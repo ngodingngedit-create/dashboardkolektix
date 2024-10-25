@@ -17,6 +17,7 @@ import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { ModalsProvider } from '@mantine/modals';
 
 config.autoAddCss = false;
 
@@ -26,18 +27,20 @@ export default function App({ Component, pageProps }: AppProps) {
     <main className={inter.className}>
       <NextUIProvider locale='en-UK'>
         <MantineProvider>
-          <ToastContainer />
-          {router.pathname.startsWith('/dashboard') ? (
-            <SidebarComponent>
+          <ModalsProvider>
+            <ToastContainer />
+            {router.pathname.startsWith('/dashboard') ? (
+              <SidebarComponent>
+                <Component {...pageProps} />
+              </SidebarComponent>
+            ) : router.pathname.startsWith('/auth') ? (
               <Component {...pageProps} />
-            </SidebarComponent>
-          ) : router.pathname.startsWith('/auth') ? (
-            <Component {...pageProps} />
-          ) : (
-            <NavbarComponent>
-              <Component {...pageProps} />
-            </NavbarComponent>
-          )}
+            ) : (
+              <NavbarComponent>
+                <Component {...pageProps} />
+              </NavbarComponent>
+            )}
+          </ModalsProvider>
         </MantineProvider>
       </NextUIProvider>
       {/* <ChatBox /> */}

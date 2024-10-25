@@ -1,12 +1,13 @@
 import CreateMerchandise from '@/components/CreateMerchandise';
-import { Get, Post } from '@/utils/REST';
-import { Card, Center, NumberFormatter, Text, Switch } from '@mantine/core';
+import { Delete, Get, Post } from '@/utils/REST';
+import { Card, Center, NumberFormatter, Text, Switch, ActionIcon } from '@mantine/core';
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from '@nextui-org/react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MerchListResponse } from './type';
 import Cookies from 'js-cookie';
 import { useListState } from '@mantine/hooks';
+import { modals } from '@mantine/modals';
 
 const Merch = () => {
   const [modalCreate, setModalCreate] = useState<boolean>(false);
@@ -58,6 +59,27 @@ const Merch = () => {
   const splittedByStatus = useCallback((status: number) => {
     return merchList?.filter(e => e.status == status);
   }, [merchList]);
+
+  const handleDelete = async (id: number) => {
+    modals.openConfirmModal({
+      centered: true,
+      title: 'Hapus Produk?',
+      children: 'Apakah anda yakin ingin menghapus produk ini?',
+      labels: { confirm: 'Hapus', cancel: 'Batal' },
+      onConfirm: () => {
+        setLoading.append(`delete${id}`);
+        Delete(`product/${id}`, {})
+        .then(() => {
+          setMerchList([...(merchList ?? []).filter(e => e.id != id)]);
+          setLoading.filter(e => e != `delete${id}`);
+        })
+        .catch((err) => {
+          console.log(err);
+          setLoading.filter(e => e != `delete${id}`);
+        });
+      }
+    })
+  }
 
   return (
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
@@ -127,11 +149,11 @@ const Merch = () => {
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
                           <Switch checked={e.status == 1} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>
-                          <button>
+                          <ActionIcon variant="transparent" onClick={() => handleDelete(e.id)} loading={loading.includes(`delete${e.id}`)}>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M13.3333 5.00033V4.33366C13.3333 3.40024 13.3333 2.93353 13.1517 2.57701C12.9919 2.2634 12.7369 2.00844 12.4233 1.84865C12.0668 1.66699 11.6001 1.66699 10.6667 1.66699H9.33333C8.39991 1.66699 7.9332 1.66699 7.57668 1.84865C7.26308 2.00844 7.00811 2.2634 6.84832 2.57701C6.66667 2.93353 6.66667 3.40024 6.66667 4.33366V5.00033M8.33333 9.58366V13.7503M11.6667 9.58366V13.7503M2.5 5.00033H17.5M15.8333 5.00033V14.3337C15.8333 15.7338 15.8333 16.4339 15.5608 16.9686C15.3212 17.439 14.9387 17.8215 14.4683 18.0612C13.9335 18.3337 13.2335 18.3337 11.8333 18.3337H8.16667C6.76654 18.3337 6.06647 18.3337 5.53169 18.0612C5.06129 17.8215 4.67883 17.439 4.43915 16.9686C4.16667 16.4339 4.16667 15.7338 4.16667 14.3337V5.00033" stroke="#666666" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                          </button>
+                          </ActionIcon>
                           <button>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <g clip-path="url(#clip0_9535_48088)">
