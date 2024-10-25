@@ -1,0 +1,17 @@
+.custom-accordion .nextui-accordion-item {
+  width: 20px; /* Width when closed */
+  overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.custom-accordion .nextui-accordion-item.expanded {
+  width: 500px; /* Adjust width as needed when expanded */
+}
+
+.custom-accordion .nextui-accordion-title {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  justify-content: space-between;
+  min-width: 300px; /* Adjust as needed */
+}

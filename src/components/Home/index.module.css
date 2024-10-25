@@ -1,0 +1,53 @@
+.heading {
+  position: relative;
+  font-weight: 800;
+}
+
+.heading::before {
+  content: '';
+  width: 120%;
+  background: #e2eefe;
+  position: absolute;
+  display: block;
+  height: 3px;
+  left: -148%;
+  bottom: 50%;
+}
+
+.eventContainer {
+  display: flex;
+  justify-content: flex-start;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+}
+
+.eventCard {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.eventCard:last-child {
+  margin-right: 1rem;
+}
+.eventCard:first-child {
+  padding-left: 1rem;
+}
+
+.customInput:focus {
+  outline: none;
+  border-color: transparent;
+}
+
+@media (min-width: 768px) {
+  .eventContainer {
+    overflow-x: auto;
+  }
+}
+
+.categoryCard:first-child {
+  margin-left: 1rem;
+}
+
+.categoryCard:last-child {
+  margin-right: 2rem;
+}

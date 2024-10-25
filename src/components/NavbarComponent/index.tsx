@@ -1,0 +1,582 @@
+import { ReactNode, useState, useEffect } from 'react';
+import Logo from '@images/logo.png';
+import useWindowSize from '@/utils/useWindowSize';
+import Image from 'next/image';
+import FilterMenu from '../FilterMenu';
+import Footer from '../FooterComponent';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBell, faBookmark, faStar } from '@fortawesome/free-regular-svg-icons';
+import {
+  faBell as Bell,
+  faBars,
+  faXmark,
+  faSearch,
+  faCalendarDays,
+  faEnvelope,
+  faCirclePlus,
+  faTableColumns,
+  faRightFromBracket,
+} from '@fortawesome/free-solid-svg-icons';
+import { UserProps } from '@/utils/globalInterface';
+import top from '../../assets/images/Ellipse 40.png';
+import avatar from '../../assets/images/avatar.jpg';
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/router';
+import useLoggedUser from '@/utils/useLoggedUser';
+import Fade from '../Transition';
+import Link from 'next/link';
+import Lowongan from '../../pages/lowongan/index';
+import Merchandise from '../../pages/merchandise/index';
+import Talenta from '../../pages/dashboard/talenta/index';
+import React from 'react';
+
+export default function NavbarComponent({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const users = useLoggedUser();
+  const { route } = router;
+  const { width } = useWindowSize();
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+  const [userData, setUserData] = useState<UserProps>();
+  const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
+  const [showSideMenu, setShowSideMenu] = useState<boolean>(false);
+  const [showSideBar, setShowSideBar] = useState<boolean>(false);
+  const [isLogin, setIsLogin] = useState<boolean>(false);
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [navbarBackground, setNavbarBackground] = useState<boolean>(false);
+  const [hasNotification, setHasNotification] = useState<boolean>(false);
+  const [bgNav, setBgNav] = useState<boolean>(false);
+
+  const handleNotification = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleSideMenu = () => {
+    setShowSideMenu(!showSideMenu);
+  };
+
+  const handleSideBar = () => {
+    setShowSideBar(!showSideBar);
+  };
+
+  const handleFilter = () => {
+    setShowFilter(!showFilter);
+  };
+
+  const handleLogout = () => {
+    Cookies.remove('token', { path: '/' });
+    Cookies.remove('user_data', { path: '/' });
+    Cookies.remove('prevPath', { path: '/' });
+    Cookies.remove('ticketCount', { path: '/' });
+    if (route !== '/') {
+      router.push('/').then(() => window.location.reload());
+    } else {
+      window.location.reload();
+    }
+  };
+
+  useEffect(() => {
+    if (users) {
+      setUserData(users);
+      console.log(users);
+    }
+  }, [users]);
+
+  const token = Cookies.get('token');
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 100) {
+        setNavbarBackground(true);
+      } else {
+        setNavbarBackground(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    token !== undefined ? setIsLogin(true) : setIsLogin(false);
+  }, []);
+
+  useEffect(() => {
+    navbarActive();
+  }, [route]);
+
+  const navbarActive = () => {
+    let active = false;
+    route === '/' ||
+    route === '/event' ||
+    route === '/venue' ||
+    route === '/talent' ||
+    route === '/lowongan' ||
+    route === '/merchandise'
+      ? (active = true)
+      : (active = false);
+    setBgNav(active);
+  };
+
+  return (
+    <div>
+      <nav
+        className={`${
+          width && width > 768
+            ? navbarBackground || !bgNav || showFilter
+              ? 'bg-primary-dark'
+              : 'bg-transparent'
+            : 'bg-primary-dark'
+        } transition-colors duration-300 sticky top-0 w-full z-50`}
+      >
+        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+          <div className='flex h-16 items-center justify-between'>
+            <div className='flex items-center flex-1'>
+            <div className='mr-2 w-8 md:hidden'>
+                <button
+                  type='button'
+                  className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
+                  aria-controls='mobile-menu'
+                  aria-expanded='false'
+                  onClick={handleSideMenu}
+                >
+                  <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
+                </button>
+              </div>
+              <div className='mr-2 w-8 hidden md:inline lg:inline'>
+                <button
+                  type='button'
+                  className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
+                  aria-controls='mobile-menu'
+                  aria-expanded='false'
+                  onClick={handleSideBar}
+                >
+                  <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
+                </button>
+              </div>
+              <div className='flex-shrink-0'>
+                <Link href='/'>
+                  <Image className='w-14 md:w-20' src={Logo} alt='Kolektix Logo' />
+                </Link>
+              </div>
+            </div>
+            <div className='flex items-center justify-center flex-1'>
+              <div className='bg-primary-dark flex items-center drop-shadow-2xl rounded-full'>
+                <div className='md:block hidden'>
+                  <div className='flex items-baseline space-x-4 p-1'>
+                    <Link
+                      href='/event'
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${
+                        route === '/event' ? 'text-white' : 'text-primary-light-200'
+                      } hover:text-white`}
+                    >
+                      Event
+                    </Link>
+                    <Link
+                      href='/talent'
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${
+                        route === '/talent' ? 'text-white' : 'text-primary-light-200'
+                      } hover:text-white`}
+                    >
+                      Talenta
+                    </Link>
+                    <Link
+                      href='/lowongan'
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${
+                        route === '/lowongan' ? 'text-white' : 'text-primary-light-200'
+                      } hover:text-white`}
+                    >
+                      Lowongan
+                    </Link>
+                    <Link
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${
+                        route === '/merchandise' ? 'text-white' : 'text-primary-light-200'
+                      } hover:text-white`}
+                      href='/merchandise'
+                    >
+                      Merchandise
+                    </Link>
+                    <Link
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${
+                        route === '/venue' ? 'text-white' : 'text-primary-light-200'
+                      } hover:text-white`}
+                      href='/venue'
+                    >
+                      Venue
+                    </Link>
+                    <div className='w-10'>
+                      <button className='bg-white rounded-full w-8 h-8' onClick={handleFilter}>
+                        <FontAwesomeIcon icon={faSearch} className='text-primary' />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className='flex items-center justify-end flex-1'>
+              <div className=''>
+                <div className='flex items-center'>
+                <button
+                  type='button'
+                  className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
+                >
+                  <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
+                    <FontAwesomeIcon icon={faCirclePlus} />
+                    <span className='ml-1 hidden lg:inline'>Buat Event</span>
+                  </Link>
+                </button>
+
+                  <button
+                    type='button'
+                    className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white'
+                    onClick={handleNotification}
+                  >
+                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                  </button>
+
+                  <div className='relative ml-3'>
+                    <div className='bg-white rounded-full md:px-3 px-1 py-0.5 md:py-1.5 md:w-20 w-16'>
+                      {isLogin ? (
+                        <button
+                          type='button'
+                          className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
+                          id='user-menu-button'
+                          aria-expanded='false'
+                          aria-haspopup='true'
+                          onClick={() => setShowUserMenu(!showUserMenu)}
+                        >
+                          <FontAwesomeIcon icon={faBars} className='text-primary-base' />
+                          <Image
+                            className='h-6 w-6 rounded-full border border-primary-light-200'
+                            src={avatar}
+                            alt=''
+                          />
+                        </button>
+                      ) : (
+                        <button
+                          type='button'
+                          className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around text-primary-base font-semibold hover:text-primary-dark'
+                          id='user-menu-button'
+                          aria-expanded='false'
+                          aria-haspopup='true'
+                          onClick={() => router.push('/auth')}
+                        >
+                          Login
+                        </button>
+                      )}
+                    </div>
+                    <Fade isShowing={showNotifications}>
+                      <div
+                        className={`absolute right-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
+                          showNotifications ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        role='menu'
+                        aria-orientation='vertical'
+                        aria-labelledby='user-menu-button'
+                        tabIndex={-1}
+                      >
+                        {hasNotification ? (
+                          <>
+                            <Link
+                              href='#'
+                              className='block px-4 py-2 text-sm text-dark'
+                              role='menuitem'
+                              tabIndex={-1}
+                              id='user-menu-item-0'
+                            >
+                              Your Profile
+                            </Link>
+                            <Link
+                              href='#'
+                              className='block px-4 py-2 text-sm text-dark'
+                              role='menuitem'
+                              tabIndex={-1}
+                              id='user-menu-item-1'
+                            >
+                              Settings
+                            </Link>
+                            <Link
+                              href='#'
+                              className='block px-4 py-2 text-sm text-dark'
+                              role='menuitem'
+                              tabIndex={-1}
+                              id='user-menu-item-2'
+                            >
+                              Sign out
+                            </Link>
+                          </>
+                        ) : (
+                          <div className='p-3'>
+                            <p className='text-dark text-sm'>Belum ada notifikasi</p>
+                          </div>
+                        )}
+                      </div>
+                    </Fade>
+                    <Fade isShowing={showUserMenu}>
+                      <div
+                        className={`absolute right-0 z-10 mt-2 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-all duration-200 ${
+                          showUserMenu ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        role='menu'
+                        aria-orientation='vertical'
+                        aria-labelledby='user-menu-button'
+                        tabIndex={-1}
+                      >
+                        <Link
+                          href='/dashboard/my-ticket'
+                          className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
+                          role='menuitem'
+                          tabIndex={-1}
+                          id='user-menu-item-0'
+                        >
+                          <FontAwesomeIcon icon={faCalendarDays} className='mr-2' />
+                          Transaksi
+                        </Link>
+                        <Link
+                          href='/dashboard/my-ticket'
+                          className='block px-4 py-2 text-xs text-dark hover:bg-primary-light'
+                          role='menuitem'
+                          tabIndex={-1}
+                          id='user-menu-item-1'
+                        >
+                          <FontAwesomeIcon icon={faTableColumns} className='mr-2' />
+                          Dashboard
+                        </Link>
+                        <Link
+                          href='/'
+                          className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
+                          role='menuitem'
+                          tabIndex={-1}
+                          id='user-menu-item-0'
+                        >
+                          <FontAwesomeIcon icon={faBookmark} className='mr-2' />
+                          Bookmark
+                        </Link>
+                        {/* <a
+                          href='#'
+                          className='block px-4 py-2 text-xs text-dark hover:bg-primary-light'
+                          role='menuitem'
+                          tabIndex={-1}
+                          id='user-menu-item-2'
+                        >
+                          <FontAwesomeIcon icon={faEnvelope} className='mr-2' />
+                          Inbox
+                        </a> */}
+                        <button
+                          className='block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md'
+                          role='menuitem'
+                          tabIndex={-1}
+                          onClick={handleLogout}
+                          id='user-menu-item-2'
+                        >
+                          <FontAwesomeIcon icon={faRightFromBracket} className='mr-2' />
+                          Keluar
+                        </button>
+                      </div>
+                    </Fade>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showSideMenu && (
+          <div className='' id='mobile-menu'>
+            <div className='border-t border-gray-700 pb-3 pt-4'>
+              <div className='flex items-center px-5'>
+              {isLogin ? (
+                <>
+                  <div className='flex-shrink-0'>
+                    <Image
+                      className='h-6 w-6 rounded-full border border-primary-light-200'
+                      src={avatar}
+                      alt=''
+                    />
+                  </div>
+                  <div className='ml-3'>
+                    <div className='text-base font-medium leading-none text-white'>
+                      {/* {userData.name} */}
+                    </div>
+                    <div className='text-sm font-medium leading-none text-white'>
+                      {userData && userData.email}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className='space-y-1 flex flex-col px-2'>
+                  <Link
+                    href='/event'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/event' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Event
+                  </Link>
+                  <Link
+                    href='/talent'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/talent' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Talenta
+                  </Link>
+                  <Link
+                    href='/lowongan'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/lowongan' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Lowongan
+                  </Link>
+                  <Link
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/merchandise' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                    href='/merchandise'
+                  >
+                    Merchandise
+                  </Link>
+                  <Link
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/venue' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                    href='/venue'
+                  >
+                    Venue
+                  </Link>
+                </div>
+              )}
+              </div>
+              {isLogin && (
+                <div className='mt-3 space-y-1 flex flex-col px-2'>
+                  <Link
+                    href='/event'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/event' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Event
+                  </Link>
+                  <Link
+                    href='/talent'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/talent' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Talenta
+                  </Link>
+                  <Link
+                    href='/lowongan'
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/lowongan' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                  >
+                    Lowongan
+                  </Link>
+                  <Link
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/merchandise' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                    href='/merchandise'
+                  >
+                    Merchandise
+                  </Link>
+                  <Link
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
+                      route === '/venue' ? 'text-white' : 'text-primary-light-200'
+                    } hover:text-white`}
+                    href='/venue'
+                  >
+                    Venue
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      {showSideBar &&(
+        <div className='fixed inset-0 flex'>
+          <div
+            className={`fixed top-0 left-0 w-1/5 bg-black opacity-80 p-4 transition-transform duration-700 ease-in-out transform ${showSideBar ? 'translate-x-0' : '-translate-x-full'}`}
+            style={{ height: '100vh', zIndex: 30 }}
+          >
+            <div className="flex items-center">
+              <button
+                type='button'
+                className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
+                aria-controls='mobile-menu'
+                aria-expanded={showSideBar}
+                onClick={handleSideBar}
+              >
+                <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
+              </button>
+              <div className='flex-shrink-0 ms-4'>
+                <Link href='/'>
+                  <Image className='w-14 md:w-20' src={Logo} alt='Kolektix Logo' />
+                </Link>
+              </div>
+            </div>
+            <div className='mt-4 p-4 rounded-lg'>
+              <p className='text-white text-lg font-semibold mb-4'>Konten Sidebar</p>
+              <ul className='space-y-2'>
+              <li className="flex items-center space-x-2 p-2 text-lg transition duration-300 hover:bg-gray-700 rounded-lg">
+                <FontAwesomeIcon icon={faCalendarDays} className="text-white" />
+                <Link href='/event' className='text-white hover:text-white block transition'>
+                  Event
+                </Link>
+              </li>
+              <li className="flex items-center space-x-2 p-2 text-lg transition duration-300 hover:bg-gray-700 rounded-lg">
+                <FontAwesomeIcon icon={faStar} className="text-white" />
+                <Link href='/talent' className='text-white hover:text-white block transition'>
+                  Talenta
+                </Link>
+              </li>
+                <li>
+                  <Link href='/lowongan' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
+                    Lowongan
+                  </Link>
+                </li>
+                <li>
+                  <Link href='/merchandise' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
+                    Merchandise
+                  </Link>
+                </li>
+                <li>
+                  <Link href='/venue' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
+                    Venue
+                  </Link>
+                </li>
+              </ul>
+            </div>
+        </div>
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-30 transition-opacity duration-700 ease-in-out ${showSideBar ? 'opacity-100' : 'opacity-0'}`}
+        style={{ zIndex: 20 }}  // Adjust zIndex as needed
+        onClick={handleSideBar}
+      />
+        </div>
+      )}
+        <Fade isShowing={showFilter}>
+          <FilterMenu />
+        </Fade>
+      </nav>
+      <main>
+        <div className='margin-min'>
+          {route === '/event' ||
+          route === '/venue' ||
+          route === '/talent' ||
+          route === '/merchandise' ||
+          route === '/lowongan' ? (
+            <Image src={top} alt='top' className='w-full' quality={100} />
+          ) : (
+            <></>
+          )}
+
+          {children}
+        </div>
+      </main>
+      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && <Footer />}
+    </div>
+  );
+}

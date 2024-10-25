@@ -1,0 +1,12 @@
+.bgPromo {
+  background-image: url('../../../assets/images/bg-promo.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 95%;
+}
+
+@media only screen and (max-width: 768px) {
+  .bgPromo {
+    width: 100%;
+  }
+}
