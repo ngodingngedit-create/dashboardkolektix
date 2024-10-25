@@ -3,15 +3,24 @@ import Cookies from 'js-cookie';
 import router from 'next/router';
 import Config from '../Config';
 
-export const Post = async (url: string, params: any) => {
+export const Post = async (
+  url: string,
+  params: any,
+  contentType: string = 'application/json'
+) => {
   const token = Cookies.get('token');
 
-  if (!!token) Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  if (token) {
+    Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Convert params to FormData if contentType is 'multipart/form-data'
+  const data = contentType === 'multipart/form-data' ? convertToFormData(params) : JSON.stringify(params);
 
   return new Promise((resolve, reject) => {
-    Axios.post(`${Config.wsUrl}${url}`, JSON.stringify(params), {
+    Axios.post(`${Config.wsUrl}${url}`, data, {
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': contentType,
         Accept: 'application/json',
       },
     })
@@ -25,6 +34,23 @@ export const Post = async (url: string, params: any) => {
       });
   });
 };
+
+// Helper function to convert an object with potential Files into FormData
+function convertToFormData(params: any) {
+  const formData = new FormData();
+  Object.keys(params).forEach(key => {
+    if (typeof params[key] == 'object' && (params[key] as (string | Blob)[]).length) {
+      let i = 0;
+      for (const v of (params[key] as (string | Blob)[])) {
+          formData.append(`${key}[${i}]`, v);
+          i++;
+      }
+    } else {
+      formData.append(key, params[key] as (string | Blob));
+    }
+  });
+  return formData;
+}
 
 export const Get = async (url: string, params: any) => {
   let stringParams: string = '';

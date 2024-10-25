@@ -3,24 +3,30 @@ import { Input } from '@nextui-org/react';
 import Image from 'next/image';
 import ImageInput from '../ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
-import { ActionIcon, Button, Card, Checkbox, Divider, Flex, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import InputEditor from '@/components/Input/InputEditor';
 import { Post } from '@/utils/REST';
 import Cookies from 'js-cookie';
-import z, { ZodSchema } from 'zod';
+import z from 'zod';
+import { useRouter } from 'next/router';
+import { useListState } from '@mantine/hooks';
 
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     name: z.string().min(1, { message: '"Wajib Diisi' }),
     sku: z.string().min(1, { message: '"Wajib Diisi' }),
     price: z.number().min(1, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
-    image: z.any().optional().nullable(),
+    image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
     variant: z.array(z.any()).optional().nullable(),
     variantdetail: z.array(z.any()).optional().nullable(),
+    status: z.boolean().nullable().optional()
 });
 
 export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>) {
+    const [loading, setLoading] = useListState<string>();
+
+    const router = useRouter();
     const form = useForm<MerchandiseState>({
         initialValues: {
             name: '',
@@ -29,7 +35,8 @@ export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>)
             description: '',
             image: [],
             variant: [],
-            variantdetail: []
+            variantdetail: [],
+            status: true
         },
         validate: zodResolver(storeSchema)
     });
@@ -38,29 +45,35 @@ export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>)
         const valid = form.validate();
         if (valid.hasErrors) return;
 
-        const { name, description, price: selling_price, sku, image } = form.values;
+        setLoading.append('save');
+        const { name, description, price: selling_price, sku, image, status } = form.values;
         Post('product', {
             name,
-            description,
+            description: description ?? '-',
             sku,
             selling_price,
             image,
-            status: isDraft ? 5 : 1,
+            status: isDraft ? 5 : status ? 1 : 0,
             creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
             buying_price: selling_price,
             variation_price: 0,
             order: 10,
-            can_purchasablze: true,
-            show_stock_out: true,
+            can_purchasable: 1,
+            show_stock_out: 1,
             maximum_purchase_quantity: 100,
             low_stock_quantity_warning: 4,
-            refundable: false,
+            refundable: 0,
             discount: 0,
-            is_product_quantity_multiply: true,
-            add_to_flash_sale: true
-        } satisfies MerchandiseStoreRequest)
-        .then(() => {
-            onClose && onClose();
+            is_product_quantity_multiply: 1,
+            add_to_flash_sale: 1
+        } satisfies MerchandiseStoreRequest, 'multipart/form-data')
+        .then((res: any) => {
+            router.reload();
+            setLoading.filter(e => e != 'save');
+        })
+        .catch(({ response }) => {
+            form.setErrors({ ...response.data.errors, name: response.data.errors.slug ?? undefined });
+            setLoading.filter(e => e != 'save');
         });
     }
 
@@ -93,20 +106,24 @@ export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>)
                                         <p className="text-grey mt-[5px]">Direkomendasikan tidak lebih dari 2mb</p>
                                     </div>
                                     <div className="flex-grow overflow-x-auto">
-                                        <SimpleGrid w="fit-content" className={`!flex sm:!grid sm:!grid-cols-3 md:!grid-cols-5`}>
-                                            {Array(10).fill(1).map((e, i) => (
-                                                <ImageInput
-                                                    key={i}
-                                                    value={form.values.image[i]}
-                                                    onChange={e => e && (form.values.image[i] ?
-                                                        form.setValues({ image: form.values.image.map((x, z) => z == i ? e : x) }) :
-                                                        form.setValues({ image: [...form.values.image, e] })
-                                                    )}
-                                                    onDelete={() => form.setValues({ image: form.values.image.filter((_, z) => z != i) })}
-                                                    floattext={i == 0 ? 'Utama' : undefined}
-                                                />
-                                            ))}
-                                        </SimpleGrid>
+                                        <InputWrapper error={form.errors.image}>
+                                            <Box pb={10}>
+                                                <SimpleGrid w="fit-content" className={`!flex sm:!grid sm:!grid-cols-3 md:!grid-cols-5`}>
+                                                    {Array(10).fill(1).map((e, i) => (
+                                                        <ImageInput
+                                                            key={i}
+                                                            value={form.values.image[i]}
+                                                            onChange={e => e && (form.values.image[i] ?
+                                                                form.setValues({ image: form.values.image.map((x, z) => z == i ? e : x) }) :
+                                                                form.setValues({ image: [...form.values.image, e] })
+                                                            )}
+                                                            onDelete={() => form.setValues({ image: form.values.image.filter((_, z) => z != i) })}
+                                                            floattext={i == 0 ? 'Utama' : undefined}
+                                                        />
+                                                    ))}
+                                                </SimpleGrid>
+                                            </Box>
+                                        </InputWrapper>
                                     </div>
                                 </div>
 
@@ -327,21 +344,34 @@ export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>)
                 </div>
 
                 <div className="border-t border-[#E2EDFF] p-[10px] shrink-0">
-                    <div className="mx-auto max-w-[1280px] px-[20px] flex justify-end items-center gap-[20px]">
-                        <Flex gap={10}>
+                    {JSON.stringify(form.errors)}
+                    <div className="mx-auto max-w-[1280px] px-[20px]">
+                        <Flex gap={10} justify="space-between">
                             <Button
-                                onClick={() => handleSave(true)}
+                                onClick={() => onClose && onClose()}
                                 className={`!border-[#E2EDFF]`}
-                                variant="outline"
-                                color="#0B387C"
+                                variant="subtle"
+                                color="gray"
                                 radius="xl"
-                            >Simpan Draf</Button>
+                            >Kembali</Button>
 
-                            <Button
-                                onClick={() => handleSave(false)}
-                                bg="#0B387C"
-                                radius="xl"
-                            >Buat Merchandise</Button>
+                            <Flex gap={10}>
+                                <Button
+                                    loading={loading.includes('save')}
+                                    onClick={() => handleSave(true)}
+                                    className={`!border-[#E2EDFF]`}
+                                    variant="outline"
+                                    color="#0B387C"
+                                    radius="xl"
+                                >Simpan Draf</Button>
+
+                                <Button
+                                    loading={loading.includes('save')}
+                                    onClick={() => handleSave(false)}
+                                    bg="#0B387C"
+                                    radius="xl"
+                                >Buat Merchandise</Button>
+                            </Flex>
                         </Flex>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ type MerchandiseState = {
     price: number;
     description: string;
     image: Blob[];
+    status: boolean;
     variant: {
         name: string;
         value: string[];
@@ -34,19 +35,19 @@ type MerchandiseStoreRequest = {
     variation_price: number;
     status: number;
     order: number;
-    can_purchasablze: boolean;
-    show_stock_out: boolean;
+    can_purchasable: 1 | 0;
+    show_stock_out: 1 | 0;
     maximum_purchase_quantity: number;
     low_stock_quantity_warning: number;
     // weight: number;
-    refundable: boolean;
+    refundable: 1 | 0;
     description: string;
     // shipping_and_return: string;
-    add_to_flash_sale: boolean;
+    add_to_flash_sale: 1 | 0;
     discount: number;
     // offer_start_date: string;
     // offer_end_date: string;
-    is_product_quantity_multiply: boolean;
+    is_product_quantity_multiply: 1 | 0;
     // editor_type: string;
     // editor_id: number;
     image: Blob[];
