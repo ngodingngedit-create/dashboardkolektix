@@ -238,7 +238,7 @@ useEffect(() => {
             </Link>
           </li>
           <li className='border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3'>
-  <div className='flex items-center gap-3 px-3'>
+  <div className='flex items-center gap-3 px-3 text-white'>
     <Image src={Avatar} alt='Avatar' className='w-9 h-9 rounded-full object-cover' />
     {visible && (
       <>
@@ -277,7 +277,7 @@ useEffect(() => {
   <div
     className={`${
       pop ? 'opacity-0 h-0' : 'opacity-100'
-    } transition-all delay-100 ease-in-out duration-200 p-4`}
+    } transition-all delay-100 ease-in-out duration-200 p-4 text-white`}
   >
     <div className='flex justify-between mb-2'>
       <p className='text-sm'>Saldo</p>
@@ -686,7 +686,7 @@ useEffect(() => {
             </Link>
           </li>
           <li className='border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3'>
-  <div className='flex items-center gap-3 px-3'>
+  <div className='flex items-center gap-3 px-3 [&_*]!text-white '>
     <Image src={Avatar} alt='Avatar' className='w-9 h-9 rounded-full object-cover' />
     {visible && (
       <>
@@ -725,7 +725,7 @@ useEffect(() => {
   <div
     className={`${
       pop ? 'opacity-0 h-0' : 'opacity-100'
-    } transition-all delay-100 ease-in-out duration-200 p-4`}
+    } transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}
   >
     <div className='flex justify-between mb-2'>
       <p className='text-sm'>Saldo</p>

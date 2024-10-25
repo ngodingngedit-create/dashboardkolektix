@@ -2,29 +2,67 @@ import Logo from '@/assets/images/kolektix logo tansparant-blue.png';
 import { Input } from '@nextui-org/react';
 import Image from 'next/image';
 import ImageInput from '../ImageInput.tsx';
-import { useForm } from '@mantine/form';
-import { ActionIcon, Button, Card, Divider, Flex, NumberInput, SimpleGrid, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
+import { useForm, zodResolver } from '@mantine/form';
+import { ActionIcon, Button, Card, Checkbox, Divider, Flex, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import InputEditor from '@/components/Input/InputEditor';
+import { Post } from '@/utils/REST';
+import Cookies from 'js-cookie';
+import z, { ZodSchema } from 'zod';
 
-type MerchandiseState = {
-    image: (string | Blob)[];
-    variant: {
-        name: string;
-        value: string[];
-    }[];
-}
+const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
+    name: z.string().min(1, { message: '"Wajib Diisi' }),
+    sku: z.string().min(1, { message: '"Wajib Diisi' }),
+    price: z.number().min(1, { message: '"Wajib Diisi' }),
+    description: z.string().min(1, { message: '"Wajib Diisi' }),
+    image: z.any().optional().nullable(),
+    variant: z.array(z.any()).optional().nullable(),
+    variantdetail: z.array(z.any()).optional().nullable(),
+});
 
-type ComponentProps = {
-    onDraft?: () => void;
-};
-
-export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>) {
+export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>) {
     const form = useForm<MerchandiseState>({
         initialValues: {
+            name: '',
+            sku: '',
+            price: 0,
+            description: '',
             image: [],
-            variant: []
-        }
+            variant: [],
+            variantdetail: []
+        },
+        validate: zodResolver(storeSchema)
     });
+
+    const handleSave = (isDraft: boolean = false) => {
+        const valid = form.validate();
+        if (valid.hasErrors) return;
+
+        const { name, description, price: selling_price, sku, image } = form.values;
+        Post('product', {
+            name,
+            description,
+            sku,
+            selling_price,
+            image,
+            status: isDraft ? 5 : 1,
+            creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
+            buying_price: selling_price,
+            variation_price: 0,
+            order: 10,
+            can_purchasablze: true,
+            show_stock_out: true,
+            maximum_purchase_quantity: 100,
+            low_stock_quantity_warning: 4,
+            refundable: false,
+            discount: 0,
+            is_product_quantity_multiply: true,
+            add_to_flash_sale: true
+        } satisfies MerchandiseStoreRequest)
+        .then(() => {
+            onClose && onClose();
+        });
+    }
 
     return (
         <div className="fixed w-[100vw] h-[100vh] top-0 left-0 z-[900] bg-white">
@@ -38,7 +76,7 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                 </div>
 
                 <div className="h-full overflow-y-auto pb-[20px]">
-                    <div className="mx-auto max-w-[1280px] py-[20px] px-[30px] flex flex-col gap-[30px]">
+                    <div className="mx-auto max-w-[1280px] py-[20px] px-[20px] md:px-[30px] flex flex-col gap-[30px]">
 
                         <div>
                             <h2 className="text-[30px] font-[600]">Buat Merchandise</h2>
@@ -49,13 +87,13 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                             <h3 className="text-[20px] font-[500] p-[12px_16px] border-b border-[#E2EDFF]">Informasi Merchandise</h3>
 
                             <div className="p-[24px_16px] flex flex-col gap-[20px]">
-                                <div className="flex gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
+                                <div className="flex flex-wrap gap-[20px]">
+                                    <div className="min-w-[250px] shrink-0">
                                         <h4 className="text-[16px] font-[500]">Foto Merchandise <span className="text-red-400">*</span></h4>
                                         <p className="text-grey mt-[5px]">Direkomendasikan tidak lebih dari 2mb</p>
                                     </div>
-                                    <div className="w-full">
-                                        <SimpleGrid cols={5} w="fit-content">
+                                    <div className="flex-grow overflow-x-auto">
+                                        <SimpleGrid w="fit-content" className={`!flex sm:!grid sm:!grid-cols-3 md:!grid-cols-5`}>
                                             {Array(10).fill(1).map((e, i) => (
                                                 <ImageInput
                                                     key={i}
@@ -72,30 +110,40 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
+                                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                                    <div className="min-w-[250px] shrink-0">
                                         <h4 className="text-[16px] font-[500]">Nama Produk <span className="text-red-400">*</span></h4>
                                     </div>
-                                    <div className="w-full [&_*]:border-[#E2EDFF]">
-                                        <Input variant="bordered" size="lg" type="text" placeholder="Isi Nama Produk" />
+                                    <div className="flex-grow [&_*]:border-[#E2EDFF]">
+                                        <TextInput placeholder="Isi Nama Produk" error={form.errors.name} value={form.values.name} onChange={e => form.setValues({ name: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
-                                        <h4 className="text-[16px] font-[500]">Kategori <span className="text-red-400">*</span></h4>
+                                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                                    <div className="min-w-[250px] shrink-0">
+                                        <h4 className="text-[16px] font-[500]">SKU Produk <span className="text-red-400">*</span></h4>
                                     </div>
-                                    <div className="w-full [&_*]:border-[#E2EDFF]">
-                                        <Input variant="bordered" size="lg" type="text" placeholder="Isi Kategori Produk" />
+                                    <div className="flex-grow [&_*]:border-[#E2EDFF]">
+                                        <TextInput placeholder="Isi Nama Produk" error={form.errors.sku} value={form.values.sku} onChange={e => form.setValues({ sku: e.target.value.replaceAll(/\s/g, '') })} />
                                     </div>
                                 </div>
+
+                                {/* <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                                    <div className="min-w-[250px] shrink-0">
+                                        <h4 className="text-[16px] font-[500]">Kategori <span className="text-red-400">*</span></h4>
+                                    </div>
+                                    <div className="flex-grow [&_*]:border-[#E2EDFF]">
+                                        <TagsInput placeholder="Isi Kategori Produk" />
+                                    </div>
+                                </div> */}
                             </div>
                         </div>
 
                         <div className="border border-[#E2EDFF] rounded-[8px]">
-                            <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
+                            <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`} wrap="wrap">
                                 <h3 className="text-[20px] font-[500]">Varian Merchandise</h3>
                                 <Button
+                                    p={0}
                                     onClick={() => form.setValues({ variant: [...form.values.variant, { name: '', value: [] }] })}
                                     color="#0B387C"
                                     variant="transparent"
@@ -109,35 +157,41 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
 
                             <div className="p-[16px_20px] flex flex-col gap-[10px]">
                                 {form.values.variant.map((e, i) => (
-                                    <Flex key={i} align="end" gap={15}>
+                                    <Flex key={i} align="end" gap={10} wrap="wrap">
                                         <TextInput
                                             value={form.values.variant[i].name}
                                             onChange={e => form.setFieldValue(`variant.${i}.name`, e.target.value)}
                                             label="Nama Varian"
                                             placeholder="Contoh: Ukuran, Warna"
                                         />
-                                        <TagsInput
-                                            w="100%"
-                                            value={form.values.variant[i].value}
-                                            onChange={e => form.setFieldValue(`variant.${i}.value`, e)}
-                                            placeholder="Ketik untuk menambah tipe varian Warna"
-                                        />
-                                        <ActionIcon
-                                            variant="transparent"
-                                            color="#0B387C"
-                                            radius="xl"
-                                            className={`!border-[#E2EDFF] shrink-0 mb-[-2px]`}
-                                            size="xl"
-                                            onClick={() => form.setValues({ variant: form.values.variant.filter((_, z) => z != i) })}>
-                                            <Icon icon="material-symbols:delete-outline" className={`text-[24px]`}/>
-                                        </ActionIcon>
+                                        <Flex gap={10} align="center">
+                                            <TagsInput
+                                                w="100%"
+                                                value={form.values.variant[i].value}
+                                                onChange={e => form.setFieldValue(`variant.${i}.value`, e)}
+                                                placeholder={`Ketik untuk menambah tipe varian ${form.values.variant[i].name}`}
+                                            />
+                                            <ActionIcon
+                                                variant="transparent"
+                                                color="#0B387C"
+                                                radius="xl"
+                                                className={`!border-[#E2EDFF] shrink-0`}
+                                                size="xl"
+                                                onClick={() => form.setValues({ variant: form.values.variant.filter((_, z) => z != i) })}>
+                                                <Icon icon="material-symbols:delete-outline" className={`text-[24px]`}/>
+                                            </ActionIcon>
+                                        </Flex>
                                     </Flex>
                                 ))}
 
-                                <Divider my={10} />
+                                {form.values.variant.length == 0 && (
+                                    <Text className={`!text-grey`}>Tambah Varian terlebih dahulu untuk mengatur varian</Text>
+                                )}
 
-                                <Card withBorder p={0}>
-                                    <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px]`} horizontalSpacing="md">
+                                <Divider label="Atur Varian" my={10} display={form.values.variant[0] && Boolean(form.values.variant[0].name) ? undefined : 'none'}/>
+
+                                <Card className={`!overflow-auto`} withBorder p={0} display={form.values.variant[0] && Boolean(form.values.variant[0].name) ? undefined : 'none'}>
+                                    <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px] min-w-[700px]`} horizontalSpacing="md">
                                         <Table.Thead>
                                             <Table.Tr>
                                                 {form.values.variant.map((variant, index) => (
@@ -174,12 +228,14 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                                                     {form.values.variant.map((variant, variantIndex) => (
                                                         <Table.Td key={variantIndex} miw={100}>{row[variant.name]}</Table.Td>
                                                     ))}
-                                                    <Table.Td miw={100}>SKU</Table.Td>
                                                     <Table.Td>
-                                                        <NumberInput maw={200} hideControls placeholder="Isi Harga Varian" />
+                                                        <TextInput maw={200} placeholder="Isi SKU Varian"/>
                                                     </Table.Td>
                                                     <Table.Td>
-                                                        <NumberInput maw={200} hideControls placeholder="Isi Berat Varian" />
+                                                        <NumberInput maw={200} hideControls placeholder="Isi Harga Varian" prefix="Rp " thousandSeparator/>
+                                                    </Table.Td>
+                                                    <Table.Td>
+                                                        <NumberInput maw={200} hideControls placeholder="Isi Berat Varian" suffix=' gr' thousandSeparator/>
                                                     </Table.Td>
                                                     <Table.Td>
                                                         <NumberInput maw={200} hideControls placeholder="Isi Stok Varian" />
@@ -198,34 +254,61 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                         <div className="border border-[#E2EDFF] rounded-[8px]">
                             <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
                                 <h3 className="text-[20px] font-[500]">Detail Merchandise</h3>
-                                <Switch size="md" color="#0B387C"/>
                             </Flex>
 
                             <div className="p-[16px] flex flex-col gap-[20px]">
-                                <div className="flex items-center gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
+                                <div className="flex flex-wrap items-center gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0">
                                         <h4 className="text-[16px] font-[500]">Harga <span className="text-red-400">*</span></h4>
                                     </div>
-                                    <div className="w-full [&_*]:border-[#E2EDFF]">
-                                        <Input variant="bordered" size="lg" type="text" placeholder="Isi Harga" />
+                                    <div className="flex-grow">
+                                        <NumberInput error={form.errors.name} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
+                                <div className="flex flex-wrap gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0 mt-[12px]">
                                         <h4 className="text-[16px] font-[500]">Stok <span className="text-red-400">*</span></h4>
                                     </div>
-                                    <div className="w-full [&_*]:border-[#E2EDFF]">
-                                        <Input variant="bordered" size="lg" type="text" placeholder="Isi Stok" />
-                                    </div>
+                                    <Stack className="flex-grow">
+                                        <NumberInput hideControls type="text" placeholder="Isi Stok" />
+                                        <Checkbox label="Tampilkan label jika stok habis"/>
+                                    </Stack>
                                 </div>
-                                <div className="flex items-center gap-[20px]">
-                                    <div className="min-w-[300px] shrink-0">
+                                <div className="flex flex-wrap items-center gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0">
                                         <h4 className="text-[16px] font-[500]">Berat <span className="text-red-400">*</span></h4>
                                     </div>
-                                    <div className="w-full [&_*]:border-[#E2EDFF]">
-                                        <Input variant="bordered" size="lg" type="text" placeholder="Isi Berat" />
+                                    <div className="flex-grow">
+                                        <NumberInput hideControls type="text" placeholder="Isi Stok" />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="border border-[#E2EDFF] rounded-[8px]">
+                            <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
+                                <h3 className="text-[20px] font-[500]">Deskripsi Produk</h3>
+                            </Flex>
+
+                            <div className="p-[16px] flex flex-col gap-[20px]">
+                                <InputEditor
+                                    theme='snow'
+                                    onChange={(value: string) => form.setValues({ description: value })}
+                                    value={form.values.description}
+                                    error={form.errors.description}
+                                    placeholder='Ketik Syarat & Ketentuan'
+                                    modules={{
+                                        toolbar: [
+                                        [{ header: '1' }],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        [{ list: 'bullet' }],
+                                        ],
+                                        clipboard: {
+                                        matchVisual: false,
+                                        },
+                                    }}
+                                    className='editor'
+                                />
                             </div>
                         </div>
 
@@ -247,7 +330,7 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                     <div className="mx-auto max-w-[1280px] px-[20px] flex justify-end items-center gap-[20px]">
                         <Flex gap={10}>
                             <Button
-                                onClick={onDraft}
+                                onClick={() => handleSave(true)}
                                 className={`!border-[#E2EDFF]`}
                                 variant="outline"
                                 color="#0B387C"
@@ -255,6 +338,7 @@ export default function CreateMerchandise({ onDraft }: Readonly<ComponentProps>)
                             >Simpan Draf</Button>
 
                             <Button
+                                onClick={() => handleSave(false)}
                                 bg="#0B387C"
                                 radius="xl"
                             >Buat Merchandise</Button>

@@ -1,8 +1,8 @@
 import { Post } from '@/utils/REST';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useZxing } from 'react-zxing';
 import { toast } from 'react-toastify';
-
+import _ from 'lodash';  // Ensure you have lodash installed
 
 interface SuccessCheckinData {
   invoice_no: string;
@@ -22,18 +22,33 @@ interface ScannerProps {
 
 const QrScanner = ({ isOpen, step, setStep, setData }: ScannerProps) => {
   const [result, setResult] = useState('');
+  const requestLock = useRef(false);
+  
+  const handleDecodeResult = useCallback(
+    _.throttle((decodedText: string) => {
+      if (!requestLock.current) {
+        requestLock.current = true;
+        Post('eticket/checkin', { eticket_number: decodedText })
+          .then((res: any) => {
+            console.log(res);
+            toast.success('Check-in success');
+            setData(res.data);
+          })
+          .catch((err: any) => {
+            console.log(err);
+            toast.error('Qr tidak ditemukan');
+          })
+          .finally(() => {
+            requestLock.current = false;
+          });
+      }
+    }, 3000), // Adjust the delay as needed
+    [],
+  );
+
   const { ref } = useZxing({
     onDecodeResult(result) {
-      Post('eticket/checkin', { eticket_number: result.getText() })
-        .then((res: any) => {
-          console.log(res);
-          toast.success('Check-in success');
-          setData(res.data);
-        })
-        .catch((err: any) => {
-          console.log(err);
-          toast.error('Qr tidak ditemukan');
-        });
+      handleDecodeResult(result.getText());
     },
   });
 
@@ -41,10 +56,6 @@ const QrScanner = ({ isOpen, step, setStep, setData }: ScannerProps) => {
     isOpen && (
       <>
         <video ref={ref} />
-        {/* <p>
-          <span>Last result:</span>
-          <span>{result}</span>
-        </p> */}
       </>
     )
   );
