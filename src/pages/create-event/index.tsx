@@ -5,6 +5,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { UserProps } from '@/utils/globalInterface';
 import imagePlus from '../../assets/icon/image-plus.png';
 import { faCalendar, faClock } from '@fortawesome/free-regular-svg-icons';
+import { TagsInput } from '@mantine/core';
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from '@nextui-org/react';
 import {
   faLocationDot,
@@ -22,7 +23,7 @@ import ModalTicket from '@/components/EventCreator/Modal/ModalTicket';
 import { FormEvent, EventTicket } from '@/utils/formInterface';
 import ModalLocation from '@/components/EventCreator/Modal/ModalLocation';
 import ModalCreateTicket from '@/components/EventCreator/Modal/ModalCreateTicket';
-import { Post } from '@/utils/REST';
+import { Get, Post } from '@/utils/REST';
 import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { toast } from 'react-toastify';
 import Button from '@/components/Button';
@@ -115,15 +116,19 @@ const CreateEvent = () => {
   const [showTicket, setShowTicket] = useState<boolean>(false);
   const [showLocation, setShowLocation] = useState<boolean>(false);
   const [addTicket, showAddTicket] = useState<boolean>(false);
+  const [tagSuggestion, setTagSuggestion] = useState<string[]>();
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<string>('info');
   // const [userData, setUserData] = useState<UserProps | null>(null);
   const loggedUser = useLoggedUser();
 
   useEffect(() => {
+    getTagSuggestion();
+  }, []);
+
+  useEffect(() => {
     if (loggedUser) {
       setForm({ ...form, creator_id: loggedUser.has_creator.id });
-      console.log(form);
-      console.log(loggedUser);
     }
     //eslint-disable-next-line
   }, [loggedUser]);
@@ -133,21 +138,45 @@ const CreateEvent = () => {
     //eslint-disable-next-line
   }, [ticket]);
 
+  const getTagSuggestion = async () => {
+    if (!tagSuggestion) {
+      try {
+        Get('event-topic', {})
+        .then((res: any) => {
+          setTagSuggestion(res.map((e: any) => e.name));
+        })
+        .catch((err) => {
+          toast.error('FAILED GET TAG SUGGESTION');
+        })
+      } catch (error) {
+        console.log('FAILED GET TAG SUGGESTION');
+      }
+    }
+  };
+
   const submitEvent = () => {
     setLoading(true); // Set loading ke true
     Post('event', form)
       .then((res) => {
-        console.log(res);
+        console.log(res);4
         toast.success('Event Berhasil Dibuat');
         router.push('/create-event/success');
       })
       .catch((err) => {
-        console.log(err);
+        const error = err.response.data.errors
         toast.error(err.response.data.message);
-        setError(err.response.data.errors);
+        setError(error);
+
+        const keys = Object.keys(error);
+        const hasDescription = keys.includes('description');
+        const hasTermCondition = keys.includes('term_condition');
+
+        if ((hasDescription || hasTermCondition) && keys.length <= 2) {
+            setTab('detail');
+        }
       })
       .finally(() => {
-        setLoading(false); // Set loading ke false setelah selesai
+        setLoading(false);
       });
   };
 
@@ -260,15 +289,16 @@ const CreateEvent = () => {
               )}
             </div>
             <div className='mb-8 mt-2 text-sm'>
-              <InputField
-                type='text'
+              <TagsInput
+                multiple
+                className={`[&_*]:!border-[#E2EDFF]`}
+                radius={8}
                 placeholder='Tag; Contoh: hiburan, musik, budaya, kuliner, pendidikan'
-                fullWidth
-                onChange={(e: any) => setForm({ ...form, tag: e.target.value })}
+                data={tagSuggestion}
+                value={!form.tag ? [] : form.tag.split('||')}
+                onChange={(e) => setForm({ ...form, tag: e.join('||') })}
+                error={(error && error?.tag) && error?.tag[0]}
               />
-              {error && error?.tag && (
-                <p className='text-danger text-xs mt-1'>{error && error?.tag[0]}</p>
-              )}
             </div>
             <div className='w-full rounded-lg'>
               <div
@@ -356,6 +386,8 @@ const CreateEvent = () => {
           </div>
           <div className='md:px-10'>
             <Tabs
+              selectedKey={tab}
+              onSelectionChange={e => setTab(e as string)}
               variant='solid'
               aria-label='Tabs variants'
               className='border border-b-2 border-primary-light-200 border-x-0 border-t-0'
@@ -366,7 +398,7 @@ const CreateEvent = () => {
                 cursor: 'rounded-b-none border-b-2 border-b-primary-base',
               }}
             >
-              <Tab key='active' title='Info Tiket'>
+              <Tab key='info' title='Info Tiket'>
                 <div className='border-2 border-primary-light-200 rounded-2xl my-5 mx-auto'>
                   <div className='border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center'>
                     <h3 className='text-medium font-semibold'>Tiket</h3>
@@ -530,7 +562,7 @@ const CreateEvent = () => {
                 </div>
               </Tab>
               <Tab
-                 key='history'
+                 key='detail'
                  title={
                    error && (error?.description || error?.term_condition) ? (
                      <div className='flex items-center space-x-2'>
@@ -545,7 +577,7 @@ const CreateEvent = () => {
                 <div className='border-2 border-primary-light-200 rounded-2xl my-5'>
                   <div className='border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center'>
                     <h3 className='text-medium font-semibold'>Deskripsi</h3>
-                    {/* {error?.description && <p className='text-danger mt-1'>{error?.description}</p>} */}
+                    {error?.description && <p className='text-danger mt-1'>{error?.description}</p>}
                   </div>
                   <div className='p-5'>
                     <InputEditor
