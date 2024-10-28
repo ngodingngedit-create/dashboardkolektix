@@ -6,6 +6,8 @@ import {
   ModalFooter,
   RadioGroup,
   Radio,
+  Tabs,
+  Tab,
 } from '@nextui-org/react';
 import { EventTicket } from '@/utils/formInterface';
 import InputField from '@/components/Input';
@@ -124,95 +126,83 @@ export default function ModalCreateTicket({
                           </Radio>
                         </div>
                       </RadioGroup>
-                      <RadioGroup
-                        label={
-                          <p className=''>
-                            Kategori Tiket<span className='text-danger'> *</span>
-                          </p>
-                        }
-                        className=''
-                        size='md'
-                        color='primary'
-                        value={form.ticket_category}
-                        onChange={(e: any) => setForm({ ...form, ticket_category: e.target.value })}
+                      <Tabs
+                        selectedKey={form.ticket_category}
+                        onSelectionChange={e => setForm({ ...form, ticket_category: e as string })}
+                        variant='solid'
+                        aria-label='Tabs variants'
+                        className='border border-b-2 border-primary-light-200 border-x-0 border-t-0 mt-2'
+                        fullWidth
+                        classNames={{
+                          tabList: 'pb-0 self-center font-semibold rounded-b-none bg-white',
+                          tab: 'p-5',
+                          cursor: 'rounded-b-none border-b-2 border-b-primary-base',
+                        }}
                       >
-                        <div className='grid grid-cols-2'>
-                          <Radio
-                            classNames={{
-                              base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
-                            }}
-                            value='Festival'
-                          >
-                            Festival
-                          </Radio>
-                          <Radio
-                            classNames={{
-                              base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
-                            }}
-                            value='Seated'
-                          >
-                            Seated
-                          </Radio>
-                        </div>
-                      </RadioGroup>
-                      <InputField
-                        type='text'
-                        label='Nama Tiket'
-                        placeholder='Nama Tiket'
-                        required
-                        fullWidth
-                        value={form.name}
-                        onChange={(e: any) => setForm({ ...form, name: e.target.value })}
-                      />
-                      <div className='grid grid-cols-2 gap-2 my-2'>
-                        <InputField
-                          type='date'
-                          label='Tanggal Mulai Penjualan'
-                          required
-                          maxDateVal={endDate ? endDate : undefined}
-                          value={form.ticket_date && form.ticket_date}
-                          onChange={(e: any) =>
-                            e && setForm({ ...form, ticket_date: e.toString() })
-                          }
-                        />
-                        <InputField
-                          type='date'
-                          label='Tanggal Berakhir Penjualan'
-                          required
-                          value={form.ticket_end && form.ticket_end}
-                          minDateVal={form.ticket_date ? form.ticket_date : undefined}
-                          maxDateVal={endDate ? endDate : undefined}
-                          onChange={(e: any) => e && setForm({ ...form, ticket_end: e.toString() })}
-                        />
-                      </div>
-                      <div className='grid grid-cols-2 gap-2 my-2'>
-                        <InputField
-                          type='num'
-                          label='Harga Tiket'
-                          required
-                          disabled={form.ticket_type === 'Gratis'}
-                          fullWidth
-                          value={form.price > 0 && form.price}
-                          onChange={(e: any) => setForm({ ...form, price: e.target.value })}
-                        />
-                        <InputField
-                          type='num'
-                          label='Jumlah Tiket'
-                          required
-                          fullWidth
-                          value={form.qty > 0 && form.qty}
-                          onChange={(e: any) => setForm({ ...form, qty: e.target.value })}
-                        />
-                      </div>
-                      <InputField
-                        type='textarea'
-                        label='Deskripsi'
-                        placeholder='Deskripsi Tiket'
-                        required
-                        fullWidth
-                        value={form.description}
-                        onChange={(e: any) => setForm({ ...form, description: e.target.value })}
-                      />
+                        <Tab key="Festival" title="Festival">
+                          <InputField
+                            type='text'
+                            label='Nama Tiket'
+                            placeholder='Nama Tiket'
+                            required
+                            fullWidth
+                            value={form.name}
+                            onChange={(e: any) => setForm({ ...form, name: e.target.value })}
+                          />
+                          <div className='grid grid-cols-2 gap-2 my-2'>
+                            <InputField
+                              type='date'
+                              label='Tanggal Mulai Penjualan'
+                              required
+                              maxDateVal={endDate ? endDate : undefined}
+                              value={form.ticket_date && form.ticket_date}
+                              onChange={(e: any) =>
+                                e && setForm({ ...form, ticket_date: e.toString() })
+                              }
+                            />
+                            <InputField
+                              type='date'
+                              label='Tanggal Berakhir Penjualan'
+                              required
+                              value={form.ticket_end && form.ticket_end}
+                              minDateVal={form.ticket_date ? form.ticket_date : undefined}
+                              maxDateVal={endDate ? endDate : undefined}
+                              onChange={(e: any) => e && setForm({ ...form, ticket_end: e.toString() })}
+                            />
+                          </div>
+                          <div className='grid grid-cols-2 gap-2 my-2'>
+                            <InputField
+                              type='num'
+                              label='Harga Tiket'
+                              required
+                              disabled={form.ticket_type === 'Gratis'}
+                              fullWidth
+                              value={form.price > 0 && form.price}
+                              onChange={(e: any) => setForm({ ...form, price: e.target.value })}
+                            />
+                            <InputField
+                              type='num'
+                              label='Jumlah Tiket'
+                              required
+                              fullWidth
+                              value={form.qty > 0 && form.qty}
+                              onChange={(e: any) => setForm({ ...form, qty: e.target.value })}
+                            />
+                          </div>
+                          <InputField
+                            type='textarea'
+                            label='Deskripsi'
+                            placeholder='Deskripsi Tiket'
+                            required
+                            fullWidth
+                            value={form.description}
+                            onChange={(e: any) => setForm({ ...form, description: e.target.value })}
+                          />
+                        </Tab>
+                        <Tab key="Seated" title="Seated">
+
+                        </Tab>
+                      </Tabs>
                     </>
                   )}
                   {step === 1 && (
