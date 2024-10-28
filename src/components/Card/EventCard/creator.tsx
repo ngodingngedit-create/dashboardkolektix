@@ -50,8 +50,8 @@ const EventCardCreator = ({
     return month;
   };
   return (
-    <div className='max-w-full min-w-full lg:min-w-60 lg:max-w-60 bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200'>
-      <Link href={`/dashboard/my-event/${slug}`} className='relative'>
+    <div className='relative max-w-full min-w-full lg:min-w-60 lg:max-w-60 bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200'>
+      <Link href={`/dashboard/my-event/${slug}`}>
         <div className='absolute right-0 top-0 p-3'>
           <div className='bg-light-grey text-dark py-1 px-3 rounded-full shadow-sm'>
             <p className='text-xs'>{eventStatus}</p>

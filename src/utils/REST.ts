@@ -86,7 +86,7 @@ export const Get = async (url: string, params: any) => {
         }
       })
       .catch((err: any) => {
-        if (err.response.status == 401) {
+        if (err?.response?.status == 401) {
           Cookies.remove('token');
           Cookies.remove('user_data');
           setTimeout(() => {

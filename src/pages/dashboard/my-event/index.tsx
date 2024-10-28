@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import EventCardCreator from '@/components/Card/EventCard/creator';
 import Button from '@/components/Button';
 import { useRouter } from 'next/router';
+import { Modal } from '@mantine/core';
 
 const MyEvent = () => {
   const [data, setData] = useState<EventProps[] | null>(null);

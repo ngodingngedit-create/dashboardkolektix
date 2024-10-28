@@ -23,7 +23,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     status: z.boolean().nullable().optional()
 });
 
-export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>) {
+export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
 
     const router = useRouter();
@@ -344,7 +344,6 @@ export default function CreateMerchandise({ onClose }: Readonly<ComponentProps>)
                 </div>
 
                 <div className="border-t border-[#E2EDFF] p-[10px] shrink-0">
-                    {JSON.stringify(form.errors)}
                     <div className="mx-auto max-w-[1280px] px-[20px]">
                         <Flex gap={10} justify="space-between">
                             <Button

@@ -15,7 +15,8 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, MantineTheme, Modal, ModalProps, createTheme } from '@mantine/core';
+
 import '@mantine/core/styles.css';
 import { ModalsProvider } from '@mantine/modals';
 
