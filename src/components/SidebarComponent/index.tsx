@@ -189,10 +189,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                 <nav
                     ref={outsideClick}
                     className={`
-                        fixed md:static
-                        bg-primary-darker duration-300 left-0 min-h-screen h-[100vh]
+                        fixed md:static shrink-0
+                        bg-primary-darker duration-300 left-0 h-[100vh]
                         overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50
-                        ${collapse ? 'w-[232px]' : 'w-0 md:w-[65px]'}
+                        ${collapse ? 'w-[280px]' : 'w-0 md:w-[65px]'}
                     `}
                 >
                     <ul className="w-full min-h-[90vh]">
@@ -201,12 +201,12 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                 {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}
                             </Link>
                         </li>
-                        <li className="border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3">
-                            <div className="flex items-center gap-3 px-3 [&_*]:!text-white">
+                        <li className="border border-[#1b3a6a] border-x-0 border-t-0 p-2 mb-3 mt-2">
+                            <div className="flex items-center gap-3 px-3 [&_*]:!text-white w-full">
                                 <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
                                 {visible && (
                                     <>
-                                        <div className={`w-1/2 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
+                                        <div className={`w-full ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
                                             <p className="text-sm">{userData && userData.has_creator ? userData.has_creator.name : userData?.name}</p>
                                             <p className="text-[10px] ">{role}</p>
                                         </div>
@@ -220,7 +220,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                     </>
                                 )}
                             </div>
-                            <div className={`${(pop && !collapse) ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                            <div className={`${(collapse ? pop : true) ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
                                 <div className="flex justify-between mb-2">
                                     <p className="text-sm">Saldo</p>
                                     <p className="text-sm ">Rp.0</p>
@@ -246,7 +246,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             {sidebarData
                                 .filter((el) => el.role === role)
                                 .map((el) => (
-                                    <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'}  transition-transform-colors`}>
+                                    <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'} list-none transition-transform-colors`}>
                                         {el.link ? (
                                             <Link href={el.link} className="" onClick={handleItemClick}>
                                                 <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
@@ -308,8 +308,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                         </div>
                     </button>
                 </nav>
-                <div className="flex-1">
-                    <div className={`transition-all ease-in-out delay-150`}>
+                <div className="w-full overflow-x-hidden">
+                    <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
                         <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Burgers isOpen={collapse} setIsOpen={setCollapse} />
