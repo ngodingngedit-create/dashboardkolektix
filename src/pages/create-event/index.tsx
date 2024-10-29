@@ -141,7 +141,7 @@ const CreateEvent = () => {
   const getTagSuggestion = async () => {
     if (!tagSuggestion) {
       try {
-        Get('event-topic', {})
+        Get('category', {})
         .then((res: any) => {
           setTagSuggestion(res.map((e: any) => e.name));
         })

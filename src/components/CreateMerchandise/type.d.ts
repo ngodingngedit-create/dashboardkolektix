@@ -7,14 +7,11 @@ type MerchandiseState = {
     status: boolean;
     variant: {
         name: string;
-        value: string[];
-    }[];
-    variantdetail: {
-        sku: string;
-        price: number;
-        weight: number;
-        stock: number;
-        status: boolean;
+        sku?: string;
+        price?: number;
+        weight?: number;
+        stock?: number;
+        status?: boolean;
     }[];
 };
 
@@ -89,6 +86,7 @@ type MerchandiseStoreRequest = {
     // editor_type: string;
     // editor_id: number;
     image: Blob[];
+    variant: MerchandiseState['variant'];
 };
 
 type VariantStoreRequest = {

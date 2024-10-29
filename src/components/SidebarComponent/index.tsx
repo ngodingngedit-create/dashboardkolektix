@@ -4,40 +4,9 @@ import Logo from '../../assets/images/logo.png';
 import LogoSquare from '../../assets/images/logosquare.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useLoggedUser from '@/utils/useLoggedUser';
-import {
-  faChevronCircleDown,
-  faBell as Bell,
-  faTicket,
-  faBars,
-  faClose,
-  faHome,
-  faHouse,
-  faBriefcase,
-  faGift,
-  faStar,
-  faLocationDot,
-  faBuildingColumns,
-  faChevronLeft,
-  faChevronRight,
-  faUpload,
-  faEye,
-  faTableColumns,
-  faRightFromBracket,
-  faSquareArrowUpRight,
-} from '@fortawesome/free-solid-svg-icons';
+import { faChevronCircleDown, faBell as Bell, faTicket, faBars, faClose, faHome, faHouse, faBriefcase, faGift, faStar, faLocationDot, faBuildingColumns, faChevronLeft, faChevronRight, faUpload, faEye, faTableColumns, faRightFromBracket, faSquareArrowUpRight } from '@fortawesome/free-solid-svg-icons';
 import Cookies from 'js-cookie';
-import {
-  faBell,
-  faFileLines,
-  faIdBadge,
-  faCalendar,
-  faArrowAltCircleRight,
-  faArrowAltCircleLeft,
-  faCalendarDays,
-  faBookmark,
-  faEdit,
-  faMessage,
-} from '@fortawesome/free-regular-svg-icons';
+import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage } from '@fortawesome/free-regular-svg-icons';
 import { UserProps } from '@/utils/globalInterface';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
@@ -51,1071 +20,657 @@ import { useParams } from 'next/navigation';
 import { Get } from '@/utils/REST';
 import config from '@/Config';
 import axios from 'axios';
+import { useClickOutside } from '@mantine/hooks';
 
 const profileData = [
-  {
-    id: 1,
-    name: 'Profile Saya',
-    icon: faIdBadge,
-    link: '/dashboard/profile',
-    role: 'Pembeli',
-  },
-  {
-    id: 2,
-    name: 'Profile Creator',
-    icon: faIdBadge,
-    link: '/dashboard/profile',
-    role: 'Creator',
-  },
-  {
-    id: 3,
-    name: 'Informasi Legal',
-    icon: faFileLines,
-    link: '/dashboard/legal',
-    role: 'Creator',
-  },
-  {
-    id: 4,
-    name: 'Rekening Saya',
-    icon: faBuildingColumns,
-    link: '/dashboard/bank',
-    role: 'Creator',
-  },
+    {
+        id: 1,
+        name: 'Profile Saya',
+        icon: faIdBadge,
+        link: '/dashboard/profile',
+        role: 'Pembeli'
+    },
+    {
+        id: 2,
+        name: 'Profile Creator',
+        icon: faIdBadge,
+        link: '/dashboard/profile',
+        role: 'Creator'
+    },
+    {
+        id: 3,
+        name: 'Informasi Legal',
+        icon: faFileLines,
+        link: '/dashboard/legal',
+        role: 'Creator'
+    },
+    {
+        id: 4,
+        name: 'Rekening Saya',
+        icon: faBuildingColumns,
+        link: '/dashboard/bank',
+        role: 'Creator'
+    }
 ];
 
 const sidebarData = [
-  { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator' },
-  { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
-  { id: 3, name: 'Event Saya', icon: faCalendar, link: '/dashboard/my-event', role: 'Creator' },
-  { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
-  { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
-  { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
-  { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
-  { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Creator' },
-  { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Creator', submenu: profileData },
-  { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Pembeli', submenu: profileData },
-  
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator' },
+    { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
+    { id: 3, name: 'Event Saya', icon: faCalendar, link: '/dashboard/my-event', role: 'Creator' },
+    { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
+    { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
+    { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
+    { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
+    { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Creator' },
+    { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Creator', submenu: profileData },
+    { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Pembeli', submenu: profileData }
 ];
 
 const SidebarComponent = ({ children }: { children: ReactNode }) => {
-  const router = useRouter();
-  const { slug } = router.query;
-  const users = useLoggedUser();
-  const { route } = router;
-  const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
-  const [openMenu, setOpenMenu] = useState<{ [key: number]: boolean }>({});
-  const [userData, setUserData] = useState<UserProps>();
-  const [hasCreator, setHasCreator] = useState<boolean>(false);
-  const [pop, setIsPop] = useState<boolean>(true);
-  const [role, setRole] = useState<'Creator' | 'Pembeli'>('Pembeli');
-  const [open, setOpen] = useState<boolean>(false);
-  const [showNotifications, setShowNotifications] = useState<boolean>(false);
-  const [hasNotification, setHasNotification] = useState<boolean>(false);
-  const [collapse, setCollapse] = useState<boolean>(false);
-  const current = Cookies.get('hasCreator');
-  const params = useParams();
-  const [withdrawData, setWithdrawData] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+    const router = useRouter();
+    const { slug } = router.query;
+    const users = useLoggedUser();
+    const { route } = router;
+    const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
+    const [openMenu, setOpenMenu] = useState<{ [key: number]: boolean }>({});
+    const [userData, setUserData] = useState<UserProps>();
+    const [hasCreator, setHasCreator] = useState<boolean>(false);
+    const [pop, setIsPop] = useState<boolean>(true);
+    const [role, setRole] = useState<'Creator' | 'Pembeli'>('Pembeli');
+    const [open, setOpen] = useState<boolean>(false);
+    const [showNotifications, setShowNotifications] = useState<boolean>(false);
+    const [hasNotification, setHasNotification] = useState<boolean>(false);
+    const [collapse, setCollapse] = useState<boolean>(false);
+    const current = Cookies.get('hasCreator');
+    const params = useParams();
+    const [withdrawData, setWithdrawData] = useState<any[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const outsideClick = useClickOutside(() => {
+        if (window?.innerWidth < 768) {
+            // setCollapse(false);
+        }
+    });
+    const outsideClickMenu = useClickOutside(() => {
+        // setShowUserMenu(false);
+    });
 
- 
-  
-  const getWithdrawData = async () => {
-      setLoading(true);
-      try {
-          const response = await axios.get(`${config.wsUrl}api/withdraw`);
-          const result = response.data;
-  
-          if (Array.isArray(result.data)) {
-              console.log("Data withdraw:", result.data);
-              setWithdrawData(result.data);
-          } else {
-              console.warn("Fetched data is not an array:", result);
-              setWithdrawData([]);
-          }
-      } catch (err) {
-          console.error("Error fetching withdraw data:", err);
-      } finally {
-          setLoading(false);
-      }
-  };
-  
-useEffect(() => {
-  getWithdrawData();
-}, []); 
+    const getWithdrawData = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`${config.wsUrl}api/withdraw`);
+            const result = response.data;
 
+            if (Array.isArray(result.data)) {
+                console.log('Data withdraw:', result.data);
+                setWithdrawData(result.data);
+            } else {
+                console.warn('Fetched data is not an array:', result);
+                setWithdrawData([]);
+            }
+        } catch (err) {
+            console.error('Error fetching withdraw data:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const toggleSubmenu = (id: number) => {
-    setOpenMenu((prevState) => ({
-      ...prevState,
-      [id]: !prevState[id],
-    }));
-  };
-  useEffect(() => {
-    if (users) {
-      console.log(users);
-      setUserData(users);
-      if (users.has_creator) {
-        setHasCreator(true);
-      }
-    }
-  }, [users]);
+    useEffect(() => {
+        getWithdrawData();
+    }, []);
 
+    const toggleSubmenu = (id: number) => {
+        setOpenMenu((prevState) => ({
+            ...prevState,
+            [id]: !prevState[id]
+        }));
+    };
+    useEffect(() => {
+        if (users) {
+            console.log(users);
+            setUserData(users);
+            if (users.has_creator) {
+                setHasCreator(true);
+            }
+        }
+    }, [users]);
 
+    useEffect(() => {
+        if (current === 'true' && hasCreator) {
+            setRole('Creator');
+        } else {
+            setRole('Pembeli');
+        }
+    }, [current, hasCreator]);
 
-  useEffect(() => {
-    if (current === 'true' && hasCreator) {
-      setRole('Creator');
-    } else {
-      setRole('Pembeli');
-    }
-  }, [current, hasCreator]);
+    useEffect(() => {
+        if (route === '/dashboard/my-ticket') {
+            Cookies.set('hasCreator', 'false');
+            setRole('Pembeli');
+        }
+    }, [route]);
 
-  useEffect(() => {
-    if (route === '/dashboard/my-ticket') {
-      Cookies.set('hasCreator', 'false');
-      setRole('Pembeli');
-    }
-  }, [route]);
+    const [visible, setIsVisible] = useState<boolean>(false);
 
-  const [visible, setIsVisible] = useState<boolean>(false);
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (!collapse) {
+            timeout = setTimeout(() => {
+                setIsVisible(false);
+            }, 75);
+        } else {
+            timeout = setTimeout(() => {
+                setIsVisible(true);
+            }, 400);
+        }
 
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (!collapse) {
-      timeout = setTimeout(() => {
-        setIsVisible(false);
-      }, 75);
-    } else {
-      timeout = setTimeout(() => {
-        setIsVisible(true);
-      }, 400);
-    }
+        return () => clearTimeout(timeout);
+    }, [collapse]);
 
-    return () => clearTimeout(timeout);
-  }, [collapse]);
+    const handleLogout = () => {
+        Cookies.remove('token', { path: '/' });
+        Cookies.remove('user_data', { path: '/' });
+        Cookies.remove('prevPath', { path: '/' });
+        Cookies.remove('ticketCount', { path: '/' });
+        if (route !== '/') {
+            router.push('/').then(() => window.location.reload());
+        } else {
+            window.location.reload();
+        }
+    };
 
-  const handleLogout = () => {
-    Cookies.remove('token', { path: '/' });
-    Cookies.remove('user_data', { path: '/' });
-    Cookies.remove('prevPath', { path: '/' });
-    Cookies.remove('ticketCount', { path: '/' });
-    if (route !== '/') {
-      router.push('/').then(() => window.location.reload());
-    } else {
-      window.location.reload();
-    }
-  };
+    const handleItemClick = () => {
+        setCollapse(false);
+    };
 
-  const handleItemClick = () => {
-    setCollapse(false); 
-  };
-
-
-  return (
-    <div>
-        <div className="hidden sm:flex">
-      
-      <nav
-        className={`bg-primary-darker 
-      duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${
-        collapse ? 'w-1/2 md:w-[232px]' : 'w-0 md:w-[65px]'
-      }   `}
-      >
-        <ul className='w-full min-h-[90vh]'>
-          <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
-            <Link href='/' className='flex items-center justify-center'>
-              {collapse ? (
-                <Image src={Logo} alt='Logo' className='w-1/2' />
-              ) : (
-                <Image
-                  src={LogoSquare}
-                  alt='Logo'
-                  className={` ${
-                    collapse ? 'opacity-0' : 'opacity-100 '
-                  } transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`}
-                />
-              )}
-            </Link>
-          </li>
-          <li className='border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3'>
-  <div className='flex items-center gap-3 px-3 text-white'>
-    <Image src={Avatar} alt='Avatar' className='w-9 h-9 rounded-full object-cover' />
-    {visible && (
-      <>
-        <div
-          className={`w-1/2 ${
-            collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-          } transition-opacity `}
-        >
-          <p className='text-sm'>
-            {userData && userData.has_creator
-              ? userData.has_creator.name
-              : userData?.name}
-          </p>
-          <p className='text-[10px] '>{role}</p>
-        </div>
+    return (
         <div>
-          {hasCreator && (
-            <button
-              className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${
-                collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-              } transition-opacity `}
-              onClick={() => setIsPop(!pop)}
-            >
-              <FontAwesomeIcon
-                icon={faChevronCircleDown}
-                className={`${pop ? 'rotate-0' : 'rotate-180'}  ${
-                  collapse ? 'opacity-100' : 'opacity-0'
-                } transition-transform delay-100 ease-in-out duration-200`}
-              />
-            </button>
-          )}
-        </div>
-      </>
-    )}
-  </div>
-  <div
-    className={`${
-      pop ? 'opacity-0 h-0' : 'opacity-100'
-    } transition-all delay-100 ease-in-out duration-200 p-4 text-white`}
-  >
-    <div className='flex justify-between mb-2'>
-      <p className='text-sm'>Saldo</p>
-      <p className='text-sm '>Rp.0</p>
-    </div>
-    <div className='flex justify-between'>
-      <p className='text-sm'>Kredit</p>
-      <p className='text-sm '>Rp.0</p>
-    </div>
-    <div className='items-center'>
-      <Link href={'/dashboard/withdraw'}>
-        <button
-          className='w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs'
-          onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
-        >
-          Detail
-        </button>
-      </Link>
-    </div>
-  </div>
-</li>
-
-          <>
-            {sidebarData
-              .filter((el) => el.role === role)
-              .map((el) => (
-                <li
-                  key={el.id}
-                  className={`${
-                    router.pathname === el.link
-                      ? 'bg-[#1b3a6a] border-l-3 border-white text-white'
-                      : 'pl-[3px]  text-primary-light-200'
-                  }  transition-transform-colors`}
+            <div className="hidden sm:flex">
+                <nav
+                    ref={outsideClick}
+                    className={`bg-primary-darker 
+      duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${collapse ? 'w-1/2 md:w-[232px]' : 'w-0 md:w-[65px]'}   `}
                 >
-                  {el.link ? (
-                    <Link href={el.link} className='' onClick={handleItemClick}>
-                      <div className='flex px-5 items-center hover:bg-[#1b3a6a] py-3'>
-                        <div className='w-5 h-5 flex justify-center items-center'>
-                          <FontAwesomeIcon icon={el.icon} className='w-5 h-5' />
-                        </div>
-                        {visible && (
-                          <p
-                            className={`text-sm ml-3 ${
-                              collapse ? 'opacity-100 ' : 'opacity-0 '
-                            } transition-opacity delay-700`}
-                          >
-                            {el.name}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  ) : (
-                    <div onClick={() => toggleSubmenu(el.id)} className='cursor-pointer'>
-                      <div className='flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3'>
-                        <div className='flex items-center'>
-                          <div className='w-5 h-5 flex justify-center items-center'>
-                            <FontAwesomeIcon icon={el.icon} className='w-5 h-5' />
-                          </div>
-                          {visible && (
-                            <p
-                              className={`text-sm ml-3 ${
-                                collapse ? 'opacity-100 ' : 'opacity-0 '
-                              } transition-opacity delay-700`}
-                            >
-                              {el.name}
-                            </p>
-                          )}
-                        </div>
-                        {el.submenu && visible && (
-                          <button>
-                            <FontAwesomeIcon
-                              icon={faChevronLeft}
-                              className={`${
-                                openMenu[el.id] ? '-rotate-90' : ''
-                              } transition-transform`}
-                            />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {el.submenu && (
-                    <ul
-                      className={`${
-                        openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'
-                      } transition-max-height duration-150 ease-in-out`}
-                    >
-                      {el.submenu
-                        .filter((subEl) => subEl.role === role)
-                        .map((subEl) => (
-                          <li
-                            key={subEl.id}
-                            className={`${
-                              openMenu[el.id] && visible
-                                ? 'visible opacity-100'
-                                : 'invisible opacity-0'
-                            } ${
-                              router.pathname === subEl.link
-                                ? 'bg-[#1b3a6a] border-l-3 border-white text-white'
-                                : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'
-                            } py-3 transition-transform-colors-opacity`}
-                          >
-                            <Link href={subEl.link}>
-                              <div className='flex px-5 items-center'>
-                                <div className='w-5 h-5 flex justify-center items-center'>
-                                  <FontAwesomeIcon icon={subEl.icon} className='w-5 h-5' />
-                                </div>
-                                {visible && (
-                                  <p
-                                    className={`text-sm ml-3 ${
-                                      collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-                                    } transition-opacity`}
-                                  >
-                                    {subEl.name}
-                                  </p>
-                                )}
-                              </div>
+                    <ul className="w-full min-h-[90vh]">
+                        <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
+                            <Link href="/" className="flex items-center justify-center">
+                                {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}
                             </Link>
-                          </li>
-                        ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-          </>
-          <button
-            onClick={() => setCollapse(!collapse)}
-            className='pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden'
-          >
-            <div className='flex items-center justify-center px-5'>
-              {visible && (
-                <p
-                  className={`${
-                    collapse ? 'w-full' : 'w-0 hidden'
-                  } overflow-hidden transition-all delay-700`}
-                >
-                  Persingkat Menu{' '}
-                </p>
-              )}
-              <FontAwesomeIcon
-                icon={faChevronLeft}
-                className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`}
-              />
-            </div>
-          </button>
-        </ul>
-        <button
-          onClick={() => setCollapse(!collapse)}
-          className='pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden'
-        >
-          <div className='flex items-center justify-center px-5'>
-            {visible && (
-              <p
-                className={`${
-                  collapse ? 'w-full' : 'w-0 hidden'
-                } overflow-hidden transition-all delay-700`}
-              >
-                Persingkat Menu{' '}
-              </p>
-            )}
-            <FontAwesomeIcon
-              icon={faChevronLeft}
-              className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`}
-            />
-          </div>
-        </button>
-      </nav>
-    <div className='flex-1 '>
-        <div
-          className={`ml-0 ${
-            collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'
-          } transition-all ease-in-out delay-150`}
-        >
-          <div className='pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <Burgers isOpen={collapse} setIsOpen={setCollapse} />
-              <h3>
-                {route === '/dashboard'
-                  ? 'Dashboard'
-                  : route === '/dashboard/my-ticket'
-                  ? 'Tiket Saya'
-                  : route === '/dashboard/profile'
-                  ? 'Informasi Dasar'
-                  : route === '/dashboard/legal'
-                  ? 'Informasi Legal'
-                  : route === '/dashboard/bank'
-                  ? 'Informasi Legal'
-                  : route === '/dashboard/bank'
-                  ? 'Rekening'
-                  : route === '/dashboard/vacancy'
-                  ? 'Lowongan'
-                  : route === '/dashboard/my-event/checkin'
-                  ? 'Check In Event'
-                  : route === '/dashboard/my-event'
-                  ? 'Event Saya'
-                  : route === '/dashboard/chat'
-                  ? 'Pesan'
-                  : ''}
-              </h3>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Fade isShowing={showNotifications}>
-                <div
-                  className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
-                    showNotifications ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  role='menu'
-                  aria-orientation='vertical'
-                  aria-labelledby='user-menu-button'
-                  tabIndex={-1}
-                >
-                  {hasNotification ? (
-                    <>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-0'
-                      >
-                        Your Profile
-                      </Link>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-1'
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-2'
-                      >
-                        Sign out
-                      </Link>
-                    </>
-                  ) : (
-                    <div className='p-3'>
-                      <p className='text-dark text-sm'>Belum ada notifikasi</p>
-                    </div>
-                  )}
-                </div>
-              </Fade>
-              <button
-                type='button'
-                className='relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200'
-                onClick={() => router.push('/')}
-              >
-                <FontAwesomeIcon icon={faHome} />
-              </button>
-              <button
-                type='button'
-                className='relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200'
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
-              </button>
-              {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
-                <Button
-                  label='Buat Event'
-                  color='secondary'
-                  onClick={() => router.push('/create-event')}
-                />
-              ) : (
-                role === 'Creator' && (
-                  <>
-                    <Button
-                      label='Edit'
-                      color='secondary'
-                      onClick={() => router.push(`/edit-event/${params.slug}`)}
-                      startIcon={faEdit}
-                    />
-                    <Button
-                      color='primary'
-                      startIcon={faEye}
-                      className='mr-0'
-                      onClick={() => router.push(`/event/${params.slug}`)}
-                    />
-                  </>
-                )
-              )}
-              <div>
-                <div className='bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200'>
-                  <button
-                    type='button'
-                    className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
-                    id='user-menu-button'
-                    aria-expanded='false'
-                    aria-haspopup='true'
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <FontAwesomeIcon icon={faBars} className='text-primary-base' />
-                    <Image
-                      className='h-6 w-6 rounded-full border border-primary-light-200'
-                      src={Avatar}
-                      alt=''
-                    />
-                  </button>
-                </div>
-                <Fade isShowing={showUserMenu}>
-                  <div
-                    className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${
-                      showUserMenu ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    role='menu'
-                    aria-orientation='vertical'
-                    aria-labelledby='user-menu-button'
-                    tabIndex={-1}
-                  >
-                    {hasCreator && (
-                      <button
-                        className='px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md'
-                        role='menuitem'
-                        onClick={() => {
-                          setShowUserMenu(!showUserMenu);
-                          role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                          role === 'Creator'
-                            ? router.push('/dashboard/my-ticket')
-                            : router.push('/dashboard');
-                          role === 'Creator'
-                            ? Cookies.set('hasCreator', 'false')
-                            : Cookies.set('hasCreator', 'true');
-                          role === 'Creator'
-                            ? toast.success('Beralih ke dashboard pembeli', {
-                                autoClose: 2000,
-                                hideProgressBar: true,
-                              })
-                            : toast.success('Beralih ke dashboard creator', {
-                                autoClose: 2000,
-                                hideProgressBar: true,
-                              });
-                        }}
-                        tabIndex={-1}
-                        id='user-menu-item-0'
-                      >
-                        <FontAwesomeIcon icon={faSquareArrowUpRight} className='mr-2' />
-                        Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
-                      </button>
-                    )}
-                    <Link
-                      href='/dashboard/my-ticket'
-                      className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      id='user-menu-item-0'
-                    >
-                      <FontAwesomeIcon icon={faCalendarDays} className='mr-2' />
-                      Transaksi
-                    </Link>
-                    <Link
-                      href='/'
-                      className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      id='user-menu-item-0'
-                    >
-                      <FontAwesomeIcon icon={faBookmark} className='mr-2' />
-                      Bookmark
-                    </Link>
+                        </li>
+                        <li className="border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3">
+                            <div className="flex items-center gap-3 px-3 [&_*]:!text-white">
+                                <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                                {visible && (
+                                    <>
+                                        <div className={`w-1/2 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
+                                            <p className="text-sm">{userData && userData.has_creator ? userData.has_creator.name : userData?.name}</p>
+                                            <p className="text-[10px] ">{role}</p>
+                                        </div>
+                                        <div>
+                                            {hasCreator && (
+                                                <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `} onClick={() => setIsPop(!pop)}>
+                                                    <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? 'rotate-0' : 'rotate-180'}  ${collapse ? 'opacity-100' : 'opacity-0'} transition-transform delay-100 ease-in-out duration-200 text-white`} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <div className={`${pop ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                                <div className="flex justify-between mb-2">
+                                    <p className="text-sm">Saldo</p>
+                                    <p className="text-sm ">Rp.0</p>
+                                </div>
+                                <div className="flex justify-between">
+                                    <p className="text-sm">Kredit</p>
+                                    <p className="text-sm ">Rp.0</p>
+                                </div>
+                                <div className="items-center">
+                                    <Link href={'/dashboard/withdraw'}>
+                                        <button
+                                            className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
+                                            onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
+                                        >
+                                            Detail
+                                        </button>
+                                    </Link>
+                                </div>
+                            </div>
+                        </li>
 
-                    <button
-                      className='block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      onClick={handleLogout}
-                      id='user-menu-item-2'
-                    >
-                      <FontAwesomeIcon icon={faRightFromBracket} className='mr-2' />
-                      Keluar
+                        <>
+                            {sidebarData
+                                .filter((el) => el.role === role)
+                                .map((el) => (
+                                    <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'}  transition-transform-colors`}>
+                                        {el.link ? (
+                                            <Link href={el.link} className="" onClick={handleItemClick}>
+                                                <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
+                                                    <div className="w-5 h-5 flex justify-center items-center">
+                                                        <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                    </div>
+                                                    {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div onClick={() => toggleSubmenu(el.id)} className="cursor-pointer">
+                                                <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
+                                                    <div className="flex items-center">
+                                                        <div className="w-5 h-5 flex justify-center items-center">
+                                                            <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                        </div>
+                                                        {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
+                                                    </div>
+                                                    {el.submenu && visible && (
+                                                        <button>
+                                                            <FontAwesomeIcon icon={faChevronLeft} className={`${openMenu[el.id] ? '-rotate-90' : ''} transition-transform`} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {el.submenu && (
+                                            <ul className={`${openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'} transition-max-height duration-150 ease-in-out`}>
+                                                {el.submenu
+                                                    .filter((subEl) => subEl.role === role)
+                                                    .map((subEl) => (
+                                                        <li key={subEl.id} className={`${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
+                                                            <Link href={subEl.link}>
+                                                                <div className="flex px-5 items-center">
+                                                                    <div className="w-5 h-5 flex justify-center items-center">
+                                                                        <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />
+                                                                    </div>
+                                                                    {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity`}>{subEl.name}</p>}
+                                                                </div>
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                ))}
+                        </>
+                        <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden">
+                            <div className="flex items-center justify-center px-5">
+                                {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                                <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
+                            </div>
+                        </button>
+                    </ul>
+                    <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden">
+                        <div className="flex items-center justify-center px-5">
+                            {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                            <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
+                        </div>
                     </button>
-                  </div>
-                </Fade>
-              </div>
+                </nav>
+                <div className="flex-1 ">
+                    <div className={`ml-0 ${collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'} transition-all ease-in-out delay-150`}>
+                        <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Burgers isOpen={collapse} setIsOpen={setCollapse} />
+                                {/* <h3>
+                                    {route === '/dashboard'
+                                        ? 'Dashboard'
+                                        : route === '/dashboard/my-ticket'
+                                        ? 'Tiket Saya'
+                                        : route === '/dashboard/profile'
+                                        ? 'Informasi Dasar'
+                                        : route === '/dashboard/legal'
+                                        ? 'Informasi Legal'
+                                        : route === '/dashboard/bank'
+                                        ? 'Informasi Legal'
+                                        : route === '/dashboard/bank'
+                                        ? 'Rekening'
+                                        : route === '/dashboard/vacancy'
+                                        ? 'Lowongan'
+                                        : route === '/dashboard/my-event/checkin'
+                                        ? 'Check In Event'
+                                        : route === '/dashboard/my-event'
+                                        ? 'Event Saya'
+                                        : route === '/dashboard/chat'
+                                        ? 'Pesan'
+                                        : ''}
+                                </h3> */}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Fade isShowing={showNotifications}>
+                                    <div className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                        {hasNotification ? (
+                                            <>
+                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                    Your Profile
+                                                </Link>
+                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
+                                                    Settings
+                                                </Link>
+                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
+                                                    Sign out
+                                                </Link>
+                                            </>
+                                        ) : (
+                                            <div className="p-3">
+                                                <p className="text-dark text-sm">Belum ada notifikasi</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Fade>
+                                <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push('/')}>
+                                    <FontAwesomeIcon icon={faHome} />
+                                </button>
+                                <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
+                                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                                </button>
+                                {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
+                                    <Button label="Buat Event" color="secondary" onClick={() => router.push('/create-event')} />
+                                ) : (
+                                    role === 'Creator' && (
+                                        <>
+                                            <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
+                                            <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
+                                        </>
+                                    )
+                                )}
+                                <div>
+                                    <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
+                                        <button type="button" className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around" id="user-menu-button" aria-expanded="false" aria-haspopup="true" onClick={() => setShowUserMenu(!showUserMenu)}>
+                                            <FontAwesomeIcon icon={faBars} className="text-primary-base" />
+                                            <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
+                                        </button>
+                                    </div>
+                                    <Fade isShowing={showUserMenu}>
+                                        <div ref={outsideClickMenu} className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                            {hasCreator && (
+                                                <button
+                                                    className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
+                                                    role="menuitem"
+                                                    onClick={() => {
+                                                        setShowUserMenu(!showUserMenu);
+                                                        role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
+                                                        role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
+                                                        role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
+                                                        role === 'Creator'
+                                                            ? toast.success('Beralih ke dashboard pembeli', {
+                                                                  autoClose: 2000,
+                                                                  hideProgressBar: true
+                                                              })
+                                                            : toast.success('Beralih ke dashboard creator', {
+                                                                  autoClose: 2000,
+                                                                  hideProgressBar: true
+                                                              });
+                                                    }}
+                                                    tabIndex={-1}
+                                                    id="user-menu-item-0"
+                                                >
+                                                    <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
+                                                    Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
+                                                </button>
+                                            )}
+                                            <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                                Transaksi
+                                            </Link>
+                                            <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                                Bookmark
+                                            </Link>
+
+                                            <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
+                                                <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
+                                                Keluar
+                                            </button>
+                                        </div>
+                                    </Fade>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="">{children}</div>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div className=''>{children}</div>
-        </div>
-      </div>
-    </div>
-    <nav
-  className={`bg-primary-darker 
-    duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${
-      collapse ? ' md:w-[232px]' : 'w-0 md:w-[65px]'
-    } 
+            <nav
+                className={`bg-primary-darker 
+    duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${collapse ? ' md:w-[232px]' : 'w-0 md:w-[65px]'} 
     ${collapse ? 'absolute md:fixed' : 'absolute md:fixed'} md:left-0 md:hidden`} // Menyembunyikan di tablet dan lebih besar
->
-        <ul className='w-full min-h-[90vh]'>
-          <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
-            <Link href='/' className='flex items-center justify-center'>
-              {collapse ? (
-                <Image src={Logo} alt='Logo' className='w-1/2' />
-              ) : (
-                <Image
-                  src={LogoSquare}
-                  alt='Logo'
-                  className={` ${
-                    collapse ? 'opacity-0' : 'opacity-100 '
-                  } transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`}
-                />
-              )}
-            </Link>
-          </li>
-          <li className='border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3'>
-  <div className='flex items-center gap-3 px-3 [&_*]!text-white '>
-    <Image src={Avatar} alt='Avatar' className='w-9 h-9 rounded-full object-cover' />
-    {visible && (
-      <>
-        <div
-          className={`w-1/2 ${
-            collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-          } transition-opacity `}
-        >
-          <p className='text-sm'>
-            {userData && userData.has_creator
-              ? userData.has_creator.name
-              : userData?.name}
-          </p>
-          <p className='text-[10px] '>{role}</p>
-        </div>
-        <div>
-          {hasCreator && (
-            <button
-              className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${
-                collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-              } transition-opacity `}
-              onClick={() => setIsPop(!pop)}
             >
-              <FontAwesomeIcon
-                icon={faChevronCircleDown}
-                className={`${pop ? 'rotate-0' : 'rotate-180'}  ${
-                  collapse ? 'opacity-100' : 'opacity-0'
-                } transition-transform delay-100 ease-in-out duration-200`}
-              />
-            </button>
-          )}
-        </div>
-      </>
-    )}
-  </div>
-  <div
-    className={`${
-      pop ? 'opacity-0 h-0' : 'opacity-100'
-    } transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}
-  >
-    <div className='flex justify-between mb-2'>
-      <p className='text-sm'>Saldo</p>
-      <p className='text-sm '>Rp.0</p>
-    </div>
-    <div className='flex justify-between'>
-      <p className='text-sm'>Kredit</p>
-      <p className='text-sm '>Rp.0</p>
-    </div>
-    <div className='items-center'>
-      <Link href={'/dashboard/withdraw'}>
-        <button
-          className='w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs'
-          onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
-        >
-          Detail
-        </button>
-      </Link>
-    </div>
-  </div>
-</li>
+                <ul className="w-full min-h-[90vh]">
+                    <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
+                        <Link href="/" className="flex items-center justify-center">
+                            {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}
+                        </Link>
+                    </li>
+                    <li className="border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3">
+                        <div className="flex items-center gap-3 px-3 [&_*]:!text-white ">
+                            <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                            {visible && (
+                                <>
+                                    <div className={`w-1/2 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
+                                        <p className="text-sm">{userData && userData.has_creator ? userData.has_creator.name : userData?.name}</p>
+                                        <p className="text-[10px] ">{role}</p>
+                                    </div>
+                                    <div>
+                                        {hasCreator && (
+                                            <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `} onClick={() => setIsPop(!pop)}>
+                                                <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? 'rotate-0' : 'rotate-180'}  ${collapse ? 'opacity-100' : 'opacity-0'} transition-transform delay-100 ease-in-out duration-200`} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className={`${pop ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                            <div className="flex justify-between mb-2">
+                                <p className="text-sm">Saldo</p>
+                                <p className="text-sm ">Rp.0</p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-sm">Kredit</p>
+                                <p className="text-sm ">Rp.0</p>
+                            </div>
+                            <div className="items-center">
+                                <Link href={'/dashboard/withdraw'}>
+                                    <button
+                                        className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
+                                        onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
+                                    >
+                                        Detail
+                                    </button>
+                                </Link>
+                            </div>
+                        </div>
+                    </li>
 
-          <>
-            {sidebarData
-              .filter((el) => el.role === role)
-              .map((el) => (
-                <li
-                  key={el.id}
-                  className={`${
-                    router.pathname === el.link
-                      ? 'bg-[#1b3a6a] border-l-3 border-white text-white'
-                      : 'pl-[3px]  text-primary-light-200'
-                  }  transition-transform-colors`}
-                >
-                  {el.link ? (
-                    <Link href={el.link} className='' onClick={handleItemClick}>
-                      <div className='flex px-5 items-center hover:bg-[#1b3a6a] py-3'>
-                        <div className='w-5 h-5 flex justify-center items-center'>
-                          <FontAwesomeIcon icon={el.icon} className='w-5 h-5' />
-                        </div>
-                        {visible && (
-                          <p
-                            className={`text-sm ml-3 ${
-                              collapse ? 'opacity-100 ' : 'opacity-0 '
-                            } transition-opacity delay-700`}
-                          >
-                            {el.name}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  ) : (
-                    <div onClick={() => toggleSubmenu(el.id)} className='cursor-pointer'>
-                      <div className='flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3'>
-                        <div className='flex items-center'>
-                          <div className='w-5 h-5 flex justify-center items-center'>
-                            <FontAwesomeIcon icon={el.icon} className='w-5 h-5' />
-                          </div>
-                          {visible && (
-                            <p
-                              className={`text-sm ml-3 ${
-                                collapse ? 'opacity-100 ' : 'opacity-0 '
-                              } transition-opacity delay-700`}
-                            >
-                              {el.name}
-                            </p>
-                          )}
-                        </div>
-                        {el.submenu && visible && (
-                          <button>
-                            <FontAwesomeIcon
-                              icon={faChevronLeft}
-                              className={`${
-                                openMenu[el.id] ? '-rotate-90' : ''
-                              } transition-transform`}
-                            />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {el.submenu && (
-                    <ul
-                      className={`${
-                        openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'
-                      } transition-max-height duration-150 ease-in-out`}
-                    >
-                      {el.submenu
-                        .filter((subEl) => subEl.role === role)
-                        .map((subEl) => (
-                          <li
-                            key={subEl.id}
-                            className={`${
-                              openMenu[el.id] && visible
-                                ? 'visible opacity-100'
-                                : 'invisible opacity-0'
-                            } ${
-                              router.pathname === subEl.link
-                                ? 'bg-[#1b3a6a] border-l-3 border-white text-white'
-                                : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'
-                            } py-3 transition-transform-colors-opacity`}
-                          >
-                            <Link href={subEl.link}>
-                              <div className='flex px-5 items-center'>
-                                <div className='w-5 h-5 flex justify-center items-center'>
-                                  <FontAwesomeIcon icon={subEl.icon} className='w-5 h-5' />
-                                </div>
-                                {visible && (
-                                  <p
-                                    className={`text-sm ml-3 ${
-                                      collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'
-                                    } transition-opacity`}
-                                  >
-                                    {subEl.name}
-                                  </p>
-                                )}
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-          </>
-          <button
-            onClick={() => setCollapse(!collapse)}
-            className='pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden'
-          >
-            <div className='flex items-center justify-center px-5'>
-              {visible && (
-                <p
-                  className={`${
-                    collapse ? 'w-full' : 'w-0 hidden'
-                  } overflow-hidden transition-all delay-700`}
-                >
-                  Persingkat Menu{' '}
-                </p>
-              )}
-              <FontAwesomeIcon
-                icon={faChevronLeft}
-                className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`}
-              />
-            </div>
-          </button>
-        </ul>
-        <button
-          onClick={() => setCollapse(!collapse)}
-          className='pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden'
-        >
-          <div className='flex items-center justify-center px-5'>
-            {visible && (
-              <p
-                className={`${
-                  collapse ? 'w-full' : 'w-0 hidden'
-                } overflow-hidden transition-all delay-700`}
-              >
-                Persingkat Menu{' '}
-              </p>
-            )}
-            <FontAwesomeIcon
-              icon={faChevronLeft}
-              className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`}
-            />
-          </div>
-        </button>
-      </nav>
-    <div className='block lg:hidden'>
-        <div
-          className={`ml-0 ${
-            collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'
-          } transition-all ease-in-out delay-150`}
-        >
-          <div className='pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <Burgers isOpen={collapse} setIsOpen={setCollapse} />
-              <h3>
-                {route === '/dashboard'
-                  ? 'Dashboard'
-                  : route === '/dashboard/my-ticket'
-                  ? 'Tiket Saya'
-                  : route === '/dashboard/profile'
-                  ? 'Informasi Dasar'
-                  : route === '/dashboard/legal'
-                  ? 'Informasi Legal'
-                  : route === '/dashboard/bank'
-                  ? 'Informasi Legal'
-                  : route === '/dashboard/bank'
-                  ? 'Rekening'
-                  : route === '/dashboard/vacancy'
-                  ? 'Lowongan'
-                  : route === '/dashboard/my-event/checkin'
-                  ? 'Check In Event'
-                  : route === '/dashboard/my-event'
-                  ? 'Event Saya'
-                  : route === '/dashboard/chat'
-                  ? 'Pesan'
-                  : ''}
-              </h3>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Fade isShowing={showNotifications}>
-                <div
-                  className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
-                    showNotifications ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  role='menu'
-                  aria-orientation='vertical'
-                  aria-labelledby='user-menu-button'
-                  tabIndex={-1}
-                >
-                  {hasNotification ? (
                     <>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-0'
-                      >
-                        Your Profile
-                      </Link>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-1'
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href='#'
-                        className='block px-4 py-2 text-sm text-dark'
-                        role='menuitem'
-                        tabIndex={-1}
-                        id='user-menu-item-2'
-                      >
-                        Sign out
-                      </Link>
+                        {sidebarData
+                            .filter((el) => el.role === role)
+                            .map((el) => (
+                                <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'}  transition-transform-colors`}>
+                                    {el.link ? (
+                                        <Link href={el.link} className="" onClick={handleItemClick}>
+                                            <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
+                                                <div className="w-5 h-5 flex justify-center items-center">
+                                                    <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                </div>
+                                                {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
+                                            </div>
+                                        </Link>
+                                    ) : (
+                                        <div onClick={() => toggleSubmenu(el.id)} className="cursor-pointer">
+                                            <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
+                                                <div className="flex items-center">
+                                                    <div className="w-5 h-5 flex justify-center items-center">
+                                                        <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                    </div>
+                                                    {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
+                                                </div>
+                                                {el.submenu && visible && (
+                                                    <button>
+                                                        <FontAwesomeIcon icon={faChevronLeft} className={`${openMenu[el.id] ? '-rotate-90' : ''} transition-transform`} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {el.submenu && (
+                                        <ul className={`${openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'} transition-max-height duration-150 ease-in-out`}>
+                                            {el.submenu
+                                                .filter((subEl) => subEl.role === role)
+                                                .map((subEl) => (
+                                                    <li key={subEl.id} className={`${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
+                                                        <Link href={subEl.link}>
+                                                            <div className="flex px-5 items-center">
+                                                                <div className="w-5 h-5 flex justify-center items-center">
+                                                                    <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />
+                                                                </div>
+                                                                {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity`}>{subEl.name}</p>}
+                                                            </div>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    )}
+                                </li>
+                            ))}
                     </>
-                  ) : (
-                    <div className='p-3'>
-                      <p className='text-dark text-sm'>Belum ada notifikasi</p>
-                    </div>
-                  )}
-                </div>
-              </Fade>
-              <button
-                type='button'
-                className='relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200'
-                onClick={() => router.push('/')}
-              >
-                <FontAwesomeIcon icon={faHome} />
-              </button>
-              <button
-                type='button'
-                className='relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200'
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
-              </button>
-              {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
-                <Button
-                  label='Buat Event'
-                  color='secondary'
-                  onClick={() => router.push('/create-event')}
-                />
-              ) : (
-                role === 'Creator' && (
-                  <>
-                    <Button
-                      label='Edit'
-                      color='secondary'
-                      onClick={() => router.push(`/edit-event/${params.slug}`)}
-                      startIcon={faEdit}
-                    />
-                    <Button
-                      color='primary'
-                      startIcon={faEye}
-                      className='mr-0'
-                      onClick={() => router.push(`/event/${params.slug}`)}
-                    />
-                  </>
-                )
-              )}
-              <div>
-                <div className='bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200'>
-                  <button
-                    type='button'
-                    className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
-                    id='user-menu-button'
-                    aria-expanded='false'
-                    aria-haspopup='true'
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <FontAwesomeIcon icon={faBars} className='text-primary-base' />
-                    <Image
-                      className='h-6 w-6 rounded-full border border-primary-light-200'
-                      src={Avatar}
-                      alt=''
-                    />
-                  </button>
-                </div>
-                <Fade isShowing={showUserMenu}>
-                  <div
-                    className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${
-                      showUserMenu ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    role='menu'
-                    aria-orientation='vertical'
-                    aria-labelledby='user-menu-button'
-                    tabIndex={-1}
-                  >
-                    {hasCreator && (
-                      <button
-                        className='px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md'
-                        role='menuitem'
-                        onClick={() => {
-                          setShowUserMenu(!showUserMenu);
-                          role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                          role === 'Creator'
-                            ? router.push('/dashboard/my-ticket')
-                            : router.push('/dashboard');
-                          role === 'Creator'
-                            ? Cookies.set('hasCreator', 'false')
-                            : Cookies.set('hasCreator', 'true');
-                          role === 'Creator'
-                            ? toast.success('Beralih ke dashboard pembeli', {
-                                autoClose: 2000,
-                                hideProgressBar: true,
-                              })
-                            : toast.success('Beralih ke dashboard creator', {
-                                autoClose: 2000,
-                                hideProgressBar: true,
-                              });
-                        }}
-                        tabIndex={-1}
-                        id='user-menu-item-0'
-                      >
-                        <FontAwesomeIcon icon={faSquareArrowUpRight} className='mr-2' />
-                        Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
-                      </button>
-                    )}
-                    <Link
-                      href='/dashboard/my-ticket'
-                      className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      id='user-menu-item-0'
-                    >
-                      <FontAwesomeIcon icon={faCalendarDays} className='mr-2' />
-                      Transaksi
-                    </Link>
-                    <Link
-                      href='/'
-                      className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      id='user-menu-item-0'
-                    >
-                      <FontAwesomeIcon icon={faBookmark} className='mr-2' />
-                      Bookmark
-                    </Link>
-
-                    <button
-                      className='block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md'
-                      role='menuitem'
-                      tabIndex={-1}
-                      onClick={handleLogout}
-                      id='user-menu-item-2'
-                    >
-                      <FontAwesomeIcon icon={faRightFromBracket} className='mr-2' />
-                      Keluar
+                    <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden">
+                        <div className="flex items-center justify-center px-5">
+                            {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                            <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
+                        </div>
                     </button>
-                  </div>
-                </Fade>
-              </div>
-            </div>
-          </div>
-          <div className='hidden md:block'>
-  {children}
-</div>
+                </ul>
+                <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden">
+                    <div className="flex items-center justify-center px-5">
+                        {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                        <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
+                    </div>
+                </button>
+            </nav>
+            <div className="block lg:hidden">
+                <div className={`ml-0 ${collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'} transition-all ease-in-out delay-150`}>
+                    <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Burgers isOpen={collapse} setIsOpen={setCollapse} />
+                            {/* <h3>
+                                {route === '/dashboard'
+                                    ? 'Dashboard'
+                                    : route === '/dashboard/my-ticket'
+                                    ? 'Tiket Saya'
+                                    : route === '/dashboard/profile'
+                                    ? 'Informasi Dasar'
+                                    : route === '/dashboard/legal'
+                                    ? 'Informasi Legal'
+                                    : route === '/dashboard/bank'
+                                    ? 'Informasi Legal'
+                                    : route === '/dashboard/bank'
+                                    ? 'Rekening'
+                                    : route === '/dashboard/vacancy'
+                                    ? 'Lowongan'
+                                    : route === '/dashboard/my-event/checkin'
+                                    ? 'Check In Event'
+                                    : route === '/dashboard/my-event'
+                                    ? 'Event Saya'
+                                    : route === '/dashboard/chat'
+                                    ? 'Pesan'
+                                    : ''}
+                            </h3> */}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Fade isShowing={showNotifications}>
+                                <div className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                    {hasNotification ? (
+                                        <>
+                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                Your Profile
+                                            </Link>
+                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
+                                                Settings
+                                            </Link>
+                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
+                                                Sign out
+                                            </Link>
+                                        </>
+                                    ) : (
+                                        <div className="p-3">
+                                            <p className="text-dark text-sm">Belum ada notifikasi</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Fade>
+                            <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push('/')}>
+                                <FontAwesomeIcon icon={faHome} />
+                            </button>
+                            <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
+                                <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                            </button>
+                            {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
+                                <Button label="Buat Event" color="secondary" onClick={() => router.push('/create-event')} />
+                            ) : (
+                                role === 'Creator' && (
+                                    <>
+                                        <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
+                                        <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
+                                    </>
+                                )
+                            )}
+                            <div>
+                                <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
+                                    <button type="button" className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around" id="user-menu-button" aria-expanded="false" aria-haspopup="true" onClick={() => setShowUserMenu(!showUserMenu)}>
+                                        <FontAwesomeIcon icon={faBars} className="text-primary-base" />
+                                        <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
+                                    </button>
+                                </div>
+                                <Fade isShowing={showUserMenu}>
+                                    <div className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                        {hasCreator && (
+                                            <button
+                                                className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
+                                                role="menuitem"
+                                                onClick={() => {
+                                                    setShowUserMenu(!showUserMenu);
+                                                    role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
+                                                    role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
+                                                    role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
+                                                    role === 'Creator'
+                                                        ? toast.success('Beralih ke dashboard pembeli', {
+                                                              autoClose: 2000,
+                                                              hideProgressBar: true
+                                                          })
+                                                        : toast.success('Beralih ke dashboard creator', {
+                                                              autoClose: 2000,
+                                                              hideProgressBar: true
+                                                          });
+                                                }}
+                                                tabIndex={-1}
+                                                id="user-menu-item-0"
+                                            >
+                                                <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
+                                                Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
+                                            </button>
+                                        )}
+                                        <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                            <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                            Transaksi
+                                        </Link>
+                                        <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                            <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                            Bookmark
+                                        </Link>
 
+                                        <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
+                                            <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
+                                            Keluar
+                                        </button>
+                                    </div>
+                                </Fade>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="hidden md:block">{children}</div>
+                </div>
+            </div>
+            <div className="block md:hidden lg:hidden">{children}</div>
         </div>
-      </div>
-    <div className="block md:hidden lg:hidden">{children}</div>
-      </div>
-    
-  );
+    );
 };
 
 export default SidebarComponent;

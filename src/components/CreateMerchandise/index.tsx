@@ -6,7 +6,7 @@ import { useForm, zodResolver } from '@mantine/form';
 import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import InputEditor from '@/components/Input/InputEditor';
-import { Post } from '@/utils/REST';
+import { Post, Put } from '@/utils/REST';
 import Cookies from 'js-cookie';
 import z from 'zod';
 import { useRouter } from 'next/router';
@@ -18,8 +18,14 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     price: z.number().min(1, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
-    variant: z.array(z.any()).optional().nullable(),
-    variantdetail: z.array(z.any()).optional().nullable(),
+    variant: z.array(z.object({
+        name: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
+        sku: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
+        stock: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
+        price: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
+        weight: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
+        status: z.boolean().nullable().optional()
+    })).optional().nullable(),
     status: z.boolean().nullable().optional()
 });
 
@@ -35,19 +41,19 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             description: '',
             image: [],
             variant: [],
-            variantdetail: [],
             status: true
         },
         validate: zodResolver(storeSchema)
     });
 
-    const handleSave = (isDraft: boolean = false) => {
+    const handleSave = async  (isDraft: boolean = false) => {
         const valid = form.validate();
+        var product_id: number | null = null;
         if (valid.hasErrors) return;
 
         setLoading.append('save');
-        const { name, description, price: selling_price, sku, image, status } = form.values;
-        Post('product', {
+        const { name, description, price: selling_price, sku, image, status, variant } = form.values;
+        const resProduct: any = await (id ? Put : Post)(id ? `product/${id}` : 'product', {
             name,
             description: description ?? '-',
             sku,
@@ -65,16 +71,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             refundable: 0,
             discount: 0,
             is_product_quantity_multiply: 1,
-            add_to_flash_sale: 1
-        } satisfies MerchandiseStoreRequest, 'multipart/form-data')
-        .then((res: any) => {
-            router.reload();
-            setLoading.filter(e => e != 'save');
-        })
-        .catch(({ response }) => {
-            form.setErrors({ ...response.data.errors, name: response.data.errors.slug ?? undefined });
-            setLoading.filter(e => e != 'save');
-        });
+            add_to_flash_sale: 1,
+            variant
+        } satisfies MerchandiseStoreRequest, 'multipart/form-data');
+        product_id = resProduct.data.id as number;
     }
 
     return (
@@ -84,7 +84,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 <div className="border-b border-[#E2EDFF] p-[10px] shrink-0">
                     <div className="mx-auto max-w-[1280px] px-[20px] flex justify-between items-center gap-[20px]">
                         <Image src={Logo} alt="Kolektix Logo" height={32}/>
-                        <div className="h-[32px] w-[32px] bg-light-grey rounded-full"></div>
+                        {/* <div className="h-[32px] w-[32px] bg-light-grey rounded-full"></div> */}
                     </div>
                 </div>
 
@@ -159,7 +159,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         <div className="border border-[#E2EDFF] rounded-[8px]">
                             <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`} wrap="wrap">
                                 <h3 className="text-[20px] font-[500]">Varian Merchandise</h3>
-                                <Button
+                                {/* <Button
                                     p={0}
                                     onClick={() => form.setValues({ variant: [...form.values.variant, { name: '', value: [] }] })}
                                     color="#0B387C"
@@ -169,37 +169,39 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                             <path d="M7.99967 5.93262V11.266M5.33301 8.59928H10.6663M14.6663 8.59928C14.6663 12.2812 11.6816 15.266 7.99967 15.266C4.31778 15.266 1.33301 12.2812 1.33301 8.59928C1.33301 4.91739 4.31778 1.93262 7.99967 1.93262C11.6816 1.93262 14.6663 4.91739 14.6663 8.59928Z" stroke="#0B387C" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
                                     }
-                                >Tambah Varian</Button>
+                                >Tambah Varian</Button> */}
                             </Flex>
 
                             <div className="p-[16px_20px] flex flex-col gap-[10px]">
-                                {form.values.variant.map((e, i) => (
-                                    <Flex key={i} align="end" gap={10} wrap="wrap">
-                                        <TextInput
-                                            value={form.values.variant[i].name}
-                                            onChange={e => form.setFieldValue(`variant.${i}.name`, e.target.value)}
-                                            label="Nama Varian"
-                                            placeholder="Contoh: Ukuran, Warna"
+                                <Flex align="end" gap={10} wrap="wrap">
+                                    {/* <TextInput
+                                        value={form.values.variant[i].name}
+                                        onChange={e => form.setFieldValue(`variant.${i}.name`, e.target.value)}
+                                        label="Nama Varian"
+                                        placeholder="Contoh: Ukuran, Warna"
+                                    /> */}
+                                    <Flex gap={10} align="center" w="100%">
+                                        <TagsInput
+                                            w="100%"
+                                            value={form.values.variant.map(e => e.name)}
+                                            onChange={e => form.setValues({ variant: e.map((e, i) => ({
+                                                ...form.values.variant[i],
+                                                name: e,
+                                                status: form.values.variant[i] ? form.values.variant[i].status : true
+                                            }))})}
+                                            placeholder={`Masukan Nama Varian`}
                                         />
-                                        <Flex gap={10} align="center">
-                                            <TagsInput
-                                                w="100%"
-                                                value={form.values.variant[i].value}
-                                                onChange={e => form.setFieldValue(`variant.${i}.value`, e)}
-                                                placeholder={`Ketik untuk menambah tipe varian ${form.values.variant[i].name}`}
-                                            />
-                                            <ActionIcon
-                                                variant="transparent"
-                                                color="#0B387C"
-                                                radius="xl"
-                                                className={`!border-[#E2EDFF] shrink-0`}
-                                                size="xl"
-                                                onClick={() => form.setValues({ variant: form.values.variant.filter((_, z) => z != i) })}>
-                                                <Icon icon="material-symbols:delete-outline" className={`text-[24px]`}/>
-                                            </ActionIcon>
-                                        </Flex>
+                                        {/* <ActionIcon
+                                            variant="transparent"
+                                            color="#0B387C"
+                                            radius="xl"
+                                            className={`!border-[#E2EDFF] shrink-0`}
+                                            size="xl"
+                                            onClick={() => form.setValues({ variant: form.values.variant.filter((_, z) => z != i) })}>
+                                            <Icon icon="material-symbols:delete-outline" className={`text-[24px]`}/>
+                                        </ActionIcon> */}
                                     </Flex>
-                                ))}
+                                </Flex>
 
                                 {form.values.variant.length == 0 && (
                                     <Text className={`!text-grey`}>Tambah Varian terlebih dahulu untuk mengatur varian</Text>
@@ -211,9 +213,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px] min-w-[700px]`} horizontalSpacing="md">
                                         <Table.Thead>
                                             <Table.Tr>
-                                                {form.values.variant.map((variant, index) => (
-                                                    <Table.Th key={index}>{variant.name}</Table.Th>
-                                                ))}
+                                                <Table.Th>Nama</Table.Th>
                                                 <Table.Th>SKU</Table.Th>
                                                 <Table.Th>Harga</Table.Th>
                                                 <Table.Th>Berat</Table.Th>
@@ -222,43 +222,59 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                             </Table.Tr>
                                         </Table.Thead>
                                         <Table.Tbody>
-                                            {form.values.variant.reduce((rows: any[], variant, variantIndex) => {
-                                                const values = variant.value;
-                                                if (variantIndex === 0) {
-                                                    values.forEach((value1) => {
-                                                        const row = { [variant.name]: value1 };
-                                                        rows.push(row);
-                                                    });
-                                                } else {
-                                                    return rows.flatMap((row) => {
-                                                        return values.map((value2) => {
-                                                            return {
-                                                                ...row,
-                                                                [variant.name]: value2,
-                                                            };
-                                                        });
-                                                    });
-                                                }
-                                                return rows;
-                                            }, []).map((row, rowIndex) => (
-                                                <Table.Tr key={rowIndex}>
-                                                    {form.values.variant.map((variant, variantIndex) => (
-                                                        <Table.Td key={variantIndex} miw={100}>{row[variant.name]}</Table.Td>
-                                                    ))}
+                                            {form.values.variant.map((e, i) => (
+                                                <Table.Tr key={i}>
+                                                    <Table.Td miw={100}>{e.name}</Table.Td>
                                                     <Table.Td>
-                                                        <TextInput maw={200} placeholder="Isi SKU Varian"/>
+                                                        <TextInput
+                                                            maw={200}
+                                                            placeholder="Isi SKU Varian"
+                                                            value={form.values.variant[i].sku}
+                                                            onChange={e => form.setFieldValue(`variant.${i}.sku`, e.target.value)}
+                                                            error={form.errors[`variant.${i}.sku`]}
+                                                        />
                                                     </Table.Td>
                                                     <Table.Td>
-                                                        <NumberInput maw={200} hideControls placeholder="Isi Harga Varian" prefix="Rp " thousandSeparator/>
+                                                        <NumberInput
+                                                            maw={200}
+                                                            hideControls
+                                                            placeholder="Isi Harga Varian"
+                                                            prefix="Rp "
+                                                            thousandSeparator
+                                                            value={form.values.variant[i].price}
+                                                            onChange={e => form.setFieldValue(`variant.${i}.price`, e)}
+                                                            error={form.errors[`variant.${i}.price`]}
+                                                        />
                                                     </Table.Td>
                                                     <Table.Td>
-                                                        <NumberInput maw={200} hideControls placeholder="Isi Berat Varian" suffix=' gr' thousandSeparator/>
+                                                        <NumberInput
+                                                            maw={200}
+                                                            hideControls
+                                                            placeholder="Isi Berat Varian"
+                                                            suffix=' gr'
+                                                            thousandSeparator
+                                                            value={form.values.variant[i].weight}
+                                                            onChange={e => form.setFieldValue(`variant.${i}.weight`, e)}
+                                                            error={form.errors[`variant.${i}.weight`]}
+                                                        />
                                                     </Table.Td>
                                                     <Table.Td>
-                                                        <NumberInput maw={200} hideControls placeholder="Isi Stok Varian" />
+                                                        <NumberInput
+                                                            maw={200}
+                                                            hideControls
+                                                            placeholder="Isi Stok Varian"
+                                                            value={form.values.variant[i].stock}
+                                                            onChange={e => form.setFieldValue(`variant.${i}.stock`, e)}
+                                                            error={form.errors[`variant.${i}.stock`]}
+                                                        />
                                                     </Table.Td>
                                                     <Table.Td>
-                                                        <Switch color="#0B387C" />
+                                                        <Switch
+                                                            color="#0B387C"
+                                                            checked={form.values.variant[i].status}
+                                                            onChange={e => form.setFieldValue(`variant.${i}.status`, e.target.checked)}
+                                                            error={form.errors[`variant.${i}.status`]}
+                                                        />
                                                     </Table.Td>
                                                 </Table.Tr>
                                             ))}
@@ -279,7 +295,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Harga <span className="text-red-400">*</span></h4>
                                     </div>
                                     <div className="flex-grow">
-                                        <NumberInput error={form.errors.name} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
+                                        <NumberInput error={form.errors.price} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-[20px]">
@@ -287,7 +303,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Stok <span className="text-red-400">*</span></h4>
                                     </div>
                                     <Stack className="flex-grow">
-                                        <NumberInput hideControls type="text" placeholder="Isi Stok" />
+                                        <NumberInput error={form.errors.stock}  hideControls type="text" placeholder="Isi Stok" />
                                         <Checkbox label="Tampilkan label jika stok habis"/>
                                     </Stack>
                                 </div>
@@ -296,7 +312,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Berat <span className="text-red-400">*</span></h4>
                                     </div>
                                     <div className="flex-grow">
-                                        <NumberInput hideControls type="text" placeholder="Isi Stok" />
+                                        <NumberInput error={form.errors.weight} hideControls type="text" placeholder="Isi Berat" suffix=" gr" />
                                     </div>
                                 </div>
                             </div>
@@ -343,7 +359,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     </div>
                 </div>
 
-                <div className="border-t border-[#E2EDFF] p-[10px] shrink-0">
+                <div className="border-t border-[#E2EDFF] py-[15px] shrink-0">
                     <div className="mx-auto max-w-[1280px] px-[20px]">
                         <Flex gap={10} justify="space-between">
                             <Button

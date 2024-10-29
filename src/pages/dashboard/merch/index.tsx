@@ -1,6 +1,6 @@
 import CreateMerchandise from '@/components/CreateMerchandise';
 import { Delete, Get, Post } from '@/utils/REST';
-import { Card, Center, NumberFormatter, Text, Switch, ActionIcon } from '@mantine/core';
+import { Card, Center, NumberFormatter, Text, Switch, ActionIcon, Stack, Flex, Title } from '@mantine/core';
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from '@nextui-org/react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -8,6 +8,9 @@ import { MerchListResponse } from './type';
 import Cookies from 'js-cookie';
 import { useListState } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
+import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
+import merchIcon from '../../../assets/svg/merch.svg';
+import Button from '@/components/Button';
 
 const Merch = () => {
   const [modalCreate, setModalCreate] = useState<boolean>(false);
@@ -22,7 +25,7 @@ const Merch = () => {
     if (loading.includes('getdata')) return;
     setLoading.append('getdata');
     Get(`product`, {
-      creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0)
+      creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? 'null')?.has_creator?.id ?? 0)
     })
     .then((res: any) => {
       setMerchList(res.data);
@@ -85,6 +88,8 @@ const Merch = () => {
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
 
       {modalCreate && <CreateMerchandise onClose={() => setModalCreate(!modalCreate)} />}
+
+      <Title order={1} size="h2">Merchandise Saya</Title>
 
       <div className="flex flex-wrap items-center justify-between gap-[20px]">
         <div className="flex gap-[10px] items-center">
@@ -173,9 +178,26 @@ const Merch = () => {
                 </TableBody>
               </Table>
 
-              {splittedByStatus(e[0])?.length == 0 && (
-                <Center mih={200}>
-                  <Text>Produk tidak ada</Text>
+              {(!splittedByStatus(e[0]) || splittedByStatus(e[0])?.length == 0 || merchList?.length == 0) && (
+                <Center mih={200} w="100%">
+                  <div className='py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full'>
+                    <div className='border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2'>
+                      <Image src={merchIcon} alt='bank' className='w-7' />
+                    </div>
+                    <div className='text-center'>
+                      <p className='font-semibold text-lg'>Belum ada merchandise yang dibuat</p>
+                      <p className='text-grey max-w-72 mt-[10px]'>
+                        Mulai buat merchandise dengan klik button “Buat Merchandis” di bawah.{' '}
+                      </p>
+                    </div>
+                    <Button
+                      label='Buat Merchandise'
+                      color='primary'
+                      className='mt-4'
+                      onClick={() => setModalCreate(!modalCreate)}
+                      startIcon={faCirclePlus}
+                    />
+                  </div>
                 </Center>
               )}
             </Card>
