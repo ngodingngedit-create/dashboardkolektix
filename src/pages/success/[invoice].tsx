@@ -13,10 +13,15 @@ import Config from '@/Config';
 import { Transition } from '@headlessui/react';
 
 const SuccessWithInvoice = () => {
+  const [isRendered, setIsRendered] = useState(false);
   const [data, setData] = useState<TransactionProps>();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { invoice } = router.query;
+
+  useEffect(() => {
+    setIsRendered(true);
+  }, []);
 
   // const renderer: CountdownRendererFn = ({ seconds, completed }) => {
   //   if (completed) {
@@ -45,10 +50,10 @@ const SuccessWithInvoice = () => {
   };
 
   useEffect(() => {
-    if (invoice) {
+    if (isRendered && invoice) {
       getData();
     }
-  }, [invoice]);
+  }, [isRendered, invoice]);
 
   const formatTime = (date: string) => {
     const dateString = new Date(date);
@@ -92,7 +97,7 @@ const SuccessWithInvoice = () => {
         )}
 
         <div className='border-b border-b-primary-light-200'>
-          {data.payment_method.payment_name.toLowerCase() !== 'xendit' && (
+          {data.payment_method && data.payment_method?.payment_name.toLowerCase() !== 'xendit' && (
             <div className='flex justify-between my-3'>
               <p className='text-grey'>Metode Pembayaran</p>
               <p className='text-dark'>{data.payment_method.payment_name}</p>
@@ -123,10 +128,12 @@ const SuccessWithInvoice = () => {
             <p className='text-grey'>{`Ticket (x${data.total_qty})`}</p>
             <p className='text-dark'>Rp{data.total_price.toLocaleString('id-ID')}</p>
           </div>
-          <div className='flex justify-between my-3'>
-            <p className='text-grey'>Biaya Admin</p>
-            <p className='text-dark'>Rp{data.admin_fee.toLocaleString('id-ID')}</p>
-          </div>
+          {data.admin_fee && (
+            <div className='flex justify-between my-3'>
+              <p className='text-grey'>Biaya Admin</p>
+              <p className='text-dark'>Rp{data.admin_fee.toLocaleString('id-ID')}</p>
+            </div>
+          )}
         </div>
         <div className='flex justify-between my-3 font-semibold'>
           <p className='text-dark text-[15px]'>Total</p>

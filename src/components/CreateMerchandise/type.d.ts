@@ -5,6 +5,7 @@ type MerchandiseState = {
     description: string;
     image: Blob[];
     status: boolean;
+    variant_name: string;
     variant: {
         name: string;
         sku?: string;

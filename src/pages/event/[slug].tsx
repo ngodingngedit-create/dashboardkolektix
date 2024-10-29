@@ -42,6 +42,7 @@ import ImagesWithModal from '@/components/Images/ImagesWithModal';
 import AuthModal from '@/components/AuthModal';
 import React from 'react';
 import ChatBox from '@/components/chat';
+import { validateHeaderName } from 'node:http';
 
 
 
@@ -335,11 +336,10 @@ const EventDetails = () => {
     const isoString = now.toISOString();
     console.log(userId);
   
-    const payload = {
+    var payload: { [key: string]: any } = {
       user_id: userId,
       event_id: detail?.id,
       admin_fee: detail?.admin_fee,
-      payment_method: payment,
       payment_status: 'pending',
       identities: form,
       tickets: ticket,
@@ -349,10 +349,19 @@ const EventDetails = () => {
       bank_code: bank,
       expiration_date: isoString,
     };
-  
+
+    if (payment) payload.payment_method = payment;
+
     Post('transaction', payload)
   .then((res: any) => {
+
+    if (res?.isFree) {
+      router.push('/success/' + res.invoice_no);
+      return;
+    }
+
     setTransactionData(res.data);
+
     if (res.xendit_invoice && res.xendit_invoice.va_number) {
       console.log(res.xendit_invoice);
       setXenditInvoice(res.xendit_invoice.va_number[0]);
@@ -794,7 +803,11 @@ const EventDetails = () => {
                 <Button
                   color='primary'
                   label='Selanjutnya'
-                  onClick={() => (step === 33 ? setStep(66) : setStep(100))}
+                  onClick={() => (step === 33 ?
+                      (detail ? totalSubtotalPrice + (detail.admin_fee * totalCount) + (detail.ppn || 0) : 0) == 0 ? submitData() : 
+                      setStep(66) :
+                      setStep(100)
+                  )}
                 />
               )}
             </div>

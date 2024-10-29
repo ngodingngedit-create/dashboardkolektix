@@ -31,7 +31,8 @@ const Merch = () => {
         const column: { [key: string]: [string, (data: any) => any] | [string] } = {
             id: ['ID'],
             name: ['Name'],
-            created_at: ['Tanggal', (data: string) => moment(data).format('DD-MM-YYYY')]
+            created_at: ['Tanggal', (data: string) => moment(data).format('DD-MM-YYYY')],
+            updated_at: ['Tanggal', (data: string) => moment(data).format('DD-MM-YYYY')],
         };
 
         const headKeys = Object.keys(column);

@@ -285,7 +285,6 @@ const FirstStepUnlogged = ({
 
     const ticketPriceTotal = ticket.reduce((e, n) => e + (n.price * n.qty_ticket), 0);
     if (ticketPriceTotal == 0) {
-      router.push('/success');
       return;
     }
 
@@ -293,6 +292,11 @@ const FirstStepUnlogged = ({
     .then((res: any) => {
       setTransactionData(res.data);
       console.log('Response:', res);
+
+      if (res?.isFree) {
+        router.push('/success/' + res.invoice_no);
+        return;
+      }
   
       if (res.xendit_invoice && res.xendit_invoice.invoice_url) {
         router.push(res.xendit_invoice.invoice_url);

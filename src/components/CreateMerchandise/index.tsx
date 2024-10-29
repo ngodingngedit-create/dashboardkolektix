@@ -18,6 +18,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     price: z.number().min(1, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
+    variant_name: z.string().min(1, { message: '"Wajib Diisi' }).optional().nullable(),
     variant: z.array(z.object({
         name: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
         sku: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
@@ -40,6 +41,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             price: 0,
             description: '',
             image: [],
+            variant_name: '',
             variant: [],
             status: true
         },
@@ -181,6 +183,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         placeholder="Contoh: Ukuran, Warna"
                                     /> */}
                                     <Flex gap={10} align="center" w="100%">
+                                        <TextInput
+                                            placeholder="Nama Varian"
+                                            // {...form.}
+                                        />
                                         <TagsInput
                                             w="100%"
                                             value={form.values.variant.map(e => e.name)}
