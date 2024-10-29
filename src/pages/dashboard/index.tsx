@@ -8,6 +8,7 @@ import { useRouter } from 'next/router';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Get } from '@/utils/REST';
 import { Accordion, AccordionItem } from '@nextui-org/react';
+import { Card } from '@mantine/core';
 
 interface EventData {
   creator_id: string;
@@ -77,48 +78,49 @@ export default function Dashboard() {
         <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p>
       </div>
 
-      
-      <Accordion defaultExpandedKeys={['event']}>
-        {/* Event Section */}
-        <AccordionItem key="event" title="Event Saya">
-          <div className="px-4 py-4 md:px-7 md:py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-              <CreatorTable title="Event Berjalan" value={calculateTotalEvents()} />
-              <CreatorTable title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
-              <CreatorTable title="Total Pengunjung" value={calculateTotal('total_views')} yBorderNone />
-              <CreatorTable title="Total Transaksi" value={calculateTotal('total_paid')} yBorderNone />
-              <CreatorTable title="Total Tiket Terjual" value={calculateTotal('total_ticket')} xBorderNone />
-              <CreatorTable title="Total Penjualan" currency value={calculateTotal('total_price_sell')} />
+      <Card>
+        <Accordion defaultExpandedKeys={['event']}>
+          {/* Event Section */}
+          <AccordionItem key="event" title="Event Saya">
+            <div className="px-4 py-4 md:px-7 md:py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
+                <CreatorTable title="Event Berjalan" value={calculateTotalEvents()} />
+                <CreatorTable title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
+                <CreatorTable title="Total Pengunjung" value={calculateTotal('total_views')} yBorderNone />
+                <CreatorTable title="Total Transaksi" value={calculateTotal('total_paid')} yBorderNone />
+                <CreatorTable title="Total Tiket Terjual" value={calculateTotal('total_ticket')} xBorderNone />
+                <CreatorTable title="Total Penjualan" currency value={calculateTotal('total_price_sell')} />
+              </div>
             </div>
-          </div>
-        </AccordionItem>
+          </AccordionItem>
 
-        {/* Job Section */}
-        <AccordionItem key="lowongan" title="Lowongan">
-          <div className="px-4 py-4 md:px-7 md:py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-              <CreatorTable title="Lowongan yang aktif" value={0} />
-              <CreatorTable title="Lowongan Draf" value={0} yBorderNone />
-              <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
-              <CreatorTable title="Pelamar belum direspon" value={0} yBorderNone />
+          {/* Job Section */}
+          <AccordionItem key="lowongan" title="Lowongan">
+            <div className="px-4 py-4 md:px-7 md:py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
+                <CreatorTable title="Lowongan yang aktif" value={0} />
+                <CreatorTable title="Lowongan Draf" value={0} yBorderNone />
+                <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
+                <CreatorTable title="Pelamar belum direspon" value={0} yBorderNone />
+              </div>
             </div>
-          </div>
-        </AccordionItem>
+          </AccordionItem>
 
-        {/* Merchandise Section */}
-        <AccordionItem key="merchandise" title="Merchandise">
-          <div className="px-4 py-4 md:px-7 md:py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-              <CreatorTable title="Sedang dijual" value={0} />
-              <CreatorTable title="Merchandise Draf" value={0} yBorderNone />
-              <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
-              <CreatorTable title="Total Transaksi Merchandise" value={0} yBorderNone />
-              <CreatorTable title="Total Merchandise Terjual" value={0} xBorderNone />
-              <CreatorTable title="Total Penjualan Merchandise" currency value={0} />
+          {/* Merchandise Section */}
+          <AccordionItem key="merchandise" title="Merchandise">
+            <div className="px-4 py-4 md:px-7 md:py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
+                <CreatorTable title="Sedang dijual" value={0} />
+                <CreatorTable title="Merchandise Draf" value={0} yBorderNone />
+                <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
+                <CreatorTable title="Total Transaksi Merchandise" value={0} yBorderNone />
+                <CreatorTable title="Total Merchandise Terjual" value={0} xBorderNone />
+                <CreatorTable title="Total Penjualan Merchandise" currency value={0} />
+              </div>
             </div>
-          </div>
-        </AccordionItem>
-      </Accordion>
+          </AccordionItem>
+        </Accordion>
+      </Card>
     </div>
   );
 }

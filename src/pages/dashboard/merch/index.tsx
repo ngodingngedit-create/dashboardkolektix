@@ -187,7 +187,7 @@ const Merch = () => {
                     <div className='text-center'>
                       <p className='font-semibold text-lg'>Belum ada merchandise yang dibuat</p>
                       <p className='text-grey max-w-72 mt-[10px]'>
-                        Mulai buat merchandise dengan klik button “Buat Merchandis” di bawah.{' '}
+                        Mulai buat merchandise dengan klik button “Buat Merchandise” di bawah.{' '}
                       </p>
                     </div>
                     <Button

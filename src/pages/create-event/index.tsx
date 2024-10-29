@@ -143,7 +143,7 @@ const CreateEvent = () => {
       try {
         Get('category', {})
         .then((res: any) => {
-          setTagSuggestion(res.map((e: any) => e.name));
+          setTagSuggestion(res.data.map((e: any) => e.name));
         })
         .catch((err) => {
           toast.error('FAILED GET TAG SUGGESTION');
@@ -295,8 +295,8 @@ const CreateEvent = () => {
                 radius={8}
                 placeholder='Tag; Contoh: hiburan, musik, budaya, kuliner, pendidikan'
                 data={tagSuggestion}
-                value={!form.tag ? [] : form.tag.split('||')}
-                onChange={(e) => setForm({ ...form, tag: e.join('||') })}
+                value={!form.tag ? [] : form.tag.split(',')}
+                onChange={(e) => setForm({ ...form, tag: e.join(',') })}
                 error={(error && error?.tag) && error?.tag[0]}
               />
             </div>

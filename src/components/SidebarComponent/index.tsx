@@ -21,6 +21,7 @@ import { Get } from '@/utils/REST';
 import config from '@/Config';
 import axios from 'axios';
 import { useClickOutside } from '@mantine/hooks';
+import { Flex } from '@mantine/core';
 
 const profileData = [
     {
@@ -87,11 +88,11 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const outsideClick = useClickOutside(() => {
         if (window?.innerWidth < 768) {
-            // setCollapse(false);
+            setCollapse(false);
         }
     });
     const outsideClickMenu = useClickOutside(() => {
-        // setShowUserMenu(false);
+        setShowUserMenu(false);
     });
 
     const getWithdrawData = async () => {
@@ -184,11 +185,15 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
     return (
         <div>
-            <div className="hidden sm:flex">
+            <div className="flex max-w-[100vw] overflow-x-hidden">
                 <nav
                     ref={outsideClick}
-                    className={`bg-primary-darker 
-      duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${collapse ? 'w-1/2 md:w-[232px]' : 'w-0 md:w-[65px]'}   `}
+                    className={`
+                        fixed md:static
+                        bg-primary-darker duration-300 left-0 min-h-screen h-[100vh]
+                        overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50
+                        ${collapse ? 'w-[232px]' : 'w-0 md:w-[65px]'}
+                    `}
                 >
                     <ul className="w-full min-h-[90vh]">
                         <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
@@ -215,7 +220,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                     </>
                                 )}
                             </div>
-                            <div className={`${pop ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                            <div className={`${(pop && !collapse) ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
                                 <div className="flex justify-between mb-2">
                                     <p className="text-sm">Saldo</p>
                                     <p className="text-sm ">Rp.0</p>
@@ -303,8 +308,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                         </div>
                     </button>
                 </nav>
-                <div className="flex-1 ">
-                    <div className={`ml-0 ${collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'} transition-all ease-in-out delay-150`}>
+                <div className="flex-1">
+                    <div className={`transition-all ease-in-out delay-150`}>
                         <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Burgers isOpen={collapse} setIsOpen={setCollapse} />
@@ -332,343 +337,103 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                         : ''}
                                 </h3> */}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Fade isShowing={showNotifications}>
-                                    <div className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
-                                        {hasNotification ? (
-                                            <>
-                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                    Your Profile
-                                                </Link>
-                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
-                                                    Settings
-                                                </Link>
-                                                <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
-                                                    Sign out
-                                                </Link>
-                                            </>
-                                        ) : (
-                                            <div className="p-3">
-                                                <p className="text-dark text-sm">Belum ada notifikasi</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Fade>
-                                <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push('/')}>
-                                    <FontAwesomeIcon icon={faHome} />
-                                </button>
-                                <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
-                                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
-                                </button>
-                                {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
-                                    <Button label="Buat Event" color="secondary" onClick={() => router.push('/create-event')} />
-                                ) : (
-                                    role === 'Creator' && (
-                                        <>
-                                            <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
-                                            <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
-                                        </>
-                                    )
-                                )}
-                                <div>
-                                    <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
-                                        <button type="button" className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around" id="user-menu-button" aria-expanded="false" aria-haspopup="true" onClick={() => setShowUserMenu(!showUserMenu)}>
-                                            <FontAwesomeIcon icon={faBars} className="text-primary-base" />
-                                            <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
-                                        </button>
-                                    </div>
-                                    <Fade isShowing={showUserMenu}>
-                                        <div ref={outsideClickMenu} className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
-                                            {hasCreator && (
-                                                <button
-                                                    className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
-                                                    role="menuitem"
-                                                    onClick={() => {
-                                                        setShowUserMenu(!showUserMenu);
-                                                        role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                                                        role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
-                                                        role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
-                                                        role === 'Creator'
-                                                            ? toast.success('Beralih ke dashboard pembeli', {
-                                                                  autoClose: 2000,
-                                                                  hideProgressBar: true
-                                                              })
-                                                            : toast.success('Beralih ke dashboard creator', {
-                                                                  autoClose: 2000,
-                                                                  hideProgressBar: true
-                                                              });
-                                                    }}
-                                                    tabIndex={-1}
-                                                    id="user-menu-item-0"
-                                                >
-                                                    <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
-                                                    Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
-                                                </button>
+                            <div className="!overflow-x-hidden flex-grow">
+                                <Flex gap={8} align="center" justify="end">
+                                    <Fade isShowing={showNotifications}>
+                                        <div className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                            {hasNotification ? (
+                                                <>
+                                                    <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                        Your Profile
+                                                    </Link>
+                                                    <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
+                                                        Settings
+                                                    </Link>
+                                                    <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
+                                                        Sign out
+                                                    </Link>
+                                                </>
+                                            ) : (
+                                                <div className="p-3">
+                                                    <p className="text-dark text-sm">Belum ada notifikasi</p>
+                                                </div>
                                             )}
-                                            <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                                                Transaksi
-                                            </Link>
-                                            <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                                                Bookmark
-                                            </Link>
-
-                                            <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
-                                                <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
-                                                Keluar
-                                            </button>
                                         </div>
                                     </Fade>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="">{children}</div>
-                    </div>
-                </div>
-            </div>
-            <nav
-                className={`bg-primary-darker 
-    duration-300 fixed left-0 min-h-screen max-h-screen overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50 ${collapse ? ' md:w-[232px]' : 'w-0 md:w-[65px]'} 
-    ${collapse ? 'absolute md:fixed' : 'absolute md:fixed'} md:left-0 md:hidden`} // Menyembunyikan di tablet dan lebih besar
-            >
-                <ul className="w-full min-h-[90vh]">
-                    <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
-                        <Link href="/" className="flex items-center justify-center">
-                            {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}
-                        </Link>
-                    </li>
-                    <li className="border border-[#1b3a6a] border-x-0 border-t-0 py-3 mb-3">
-                        <div className="flex items-center gap-3 px-3 [&_*]:!text-white ">
-                            <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
-                            {visible && (
-                                <>
-                                    <div className={`w-1/2 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
-                                        <p className="text-sm">{userData && userData.has_creator ? userData.has_creator.name : userData?.name}</p>
-                                        <p className="text-[10px] ">{role}</p>
-                                    </div>
-                                    <div>
-                                        {hasCreator && (
-                                            <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `} onClick={() => setIsPop(!pop)}>
-                                                <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? 'rotate-0' : 'rotate-180'}  ${collapse ? 'opacity-100' : 'opacity-0'} transition-transform delay-100 ease-in-out duration-200`} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className={`${pop ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
-                            <div className="flex justify-between mb-2">
-                                <p className="text-sm">Saldo</p>
-                                <p className="text-sm ">Rp.0</p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-sm">Kredit</p>
-                                <p className="text-sm ">Rp.0</p>
-                            </div>
-                            <div className="items-center">
-                                <Link href={'/dashboard/withdraw'}>
-                                    <button
-                                        className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
-                                        onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
-                                    >
-                                        Detail
+                                    <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push('/')}>
+                                        <FontAwesomeIcon icon={faHome} />
                                     </button>
-                                </Link>
-                            </div>
-                        </div>
-                    </li>
-
-                    <>
-                        {sidebarData
-                            .filter((el) => el.role === role)
-                            .map((el) => (
-                                <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'}  transition-transform-colors`}>
-                                    {el.link ? (
-                                        <Link href={el.link} className="" onClick={handleItemClick}>
-                                            <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
-                                                <div className="w-5 h-5 flex justify-center items-center">
-                                                    <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
-                                                </div>
-                                                {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
-                                            </div>
-                                        </Link>
+                                    <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
+                                        <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                                    </button>
+                                    {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
+                                        <Button label="Buat Event" color="secondary" onClick={() => router.push('/create-event')} />
                                     ) : (
-                                        <div onClick={() => toggleSubmenu(el.id)} className="cursor-pointer">
-                                            <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
-                                                <div className="flex items-center">
-                                                    <div className="w-5 h-5 flex justify-center items-center">
-                                                        <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
-                                                    </div>
-                                                    {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
-                                                </div>
-                                                {el.submenu && visible && (
-                                                    <button>
-                                                        <FontAwesomeIcon icon={faChevronLeft} className={`${openMenu[el.id] ? '-rotate-90' : ''} transition-transform`} />
+                                        role === 'Creator' && (
+                                            <>
+                                                <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
+                                                <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
+                                            </>
+                                        )
+                                    )}
+                                    <div>
+                                        <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
+                                            <button type="button" className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around" id="user-menu-button" aria-expanded="false" aria-haspopup="true" onClick={() => setShowUserMenu(!showUserMenu)}>
+                                                <FontAwesomeIcon icon={faBars} className="text-primary-base" />
+                                                <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
+                                            </button>
+                                        </div>
+                                        <Fade isShowing={showUserMenu}>
+                                            <div ref={outsideClickMenu} className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                                {hasCreator && (
+                                                    <button
+                                                        className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
+                                                        role="menuitem"
+                                                        onClick={() => {
+                                                            setShowUserMenu(!showUserMenu);
+                                                            role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
+                                                            role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
+                                                            role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
+                                                            role === 'Creator'
+                                                                ? toast.success('Beralih ke dashboard pembeli', {
+                                                                    autoClose: 2000,
+                                                                    hideProgressBar: true
+                                                                })
+                                                                : toast.success('Beralih ke dashboard creator', {
+                                                                    autoClose: 2000,
+                                                                    hideProgressBar: true
+                                                                });
+                                                        }}
+                                                        tabIndex={-1}
+                                                        id="user-menu-item-0"
+                                                    >
+                                                        <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
+                                                        Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
                                                     </button>
                                                 )}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {el.submenu && (
-                                        <ul className={`${openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'} transition-max-height duration-150 ease-in-out`}>
-                                            {el.submenu
-                                                .filter((subEl) => subEl.role === role)
-                                                .map((subEl) => (
-                                                    <li key={subEl.id} className={`${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
-                                                        <Link href={subEl.link}>
-                                                            <div className="flex px-5 items-center">
-                                                                <div className="w-5 h-5 flex justify-center items-center">
-                                                                    <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />
-                                                                </div>
-                                                                {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity`}>{subEl.name}</p>}
-                                                            </div>
-                                                        </Link>
-                                                    </li>
-                                                ))}
-                                        </ul>
-                                    )}
-                                </li>
-                            ))}
-                    </>
-                    <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden">
-                        <div className="flex items-center justify-center px-5">
-                            {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
-                            <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
-                        </div>
-                    </button>
-                </ul>
-                <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden">
-                    <div className="flex items-center justify-center px-5">
-                        {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
-                        <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
-                    </div>
-                </button>
-            </nav>
-            <div className="block lg:hidden">
-                <div className={`ml-0 ${collapse ? 'md:ml-[232px]' : 'md:ml-[70px]'} transition-all ease-in-out delay-150`}>
-                    <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Burgers isOpen={collapse} setIsOpen={setCollapse} />
-                            {/* <h3>
-                                {route === '/dashboard'
-                                    ? 'Dashboard'
-                                    : route === '/dashboard/my-ticket'
-                                    ? 'Tiket Saya'
-                                    : route === '/dashboard/profile'
-                                    ? 'Informasi Dasar'
-                                    : route === '/dashboard/legal'
-                                    ? 'Informasi Legal'
-                                    : route === '/dashboard/bank'
-                                    ? 'Informasi Legal'
-                                    : route === '/dashboard/bank'
-                                    ? 'Rekening'
-                                    : route === '/dashboard/vacancy'
-                                    ? 'Lowongan'
-                                    : route === '/dashboard/my-event/checkin'
-                                    ? 'Check In Event'
-                                    : route === '/dashboard/my-event'
-                                    ? 'Event Saya'
-                                    : route === '/dashboard/chat'
-                                    ? 'Pesan'
-                                    : ''}
-                            </h3> */}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Fade isShowing={showNotifications}>
-                                <div className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
-                                    {hasNotification ? (
-                                        <>
-                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                Your Profile
-                                            </Link>
-                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
-                                                Settings
-                                            </Link>
-                                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
-                                                Sign out
-                                            </Link>
-                                        </>
-                                    ) : (
-                                        <div className="p-3">
-                                            <p className="text-dark text-sm">Belum ada notifikasi</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </Fade>
-                            <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push('/')}>
-                                <FontAwesomeIcon icon={faHome} />
-                            </button>
-                            <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
-                                <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
-                            </button>
-                            {role === 'Creator' && route !== '/dashboard/my-event/[slug]' ? (
-                                <Button label="Buat Event" color="secondary" onClick={() => router.push('/create-event')} />
-                            ) : (
-                                role === 'Creator' && (
-                                    <>
-                                        <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
-                                        <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
-                                    </>
-                                )
-                            )}
-                            <div>
-                                <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
-                                    <button type="button" className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around" id="user-menu-button" aria-expanded="false" aria-haspopup="true" onClick={() => setShowUserMenu(!showUserMenu)}>
-                                        <FontAwesomeIcon icon={faBars} className="text-primary-base" />
-                                        <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
-                                    </button>
-                                </div>
-                                <Fade isShowing={showUserMenu}>
-                                    <div className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
-                                        {hasCreator && (
-                                            <button
-                                                className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
-                                                role="menuitem"
-                                                onClick={() => {
-                                                    setShowUserMenu(!showUserMenu);
-                                                    role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                                                    role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
-                                                    role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
-                                                    role === 'Creator'
-                                                        ? toast.success('Beralih ke dashboard pembeli', {
-                                                              autoClose: 2000,
-                                                              hideProgressBar: true
-                                                          })
-                                                        : toast.success('Beralih ke dashboard creator', {
-                                                              autoClose: 2000,
-                                                              hideProgressBar: true
-                                                          });
-                                                }}
-                                                tabIndex={-1}
-                                                id="user-menu-item-0"
-                                            >
-                                                <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
-                                                Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
-                                            </button>
-                                        )}
-                                        <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                            <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                                            Transaksi
-                                        </Link>
-                                        <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                            <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                                            Bookmark
-                                        </Link>
+                                                <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                    <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                                    Transaksi
+                                                </Link>
+                                                <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                    <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                                    Bookmark
+                                                </Link>
 
-                                        <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
-                                            <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
-                                            Keluar
-                                        </button>
+                                                <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
+                                                    <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
+                                                    Keluar
+                                                </button>
+                                            </div>
+                                        </Fade>
                                     </div>
-                                </Fade>
+                                </Flex>
                             </div>
                         </div>
+                        <div className="max-w-[100vw] overflow-x-hidden">{children}</div>
                     </div>
-                    <div className="hidden md:block">{children}</div>
                 </div>
             </div>
-            <div className="block md:hidden lg:hidden">{children}</div>
         </div>
     );
 };

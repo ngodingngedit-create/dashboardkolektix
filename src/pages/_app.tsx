@@ -15,19 +15,33 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { MantineProvider, MantineTheme, Modal, ModalProps, createTheme } from '@mantine/core';
+import { MantineProvider, MantineTheme, Modal, ModalProps, Table, createTheme } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import { ModalsProvider } from '@mantine/modals';
 
 config.autoAddCss = false;
 
+const theme = createTheme({
+  components: {
+    Table: Table.extend({
+        defaultProps:{
+            className: `
+                [&_thead]:!bg-[#f0f0f0] [&_*]:text-[14px] [&_tr:hover]:bg-gray-50 [&_th]:bg-gray-100 [&_th]:font-[500]
+                [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100 
+            `,
+            horizontalSpacing: 20
+        }
+    }),
+  }
+})
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   return (
     <main className={inter.className}>
       <NextUIProvider locale='en-UK'>
-        <MantineProvider>
+        <MantineProvider theme={theme}>
           <ModalsProvider>
             <ToastContainer />
             {router.pathname.startsWith('/dashboard') ? (
