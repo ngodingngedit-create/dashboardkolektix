@@ -60,7 +60,7 @@ type MerchandiseShowResponse = {
 
 type MerchandiseStoreRequest = {
     creator_id: number;
-    name: string;
+    product_name: string;
     sku: string;
     // product_category_id: number;
     // product_brand_id: number;
@@ -87,7 +87,15 @@ type MerchandiseStoreRequest = {
     // editor_type: string;
     // editor_id: number;
     image: Blob[];
-    variant: MerchandiseState['variant'];
+    variant: {
+        varian_name: string;
+        sku: string;
+        price: number;
+        weight: number;
+        stock_qty: number;
+        varian_category_id: number;
+        product_status: "active" | "inactive";
+    }[];
 };
 
 type VariantStoreRequest = {

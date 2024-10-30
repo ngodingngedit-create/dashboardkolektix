@@ -18,7 +18,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     price: z.number().min(1, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
-    variant_name: z.string().min(1, { message: '"Wajib Diisi' }).optional().nullable(),
+    variant_name: z.number().min(1, { message: '"Wajib Diisi' }).optional().nullable(),
     variant: z.array(z.object({
         name: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
         sku: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
@@ -55,28 +55,48 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
         setLoading.append('save');
         const { name, description, price: selling_price, sku, image, status, variant } = form.values;
-        const resProduct: any = await (id ? Put : Post)(id ? `product/${id}` : 'product', {
-            name,
-            description: description ?? '-',
-            sku,
-            selling_price,
-            image,
-            status: isDraft ? 5 : status ? 1 : 0,
-            creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
-            buying_price: selling_price,
-            variation_price: 0,
-            order: 10,
-            can_purchasable: 1,
-            show_stock_out: 1,
-            maximum_purchase_quantity: 100,
-            low_stock_quantity_warning: 4,
-            refundable: 0,
-            discount: 0,
-            is_product_quantity_multiply: 1,
-            add_to_flash_sale: 1,
-            variant
-        } satisfies MerchandiseStoreRequest, 'multipart/form-data');
-        product_id = resProduct.data.id as number;
+
+        try {
+            const resProduct: any = await (id ? Put : Post)(id ? `product/${id}` : 'product', {
+                product_name: name,
+                description: description ?? '-',
+                sku,
+                selling_price,
+                image,
+                status: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
+                creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
+                buying_price: selling_price,
+                variation_price: 0,
+                order: 10,
+                can_purchasable: 1,
+                show_stock_out: 1,
+                maximum_purchase_quantity: 100,
+                low_stock_quantity_warning: 4,
+                refundable: 0,
+                discount: 0,
+                is_product_quantity_multiply: 1,
+                add_to_flash_sale: 1,
+                variant: variant.map(e => ({
+                    varian_name: e.name,
+                    sku: e.sku ?? '',
+                    price: e.price ?? 999999,
+                    weight: e.weight ?? 1,
+                    stock_qty: e.stock ?? 0,
+                    varian_category_id: 1,
+                    product_status: e.status ? "active" : "inactive"
+                }))
+            } satisfies MerchandiseStoreRequest, 'multipart/form-data');
+            product_id = resProduct.data.id as number;
+
+            if (resProduct.status) router.reload();
+        } catch (err: any) {
+            const error = err?.response?.data?.errors;
+            if (error) {
+                form.setErrors({ ...error, name: error.slug ?? error.product_name });
+            }
+        } finally {
+            setLoading.filter(e => e != 'save');
+        }
     }
 
     return (
@@ -185,7 +205,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <Flex gap={10} align="center" w="100%">
                                         <TextInput
                                             placeholder="Nama Varian"
-                                            // {...form.}
+                                            value={form.values.variant_name}
+                                            onChange={e => form.setValues({ variant_name: e.target.value })}
                                         />
                                         <TagsInput
                                             w="100%"
@@ -219,7 +240,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px] min-w-[700px]`} horizontalSpacing="md">
                                         <Table.Thead>
                                             <Table.Tr>
-                                                <Table.Th>Nama</Table.Th>
+                                                <Table.Th>{ form.values.variant_name == '' ? "Varian" : form.values.variant_name}</Table.Th>
                                                 <Table.Th>SKU</Table.Th>
                                                 <Table.Th>Harga</Table.Th>
                                                 <Table.Th>Berat</Table.Th>
@@ -354,7 +375,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         <div className="border border-[#E2EDFF] rounded-[8px]">
                             <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
                                 <h3 className="text-[20px] font-[500]">Status Produk</h3>
-                                <Switch size="md" color="#0B387C"/>
+                                <Switch
+                                    defaultChecked
+                                    size="md"
+                                    color="#0B387C"
+                                    checked={form.values.status}
+                                    onChange={e => form.setValues({status: e.target.checked }) }
+                                />
                             </Flex>
 
                             <div className="p-[16px] flex flex-col gap-[20px]">
