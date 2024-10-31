@@ -33,6 +33,44 @@ const theme = createTheme({
             horizontalSpacing: 20
         }
     }),
+    Modal: {
+      styles: (theme: MantineTheme) => ({
+        content: {
+          borderRadius: '12px',
+          boxShadow: theme.shadows.md,
+          border: `1px solid ${theme.colors.gray[3]}`,
+          width: '600px',
+          maxWidth: '90%',
+        },
+        header: {
+          borderBottom: `1px solid ${theme.colors.gray[3]}`,
+          padding: 0,
+        },
+        title: {
+          padding: '0 0 0 20px',
+          width: '100%',
+          fontSize: theme.fontSizes.md,
+          fontWeight: 500,
+        },
+        body: {
+          padding: theme.spacing.md,
+          overflowY: 'auto',
+        },
+        close: {
+          color: theme.colors.dark[7],
+          position: 'absolute',
+          top: '50%',
+          right: '10px',
+          transform: 'translateY(-50%)',
+          '& svg': {
+            fontSize: '24px',
+          },
+          '&:hover': {
+            backgroundColor: theme.colors.gray[0],
+          },
+        },
+      }),
+    }
   }
 })
 

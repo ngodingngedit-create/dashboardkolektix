@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { faChevronCircleDown, faBell as Bell, faTicket, faBars, faClose, faHome, faHouse, faBriefcase, faGift, faStar, faLocationDot, faBuildingColumns, faChevronLeft, faChevronRight, faUpload, faEye, faTableColumns, faRightFromBracket, faSquareArrowUpRight } from '@fortawesome/free-solid-svg-icons';
 import Cookies from 'js-cookie';
-import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage } from '@fortawesome/free-regular-svg-icons';
+import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage } from '@fortawesome/free-regular-svg-icons';
 import { UserProps } from '@/utils/globalInterface';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
@@ -40,13 +40,27 @@ const profileData = [
     },
     {
         id: 3,
+        name: 'Alamat Saya',
+        icon: faMap,
+        link: '/dashboard/profile/address',
+        role: 'Pembeli'
+    },
+    {
+        id: 4,
+        name: 'Alamat Saya',
+        icon: faMap,
+        link: '/dashboard/profile/address',
+        role: 'Creator'
+    },
+    {
+        id: 5,
         name: 'Informasi Legal',
         icon: faFileLines,
         link: '/dashboard/legal',
         role: 'Creator'
     },
     {
-        id: 4,
+        id: 6,
         name: 'Rekening Saya',
         icon: faBuildingColumns,
         link: '/dashboard/bank',
