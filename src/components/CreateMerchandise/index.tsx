@@ -6,15 +6,18 @@ import { useForm, zodResolver } from '@mantine/form';
 import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import InputEditor from '@/components/Input/InputEditor';
-import { Post, Put } from '@/utils/REST';
+import { Get, Post, Put } from '@/utils/REST';
 import Cookies from 'js-cookie';
 import z from 'zod';
 import { useRouter } from 'next/router';
 import { useListState } from '@mantine/hooks';
+import { useEffect } from 'react';
 
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     name: z.string().min(1, { message: '"Wajib Diisi' }),
     sku: z.string().min(1, { message: '"Wajib Diisi' }),
+    stock: z.number().min(0, { message: '"Wajib Diisi' }),
+    is_variant: z.any().nullable(),
     price: z.number().min(1, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
@@ -33,11 +36,52 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
 
+    useEffect(() => {
+        getData();
+    }, []);
+
+    const getData = () => {
+        if (id && id > 0) {
+            Get(`product/${id}`, {})
+            .then((res: any) => {
+                if (res.status) {
+                    const data = res.data as MerchandiseShowResponse;
+
+                    if (data.is_product_variant) form.setValues({ is_variant: Boolean(data.is_product_variant) });
+
+                    form.setValues({
+                        name: data.product_name,
+                        sku: data.sku,
+                        price: 0,
+                        description: data.description ?? '',
+                        image: data.product_image.map(e => e.name),
+                        variant_name: data.product_varian.length > 0 ? data.product_varian[0].product_variant_category.varian_name : '',
+                        variant: data.product_varian.map(e => ({
+                            name: e.varian_name,
+                            sku: e.sku,
+                            stock: e.stock_qty,
+                            price: parseInt(e.price ?? "0"),
+                            weight: parseInt(e.weight ?? "0"),
+                            status: true
+                        }))
+                    });
+                }
+                setLoading.filter((e) => e != 'getdata');
+            })
+            .catch((err) => {
+                console.log(err);
+                setLoading.filter((e) => e != 'getdata');
+            });
+        }
+    };
+
     const router = useRouter();
     const form = useForm<MerchandiseState>({
         initialValues: {
+            is_variant: false,
             name: '',
             sku: '',
+            stock: 0,
             price: 0,
             description: '',
             image: [],
@@ -54,37 +98,37 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         if (valid.hasErrors) return;
 
         setLoading.append('save');
-        const { name, description, price: selling_price, sku, image, status, variant } = form.values;
+        const { name, description, price, sku, image, status, variant, stock, is_variant } = form.values;
 
         try {
-            const resProduct: any = await (id ? Put : Post)(id ? `product/${id}` : 'product', {
+            const resProduct: any = await Post((id && id > 0) ? `product/${id}` : 'product', {
                 product_name: name,
                 description: description ?? '-',
                 sku,
-                selling_price,
+                price: price ?? 99999,
                 image,
-                status: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
+                product_status_id: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
                 creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
-                buying_price: selling_price,
-                variation_price: 0,
-                order: 10,
-                can_purchasable: 1,
+                // order: 10,
+                // can_purchasable: 1,
+                qty: stock ?? 0,
                 show_stock_out: 1,
-                maximum_purchase_quantity: 100,
-                low_stock_quantity_warning: 4,
-                refundable: 0,
+                max_purchase_quantity: 100,
+                low_quantity_warning: 4,
+                // refundable: 0,
                 discount: 0,
-                is_product_quantity_multiply: 1,
-                add_to_flash_sale: 1,
-                variant: variant.map(e => ({
+                // is_product_quantity_multiply: 1,
+                add_to_flash_sale: 0,
+                is_product_variant: is_variant ? 1 : 0,
+                variant: is_variant ? variant.map(e => ({
                     varian_name: e.name,
                     sku: e.sku ?? '',
                     price: e.price ?? 999999,
                     weight: e.weight ?? 1,
                     stock_qty: e.stock ?? 0,
                     varian_category_id: 1,
-                    product_status: e.status ? "active" : "inactive"
-                }))
+                    status_product: e.status ? "active" : "inactive",
+                })) : []
             } satisfies MerchandiseStoreRequest, 'multipart/form-data');
             product_id = resProduct.data.id as number;
 
@@ -114,7 +158,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     <div className="mx-auto max-w-[1280px] py-[20px] px-[20px] md:px-[30px] flex flex-col gap-[30px]">
 
                         <div>
-                            <h2 className="text-[30px] font-[600]">Buat Merchandise</h2>
+                            <h2 className="text-[30px] font-[600]">{(id == 0 || !Boolean(id)) ? "Buat" : "Update"} Merchandise</h2>
                             <p className="text-grey">Lengkapi form dibawah untuk membuat Merchandise</p>
                         </div>
 
@@ -178,7 +222,43 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             </div>
                         </div>
 
-                        <div className="border border-[#E2EDFF] rounded-[8px]">
+                        <Switch label="Gunakan Varian Merchandise"/>
+
+                        <div className={`${form.values.is_variant ? 'hidden' : ''} border border-[#E2EDFF] rounded-[8px]`}>
+                            <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
+                                <h3 className="text-[20px] font-[500]">Detail Merchandise</h3>
+                            </Flex>
+
+                            <div className="p-[16px] flex flex-col gap-[20px]">
+                                <div className="flex flex-wrap items-center gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0">
+                                        <h4 className="text-[16px] font-[500]">Harga <span className="text-red-400">*</span></h4>
+                                    </div>
+                                    <div className="flex-grow">
+                                        <NumberInput error={form.errors.price} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0 mt-[12px]">
+                                        <h4 className="text-[16px] font-[500]">Stok <span className="text-red-400">*</span></h4>
+                                    </div>
+                                    <Stack className="flex-grow">
+                                        <NumberInput error={form.errors.stock}  hideControls type="text" placeholder="Isi Stok" />
+                                        <Checkbox label="Tampilkan label jika stok habis"/>
+                                    </Stack>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-[20px]">
+                                    <div className="min-w-[200px] shrink-0">
+                                        <h4 className="text-[16px] font-[500]">Berat <span className="text-red-400">*</span></h4>
+                                    </div>
+                                    <div className="flex-grow">
+                                        <NumberInput error={form.errors.weight} hideControls type="text" placeholder="Isi Berat" suffix=" gr" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`${form.values.is_variant ? '' : 'hidden'} border border-[#E2EDFF] rounded-[8px]`}>
                             <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`} wrap="wrap">
                                 <h3 className="text-[20px] font-[500]">Varian Merchandise</h3>
                                 {/* <Button
@@ -308,40 +388,6 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         </Table.Tbody>
                                     </Table>
                                 </Card>
-                            </div>
-                        </div>
-
-                        <div className="border border-[#E2EDFF] rounded-[8px]">
-                            <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
-                                <h3 className="text-[20px] font-[500]">Detail Merchandise</h3>
-                            </Flex>
-
-                            <div className="p-[16px] flex flex-col gap-[20px]">
-                                <div className="flex flex-wrap items-center gap-[20px]">
-                                    <div className="min-w-[200px] shrink-0">
-                                        <h4 className="text-[16px] font-[500]">Harga <span className="text-red-400">*</span></h4>
-                                    </div>
-                                    <div className="flex-grow">
-                                        <NumberInput error={form.errors.price} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-[20px]">
-                                    <div className="min-w-[200px] shrink-0 mt-[12px]">
-                                        <h4 className="text-[16px] font-[500]">Stok <span className="text-red-400">*</span></h4>
-                                    </div>
-                                    <Stack className="flex-grow">
-                                        <NumberInput error={form.errors.stock}  hideControls type="text" placeholder="Isi Stok" />
-                                        <Checkbox label="Tampilkan label jika stok habis"/>
-                                    </Stack>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-[20px]">
-                                    <div className="min-w-[200px] shrink-0">
-                                        <h4 className="text-[16px] font-[500]">Berat <span className="text-red-400">*</span></h4>
-                                    </div>
-                                    <div className="flex-grow">
-                                        <NumberInput error={form.errors.weight} hideControls type="text" placeholder="Isi Berat" suffix=" gr" />
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
