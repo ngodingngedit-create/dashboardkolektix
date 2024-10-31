@@ -160,7 +160,7 @@ const Merch = () => {
                         />
 
                         <Switch
-                            mt={33}
+                            className={`mt-0 md:!mt-[33px]`}
                             label="Alamat Utama"
                             checked={form.values.is_default}
                             onChange={e => form.setFieldValue('is_default', e.target.checked)}
@@ -251,7 +251,7 @@ const Merch = () => {
 
             <Divider />
 
-            <SimpleGrid className={`[&>*]:flex-grow !grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3`}>
+            <SimpleGrid display={addressList.length > 0 ? undefined : 'none'} className={`[&>*]:flex-grow !grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3`}>
                 {addressList.map((e, i) => (
                     <UnstyledButton key={i} mih="100%" onClick={() => setModalIndex(e.id)}>
                         <Card withBorder p={20} radius={15} h="100%" className={`${e.is_default ? '!border-b-3 !border-b-[#0B387C]' : ''}`}>
@@ -270,6 +270,25 @@ const Merch = () => {
                     </UnstyledButton>
                 ))}
             </SimpleGrid>
+
+            {(addressList.length == 0 || !addressList) && (
+                <Card withBorder radius={15} px={30} py={60}>
+                    <Stack align="center" gap={15}>
+                        <Box c="#0B387C">
+                            <Icon icon="nonicons:not-found-16" className={`text-[2rem]`} />
+                        </Box>
+                        <Text ta="center" c="gray">Tidak ada alamat yang terdaftar</Text>
+                        <Button
+                            variant='outline'
+                            color="#0B387C"
+                            w="fit-content"
+                            radius="xl"
+                            leftSection={<Icon icon="uiw:plus" />}
+                            onClick={() => setModalIndex(0)}
+                        >Tambah Alamat</Button>
+                    </Stack>
+                </Card>
+            )}
         </div>
     );
 };
