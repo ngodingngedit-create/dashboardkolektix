@@ -152,7 +152,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             } satisfies MerchandiseStoreRequest, 'multipart/form-data');
             product_id = resProduct.data.id as number;
 
-            // if (resProduct.status) router.reload();
+            if (resProduct.status) router.reload();
         } catch (err: any) {
             const error = err?.response?.data?.errors;
             if (error) {
