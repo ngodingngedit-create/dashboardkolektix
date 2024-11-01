@@ -1,6 +1,6 @@
 import CreateMerchandise from '@/components/CreateMerchandise';
 import { Delete, Get, Post } from '@/utils/REST';
-import { Card, Center, NumberFormatter, Text, Switch, ActionIcon, Stack, Flex, Title } from '@mantine/core';
+import { Card, Center, NumberFormatter, Text, Switch, ActionIcon, Stack, Flex, Title, Image as MImage } from '@mantine/core';
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from '@nextui-org/react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -150,14 +150,14 @@ const Merch = () => {
                     <TableRow key={i}>
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
-                          <div className="h-10 w-10 bg-[#d0d0d0] rounded-[5px] shrink-0"></div>
+                          <MImage src={e.product_image[0].image_url} className="h-10 w-10 bg-[#d0d0d0] rounded-[5px] shrink-0" />
                           <p>{e.product_name}</p>
                         </div>
                       </TableCell>
                       <TableCell className={`whitespace-nowrap`}>
                         <NumberFormatter value={parseInt(e.price)} prefix="Rp " />
                       </TableCell>
-                      <TableCell>-</TableCell>
+                      <TableCell>{e.qty}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
                           <Switch checked={e.product_status_id == 1} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>

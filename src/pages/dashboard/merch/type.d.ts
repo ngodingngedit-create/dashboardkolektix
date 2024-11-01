@@ -4,6 +4,11 @@ export type MerchListResponse = {
     product_name: string;
     product_status_id: number;
     slug: string;
+    qty: number;
+    product_image: {
+        id: number;
+        image_url: string;
+    }[];
     // creator_id: number;
     // slug: string;
     // sku: string;
