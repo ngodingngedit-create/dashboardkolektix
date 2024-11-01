@@ -6,7 +6,7 @@ type MerchandiseState = {
     description: string;
     image: (Blob | string)[];
     status: boolean;
-    variant_name: string;
+    variant_name: number;
     is_variant: boolean;
     variant: {
         name: string;
@@ -20,7 +20,7 @@ type MerchandiseState = {
 
 type ComponentProps = {
     onClose?: () => void;
-    id?: number;
+    id?: string;
 };
 
 type MerchandiseShowResponse = {
@@ -138,3 +138,8 @@ type VariantStoreRequest = {
     qty: number;
     status: 'active' | 'inactive';
 };
+
+type VariantCategoryListResponse = {
+    id: number;
+    varian_name: string;
+}

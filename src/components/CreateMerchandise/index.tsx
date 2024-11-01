@@ -3,7 +3,7 @@ import { Input } from '@nextui-org/react';
 import Image from 'next/image';
 import ImageInput from '../ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
-import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import InputEditor from '@/components/Input/InputEditor';
 import { Get, Post, Put } from '@/utils/REST';
@@ -11,14 +11,15 @@ import Cookies from 'js-cookie';
 import z from 'zod';
 import { useRouter } from 'next/router';
 import { useListState } from '@mantine/hooks';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import useLoggedUser from '@/utils/useLoggedUser';
 
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     name: z.string().min(1, { message: '"Wajib Diisi' }),
     sku: z.string().min(1, { message: '"Wajib Diisi' }),
     stock: z.number().min(0, { message: '"Wajib Diisi' }),
     is_variant: z.any().nullable(),
-    price: z.number().min(1, { message: '"Wajib Diisi' }),
+    price: z.number().min(0, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
     variant_name: z.number().min(1, { message: '"Wajib Diisi' }).optional().nullable(),
@@ -35,16 +36,18 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
 
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
+    const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
+    const user = useLoggedUser();
 
     useEffect(() => {
         getData();
     }, []);
 
     const getData = () => {
-        if (id && id > 0) {
+        if (id) {
             Get(`product/${id}`, {})
             .then((res: any) => {
-                if (res.status) {
+                if (res.data) {
                     const data = res.data as MerchandiseShowResponse;
 
                     if (data.is_product_variant) form.setValues({ is_variant: Boolean(data.is_product_variant) });
@@ -54,8 +57,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         sku: data.sku,
                         price: 0,
                         description: data.description ?? '',
-                        image: data.product_image.map(e => e.name),
-                        variant_name: data.product_varian.length > 0 ? data.product_varian[0].product_variant_category.varian_name : '',
+                        image: data.product_image.map(e => e.image_url),
+                        variant_name: data.product_varian.length > 0 ? data.product_varian[0].product_variant_category.id : 0,
                         variant: data.product_varian.map(e => ({
                             name: e.varian_name,
                             sku: e.sku,
@@ -73,6 +76,19 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 setLoading.filter((e) => e != 'getdata');
             });
         }
+        if (!variantCategory) {
+            Get(`product-varian-category`, {})
+            .then((res: any) => {
+                if (res.data) {
+                    console.log(res.data)
+                    const data = res.data as VariantCategoryListResponse[];
+                    setVariantCategory(data);
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+        }
     };
 
     const router = useRouter();
@@ -85,7 +101,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             price: 0,
             description: '',
             image: [],
-            variant_name: '',
+            variant_name: 0,
             variant: [],
             status: true
         },
@@ -98,17 +114,17 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         if (valid.hasErrors) return;
 
         setLoading.append('save');
-        const { name, description, price, sku, image, status, variant, stock, is_variant } = form.values;
+        const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
 
         try {
-            const resProduct: any = await Post((id && id > 0) ? `product/${id}` : 'product', {
+            const resProduct: any = await Post(id ? `product/${id}` : 'product', {
                 product_name: name,
                 description: description ?? '-',
                 sku,
                 price: price ?? 99999,
                 image,
                 product_status_id: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
-                creator_id: parseInt(JSON.parse(Cookies.get('user_data') ?? '')?.has_creator?.id ?? 0),
+                creator_id: user?.has_creator.id ?? 0,
                 // order: 10,
                 // can_purchasable: 1,
                 qty: stock ?? 0,
@@ -126,7 +142,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     price: e.price ?? 999999,
                     weight: e.weight ?? 1,
                     stock_qty: e.stock ?? 0,
-                    varian_category_id: 1,
+                    varian_category_id: variant_name,
                     status_product: e.status ? "active" : "inactive",
                 })) : []
             } satisfies MerchandiseStoreRequest, 'multipart/form-data');
@@ -144,7 +160,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     }
 
     return (
-        <div className="fixed w-[100vw] h-[100vh] top-0 left-0 z-[900] bg-white">
+        <div className="fixed w-[100vw] h-[100vh] top-0 left-0 z-[200] bg-white">
             <div className="flex flex-col h-full w-full">
 
                 <div className="border-b border-[#E2EDFF] p-[10px] shrink-0">
@@ -158,7 +174,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     <div className="mx-auto max-w-[1280px] py-[20px] px-[20px] md:px-[30px] flex flex-col gap-[30px]">
 
                         <div>
-                            <h2 className="text-[30px] font-[600]">{(id == 0 || !Boolean(id)) ? "Buat" : "Update"} Merchandise</h2>
+                            <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Merchandise</h2>
                             <p className="text-grey">Lengkapi form dibawah untuk membuat Merchandise</p>
                         </div>
 
@@ -222,7 +238,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             </div>
                         </div>
 
-                        <Switch label="Gunakan Varian Merchandise"/>
+                        <Switch checked={form.values.is_variant} onChange={e => form.setFieldValue('is_variant', e.target.checked)} label="Gunakan Varian Merchandise"/>
 
                         <div className={`${form.values.is_variant ? 'hidden' : ''} border border-[#E2EDFF] rounded-[8px]`}>
                             <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
@@ -283,10 +299,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         placeholder="Contoh: Ukuran, Warna"
                                     /> */}
                                     <Flex gap={10} align="center" w="100%">
-                                        <TextInput
+                                        <Select
+                                            searchable
                                             placeholder="Nama Varian"
-                                            value={form.values.variant_name}
-                                            onChange={e => form.setValues({ variant_name: e.target.value })}
+                                            value={String(form.values.variant_name)}
+                                            onChange={e => e && form.setValues({ variant_name: parseInt(e as string) })}
+                                            data={variantCategory?.map(e => ({ value: String(e.id), label: e.varian_name }))}
                                         />
                                         <TagsInput
                                             w="100%"
@@ -320,7 +338,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px] min-w-[700px]`} horizontalSpacing="md">
                                         <Table.Thead>
                                             <Table.Tr>
-                                                <Table.Th>{ form.values.variant_name == '' ? "Varian" : form.values.variant_name}</Table.Th>
+                                                <Table.Th>{ !Boolean(form.values.variant_name) ? "Varian" : variantCategory?.find(e => e.id == form.values.variant_name)?.varian_name}</Table.Th>
                                                 <Table.Th>SKU</Table.Th>
                                                 <Table.Th>Harga</Table.Th>
                                                 <Table.Th>Berat</Table.Th>
