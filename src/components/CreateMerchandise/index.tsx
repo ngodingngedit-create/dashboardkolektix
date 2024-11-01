@@ -22,7 +22,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     price: z.number().min(0, { message: '"Wajib Diisi' }),
     description: z.string().min(1, { message: '"Wajib Diisi' }),
     image: z.array(z.any()).min(1, { message: 'Masukan minimal satu gambar'}),
-    variant_name: z.number().min(1, { message: '"Wajib Diisi' }).optional().nullable(),
+    variant_name: z.number().optional().nullable(),
     variant: z.array(z.object({
         name: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
         sku: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
@@ -35,6 +35,8 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
 });
 
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
+    const [merchId, setMerchId] = useState<number>();
+    const [imageList, setImageList] = useState<MerchandiseShowResponse['product_image']>();
     const [loading, setLoading] = useListState<string>();
     const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
     const user = useLoggedUser();
@@ -49,8 +51,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             .then((res: any) => {
                 if (res.data) {
                     const data = res.data as MerchandiseShowResponse;
+                    setMerchId(data.id);
+                    setImageList(data.product_image);
 
-                    if (data.is_product_variant) form.setValues({ is_variant: Boolean(data.is_product_variant) });
+                    if (data.is_product_varian) form.setValues({ is_variant: Boolean(data.is_product_varian) });
 
                     form.setValues({
                         name: data.product_name,
@@ -58,7 +62,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         price: 0,
                         description: data.description ?? '',
                         image: data.product_image.map(e => e.image_url),
-                        variant_name: data.product_varian.length > 0 ? data.product_varian[0].product_variant_category.id : 0,
+                        variant_name: data.product_varian.length > 0 ? data.product_varian[0].varian_category_id : 0,
                         variant: data.product_varian.map(e => ({
                             name: e.varian_name,
                             sku: e.sku,
@@ -117,12 +121,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
 
         try {
-            const resProduct: any = await Post(id ? `product/${id}` : 'product', {
+            const resProduct: any = await Post(Boolean(id) ? `product/${merchId}` : 'product', {
                 product_name: name,
                 description: description ?? '-',
                 sku,
                 price: price ?? 99999,
-                image,
+                image: image.map(e => e instanceof Blob ? e : (imageList?.find(z => e == z.image_url)?.image ?? '')),
                 product_status_id: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
                 creator_id: user?.has_creator.id ?? 0,
                 // order: 10,
@@ -135,8 +139,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 discount: 0,
                 // is_product_quantity_multiply: 1,
                 add_to_flash_sale: 0,
-                is_product_variant: is_variant ? 1 : 0,
-                variant: is_variant ? variant.map(e => ({
+                is_product_varian: is_variant ? 1 : 0,
+                product_variant: is_variant ? JSON.stringify(variant.map(e => ({
                     varian_name: e.name,
                     sku: e.sku ?? '',
                     price: e.price ?? 999999,
@@ -144,11 +148,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     stock_qty: e.stock ?? 0,
                     varian_category_id: variant_name,
                     status_product: e.status ? "active" : "inactive",
-                })) : []
+                }))) : '[]'
             } satisfies MerchandiseStoreRequest, 'multipart/form-data');
             product_id = resProduct.data.id as number;
 
-            if (resProduct.status) router.reload();
+            // if (resProduct.status) router.reload();
         } catch (err: any) {
             const error = err?.response?.data?.errors;
             if (error) {
@@ -175,7 +179,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
                         <div>
                             <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Merchandise</h2>
-                            <p className="text-grey">Lengkapi form dibawah untuk membuat Merchandise</p>
+                            <p className="text-grey">
+                                {!Boolean(id) ? "Lengkapi form dibawah untuk membuat Merchandise"
+                                    : "Lengkapi form dibawah untuk update Merchandise"}
+                            </p>
                         </div>
 
                         <div className="border border-[#E2EDFF] rounded-[8px]">
@@ -482,7 +489,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     onClick={() => handleSave(false)}
                                     bg="#0B387C"
                                     radius="xl"
-                                >Buat Merchandise</Button>
+                                >
+                                    {Boolean(id) ? "Simpan Merchandise" : "Buat Merchandise"}
+                                </Button>
                             </Flex>
                         </Flex>
                     </div>

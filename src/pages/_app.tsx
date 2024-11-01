@@ -15,7 +15,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { MantineProvider, MantineTheme, Modal, ModalProps, Table, createTheme } from '@mantine/core';
+import { MantineProvider, MantineTheme, Modal, ModalProps, NumberFormatter, Table, createTheme } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import { ModalsProvider } from '@mantine/modals';
@@ -24,6 +24,13 @@ config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
+    NumberFormatter: NumberFormatter.extend({
+      defaultProps: {
+        prefix: "Rp ",
+        thousandSeparator: ".",
+        decimalSeparator: ","
+      }
+    }),
     Table: Table.extend({
         defaultProps:{
             className: `

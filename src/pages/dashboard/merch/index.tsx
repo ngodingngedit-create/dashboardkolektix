@@ -150,7 +150,9 @@ const Merch = () => {
                     <TableRow key={i}>
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
-                          <MImage src={e.product_image[0].image_url} className="h-10 w-10 bg-[#d0d0d0] rounded-[5px] shrink-0" />
+                          {e.product_image.length > 0 && (
+                            <MImage src={e.product_image[0].image_url} className="!h-10 !w-10 bg-[#d0d0d0] rounded-[5px] shrink-0" />
+                          )} 
                           <p>{e.product_name}</p>
                         </div>
                       </TableCell>

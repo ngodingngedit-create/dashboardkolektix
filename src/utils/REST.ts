@@ -38,15 +38,35 @@ export const Post = async (
 // Helper function to convert an object with potential Files into FormData
 function convertToFormData(params: any) {
   const formData = new FormData();
+
   Object.keys(params).forEach(key => {
-    if (typeof params[key] == 'object' && (params[key] as (string | Blob)[]).length) {
-      let i = 0;
-      for (const v of (params[key] as (string | Blob)[])) {
-          formData.append(`${key}[${i}]`, v);
-          i++;
-      }
+    const value = params[key];
+
+    if (Array.isArray(value)) {
+      // Handle array values with empty square brackets
+      value.forEach(v => {
+        if (typeof v === 'object' && v !== null && !(v instanceof Blob)) {
+          // If it's an object (not a Blob/File), handle its properties
+          Object.keys(v).forEach(subKey => {
+            formData.append(`${key}[][${subKey}]`, v[subKey]);
+          });
+        } else {
+          // Append Blob or File directly using empty brackets
+          formData.append(`${key}[]`, v);
+        }
+      });
+    } else if (typeof value === 'object' && value !== null) {
+      // Handle nested objects but allow Blob/File
+      Object.keys(value).forEach(subKey => {
+        if (value[subKey] instanceof Blob) {
+          formData.append(`${key}[${subKey}]`, value[subKey]);
+        } else {
+          formData.append(`${key}[${subKey}]`, value[subKey]);
+        }
+      });
     } else {
-      formData.append(key, params[key] as (string | Blob));
+      // Handle simple values (including Blob/File in params)
+      formData.append(key, value);
     }
   });
   return formData;

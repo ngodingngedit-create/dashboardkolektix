@@ -5,6 +5,7 @@ export type MerchListResponse = {
     product_status_id: number;
     slug: string;
     qty: number;
+    created_by: string;
     product_image: {
         id: number;
         image_url: string;

@@ -7,10 +7,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faProductHunt } from '@fortawesome/free-brands-svg-icons';
 import { faCartShopping } from '@fortawesome/free-solid-svg-icons';
 import FilterMerchandise from '@/components/FilterMerchandise';
+import { MerchListResponse } from '../dashboard/merch/type';
 
 const Merchandise = () => {
   const [categoryActive, setCategoryActive] = useState<string>();
-  const [data, setData] = useState<MerchProps[]>([]);
+  const [data, setData] = useState<MerchListResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const getData = () => {
     setLoading(true);
@@ -63,10 +64,11 @@ const Merchandise = () => {
           {data.map((item) => (
             <MerchandiseCard
               key={item.id}
-              name={item.name}
-              price={item.buying_price}
-              sale={item.selling_price}
+              name={item.product_name}
+              price={parseInt(item.price)}
+              sale={0}
               creator={item.created_by}
+              redirect={`/merchandise/${item.slug}`}
             />
           ))}
         </div>

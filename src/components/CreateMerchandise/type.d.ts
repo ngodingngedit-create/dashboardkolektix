@@ -32,7 +32,7 @@ type MerchandiseShowResponse = {
     sku: string,
     product_category_id?: number,
     product_brand_id?: number,
-    is_product_variant: 1 | 0,
+    is_product_varian: 1 | 0,
     weight: string,
     show_stock_out: 1 | 0,
     max_purchase_quantity: number,
@@ -97,7 +97,7 @@ type MerchandiseStoreRequest = {
     add_to_flash_sale: 1 | 0;
     discount: number;
     description: string;
-    is_product_variant: 1 | 0;
+    is_product_varian: 1 | 0;
     // product_category_id: number;
     // product_brand_id: number;
     // barcode_id: number;
@@ -117,15 +117,16 @@ type MerchandiseStoreRequest = {
     // editor_type: string;
     // editor_id: number;
     image: (Blob | string)[];
-    variant: {
-        varian_name: string;
-        sku: string;
-        price: number;
-        weight: number;
-        stock_qty: number;
-        varian_category_id: number;
-        status_product: "active" | "inactive";
-    }[];
+    product_variant: string;
+    // product_variant: {
+    //     varian_name: string;
+    //     sku: string;
+    //     price: number;
+    //     weight: number;
+    //     stock_qty: number;
+    //     varian_category_id: number;
+    //     status_product: "active" | "inactive";
+    // }[];
 };
 
 type VariantStoreRequest = {
