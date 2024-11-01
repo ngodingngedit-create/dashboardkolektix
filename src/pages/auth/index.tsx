@@ -222,7 +222,7 @@ const Auth = () => {
           alt='logo'
           style={{ opacity: imageOpacity, transition: 'opacity 1.5s ease-in-out' }}
         />
-        <h3>{displayedText}</h3>
+        <h3 className={`text-white`}>{displayedText}</h3>
       </div>
       <div className='sm:w-full lg:w-1/2 flex flex-col justify-center items-center lg:px-10 max-w-2xl'>
         <div className='bg-white rounded-2xl flex flex-col justify-center w-full sm:w-[20rem] h-[22rem]'>

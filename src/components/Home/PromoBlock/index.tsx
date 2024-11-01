@@ -5,7 +5,7 @@ import { faTicket, faUsers } from '@fortawesome/free-solid-svg-icons';
 
 const PromoBlock = () => {
   return (
-    <div className={`${styles.bgPromo} md:rounded-e-[50px] my-20 md:pb-0 py-8`}>
+    <div className={`${styles.bgPromo} md:rounded-e-[50px] my-20 md:pb-0 py-8 !text-white`}>
       <div className='flex flex-col md:flex-row justify-between'>
         <div className='w-full md:w-2/3 pt-0 md:pt-32'>
           <div className='bg-white text-dark w-72 font-semibold rounded-full md:rounded-none md:rounded-e-full py-1 md:pl-20 md:text-start text-center mx-auto md:mx-0'>
@@ -23,8 +23,8 @@ const PromoBlock = () => {
             </button>
           </div>
         </div>
-        <div className='w-full md:w-1/4 flex flex-col justify-center gap-2'>
-          <div className='flex w-2/3 md:w-full self-end items-center bg-gradient-to-b from-dark/40 to-white/20 md:rounded-e-none rounded-s-3xl border border-grey/20 py-2'>
+        <div className='w-full md:w-1/4 flex flex-col justify-center items-center gap-2 mt-5 md:mt-0'>
+          <div className='flex w-2/3 md:w-full md:self-end items-center bg-gradient-to-b from-dark/40 to-white/20 md:rounded-e-none rounded-3xl md:rounded-s-3xl border border-grey/20 py-2'>
             <div className='w-1/4 flex justify-center'>
               <FontAwesomeIcon icon={faTicket} className='' size='2xl' />
             </div>
@@ -34,7 +34,7 @@ const PromoBlock = () => {
               <p>Pemesan Tiket</p>
             </div>
           </div>
-          <div className='flex w-2/3 md:w-full items-center bg-gradient-to-b from-dark/40 to-white/20 rounded-e-3xl md:rounded-e-none md:rounded-s-3xl border border-white/20 py-2'>
+          <div className='flex w-2/3 md:w-full items-center bg-gradient-to-b from-dark/40 to-white/20 rounded-3xl md:rounded-e-3xl md:rounded-e-none md:rounded-s-3xl border border-white/20 py-2'>
             <div className='w-1/4 flex justify-center'>
               <FontAwesomeIcon icon={faUsers} className='' size='2xl' />
             </div>
