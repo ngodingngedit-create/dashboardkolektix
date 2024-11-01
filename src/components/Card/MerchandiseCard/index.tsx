@@ -19,14 +19,15 @@ interface MerchCardProps {
   sale: number;
   creator: string;
   redirect: string;
+  image?: string;
 }
 
-const MerchandiseCard = ({ name, price, sale, creator, redirect }: MerchCardProps & {}) => {
+const MerchandiseCard = ({ name, price, sale, creator, redirect, image }: MerchCardProps & {}) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   return (
     <Link href={redirect} className='min-w-44 bg-white rounded-lg border border-primary-light-200 shadow-md ml-1 md:ml-0 w-full'>
       <div className={``}>
-        <Image className={`${styles.cardImg} rounded-t-lg`} src={Foto} alt='' />
+        <Image className={`${styles.cardImg} rounded-t-lg`} src={image ?? Foto} width={500} height={500} alt='' />
       </div>
       <div>
         <div className={`p-[10px]`}>

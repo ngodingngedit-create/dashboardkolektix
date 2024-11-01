@@ -6,9 +6,24 @@ export type MerchListResponse = {
     slug: string;
     qty: number;
     created_by: string;
+    description: string;
     product_image: {
         id: number;
         image_url: string;
+    }[];
+    product_varian: {
+        id: number;
+        product_id: number;
+        varian_category_id: number;
+        varian_name: string;
+        sku: string;
+        price: string;
+        weight: string;
+        stock_qty: number;
+        product_varian_category: {
+            id: number;
+            varian_name: string;
+        }
     }[];
     // creator_id: number;
     // slug: string;
