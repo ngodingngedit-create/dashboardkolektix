@@ -12,6 +12,7 @@ import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 import merchIcon from '../../../assets/svg/merch.svg';
 import Button from '@/components/Button';
 import useLoggedUser from '@/utils/useLoggedUser';
+import _ from 'lodash';
 
 const Merch = () => {
   const [isRender, setIsRender] = useState(false);
@@ -157,9 +158,9 @@ const Merch = () => {
                         </div>
                       </TableCell>
                       <TableCell className={`whitespace-nowrap`}>
-                        <NumberFormatter value={parseInt(e.price)} prefix="Rp " />
+                        <NumberFormatter value={parseInt((e.product_varian.length ?? 0) > 0 ? e.product_varian[0].price : e.price)} prefix="Rp " />
                       </TableCell>
-                      <TableCell>{e.qty}</TableCell>
+                      <TableCell>{((e.product_varian.length ?? 0) > 0 ? _.sumBy(e.product_varian, 'stock_qty') : e.qty)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
                           <Switch checked={e.product_status_id == 1} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>
