@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { faChevronCircleDown, faBell as Bell, faTicket, faBars, faClose, faHome, faHouse, faBriefcase, faGift, faStar, faLocationDot, faBuildingColumns, faChevronLeft, faChevronRight, faUpload, faEye, faTableColumns, faRightFromBracket, faSquareArrowUpRight } from '@fortawesome/free-solid-svg-icons';
 import Cookies from 'js-cookie';
-import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage } from '@fortawesome/free-regular-svg-icons';
+import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition } from '@fortawesome/free-regular-svg-icons';
 import { UserProps } from '@/utils/globalInterface';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
@@ -22,8 +22,19 @@ import config from '@/Config';
 import axios from 'axios';
 import { useClickOutside } from '@mantine/hooks';
 import { Flex } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
-const profileData = [
+type SidebarData = {
+    id: number;
+    name: string;
+    icon?: IconDefinition;
+    iconify?: string;
+    link?: string;
+    role: "Creator" | "Pembeli";
+    submenu?: Omit<SidebarData, 'submenu'>;
+}[];
+
+const profileData: SidebarData[number]['submenu'] = [
     {
         id: 1,
         name: 'Profile Saya',
@@ -68,10 +79,32 @@ const profileData = [
     }
 ];
 
-const sidebarData = [
-    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator' },
+const sidebarData: SidebarData = [
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
-    { id: 3, name: 'Event Saya', icon: faCalendar, link: '/dashboard/my-event', role: 'Creator' },
+    { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
+        {
+            id: 1,
+            name: 'Event Saya',
+            icon: faCalendar,
+            link: '/dashboard/my-event',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'Check In Event',
+            iconify: 'lets-icons:in',
+            link: '/dashboard/my-event/checkin',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'Report Event',
+            iconify: 'carbon:report',
+            link: '/dashboard/my-event/report',
+            role: 'Creator'
+        }
+    ] },
     { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
     { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
     { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
@@ -265,7 +298,9 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                             <Link href={el.link} className="" onClick={handleItemClick}>
                                                 <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
                                                     <div className="w-5 h-5 flex justify-center items-center">
-                                                        <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                        {el.iconify ? (
+                                                            <Icon icon={el.iconify ?? ''} className={`h-5 w-5`} />
+                                                        ) : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}
                                                     </div>
                                                     {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
                                                 </div>
@@ -275,7 +310,11 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
                                                     <div className="flex items-center">
                                                         <div className="w-5 h-5 flex justify-center items-center">
-                                                            <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />
+                                                            <div className="w-5 h-5 flex justify-center items-center">
+                                                                {el.iconify ? (
+                                                                    <Icon icon={el.iconify ?? ''} className={`h-5 w-5`} />
+                                                                ) : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}
+                                                            </div>
                                                         </div>
                                                         {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 ' : 'opacity-0 '} transition-opacity delay-700`}>{el.name}</p>}
                                                     </div>
@@ -288,15 +327,17 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                             </div>
                                         )}
                                         {el.submenu && (
-                                            <ul className={`${openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'} transition-max-height duration-150 ease-in-out`}>
+                                            <ul className={`${openMenu[el.id] && visible ? 'max-h-80' : 'max-h-0'} ml-[10px] transition-max-height duration-150 ease-in-out`}>
                                                 {el.submenu
                                                     .filter((subEl) => subEl.role === role)
-                                                    .map((subEl) => (
-                                                        <li key={subEl.id} className={`list-none ${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
-                                                            <Link href={subEl.link}>
+                                                    .map((subEl, i) => (
+                                                        <li key={i} className={`list-none ${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
+                                                            <Link href={subEl.link ?? '#'}>
                                                                 <div className="flex px-5 items-center">
                                                                     <div className="w-5 h-5 flex justify-center items-center">
-                                                                        <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />
+                                                                        {subEl.iconify ? (
+                                                                            <Icon icon={subEl.iconify ?? ''} className={`h-5 w-5 text-white`} />
+                                                                        ) : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
                                                                     </div>
                                                                     {visible && <p className={`text-sm ml-3 ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity`}>{subEl.name}</p>}
                                                                 </div>
