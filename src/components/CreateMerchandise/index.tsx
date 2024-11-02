@@ -64,6 +64,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         image: data.product_image.map(e => e.image_url),
                         variant_name: data.product_varian.length > 0 ? data.product_varian[0].varian_category_id : 0,
                         variant: data.product_varian.map(e => ({
+                            id: e.id,
                             name: e.varian_name,
                             sku: e.sku,
                             stock: e.stock_qty,
@@ -141,6 +142,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 add_to_flash_sale: 0,
                 is_product_varian: is_variant ? 1 : 0,
                 product_variant: is_variant ? JSON.stringify(variant.map(e => ({
+                    id: e.id,
                     varian_name: e.name,
                     sku: e.sku ?? '',
                     price: e.price ?? 999999,
@@ -148,7 +150,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     stock_qty: e.stock ?? 0,
                     varian_category_id: variant_name,
                     status_product: e.status ? "active" : "inactive",
-                }))) : '[]'
+                })) satisfies VariantStoreRequest[]) : '[]'
             } satisfies MerchandiseStoreRequest, 'multipart/form-data');
             product_id = resProduct.data.id as number;
 
@@ -422,24 +424,25 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             </Flex>
 
                             <div className="p-[16px] flex flex-col gap-[20px]">
-                                <InputEditor
-                                    theme='snow'
-                                    onChange={(value: string) => form.setValues({ description: value })}
-                                    value={form.values.description}
-                                    error={form.errors.description}
-                                    placeholder='Ketik Syarat & Ketentuan'
-                                    modules={{
-                                        toolbar: [
-                                        [{ header: '1' }],
-                                        ['bold', 'italic', 'underline', 'strike'],
-                                        [{ list: 'bullet' }],
-                                        ],
-                                        clipboard: {
-                                        matchVisual: false,
-                                        },
-                                    }}
-                                    className='editor'
-                                />
+                                <InputWrapper error={form.errors.description}>
+                                    <InputEditor
+                                        theme='snow'
+                                        onChange={(value: string) => form.setValues({ description: value })}
+                                        value={form.values.description}
+                                        placeholder='Ketik Syarat & Ketentuan'
+                                        modules={{
+                                            toolbar: [
+                                            [{ header: '1' }],
+                                            ['bold', 'italic', 'underline', 'strike'],
+                                            [{ list: 'bullet' }],
+                                            ],
+                                            clipboard: {
+                                            matchVisual: false,
+                                            },
+                                        }}
+                                        className='editor'
+                                    />
+                                </InputWrapper>
                             </div>
                         </div>
 

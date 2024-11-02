@@ -9,6 +9,7 @@ type MerchandiseState = {
     variant_name: number;
     is_variant: boolean;
     variant: {
+        id?: number;
         name: string;
         sku?: string;
         price?: number;
@@ -130,14 +131,14 @@ type MerchandiseStoreRequest = {
 };
 
 type VariantStoreRequest = {
-    creator_id: number;
-    product_id: number;
-    product_attribute_id: number;
-    product_attribute_option_id: number;
-    price: number;
+    id?: number;
+    varian_name: string;
     sku: string;
-    qty: number;
-    status: 'active' | 'inactive';
+    price: number;
+    weight: number;
+    stock_qty: number;
+    varian_category_id: number;
+    status_product: "active" | "inactive";
 };
 
 type VariantCategoryListResponse = {
