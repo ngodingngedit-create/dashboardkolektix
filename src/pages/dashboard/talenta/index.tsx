@@ -69,10 +69,15 @@ const Talenta = () => {
     }
   });
 
+  const [isr, setIsr] = useState(false);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState<TalentCategoryList[]>();
   const [formState, setFormState] = useState<"store" | "update">("store");
   const user = useLoggedUser();
+
+  useEffect(() => {
+    setIsr(true);
+  }, []);
 
   const getCategory = () => {
     Get('talent-category', {})
@@ -145,9 +150,11 @@ const Talenta = () => {
   };
 
   useEffect(() => {
-    getTalentData();
-    if (!category) getCategory();
-  }, []);
+    if (isr) {
+      getTalentData();
+      if (!category) getCategory();
+    }
+  }, [isr]);
 
   return (
     <>
