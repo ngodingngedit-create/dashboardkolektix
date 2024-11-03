@@ -23,7 +23,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
     <div className='my-12 md:mx-auto md:max-w-7xl md:px-10'>
     {!loading && upcomingEvents.length === 0 ? null : (
       <>
-        <div className='flex justify-between items-center mb-4 px-6'>
+        <div className='flex justify-between items-center mb-4 px-6 [&_*]:!text-white'>
           <h3 className='font-bold'>Segera Hadir!</h3>
           <Link href='/event' className='flex gap-2 items-center'>
             Lihat Semua

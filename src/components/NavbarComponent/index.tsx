@@ -29,6 +29,8 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
+import { Button } from '@mantine/core';
+import { useClickOutside } from '@mantine/hooks';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -45,6 +47,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   const [navbarBackground, setNavbarBackground] = useState<boolean>(false);
   const [hasNotification, setHasNotification] = useState<boolean>(false);
   const [bgNav, setBgNav] = useState<boolean>(false);
+
+  const outsideClickMenu = useClickOutside(() => {
+    setShowUserMenu(false);
+  });
 
   const handleNotification = () => {
     setShowNotifications(!showNotifications);
@@ -157,7 +163,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
               </div>
               <div className='flex-shrink-0'>
                 <Link href='/'>
-                  <Image className='w-14 md:w-20' src={Logo} alt='Kolektix Logo' />
+                  <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
                 </Link>
               </div>
             </div>
@@ -222,50 +228,61 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                   className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
                 >
                   <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
-                    <FontAwesomeIcon icon={faCirclePlus} />
+                    <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
                     <span className='ml-1 hidden lg:inline'>Buat Event</span>
                   </Link>
                 </button>
 
                   <button
                     type='button'
-                    className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white'
+                    className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
                     onClick={handleNotification}
                   >
-                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
                   </button>
 
                   <div className='relative ml-3'>
-                    <div className='bg-white rounded-full md:px-3 px-1 py-0.5 md:py-1.5 md:w-20 w-16'>
-                      {isLogin ? (
-                        <button
-                          type='button'
-                          className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
-                          id='user-menu-button'
-                          aria-expanded='false'
-                          aria-haspopup='true'
-                          onClick={() => setShowUserMenu(!showUserMenu)}
-                        >
-                          <FontAwesomeIcon icon={faBars} className='text-primary-base' />
-                          <Image
-                            className='h-6 w-6 rounded-full border border-primary-light-200'
-                            src={avatar}
-                            alt=''
-                          />
-                        </button>
-                      ) : (
-                        <button
-                          type='button'
-                          className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around text-primary-base font-semibold hover:text-primary-dark'
-                          id='user-menu-button'
-                          aria-expanded='false'
-                          aria-haspopup='true'
+                    {isLogin ? (
+                      <div className='bg-white rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16'>
+                          <button
+                            type='button'
+                            className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
+                            id='user-menu-button'
+                            aria-expanded='false'
+                            aria-haspopup='true'
+                            onClick={() => setShowUserMenu(!showUserMenu)}
+                          >
+                            <FontAwesomeIcon icon={faBars} className='text-primary-base' />
+                            <Image
+                              className='h-6 w-6 rounded-full border border-primary-light-200'
+                              src={avatar}
+                              alt=''
+                            />
+                          </button>
+                      </div>
+                    ) : (
+                      <>
+                        <Button
+                          size="compact-lg"
+                          radius="xl"
+                          bg="white"
+                          className={`!text-primary-base`}
                           onClick={() => router.push('/auth')}
                         >
                           Login
-                        </button>
-                      )}
-                    </div>
+                        </Button>
+                        {/* <button
+                          type='button'
+                          className='w-full relative flex items-center rounded-full justify-around text-[20px] text-primary-base font-semibold hover:text-primary-dark'
+                          id='user-menu-button'
+                          aria-expanded='false'
+                          aria-haspopup='true'
+                          
+                        >
+                          Login
+                        </button> */}
+                      </>
+                    )}
                     <Fade isShowing={showNotifications}>
                       <div
                         className={`absolute right-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
@@ -313,7 +330,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         )}
                       </div>
                     </Fade>
-                    <Fade isShowing={showUserMenu}>
+                    <Fade isShowing={showUserMenu} ref={outsideClickMenu}>
                       <div
                         className={`absolute right-0 z-10 mt-2 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-all duration-200 ${
                           showUserMenu ? 'opacity-100' : 'opacity-0'
