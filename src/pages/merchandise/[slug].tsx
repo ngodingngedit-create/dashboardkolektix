@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Foto from '../../assets/images/amis-banner.png';
 import CreatorTitle from '@/components/Creator/CreatorTitle';
 import Image, { StaticImageData } from 'next/image';
@@ -6,39 +6,81 @@ import { faCirclePlus, faMinus, faPlus, faStar } from '@fortawesome/free-solid-s
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useRouter } from 'next/router';
 import { MerchListResponse } from '../dashboard/merch/type';
-import { Get } from '@/utils/REST';
+import { Get, Post } from '@/utils/REST';
 import { useListState } from '@mantine/hooks';
 import { NumberFormatter, Button } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import _ from 'lodash';
+import useLoggedUser from '@/utils/useLoggedUser';
+import { toast } from 'react-toastify';
 
 const MerchandiseDetail = () => {
+    const [isr, setIsr] = useState(false);
     const [mainData, setMainData] = useState<MerchListResponse>();
     const [colorOpt, setColorOpt] = useState<string>('');
     const [count, setCount] = useState<number>(0);
     const [imageActive, setImage] = useState<number>(0);
     const [loading, setLoading] = useListState<string>();
     const [selectedVariant, setSelectedVariant] = useState<number>();
+    const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;
 
     useEffect(() => {
-        getData();
+        setIsr(true);
     }, []);
+
+    useEffect(() => {
+        getData();
+    }, [isr]);
+
+    useEffect(() => {
+        const stock = _.find(mainData?.product_varian, ['id', selectedVariant])?.stock_qty;
+        setCount((stock ?? 0) > 1 ? 1 : 0);
+    }, [selectedVariant]);
 
     const getData = () => {
         Get(`product/${slug}`, {})
             .then((res: any) => {
                 setMainData(res.data);
                 if ((res.data?.product_varian?.length) ?? 0 > 0) {
-                  setSelectedVariant(res.data?.product_varian[0].id);
+                    setSelectedVariant(res.data?.product_varian[0].id);
+                    setCount(res.data?.product_varian[0].stock_qty > 1 ? 1 : 0);
+                } else {
+                    setCount(res.data?.qty > 1 ? 1 : 0);
                 }
+                if (res.data)
                 setLoading.filter((e) => e != 'getdata');
             })
             .catch((err) => {
                 console.log(err);
                 setLoading.filter((e) => e != 'getdata');
             });
+    };
+
+    const handleAddCart = () => {
+        setLoading.append('addcart');
+        Post('cart', {
+            user_id: user?.id,
+            product_id: mainData?.id,
+            qty: count,
+            price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
+            description: ''
+        })
+        .then((res: any) => {
+            if (res.id) {
+                toast.success('Berhasil menambah produk ke keranjang');
+                setTimeout(() => {
+                    router.push('/merch-cart');
+                }, 2000)
+            }
+            setLoading.filter(e => e != 'addcart');
+        })
+        .catch((err) => {
+            console.log(err);
+            setLoading.filter((e) => e != 'getdata');
+            setLoading.filter(e => e != 'addcart');
+        });
     };
 
     if (!mainData) return <></>;
@@ -108,13 +150,13 @@ const MerchandiseDetail = () => {
                                 <FontAwesomeIcon icon={faMinus} size="xs" />
                             </button>
                             <p>{count}</p>
-                            <button onClick={() => count < mainData.qty && setCount(count + 1)} disabled={count == mainData.qty} className="w-5 h-5 rounded-full border-primary-dark border-2 text-primary-dark flex items-center justify-center">
+                            <button onClick={() => (count < ((selectedVariant ? _.find(mainData.product_varian, ['id', selectedVariant])?.stock_qty : mainData.qty) ?? 0)) && setCount(count + 1)} disabled={count == mainData.qty} className="w-5 h-5 rounded-full border-primary-dark border-2 text-primary-dark flex items-center justify-center">
                                 <FontAwesomeIcon icon={faPlus} size="xs" />
                             </button>
                         </div>
                     </div>
                     <p>
-                        Stok <span className="font-semibold">{mainData.qty}</span>
+                        Stok <span className="font-semibold">{selectedVariant ? _.find(mainData.product_varian, ['id', selectedVariant])?.stock_qty : mainData.qty}</span>
                     </p>
                 </div>
                 {/* <div className="flex justify-end">
@@ -124,24 +166,28 @@ const MerchandiseDetail = () => {
                     <p className="text-grey">Subtotal</p>
                     <h5 className="font-semibold"><NumberFormatter value={parseInt(selectedVariant ? _.find(mainData.product_varian, ['id', selectedVariant])?.price ?? '0' : mainData.price)} /></h5>
                 </div>
-                <Button
-                  mt={5}
-                  size="md"
-                  radius="xl"
-                  color="#0B387C"
-                  leftSection={<Icon icon="uiw:plus" />}
-                >
-                  Tambah Keranjang
-                </Button>
-                <Button
-                  mt={5}
-                  size="md"
-                  radius="xl"
-                  color="#0B387C"
-                  variant="outline"
-                >
-                  Beli Sekarang
-                </Button>
+                    <Button
+                        onClick={handleAddCart}
+                        disabled={count <= 0}
+                        loading={loading.includes('addcart')}
+                        mt={5}
+                        size="md"
+                        radius="xl"
+                        color="#0B387C"
+                        leftSection={<Icon icon="uiw:plus" />}
+                    >
+                        Tambah Keranjang
+                    </Button>
+                    <Button
+                        disabled={count <= 0}
+                        mt={5}
+                        size="md"
+                        radius="xl"
+                        color="#0B387C"
+                        variant="outline"
+                    >
+                        Beli Sekarang
+                    </Button>
             </div>
         </div>
     );
