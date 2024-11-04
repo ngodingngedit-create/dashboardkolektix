@@ -34,7 +34,7 @@ const MerchandiseCard = ({ name, price, sale, creator, redirect, image }: MerchC
           <p className='mb-2 text-dark font-[500] leading-[140%] text-[0.8rem]'>{name}</p>
           <div>
             <p className='text-dark text-[0.8rem] font-[500]'><NumberFormatter value={price} /></p>
-            <p className='text-dark-grey text-[0.7rem] line-through'><NumberFormatter value={sale} /></p>
+            {/* <p className='text-dark-grey text-[0.7rem] line-through'><NumberFormatter value={sale} /></p> */}
           </div>
           <div className='flex items-center text-xs mt-[5px]'>
             <p className='text-xs'>
