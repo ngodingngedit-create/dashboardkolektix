@@ -1,6 +1,6 @@
 // pages/cart.tsx
 import { useEffect, useMemo, useState } from 'react';
-import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center } from '@mantine/core';
+import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Delete, Get } from '@/utils/REST';
@@ -104,7 +104,7 @@ export default function Cart() {
         setSelectedItems((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
     };
 
-    const totalPrice = cartListFiltered.filter((item) => selectedItems.includes(item.id)).reduce((sum, item) => sum + item.price, 0);
+    const totalPrice = cartListFiltered.filter((item) => selectedItems.includes(item.id)).reduce((sum, item) => sum + (item.price * item.qty), 0);
 
     const subheadings = ['Cek produkmu sebelum melanjutkan!', 'Pastikan yang kamu beli sesuai kebutuhan.', 'Nikmati belanja dengan aman dan nyaman.'];
 
@@ -118,23 +118,47 @@ export default function Cart() {
             </Text>{' '}
             {/* You can choose any subheading from the array */}
             <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
-                <Stack gap="md">
-                    {cartListFiltered.map((item) => (
+                <Stack gap="md" w="100%">
+                    {cartListFiltered.map((item, i) => (
                         <Paper key={item.id} p="md" withBorder>
-                            <Flex gap={15} align="center">
-                                <Checkbox checked={selectedItems.includes(item.id)} onChange={() => handleSelect(item.id)} />
-                                <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`shrink-0 bg-grey/20`} radius={5} />
-                                <div className={`w-full`}>
-                                    <Text fw={500}>{item.product?.product_name}</Text>
-                                    <Text size="sm" c="gray"><NumberFormatter value={item.price} /></Text>
-                                </div>
+                            <Flex gap={15} align="center" justify="space-between" wrap="wrap">
+                                <Flex gap={15} align="center">
+                                    <Checkbox checked={selectedItems.includes(item.id)} onChange={() => handleSelect(item.id)} />
+                                    <AspectRatio>
+                                        <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+                                    </AspectRatio>
+                                    <div className={`w-full`}>
+                                        <Text fw={500}>{item.product?.product_name}</Text>
+                                        <Text size="sm" c="gray"><NumberFormatter value={item.price} /></Text>
+                                    </div>
+                                </Flex>
 
-                                <ActionIcon
-                                    onClick={() => deleteCart(item.id)}
-                                    color="red"
-                                    variant='transparent'>
-                                    <Icon icon="uiw:delete" />
-                                </ActionIcon>
+                                <Flex gap={10} align="center" justify="end" className={`flex-grow`}>
+                                    <ActionIcon
+                                        radius="xl"
+                                        className={`shrink-0`}
+                                        disabled={item.qty <= 0}
+                                        onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty - 1}))}
+                                        color="#194E9E">
+                                        <Icon icon="uiw:minus" />
+                                    </ActionIcon>
+                                    <NumberInput value={item.qty} hideControls w={50} className='[&_*]:!text-center'/>
+                                    <ActionIcon
+                                        radius="xl"
+                                        className={`shrink-0`}
+                                        disabled={item.qty >= (item.product?.qty ?? 0)}
+                                        onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty + 1}))}
+                                        color="#194E9E">
+                                        <Icon icon="uiw:plus" />
+                                    </ActionIcon>
+                                    <ActionIcon
+                                        className={`shrink-0`}
+                                        onClick={() => deleteCart(item.id)}
+                                        color="red"
+                                        variant='transparent'>
+                                        <Icon icon="uiw:delete" />
+                                    </ActionIcon>
+                                </Flex>
                             </Flex>
                         </Paper>
                     ))}

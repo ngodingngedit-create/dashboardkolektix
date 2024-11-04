@@ -60,27 +60,30 @@ const MerchandiseDetail = () => {
 
     const handleAddCart = () => {
         setLoading.append('addcart');
-        Post('cart', {
-            user_id: user?.id,
-            product_id: mainData?.id,
-            qty: count,
-            price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
-            description: ''
-        })
-        .then((res: any) => {
-            if (res.id) {
-                toast.success('Berhasil menambah produk ke keranjang');
-                setTimeout(() => {
-                    router.push('/merch-cart');
-                }, 2000)
-            }
-            setLoading.filter(e => e != 'addcart');
-        })
-        .catch((err) => {
-            console.log(err);
-            setLoading.filter((e) => e != 'getdata');
-            setLoading.filter(e => e != 'addcart');
-        });
+        if (user?.id) {
+            Post('cart', {
+                user_id: user?.id,
+                product_id: mainData?.id,
+                qty: count,
+                price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
+                description: ''
+            })
+            .then((res: any) => {
+                if (res.id) {
+                    toast.success('Berhasil menambah produk ke keranjang');
+                    setTimeout(() => {
+                        router.push('/merch-cart');
+                    }, 2000)
+                }
+                setLoading.filter(e => e != 'addcart');
+            })
+            .catch((err) => {
+                console.log(err);
+                setLoading.filter(e => e != 'addcart');
+            });
+        } else {
+            router.push('/auth');
+        }
     };
 
     if (!mainData) return <></>;
@@ -89,7 +92,9 @@ const MerchandiseDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 auto-rows-min">
                 <div className="col-span-2 md:col-span-4">
-                    <Image src={mainData.product_image[imageActive].image_url ?? ''} width={500} height={500} alt="merch" className="w-full h-72 object-cover rounded-md" />
+                    {mainData.product_image[imageActive] && (
+                        <Image src={mainData.product_image[imageActive].image_url ?? ''} width={500} height={500} alt="merch" className="w-full h-72 object-cover rounded-md" />
+                    )}
                 </div>
                 {mainData.product_image.map((e, i) => (
                     <div key={i} className="flex items-center justify-center">
@@ -118,10 +123,10 @@ const MerchandiseDetail = () => {
                     {/* <Button color='secondary' label='Lihat Toko' /> */}
                 </div>
 
-                {mainData.product_varian.length > 0 && (
+                {mainData?.product_varian?.length > 0 && (
                   <div className="pt-3 pb-1">
                       <p className="font-semibold">
-                          Pilih {mainData.product_varian.map(e => e.product_varian_category.varian_name)[0]}: <span className="text-grey font-normal">{_.find(mainData.product_varian, ['id', selectedVariant])?.varian_name}</span>
+                          Pilih {mainData.product_varian.map(e => e?.product_varian_category?.varian_name)[0]}: <span className="text-grey font-normal">{_.find(mainData.product_varian, ['id', selectedVariant])?.varian_name}</span>
                       </p>
                       <div className="flex flex-wrap gap-2 my-2">
                           {mainData.product_varian.map((e, i) => (
