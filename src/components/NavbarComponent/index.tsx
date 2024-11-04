@@ -229,7 +229,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
                     <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
-                    <span className='ml-1 hidden lg:inline'>Buat Event</span>
+                    <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
                   </Link>
                 </button>
 
