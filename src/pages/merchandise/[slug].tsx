@@ -64,7 +64,7 @@ const MerchandiseDetail = () => {
         if (user?.id) {
             Post('cart', {
                 user_id: user?.id,
-                variant_id: 0,
+                variant_id: selectedVariant,
                 product_id: mainData?.id,
                 qty: count,
                 price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
@@ -84,7 +84,19 @@ const MerchandiseDetail = () => {
                 setLoading.filter(e => e != 'addcart');
             });
         } else {
-            router.push('/auth');
+            const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
+
+            cartData.push({
+                user_id: user?.id,
+                variant_id: selectedVariant,
+                product_id: mainData?.id,
+                qty: count,
+                price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
+                description: ''
+            });
+
+            Cookies.set('_cart', JSON.stringify(cartData));
+            router.push('/merch-cart');
         }
     };
 

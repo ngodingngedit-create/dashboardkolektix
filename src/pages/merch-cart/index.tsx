@@ -13,6 +13,8 @@ import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import ButtonB from '@/components/Button';
 import ImageB from 'next/image';
+import fetch from '@/utils/fetch';
+import Cookies from 'js-cookie';
 
 interface CartItem {
     id: number;
@@ -23,10 +25,11 @@ interface CartItem {
     imageUrl: string;
 }
 
-type CartListResponse = {
-    id: number;
+type CartListResponse<T = number> = {
+    id?: T;
     user_id: number;
     product_id: number;
+    variant_id: number;
     qty: number;
     price: number;
 };
@@ -55,34 +58,24 @@ export default function Cart() {
         getProduct();
     }, [isr]);
 
-    const getCart = () => {
-        Get('cart', {})
-            .then((res: any) => {
-                const list = _.filter(res, ['user_id', user?.id]);
-                setCartList.setState(list);
-                console.log(list);
-            })
-            .catch((err) => {
-                console.log(err);
+    const getCart = async () => {
+        if (user?.id) {
+            await fetch<any, CartListResponse[]>({
+                url: 'cart',
+                method: 'GET',
+                data: {},
+                before: () => setLoading.append('getcart'),
+                success: (res) => {
+                    const data = res as CartListResponse[];
+                    const list = _.filter(data, ['user_id', user?.id]);
+                    setCartList.setState(list);
+                },
+                complete: () => setLoading.filter(e => e != 'getcart'),
             });
-    };
-
-    const deleteCart = (id: number) => {
-        modals.openConfirmModal({
-            centered: true,
-            title: 'Hapus Produk?',
-            children: 'Apakah anda yakin ingin menghapus produk ini dari keranjang?',
-            labels: { confirm: 'Hapus', cancel: 'Batal' },
-            onConfirm: () => {
-                Delete(`cart/${id}`, {})
-                .then((res: any) => {
-                    setCartList.filter((e) => e.id != id);
-                })
-                .catch((err) => {
-                    console.log(err);
-                });
-            }
-        })
+        } else {
+            const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
+            setCartList.setState(cartData.map((e, i) => ({...e, id: i + 1})));
+        }
     };
 
     const getProduct = () => {
@@ -97,16 +90,72 @@ export default function Cart() {
     };
 
     const cartListFiltered = useMemo(() => {
-        return cartList.map((e) => ({ ...e, product: _.find(productList, ['id', e.product_id]) }));
-    }, [cartList]);
+        return cartList.reduce((acc, curr) => {
+            var result = acc;
+            var valid = result.find(e => e.product_id === curr.product_id && e.variant_id === curr.variant_id);
+        
+            if (valid) {
+                result.forEach((e, index) => {
+                    if (e.product_id === curr.product_id && e.variant_id === curr.variant_id) {
+                        result[index] = { ...e, qty: e.qty + curr.qty };
+                    }
+                });
+            } else {
+                result.push({ ...curr, id: [curr.id ?? 0] });
+            }
+        
+            return result;
+        }, [] as CartListResponse<number[]>[]).map((e) => {
+            const product = _.find(productList, ['id', e.product_id]);
+            const variant = e.variant_id ? _.find(product?.product_varian, ['id', e.variant_id]) : null;
+            const price = (e.variant_id ? parseInt(variant?.price ?? '0') : parseInt(product?.price ?? '0')) * e.qty;
+            const subprice = (e.variant_id ? parseInt(variant?.price ?? '0') : parseInt(product?.price ?? '0'));
+
+            return { ...e, product, variant, price, subprice };
+        })
+    }, [cartList, productList]);
+
+    const deleteCart = (idx: number) => {
+        modals.openConfirmModal({
+            centered: true,
+            title: 'Hapus Produk?',
+            children: 'Apakah anda yakin ingin menghapus produk ini dari keranjang?',
+            labels: { confirm: 'Hapus', cancel: 'Batal' },
+            onConfirm: () => {
+                const deleteList = cartListFiltered[idx].id
+                if (user?.id) {
+                    for (const d of (deleteList ?? [])) {
+                        Delete(`cart/${d}`, {})
+                        .then(() => {
+                            setCartList.filter((e) => e.id != d);
+                        })
+                        .catch((err) => {
+                            console.log(err);
+                        });
+                    }
+                } else {
+                    const cart = cartList.filter((e) => (deleteList ? deleteList?.includes(e?.id ?? 0) : false));
+                    setCartList.setState(cart);
+                    Cookies.set('_cart', JSON.stringify(cart));
+                }
+            }
+        })
+    };
 
     const handleSelect = (id: number) => {
         setSelectedItems((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
     };
 
-    const totalPrice = cartListFiltered.filter((item) => selectedItems.includes(item.id)).reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const totalPrice = cartListFiltered.filter((item, i) => selectedItems.includes(i)).reduce((sum, item) => sum + item.price, 0);
 
-    const subheadings = ['Cek produkmu sebelum melanjutkan!', 'Pastikan yang kamu beli sesuai kebutuhan.', 'Nikmati belanja dengan aman dan nyaman.'];
+    const handleCheckout = () => {
+        Cookies.set('order_data', JSON.stringify(cartListFiltered.filter((item, i) => selectedItems.includes(i)).map(e => ({
+            product_id: e.product_id,
+            qty: e.qty,
+            variant_id: e.variant_id
+        }))));
+        router.push('/merch-order');
+    };
 
     return (
         <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[100px]`}>
@@ -114,22 +163,23 @@ export default function Cart() {
                 Keranjang Saya
             </Title>
             <Text size="md" c="gray">
-                {subheadings[0]}
+                Cek produkmu sebelum melanjutkan!
             </Text>{' '}
             {/* You can choose any subheading from the array */}
             <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
                 <Stack gap="md" w="100%">
                     {cartListFiltered.map((item, i) => (
-                        <Paper key={item.id} p="md" withBorder>
+                        <Paper key={i} p="md" withBorder>
                             <Flex gap={15} align="center" justify="space-between" wrap="wrap">
                                 <Flex gap={15} align="center">
-                                    <Checkbox checked={selectedItems.includes(item.id)} onChange={() => handleSelect(item.id)} />
+                                    <Checkbox checked={selectedItems.includes(i)} onChange={() => handleSelect(i)} />
                                     <AspectRatio>
                                         <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
                                     </AspectRatio>
                                     <div className={`w-full`}>
                                         <Text fw={500}>{item.product?.product_name}</Text>
-                                        <Text size="sm" c="gray"><NumberFormatter value={item.price} /></Text>
+                                        <Text size="sm" c="gray">Varian: {item.variant?.varian_name}</Text>
+                                        <Text size="sm" c="gray"><NumberFormatter value={item.subprice} /></Text>
                                     </div>
                                 </Flex>
 
@@ -153,7 +203,7 @@ export default function Cart() {
                                     </ActionIcon>
                                     <ActionIcon
                                         className={`shrink-0`}
-                                        onClick={() => deleteCart(item.id)}
+                                        onClick={() => deleteCart(i)}
                                         color="red"
                                         variant='transparent'>
                                         <Icon icon="uiw:delete" />
@@ -193,7 +243,7 @@ export default function Cart() {
                             <Text>Total Harga</Text>
                             <Text><NumberFormatter value={totalPrice} /></Text>
                         </Flex>
-                        <Button fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0} radius="xl">
+                        <Button onClick={handleCheckout} fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0} radius="xl">
                             Checkout
                         </Button>
                     </Stack>
