@@ -7,67 +7,69 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import { modals } from '@mantine/modals';
+import fetch from '@/utils/fetch';
+import useLoggedUser from '@/utils/useLoggedUser';
 
 type AddressData = {
     id: number;
     name: string;
-    province: string;
-    city: string;
+    phone: string;
+    province: number;
+    city: number;
     detail: string;
     postcode: string;
-    note?: string;
     is_default?: boolean;
+}
+
+type AddressUpdateRequest = {
+    user_id: number,
+    is_main_address: 1 | 0,
+    province_id: number,
+    city_id: number,
+    address_detail: string,
+    address_name: string,
+    zipcode: string,
+    latitude: string,
+    longitude: string,
+    nama_penerima: string,
+    phone: string,
+    is_active: number
 }
 
 const addressDataSchema = z.object({
     name: z.string({ message: "Wajib Diisi" }).nonempty("Nama tidak boleh kosong."),
+    phone: z.string({ message: "Wajib Diisi" }).min(10, { message: 'Format Tidak Sesuai' }),
     province: z.string({ message: "Wajib Diisi" }).nonempty("Provinsi tidak boleh kosong."),
     city: z.string({ message: "Wajib Diisi" }).nonempty("Kota tidak boleh kosong."),
     detail: z.string({ message: "Wajib Diisi" }).nonempty("Detail alamat tidak boleh kosong."),
     postcode: z.string({ message: "Wajib Diisi" }).nonempty("Kode pos tidak boleh kosong."),
-    note: z.string().optional(),
     is_default: z.boolean().optional(),
 });
 
-const dummyData: AddressData[] = [
-    {
-        id: 1,
-        name: "Rumah",
-        province: "Jawa Barat",
-        city: "Bandung",
-        detail: "Jl. Kebon Jeruk No. 5, RT 02 RW 01, Kelurahan Kebon Jeruk",
-        note: "Dekat dengan taman kota dan pusat perbelanjaan",
-        postcode: '40552',
-        is_default: true
-    },
-    {
-        id: 2,
-        name: "Kantor",
-        province: "Jawa Timur",
-        city: "Surabaya",
-        detail: "Jl. Merpati No. 10, Lantai 2, Kecamatan Gubeng",
-        postcode: '40552',
-        is_default: false
-    },
-    {
-        id: 3,
-        name: "Rumah 2",
-        province: "DKI Jakarta",
-        city: "Jakarta Selatan",
-        detail: "Jl. Raya Kebayoran No. 3, RT 03 RW 04, Kelurahan Kebayoran Lama",
-        postcode: '40552',
-        is_default: false
-    }
-];
+type Province = {
+    id: number;
+    name: string;
+}
 
-const Merch = () => {
-    const [dataList, setDataList] = useState<any[]>();
+type City = {
+    id: number;
+    province_id: number;
+    name: string;
+    province?: Province;
+}
+
+type AddressListResponse = AddressUpdateRequest & { id: number };
+
+const Address = () => {
     const [loading, setLoading] = useListState<string>();
-    const [addressList, setAddressList] = useListState<AddressData>(dummyData);
+    const [addressList, setAddressList] = useListState<AddressData>([]);
+    const [provinceList, setProvinceList] = useListState<Province>([]);
+    const [cityList, setCityList] = useListState<City>([]);
     const [modalIndex, setModalIndex] = useState<number>();
+    const user = useLoggedUser();
 
     useEffect(() => {
-        if (dataList == undefined) getData();
+        getData();
     }, []);
 
     useEffect(() => {
@@ -81,45 +83,99 @@ const Merch = () => {
         validate: zodResolver(addressDataSchema),
         onValuesChange: (values) => {
             if (values.postcode) values.postcode = values.postcode.replaceAll(/\D/g, '');
+            if (values.phone) values.phone = values.phone.replaceAll(/\D/g, '');
             return values;
         }
     });
 
-    const getData = () => {
+    const getData = async () => {
         if (loading.includes('getdata')) return;
-        setLoading.append('getdata');
-        Get(`category`, {})
-            .then((res: any) => {
-                setDataList(res.data);
-                setLoading.filter((e) => e != 'getdata');
-            })
-            .catch((err) => {
-                console.log(err);
-                setLoading.filter((e) => e != 'getdata');
-            });
+        await fetch<any, AddressListResponse[]>({
+            url: `my-address?user_id=${user?.id}`,
+            method: 'GET',
+            before: () => setLoading.append('getprovince'),
+            success: ({ data }) => {
+                if (data) {
+                    setAddressList.setState(data.map(e => ({
+                        id: e.id,
+                        name: e.address_name,
+                        phone: e.phone,
+                        province: e.province_id,
+                        city: e.city_id,
+                        detail: e.address_detail,
+                        postcode: e.zipcode,
+                        is_default: e.is_main_address == 1,
+                    })));
+                }
+            },
+            complete: () => setLoading.filter(e => e != 'getprovince'),
+        });
+        await fetch<any, Province[]>({
+            url: 'province',
+            method: 'GET',
+            before: () => setLoading.append('getprovince'),
+            success: ({ data }) => {
+                setProvinceList.setState(data ?? []);
+            },
+            complete: () => setLoading.filter(e => e != 'getprovince'),
+        });
+        await fetch<any, City[]>({
+            url: 'city',
+            method: 'GET',
+            before: () => setLoading.append('getcity'),
+            success: ({ data }) => {
+                setCityList.setState(data ?? []);
+            },
+            complete: () => setLoading.filter(e => e != 'getcity'),
+        });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const valid = form.validate();
         if (valid.hasErrors) return;
 
-        if (form.values.is_default) setAddressList.apply(e => ({...e, is_default: false }));
+        const { values } = form;
 
-        if (modalIndex) {
-            setAddressList.applyWhere(
-                e => e.id == modalIndex,
-                e => ({
-                    ...form.values,
-                    id: addressList?.find(e => e.id == modalIndex)?.id ?? 0,
-                    is_default: form.values.is_default ? true : e.is_default
-                })
-            );
-        } else {
-            setAddressList.prepend({
-                ...form.values,
-                id: addressList.length + 1
-            });
-        }
+        await fetch<AddressUpdateRequest, any>({
+            url: modalIndex ? `my-address/${modalIndex}` : 'my-address',
+            method: modalIndex ? 'PUT' : 'POST',
+            data: {
+                user_id: user?.id ?? 0,
+                is_main_address: values.is_default ? 1 : 0,
+                province_id: 1,
+                city_id: 1,
+                address_detail: values.detail,
+                address_name: values.name,
+                zipcode: values.postcode,
+                latitude: '0',
+                longitude: '0',
+                nama_penerima: user?.name ?? '-',
+                phone: values.phone,
+                is_active: 1
+            },
+            before: () => setLoading.append('save'),
+            success: () => {
+                if (form.values.is_default) setAddressList.apply(e => ({...e, is_default: false }));
+
+                if (modalIndex) {
+                    setAddressList.applyWhere(
+                        e => e.id == modalIndex,
+                        e => ({
+                            ...form.values,
+                            id: addressList?.find(e => e.id == modalIndex)?.id ?? 0,
+                            is_default: form.values.is_default ? true : e.is_default
+                        })
+                    );
+                } else {
+                    setAddressList.prepend({
+                        ...form.values,
+                        id: addressList.length + 1
+                    });
+                }
+            },
+            complete: () => setLoading.filter(e => e != 'save'),
+            error: () => {},
+        });
 
         setModalIndex(undefined);
     };
@@ -130,14 +186,23 @@ const Merch = () => {
             title: "Hapus Alamat",
             children: "Apakah anda yakin ingin menghapus alamat ini?",
             labels: { confirm: "Hapus", cancel: "Batal"},
-            onConfirm: () => {
-                const data = addressList?.find(e => e.id == modalIndex)
-                setAddressList.filter(e => e.id != modalIndex);
+            onConfirm: async () => {
+                await fetch<any, any>({
+                    url: `my-address/${modalIndex}`,
+                    method: 'DELETE',
+                    before: () => setLoading.append(''),
+                    success: () => {
+                        const data = addressList?.find(e => e.id == modalIndex)
+                        setAddressList.filter(e => e.id != modalIndex);
 
-                if (data?.is_default) setAddressList.applyWhere(
-                    (_, i) => i == 0,
-                    e => ({ ...e, is_default: true })
-                );
+                        if (data?.is_default) setAddressList.applyWhere(
+                            (_, i) => i == 0,
+                            e => ({ ...e, is_default: true })
+                        );
+                    },
+                    complete: () => setLoading.filter(e => e != ''),
+                    error: () => {},
+                });
                 setModalIndex(undefined);
             }
         })
@@ -168,22 +233,28 @@ const Merch = () => {
                         />
                     </Flex>
 
+                    <TextInput
+                        label="No. Telp"
+                        placeholder="08XX XXXX XXXX"
+                        {...form.getInputProps('phone')}
+                    />
+
                     <Flex gap={15} className={`[&>*]:flex-grow !flex-col md:!flex-row`}>
                         <Select
                             label="Provinsi"
                             placeholder="Pilih Provinsi"
-                            data={dummyData.map(e => e.province)}
-                            value={form.values.province}
-                            onChange={e => e && form.setFieldValue('province', e)}
+                            data={provinceList.map(e => ({ value: String(e.id), label: e.name }))}
+                            value={String(form.values.province)}
+                            onChange={e => e && form.setValues({ province: parseInt(e) })}
                             error={form.errors.province}
                         />
 
                         <Select
                             label="Kota"
                             placeholder="Pilih Kota"
-                            data={dummyData.map(e => e.city)}
-                            value={form.values.city}
-                            onChange={e => e && form.setFieldValue('city', e)}
+                            data={cityList.map(e => ({ value: String(e.id), label: e.name }))}
+                            value={String(form.values.city)}
+                            onChange={e => e && form.setValues({ city: parseInt(e) })}
                             error={form.errors.city}
                         />
                     </Flex>
@@ -198,14 +269,8 @@ const Merch = () => {
                         autosize
                         minRows={3}
                         label="Detail Alamat"
-                        placeholder="Kecamatan, Desa, No. Rumah, dll"
+                        placeholder="RT, RW, No. Rumah, dll"
                         {...form.getInputProps('detail')}
-                    />
-
-                    <TextInput
-                        label="Keterangan Tambahan"
-                        placeholder="Patokan Rumah, dll"
-                        {...form.getInputProps('note')}
                     />
 
                     <Text size="xs" c="gray">Periksa kembali alamat yang Anda masukkan untuk memastikan tidak ada kesalahan.</Text>
@@ -263,7 +328,7 @@ const Merch = () => {
                                     <Text fw={600} size="lg">{e.name} {e.is_default && <Text c="#0B387C" component="span" size="xs" fw={600} className={`whitespace-nowrap`}>(Alamat Utama)</Text>} </Text>
                                     <Text c="gray" size="sm" mt={5} className={`uppercase`}>{e.province}, {e.city}, {e.postcode}</Text>
                                     <Text c="gray" size="sm">{e.detail}</Text>
-                                    {e.note && <Text c="gray" size="xs">({e.note})</Text>}
+                                    {/* {e.note && <Text c="gray" size="xs">({e.note})</Text>} */}
                                 </Stack>
                             </Flex>
                         </Card>
@@ -293,4 +358,4 @@ const Merch = () => {
     );
 };
 
-export default Merch;
+export default Address;
