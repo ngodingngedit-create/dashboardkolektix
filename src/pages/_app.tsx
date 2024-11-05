@@ -28,7 +28,8 @@ const theme = createTheme({
       defaultProps: {
         prefix: "Rp ",
         thousandSeparator: ".",
-        decimalSeparator: ","
+        decimalSeparator: ",",
+        className: `whitespace-nowrap`
       }
     }),
     Table: Table.extend({

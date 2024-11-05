@@ -7,11 +7,9 @@ import { Delete, Get } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { modals } from '@mantine/modals';
-import merchIcon from '../../assets/svg/merch.svg';
-import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/router';
 import { useForm } from '@mantine/form';
+import Cookies from 'js-cookie';
 
 type FormState = {
     receiver?: {
@@ -29,9 +27,16 @@ type FormState = {
     courier?: any;
 }
 
+type OrderData = {
+    product_id: number;
+    variant_id: number;
+    qty: number;
+}[];
+
 export default function Cart() {
     const [isr, setIsr] = useState(false);
     const [modal, setModal] = useState<string>();
+    const [orderData, setOrderData] = useState<OrderData>();
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [productList, setProductList] = useListState<MerchListResponse>();
     const [loading, setLoading] = useListState<string>();
@@ -44,7 +49,46 @@ export default function Cart() {
         setIsr(true);
     }, []);
 
-    useEffect(() => {}, [isr]);
+    useEffect(() => {
+        getProduct();
+        const _orderData = JSON.parse(Cookies.get('order_data') ?? '[]');
+        if (!_orderData || _orderData.length == 0) router.push('/merchandise');
+        setOrderData(_orderData);
+    }, [isr]);
+
+    const getProduct = () => {
+        Get('product', {})
+            .then((res: any) => {
+                setProductList.setState(res.data);
+                console.log(res.data);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    };
+
+    const orderedProduct = useMemo(() => {
+        return orderData?.map(e => {
+            const product = _.find(productList, ['id', e.product_id]);
+            const variant = e.variant_id ? _.find(product?.product_varian, ['id', e.variant_id]) : null;
+            const price = parseInt((!variant ? product?.price : variant?.price) ?? '0') * e.qty;
+            const image = product?.product_image[0].image_url;
+
+            return { ...e, product, variant, price, image };
+        });
+    }, [productList, orderData]);
+
+    const orderSummary = useMemo<[string, number][]>(() => {
+        const result: [string, number][] = [];
+
+        for (const order of (orderedProduct ?? [])) {
+            result.push([`x${order.qty} ${order.product?.product_name ?? '-'}`, order.price]);
+        }
+
+        result.push(['Total', result.reduce((q, n) => q + n[1], 0)]);
+
+        return result;
+    }, [orderedProduct]);
 
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
@@ -110,19 +154,15 @@ export default function Cart() {
                             </DropdownComponent>
 
                             <DropdownComponent title="Kurir Pengiriman" icon="fa-solid:shipping-fast">
-                                <SimpleGrid className={`!gap-[10px] !grid-cols-1 md:!grid-cols-2`}>
-                                    {Array(3).fill('COURIER_NAME').map((e, i) => (
-                                        <UnstyledButton key={i} p={8} className={`!rounded-md !bg-primary-light`} pos="relative">
-                                            <Flex align="center" gap={15}>
-                                                <AspectRatio className={`shrink-0`}>
-                                                    <Image w={40} h={40} radius="sm"/>
-                                                </AspectRatio>
-                                                <Text>{e}</Text>
-                                                <Icon icon="uiw:circle-check" className={`text-[#194E9E] text-[24px] shrink-0 mr-[10px] absolute right-[5px] top-2/4 -translate-y-2/4 z-10`} />
-                                            </Flex>
-                                        </UnstyledButton>
-                                    ))}
-                                </SimpleGrid>
+                                <Flex wrap="wrap" className={`[&>*]:!flex-grow`} gap={15}>
+                                    <Select
+                                        placeholder="Pilih Kurir Pengiriman"
+                                    />
+                                    <Select
+                                        disabled
+                                        placeholder="Pilih Type Pengiriman"
+                                    />
+                                </Flex>
                             </DropdownComponent>
 
                             <DropdownComponent title="Metode Pembayaran" icon="fluent:payment-16-filled">
@@ -152,17 +192,17 @@ export default function Cart() {
 
                                     <Divider />
 
-                                    {Array(2).fill('PRODUCT_NAME PRODUCT_NAME PRODUCT_NAME PRODUCT_NAME').map((e, i) => (
+                                    {(orderedProduct ?? []).map((e, i) => (
                                         <Flex key={i} gap={15} wrap="wrap">
                                             <AspectRatio className={`shrink-0`}>
-                                                <Image h={50} w={50} bg="gray.1" radius="sm"/>
+                                                <Image src={e.image} h={50} w={50} bg="gray.1" radius="sm"/>
                                             </AspectRatio>
                                             <Stack className={`flex-grow`} gap={0}>
-                                                <Text className={`whitespace-nowrap text-ellipsis overflow-hidden max-w-[150px] md:max-w-[250px]`} size="sm">{e}</Text>
-                                                <Text c="gray" size="sm">Varian: variant_name</Text>
-                                                <Text c="gray" size="sm"><NumberFormatter value={100000}/></Text>
+                                                <Text className={`whitespace-nowrap text-ellipsis overflow-hidden max-w-[150px] md:max-w-[250px]`} size="sm">{e.product?.product_name}</Text>
+                                                {e.variant && <Text c="gray" size="sm">Varian: {e.variant?.varian_name}</Text>}
+                                                <Text c="gray" size="sm"><NumberFormatter value={e.price}/></Text>
                                             </Stack>
-                                            <Text>x1</Text>
+                                            <Text>x{e.qty}</Text>
                                         </Flex>
                                     ))}
                                 </Stack>
@@ -178,22 +218,12 @@ export default function Cart() {
                                     <Divider />
 
                                     <Stack>
-                                        <Flex justify="space-between">
-                                            <Text>Product 1</Text>
-                                            <Text><NumberFormatter value={100000}/></Text>
-                                        </Flex>
-                                        <Flex justify="space-between">
-                                            <Text>Product 2</Text>
-                                            <Text><NumberFormatter value={100000}/></Text>
-                                        </Flex>
-                                        <Flex justify="space-between">
-                                            <Text>Ongkos Kirim</Text>
-                                            <Text><NumberFormatter value={10000}/></Text>
-                                        </Flex>
-                                        <Flex justify="space-between">
-                                            <Text fw={600}>Total Pembayaran</Text>
-                                            <Text fw={600}><NumberFormatter value={210000}/></Text>
-                                        </Flex>
+                                        {orderSummary.map((e, i) => (
+                                            <Flex justify="space-between" key={i}>
+                                                <Text fw={e[0] == "Total" ? 600 : 400}>{e[0]}</Text>
+                                                <Text fw={e[0] == "Total" ? 600 : 400}><NumberFormatter value={e[1]}/></Text>
+                                            </Flex>
+                                        ))}
                                     </Stack>
 
                                     <Divider />

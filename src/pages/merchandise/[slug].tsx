@@ -13,6 +13,7 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import _ from 'lodash';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 const MerchandiseDetail = () => {
     const [isr, setIsr] = useState(false);
@@ -63,6 +64,7 @@ const MerchandiseDetail = () => {
         if (user?.id) {
             Post('cart', {
                 user_id: user?.id,
+                variant_id: 0,
                 product_id: mainData?.id,
                 qty: count,
                 price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
@@ -84,6 +86,17 @@ const MerchandiseDetail = () => {
         } else {
             router.push('/auth');
         }
+    };
+
+    const handleDirectOrder = () => {
+        Cookies.set('order_data', JSON.stringify([
+            {
+                product_id: mainData?.id,
+                variant_id: selectedVariant,
+                qty: count
+            }
+        ]))
+        router.push('/merch-order');
     };
 
     if (!mainData) return <></>;
@@ -169,7 +182,7 @@ const MerchandiseDetail = () => {
                 </div> */}
                 <div className="flex items-center justify-between">
                     <p className="text-grey">Subtotal</p>
-                    <h5 className="font-semibold"><NumberFormatter value={parseInt(selectedVariant ? _.find(mainData.product_varian, ['id', selectedVariant])?.price ?? '0' : mainData.price)} /></h5>
+                    <h5 className="font-semibold"><NumberFormatter value={parseInt(selectedVariant ? _.find(mainData.product_varian, ['id', selectedVariant])?.price ?? '0' : mainData.price) * count} /></h5>
                 </div>
                     <Button
                         onClick={handleAddCart}
@@ -184,6 +197,7 @@ const MerchandiseDetail = () => {
                         Tambah Keranjang
                     </Button>
                     <Button
+                        onClick={handleDirectOrder}
                         disabled={count <= 0}
                         mt={5}
                         size="md"
