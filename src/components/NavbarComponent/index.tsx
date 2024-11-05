@@ -29,8 +29,9 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { Button } from '@mantine/core';
+import { Button, Indicator } from '@mantine/core';
 import { useClickOutside } from '@mantine/hooks';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -220,7 +221,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </div>
-            <div className='flex items-center justify-end flex-1'>
+            <div className='flex items-center justify-end flex-1 gap-[5px]'>
               <div className=''>
                 <div className='flex items-center'>
                 <button
@@ -232,6 +233,16 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
                   </Link>
                 </button>
+
+                  <Indicator label="0" size="lg" offset={8}>
+                    <button
+                      type='button'
+                      className='mr-2 relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
+                      onClick={() => router.push('/merch-cart')}
+                    >
+                      <Icon icon={'ant-design:shopping-cart-outlined'} className={`text-[26px]`} />
+                    </button>
+                  </Indicator>
 
                   <button
                     type='button'
