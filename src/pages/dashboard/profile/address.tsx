@@ -13,6 +13,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 export type AddressData = {
     id: number;
     name: string;
+    nama_penerima: string;
     phone: string;
     province: number;
     city: number;
@@ -21,7 +22,7 @@ export type AddressData = {
     is_default?: boolean;
 }
 
-type AddressUpdateRequest = {
+export type AddressUpdateRequest = {
     id?: number;
     user_id: number,
     is_main_address: 1 | 0,
@@ -39,6 +40,7 @@ type AddressUpdateRequest = {
 
 export const addressDataSchema = z.object({
     name: z.string({ message: "Wajib Diisi" }).nonempty("Nama tidak boleh kosong."),
+    nama_penerima: z.string({ message: "Wajib Diisi" }).nonempty("Nama Penerima tidak boleh kosong."),
     phone: z.string({ message: "Wajib Diisi" }).min(10, { message: 'Format Tidak Sesuai' }),
     province: z.number({ message: "Wajib Diisi" }).min(1, "Provinsi tidak boleh kosong."),
     city: z.number({ message: "Wajib Diisi" }).min(1, "Kota tidak boleh kosong."),
@@ -109,6 +111,7 @@ const Address = () => {
                 if (data) {
                     setAddressList.setState(data.map(e => ({
                         id: e.id,
+                        nama_penerima: e.nama_penerima,
                         name: e.address_name,
                         phone: e.phone,
                         province: e.province_id,
@@ -205,7 +208,7 @@ const Address = () => {
                 zipcode: values.postcode,
                 latitude: '0',
                 longitude: '0',
-                nama_penerima: user?.name ?? '-',
+                nama_penerima: values.nama_penerima,
                 phone: values.phone,
                 is_active: 1
             },
@@ -273,6 +276,12 @@ const Address = () => {
                 centered
             >
                 <Stack gap={15} p={5}>
+                    <TextInput
+                        label="Nama Penerima"
+                        placeholder="Masukan Nama Penerima"
+                        {...form.getInputProps('nama_penerima')}
+                    />
+
                     <Flex gap={15} className={`!flex-col md:!flex-row`}>
                         <TextInput
                             label="Nama Alamat"
