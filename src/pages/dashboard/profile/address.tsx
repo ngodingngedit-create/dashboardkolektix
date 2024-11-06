@@ -22,6 +22,7 @@ export type AddressData = {
 }
 
 type AddressUpdateRequest = {
+    id?: number;
     user_id: number,
     is_main_address: 1 | 0,
     province_id: number,
