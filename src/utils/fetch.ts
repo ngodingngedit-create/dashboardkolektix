@@ -16,17 +16,22 @@ interface FetchOptions<T, D> extends AxiosRequestConfig<T> {
     success?: (response: FetchResponse<D>, rawresponse?: AxiosResponse<T>) => void;
     error?: (error: any) => void;
     complete?: () => void;
+    nofilter?: boolean;
 }
 
 async function fetch<ReqType = { [key: string]: string | Blob }, ResType = any>(options: FetchOptions<ReqType, ResType>) {
-    const { before, success, error, complete, data, ...axiosOptions } = options;
+    const { before, success, error, complete, data, nofilter, ...axiosOptions } = options;
 
     if (before) before();
 
     try {
         const formData = new FormData();
         for (const val in data) {
-            if (data[val]) formData.append(val, data[val] as (string | Blob));
+            if (nofilter) {
+                formData.append(val, !(data[val] instanceof Blob) ? String(data[val]) : data[val]);
+            } else {
+                if (data[val]) formData.append(val, data[val] as (string | Blob));
+            }
         }
 
         const response = await axios({

@@ -29,6 +29,8 @@ type City = {
 }
 
 type FormState = {
+    nama_pemesan?: string;
+    email_pemesan?: string;
     receiver?: {
         name: string;
         phone: string;
@@ -71,41 +73,45 @@ type OrderData = {
 }[];
 
 type Checkout = {
-    user_id: number,
-    creator_id: number,
-    grandtotal: number,
+    user_id: number | null;
+    nama_pemesan?: string;
+    email_pemesan?: string;
+    creator_id: number;
+    grandtotal: number;
     product: Array<{
-        product_id: number,
-        variant_id: null | number,
-        qty: number,
+        product_id: number;
+        variant_id: null | number;
+        qty: number;
         price: number
-    }>,
-    payment_method: string,
+    }>;
+    payment_method: string;
     courier: {
-        main: string,
-        type: string,
+        main: string;
+        type: string;
         price: number
-    },
+    };
     address: {
-        user_id: number,
-        is_main_address: number,
-        province_id: number,
-        city_id: number,
-        address_detail: string,
-        address_name: string,
-        zipcode: string,
-        latitude: string,
-        longitude: string,
-        nama_penerima: string,
-        phone: string,
-        is_active: number
+        is_main_address: number;
+        province_id: number;
+        city_id: number;
+        address_detail: string;
+        address_name: string;
+        zipcode: string;
+        latitude: string;
+        longitude: string;
+        nama_penerima: string;
+        phone: string;
+        is_active: number;
     }
     }
 ;  
 
 export const formStateSchema = z.object({
+    nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
+    email_pemesan: z.string().email("Email pemesan tidak boleh kosong.").optional().nullable(),
     receiver: z.object({
         name: z.string().nonempty("Nama penerima tidak boleh kosong."),
+        address_name: z.string().nonempty("Nama alamat tidak boleh kosong."),
         phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
         province_id: z.number().int().positive("ID provinsi harus berupa bilangan bulat positif."),
         city_id: z.number().int().positive("ID kota harus berupa bilangan bulat positif."),
@@ -272,7 +278,9 @@ export default function Cart() {
             url: 'order-product',
             method: 'POST',
             data: {
-                user_id: user?.id ?? 0,
+                user_id: user?.id ?? null,
+                nama_pemesan: values.nama_pemesan,
+                email_pemesan: values.email_pemesan,
                 creator_id: orderedProduct ? orderedProduct[0].creator_id ?? 0 : 0,
                 grandtotal: orderSummary.grandtotal,
                 product: (orderedProduct ?? []).map((e => ({
@@ -288,7 +296,6 @@ export default function Cart() {
                     price: values.courier?.type?.cost[0].value ?? 999999
                 },
                 address: {
-                    user_id: user?.id ?? 0,
                     is_main_address: 1,
                     province_id: values.receiver?.province_id ?? 1,
                     city_id: values.receiver?.city_id ?? 1,
@@ -306,6 +313,9 @@ export default function Cart() {
             success: ({ data }) => data && router.push(data.invoice_url),
             complete: () => setLoading.filter(e => e != 'checkout'),
             error: () => {},
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
     };
 
@@ -338,21 +348,28 @@ export default function Cart() {
                     <Flex gap={20} w="100%" wrap="wrap">
                         <Stack gap={15} className={`flex-grow`}>
                             <DropdownComponent title="Alamat Pengiriman" icon="lets-icons:form-fill" defaultOpened>
-                                <Flex gap={15} wrap="wrap" className="[&>*]:!flex-grow">
-                                    {/* <TextInput
-                                        disabled={Boolean(user?.id)}
-                                        label="Nama Penerima"
-                                        placeholder="Masukan Nama Penerima"
-                                        value={form.values.receiver?.name}
-                                    /> */}
+                                {!user?.id && (
+                                    <Flex gap={15} wrap="wrap" className="[&>*]:!flex-grow">
+                                        <TextInput
+                                            disabled={Boolean(user?.id)}
+                                            label="Nama Pemesan"
+                                            placeholder="Masukan Nama Pemesan"
+                                            onChange={e => form.setValues({ nama_pemesan: e.target.value })}
+                                            value={form.values.nama_pemesan}
+                                            error={form.errors.nama_pemesan}
+                                        />
 
-                                    {/* <TextInput 
-                                        disabled={Boolean(user?.id)}
-                                        label="No. Telp Penerima"
-                                        placeholder="Masukan No. Telp Penerima"
-                                        value={form.values.receiver?.phone}
-                                    /> */}
-                                </Flex>
+                                        <TextInput
+                                            type="email"
+                                            disabled={Boolean(user?.id)}
+                                            label="Email Pemesan"
+                                            placeholder="Masukan Email Pemesan"
+                                            onChange={e => form.setValues({ email_pemesan: e.target.value })}
+                                            value={form.values.email_pemesan}
+                                            error={form.errors.email_pemesan}
+                                        />
+                                    </Flex>
+                                )}
 
                                 <UnstyledButton mih="100%" onClick={() => {}}>
                                     <Card
@@ -457,6 +474,19 @@ export default function Cart() {
                                             <Text>x{e.qty}</Text>
                                         </Flex>
                                     ))}
+                                </Stack>
+                            </Card>
+
+                            <Card withBorder radius={10} p={20}>
+                                <Stack gap={20}>
+                                    <Flex gap={10} align="center">
+                                        <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
+                                        <Text fw={600}>Voucher</Text>
+                                    </Flex>
+
+                                    <TextInput
+                                        placeholder="Masukan Kode Voucher"
+                                    />
                                 </Stack>
                             </Card>
 
@@ -578,7 +608,7 @@ const AddressModal = ({ list, opened, onClose, onChange, province, getCity, city
 
             const { values } = form;
             onChange({
-                name: values.name,
+                name: values.nama_penerima,
                 phone: values.phone,
                 address_name: values.name,
                 province_id: values.province,
@@ -647,7 +677,7 @@ const AddressModal = ({ list, opened, onClose, onChange, province, getCity, city
                         <TextInput
                             label="Nama Penerima"
                             placeholder="Masukan Nama Penerima"
-                            {...form.getInputProps('name')}
+                            {...form.getInputProps('nama_penerima')}
                         />
 
                         <TextInput

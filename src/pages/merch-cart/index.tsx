@@ -34,12 +34,6 @@ type CartListResponse<T = number> = {
     price: number;
 };
 
-const cartItems: CartItem[] = [
-    { id: 1, storeName: 'Store A', productName: 'Product 1', price: 100, variant: 'Red', imageUrl: '/path/to/image1.jpg' },
-    { id: 2, storeName: 'Store B', productName: 'Product 2', price: 200, imageUrl: '/path/to/image2.jpg' },
-    { id: 3, storeName: 'Store A', productName: 'Product 3', price: 300, variant: 'Large', imageUrl: '/path/to/image3.jpg' }
-];
-
 export default function Cart() {
     const [isr, setIsr] = useState(false);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
