@@ -10,7 +10,7 @@ import { modals } from '@mantine/modals';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 
-type AddressData = {
+export type AddressData = {
     id: number;
     name: string;
     phone: string;
@@ -36,11 +36,11 @@ type AddressUpdateRequest = {
     is_active: number
 }
 
-const addressDataSchema = z.object({
+export const addressDataSchema = z.object({
     name: z.string({ message: "Wajib Diisi" }).nonempty("Nama tidak boleh kosong."),
     phone: z.string({ message: "Wajib Diisi" }).min(10, { message: 'Format Tidak Sesuai' }),
-    province: z.string({ message: "Wajib Diisi" }).nonempty("Provinsi tidak boleh kosong."),
-    city: z.string({ message: "Wajib Diisi" }).nonempty("Kota tidak boleh kosong."),
+    province: z.number({ message: "Wajib Diisi" }).min(1, "Provinsi tidak boleh kosong."),
+    city: z.number({ message: "Wajib Diisi" }).min(1, "Kota tidak boleh kosong."),
     detail: z.string({ message: "Wajib Diisi" }).nonempty("Detail alamat tidak boleh kosong."),
     postcode: z.string({ message: "Wajib Diisi" }).nonempty("Kode pos tidak boleh kosong."),
     is_default: z.boolean().optional(),
@@ -65,12 +65,22 @@ const Address = () => {
     const [addressList, setAddressList] = useListState<AddressData>([]);
     const [provinceList, setProvinceList] = useListState<Province>([]);
     const [cityList, setCityList] = useListState<City>([]);
+    const [provinceName, setProvinceName] = useState<{ [key: number]: string }>()
+    const [cityName, setCityName] = useState<{ [key: number]: string }>()
     const [modalIndex, setModalIndex] = useState<number>();
+    const [isr, setIsr] = useState(false);
     const user = useLoggedUser();
 
+
     useEffect(() => {
-        getData();
+        setIsr(true);
     }, []);
+
+    useEffect(() => {
+        if (isr) {
+            getData();
+        }
+    }, [isr]);
 
     useEffect(() => {
         if (modalIndex && modalIndex > 0) {
@@ -103,7 +113,7 @@ const Address = () => {
                         province: e.province_id,
                         city: e.city_id,
                         detail: e.address_detail,
-                        postcode: e.zipcode,
+                        postcode: String(e.zipcode),
                         is_default: e.is_main_address == 1,
                     })));
                 }
@@ -119,8 +129,19 @@ const Address = () => {
             },
             complete: () => setLoading.filter(e => e != 'getprovince'),
         });
+    };
+
+    useEffect(() => {
+        getCity(form.values.province);
+    }, [form.values.province]);
+
+    useEffect(() => {
+        getProvinceCityName();
+    }, [addressList]);
+
+    const getCity = async (province_id: number) => {
         await fetch<any, City[]>({
-            url: 'city',
+            url: `city?province_id=${province_id}`,
             method: 'GET',
             before: () => setLoading.append('getcity'),
             success: ({ data }) => {
@@ -128,7 +149,41 @@ const Address = () => {
             },
             complete: () => setLoading.filter(e => e != 'getcity'),
         });
-    };
+    }
+
+    const getProvinceCityName = async () => {
+        const cityId = addressList.map(e => e.city);
+        const provinceId = addressList.map(e => e.province);
+        var cityName: { [key: number]: string } = [];
+        var provinceName: { [key: number]: string } = [];
+
+        cityId.forEach(async (e) => {
+            await fetch<any, { name: string }>({
+                url: `city/${e}`,
+                method: 'GET',
+                success: ({ data }) => {
+                    if (data) {
+                        cityName[e] = data?.name
+                    }
+                }
+            });
+        });
+
+        provinceId.forEach(async (e) => {
+            await fetch<any, { name: string }>({
+                url: `province/${e}`,
+                method: 'GET',
+                success: ({ data }) => {
+                    if (data) {
+                        provinceName[e] = data?.name
+                    }
+                }
+            });
+        });
+
+        setCityName(cityName);
+        setProvinceName(provinceName);
+    }
 
     const handleSave = async () => {
         const valid = form.validate();
@@ -142,8 +197,8 @@ const Address = () => {
             data: {
                 user_id: user?.id ?? 0,
                 is_main_address: values.is_default ? 1 : 0,
-                province_id: 1,
-                city_id: 1,
+                province_id: values.province,
+                city_id: values.city,
                 address_detail: values.detail,
                 address_name: values.name,
                 zipcode: values.postcode,
@@ -250,6 +305,7 @@ const Address = () => {
                         />
 
                         <Select
+                            disabled={loading.includes('getcity')}
                             label="Kota"
                             placeholder="Pilih Kota"
                             data={cityList.map(e => ({ value: String(e.id), label: e.name }))}
@@ -326,7 +382,7 @@ const Address = () => {
                                 </Box>
                                 <Stack gap={3} mt={-5}>
                                     <Text fw={600} size="lg">{e.name} {e.is_default && <Text c="#0B387C" component="span" size="xs" fw={600} className={`whitespace-nowrap`}>(Alamat Utama)</Text>} </Text>
-                                    <Text c="gray" size="sm" mt={5} className={`uppercase`}>{e.province}, {e.city}, {e.postcode}</Text>
+                                    <Text c="gray" size="sm" mt={5} className={`uppercase`}>{provinceName ? provinceName[e.province] ?? '-' : '-'}, {cityName ? cityName[e.city] ?? '-' : '-'}, {e.postcode}</Text>
                                     <Text c="gray" size="sm">{e.detail}</Text>
                                     {/* {e.note && <Text c="gray" size="xs">({e.note})</Text>} */}
                                 </Stack>
