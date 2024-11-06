@@ -1,6 +1,6 @@
 // pages/cart.tsx
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid } from '@mantine/core';
+import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Delete, Get } from '@/utils/REST';
@@ -8,24 +8,61 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useRouter } from 'next/router';
-import { useForm } from '@mantine/form';
+import { useForm, zodResolver } from '@mantine/form';
 import Cookies from 'js-cookie';
+import fetch from '@/utils/fetch';
+import { AddressData, addressDataSchema, AddressUpdateRequest } from '../dashboard/profile/address';
+import { currencyFormat } from '@/utils/currencyFormat';
+import { z } from 'zod';
+
+
+type Province = {
+    id: number;
+    name: string;
+}
+
+type City = {
+    id: number;
+    province_id: number;
+    name: string;
+    province?: Province;
+}
 
 type FormState = {
     receiver?: {
         name: string;
         phone: string;
-        province: string;
-        province_code?: number;
-        city: string;
-        citi_code?: number;
+        address_name: string;
+        province_id: number;
+        city_id: number;
         pos_code: number;
         detail: string;
-        note: string;
     };
-    payment_method?: any;
-    courier?: any;
+    payment_method?: string;
+    courier?: {
+        name: string;
+        type?: GetCourierRes;
+    };
 }
+
+type GetCourierReq = {
+    origin: number,
+    origin_type: string,
+    destination: number,
+    destination_type: string,
+    weight: number,
+    courier: string
+};
+
+type GetCourierRes = {
+    service: string,
+    description: string,
+    cost: Array<{
+        value: number,
+        etd: string,
+        note: string
+    }>
+};
 
 type OrderData = {
     product_id: number;
@@ -33,13 +70,62 @@ type OrderData = {
     qty: number;
 }[];
 
+type Checkout = {
+    user_id: number,
+    creator_id: number,
+    grandtotal: number,
+    product: Array<{
+        product_id: number,
+        variant_id: null | number,
+        qty: number,
+        price: number
+    }>,
+    payment_method: string,
+    courier: {
+        main: string,
+        type: string,
+        price: number
+    },
+    address: {
+        user_id: number,
+        is_main_address: number,
+        province_id: number,
+        city_id: number,
+        address_detail: string,
+        address_name: string,
+        zipcode: string,
+        latitude: string,
+        longitude: string,
+        nama_penerima: string,
+        phone: string,
+        is_active: number
+    }
+    }
+;  
+
+export const formStateSchema = z.object({
+    receiver: z.object({
+        name: z.string().nonempty("Nama penerima tidak boleh kosong."),
+        phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
+        province_id: z.number().int().positive("ID provinsi harus berupa bilangan bulat positif."),
+        city_id: z.number().int().positive("ID kota harus berupa bilangan bulat positif."),
+        pos_code: z.number().int().nonnegative("Kode pos harus berupa bilangan bulat non-negatif."),
+        detail: z.string().nonempty("Detail alamat tidak boleh kosong."),
+    }),
+    payment_method: z.string().nonempty("Metode Pembayaran tidak boleh kosong."),
+    courier: z.string().nonempty("Kurir tidak boleh kosong."),
+});
+
 export default function Cart() {
     const [isr, setIsr] = useState(false);
     const [modal, setModal] = useState<string>();
     const [orderData, setOrderData] = useState<OrderData>();
-    const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [productList, setProductList] = useListState<MerchListResponse>();
+    const [addressList, setAddressList] = useListState<AddressUpdateRequest>([]);
     const [loading, setLoading] = useListState<string>();
+    const [provinceList, setProvinceList] = useListState<Province>([]);
+    const [cityList, setCityList] = useListState<City>([]);
+    const [subCourier, setSubCourier] = useListState<GetCourierRes>();
     const user = useLoggedUser();
     const router = useRouter();
 
@@ -50,13 +136,20 @@ export default function Cart() {
     }, []);
 
     useEffect(() => {
-        getProduct();
+        getData();
         const _orderData = JSON.parse(Cookies.get('order_data') ?? '[]');
         if (!_orderData || _orderData.length == 0) router.push('/merchandise');
         setOrderData(_orderData);
     }, [isr]);
 
-    const getProduct = () => {
+    useEffect(() => {
+        if (form.values.receiver && form.values.courier) {
+            getCourier();
+            form.setValues({ courier: { name: form.values.courier.name, type: undefined }});
+        }
+    }, [form.values.receiver, form.values.courier?.name]);
+
+    const getData = async () => {
         Get('product', {})
             .then((res: any) => {
                 setProductList.setState(res.data);
@@ -65,37 +158,172 @@ export default function Cart() {
             .catch((err) => {
                 console.log(err);
             });
+
+        await fetch<any, Province[]>({
+            url: 'province',
+            method: 'GET',
+            before: () => setLoading.append('getprovince'),
+            success: ({ data }) => {
+                setProvinceList.setState(data ?? []);
+            },
+            complete: () => setLoading.filter(e => e != 'getprovince'),
+        });
+
+        if (user?.id) {
+            await fetch<any, AddressUpdateRequest[]>({
+                url: `my-address?user_id=${user?.id}`,
+                method: 'GET',
+                before: () => setLoading.append('getprovince'),
+                success: ({ data }) => {
+                    if (data) {
+                        setAddressList.setState(data ?? []);
+
+                        const mainAddress = _.find(data, ['is_main_address', 1]) ?? data[0];
+                        form.setValues({ 
+                            receiver: {
+                                name: mainAddress.nama_penerima,
+                                phone: mainAddress.phone,
+                                address_name: mainAddress.address_name,
+                                province_id: mainAddress.province_id,
+                                city_id: mainAddress.city_id,
+                                pos_code: parseInt(mainAddress.zipcode),
+                                detail: mainAddress.address_detail
+                            }
+                        });
+
+                        getCity(mainAddress.province_id);
+                    }
+                },
+                complete: () => setLoading.filter(e => e != 'getprovince'),
+            });
+        }
+    };
+
+    const getCity = async (province_id: number) => {
+        await fetch<any, City[]>({
+            url: `city?province_id=${province_id}`,
+            method: 'GET',
+            before: () => setLoading.append('getcity'),
+            success: ({ data }) => {
+                setCityList.setState(data ?? []);
+            },
+            complete: () => setLoading.filter(e => e != 'getcity'),
+        });
     };
 
     const orderedProduct = useMemo(() => {
         return orderData?.map(e => {
             const product = _.find(productList, ['id', e.product_id]);
             const variant = e.variant_id ? _.find(product?.product_varian, ['id', e.variant_id]) : null;
-            const price = parseInt((!variant ? product?.price : variant?.price) ?? '0') * e.qty;
+            const subprice = parseInt((!variant ? product?.price : variant?.price) ?? '0');
+            const weight = parseInt((!variant ? product?.price : variant?.weight) ?? '0');
+            const price = subprice * e.qty;
             const image = product?.product_image[0].image_url;
+            const creator_id = product?.creator_id;
 
-            return { ...e, product, variant, price, image };
+            return { ...e, product, variant, price, subprice, image, weight, creator_id };
         });
     }, [productList, orderData]);
 
-    const orderSummary = useMemo<[string, number][]>(() => {
+    const orderSummary = useMemo(() => {
         const result: [string, number][] = [];
 
         for (const order of (orderedProduct ?? [])) {
             result.push([`x${order.qty} ${order.product?.product_name ?? '-'}`, order.price]);
         }
 
-        result.push(['Total', result.reduce((q, n) => q + n[1], 0)]);
+        if (form.values.courier?.type) {
+            result.push(['Biaya Pengiriman', form.values.courier?.type.cost[0].value]);
+        }
 
-        return result;
-    }, [orderedProduct]);
+        result.push(["Biaya Admin", 2000]);
+
+        const subtotal = result.reduce((q, n) => q + n[1], 0);
+        result.push(["PPN (11%)", subtotal * 0.11]);
+
+        const grandtotal = result.reduce((q, n) => q + n[1], 0);
+        result.push(['Total', grandtotal]);
+
+        return { array: result, grandtotal };
+    }, [orderedProduct, form.values.courier?.type, form.values.receiver]);
+
+    const getCourier = async () => {
+        await fetch<GetCourierReq, GetCourierRes[]>({
+            url: 'product-cost',
+            method: 'POST',
+            data: {
+                origin: 1,
+                origin_type: 'city',
+                destination: form.values.receiver?.city_id ?? 0,
+                destination_type: 'city',
+                weight: _.sumBy(orderedProduct, 'weight') == 0 ? 999 : _.sumBy(orderedProduct, 'weight'),
+                courier: form.values.courier?.name ?? '-'
+            },
+            before: () => setLoading.append('getsubcourier'),
+            success: (res) => setSubCourier.setState(res.data ?? []),
+            complete: () => setLoading.filter(e => e != 'getsubcourier'),
+            error: () => {},
+        });
+    };
+
+    const handleCheckout = async () => {
+        const { values } = form;
+        await fetch<Checkout, { invoice_url: string }>({
+            url: 'order-product',
+            method: 'POST',
+            data: {
+                user_id: user?.id ?? 0,
+                creator_id: orderedProduct ? orderedProduct[0].creator_id ?? 0 : 0,
+                grandtotal: orderSummary.grandtotal,
+                product: (orderedProduct ?? []).map((e => ({
+                    product_id: e.product_id,
+                    variant_id: e.variant_id,
+                    qty: e.qty,
+                    price: e.price
+                }))),
+                payment_method: 'xendit',
+                courier: {
+                    main: values.courier?.name ?? '-',
+                    type: values.courier?.type?.service ?? '-',
+                    price: values.courier?.type?.cost[0].value ?? 999999
+                },
+                address: {
+                    user_id: user?.id ?? 0,
+                    is_main_address: 1,
+                    province_id: values.receiver?.province_id ?? 1,
+                    city_id: values.receiver?.city_id ?? 1,
+                    address_detail: values.receiver?.detail ?? '',
+                    address_name: values.receiver?.address_name ?? '',
+                    zipcode: String(values.receiver?.pos_code),
+                    latitude: '',
+                    longitude: '',
+                    nama_penerima: values.receiver?.name ?? '',
+                    phone: values.receiver?.phone ?? '',
+                    is_active: 1
+                }
+            },
+            before: () => setLoading.append('checkout'),
+            success: ({ data }) => data && router.push(data.invoice_url),
+            complete: () => setLoading.filter(e => e != 'checkout'),
+            error: () => {},
+        });
+    };
 
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
-            <AddressModal opened={modal == 'address'} onClose={() => setModal(undefined)} list={[]} onChange={() => {}}/>
+            <AddressModal
+                opened={modal == 'address'}
+                onClose={() => setModal(undefined)}
+                list={addressList}
+                onChange={(data) => data && form.setValues({ receiver: data })}
+                province={provinceList}
+                getCity={e => getCity(e)}
+                cityLoading={loading.includes('getcity')}
+                city={cityList}
+            />
 
             <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[100px`}>
-                <Stack gap={25}>
+                <Stack gap={25} mb={40}>
                     <Stack gap={0}>
                         <Title order={1} size="h2">
                             Checkout Merchandise
@@ -109,17 +337,21 @@ export default function Cart() {
 
                     <Flex gap={20} w="100%" wrap="wrap">
                         <Stack gap={15} className={`flex-grow`}>
-                            <DropdownComponent title="Data Pengiriman" icon="lets-icons:form-fill" defaultOpened>
+                            <DropdownComponent title="Alamat Pengiriman" icon="lets-icons:form-fill" defaultOpened>
                                 <Flex gap={15} wrap="wrap" className="[&>*]:!flex-grow">
-                                    <TextInput
+                                    {/* <TextInput
+                                        disabled={Boolean(user?.id)}
                                         label="Nama Penerima"
                                         placeholder="Masukan Nama Penerima"
-                                    />
+                                        value={form.values.receiver?.name}
+                                    /> */}
 
-                                    <TextInput
+                                    {/* <TextInput 
+                                        disabled={Boolean(user?.id)}
                                         label="No. Telp Penerima"
                                         placeholder="Masukan No. Telp Penerima"
-                                    />
+                                        value={form.values.receiver?.phone}
+                                    /> */}
                                 </Flex>
 
                                 <UnstyledButton mih="100%" onClick={() => {}}>
@@ -137,10 +369,11 @@ export default function Cart() {
                                                     <Icon icon="gis:location-poi" className={`text-[24px]`}/>
                                                 </Box>
                                                 <Stack gap={3} mt={-5}>
-                                                    <Text fw={600} size="lg">{form.values.receiver.name}</Text>
-                                                    <Text c="gray" size="sm" mt={5} className={`uppercase`}>{form.values.receiver.province}, {form.values.receiver.city}, {form.values.receiver.pos_code}</Text>
+                                                    <Text fw={600} size="lg">{form.values.receiver.address_name}</Text>
+                                                    <Text c="gray" size="sm">{form.values.receiver.name}, {form.values.receiver.phone}</Text>
+                                                    <Text c="gray" size="sm" mt={5} className={`uppercase`}>{_.find(provinceList, ['id', form.values.receiver.province_id])?.name}, {_.find(cityList, ['id', form.values.receiver.city_id])?.name}, {form.values.receiver.pos_code}</Text>
                                                     <Text c="gray" size="sm">{form.values.receiver.detail}</Text>
-                                                    <Text c="gray" size="xs">({form.values.receiver?.note})</Text>
+                                                    {/* <Text c="gray" size="xs">({form.values.receiver?.note})</Text> */}
                                                 </Stack>
                                             </Flex>
                                         ) : (
@@ -156,16 +389,35 @@ export default function Cart() {
                             <DropdownComponent title="Kurir Pengiriman" icon="fa-solid:shipping-fast">
                                 <Flex wrap="wrap" className={`[&>*]:!flex-grow`} gap={15}>
                                     <Select
+                                        disabled={!form.values.receiver?.city_id}
+                                        data={[
+                                            { value: 'jne', label: 'JNE' },
+                                            { value: 'tiki', label: 'TIKI' },
+                                            { value: 'pos', label: 'POS Indonesia' },
+                                        ]}
                                         placeholder="Pilih Kurir Pengiriman"
+                                        value={form.values.courier?.name}
+                                        onChange={e => {
+                                            if (e) {
+                                                form.setValues({ courier: { name: e, type: undefined }})
+                                            }
+                                        }}
                                     />
-                                    <Select
-                                        disabled
-                                        placeholder="Pilih Type Pengiriman"
-                                    />
+                                    <Flex gap={10} align="center">
+                                        {loading.includes('getsubcourier') && <Loader size="sm" color="#0B387C" />}
+                                        <Select
+                                            className={`flex-grow`}
+                                            disabled={!subCourier || subCourier.length <= 0 || loading.includes('getsubcourier')}
+                                            data={subCourier.map(e => ({ value: e.service, label: `${e.service} (${e.cost[0].etd} ${e.cost[0].etd.includes('HARI') ? '' : 'HARI'}) ${currencyFormat(e.cost[0].value)}`}))}
+                                            value={form.values.courier?.type?.service}
+                                            onChange={e => form.setValues({ courier: { name: form.values.courier?.name ?? '-', type: subCourier.find(z => z.service == e) }})}
+                                            placeholder="Pilih Type Pengiriman"
+                                        />
+                                    </Flex>
                                 </Flex>
                             </DropdownComponent>
 
-                            <DropdownComponent title="Metode Pembayaran" icon="fluent:payment-16-filled">
+                            {/* <DropdownComponent title="Metode Pembayaran" icon="fluent:payment-16-filled">
                                 <UnstyledButton>
                                         <Card p={10} radius="md" bg="gray.1">
                                             <Flex gap={20} align="center">
@@ -179,7 +431,7 @@ export default function Cart() {
                                             </Flex>
                                         </Card>
                                     </UnstyledButton>
-                            </DropdownComponent>
+                            </DropdownComponent> */}
                         </Stack>
 
                         <Stack gap={10} className={`flex-grow md:!max-w-[400px]`}>
@@ -200,7 +452,7 @@ export default function Cart() {
                                             <Stack className={`flex-grow`} gap={0}>
                                                 <Text className={`whitespace-nowrap text-ellipsis overflow-hidden max-w-[150px] md:max-w-[250px]`} size="sm">{e.product?.product_name}</Text>
                                                 {e.variant && <Text c="gray" size="sm">Varian: {e.variant?.varian_name}</Text>}
-                                                <Text c="gray" size="sm"><NumberFormatter value={e.price}/></Text>
+                                                <Text c="gray" size="sm"><NumberFormatter value={e.subprice}/></Text>
                                             </Stack>
                                             <Text>x{e.qty}</Text>
                                         </Flex>
@@ -218,7 +470,7 @@ export default function Cart() {
                                     <Divider />
 
                                     <Stack>
-                                        {orderSummary.map((e, i) => (
+                                        {orderSummary.array.map((e, i) => (
                                             <Flex justify="space-between" key={i}>
                                                 <Text fw={e[0] == "Total" ? 600 : 400}>{e[0]}</Text>
                                                 <Text fw={e[0] == "Total" ? 600 : 400}><NumberFormatter value={e[1]}/></Text>
@@ -226,20 +478,38 @@ export default function Cart() {
                                         ))}
                                     </Stack>
 
-                                    <Divider />
+                                    {/* <Divider /> */}
 
-                                    <Button
+                                    {/* <Button
+                                        loading={loading.includes('checkout')}
+                                        onClick={handleCheckout}
                                         className={`uppercase`}
                                         color="#194E9E"
                                         rightSection={<Icon icon="uiw:check" />}
                                         radius="xl">
-                                        Checkout Order
-                                    </Button>
+                                        Proses Pembayaran
+                                    </Button> */}
                                 </Stack>
                             </Card>
                         </Stack>
                     </Flex>
                 </Stack>
+
+                <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
+                    <Container size="lg" w="100%">
+                        <Flex justify="end" w="100%">
+                            <Button
+                                loading={loading.includes('checkout')}
+                                onClick={handleCheckout}
+                                className={`uppercase`}
+                                color="#194E9E"
+                                rightSection={<Icon icon="uiw:check" />}
+                                radius="xl">
+                                Proses Pembayaran
+                            </Button>
+                        </Flex>
+                    </Container>
+                </Card>
             </Container>
         </div>
     );
@@ -270,13 +540,64 @@ const DropdownComponent = ({ defaultOpened, children, title, icon }: PropsWithCh
     );
 };
 
-const AddressModal = ({ list, opened, onClose, onChange }: {
-    list: any[];
+const AddressModal = ({ list, opened, onClose, onChange, province, getCity, city, cityLoading }: {
+    list: AddressUpdateRequest[];
     opened: boolean;
     onClose: () => void;
-    onChange: (data: Omit<FormState['receiver'], 'id'>) => void;
+    onChange: (data: FormState['receiver']) => void;
+    getCity: (province_id: number) => void;
+    cityLoading: boolean;
+    province: Province[];
+    city: City[];
 }) => {
-    const [page, setPage] = useState<'create' | 'select'>(list.length > 0 ? 'select' : 'create');
+    const [page, setPage] = useState<'create' | 'select'>('select');
+
+    const form = useForm<Omit<AddressData, 'id'>>({
+        validate: zodResolver(addressDataSchema),
+        onValuesChange: (values) => {
+            if (values.postcode) values.postcode = values.postcode.replaceAll(/\D/g, '');
+            if (values.phone) values.phone = values.phone.replaceAll(/\D/g, '');
+            return values;
+        }
+    });
+
+    const handleSelect = (data?: AddressUpdateRequest) => {
+        if  (data) {
+            onChange({
+                name: data.nama_penerima,
+                phone: data.phone,
+                address_name: data.address_name,
+                province_id: data.province_id,
+                city_id: data.city_id,
+                pos_code: parseInt(data.zipcode),
+                detail: data.address_detail
+            });
+        } else {
+            const valid = form.validate();
+            if (valid.hasErrors) return;
+
+            const { values } = form;
+            onChange({
+                name: values.name,
+                phone: values.phone,
+                address_name: values.name,
+                province_id: values.province,
+                city_id: values.city,
+                pos_code: parseInt(values.postcode),
+                detail: values.detail
+            });
+        }
+        onClose();
+    };
+
+    useEffect(() => {
+        setPage('select');
+    }, [opened]);
+
+    useEffect(() => {
+        getCity(form.values.province);
+        form.setValues({ city: -1 });
+    }, [form.values.province]);
 
     return (
         <>
@@ -286,76 +607,121 @@ const AddressModal = ({ list, opened, onClose, onChange }: {
                 onClose={() => onClose()}
                 centered
             >
-                <Stack gap={15} p={5}>
-                    <TextInput
-                        label="Nama Alamat"
-                        placeholder="Rumah, Kantor, ..."
-                        // {...form.getInputProps('name')}
-                    />
+                {(page == 'select' && list.length > 0) ? (
+                    <Stack gap={20}>
+                        {list.map((e, i) => (
+                            <UnstyledButton key={i} mih="100%" onClick={() => handleSelect(e)}>
+                                <Card
+                                    withBorder
+                                    p={20}
+                                    radius={15}
+                                    h="100%"
+                                    className={`!border-b !border-b-[#0B387C]`}
+                                    // onClick={() => setModal('address')}
+                                >
+                                    <Flex gap={15}>
+                                        <Box c={"#0B387C"}>
+                                            <Icon icon="gis:location-poi" className={`text-[24px]`}/>
+                                        </Box>
+                                        <Stack gap={3} mt={-5}>
+                                            <Text fw={600} size="lg">{e.address_name}</Text>
+                                            <Text c="gray" size="sm" mt={5} className={`uppercase`}>{_.find(province, ['id', e.province_id])?.name}, {_.find(city, ['id', e.city_id])?.name}, {e.zipcode}</Text>
+                                            <Text c="gray" size="sm">{e.address_detail}</Text>
+                                            <Text c="gray" size="sm">{e.phone}</Text>
+                                            {/* <Text c="gray" size="xs">({form.values.receiver?.note})</Text> */}
+                                        </Stack>
+                                    </Flex>
+                                </Card>
+                            </UnstyledButton>
+                        ))}
 
-                    <Flex gap={15} className={`[&>*]:flex-grow !flex-col md:!flex-row`}>
-                        <Select
-                            label="Provinsi"
-                            placeholder="Pilih Provinsi"
-                            // data={dummyData.map(e => e.province)}
-                            // value={form.values.province}
-                            // onChange={e => e && form.setFieldValue('province', e)}
-                            // error={form.errors.province}
-                        />
-
-                        <Select
-                            label="Kota"
-                            placeholder="Pilih Kota"
-                            // data={dummyData.map(e => e.city)}
-                            // value={form.values.city}
-                            // onChange={e => e && form.setFieldValue('city', e)}
-                            // error={form.errors.city}
-                        />
-                    </Flex>
-
-                    <TextInput
-                        label="Kode Pos"
-                        placeholder="Masukan Kode Pos"
-                        // {...form.getInputProps('postcode')}
-                    />
-
-                    <Textarea
-                        autosize
-                        minRows={3}
-                        label="Detail Alamat"
-                        placeholder="Kecamatan, Desa, No. Rumah, dll"
-                        // {...form.getInputProps('detail')}
-                    />
-
-                    <TextInput
-                        label="Keterangan Tambahan"
-                        placeholder="Patokan Rumah, dll"
-                        // {...form.getInputProps('note')}
-                    />
-
-                    <Text size="xs" c="gray">Periksa kembali alamat yang Anda masukkan untuk memastikan tidak ada kesalahan.</Text>
-
-                    <Flex align="center" gap={10} justify="space-between" mt={10}>
                         <Button
+                            onClick={() => setPage('create')}
                             color="#0B387C"
-                            w="fit-content"
-                            radius="xl"
-                            leftSection={<Icon icon="uiw:check" />}
-                            // onClick={handleSave}
-                            // loading={loading.includes('save')}
-                        >Simpan Alamat</Button>
+                            variant="outline"
+                            className={`!border-dashed`}
+                        >Tambah Baru</Button>
+                    </Stack>
+                ) : (
+                    <Stack gap={15} p={5}>
+                        <TextInput
+                            label="Nama Penerima"
+                            placeholder="Masukan Nama Penerima"
+                            {...form.getInputProps('name')}
+                        />
 
-                        {/* {(modalIndex && modalIndex > 0) ? (
-                            <ActionIcon
-                                variant="transparent"
-                                color="red"
-                                onClick={() => handleDelete()}
-                            >
-                                <Icon icon="uiw:delete" />
-                            </ActionIcon>
-                        ) : <></>} */}
-                    </Flex>
-                </Stack>
+                        <TextInput
+                            label="Nama Alamat"
+                            placeholder="Rumah, Kantor, ..."
+                            {...form.getInputProps('name')}
+                        />
+
+                        <TextInput
+                            label="No. Telp"
+                            placeholder="08XX XXXX XXXX"
+                            {...form.getInputProps('phone')}
+                        />
+
+                        <Flex gap={15} className={`[&>*]:flex-grow !flex-col md:!flex-row`}>
+                            <Select
+                                searchable
+                                label="Provinsi"
+                                placeholder="Pilih Provinsi"
+                                data={_.sortBy(province, 'name').map(e => ({ value: String(e.id), label: e.name }))}
+                                value={String(form.values.province)}
+                                onChange={e => e && form.setFieldValue('province', parseInt(e))}
+                                error={form.errors.province}
+                            />
+
+                            <Select
+                                disabled={cityLoading}
+                                label="Kota"
+                                placeholder="Pilih Kota"
+                                data={city.map(e => ({ value: String(e.id), label: e.name }))}
+                                value={String(form.values.city)}
+                                onChange={e => e && form.setFieldValue('city', parseInt(e))}
+                                error={form.errors.city}
+                            />
+                        </Flex>
+
+                        <TextInput
+                            label="Kode Pos"
+                            placeholder="Masukan Kode Pos"
+                            {...form.getInputProps('postcode')}
+                        />
+
+                        <Textarea
+                            autosize
+                            minRows={3}
+                            label="Detail Alamat"
+                            placeholder="Kecamatan, Desa, No. Rumah, dll"
+                            {...form.getInputProps('detail')}
+                        />
+
+                        <Text size="xs" c="gray">Periksa kembali alamat yang Anda masukkan untuk memastikan tidak ada kesalahan.</Text>
+
+                        <Flex align="center" gap={10} justify="space-between" mt={10}>
+                            <Button
+                                color="#0B387C"
+                                w="fit-content"
+                                radius="xl"
+                                leftSection={<Icon icon="uiw:check" />}
+                                onClick={() => handleSelect()}
+                                // loading={loading.includes('save')}
+                            >Simpan Alamat</Button>
+
+                            {/* {(modalIndex && modalIndex > 0) ? (
+                                <ActionIcon
+                                    variant="transparent"
+                                    color="red"
+                                    onClick={() => handleDelete()}
+                                >
+                                    <Icon icon="uiw:delete" />
+                                </ActionIcon>
+                            ) : <></>} */}
+                        </Flex>
+                    </Stack>
+                )}
             </Modal>
         </>
     )

@@ -604,7 +604,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
-      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && <Footer />}
+      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && <Footer />}
     </div>
   );
 }
