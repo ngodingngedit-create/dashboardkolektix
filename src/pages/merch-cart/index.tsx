@@ -117,21 +117,21 @@ export default function Cart() {
             labels: { confirm: 'Hapus', cancel: 'Batal' },
             onConfirm: () => {
                 const deleteList = cartListFiltered[idx].id
-                if (user?.id) {
-                    for (const d of (deleteList ?? [])) {
-                        Delete(`cart/${d}`, {})
-                        .then(() => {
-                            setCartList.filter((e) => e.id != d);
-                        })
-                        .catch((err) => {
-                            console.log(err);
-                        });
-                    }
-                } else {
-                    const cart = cartList.filter((e) => (deleteList ? deleteList?.includes(e?.id ?? 0) : false));
+                // if (user?.id) {
+                //     for (const d of (deleteList ?? [])) {
+                //         Delete(`cart/${d}`, {})
+                //         .then(() => {
+                //             setCartList.filter((e) => e.id != d);
+                //         })
+                //         .catch((err) => {
+                //             console.log(err);
+                //         });
+                //     }
+                // } else {
+                    const cart = cartList.filter((e) => (deleteList ? !deleteList?.includes(e?.id ?? 0) : false));
                     setCartList.setState(cart);
                     Cookies.set('_cart', JSON.stringify(cart));
-                }
+                // }
             }
         })
     };
@@ -167,7 +167,7 @@ export default function Cart() {
                             <Flex gap={15} align="center" justify="space-between" wrap="wrap">
                                 <Flex gap={15} align="center">
                                     <Checkbox checked={selectedItems.includes(i)} onChange={() => handleSelect(i)} />
-                                    <AspectRatio>
+                                    <AspectRatio className={`shrink-0`}>
                                         <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
                                     </AspectRatio>
                                     <div className={`w-full`}>

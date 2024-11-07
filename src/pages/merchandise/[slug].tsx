@@ -61,29 +61,29 @@ const MerchandiseDetail = () => {
 
     const handleAddCart = () => {
         setLoading.append('addcart');
-        if (user?.id) {
-            Post('cart', {
-                user_id: user?.id,
-                variant_id: selectedVariant,
-                product_id: mainData?.id,
-                qty: count,
-                price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
-                description: ''
-            })
-            .then((res: any) => {
-                if (res.id) {
-                    toast.success('Berhasil menambah produk ke keranjang');
-                    setTimeout(() => {
-                        router.push('/merch-cart');
-                    }, 2000)
-                }
-                setLoading.filter(e => e != 'addcart');
-            })
-            .catch((err) => {
-                console.log(err);
-                setLoading.filter(e => e != 'addcart');
-            });
-        } else {
+        // if (user?.id) {
+        //     Post('cart', {
+        //         user_id: user?.id,
+        //         variant_id: selectedVariant,
+        //         product_id: mainData?.id,
+        //         qty: count,
+        //         price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
+        //         description: ''
+        //     })
+        //     .then((res: any) => {
+        //         if (res.id) {
+        //             toast.success('Berhasil menambah produk ke keranjang');
+        //             setTimeout(() => {
+        //                 router.push('/merch-cart');
+        //             }, 2000)
+        //         }
+        //         setLoading.filter(e => e != 'addcart');
+        //     })
+        //     .catch((err) => {
+        //         console.log(err);
+        //         setLoading.filter(e => e != 'addcart');
+        //     });
+        // } else {
             const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
 
             cartData.push({
@@ -97,7 +97,7 @@ const MerchandiseDetail = () => {
 
             Cookies.set('_cart', JSON.stringify(cartData));
             router.push('/merch-cart');
-        }
+        // }
     };
 
     const handleDirectOrder = () => {
