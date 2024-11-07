@@ -49,12 +49,12 @@ export const addressDataSchema = z.object({
     is_default: z.boolean().optional(),
 });
 
-type Province = {
+export type Province = {
     id: number;
     name: string;
 }
 
-type City = {
+export type City = {
     id: number;
     province_id: number;
     name: string;

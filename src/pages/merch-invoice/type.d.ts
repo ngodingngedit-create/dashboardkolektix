@@ -1,0 +1,91 @@
+export type InvoiceResponse = {
+    id: number;
+    product_id: null | number;
+    invoice_no: string;
+    user_id: string;
+    total_qty: number;
+    total_price: number;
+    delivery_price: number;
+    grandtotal: number;
+    admin_fee: number;
+    ppn: string;
+    payment_method: string;
+    transaction_status_id: number;
+    payment_status: 'Pending' | 'Expired' | 'Verified';
+    payment_channel_id: null | number;
+    xendit_url: string;
+    admin_fee_plus: string;
+    created_by: null | number;
+    updated_by: null | number;
+    created_at: string;
+    updated_at: string;
+    deleted_at: null | string;
+    is_pemesan: 1 | 0;
+    user: {
+        id: number;
+        name: string;
+        email: string;
+        email_verified_at: null | string;
+        otp_code: null | string;
+        otp_expiry_time: null | string;
+        created_at: string;
+        updated_at: string;
+    };
+    detail: Array<{
+        id: number;
+        order_product_id: number;
+        product_varian_id: number;
+        qty: number;
+        price: string;
+        order_notes: string;
+        created_by: null | number;
+        updated_by: null | number;
+        created_date: string;
+        updated_date: string;
+        product_id: number;
+        product: {
+            id: number;
+            product_name: string;
+            price: string;
+            product_image: {
+                id: number;
+                image_url: string;
+            }[];
+        };
+        variant: {
+            id: number;
+            varian_name: string;
+            price: string;
+        };
+    }>;
+    address: Array<{
+        id: number;
+        order_id: number;
+        is_main_address: number;
+        province_id: number;
+        city_id: number;
+        address_detail: string;
+        address_name: string;
+        zipcode: number;
+        latitude: null | string;
+        longitude: null | string;
+        nama_penerima: string;
+        phone: string;
+        is_active: null | number;
+        created_by: null | number;
+        updated_by: null | number;
+        created_date: string;
+        updated_date: string;
+        deleted: null | number;
+    }>;
+    courier: Array<{
+        id: number;
+        order_id: number;
+        main: string;
+        type: string;
+        price: string;
+        created_at: string;
+        updated_at: string;
+        deleted_at: null | string;
+    }>;
+};
