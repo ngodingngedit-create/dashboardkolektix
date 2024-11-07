@@ -35,6 +35,8 @@ type TalentCategoryList = {
   description: string;
 }
 
+const isBrowser = typeof window !== 'undefined';
+
 export const formTalentaSchema = z.object({
   name: z.string().nonempty("Nama tidak boleh kosong."),
   email: z.string().email("Format email tidak valid."),
@@ -43,9 +45,9 @@ export const formTalentaSchema = z.object({
   location: z.string().nonempty("Lokasi tidak boleh kosong."),
   category: z.number().int().positive("Kategori harus berupa bilangan bulat positif."),
   description: z.string({ message: 'Gambar tidak boleh kosong' }).nonempty("Deskripsi tidak boleh kosong."),
-  image: z.instanceof(Blob, { message: 'Gambar tidak boleh kosong' }).refine(blob => blob.size > 0, "Gambar tidak boleh kosong."),
-  image_thumbnail: z.instanceof(Blob).refine(blob => blob.size > 0, "Thumbnail gambar tidak boleh kosong."),
-  document: z.instanceof(File).nullable(),
+  image: isBrowser ? z.instanceof(Blob, { message: 'Gambar tidak boleh kosong' }).refine(blob => blob.size > 0, "Gambar tidak boleh kosong.") : z.string(),
+  image_thumbnail: isBrowser ? z.instanceof(Blob).refine(blob => blob.size > 0, "Thumbnail gambar tidak boleh kosong.") : z.string(),
+  document: isBrowser ? z.instanceof(File).nullable() : z.any().nullable(),
 });
 
 const Talenta = () => {
