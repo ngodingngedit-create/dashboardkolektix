@@ -91,7 +91,7 @@ export default function Invoice() {
                                         <Title order={1} className={`uppercase !text-[20px] md:!text-[1.8rem]`}>
                                             Invoice Pesanan
                                         </Title>
-                                        <Text size="sm">No. {invoice}</Text>
+                                        <Text size="sm">{invoice}</Text>
                                     </Stack>
                                 </Flex>
 
