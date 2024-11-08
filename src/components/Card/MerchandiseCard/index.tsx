@@ -47,7 +47,7 @@ const MerchandiseCard = ({ name, price, sale, creator, redirect, image }: MerchC
           <div className='h-8 w-8 bg-primary-light-200 rounded-full'></div>
           <div>
             <p className='text-dark font-[400] text-xs'>{creator}</p>
-            <div className='text-grey text-[10px]'>Jakarta</div>
+            {/* <div className='text-grey text-[10px]'>Jakarta</div> */}
           </div>
         </div>
       </div>
