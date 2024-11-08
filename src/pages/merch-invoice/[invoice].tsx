@@ -73,9 +73,10 @@ export default function Invoice() {
     const summaryPrice = useMemo(() => {
         const admin = 2000;
         const totalProductPrice = data?.detail.reduce((q, n) => q + (Boolean(n.product_varian_id) ? parseInt(n.variant.price) : parseInt(n.product.price)), 0);
-        const ppn = (admin + (totalProductPrice ?? 0)) * 0.11;
+        const courier = parseInt(data?.courier.price ?? '0');
+        const ppn = (courier + admin + (totalProductPrice ?? 0)) * 0.11;
 
-        return { ppn, admin }
+        return { ppn, admin, courier }
     }, [data]);
 
     return (
@@ -268,10 +269,23 @@ export default function Invoice() {
                                                 <Table.Td></Table.Td>
                                                 <Table.Td></Table.Td>
                                                 <Table.Td>
-                                                    <Text className={`!pt-[10px]`}>Biaya Admin</Text>
+                                                    <Text className={`!pt-[10px]`}>Biaya Pengiriman</Text>
                                                 </Table.Td>
                                                 <Table.Td>
                                                     <Text className={`!pt-[10px]`}>
+                                                        <NumberFormatter value={summaryPrice.courier} />
+                                                    </Text>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                            <Table.Tr>
+                                                <Table.Td></Table.Td>
+                                                <Table.Td></Table.Td>
+                                                <Table.Td></Table.Td>
+                                                <Table.Td>
+                                                    <Text>Biaya Admin</Text>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Text>
                                                         <NumberFormatter value={summaryPrice.admin} />
                                                     </Text>
                                                 </Table.Td>

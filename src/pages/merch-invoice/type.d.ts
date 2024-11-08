@@ -78,7 +78,7 @@ export type InvoiceResponse = {
         updated_date: string;
         deleted: null | number;
     };
-    courier: Array<{
+    courier: {
         id: number;
         order_id: number;
         main: string;
@@ -87,5 +87,5 @@ export type InvoiceResponse = {
         created_at: string;
         updated_at: string;
         deleted_at: null | string;
-    }>;
+    };
 };
