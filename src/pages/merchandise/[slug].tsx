@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import Foto from '../../assets/images/amis-banner.png';
 import CreatorTitle from '@/components/Creator/CreatorTitle';
 import Image, { StaticImageData } from 'next/image';
@@ -14,6 +14,14 @@ import _ from 'lodash';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
+import { AppMainContext } from '../_app';
+
+export type CartStorage = {
+    variant_id: number,
+    product_id: number,
+    qty: number,
+    price: number,
+}
 
 const MerchandiseDetail = () => {
     const [isr, setIsr] = useState(false);
@@ -26,6 +34,8 @@ const MerchandiseDetail = () => {
     const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;
+
+    const { cartCount, setCartCount } = useContext(AppMainContext);
 
     useEffect(() => {
         setIsr(true);
@@ -84,19 +94,40 @@ const MerchandiseDetail = () => {
         //         setLoading.filter(e => e != 'addcart');
         //     });
         // } else {
-            const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
+            const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as CartStorage[];
+            const has = cartData.find(e => e.product_id == mainData?.id && (e.variant_id ? e.variant_id == selectedVariant : true));
+            const selectedQty = (mainData?.product_varian.length ?? 0) > 0 
+                ? mainData?.product_varian.find(e => e.id == selectedVariant)?.stock_qty 
+                : mainData?.qty;
 
-            cartData.push({
-                user_id: user?.id,
-                variant_id: selectedVariant,
-                product_id: mainData?.id,
-                qty: count,
-                price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
-                description: ''
-            });
+            const added = has ? _.min([has?.qty + count, selectedQty]) ?? 0 : 0;
 
+            // Update the cartData and set the appropriate quantities
+            if (has) {
+                cartData.forEach((e, index) => {
+                    if (e.product_id == mainData?.id && (e.variant_id ? e.variant_id == selectedVariant : true)) {
+                        cartData[index] = { ...e, qty: added };
+                    }
+                });
+            } else {
+                cartData.push({
+                    variant_id: selectedVariant ?? 0,
+                    product_id: mainData?.id ?? 0,
+                    qty: added,
+                    price: parseInt(selectedVariant ? _.find((mainData?.product_varian ?? []), ['id', selectedVariant])?.price ?? '0' : (mainData?.price ?? '0')),
+                });
+            }
+
+            // Calculate the new cart count
+            const newCartCount = cartData.reduce((total, item) => total + item.qty, 0);
+
+            // Update state and cookies
+            setCartCount && setCartCount(newCartCount);
             Cookies.set('_cart', JSON.stringify(cartData));
-            router.push('/merch-cart');
+
+            toast.success('Berhasil menambah produk ke keranjang');
+            setLoading.filter(e => e != 'addcart');
+
         // }
     };
 

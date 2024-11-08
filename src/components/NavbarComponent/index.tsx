@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useMemo, useContext } from 'react';
 import Logo from '@images/logo.png';
 import useWindowSize from '@/utils/useWindowSize';
 import Image from 'next/image';
@@ -32,6 +32,7 @@ import React from 'react';
 import { Button, Indicator } from '@mantine/core';
 import { useClickOutside } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { AppMainContext } from '@/pages/_app';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -48,6 +49,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   const [navbarBackground, setNavbarBackground] = useState<boolean>(false);
   const [hasNotification, setHasNotification] = useState<boolean>(false);
   const [bgNav, setBgNav] = useState<boolean>(false);
+  const { cartCount } = useContext(AppMainContext);
 
   const outsideClickMenu = useClickOutside(() => {
     setShowUserMenu(false);
@@ -125,6 +127,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
       : (active = false);
     setBgNav(active);
   };
+
+  // const cartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
 
   return (
     <div>
@@ -234,7 +238,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                   </Link>
                 </button>
 
-                  <Indicator label="0" size="lg" offset={8}>
+                  <Indicator label={String(cartCount)} size="lg" offset={8} color="red">
                     <button
                       type='button'
                       className='mr-2 relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'

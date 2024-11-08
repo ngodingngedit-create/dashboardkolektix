@@ -1,5 +1,5 @@
 // pages/cart.tsx
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { MerchListResponse } from '../dashboard/merch/type';
@@ -15,6 +15,7 @@ import ButtonB from '@/components/Button';
 import ImageB from 'next/image';
 import fetch from '@/utils/fetch';
 import Cookies from 'js-cookie';
+import { AppMainContext } from '../_app';
 
 interface CartItem {
     id: number;
@@ -25,7 +26,7 @@ interface CartItem {
     imageUrl: string;
 }
 
-type CartListResponse<T = number> = {
+export type CartListResponse<T = number> = {
     id?: T;
     user_id: number;
     product_id: number;
@@ -42,6 +43,7 @@ export default function Cart() {
     const [loading, setLoading] = useListState<string>();
     const user = useLoggedUser();
     const router = useRouter();
+    const { cartCount, setCartCount } = useContext(AppMainContext);
 
     useEffect(() => {
         setIsr(true);
@@ -130,6 +132,7 @@ export default function Cart() {
                 // } else {
                     const cart = cartList.filter((e) => (deleteList ? !deleteList?.includes(e?.id ?? 0) : false));
                     setCartList.setState(cart);
+                    setCartCount && setCartCount(cart.reduce((q, n) => q + n.qty, 0));
                     Cookies.set('_cart', JSON.stringify(cart));
                 // }
             }

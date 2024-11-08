@@ -81,7 +81,7 @@ export default function Invoice() {
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
             <Container px={0} className={`py-[44px] md:py-[100px]`}>
-                <Card p={0} radius={0} className={`!shadow-lg`}>
+                <Card p={0} radius={8} className={`!shadow-lg`}>
                     <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
                         <Stack gap={30}>
                             <Flex justify="space-between" align="center" wrap="wrap" gap={20}>

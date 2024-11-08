@@ -19,6 +19,8 @@ import { MantineProvider, MantineTheme, Modal, ModalProps, NumberFormatter, Tabl
 
 import '@mantine/core/styles.css';
 import { ModalsProvider } from '@mantine/modals';
+import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
 
 config.autoAddCss = false;
 
@@ -82,8 +84,24 @@ const theme = createTheme({
   }
 })
 
+type Context = {
+  cartCount: number;
+  setCartCount?: Dispatch<SetStateAction<number>>;
+}
+
+export const AppMainContext = createContext<Context>({
+  cartCount: 0
+});
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const totalCartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
+    setCartCount(totalCartCount)
+  }, [])
+
   return (
     <main className={inter.className}>
       <NextUIProvider locale='en-UK'>
@@ -97,9 +115,11 @@ export default function App({ Component, pageProps }: AppProps) {
             ) : router.pathname.startsWith('/auth') ? (
               <Component {...pageProps} />
             ) : (
-              <NavbarComponent>
-                <Component {...pageProps} />
-              </NavbarComponent>
+              <AppMainContext.Provider value={{ cartCount, setCartCount }}>
+                <NavbarComponent>
+                  <Component {...pageProps} />
+                </NavbarComponent>
+              </AppMainContext.Provider>
             )}
           </ModalsProvider>
         </MantineProvider>
