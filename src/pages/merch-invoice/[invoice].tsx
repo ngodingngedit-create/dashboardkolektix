@@ -53,12 +53,12 @@ export default function Invoice() {
 
     const getProvinceCity = async () => {
         await fetch<any, City>({
-            url: `city/${data?.address[0].city_id}`,
+            url: `city/${data?.address?.city_id}`,
             method: 'GET',
             success: ({ data }) => data && setCity(data),
         });
         await fetch<any, City>({
-            url: `province/${data?.address[0].province_id}`,
+            url: `province/${data?.address?.province_id}`,
             method: 'GET',
             success: ({ data }) => data && setProvince(data),
         });
@@ -200,21 +200,21 @@ export default function Invoice() {
                                                 Nama Penerima
                                             </Text>
                                             <Text size="sm" fw={600}>
-                                                {data?.address[0].nama_penerima}
+                                                {data?.address?.nama_penerima}
                                             </Text>
                                         </Stack>
                                         <Stack gap={0}>
                                             <Text size="xs" fw={300}>
                                                 No. Telp Penerima
                                             </Text>
-                                            <Text size="sm">{data?.address[0].phone}</Text>
+                                            <Text size="sm">{data?.address?.phone}</Text>
                                         </Stack>
                                         <Stack gap={0}>
                                             <Text size="xs" fw={300} mb={5}>
                                                 Alamat Pengiriman
                                             </Text>
-                                            <Text size="xs">{province?.name}, {city?.name}, {data?.address[0].zipcode}</Text>
-                                            <Text size="xs">{data?.address[0].address_detail}</Text>
+                                            <Text size="xs">{province?.name}, {city?.name}, {data?.address?.zipcode}</Text>
+                                            <Text size="xs">{data?.address?.address_detail}</Text>
                                         </Stack>
                                     </SimpleGrid>
                                 </Card>

@@ -58,7 +58,7 @@ export type InvoiceResponse = {
             price: string;
         };
     }>;
-    address: Array<{
+    address: {
         id: number;
         order_id: number;
         is_main_address: number;
@@ -77,7 +77,7 @@ export type InvoiceResponse = {
         created_date: string;
         updated_date: string;
         deleted: null | number;
-    }>;
+    };
     courier: Array<{
         id: number;
         order_id: number;
