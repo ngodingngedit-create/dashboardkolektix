@@ -32,6 +32,7 @@ type FormState = {
     nama_pemesan?: string;
     email_pemesan?: string;
     receiver?: {
+        id?: number;
         name: string;
         phone: string;
         address_name: string;
@@ -91,6 +92,7 @@ type Checkout = {
         price: number
     };
     address: {
+        id?: number;
         is_main_address: number;
         province_id: number;
         city_id: number;
@@ -296,6 +298,7 @@ export default function Cart() {
                     price: values.courier?.type?.cost[0].value ?? 999999
                 },
                 address: {
+                    id: values.receiver?.id,
                     is_main_address: 1,
                     province_id: values.receiver?.province_id ?? 1,
                     city_id: values.receiver?.city_id ?? 1,
@@ -594,6 +597,7 @@ const AddressModal = ({ list, opened, onClose, onChange, province, getCity, city
     const handleSelect = (data?: AddressUpdateRequest) => {
         if  (data) {
             onChange({
+                id: data.id,
                 name: data.nama_penerima,
                 phone: data.phone,
                 address_name: data.address_name,
