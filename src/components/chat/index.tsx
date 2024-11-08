@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionItem, Input } from '@nextui-org/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperclip, faPaperPlane, faCommentDots } from '@fortawesome/free-solid-svg-icons';
@@ -15,7 +15,8 @@ import Cookies from 'js-cookie';
 import config from '@/Config';
 import AuthModal from '../AuthModal'; 
 import React from 'react';
-import { Indicator } from '@mantine/core';
+import { Badge, Indicator } from '@mantine/core';
+import _ from 'lodash';
 
 
 
@@ -303,6 +304,10 @@ const Chat = () => {
     getChatSupportData();
   }, []);
 
+  const totalUnread = useMemo(() => {
+    return chat.reduce((q, n) => q + (n.chats.filter(e => e.status == "unread").length), 0);
+  }, [chat])
+
   return (
     <>
       <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
@@ -311,10 +316,11 @@ const Chat = () => {
           <AccordionItem
             title={
               <div className="flex items-center text-primary-base">
-                {/* <Indicator label={"0"} size="lg" offset={8} color="red"> */}
-                  <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
-                {/* </Indicator> */}
+                <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
                 <p className="ml-2 text-[18px]">Chat</p>
+                {totalUnread > 0 && (
+                  <Badge color="red" ml={10}>{totalUnread}</Badge>
+                )}
               </div>
             }
           >  

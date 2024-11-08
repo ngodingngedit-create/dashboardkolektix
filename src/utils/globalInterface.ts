@@ -235,7 +235,7 @@ interface ChatProps {
   id: number;
   inbox_id: number;
   message: string;
-  status: string;
+  status: "read" | "unread";
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
