@@ -90,7 +90,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
                 <Image 
                   src={el.image_url} 
                   alt={el.name} 
-                  className='drop-shadow-xl rounded-xl'
+                  className='drop-shadow-xl rounded-xl -translate-x-[20px]'
                   width={700}
                   height={500} 
                 />
