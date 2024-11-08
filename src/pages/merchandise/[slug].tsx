@@ -207,7 +207,7 @@ const MerchandiseDetail = () => {
                 <div className="flex flex-col md:flex-row items-center gap-4">
                     <div className="flex items-center">
                         <div className="border border-primary-light-200 rounded-md py-2 px-5 flex gap-4">
-                            <button onClick={() => setCount(count - 1)} disabled={count === 0} className="w-5 h-5 rounded-full disabled:border-grey disabled:text-grey border-primary-dark border-2 text-primary-dark flex items-center justify-center">
+                            <button onClick={() => setCount(count - 1)} disabled={count === 1} className="w-5 h-5 rounded-full disabled:border-grey disabled:text-grey border-primary-dark border-2 text-primary-dark flex items-center justify-center">
                                 <FontAwesomeIcon icon={faMinus} size="xs" />
                             </button>
                             <p>{count}</p>

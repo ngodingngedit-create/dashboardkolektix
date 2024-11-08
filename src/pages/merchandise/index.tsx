@@ -44,7 +44,7 @@ const Merchandise = () => {
         </Breadcrumbs>
       </div>
 
-      <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-3 mx-2'>
+      {/* <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-3 mx-2'>
         {category.map((e, i) => (
           <div
             key={i}
@@ -58,7 +58,7 @@ const Merchandise = () => {
             <p className='whitespace-nowrap'>{e}</p>
           </div>
         ))}
-      </ScrollShadow>
+      </ScrollShadow> */}
       {data.length > 0 ? (
         <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]'>
           {data.map((item) => (
