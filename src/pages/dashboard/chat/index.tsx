@@ -76,7 +76,7 @@ const ChatList = ({
       </div>
       <div className='flex flex-col items-center'>
         <p className='text-xs text-primary-base'>{time}</p>
-        {countMsg && (
+        {(countMsg ?? 0) > 0 && (
           <div className='bg-primary-base text-white w-6 flex items-center justify-center rounded-full text-xs mt-1'>
             {countMsg}
           </div>
@@ -149,7 +149,7 @@ const Chat = () => {
                 name={item.from.name}
                 lastMsg={item.chats[0].message}
                 time={formatDate(item.chats[0].created_at)}
-                countMsg={item.chats.length}
+                countMsg={item.chats.filter(e => e.status == "unread").length}
                 key={item.from.id}
                 setSelected={setSelected}
                 selected={selected}
@@ -206,20 +206,20 @@ const Chat = () => {
                       {/* Pesan Masuk */}
                       <div
                         className={`flex flex-col gap-2 px-16 ${
-                          chat.fromId === user.id ? 'items-end' : ''
+                          chat.fromId !== user.id ? 'items-end' : ''
                         }`}
                       >
                         <div
                           className={`${
-                            chat.fromId === user.id
-                              ? 'bg-primary-base text-white'
-                              : 'bg-white text-dark'
+                            chat.fromId !== user.id
+                              ? 'bg-white text-dark'
+                              : 'bg-primary-base text-white'
                           } rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}
                         >
                           <p className='flex-grow'>{chat.message}</p>
                           <span
                             className={`text-[11px] ml-2 ${
-                              chat.fromId === user.id ? 'text-primary-light-200' : 'text-grey'
+                              chat.fromId !== user.id ? 'text-grey' : 'text-primary-light-200'
                             }`}
                           >
                             {new Date(chat.createdAt).toLocaleTimeString('en-US', {
