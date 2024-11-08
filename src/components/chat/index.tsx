@@ -246,7 +246,8 @@ const Chat = () => {
 
   
 
-  const sendMessage = () => {
+  const sendMessage = (form?: React.FormEvent) => {
+    form?.preventDefault();
     if (newMessage.trim()) {
       Post('inbox-chat', { ...messages, message: newMessage })
         .then((res: any) => {
@@ -262,7 +263,8 @@ const Chat = () => {
 
   
 
-  const sendSupportMessage = () => {
+  const sendSupportMessage = (form?: React.FormEvent) => {
+    form?.preventDefault();
     if (newMessage.trim()) {
       // Ambil token dari cookie menggunakan js-cookie
       const token = Cookies.get('token');
@@ -319,7 +321,7 @@ const Chat = () => {
           {user && user.id ? (
   <div className='flex !h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
     {/* Contact List */}
-    <div className='w-full md:w-1/3 bg-gray-100 overflow-y-auto border-e-2 flex-shrink-0'>
+    <div className='w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0'>
       {/* Kontak Support */}
       <ChatList
         name="Kolektix Support"
@@ -479,40 +481,44 @@ const Chat = () => {
 
 
       {selected !== 0 ? (
-        <div className='flex items-center p-3 bg-white w-full border shadow-md'>
-          <Input
-            fullWidth
-            color="primary"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Ketik pesan anda"
-            aria-label="Ketik pesan anda"
-          />
-          <button onClick={sendMessage}>
-            <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
-          </button>
-        </div>
+        <form onSubmit={sendMessage}>
+          <div className='flex items-center p-3 bg-white w-full shadow-md'>
+            <Input
+              fullWidth
+              color="primary"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Ketik pesan anda"
+              aria-label="Ketik pesan anda"
+            />
+            <button onClick={sendMessage}>
+              <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+            </button>
+          </div>
+        </form>
       ) : (
-        <div className='flex items-center p-3 bg-white w-full border shadow-md mt-4'>
-        <Input
-          fullWidth
-          color="primary"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Ketik pesan anda"
-          aria-label="Ketik pesan anda"
-        />
-        <button onClick={sendSupportMessage}>
-          <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
-        </button>
-      </div>
+        <form onSubmit={sendSupportMessage}>
+          <div className='flex items-center p-3 bg-white w-full shadow-md mt-4'>
+            <Input
+              fullWidth
+              color="primary"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Ketik pesan anda"
+              aria-label="Ketik pesan anda"
+            />
+            <button onClick={sendSupportMessage}>
+              <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+            </button>
+          </div>
+        </form>
       
       )}
     </div>
   </div>
 ) : (
   // Tampilkan Data Dummy
-  <div className='flex h-[70vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
+  <div className='flex h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
     <div className='w-full md:w-1/3 bg-gray-100 border-r border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0'>
       <ChatList
         name="Kolektix Support"
