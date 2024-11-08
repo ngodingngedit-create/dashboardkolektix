@@ -238,23 +238,27 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                   </Link>
                 </button>
 
-                  <Indicator label={String(cartCount)} size="lg" offset={8} color="red">
+                  {(route.startsWith('/merch-order') || route.startsWith('/merch-cart') || route.startsWith('/merchandise')) && (
+                    <Indicator label={String(cartCount)} size="lg" offset={8} color="red">
+                      <button
+                        type='button'
+                        className='mr-2 relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
+                        onClick={() => router.push('/merch-cart')}
+                      >
+                        <Icon icon={'ant-design:shopping-cart-outlined'} className={`text-[26px]`} />
+                      </button>
+                    </Indicator>
+                  )}
+
+                  {users?.id && (
                     <button
                       type='button'
-                      className='mr-2 relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
-                      onClick={() => router.push('/merch-cart')}
+                      className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
+                      onClick={handleNotification}
                     >
-                      <Icon icon={'ant-design:shopping-cart-outlined'} className={`text-[26px]`} />
+                      <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
                     </button>
-                  </Indicator>
-
-                  <button
-                    type='button'
-                    className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
-                    onClick={handleNotification}
-                  >
-                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
-                  </button>
+                  )}
 
                   <div className='relative ml-3'>
                     {isLogin ? (
@@ -608,7 +612,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
-      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && <Footer />}
+      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && !route.startsWith('/merch-cart') && <Footer />}
     </div>
   );
 }

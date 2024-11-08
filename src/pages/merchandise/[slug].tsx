@@ -175,7 +175,7 @@ const MerchandiseDetail = () => {
                     {/* <p className='text-grey text-xs line-through'>Rp1.650.000</p> */}
                 </div>
                 <div className="flex flex-row justify-between items-center pt-3 pb-2">
-                    <CreatorTitle image={Foto} creator={mainData.created_by} location="Jakarta" />
+                    <CreatorTitle image={Foto} creator={mainData.creator.name} location="Jakarta" />
                     {/* <Button color='secondary' label='Lihat Toko' /> */}
                 </div>
 

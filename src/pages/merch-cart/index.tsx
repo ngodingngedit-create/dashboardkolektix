@@ -55,23 +55,24 @@ export default function Cart() {
     }, [isr]);
 
     const getCart = async () => {
-        if (user?.id) {
-            await fetch<any, CartListResponse[]>({
-                url: 'cart',
-                method: 'GET',
-                data: {},
-                before: () => setLoading.append('getcart'),
-                success: (res) => {
-                    const data = res as CartListResponse[];
-                    const list = _.filter(data, ['user_id', user?.id]);
-                    setCartList.setState(list);
-                },
-                complete: () => setLoading.filter(e => e != 'getcart'),
-            });
-        } else {
+        // if (user?.id) {
+        //     await fetch<any, CartListResponse[]>({
+        //         url: 'cart',
+        //         method: 'GET',
+        //         data: {},
+        //         before: () => setLoading.append('getcart'),
+        //         success: (res) => {
+        //             const data = res as CartListResponse[];
+        //             const list = _.filter(data, ['user_id', user?.id]);
+        //             setCartList.setState(list);
+        //         },
+        //         complete: () => setLoading.filter(e => e != 'getcart'),
+        //     });
+        // } else {
             const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
             setCartList.setState(cartData.map((e, i) => ({...e, id: i + 1})));
-        }
+            if (cartData.length == 1) setSelectedItems([0]);
+        // }
     };
 
     const getProduct = () => {
@@ -155,97 +156,128 @@ export default function Cart() {
     };
 
     return (
-        <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[100px]`}>
-            <Title order={1} size="h2">
-                Keranjang Saya
-            </Title>
-            <Text size="md" c="gray">
-                Cek produkmu sebelum melanjutkan!
-            </Text>{' '}
-            {/* You can choose any subheading from the array */}
-            <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
-                <Stack gap="md" w="100%">
-                    {cartListFiltered.map((item, i) => (
-                        <Paper key={i} p="md" withBorder>
-                            <Flex gap={15} align="center" justify="space-between" wrap="wrap">
-                                <Flex gap={15} align="center">
-                                    <Checkbox checked={selectedItems.includes(i)} onChange={() => handleSelect(i)} />
-                                    <AspectRatio className={`shrink-0`}>
-                                        <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
-                                    </AspectRatio>
-                                    <div className={`w-full`}>
-                                        <Text fw={500}>{item.product?.product_name}</Text>
-                                        <Text size="sm" c="gray">Varian: {item.variant?.varian_name}</Text>
-                                        <Text size="sm" c="gray"><NumberFormatter value={item.subprice} /></Text>
+        <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px] min-h-[100vh]`}>
+            <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[80px]`}>
+                <Title order={1} size="h2">
+                    Keranjang Saya
+                </Title>
+                <Text size="md" c="gray">
+                    Cek produkmu sebelum melanjutkan!
+                </Text>{' '}
+                {/* You can choose any subheading from the array */}
+                <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
+                    <Stack gap="md" w="100%">
+                        {cartListFiltered.map((item, i) => (
+                            <Paper key={i} p="md" withBorder>
+                                <Flex gap={15} align="center" justify="space-between" wrap="wrap">
+                                    <Flex gap={15} align="center">
+                                        <Checkbox checked={selectedItems.includes(i)} onChange={() => handleSelect(i)} />
+                                        <Stack gap={8}>
+                                            <Flex gap={5} align="center">
+                                                <Icon icon="mynaui:store" className={`text-primary-base`} />
+                                                <Text size="sm" c="gray">{item.product?.creator.name}</Text>
+                                            </Flex>
+                                            <Flex gap={10}>
+                                                <AspectRatio className={`shrink-0`}>
+                                                    <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+                                                </AspectRatio>
+                                                <div className={`w-full`}>
+                                                    <Text fw={500}>{item.product?.product_name}</Text>
+                                                    <Text size="sm" c="gray">Varian: {item.variant?.varian_name}</Text>
+                                                    <Text size="sm" c="gray"><NumberFormatter value={item.subprice} /></Text>
+                                                </div>
+                                            </Flex>
+                                        </Stack>
+                                    </Flex>
+
+                                    <Flex gap={10} align="center" justify="end" className={`flex-grow md:flex-grow-0`}>
+                                        <ActionIcon
+                                            radius="xl"
+                                            className={`shrink-0`}
+                                            disabled={item.qty <= 0}
+                                            onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty - 1}))}
+                                            color="#194E9E">
+                                            <Icon icon="uiw:minus" />
+                                        </ActionIcon>
+                                        <NumberInput value={item.qty} hideControls w={50} className='[&_*]:!text-center'/>
+                                        <ActionIcon
+                                            radius="xl"
+                                            className={`shrink-0`}
+                                            disabled={item.qty >= (item.variant_id ? item.variant?.stock_qty ?? 0 : item.product?.qty ?? 0)}
+                                            onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty + 1}))}
+                                            color="#194E9E">
+                                            <Icon icon="uiw:plus" />
+                                        </ActionIcon>
+                                        <ActionIcon
+                                            className={`shrink-0`}
+                                            onClick={() => deleteCart(i)}
+                                            color="red"
+                                            variant='transparent'>
+                                            <Icon icon="uiw:delete" />
+                                        </ActionIcon>
+                                    </Flex>
+                                </Flex>
+                            </Paper>
+                        ))}
+                        {cartListFiltered?.length == 0 && (
+                            <Center mih={200} w="100%">
+                                <div className='py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full'>
+                                    <div className='border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2'>
+                                        <ImageB src={merchIcon} alt='bank' className='w-7' />
                                     </div>
-                                </Flex>
-
-                                <Flex gap={10} align="center" justify="end" className={`flex-grow`}>
-                                    <ActionIcon
-                                        radius="xl"
-                                        className={`shrink-0`}
-                                        disabled={item.qty <= 0}
-                                        onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty - 1}))}
-                                        color="#194E9E">
-                                        <Icon icon="uiw:minus" />
-                                    </ActionIcon>
-                                    <NumberInput value={item.qty} hideControls w={50} className='[&_*]:!text-center'/>
-                                    <ActionIcon
-                                        radius="xl"
-                                        className={`shrink-0`}
-                                        disabled={item.qty >= (item.product?.qty ?? 0)}
-                                        onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty + 1}))}
-                                        color="#194E9E">
-                                        <Icon icon="uiw:plus" />
-                                    </ActionIcon>
-                                    <ActionIcon
-                                        className={`shrink-0`}
-                                        onClick={() => deleteCart(i)}
-                                        color="red"
-                                        variant='transparent'>
-                                        <Icon icon="uiw:delete" />
-                                    </ActionIcon>
-                                </Flex>
-                            </Flex>
-                        </Paper>
-                    ))}
-                    {cartListFiltered?.length == 0 && (
-                        <Center mih={200} w="100%">
-                            <div className='py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full'>
-                                <div className='border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2'>
-                                    <ImageB src={merchIcon} alt='bank' className='w-7' />
+                                    <div className='text-center'>
+                                    <p className='font-semibold text-lg'>Belum ada produk di keranjang</p>
+                                    <p className='text-grey max-w-72 mt-[10px]'>
+                                        Cari Produk dan tambahkan ke keranjang.
+                                    </p>
+                                    </div>
+                                    <ButtonB
+                                        label='Cari Produk'
+                                        color='primary'
+                                        className='mt-4'
+                                        onClick={() => router.push('/merchandise')}
+                                        startIcon={faCirclePlus}
+                                    />
                                 </div>
-                                <div className='text-center'>
-                                <p className='font-semibold text-lg'>Belum ada produk di keranjang</p>
-                                <p className='text-grey max-w-72 mt-[10px]'>
-                                    Cari Produk dan tambahkan ke keranjang.
-                                </p>
-                                </div>
-                                <ButtonB
-                                    label='Cari Produk'
-                                    color='primary'
-                                    className='mt-4'
-                                    onClick={() => router.push('/merchandise')}
-                                    startIcon={faCirclePlus}
-                                />
-                            </div>
-                        </Center>
-                    )}
-                </Stack>
-
-                <Card withBorder w="100%" className={`md:max-w-[300px]`} h="fit-content">
-                    <Stack gap="md">
-                        <Title order={3}>Checkout</Title>
-                        <Flex justify="space-between">
-                            <Text>Total Harga</Text>
-                            <Text><NumberFormatter value={totalPrice} /></Text>
-                        </Flex>
-                        <Button onClick={handleCheckout} fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0} radius="xl">
-                            Checkout
-                        </Button>
+                            </Center>
+                        )}
                     </Stack>
+
+                    {/* <Card withBorder w="100%" className={`md:max-w-[300px]`} h="fit-content">
+                        <Stack gap="md">
+                            <Title order={3}>Checkout</Title>
+                            <Flex justify="space-between">
+                                <Text>Total Harga</Text>
+                                <Text><NumberFormatter value={totalPrice} /></Text>
+                            </Flex>
+                            <Button onClick={handleCheckout} fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0} radius="xl">
+                                Checkout
+                            </Button>
+                        </Stack>
+                    </Card> */}
+
+                <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
+                    <Container size="lg" w="100%">
+                        <Flex justify="space-between" w="100%" wrap="wrap" gap={10}>
+                            <Flex align="center" gap={10} className={`[&_*]:!whitespace-nowrap`}>
+                                <Text>Total Harga :</Text>
+                                <Text fw={600}><NumberFormatter value={totalPrice} /></Text>
+                            </Flex>
+                            <Button
+                                disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0}
+                                loading={loading.includes('checkout')}
+                                onClick={handleCheckout}
+                                className={`uppercase`}
+                                color="#194E9E"
+                                rightSection={<Icon icon="uiw:right" />}
+                                radius="xl">
+                                Checkout Sekarang
+                            </Button>
+                        </Flex>
+                    </Container>
                 </Card>
-            </Flex>
-        </Container>
+                </Flex>
+            </Container>
+        </div>
     );
 }

@@ -26,6 +26,10 @@ export type MerchListResponse = {
             varian_name: string;
         }
     }[];
+    creator: {
+        id: number;
+        name: string;
+    }
     // creator_id: number;
     // slug: string;
     // sku: string;
