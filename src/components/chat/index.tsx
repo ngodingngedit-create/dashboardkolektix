@@ -15,6 +15,7 @@ import Cookies from 'js-cookie';
 import config from '@/Config';
 import AuthModal from '../AuthModal'; 
 import React from 'react';
+import { Indicator } from '@mantine/core';
 
 
 
@@ -150,7 +151,8 @@ const Chat = () => {
   const [newMessage, setNewMessage] = useState<string>('');
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handleButtonClick = () => {
+  const handleButtonClick = (form?: React.FormEvent) => {
+    form?.preventDefault();
     const token = Cookies.get('token'); // Ambil token dari cookies
     if (!token) {
         setModalVisible(true); // Hanya set modalVisible ke true jika tidak ada token
@@ -302,20 +304,22 @@ const Chat = () => {
   return (
     <>
       <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-      <div className='fixed bottom-16 right-5 transition-all duration-300 bg-white shadow-xl rounded-lg z-10 opacity-100'>
+      <div className='[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100'>
         <Accordion>
           <AccordionItem
             title={
               <div className="flex items-center text-primary-base">
-                <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
-                <p className="ml-2">Chat</p>
+                {/* <Indicator label={"0"} size="lg" offset={8} color="red"> */}
+                  <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
+                {/* </Indicator> */}
+                <p className="ml-2 text-[18px]">Chat</p>
               </div>
             }
           >  
           {user && user.id ? (
-  <div className='flex h-[70vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
+  <div className='flex !h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
     {/* Contact List */}
-    <div className='w-full md:w-1/3 bg-gray-100 border-r overflow-y-auto border-e-2 flex-shrink-0'>
+    <div className='w-full md:w-1/3 bg-gray-100 overflow-y-auto border-e-2 flex-shrink-0'>
       {/* Kontak Support */}
       <ChatList
         name="Kolektix Support"
@@ -509,7 +513,7 @@ const Chat = () => {
 ) : (
   // Tampilkan Data Dummy
   <div className='flex h-[70vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border'>
-    <div className='w-full md:w-1/3 bg-gray-100 border-r overflow-y-auto border-e-2 flex-shrink-0'>
+    <div className='w-full md:w-1/3 bg-gray-100 border-r border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0'>
       <ChatList
         name="Kolektix Support"
         lastMsg={defaultSupportContact.lastMsg}
@@ -532,19 +536,21 @@ const Chat = () => {
         </div>
       </div>
       {/* Tambahkan input untuk mengirim pesan */}
-      <div className='flex items-center p-3 bg-white w-full border shadow-md'>
-        <Input
-          fullWidth
-          color="primary"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Ketik pesan anda"
-          aria-label="Ketik pesan anda"
-        />
-        <button onClick={handleButtonClick}>
-          <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
-        </button>
-      </div>
+      <form onSubmit={handleButtonClick}>
+        <div className='flex items-center p-3 bg-white w-full shadow-md'>
+          <Input
+            fullWidth
+            color="primary"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Ketik pesan anda"
+            aria-label="Ketik pesan anda"
+          />
+          <button onClick={handleButtonClick}>
+            <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 )}
