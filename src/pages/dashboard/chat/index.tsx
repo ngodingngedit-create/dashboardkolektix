@@ -271,6 +271,12 @@ const Chat = () => {
                               hour12: false,
                             })}
                           </span>
+                          {chat.fromId !== user.id && (
+                            <Icon
+                              icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
+                              className={`text-grey text-[18px] ml-[3px]`}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
