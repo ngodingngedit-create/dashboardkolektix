@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Chip } from '@nextui-org/react';
 import { UserProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperclip } from '@fortawesome/free-solid-svg-icons';
+import { faPaperclip, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import InputField from '@/components/Input';
 import { formatDate, formatDateDiff } from '@/utils/useFormattedDate';
 import { Get, Post } from '@/utils/REST';
@@ -11,6 +11,8 @@ import paperplane from '../../../assets/icon/paperplane.png';
 import { InboxListProps } from '@/utils/globalInterface';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
+import { Box, Card, Text, TextInput } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface ChatProps {
   inbox_id: number;
@@ -91,6 +93,8 @@ const Chat = () => {
   const [selected, setSelected] = useState<number>(0);
   const [messagerName, setName] = useState<string>('');
   const [user, setUser] = useState<UserProps>();
+  const [searchedChats, setSearchedChats] = useState<InboxListProps[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const users = useLoggedUser();
   const [messages, setMessages] = useState<ChatProps>({
     inbox_id: 0,
@@ -122,11 +126,16 @@ const Chat = () => {
       });
   };
 
-  const sendMessage = () => {
+  const sendMessage = (form?: React.FormEvent) => {
+    form?.preventDefault();
     Post('inbox-chat', messages)
       .then((res: any) => {
         console.log(res);
         getData();
+        setMessages({ ...messages, message: '' })
+        if (messageBoxRef.current) {
+          messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+        }
       })
       .catch((err: any) => {
         toast.error(err.response.data.message);
@@ -136,13 +145,47 @@ const Chat = () => {
   useEffect(() => {
     getData();
   }, []);
+
+  useEffect(() => {
+    if (Boolean(searchQuery)) {
+      setSearchedChats(chat.filter(e => e.from.name?.toLowerCase().includes(searchQuery.toLowerCase())));
+    } else {
+      setSearchedChats([]);
+    }
+  }, [searchQuery]);
+
+  const messageBoxRef = useRef<HTMLDivElement | null>(null);
+  
+  useEffect(() => {
+    if (messageBoxRef.current) {
+      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+    }
+  }, [chat, selected])
+
   return (
     user &&
     user.id &&
     chat.length > 0 && (
-      <div className='flex text-dark h-[86vh]'>
-        <div className='w-1/3 flex flex-col divide-y divide-primary-light-200 overflow-y-scroll'>
-          {chat
+      <div className='flex text-dark h-[calc(100vh_-_81px)]'>
+        <div className='w-1/3 flex flex-col divide-y divide-primary-light-200'>
+
+          <Box p={5}>
+            <TextInput
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              leftSection={<Icon icon="uiw:search" />}
+              placeholder="Cari Chat"
+              variant="unstyled"
+            />
+          </Box>
+
+          {(searchQuery && searchedChats.length == 0) && (
+            <Card>
+              <Text size="sm" c="gray">Chat tidak ditemukan</Text>
+            </Card>
+          )}
+
+          {(searchQuery ? searchedChats : chat)
             .filter((item: InboxListProps) => item.from.id !== user?.id)
             .map((item: InboxListProps) => (
               <ChatList
@@ -170,7 +213,7 @@ const Chat = () => {
               </div>
             </div>
           )}
-          <div className=' py-4 px-3 h-16 gap-3 bg-chat min-h-full overflow-y-scroll'>
+          <div ref={messageBoxRef} className=' py-4 px-3 h-full gap-3 bg-chat overflow-y-scroll'>
             {(() => {
               let lastDate: string | null = null; // Deklarasi tipe data yang lebih spesifik
               return chat
@@ -237,25 +280,25 @@ const Chat = () => {
           </div>
           {selected ? (
             <div className='sticky flex justify-center bottom-0 bg-white py-3 border border-primary-light-200'>
-              <div className='flex w-4/5 gap-2'>
-                <button className='text-dark-grey w-10 h-10 hover:bg-primary-light-200 rounded-full'>
-                  <FontAwesomeIcon icon={faPaperclip} />
-                </button>
-                <div className='flex-grow'>
-                  <InputField
-                    type='text'
-                    placeholder='Ketik pesan anda'
-                    fullWidth
-                    onChange={(e) => setMessages({ ...messages, message: e.target.value })}
-                  />
+              <form onSubmit={sendMessage} className={`w-full px-[20px]`}>
+                <div className='flex gap-2'>
+                  {/* <button className='text-dark-grey w-10 h-10 hover:bg-primary-light-200 rounded-full'>
+                    <FontAwesomeIcon icon={faPaperclip} />
+                  </button> */}
+                  <div className='flex-grow'>
+                    <InputField
+                      type='text'
+                      placeholder='Ketik pesan anda'
+                      fullWidth
+                      value={messages.message}
+                      onChange={(e) => setMessages({ ...messages, message: e.target.value })}
+                    />
+                  </div>
+                  <button onClick={sendMessage} className={`flex items-center justify-center`}>
+                      <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+                  </button>
                 </div>
-                <button
-                  className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base flex items-center justify-center rounded-full'
-                  onClick={sendMessage}
-                >
-                  <Image src={paperplane} alt='paperplane' />
-                </button>
-              </div>
+              </form>
             </div>
           ) : null}
         </div>

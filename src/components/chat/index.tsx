@@ -15,9 +15,10 @@ import Cookies from 'js-cookie';
 import config from '@/Config';
 import AuthModal from '../AuthModal';
 import React from 'react';
-import { Badge, Box, Flex, Indicator, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip } from '@mantine/core';
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import Link from 'next/link';
 
 interface ChatProps {
     inbox_id: number;
@@ -297,20 +298,6 @@ const Chat = () => {
       }
     }, [searchQuery]);
 
-    const SearchChat = () => {
-        return (
-          <Box p={5}>
-            <TextInput
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              leftSection={<Icon icon="uiw:search" />}
-              placeholder="Cari Chat"
-              variant="unstyled"
-            />
-          </Box>
-        )
-    }
-
     const messageBoxRef = useRef<HTMLDivElement | null>(null);
     
     useEffect(() => {
@@ -322,7 +309,7 @@ const Chat = () => {
     return (
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
+            <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
                 <Accordion>
                     <AccordionItem
                         title={
@@ -334,6 +321,13 @@ const Chat = () => {
                                         {totalUnread}
                                     </Badge>
                                 )}
+                                {(users?.id && Boolean(users.has_creator)) && (
+                                  <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
+                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden`}>
+                                      <Icon icon="majesticons:open-line" />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                )}
                             </div>
                         }
                     >
@@ -341,10 +335,24 @@ const Chat = () => {
                             <div className="flex !h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
                                 {/* Contact List */}
                                 <div className="w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0">
-                                    <SearchChat />
+                                    <Box p={5}>
+                                      <TextInput
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        leftSection={<Icon icon="uiw:search" />}
+                                        placeholder="Cari Chat"
+                                        variant="unstyled"
+                                      />
+                                    </Box>
 
                                     {/* Kontak Support */}
                                     <ChatList name="Kolektix Support" lastMsg={supportContacts[0]?.lastMessage || 'Belum ada pesan'} time={supportContacts[0]?.lastMessageTime || 'Belum ada pesan'} key="kolektix-support" setSelected={setSelected} selected={selected} setName={setName} setMessages={setMessages} messages={messages} id={0} inbox={0} />
+
+                                    {(searchQuery && searchedChats.length == 0) && (
+                                      <Card>
+                                        <Text size="sm" c="gray">Chat tidak ditemukan</Text>
+                                      </Card>
+                                    )}
 
                                     {/* Kontak Lain */}
                                     {chat.length > 0 ? (
