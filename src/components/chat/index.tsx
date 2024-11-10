@@ -15,7 +15,7 @@ import Cookies from 'js-cookie';
 import config from '@/Config';
 import AuthModal from '../AuthModal';
 import React from 'react';
-import { Badge, Box, Indicator, TextInput } from '@mantine/core';
+import { Badge, Box, Flex, Indicator, Text, TextInput } from '@mantine/core';
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
@@ -404,6 +404,12 @@ const Chat = () => {
                                                                                         hour12: false
                                                                                     })}
                                                                                 </span>
+                                                                                {!isAdminReply && (
+                                                                                  <Icon
+                                                                                    icon={true ? "solar:check-read-linear" : "ci:check"}
+                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px]`}
+                                                                                  />
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -453,6 +459,12 @@ const Chat = () => {
                                                                                 hour12: false
                                                                             })}
                                                                         </span>
+                                                                        {chat.fromId !== user.id && (
+                                                                          <Icon
+                                                                            icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
+                                                                            className={`text-grey text-[18px] ml-[3px]`}
+                                                                          />
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
