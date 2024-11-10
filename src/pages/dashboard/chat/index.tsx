@@ -300,8 +300,11 @@ const Chat = () => {
                       onChange={(e) => setMessages({ ...messages, message: e.target.value })}
                     />
                   </div>
-                  <button onClick={sendMessage} className={`flex items-center justify-center`}>
-                      <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+                  <button
+                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base flex items-center justify-center rounded-full'
+                    onClick={sendMessage}
+                  >
+                    <Image src={paperplane} alt='paperplane' />
                   </button>
                 </div>
               </form>

@@ -19,6 +19,8 @@ import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import Link from 'next/link';
+import paperplane from '../../assets/icon/paperplane.png';
+import Image from 'next/image';
 
 interface ChatProps {
     inbox_id: number;
@@ -486,8 +488,11 @@ const Chat = () => {
                                         <form onSubmit={sendMessage}>
                                             <div className="flex items-center p-3 bg-white w-full shadow-md">
                                                 <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                                <button onClick={sendMessage} className={`flex items-center justify-center`}>
-                                                    <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+                                                <button
+                                                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
+                                                    onClick={sendMessage}
+                                                >
+                                                    <Image src={paperplane} alt='paperplane' />
                                                 </button>
                                             </div>
                                         </form>
@@ -495,8 +500,11 @@ const Chat = () => {
                                         <form onSubmit={sendSupportMessage}>
                                             <div className="flex items-center p-3 bg-white w-full shadow-md mt-4">
                                                 <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                                <button onClick={sendSupportMessage} className={`flex items-center justify-center`}>
-                                                    <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+                                                <button
+                                                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
+                                                    onClick={sendSupportMessage}
+                                                >
+                                                    <Image src={paperplane} alt='paperplane' />
                                                 </button>
                                             </div>
                                         </form>
@@ -520,8 +528,11 @@ const Chat = () => {
                                     <form onSubmit={handleButtonClick}>
                                         <div className="flex items-center p-3 bg-white w-full shadow-md">
                                             <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                            <button onClick={handleButtonClick} className={`flex items-center justify-center`}>
-                                                <FontAwesomeIcon icon={faPaperPlane} className="text-white bg-primary-base w-6 h-6 ms-2 rounded-full p-2" />
+                                            <button
+                                                className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
+                                                onClick={sendMessage}
+                                            >
+                                                <Image src={paperplane} alt='paperplane' />
                                             </button>
                                         </div>
                                     </form>
