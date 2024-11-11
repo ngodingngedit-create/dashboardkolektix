@@ -18,11 +18,13 @@ interface MerchCardProps {
   price: number;
   sale: number;
   creator: string;
+  creatorid?: number;
+  creatorImage?: string;
   redirect: string;
   image?: string;
 }
 
-const MerchandiseCard = ({ name, price, sale, creator, redirect, image }: MerchCardProps & {}) => {
+const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image }: MerchCardProps & {}) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   return (
     <Link href={redirect} className='bg-white rounded-lg border border-primary-light-200 shadow-md ml-1 md:ml-0 w-full'>
@@ -43,13 +45,13 @@ const MerchandiseCard = ({ name, price, sale, creator, redirect, image }: MerchC
             </p>
           </div>
         </div>
-        <div className='flex items-center gap-2 border-t p-[10px] border-t-primary-light-200 border-dashed'>
+        <Link href={`/creator/${creator}`} className='flex items-center gap-2 border-t p-[10px] border-t-primary-light-200 border-dashed relative z-20'>
           <div className='h-8 w-8 bg-primary-light-200 rounded-full'></div>
           <div>
             <p className='text-dark font-[400] text-xs'>{creator}</p>
             {/* <div className='text-grey text-[10px]'>Jakarta</div> */}
           </div>
-        </div>
+        </Link>
       </div>
     </Link>
   );

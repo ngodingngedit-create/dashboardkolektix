@@ -68,6 +68,7 @@ const Merchandise = () => {
               price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
               sale={0}
               creator={item.creator.name}
+              creatorid={item.creator.id}
               redirect={`/merchandise/${item.slug}`}
               image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
             />

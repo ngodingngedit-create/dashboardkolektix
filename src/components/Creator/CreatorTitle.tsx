@@ -1,4 +1,5 @@
 import Image, { StaticImageData } from 'next/image';
+import Link from 'next/link';
 
 const CreatorTitle = ({
   image,
@@ -10,7 +11,7 @@ const CreatorTitle = ({
   location: string;
 }) => {
   return (
-    <div className='flex items-center gap-3'>
+    <Link className='flex items-center gap-3' href={`/creator/${creator}`}>
       <Image
         src={image}
         alt='image'
@@ -20,7 +21,7 @@ const CreatorTitle = ({
         <p className='font-semibold'>{creator}</p>
         <p className='text-grey text-xs'>{location}</p>
       </div>
-    </div>
+    </Link>
   );
 };
 

@@ -7,6 +7,8 @@ import { Breadcrumbs, BreadcrumbItem, ScrollShadow } from '@nextui-org/react';
 import { Get } from '@/utils/REST';
 import Images from '@/components/Images';
 import { useRouter } from 'next/router';
+import { MerchListResponse } from '../dashboard/merch/type';
+import MerchandiseCard from '@/components/Card/MerchandiseCard';
 
 interface Creator {
   id: string;
@@ -37,7 +39,7 @@ interface Event {
 
 const tabData = [
   { key: 'event', label: 'Event' },
-  { key: 'music', label: 'Merchandise' },
+  { key: 'merchandise', label: 'Merchandise' },
   { key: 'venue', label: 'Venue' },
   { key: 'lowongan', label: 'Lowongan' },
   { key: 'talent', label: 'Talent' },
@@ -53,6 +55,7 @@ const CreatoMenu: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('event');
   const [creatorData, setCreatorData] = useState<Creator | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [merchandise, setmMerchandise] = useState<MerchListResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
   const { slug } = router.query;
@@ -69,6 +72,16 @@ const CreatoMenu: React.FC = () => {
         console.error('Error fetching data:', err);
       })
       .finally(() => {
+        setLoading(false);
+      });
+    Get('product', {})
+      .then((res: any) => {
+        setmMerchandise((res.data as MerchListResponse[]).filter(e => e.creator.name == slug && e.product_status_id == 1));
+        console.log(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.log(err);
         setLoading(false);
       });
   };
@@ -177,8 +190,8 @@ const CreatoMenu: React.FC = () => {
             </ScrollShadow>
           )}
 
-          <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5'>
-            {activeTab === 'event' ? (
+          <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 gap-x-[20px] mt-5 !w-full mb-[50px]'>
+            {activeTab === 'event' && (
               activeCategory === 'Event Aktif' ? (
                 filterEvents(true).length > 0 ? (
                   filterEvents(true).map((event) => (
@@ -197,7 +210,7 @@ const CreatoMenu: React.FC = () => {
                     />
                   ))
                 ) : (
-                  <p className='text-center col-span-full'>No active events available for the selected category.</p>
+                  <p className='text-center col-span-full mb-[20px]'>No active events available for the selected category.</p>
                 )
               ) : (
                 filterEvents(false).length > 0 ? (
@@ -220,8 +233,23 @@ const CreatoMenu: React.FC = () => {
                   <p className='text-center col-span-full'>No past events available for the selected category.</p>
                 )
               )
-            ) : (
-              <p className='text-center text-grey col-span-full'>Belum ada {activeTab} yang tersedia.</p>
+            )}
+
+            {activeTab == 'merchandise' && (
+              <>
+                {merchandise.map((item) => (
+                  <MerchandiseCard
+                    key={item.id}
+                    name={item.product_name}
+                    price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
+                    sale={0}
+                    creator={item.creator.name}
+                    creatorid={item.creator.id}
+                    redirect={`/merchandise/${item.slug}`}
+                    image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
+                  />
+                ))}
+              </>
             )}
           </div>
         </div>
