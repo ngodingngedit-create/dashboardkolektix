@@ -17,7 +17,7 @@ const Merchandise = () => {
     setLoading(true);
     Get('product', {})
       .then((res: any) => {
-        setData(res.data);
+        setData((res.data as MerchListResponse[]).filter(e => e.product_status_id == 2));
         console.log(res.data);
         setLoading(false);
       })

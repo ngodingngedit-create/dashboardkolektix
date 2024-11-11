@@ -128,7 +128,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 sku,
                 price: price ?? 99999,
                 image: image.map(e => e instanceof Blob ? e : (imageList?.find(z => e == z.image_url)?.image ?? '')),
-                product_status_id: isDraft ? 5 : status == undefined ? 1 : status ? 1 : 0,
+                product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
                 creator_id: user?.has_creator.id ?? 0,
                 // order: 10,
                 // can_purchasable: 1,

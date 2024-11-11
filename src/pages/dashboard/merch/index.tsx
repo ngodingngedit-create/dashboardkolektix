@@ -48,10 +48,10 @@ const Merch = () => {
 
   const handleToggleStatus = async (id: number, status: boolean) => {
     setLoading.append('toggle-status');
-    Post(`product/toggle-status/${id}`, { status: status ? 1 : 0 })
+    Post(`product_toggle_status/${id}`, { status: status ? 2 : 3 })
     .then((res: any) => {
-      if (res.status) {
-        setMerchList([...(merchList ?? []).map(e => e.id == id ? {...e, status: status ? 1 : 0 } : e)])
+      if (res.status && merchList) {
+        setMerchList(merchList.map(e => e.id == id ? {...e, product_status_id: status ? 2 : 3 } : e))
       }
       setLoading.filter(e => e != 'toggle-status');
     })
@@ -62,9 +62,9 @@ const Merch = () => {
   }
 
   const tabStatus: [number, string][] = [
-    [1, "Sedang Dijual"],
-    [5, "Merchandise Draf"],
-    [0, "Non Aktif"]
+    [2, "Sedang Dijual"],
+    [1, "Merchandise Draf"],
+    [3, "Non Aktif"]
   ];
 
   const splittedByStatus = useCallback((status: number) => {
@@ -163,7 +163,7 @@ const Merch = () => {
                       <TableCell>{((e.product_varian.length ?? 0) > 0 ? _.sumBy(e.product_varian, 'stock_qty') : e.qty)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
-                          <Switch checked={e.product_status_id == 1} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>
+                          <Switch checked={e.product_status_id == 2} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>
                           <ActionIcon variant="transparent" onClick={() => handleDelete(e.id)} loading={loading.includes(`delete${e.id}`)}>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M13.3333 5.00033V4.33366C13.3333 3.40024 13.3333 2.93353 13.1517 2.57701C12.9919 2.2634 12.7369 2.00844 12.4233 1.84865C12.0668 1.66699 11.6001 1.66699 10.6667 1.66699H9.33333C8.39991 1.66699 7.9332 1.66699 7.57668 1.84865C7.26308 2.00844 7.00811 2.2634 6.84832 2.57701C6.66667 2.93353 6.66667 3.40024 6.66667 4.33366V5.00033M8.33333 9.58366V13.7503M11.6667 9.58366V13.7503M2.5 5.00033H17.5M15.8333 5.00033V14.3337C15.8333 15.7338 15.8333 16.4339 15.5608 16.9686C15.3212 17.439 14.9387 17.8215 14.4683 18.0612C13.9335 18.3337 13.2335 18.3337 11.8333 18.3337H8.16667C6.76654 18.3337 6.06647 18.3337 5.53169 18.0612C5.06129 17.8215 4.67883 17.439 4.43915 16.9686C4.16667 16.4339 4.16667 15.7338 4.16667 14.3337V5.00033" stroke="#666666" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>

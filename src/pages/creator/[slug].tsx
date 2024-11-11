@@ -76,7 +76,7 @@ const CreatoMenu: React.FC = () => {
       });
     Get('product', {})
       .then((res: any) => {
-        setmMerchandise((res.data as MerchListResponse[]).filter(e => e.creator.name == slug && e.product_status_id == 1));
+        setmMerchandise((res.data as MerchListResponse[]).filter(e => e.creator.name == slug && e.product_status_id == 2));
         console.log(res.data);
         setLoading(false);
       })
