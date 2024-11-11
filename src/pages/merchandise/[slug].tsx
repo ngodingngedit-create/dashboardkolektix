@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Get, Post } from '@/utils/REST';
 import { useListState } from '@mantine/hooks';
-import { NumberFormatter, Button } from '@mantine/core';
+import { NumberFormatter, Button, Flex, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import _ from 'lodash';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -207,7 +207,7 @@ const MerchandiseDetail = () => {
                 <div className="flex flex-col md:flex-row items-center gap-4">
                     <div className="flex items-center">
                         <div className="border border-primary-light-200 rounded-md py-2 px-5 flex gap-4">
-                            <button onClick={() => setCount(count - 1)} disabled={count === 1} className="w-5 h-5 rounded-full disabled:border-grey disabled:text-grey border-primary-dark border-2 text-primary-dark flex items-center justify-center">
+                            <button onClick={() => setCount(count - 1)} disabled={count <= 1} className="w-5 h-5 rounded-full disabled:border-grey disabled:text-grey border-primary-dark border-2 text-primary-dark flex items-center justify-center">
                                 <FontAwesomeIcon icon={faMinus} size="xs" />
                             </button>
                             <p>{count}</p>
@@ -250,6 +250,25 @@ const MerchandiseDetail = () => {
                     >
                         Beli Sekarang
                     </Button>
+                    <Flex mt={7} align="center" justify="space-between" gap={10} w="100%">
+                        <Button
+                            leftSection={<Icon icon="fluent:chat-12-regular" className={`!text-[20px]`} />}
+                            color="#0B387C"
+                            variant="outline"
+                            radius="xl"
+                        >
+                            Chat Creator
+                        </Button>
+
+                        <Flex gap={5} align="center">
+                            <ActionIcon variant="transparent" size="lg" color="#0B387C">
+                                <Icon icon="lineicons:share-1" className={`!text-[24px]`} />
+                            </ActionIcon>
+                            <ActionIcon variant="transparent" size="lg" color="#0B387C">
+                                <Icon icon="ri:heart-add-line" className={`!text-[24px]`} />
+                            </ActionIcon>
+                        </Flex>
+                    </Flex>
             </div>
         </div>
     );
