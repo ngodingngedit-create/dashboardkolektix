@@ -29,6 +29,7 @@ export type MerchListResponse = {
     creator: {
         id: number;
         name: string;
+        image_url: string;
     }
     // creator_id: number;
     // slug: string;

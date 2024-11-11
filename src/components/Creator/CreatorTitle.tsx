@@ -6,13 +6,15 @@ const CreatorTitle = ({
   creator,
   location,
 }: {
-  image: StaticImageData;
+  image: string;
   creator: string;
   location: string;
 }) => {
   return (
     <Link className='flex items-center gap-3' href={`/creator/${creator}`}>
       <Image
+        width={50}
+        height={50}
         src={image}
         alt='image'
         className='w-8 h-8 border border-primary-light-200 rounded-full object-contain'
