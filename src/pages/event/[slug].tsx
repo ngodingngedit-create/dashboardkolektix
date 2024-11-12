@@ -35,6 +35,8 @@ import AuthModal from '@/components/AuthModal';
 import React from 'react';
 import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
+import { Flex, Stack, Text, Image as ImageM } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface Form {
     nik: string;
@@ -714,8 +716,8 @@ const EventDetails = () => {
                                     <div className="px-8 pt-20 pb-3">
                                         <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
                                     </div>
-                                    <div className="flex justify-between px-8">
-                                        <div className="w-4/5 pr-5">
+                                    <div className="flex justify-between px-8 gap-5">
+                                        <div className="w-full">
                                             {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">
@@ -726,16 +728,16 @@ const EventDetails = () => {
                                                         </Link>
                                                     )}
                                                     {/* {detail.has_event_social_meida?.facebook && (
-                            <Link
-                              href={detail.has_event_social_meida?.facebook}
-                              target='_blank'
-                              rel='noreferrer'
-                              className='flex items-center'
-                            >
-                              <FontAwesomeIcon icon={faFacebook} className='mr-2 text-lg ' />
-                              <p className=' font-normal text-sm'>{detail.name}</p>
-                            </Link>
-                          )} */}
+                                                      <Link
+                                                        href={detail.has_event_social_meida?.facebook}
+                                                        target='_blank'
+                                                        rel='noreferrer'
+                                                        className='flex items-center'
+                                                      >
+                                                        <FontAwesomeIcon icon={faFacebook} className='mr-2 text-lg ' />
+                                                        <p className=' font-normal text-sm'>{detail.name}</p>
+                                                      </Link>
+                                                    )} */}
                                                 </div>
                                                 <div className="flex items-center">
                                                     <div className="relative">
@@ -747,61 +749,42 @@ const EventDetails = () => {
                                                     {isLogin && <FontAwesomeIcon icon={faBookmarkOutlined} className="text-xl " />}
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="px-6 w-1/5 bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 mx-2 shadow-md h-72 flex flex-col justify-center">
-                                            <p className="mb-3 font-normal text-sm">
-                                                <FontAwesomeIcon icon={faCalendar} className="w-4 mr-2 text-primary" />
-                                                <span className="text-dark">{detail && `${formatDate(detail.start_date)} ${detail.start_date !== detail.end_date ? '- ' + formatDate(detail.end_date) : ''} ${formatYear(detail.end_date)}`}</span>
-                                            </p>
-                                            <p className="mb-3 font-normal text-sm">
-                                                <FontAwesomeIcon icon={faClock} className="w-4 mr-2 text-primary" />
-                                                <span className="text-dark">
-                                                    {detail?.start_time.toString()} - {detail?.end_time.toString()}
-                                                </span>
-                                            </p>
-                                            <p className="mb-3 font-normal text-sm">
-                                                <FontAwesomeIcon icon={faLocationDot} className="w-4 mr-2 text-primary" />
-                                                <span className="text-dark">{detail?.location_name}</span>
-                                            </p>
-
-                                            <div className="flex flex-col justify-center w-full text-dark items-center text-sm gap-4">
-                                                <p className="text-[10px]">Diselenggarakan Oleh</p>
-                                                <Image src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" className="w-20" width={200} height={200} />
+                                            <div className="flex gap-5 max-w-5xl py-3">
+                                                <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
+                                                    Deskripsi
+                                                </button>
+                                                <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
+                                                    Tiket
+                                                </button>
+                                                <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
+                                                    Syarat & Ketentuan
+                                                </button>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-primary-dark sticky top-16">
-                                <div className="text-white flex items-end justify-between py-5 px-8 max-w-7xl mx-auto">
-                                    <div className="flex gap-5 w-4/5 max-w-5xl mx-auto">
-                                        <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 && 'font-semibold text-[#82b3ff]'}`}>
-                                            Deskripsi
-                                        </button>
-                                        <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 && 'font-semibold text-[#82b3ff]'}`}>
-                                            Tiket
-                                        </button>
-                                        <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 && 'font-semibold text-[#82b3ff]'}`}>
-                                            Syarat & Ketentuan
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-col gap-2 w-1/5">
-                                        <div>
-                                            <button
-                                                className="text-primary-base bg-white shadow-md rounded-full py-2 font-semibold w-full"
-                                                // onClick={handleChatClick}
-                                            >
-                                                Chat
-                                            </button>
-                                        </div>
-                                        <button
-                                            className={`text-primary-base bg-white shadow-md rounded-full py-2 font-semibold w-full ${menu === 2 ? 'opacity-0 cursor-default' : 'opacity-100'} transition-opacity`}
-                                            onClick={() => {
-                                                setMenu(2);
-                                            }}
-                                        >
-                                            Beli Tiket
-                                        </button>
+                                        
+                                        <Stack className={`w-full md:max-w-[300px]`}>
+                                          <div className="p-[25px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
+                                            <Stack gap={12}>
+                                              <Flex align="center" gap={10}>
+                                                <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
+                                                <Text>{detail && `${formatDate(detail.start_date)} ${detail.start_date !== detail.end_date ? '- ' + formatDate(detail.end_date) : ''} ${formatYear(detail.end_date)}`}</Text>
+                                              </Flex>
+                                              <Flex align="center" gap={10}>
+                                                <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
+                                                <Text>{detail?.start_time.toString()} - {detail?.end_time.toString()}</Text>
+                                              </Flex>
+                                              <Flex align="center" gap={10}>
+                                                <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
+                                                <Text>{detail?.location_name}</Text>
+                                              </Flex>
+                                              <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
+                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
+                                            </Stack>
+                                          </div>
+
+                                          <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`}/>
+                                          <Button onClick={() => setMenu(2)} label="Beli Tiket" color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
+                                        </Stack>
                                     </div>
                                 </div>
                             </div>

@@ -87,7 +87,7 @@ export default function DateTab({
         </TabList>
         <TabPanels className='mt-3'>
           {groupedTickets.map(({ date, tickets }) => (
-            <TabPanel key={date} className='rounded-xl bg-white/5 p-3'>
+            <TabPanel key={date} className='rounded-xl bg-white/5 pt-3'>
               {tickets.map((item) => (
                 <OrderCounter
                   ticketData={item}
