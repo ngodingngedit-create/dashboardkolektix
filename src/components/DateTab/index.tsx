@@ -69,7 +69,7 @@ export default function DateTab({
       }));
     };
 
-    setGroupedTickets(combineTicketsByDate(data));
+    setGroupedTickets(combineTicketsByDate(data).reverse());
   }, [data]);
 
   return (
@@ -90,6 +90,8 @@ export default function DateTab({
             <TabPanel key={date} className='rounded-xl bg-white/5 p-3'>
               {tickets.map((item) => (
                 <OrderCounter
+                  ticketData={item}
+                  description={item.description}
                   key={item.id}
                   isLogin={isLogin}
                   count={counts[item.id]}

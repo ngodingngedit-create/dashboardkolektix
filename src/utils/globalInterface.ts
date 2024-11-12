@@ -18,6 +18,7 @@ export interface TicketProps {
   updated_at: string | null;
   deleted_at: string | null;
   has_event: EventProps;
+  max_buy_ticket?: number;
 }
 
 export interface VacancyProps {
