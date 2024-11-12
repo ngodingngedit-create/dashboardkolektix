@@ -75,7 +75,7 @@ export default function DateTab({
   return (
     <div className='flex flex-col'>
       <TabGroup manual selectedIndex={selected} onChange={setSelected}>
-        <TabList className='flex gap-4 overflow-x-scroll'>
+        <TabList className='flex gap-2 overflow-x-scroll'>
           {groupedTickets.map(({ date }) => (
             <Tab
               key={date}
@@ -85,9 +85,9 @@ export default function DateTab({
             </Tab>
           ))}
         </TabList>
-        <TabPanels className='mt-3'>
+        <TabPanels className='mt-2'>
           {groupedTickets.map(({ date, tickets }) => (
-            <TabPanel key={date} className='rounded-xl bg-white/5 pt-3'>
+            <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
               {tickets.map((item) => (
                 <OrderCounter
                   ticketData={item}

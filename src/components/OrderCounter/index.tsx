@@ -38,13 +38,13 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                     <Divider className={`!border-dashed w-full`} />
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
-                <Flex justify="space-between" wrap="wrap" align="center">
+                <Flex justify="space-between" gap={20} align="center">
                   {isReady && (
                     <>
                       <Box>
                           <Text size="sm" className={`!text-primary-base`}>Penjualan tiket dimulai pada {moment(ticketData.ticket_date).format('DD MMM YYYY')}</Text>
                       </Box>
-                      <Badge color="gray">
+                      <Badge color="gray" className={`shrink-0`}>
                         Belum dimulai
                       </Badge>
                     </>
@@ -52,7 +52,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                   {isFinish && (
                     <>
                       <Box></Box>
-                      <Badge color="gray">
+                      <Badge color="gray" className={`shrink-0`}>
                         Event Selesai
                       </Badge>
                     </>
@@ -60,7 +60,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                   {isSoldOut && (
                     <>
                       <Box></Box>
-                      <Badge color="red">
+                      <Badge color="red" className={`shrink-0`}>
                         Sudah Habis
                       </Badge>
                     </>

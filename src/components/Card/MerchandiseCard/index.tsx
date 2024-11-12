@@ -46,7 +46,7 @@ const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, 
           </div>
         </div>
         <Link href={`/creator/${creator}`} className='flex items-center gap-2 border-t p-[10px] border-t-primary-light-200 border-dashed relative z-20'>
-          <Image src={creatorImage ?? '#'} alt="creator logo" className='h-8 w-8 rounded-full' height={50} width={50}/>
+          <Image src={creatorImage ?? 'https://kolektix.com'} alt="creator logo" className='h-8 w-8 rounded-full' height={50} width={50}/>
           <div>
             <p className='text-dark font-[400] text-xs'>{creator}</p>
             {/* <div className='text-grey text-[10px]'>Jakarta</div> */}

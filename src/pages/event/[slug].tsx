@@ -35,7 +35,7 @@ import AuthModal from '@/components/AuthModal';
 import React from 'react';
 import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
-import { Flex, Stack, Text, Image as ImageM } from '@mantine/core';
+import { Flex, Stack, Text, Image as ImageM, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface Form {
@@ -580,8 +580,8 @@ const EventDetails = () => {
     return !firstLoad && detail ? (
         detail && (
             <div className="text-dark w-full">
-                {/* <ChatBox />
-                <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} /> */}
+                {/* {isLogin && <ChatBox /> } */}
+                {/* <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} /> */}
                 <Head>
                     <meta name="author" content="PT.Kolektix Maju Bersama" />
                     <meta name="copyright" content="&copy;2024 kolektix Maju Bersama" />
@@ -714,10 +714,11 @@ const EventDetails = () => {
                             <div className="bg-primary-dark">
                                 <div className="max-w-7xl mx-auto">
                                     <div className="px-8 pt-20 pb-3">
+                                        <p className={`text-white/70 mb-[-10px]`}>Category Name</p>
                                         <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
                                     </div>
-                                    <div className="flex justify-between px-8 gap-5">
-                                        <div className="w-full">
+                                    <div className="flex justify-between px-8 gap-5 h-full items-stretch">
+                                          <Stack>
                                             {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">
@@ -749,7 +750,7 @@ const EventDetails = () => {
                                                     {isLogin && <FontAwesomeIcon icon={faBookmarkOutlined} className="text-xl " />}
                                                 </div>
                                             </div>
-                                            <div className="flex gap-5 max-w-5xl py-3">
+                                            <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
                                                 <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
                                                     Deskripsi
                                                 </button>
@@ -760,9 +761,9 @@ const EventDetails = () => {
                                                     Syarat & Ketentuan
                                                 </button>
                                             </div>
-                                        </div>
+                                          </Stack>
                                         
-                                        <Stack className={`w-full md:max-w-[300px]`}>
+                                        <Stack className={`w-full md:max-w-[300px] pb-[20px]`}>
                                           <div className="p-[25px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
                                             <Stack gap={12}>
                                               <Flex align="center" gap={10}>
@@ -801,7 +802,18 @@ const EventDetails = () => {
                     ) : (
                         <>
                             {detail && detail.image && <Images type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full rounded-3xl p-4 mt-16 lg:mt-0" />}
-                            <div className="p-5 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
+                            <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
+                                <Flex gap={10} justify="space-between" mb={5} align="center">
+                                  {/* <Stack gap={5}> */}
+                                    <p className={`opacity-70`}>Category Name</p>
+
+                                    {detail.has_event_social_meida?.instagram && (
+                                        <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
+                                            <FontAwesomeIcon icon={faInstagram} className="!text-[26px] text-primary-base" />
+                                        </Link>
+                                    )}
+                                  {/* </Stack> */}
+                                </Flex>
                                 <h3 className="mb-3">{detail?.name}</h3>
                                 <p className="mb-3 font-normal text-sm">
                                     <FontAwesomeIcon icon={faCalendar} className="mr-3 text-grey" />
@@ -820,10 +832,13 @@ const EventDetails = () => {
                             </div>
                             <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
                                 <Image src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
-                                <div>
+                                <div className={`w-full`}>
                                     <p>Diselenggarakan Oleh</p>
                                     <p className="font-semibold">{detail?.has_creator.name}</p>
                                 </div>
+                                <ActionIcon color="#0B387C" variant="transparent" size="lg">
+                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`}/>
+                                </ActionIcon>
                             </div>
                             <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-5">
                                 <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">

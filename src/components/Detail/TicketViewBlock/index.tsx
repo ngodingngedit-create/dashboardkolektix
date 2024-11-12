@@ -42,7 +42,7 @@ const TicketViewBlock = ({
   return (
     <div className='text-dark my-5 '>
       <div
-        className='rounded-t-xl shadow-md p-5 w-full md:w-2/3 md:py-8 overflow-y-scroll h-100 border-2 border-primary-light-200'
+        className='rounded-t-xl shadow-md p-4 w-full md:w-2/3 md:py-8 overflow-y-scroll h-100 border-2 border-primary-light-200 mb-[60px] md:mb-[90px]'
         id='ticket-picker'
       >
         <DateTab
@@ -55,7 +55,7 @@ const TicketViewBlock = ({
         />
         <button></button>
       </div>
-      <div className='flex justify-between items-center bg-[#eff5ff] p-5 rounded-b-xl shadow-md w-full md:w-2/3'>
+      <div className='flex justify-between items-center bg-[#eff5ff] p-5 rounded-b-xl shadow-md w-full fixed bottom-0 left-0 z-30'>
         <div>
           <p>Total {totalCount} Tiket</p>
           <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>

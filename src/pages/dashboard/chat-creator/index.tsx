@@ -119,7 +119,7 @@ const Chat = () => {
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
-        setChat((res as InboxListProps[]).filter(e => e.from.id == users?.id));
+        setChat((res as InboxListProps[]).filter(e => e.to.id == users?.id));
         console.log(res);
       })
       .catch((err: any) => {

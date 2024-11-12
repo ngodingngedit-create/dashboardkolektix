@@ -325,7 +325,7 @@ const Chat = () => {
                                 )}
                                 {(users?.id && Boolean(users.has_creator)) && (
                                   <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
-                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden`}>
+                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden absolute z-50`}>
                                       <Icon icon="majesticons:open-line" />
                                     </ActionIcon>
                                   </Tooltip>
@@ -472,7 +472,7 @@ const Chat = () => {
                                                                         {chat.fromId !== user.id && (
                                                                           <Icon
                                                                             icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
-                                                                            className={`text-grey text-[18px] ml-[3px]`}
+                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px]`}
                                                                           />
                                                                         )}
                                                                     </div>

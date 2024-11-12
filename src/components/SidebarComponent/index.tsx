@@ -109,7 +109,8 @@ const sidebarData: SidebarData = [
     { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
     { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
     { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
-    { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Creator' },
+    { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Pembeli' },
+    { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat-creator', role: 'Creator' },
     { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Creator', submenu: profileData },
     { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Pembeli', submenu: profileData }
 ];
