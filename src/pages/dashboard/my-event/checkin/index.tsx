@@ -57,8 +57,9 @@ const Merch = () => {
                 url: 'event/scan-eticket',
                 data: { qr_code	: barcode },
                 headers: { lgntkn: 'true' },
-                success: (data) => {
-                    if (data.status) {
+                success: (data: any) => {
+                    console.log(data)
+                    if (data.success) {
                         modals.open({
                             radius: 15,
                             centered: true,
@@ -73,7 +74,7 @@ const Merch = () => {
                                     <Card bg="gray.1" radius={10} px={25} w="100%">
                                         <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
                                             <Text ta="center">
-                                                {data?.data?.has_event_ticket?.name}
+                                                {data?.data?.has_event_ticket?.name ?? data?.data?.eticket_number}
                                             </Text>
                                         </Flex>
                                     </Card>
