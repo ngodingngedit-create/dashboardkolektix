@@ -6,7 +6,7 @@ const CreatorTitle = ({
   creator,
   location,
 }: {
-  image: string;
+  image: StaticImageData | string;
   creator: string;
   location: string;
 }) => {
