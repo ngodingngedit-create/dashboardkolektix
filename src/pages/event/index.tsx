@@ -5,6 +5,7 @@ import { Get } from '@/utils/REST';
 import { useEffect, useState } from 'react';
 import { Breadcrumbs, BreadcrumbItem, ScrollShadow } from '@nextui-org/react';
 import EventCardLoading from '@/components/Card/EventCard/loading';
+import Chat from '@/components/chat';
 
 interface TopicProps {
   id: number;
@@ -64,6 +65,7 @@ const Event = () => {
 
   return (
     <>
+      <Chat />
       <div className='text-dark max-w-6xl mx-auto min-h-screen py-10'>
         <div className='pl-4'>
           <Breadcrumbs>

@@ -238,7 +238,7 @@ const Chat = () => {
                     getData();
                     setNewMessage('');
                     if (messageBoxRef.current) {
-                      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+                        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
                     }
                 })
                 .catch((err: any) => {
@@ -275,6 +275,9 @@ const Chat = () => {
                     console.log('Pesan terkirim:', res.data);
                     getChatSupportData(); // Memperbarui daftar chat setelah mengirim pesan tanpa reload halaman
                     setNewMessage(''); // Reset input
+                    if (messageBoxRef.current) {
+                        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+                    }
                 })
                 .catch((err) => {
                     toast.error(err.response?.data?.message || 'Error mengirim pesan.');
@@ -315,7 +318,7 @@ const Chat = () => {
                 <Accordion>
                     <AccordionItem
                         title={
-                            <div className="flex items-center text-primary-base">
+                            <div className="flex items-center text-primary-base w-full relative">
                                 <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
                                 <p className="ml-2 text-[18px]">Chat</p>
                                 {totalUnread > 0 && (
@@ -324,11 +327,11 @@ const Chat = () => {
                                     </Badge>
                                 )}
                                 {(users?.id && Boolean(users.has_creator)) && (
-                                  <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
-                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden absolute z-50`}>
-                                      <Icon icon="majesticons:open-line" />
+                                //   <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
+                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden !absolute right-0 !z-50`}>
+                                      <Icon icon="majesticons:open-line" className={`!text-[20px] !text-primary-base`} />
                                     </ActionIcon>
-                                  </Tooltip>
+                                //   </Tooltip>
                                 )}
                             </div>
                         }
@@ -360,7 +363,7 @@ const Chat = () => {
                                     {chat.length > 0 ? (
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id !== user?.id)
-                                            .map((item: InboxListProps) => <ChatList countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length} name={item.from.name} lastMsg={item.chats[0].message} time={formatDate(item.chats[0].created_at)} key={item.from.id} setSelected={setSelected} selected={selected} id={item.from.id} setName={setName} setMessages={setMessages} messages={messages} inbox={item.id} />)
+                                            .map((item: InboxListProps) => <ChatList countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length} name={item.from.has_creator.name} lastMsg={item.chats[0].message} time={formatDate(item.chats[0].created_at)} key={item.from.id} setSelected={setSelected} selected={selected} id={item.from.id} setName={setName} setMessages={setMessages} messages={messages} inbox={item.id} />)
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
                                     )}
@@ -498,7 +501,7 @@ const Chat = () => {
                                         </form>
                                     ) : (
                                         <form onSubmit={sendSupportMessage}>
-                                            <div className="flex items-center p-3 bg-white w-full shadow-md mt-4">
+                                            <div className="flex items-center p-3 pt-0 bg-white w-full shadow-md mt-4">
                                                 <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
                                                 <button
                                                     className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'

@@ -718,7 +718,7 @@ const EventDetails = () => {
                                         <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
                                     </div>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
-                                          <Stack>
+                                          <Stack w="100%">
                                             {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">
