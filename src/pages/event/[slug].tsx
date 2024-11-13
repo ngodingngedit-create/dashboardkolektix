@@ -714,7 +714,7 @@ const EventDetails = () => {
                             <div className="bg-primary-dark">
                                 <div className="max-w-7xl mx-auto">
                                     <div className="px-8 pt-20 pb-3">
-                                        <p className={`text-white/70 mb-[-10px]`}>Category Name</p>
+                                        <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
                                         <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
                                     </div>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
@@ -805,7 +805,7 @@ const EventDetails = () => {
                             <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                                 <Flex gap={10} justify="space-between" mb={5} align="center">
                                   {/* <Stack gap={5}> */}
-                                    <p className={`opacity-70`}>Category Name</p>
+                                    <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
 
                                     {detail.has_event_social_meida?.instagram && (
                                         <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
