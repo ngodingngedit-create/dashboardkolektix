@@ -1,5 +1,5 @@
 import { Get } from '@/utils/REST';
-import { AspectRatio, Card, Flex, LoadingOverlay, ScrollArea, Stack, Table, TableData, Text, Title } from '@mantine/core';
+import { AspectRatio, Button, Card, Flex, LoadingOverlay, ScrollArea, Stack, Table, TableData, Text, Title } from '@mantine/core';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useListState } from '@mantine/hooks';
 import _ from 'lodash';
@@ -58,27 +58,57 @@ const Merch = () => {
                 data: { qr_code	: barcode },
                 headers: { lgntkn: 'true' },
                 success: (data) => {
-                    modals.open({
-                        radius: 15,
-                        centered: true,
-                        withCloseButton: false,
-                        onClose: closeModal,
-                        children: (
-                            <Stack p="10" gap={20} align="center" w="100%">
-                                <Text ta="center" size="1.3rem"  fw={600}>
-                                    Checkin Berhasil
-                                </Text>
-                                <Icon icon="ix:success" className={`text-[128px] text-green-500`} />
-                                <Card bg="gray.1" radius={10} px={25} w="100%">
-                                    <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
-                                        <Text ta="center">
-                                            {barcode}
-                                        </Text>
-                                    </Flex>
-                                </Card>
-                            </Stack>
-                        )
-                    });
+                    if (data.status) {
+                        modals.open({
+                            radius: 15,
+                            centered: true,
+                            withCloseButton: false,
+                            onClose: closeModal,
+                            children: (
+                                <Stack p="10" gap={20} align="center" w="100%">
+                                    <Text ta="center" size="1.3rem"  fw={600}>
+                                        Checkin Berhasil
+                                    </Text>
+                                    <Icon icon="ix:success" className={`text-[128px] text-green-500`} />
+                                    <Card bg="gray.1" radius={10} px={25} w="100%">
+                                        <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
+                                            <Text ta="center">
+                                                {data?.data?.has_event_ticket?.name}
+                                            </Text>
+                                        </Flex>
+                                    </Card>
+                                    <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
+                                        Tutup
+                                    </Button>
+                                </Stack>
+                            )
+                        });
+                    } else {
+                        modals.open({
+                            radius: 15,
+                            centered: true,
+                            withCloseButton: false,
+                            onClose: closeModal,
+                            children: (
+                                <Stack p="10" gap={20} align="center" w="100%">
+                                    <Text ta="center" size="1.3rem" fw={600}>
+                                        Checkin Gagal
+                                    </Text>
+                                    <Icon icon="ix:error" className={`text-[128px] text-red-500`} />
+                                    <Card bg="gray.1" radius={10} px={25} w="100%">
+                                        <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
+                                            <Text ta="center" c="red">
+                                                {data?.message}
+                                            </Text>
+                                        </Flex>
+                                    </Card>
+                                    <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
+                                        Ulangi Scan
+                                    </Button>
+                                </Stack>
+                            )
+                        });
+                    }
                 },
                 error: (err) => {
                     modals.open({
@@ -99,6 +129,9 @@ const Merch = () => {
                                         </Text>
                                     </Flex>
                                 </Card>
+                                <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
+                                    Ulangi Scan
+                                </Button>
                             </Stack>
                         )
                     });
