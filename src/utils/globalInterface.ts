@@ -127,7 +127,17 @@ export interface CreatorProps {
 export interface TransactionProps {
   date: string | number | Date;
   transaction_status_id: number;
-  has_transaction_status: any;
+  has_transaction_status: {
+    id: number;
+    name: string;
+    description: string;
+    bgcolor: string;
+    created_by: null | number;
+    updated_by: null | number;
+    created_at: string;
+    updated_at: string;
+    deleted_at: null | string;
+  };
   user_id: number;
   event_id: string;
   total_qty: number;
@@ -280,6 +290,9 @@ export interface EventProps {
   has_event_topic?: {
     name: string;
   };
+  has_category_event?: {
+    name: string;
+  }
   created_by: string;
   updated_by: string;
   created_at: Date;
