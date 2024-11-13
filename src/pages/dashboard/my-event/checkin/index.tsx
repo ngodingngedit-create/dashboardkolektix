@@ -58,7 +58,6 @@ const Merch = () => {
                 data: { qr_code	: barcode },
                 headers: { lgntkn: 'true' },
                 success: (data: any) => {
-                    console.log(data)
                     if (data.success) {
                         modals.open({
                             radius: 15,
@@ -191,21 +190,19 @@ const Merch = () => {
                     </Text>
                 </Stack>
 
-                <AspectRatio ratio={1} pos="relative" mx="auto" w="100%" maw={400}>
-                    <Card w="100%" p={0}>
-                        <LoadingOverlay visible={loading == 'scan'} />
-                        <div className={`_scan-line !bg-gray-50/10 rounded-[15px] w-full h-full overflow-hidden border border-primary-base/60`}>
-                            <AspectRatio ratio={1} w="100%">
-                                <video hidden ref={videoRef}></video>
-                            </AspectRatio>
-                        </div>
+                <Card w="100%" p={0} maw={400}>
+                    <LoadingOverlay visible={loading == 'scan'} />
+                    <div className={`_scan-line !bg-gray-50/10 rounded-[15px] w-full h-full overflow-hidden border border-primary-base/60`}>
+                        <AspectRatio w="100%" className={`!aspect-[9/12] md:!aspect-square`}>
+                            <video hidden className={`!aspect-[9/12] md:!aspect-square`} ref={videoRef}></video>
+                        </AspectRatio>
+                    </div>
 
-                        {/* <Stack pos="absolute" c="red" align="center" className={`${camPermit ? 'hidden' : ''} z-10 left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4`} justify="center">
-                            <Icon icon="ph:camera-slash" className={`text-[96px] md:text-[128px]`} />
-                            <Text ta="center" size="sm">Aktifkan akses kamera untuk memindai QR Point dengan mudah</Text>
-                        </Stack> */}
-                    </Card>
-                </AspectRatio>
+                    {/* <Stack pos="absolute" c="red" align="center" className={`${camPermit ? 'hidden' : ''} z-10 left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4`} justify="center">
+                        <Icon icon="ph:camera-slash" className={`text-[96px] md:text-[128px]`} />
+                        <Text ta="center" size="sm">Aktifkan akses kamera untuk memindai QR Point dengan mudah</Text>
+                    </Stack> */}
+                </Card>
             </Stack>
 
             {/* <Card p={0} withBorder maw="100%">
