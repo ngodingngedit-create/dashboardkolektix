@@ -195,22 +195,22 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
 
                     return (
                         <div className="bg-white mt-4 last:mb-16" key={index}>
-                            <div className="border-b py-3 px-5 border-primary-light flex justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
+                            <div className="border-b py-3 px-5 border-primary-light flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                                 {index > 0 && <FontAwesomeIcon icon={faTicket} className='text-primary shrink-0 mr-[10px]' />}
                                 <Stack gap={0} className={`flex-grow`}>
                                   <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}</p>
                                   {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                 </Stack>
-                                {index > 0 && (
-                                    <div className="flex items-center gap-[8px] px-3 py-2 rounded-lg text-grey">
-                                        <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
-                                        <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
-                                    </div>
-                                )}
                                 <button className="text-grey">
                                     <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? 'rotate-0' : 'rotate-180'} transition-transform`} />
                                 </button>
                             </div>
+                            {index > 0 && (
+                                <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                    <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
+                                    <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
+                                </div>
+                            )}
                             <div className={`border-b p-3 border-primary-light ${collapse[index] ? 'max-h-[50rem]' : 'max-h-0'} transition-max-height delay-100 duration-150 ease-in-out`}>
                                 <div className={`${collapse[index] ? 'opacity-100' : 'opacity-0'} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                                     <div className={`${collapse[index] ? 'visible delay-300 duration-300' : 'invisible'} transition-transform `}>
@@ -315,16 +315,16 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                         <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}</p>
                                         {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                       </Stack>
-                                      {index > 0 && (
-                                          <div className="flex items-center gap-[8px] px-3 py-2 rounded-lg text-grey">
-                                              <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
-                                              <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
-                                          </div>
-                                      )}
                                       <button className="text-grey">
                                           <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? 'rotate-0' : 'rotate-180'} transition-transform`} />
                                       </button>
                                     </div>
+                                    {index > 0 && (
+                                        <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                            <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
+                                            <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
+                                        </div>
+                                    )}
                                     <div className={`px-5 pt-3 pb-5 ${collapse[index] ? '' : 'max-h-0'} transition-max-height delay-100 duration-150 ease-in-out`}>
                                         <div className={`${collapse[index] ? 'opacity-100' : 'opacity-0'} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                                             <div className={`${collapse[index] ? 'visible' : 'invisible'} flex flex-col gap-3`}>
