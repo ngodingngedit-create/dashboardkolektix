@@ -156,13 +156,20 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
     const minutes = padToTwoDigits(targetDate.getMinutes());
     const formattedDate = `${dayName}, ${day} ${month} ${year} ${hours}:${minutes}`;
 
+    const formValidation = (data: Form) => {
+        return (detail.is_noidentity ? Boolean(data.nik) : true) &&
+        (detail.is_name ? Boolean(data.full_name) : true) &&
+        (detail.is_email ? Boolean(data.email) : true) &&
+        (detail.is_phone_number ? Boolean(data.no_telp) : true);
+    };
+
     const handleInput = (index: number, field: keyof Form, value: string) => {
         let newForm = [...form];
         newForm[index] = { ...newForm[index], [field]: value };
         setForm(newForm);
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
-        const isFormValid = newForm.every((item) => Boolean(item.nik) && Boolean(item.full_name) && Boolean(item.email) && Boolean(item.no_telp));
+        const isFormValid = newForm.every(formValidation);
 
         setFormValid(isFormValid);
     };
@@ -174,7 +181,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             setBank(value);
         }
 
-        const isFormValid = form.every((item) => item.nik != '' && item.full_name != '' && item.email != '' && item.no_telp != '') && value !== null;
+        const isFormValid = form.every(formValidation) && value !== null;
 
         setFormValid(isFormValid);
     };
@@ -185,11 +192,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             const paymentMethod = detail.has_event_payment_method[0].has_payment_method;
             if (paymentMethod.payment_name === 'Xendit') {
                 setPayment(paymentMethod.id.toString());
-                setFormValid(form.every((item) =>
-                    item.nik != '' &&
-                    item.full_name != '' &&
-                    item.email != '' &&
-                    item.no_telp != ''));
+                setFormValid(form.every(formValidation));
             }
         }
     }, [detail, form]);
@@ -199,6 +202,8 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             let newForm = [...form];
             newForm[targetIndex] = { ...newForm[0] };
             setForm(newForm);
+            const isFormValid = newForm.every(formValidation);
+            setFormValid(isFormValid);
         }
     };
 
