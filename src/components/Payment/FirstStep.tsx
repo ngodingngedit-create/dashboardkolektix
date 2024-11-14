@@ -257,7 +257,7 @@ const FirstStep = ({
                   onClick={() => toggleCollapse(index)}
                 >
                   <p className='font-semibold'>
-                    {index > 0 ? `Pemilik Tiket ${index}` : 'Data Pemesan'}
+                    {index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}
                   </p>
                   <button className='text-grey'>
                     <FontAwesomeIcon
@@ -270,8 +270,8 @@ const FirstStep = ({
                         <div className='border-b p-3 border-primary-light flex justify-between gap-3'>
                           <div className='d-flex'>
                             <div>
-                              <p className='text-sm mb-1 font-semibold'>{ticketForOwner.name}</p>
-                              <p className="text-xs text-grey">
+                              {/* <p className='text-sm mb-1 font-semibold'>{ticketForOwner.name}</p> */}
+                              <p className="text-sm text-grey">
                                 1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner.price)}
                               </p>
                             </div>
@@ -428,7 +428,7 @@ const FirstStep = ({
                   onClick={() => toggleCollapse(index)}
                 >
                   <p className='font-semibold'>
-                    {index > 0 ? `Pemilik Tiket ${index}` : 'Data Pemesan'}
+                    {index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}
                   </p>
                   <button className='text-grey'>
                     <FontAwesomeIcon
@@ -442,13 +442,13 @@ const FirstStep = ({
                 {/* Tampilkan data tiket jika ada */}
                 {index > 0 && ticketForOwner && (
                   <div className='border-b p-3 border-primary-light-200 flex justify-between gap-3'>
-                    <div className='flex justify-between'>
+                    <div className='flex justify-between items-center'>
                       <div className='px-3 flex items-center border rounded-md border-primary-light'>
                         <FontAwesomeIcon icon={faTicket} className='text-primary' />
                       </div>
                       <div>
-                        <p className='text-sm mb-1 font-semibold'>{ticketForOwner.name}</p>
-                        <p className='text-xs text-grey'>
+                        {/* <p className='text-sm mb-1 font-semibold'>{ticketForOwner.name}</p> */}
+                        <p className='text-sm text-grey'>
                         1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner.price)}
                         </p>
                       </div>
@@ -564,8 +564,9 @@ const FirstStep = ({
                 <div>
                   <p className='text-sm mb-1'>{detail?.name}</p>
                   <p className='text-xs text-grey'>
-                    {`${formatDate(detail.start_date)} - ${formatDate(detail.end_date)}`} &bull;{' '}
-                    {`${detail.start_time} - ${detail.end_time}`}
+                    {formatDate(detail.start_date) == formatDate(detail.end_date) ? formatDate(detail.start_date) : `${formatDate(detail.start_date)} - ${formatDate(detail.end_date)}`}
+                    {/* &bull;{' '}
+                    {`${detail.start_time} - ${detail.end_time}`} */}
                   </p>
                 </div>
               </div>
