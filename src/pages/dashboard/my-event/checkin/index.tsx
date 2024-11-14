@@ -78,7 +78,7 @@ const Merch = () => {
                                         </Flex>
                                     </Card>
                                     <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                        Tutup
+                                        Ulangi Scan
                                     </Button>
                                 </Stack>
                             )

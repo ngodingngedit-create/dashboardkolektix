@@ -15,7 +15,7 @@ import Cookies from 'js-cookie';
 import config from '@/Config';
 import AuthModal from '../AuthModal';
 import React from 'react';
-import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip, Image as ImageM } from '@mantine/core';
 import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import Link from 'next/link';
@@ -41,6 +41,7 @@ interface ChatListProps {
     setMessages: (messages: ChatProps) => void;
     inbox: number;
     messages: ChatProps;
+    image?: string;
 }
 
 interface Dummy {
@@ -79,7 +80,7 @@ interface SupportContact {
     has_replies: Reply[];
 }
 
-const ChatList = ({ id, name, lastMsg, time, countMsg, selected, setSelected, setName, setMessages, inbox, messages }: ChatListProps) => {
+const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelected, setName, setMessages, inbox, messages }: ChatListProps) => {
     const readMsg = (id: number) => {
         Post(`${id}/inbox-read`, {})
             .then((res: any) => {
@@ -105,7 +106,7 @@ const ChatList = ({ id, name, lastMsg, time, countMsg, selected, setSelected, se
             className={`flex justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
         >
             <div className="flex gap-3 items-center">
-                <div className="w-10 h-10 rounded-full bg-primary-base"></div>
+                <ImageM src={image ?? '#'} className="w-10 h-10 rounded-full bg-primary-base"/>
                 <div>
                     <p className="font-semibold text-dark">{name}</p>
                     <p className="text-xs text-dark">{lastMsg}</p>
@@ -175,6 +176,17 @@ const Chat = () => {
 
     const [supportContact, setSupportContact] = useState<Dummy | null>(defaultSupportContact);
 
+    const scrollDown = () => {
+        if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
+        }
+        setTimeout(() => {
+            if (messageBoxRef.current) {
+                messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
+            }
+        }, 200)
+    }
+
     useEffect(() => {
         if (users) {
             setUser(users);
@@ -226,6 +238,8 @@ const Chat = () => {
             }
         } catch (error) {
             console.error('Error fetching chat support data:', error);
+        } finally {
+            scrollDown();
         }
     };
 
@@ -250,6 +264,7 @@ const Chat = () => {
 
     const sendSupportMessage = (form?: React.FormEvent) => {
         form?.preventDefault();
+
         if (newMessage.trim()) {
             // Ambil token dari cookie menggunakan js-cookie
             const token = Cookies.get('token');
@@ -275,13 +290,15 @@ const Chat = () => {
                     console.log('Pesan terkirim:', res.data);
                     getChatSupportData(); // Memperbarui daftar chat setelah mengirim pesan tanpa reload halaman
                     setNewMessage(''); // Reset input
-                    if (messageBoxRef.current) {
-                        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
-                    }
+                    scrollDown()
                 })
                 .catch((err) => {
                     toast.error(err.response?.data?.message || 'Error mengirim pesan.');
                     console.error('Error mengirim pesan:', err);
+                    scrollDown()
+                })
+                .finally(() => {
+                    scrollDown()
                 });
         }
     };
