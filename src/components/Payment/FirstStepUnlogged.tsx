@@ -162,7 +162,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         setForm(newForm);
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
-        const isFormValid = newForm.every((item) => item.nik !== '' && item.full_name !== '' && item.email !== '' && item.no_telp !== '') && (ticketPriceTotal > 0 ? payment !== '' : true);
+        const isFormValid = newForm.every((item) => Boolean(item.nik) && Boolean(item.full_name) && Boolean(item.email) && Boolean(item.no_telp));
 
         setFormValid(isFormValid);
     };
@@ -174,7 +174,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             setBank(value);
         }
 
-        const isFormValid = form.every((item) => item.nik !== '' && item.full_name !== '' && item.email !== '' && item.no_telp !== '') && value !== null;
+        const isFormValid = form.every((item) => item.nik != '' && item.full_name != '' && item.email != '' && item.no_telp != '') && value !== null;
 
         setFormValid(isFormValid);
     };
@@ -185,7 +185,11 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             const paymentMethod = detail.has_event_payment_method[0].has_payment_method;
             if (paymentMethod.payment_name === 'Xendit') {
                 setPayment(paymentMethod.id.toString());
-                setFormValid(form.every((item) => item.nik !== '' && item.full_name !== '' && item.email !== '' && item.no_telp !== '') && (ticketPriceTotal > 0 ? paymentMethod.id.toString() !== '' : true));
+                setFormValid(form.every((item) =>
+                    item.nik != '' &&
+                    item.full_name != '' &&
+                    item.email != '' &&
+                    item.no_telp != ''));
             }
         }
     }, [detail, form]);
@@ -376,7 +380,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                         </button>
                                     </div>
                                     {index > 0 && (
-                                        <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                        <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
                                             <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
                                             <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                         </div>
@@ -551,7 +555,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                             </div>
 
                                             {index > 0 && (
-                                                <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                                <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
                                                     <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
                                                     <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                                 </div>

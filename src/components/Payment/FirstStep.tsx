@@ -206,7 +206,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 </button>
                             </div>
                             {index > 0 && (
-                                <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
                                     <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
                                     <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                 </div>
@@ -320,7 +320,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                       </button>
                                     </div>
                                     {index > 0 && (
-                                        <div className="flex items-center gap-[8px] px-4 py-2 rounded-lg text-grey">
+                                        <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
                                             <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
                                             <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                         </div>

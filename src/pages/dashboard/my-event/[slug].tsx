@@ -93,7 +93,7 @@ const MyEventDetail = () => {
   const [filterValue, setFilterValue] = useState('');
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set(["1"]));
+  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [selectedItem, setSelectedItem] = useState(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -594,7 +594,7 @@ const eventItems = useMemo(() => {
             >
               <AccordionItem
                 key="1"
-                title="Event Data"
+                title="Statistik Event"
                 className="border border-primary-light-200 px-4 rounded-lg"
               >
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
