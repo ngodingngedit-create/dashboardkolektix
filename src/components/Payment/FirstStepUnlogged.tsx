@@ -593,7 +593,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         ) : <></>}
 
                                                         {/* Field lainnya */}
-                                                        {detail?.is_name ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} /> :  : <></>}
+                                                        {detail?.is_name ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} /> : <></>}
 
                                                         {detail?.is_email ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} /> : <></>}
 
