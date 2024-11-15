@@ -42,7 +42,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                   {isReady && (
                     <>
                       <Box>
-                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket dimulai pada {moment(ticketData.ticket_date).format('HH:mm DD MMM YYYY')}</Text>
+                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket dimulai pada {moment(`${ticketData.ticket_date} ${ticketData.starting_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}</Text>
                       </Box>
                       <Badge color="gray" className={`shrink-0`}>
                         Belum dimulai
@@ -68,7 +68,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                   {(!isReady && !isSoldOut && !isFinish) && (
                     <>
                       <Box>
-                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket berakhir pada {moment(ticketData.ticket_end).format('HH:mm DD MMM YYYY')}</Text>
+                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket berakhir pada {moment(`${ticketData.ticket_end} ${ticketData.ending_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}</Text>
                       </Box>
                       <Flex align="center" gap={15}>
                         <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
