@@ -301,12 +301,12 @@ export interface EventProps {
   created_at: Date;
   updated_at: Date;
   deleted_at: Date | null;
-  is_birthdate: boolean;
-  is_email: boolean;
-  is_gender: boolean;
-  is_name: boolean;
-  is_noidentity: boolean;
-  is_phone_number: boolean;
+  is_birthdate: 1 | 0;
+  is_email: 1 | 0;
+  is_gender: 1 | 0;
+  is_name: 1 | 0;
+  is_noidentity: 1 | 0;
+  is_phone_number: 1 | 0;
   grand_total: number;
 }
 

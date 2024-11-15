@@ -60,10 +60,10 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            Penjualan tiket dimulai pada
+                            Penjualan tiket dimulai {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
-                            {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}
+                            Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Badge color="gray" className={`shrink-0`}>

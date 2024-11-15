@@ -157,10 +157,10 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
     const formattedDate = `${dayName}, ${day} ${month} ${year} ${hours}:${minutes}`;
 
     const formValidation = (data: Form) => {
-        return (detail.is_noidentity ? Boolean(data.nik) : true) &&
-        (detail.is_name ? Boolean(data.full_name) : true) &&
-        (detail.is_email ? Boolean(data.email) : true) &&
-        (detail.is_phone_number ? Boolean(data.no_telp) : true);
+        return (detail.is_noidentity == 1 ? Boolean(data.nik) : true) &&
+        (detail.is_name == 1 ? Boolean(data.full_name) : true) &&
+        (detail.is_email == 1 ? Boolean(data.email) : true) &&
+        (detail.is_phone_number == 1 ? Boolean(data.no_telp) : true);
     };
 
     const handleInput = (index: number, field: keyof Form, value: string) => {
@@ -393,7 +393,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                     <div className={`border-b p-3 border-primary-light ${collapse[index] ? 'max-h-[26rem]' : 'max-h-0'} transition-max-height delay-100 duration-150 ease-in-out`}>
                                         <div className={`${collapse[index] ? 'opacity-100' : 'opacity-0'} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                                             <div className={`${collapse[index] ? 'visible delay-300 duration-300' : 'invisible'} transition-transform `}>
-                                                {detail.is_noidentity ? (
+                                                {detail.is_noidentity == 1 ? (
                                                     <div className="grid grid-cols-4 gap-3">
                                                         <div>
                                                             <InputSelect
@@ -415,7 +415,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         </div>
                                                     </div>
                                                 ) : <></>}
-                                                {detail.is_name ? (
+                                                {detail.is_name == 1 ? (
                                                     <Field className="mb-2">
                                                         <Label className="text-sm font-base text-grey">Nama Lengkap</Label>
                                                         <Input
@@ -426,7 +426,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         />
                                                     </Field>
                                                 ) : <></>}
-                                                {detail.is_email ? (
+                                                {detail.is_email == 1 ? (
                                                     <Field className="mb-2">
                                                         <Label className="text-sm font-base text-grey">Email</Label>
                                                         <Input
@@ -438,7 +438,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         />
                                                     </Field>
                                                 ) : <></>}
-                                                {detail.is_phone_number ? (
+                                                {detail.is_phone_number == 1 ? (
                                                     <Field className="mb-2">
                                                         <Label className="text-sm font-base text-grey">No Telepon</Label>
                                                         <div className="flex gap-2 items-center">
@@ -569,7 +569,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                             <div className={`px-5 pt-3 pb-5 ${collapse[index] ? '' : 'max-h-0'} transition-max-height delay-100 duration-150 ease-in-out`}>
                                                 <div className={`${collapse[index] ? 'opacity-100' : 'opacity-0'} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                                                     <div className={`${collapse[index] ? 'visible' : 'invisible'} flex flex-col gap-3`}>
-                                                        {detail.is_noidentity ? (
+                                                        {(detail.is_noidentity) == 1 ? (
                                                             <div className="grid grid-cols-4 gap-3">
                                                                 <div>
                                                                     <InputSelect
@@ -593,11 +593,11 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         ) : <></>}
 
                                                         {/* Field lainnya */}
-                                                        {detail?.is_name ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} /> : <></>}
+                                                        {detail?.is_name == 1 ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} /> : <></>}
 
-                                                        {detail?.is_email ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} /> : <></>}
+                                                        {detail?.is_email == 1 ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} /> : <></>}
 
-                                                        {detail?.is_phone_number ? <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, 'no_telp', e.target.value)} value={item.no_telp} /> : <></>}
+                                                        {detail?.is_phone_number == 1 ? <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, 'no_telp', e.target.value)} value={item.no_telp} /> : <></>}
                                                     </div>
                                                 </div>
                                             </div>
