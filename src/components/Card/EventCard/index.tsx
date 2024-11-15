@@ -111,7 +111,7 @@ const EventCard = ({
             width={200}
             height={200}
           />
-          <p className='ml-2 text-dark text-sm font-semibold'>{creator}</p>
+          <p className='ml-2 text-dark text-sm font-semibold truncate max-w-[200px]'>{creator}</p>
         </Link>
       </div>
     </div>
