@@ -87,7 +87,10 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            Penjualan tiket berakhir pada {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}
+                            Penjualan tiket berakhir {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                        </Text>
+                        <Text size="xs" className={`!text-primary-base`}>
+                            Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Flex align="center" gap={15}>
