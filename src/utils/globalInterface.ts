@@ -8,6 +8,8 @@ export interface TicketProps {
   price: number;
   description: string;
   ticket_date: string;
+  starting_time?: string;
+  ending_time?: string;
   ticket_end: string;
   is_soldout: number;
   is_finish: number;
@@ -19,6 +21,7 @@ export interface TicketProps {
   deleted_at: string | null;
   has_event: EventProps;
   max_buy_ticket?: number;
+  event_schedule_date: string | null;
 }
 
 export interface VacancyProps {
@@ -298,12 +301,12 @@ export interface EventProps {
   created_at: Date;
   updated_at: Date;
   deleted_at: Date | null;
-  is_birthdate: boolean;
-  is_email: boolean;
-  is_gender: boolean;
-  is_name: boolean;
-  is_noidentity: boolean;
-  is_phone_number: boolean;
+  is_birthdate: 1 | 0;
+  is_email: 1 | 0;
+  is_gender: 1 | 0;
+  is_name: 1 | 0;
+  is_noidentity: 1 | 0;
+  is_phone_number: 1 | 0;
   grand_total: number;
 }
 

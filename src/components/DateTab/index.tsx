@@ -55,11 +55,13 @@ export default function DateTab({
   React.useEffect(() => {
     const combineTicketsByDate = (tickets: TicketProps[]): GroupTicket[] => {
       const groupedByDate = tickets.reduce((acc: { [key: string]: TicketProps[] }, item) => {
-        const date = item.ticket_date;
-        if (!acc[date]) {
-          acc[date] = [];
+        const date = item.event_schedule_date;
+        if (date != null) {
+          if (!acc[date]) {
+            acc[date] = [];
+          }
+          acc[date].push(item);
         }
-        acc[date].push(item);
         return acc;
       }, {});
 

@@ -18,20 +18,115 @@ interface OrderCounterProps {
     ticketData: TicketProps;
 }
 
+function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
+    const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+    const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+    const now = moment();
+
+    return now.isBetween(start, end, undefined, '[]');
+}
+
+function isDatePassed(dateString: string) {
+    const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
+    return date.isBefore(moment());
+}
+
 const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     const router = useRouter();
+
+    const StatusComponent = () => {
+        if (isSoldOut)
+            return (
+                <>
+                    <Box></Box>
+                    <Badge color="red" className={`shrink-0`}>
+                        Habis Terjual
+                    </Badge>
+                </>
+            );
+
+        if (isFinish)
+            return (
+                <>
+                    <Box></Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Event Selesai
+                    </Badge>
+                </>
+            );
+
+        if (!isDatePassed(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`))
+            return (
+                <>
+                    <Box>
+                        <Text size="sm" className={`!text-primary-base`}>
+                            Penjualan tiket dimulai {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                        </Text>
+                        <Text size="xs" className={`!text-primary-base`}>
+                            Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
+                        </Text>
+                    </Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Belum dimulai
+                    </Badge>
+                </>
+            );
+
+        if (isDatePassed(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`))
+            return (
+                <>
+                    <Box></Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Penjualan Selesai
+                    </Badge>
+                </>
+            );
+
+        if (isCurrentTimeBetween(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`, `${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`))
+            return (
+                <>
+                    <Box>
+                        <Text size="sm" className={`!text-primary-base`}>
+                            Penjualan tiket berakhir pada {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}
+                        </Text>
+                    </Box>
+                    <Flex align="center" gap={15}>
+                        <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+                            <Icon icon="uiw:minus" />
+                        </ActionIcon>
+                        <Text>{count}</Text>
+                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={ticketData.max_buy_ticket == count}>
+                            <Icon icon="uiw:plus" />
+                        </ActionIcon>
+                    </Flex>
+                </>
+            );
+
+        return (
+            <>
+                <Box></Box>
+                <Badge color="gray" className={`shrink-0`}>
+                    Event Selesai
+                </Badge>
+            </>
+        );
+    };
     //194e9e
     return (
-        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible`} bg={(isSoldOut || isReady || isFinish) ? '#fafafa' : undefined}>
+        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
             <Stack gap={10}>
                 <Flex gap={20} justify="space-between">
-                  <Stack gap={0}>
-                      <Text size="lg" className={`uppercase`}>{ticketData.name}</Text>
-                      <Text size="sm" c="gray">{ticketData.description}</Text>
-                  </Stack>
-                  <Text size="lg" fw={600}>
-                    <NumberFormatter value={ticketData.price} />
-                  </Text>
+                    <Stack gap={0}>
+                        <Text size="lg" className={`uppercase`}>
+                            {ticketData.name}
+                        </Text>
+                        <Text size="sm" c="gray">
+                            {ticketData.description}
+                        </Text>
+                    </Stack>
+                    <Text size="lg" fw={600}>
+                        <NumberFormatter value={ticketData.price} />
+                    </Text>
                 </Flex>
                 <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>
                     <Box className={`bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
@@ -39,48 +134,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
                 <Flex justify="space-between" gap={20} align="center">
-                  {isReady && (
-                    <>
-                      <Box>
-                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket dimulai pada {moment(ticketData.ticket_date).format('DD MMM YYYY')}</Text>
-                      </Box>
-                      <Badge color="gray" className={`shrink-0`}>
-                        Belum dimulai
-                      </Badge>
-                    </>
-                  )}
-                  {isFinish && (
-                    <>
-                      <Box></Box>
-                      <Badge color="gray" className={`shrink-0`}>
-                        Event Selesai
-                      </Badge>
-                    </>
-                  )}
-                  {isSoldOut && (
-                    <>
-                      <Box></Box>
-                      <Badge color="red" className={`shrink-0`}>
-                        Sudah Habis
-                      </Badge>
-                    </>
-                  )}
-                  {(!isReady && !isSoldOut && !isFinish) && (
-                    <>
-                      <Box>
-                          <Text size="sm" className={`!text-primary-base`}>Penjualan tiket berakhir pada {moment(ticketData.ticket_end).format('DD MMM YYYY')}</Text>
-                      </Box>
-                      <Flex align="center" gap={15}>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
-                          <Icon icon="uiw:minus" />
-                        </ActionIcon>
-                        <Text>{count}</Text>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={ticketData.max_buy_ticket == count}>
-                          <Icon icon="uiw:plus" />
-                        </ActionIcon>
-                      </Flex>
-                    </>
-                  )}
+                    <StatusComponent />
                 </Flex>
             </Stack>
         </Card>
