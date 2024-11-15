@@ -8,6 +8,8 @@ export interface TicketProps {
   price: number;
   description: string;
   ticket_date: string;
+  starting_time?: string;
+  ending_time?: string;
   ticket_end: string;
   is_soldout: number;
   is_finish: number;
