@@ -10,6 +10,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { toast, ToastContainer } from 'react-toastify';
 import { Chip } from '@nextui-org/react';
 import { InboxListProps } from '@/utils/globalInterface';
+import logoImg from '../../assets/images/layanan-pelanggan.png';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import config from '@/Config';
@@ -106,7 +107,7 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
             className={`flex justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
         >
             <div className="flex gap-3 items-center">
-                <ImageM src={image ?? '#'} className="w-10 h-10 rounded-full bg-primary-base"/>
+                <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
                 <div>
                     <p className="font-semibold text-dark">{name}</p>
                     <p className="text-xs text-dark">{lastMsg}</p>
@@ -368,7 +369,7 @@ const Chat = () => {
                                     </Box>
 
                                     {/* Kontak Support */}
-                                    <ChatList name="Kolektix Support" lastMsg={supportContacts[0]?.lastMessage || 'Belum ada pesan'} time={supportContacts[0]?.lastMessageTime || 'Belum ada pesan'} key="kolektix-support" setSelected={setSelected} selected={selected} setName={setName} setMessages={setMessages} messages={messages} id={0} inbox={0} />
+                                    <ChatList image={"/images/layanan-pelanggan.png"} name="Kolektix Support" lastMsg={supportContacts[0]?.lastMessage || 'Belum ada pesan'} time={supportContacts[0]?.lastMessageTime || 'Belum ada pesan'} key="kolektix-support" setSelected={setSelected} selected={selected} setName={setName} setMessages={setMessages} messages={messages} id={0} inbox={0} />
 
                                     {(searchQuery && searchedChats.length == 0) && (
                                       <Card>

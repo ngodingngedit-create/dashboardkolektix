@@ -26,30 +26,21 @@ function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
     return now.isBetween(start, end, undefined, '[]');
 }
 
+function isDatePassed(dateString: string) {
+    const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
+    return date.isBefore(moment());
+}
+
 const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     const router = useRouter();
 
     const StatusComponent = () => {
-      if (isSoldOut)
-          return (
-              <>
-                  <Box></Box>
-                  <Badge color="red" className={`shrink-0`}>
-                      Habis Terjual
-                  </Badge>
-              </>
-          );
-
-        if (isReady)
+        if (isSoldOut)
             return (
                 <>
-                    <Box>
-                        <Text size="sm" className={`!text-primary-base`}>
-                            Penjualan tiket dimulai pada {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}
-                        </Text>
-                    </Box>
-                    <Badge color="gray" className={`shrink-0`}>
-                        Belum dimulai
+                    <Box></Box>
+                    <Badge color="red" className={`shrink-0`}>
+                        Habis Terjual
                     </Badge>
                 </>
             );
@@ -60,6 +51,33 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
                         Event Selesai
+                    </Badge>
+                </>
+            );
+
+        if (!isDatePassed(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`))
+            return (
+                <>
+                    <Box>
+                        <Text size="sm" className={`!text-primary-base`}>
+                            Penjualan tiket dimulai pada
+                        </Text>
+                        <Text size="xs" className={`!text-primary-base`}>
+                            {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm DD MMM YYYY')}
+                        </Text>
+                    </Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Belum dimulai
+                    </Badge>
+                </>
+            );
+
+        if (isDatePassed(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`))
+            return (
+                <>
+                    <Box></Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Penjualan Selesai
                     </Badge>
                 </>
             );
@@ -84,7 +102,14 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 </>
             );
 
-          return <></>;
+        return (
+            <>
+                <Box></Box>
+                <Badge color="gray" className={`shrink-0`}>
+                    Event Selesai
+                </Badge>
+            </>
+        );
     };
     //194e9e
     return (

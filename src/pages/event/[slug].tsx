@@ -774,10 +774,12 @@ const EventDetails = () => {
                                                 <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
                                                 <Text>{detail?.start_time.toString()} - {detail?.end_time.toString()}</Text>
                                               </Flex>
-                                              <Flex align="center" gap={10}>
-                                                <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
-                                                <Text>{detail?.location_name}</Text>
-                                              </Flex>
+                                              <Link href={detail?.location_map ?? "#"} target="_blank">
+                                                <Flex align="center" gap={10}>
+                                                    <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
+                                                    <Text>{detail?.location_name}</Text>
+                                                </Flex>
+                                              </Link>
                                               <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
                                               <ImageM src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
                                             </Stack>
@@ -807,9 +809,12 @@ const EventDetails = () => {
                                   {/* <Stack gap={5}> */}
                                     <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
 
-                                    {detail.has_event_social_meida?.instagram && (
-                                        <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
-                                            <FontAwesomeIcon icon={faInstagram} className="!text-[26px] text-primary-base" />
+                                    {detail.has_event_social_meida?.ig_name	 && (
+                                        <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
+                                            <Flex gap={8} align="center">
+                                                <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
+                                                <Text size="sm" className={`!text-primary-base`}>{detail.has_event_social_meida?.ig_name}</Text>
+                                            </Flex>
                                         </Link>
                                     )}
                                   {/* </Stack> */}
@@ -825,10 +830,12 @@ const EventDetails = () => {
                                         {detail?.start_time} - {detail?.end_time}
                                     </span>
                                 </p>
-                                <p className="mb-3 font-normal text-sm">
-                                    <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
-                                    <span className="text-dark">{detail?.location_name}</span>
-                                </p>
+                                <Link href={detail?.location_map ?? "#"} target="_blank">
+                                    <p className="mb-3 font-normal text-sm">
+                                        <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
+                                        <span className="text-dark">{detail?.location_name}</span>
+                                    </p>
+                                </Link>
                             </div>
                             <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
                                 <Image src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
