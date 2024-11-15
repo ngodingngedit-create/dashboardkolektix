@@ -13,6 +13,7 @@ import Config from '@/Config';
 import { Transition } from '@headlessui/react';
 import { TransactionStatusResponse } from '../dashboard/my-event/type';
 import fetch from '@/utils/fetch';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 const SuccessWithInvoice = () => {
   const [isRendered, setIsRendered] = useState(false);
@@ -20,7 +21,7 @@ const SuccessWithInvoice = () => {
   const [loading, setLoading] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
   const router = useRouter();
-  const { invoice } = router.query;
+  const { external_id: invoice } = router.query;
 
   useEffect(() => {
     setIsRendered(true);
@@ -92,20 +93,21 @@ const SuccessWithInvoice = () => {
       {data.transaction_status_id !== 1 && data.transaction_status_id !== 3 && data.transaction_status_id !== 4 ? (
           <FontAwesomeIcon icon={faCheckCircle} size='3x' className='text-[#06c258] mb-2' />
         ) : (
-          <FontAwesomeIcon icon={faClock} size='3x' className='text-[#fe9d36] mb-2' />
+          <Icon icon="mi:circle-error" className='text-[#fe3636] mb-2 mx-auto text-[3rem] md:text-[4rem] shrink-0' />
         )}
-       <h1 className='text-[20px] text-center'>
-          {data.transaction_status_id === 1
+        <h1 className='text-[20px] text-center'>
+          {/* {data.transaction_status_id === 1
             ? 'Transaksi Pending'
             : data.transaction_status_id === 3
             ? 'Transaksi Failed'
             : data.transaction_status_id === 4
             ? 'Transaksi Expired'
-            : 'Transaksi Berhasil'}
+            : 'Transaksi Berhasil'} */}
+            Transaksi Gagal
         </h1>
 
         <p className='mt-2 text-grey text-sm'>
-          {transactionStatus?.find(e => e.id == data.transaction_status_id)?.description}
+          {transactionStatus?.find(e => e.id == 4)?.description}
         </p>
 
         <div className='border-b border-b-primary-light-200'>
@@ -153,7 +155,7 @@ const SuccessWithInvoice = () => {
         </div>
       </div>
       <div className='max-w-xs mx-auto'>
-  {data.transaction_status_id === 1 ? (
+  {/* {data.transaction_status_id === 1 ? (
     <Button
       label='Lanjutkan Pembayaran'
       color='primary'
@@ -195,7 +197,7 @@ const SuccessWithInvoice = () => {
         onClick={() => router.push('/')}
       />
     </>
-  )}
+  )} */}
 </div>
 
     </div>
