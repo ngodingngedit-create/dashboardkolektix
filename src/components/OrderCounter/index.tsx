@@ -30,6 +30,16 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
     const router = useRouter();
 
     const StatusComponent = () => {
+      if (isSoldOut)
+          return (
+              <>
+                  <Box></Box>
+                  <Badge color="red" className={`shrink-0`}>
+                      Habis Terjual
+                  </Badge>
+              </>
+          );
+
         if (isReady)
             return (
                 <>
@@ -40,16 +50,6 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                     </Box>
                     <Badge color="gray" className={`shrink-0`}>
                         Belum dimulai
-                    </Badge>
-                </>
-            );
-
-        if (isSoldOut)
-            return (
-                <>
-                    <Box></Box>
-                    <Badge color="red" className={`shrink-0`}>
-                        Habis Terjual
                     </Badge>
                 </>
             );
