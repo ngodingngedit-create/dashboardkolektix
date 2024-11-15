@@ -21,7 +21,7 @@ import { Get } from '@/utils/REST';
 import config from '@/Config';
 import axios from 'axios';
 import { useClickOutside } from '@mantine/hooks';
-import { Flex, Tooltip } from '@mantine/core';
+import { Flex, Stack, Text, Tooltip } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 type SidebarData = {
@@ -440,6 +440,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                         </div>
                                         <Fade isShowing={showUserMenu}>
                                             <div ref={outsideClickMenu} className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? 'opacity-100' : 'opacity-0'}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabIndex={-1}>
+                                                <Stack px={15} py={10} gap={5}>
+                                                    <Text size="sm" c="gray.8" fw={600}>Hi, {users?.name}</Text>
+                                                    <Text size="xs" c="gray" mt={-3}>{users?.email}</Text>
+                                                </Stack>
                                                 {hasCreator && (
                                                     <button
                                                         className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
