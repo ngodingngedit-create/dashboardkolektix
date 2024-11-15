@@ -21,7 +21,7 @@ import { Get } from '@/utils/REST';
 import config from '@/Config';
 import axios from 'axios';
 import { useClickOutside } from '@mantine/hooks';
-import { Flex } from '@mantine/core';
+import { Flex, Tooltip } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 type SidebarData = {
@@ -238,12 +238,13 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     ref={outsideClick}
                     className={`
                         fixed md:static shrink-0
+                        flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
                         overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50
                         ${collapse ? 'w-[280px]' : 'w-0 md:w-[65px]'}
                     `}
                 >
-                    <ul className="w-full min-h-[90vh]">
+                    <ul className="w-full flex-grow">
                         <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
                             <Link href="/" className="flex items-center justify-center">
                                 {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}
@@ -294,6 +295,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             {sidebarData
                                 .filter((el) => el.role === role)
                                 .map((el) => (
+                                    <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? 'opacity-0' : ''}`} key={el.id}>
                                     <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'} list-none transition-transform-colors`}>
                                         {el.link ? (
                                             <Link href={el.link} className="" onClick={handleItemClick}>
@@ -332,6 +334,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 {el.submenu
                                                     .filter((subEl) => subEl.role === role)
                                                     .map((subEl, i) => (
+                                                        <Tooltip key={i} label={subEl.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? 'opacity-0' : ''}`}>
                                                         <li key={i} className={`list-none ${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
                                                             <Link href={subEl.link ?? '#'}>
                                                                 <div className="flex px-5 items-center">
@@ -344,20 +347,16 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                                 </div>
                                                             </Link>
                                                         </li>
+                                                        </Tooltip>
                                                     ))}
                                             </ul>
                                         )}
                                     </li>
+                                    </Tooltip>
                                 ))}
                         </>
-                        <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:hidden">
-                            <div className="flex items-center justify-center px-5">
-                                {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
-                                <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
-                            </div>
-                        </button>
                     </ul>
-                    <button onClick={() => setCollapse(!collapse)} className="pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] sticky bottom-0 text-primary-light-200 py-4 text-sm transition-transform-colors w-full md:block hidden">
+                    <button onClick={() => setCollapse(!collapse)} className="sticky bottom-0 pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] text-primary-light-200 py-4 text-sm transition-transform-colors w-full">
                         <div className="flex items-center justify-center px-5">
                             {visible && <p className={`${collapse ? 'w-full' : 'w-0 hidden'} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
                             <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? 'rotate-0' : 'rotate-180'} transition-all ease-in-out`} />
