@@ -11,11 +11,14 @@ import { useRouter } from 'next/router';
 import Button from '@/components/Button';
 import Config from '@/Config'; 
 import { Transition } from '@headlessui/react';
+import { TransactionStatusResponse } from '../dashboard/my-event/type';
+import fetch from '@/utils/fetch';
 
 const SuccessWithInvoice = () => {
   const [isRendered, setIsRendered] = useState(false);
   const [data, setData] = useState<TransactionProps>();
   const [loading, setLoading] = useState(false);
+  const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
   const router = useRouter();
   const { invoice } = router.query;
 
@@ -35,7 +38,7 @@ const SuccessWithInvoice = () => {
   //   }
   // };
 
-  const getData = () => {
+  const getData = async () => {
     setLoading(true);
     Get('transaction-finish', { external_id: invoice })
       .then((res: any) => {
@@ -47,6 +50,18 @@ const SuccessWithInvoice = () => {
         console.log(err);
         setLoading(false);
       });
+
+    await fetch<any, any>({
+      url: 'transaction-statuses',
+      method: 'GET',
+      success: (_data) => {
+          const data = _data as TransactionStatusResponse[];
+          if ((data?.length ?? 0) > 0 && data) {
+            console.log(data)
+              setTransactionStatus(data);
+          }
+      },
+    });
   };
 
   useEffect(() => {
@@ -89,12 +104,9 @@ const SuccessWithInvoice = () => {
             : 'Transaksi Berhasil'}
         </h1>
 
-
-        {data.transaction_status_id !== 1 && (
-          <p className='mt-2 text-grey text-sm'>
-            Terimakasih sudah menggunakan kolektix, silahkan cek email untuk melihat status transaksi, atau silahkan login menggunakan email data pemesan anda.
-          </p>
-        )}
+        <p className='mt-2 text-grey text-sm'>
+          {transactionStatus?.find(e => e.id == data.transaction_status_id)?.description}
+        </p>
 
         <div className='border-b border-b-primary-light-200'>
           {data.payment_method && data.payment_method?.payment_name.toLowerCase() !== 'xendit' && (
