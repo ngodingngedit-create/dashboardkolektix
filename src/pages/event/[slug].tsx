@@ -37,6 +37,7 @@ import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
 import { Flex, Stack, Text, Image as ImageM, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { useClickOutside } from '@mantine/hooks';
 
 interface Form {
     nik: string;
@@ -117,6 +118,15 @@ const EventDetails = () => {
     const key = 'key';
     const initialValue = { transactionStorage: 'value' };
     const [alert, setAlert] = useState('');
+    const [openChat, setOpenChat] = useState(false);
+
+    const clickOutsideChat = useClickOutside(() => {
+        if (isLogin && openChat) {
+            setTimeout(() => {
+                setOpenChat(false);
+            }, 500);
+        }
+    });
 
     const handleShare = () => {
         const url = window.location.href;
@@ -580,8 +590,10 @@ const EventDetails = () => {
     return !firstLoad && detail ? (
         detail && (
             <div className="text-dark w-full">
-                {/* {isLogin && <ChatBox /> } */}
-                {/* <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} /> */}
+                <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
+                    <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
+                    <AuthModal visible={openChat && !isLogin} onClose={() => setOpenChat(false)} />
+                </div>
                 <Head>
                     <meta name="author" content="PT.Kolektix Maju Bersama" />
                     <meta name="copyright" content="&copy;2024 kolektix Maju Bersama" />
@@ -781,11 +793,11 @@ const EventDetails = () => {
                                                 </Flex>
                                               </Link>
                                               <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
-                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
+                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
                                             </Stack>
                                           </div>
 
-                                          <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`}/>
+                                          <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)}/>
                                           <Button onClick={() => setMenu(2)} label="Beli Tiket" color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
                                         </Stack>
                                     </div>
@@ -838,13 +850,13 @@ const EventDetails = () => {
                                 </Link>
                             </div>
                             <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
-                                <Image src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
+                                <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
                                 <div className={`w-full`}>
                                     <p>Diselenggarakan Oleh</p>
-                                    <p className="font-semibold">{detail?.has_creator.name}</p>
+                                    <p className="font-semibold">{detail?.has_creator?.name}</p>
                                 </div>
                                 <ActionIcon color="#0B387C" variant="transparent" size="lg">
-                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`}/>
+                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)}/>
                                 </ActionIcon>
                             </div>
                             <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-5">

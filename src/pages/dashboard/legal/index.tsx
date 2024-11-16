@@ -45,8 +45,8 @@ const Legal = () => {
 
   useEffect(() => {
     if (userData) {
-      setForm({ ...form, creator_id: userData.has_creator.id });
-      getData(userData.has_creator.id);
+      setForm({ ...form, creator_id: userData.has_creator?.id ?? 0 });
+      getData(userData.has_creator?.id ?? 0);
     }
   }, [userData]);
 

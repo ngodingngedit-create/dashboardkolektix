@@ -542,8 +542,8 @@ const eventItems = useMemo(() => {
               slug={data.slug}
               location={data.location_city}
               price={data.starting_price}
-              creatorImg={data.has_creator.image}
-              creator={data.has_creator.name}
+              creatorImg={data.has_creator?.image}
+              creator={data.has_creator?.name}
               withoutButton
             />
           <div className='text-center w-full my-4'>

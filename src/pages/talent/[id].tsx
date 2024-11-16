@@ -12,9 +12,19 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookmark } from '@fortawesome/free-regular-svg-icons';
 import { TalentProps } from '@/utils/globalInterface';
 import { formatDate, formatYear } from '@/utils/useFormattedDate';
+import moment from 'moment';
+import { AspectRatio, Card, Image as ImageM } from '@mantine/core';
 
+//Test COmment
 const TalentDetail = () => {
-  const [data, setData] = useState<TalentProps | null>(null);
+  const [data, setData] = useState<TalentProps | null>({
+    name: 'Talent Name',
+    has_category: {
+      name: 'Category'
+    },
+    created_at: moment(new Date()).format('YYYY-MM-DD'),
+    work_skill: 'Test Skill',
+  } as TalentProps);
   const [showModal, setShowModal] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState('');
   const [description, setDescription] = useState('');
@@ -43,16 +53,22 @@ const TalentDetail = () => {
           <BreadcrumbItem>{data.name}</BreadcrumbItem>
         </Breadcrumbs>
       <div className='text-dark flex flex-col divide-y divide-primary-light-200'>
-      <div className='flex flex-row justify-between items-center gap-4 py-3 flex-wrap'>
+      <Card p={0} radius={15} mx={-20} mt={10}>
+        <AspectRatio ratio={16/4} m={-5}>
+          <ImageM bg="gray.1" />
+        </AspectRatio>
+      </Card>
+      <div className='flex flex-row justify-between items-center gap-4 py-3 flex-wrap mt-[-10px] relative z-10 mb-[10px]'>
         <div className='flex flex-row items-center gap-4 flex-1'>
-          <Image src={Foto} alt='creator' className='w-20 h-20 object-cover rounded-full' />
-          <div className='flex flex-col gap-1'>
+          <Image src={Foto} alt='creator' className='mt-[-25px] w-[96px] h-[96px] object-cover rounded-full border-white border-5' />
+          <div className='flex flex-col gap-[0]'>
             <h3 className='text-lg font-bold text-center md:text-left'>{data.name}</h3>
             <p className='text-sm text-primary-dark text-center md:text-left'>{data.has_category.name}</p>
           </div>
         </div>
         <div className='flex gap-2 items-center'>
           <Button label='Hire Talent' color='primary' onClick={() => setShowModal(true)}  className='px-6 py-2' />
+          <Button label='Kirim Pesan' color='secondary' onClick={() => setShowModal(true)}  className='px-6 py-2' />
           <button className='w-10 h-10 border border-primary-light-200 hover:bg-primary-light-200 rounded-full bg-white text-primary-dark'>
             <FontAwesomeIcon icon={faBookmark} />
           </button>

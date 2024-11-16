@@ -256,7 +256,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                 {visible && (
                                     <>
                                         <div className={`w-full ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `}>
-                                            <p className="text-sm">{userData && userData.has_creator ? userData.has_creator.name : userData?.name}</p>
+                                            <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name : userData?.name}</p>
                                             <p className="text-[10px] ">{role}</p>
                                         </div>
                                         <div>

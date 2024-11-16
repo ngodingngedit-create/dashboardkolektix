@@ -39,7 +39,7 @@ export default function Dashboard() {
     }
 
     if (user && user.has_creator) {
-      const creatorId = user.has_creator.id;
+      const creatorId = user.has_creator?.id;
 
       Get(`event-view-list-by-creator/${creatorId}`, {})
         .then((response) => {

@@ -38,7 +38,7 @@ const Merch = () => {
             before: () => setLoading.append(''),
             success: ({ data }) => {
                 if ((data?.length ?? 0) > 0 && data) {
-                    const _data = data.filter(e => parseInt(e.creator_id) == user?.has_creator.id)
+                    const _data = data.filter(e => parseInt(e.creator_id) == user?.has_creator?.id)
                     setEventList(_data);
                     setSelectedEvent(_data[0].id);
                 }

@@ -34,7 +34,7 @@ const JobsList = ({ data, loading }: JobsListProps) => {
               endDate={el.end_date}
               salary={el.salary}
               status={el.status}
-              creator={el.has_creator.name}
+              creator={el.has_creator?.name}
               location={el.location}
             />
           </div>
