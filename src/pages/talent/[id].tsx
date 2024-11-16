@@ -15,6 +15,7 @@ import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import moment from 'moment';
 import { AspectRatio, Card, Image as ImageM } from '@mantine/core';
 
+//Test COmment
 const TalentDetail = () => {
   const [data, setData] = useState<TalentProps | null>({
     name: 'Talent Name',
