@@ -123,10 +123,10 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
     );
 };
 
-const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: number }) => {
+const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, toggleOpenTab?: () => void, creatorIdOpen?: number }) => {
     const [chat, setChat] = useState<InboxListProps[]>([]);
     const [chatFetched, setChatFetched] = useState(false);
-    const [selected, setSelected] = useState<number>(0);
+    const [selected, setSelected] = useState<number>();
     const [messagerName, setName] = useState<string>('');
     const [user, setUser] = useState<UserProps>();
     const users = useLoggedUser();
@@ -139,7 +139,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
     const [messages, setMessages] = useState<ChatProps>({
         inbox_id: 0,
         from: 0,
-        to: selected,
+        to: selected ?? 0,
         message: ''
     });
     const [newMessage, setNewMessage] = useState<string>('');
@@ -410,8 +410,8 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
     return (
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
-                <Accordion selectedKeys={openTab ? "1" : undefined}>
+            <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
+                <Accordion selectedKeys={openTab ? "1" : undefined} onSelectionChange={() => toggleOpenTab && toggleOpenTab()}>
                     <AccordionItem
                         key="1"
                         title={
@@ -434,9 +434,9 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                         }
                     >
                         {user && user.id ? (
-                            <div className="flex !h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
+                            <div className="flex !h-[80vh] w-[calc(100vw_-_15px)] md:w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
                                 {/* Contact List */}
-                                <div className="w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0">
+                                <div className={`${selected === undefined ? '' : 'hidden md:block'} w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0`}>
                                     <Box p={5}>
                                       <TextInput
                                         value={searchQuery}
@@ -481,9 +481,12 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                                 </div>
 
                                 {/* Chat Window */}
-                                <div className="flex-1 flex flex-col">
+                                <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full`}>
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
+                                            <ActionIcon className={`md:hidden`} variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
+                                                <Icon icon="uiw:left" />
+                                            </ActionIcon>
                                             <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
                                             <div>
                                                 <p className="font-semibold text-dark">{messagerName}</p>

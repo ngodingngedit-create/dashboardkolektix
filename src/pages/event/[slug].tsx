@@ -591,7 +591,7 @@ const EventDetails = () => {
         detail && (
             <div className="text-dark w-full">
                 <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
-                    <ChatBox openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
+                    <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
                     <AuthModal visible={openChat && !isLogin} onClose={() => setOpenChat(false)} />
                 </div>
                 <Head>
