@@ -37,6 +37,7 @@ import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
 import { Flex, Stack, Text, Image as ImageM, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { useClickOutside } from '@mantine/hooks';
 
 interface Form {
     nik: string;
@@ -117,6 +118,15 @@ const EventDetails = () => {
     const key = 'key';
     const initialValue = { transactionStorage: 'value' };
     const [alert, setAlert] = useState('');
+    const [openChat, setOpenChat] = useState(false);
+
+    const clickOutsideChat = useClickOutside(() => {
+        if (isLogin && openChat) {
+            setTimeout(() => {
+                setOpenChat(false);
+            }, 500);
+        }
+    });
 
     const handleShare = () => {
         const url = window.location.href;
@@ -580,8 +590,10 @@ const EventDetails = () => {
     return !firstLoad && detail ? (
         detail && (
             <div className="text-dark w-full">
-                {/* {isLogin && <ChatBox /> } */}
-                {/* <AuthModal visible={authModalVisible} onClose={() => setAuthModalVisible(false)} /> */}
+                <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
+                    <ChatBox openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
+                    <AuthModal visible={openChat && !isLogin} onClose={() => setOpenChat(false)} />
+                </div>
                 <Head>
                     <meta name="author" content="PT.Kolektix Maju Bersama" />
                     <meta name="copyright" content="&copy;2024 kolektix Maju Bersama" />
@@ -785,7 +797,7 @@ const EventDetails = () => {
                                             </Stack>
                                           </div>
 
-                                          <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`}/>
+                                          <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)}/>
                                           <Button onClick={() => setMenu(2)} label="Beli Tiket" color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
                                         </Stack>
                                     </div>

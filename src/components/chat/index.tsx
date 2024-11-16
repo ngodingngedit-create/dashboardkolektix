@@ -121,7 +121,7 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
     );
 };
 
-const Chat = () => {
+const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: number }) => {
     const [chat, setChat] = useState<InboxListProps[]>([]);
     const [selected, setSelected] = useState<number>(0);
     const [messagerName, setName] = useState<string>('');
@@ -333,8 +333,9 @@ const Chat = () => {
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
             <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
-                <Accordion>
+                <Accordion selectedKeys={openTab ? "1" : "2"}>
                     <AccordionItem
+                        key="1"
                         title={
                             <div className="flex items-center text-primary-base w-full relative">
                                 <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
