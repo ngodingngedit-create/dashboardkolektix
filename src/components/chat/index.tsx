@@ -481,7 +481,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 </div>
 
                                 {/* Chat Window */}
-                                <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full`}>
+                                <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full w-full`}>
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
                                             <ActionIcon className={`md:hidden`} variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
