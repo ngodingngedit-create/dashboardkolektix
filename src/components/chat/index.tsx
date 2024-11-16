@@ -473,6 +473,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                                                 setMessages={setMessages}
                                                 messages={messages}
                                                 inbox={item.id}
+                                                image={item.from.has_creator?.image_url}
                                             />)
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
@@ -483,7 +484,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                                 <div className="flex-1 flex flex-col">
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
-                                            <ImageM src={'/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
+                                            <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
                                             <div>
                                                 <p className="font-semibold text-dark">{messagerName}</p>
                                             </div>
