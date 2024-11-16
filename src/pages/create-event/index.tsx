@@ -128,7 +128,7 @@ const CreateEvent = () => {
 
   useEffect(() => {
     if (loggedUser) {
-      setForm({ ...form, creator_id: loggedUser.has_creator.id });
+      setForm({ ...form, creator_id: loggedUser.has_creator?.id ?? 0 });
     }
     //eslint-disable-next-line
   }, [loggedUser]);

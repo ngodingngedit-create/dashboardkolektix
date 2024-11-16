@@ -793,7 +793,7 @@ const EventDetails = () => {
                                                 </Flex>
                                               </Link>
                                               <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
-                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
+                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
                                             </Stack>
                                           </div>
 
@@ -850,10 +850,10 @@ const EventDetails = () => {
                                 </Link>
                             </div>
                             <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
-                                <Image src={`${config.assetUrl}creator/${detail?.has_creator.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
+                                <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
                                 <div className={`w-full`}>
                                     <p>Diselenggarakan Oleh</p>
-                                    <p className="font-semibold">{detail?.has_creator.name}</p>
+                                    <p className="font-semibold">{detail?.has_creator?.name}</p>
                                 </div>
                                 <ActionIcon color="#0B387C" variant="transparent" size="lg">
                                   <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`}/>

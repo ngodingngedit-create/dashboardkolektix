@@ -117,7 +117,7 @@ const CreateEvent = () => {
 
   useEffect(() => {
     if (loggedUser) {
-      setForm({ ...form, creator_id: loggedUser.has_creator.id });
+      setForm({ ...form, creator_id: loggedUser.has_creator?.id ?? 0 });
       console.log(form);
       console.log(loggedUser);
     }

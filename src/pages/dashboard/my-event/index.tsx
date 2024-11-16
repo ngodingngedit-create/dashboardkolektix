@@ -46,7 +46,7 @@ const MyEvent = () => {
 
   useEffect(() => {
     if (users) {
-      getData(users.has_creator.id, status);
+      getData(users.has_creator?.id ?? 0, status);
     }
   }, [users, status]);
 
@@ -109,8 +109,8 @@ useEffect(() => {
                     slug={event.slug}
                     location={event.location_city}
                     price={event.starting_price}
-                    creatorImg={event.has_creator.image}
-                    creator={event.has_creator.name}
+                    creatorImg={event.has_creator?.image}
+                    creator={event.has_creator?.name}
                     event_status_id={event.event_status_id}
                   />
                 ))}
@@ -155,8 +155,8 @@ useEffect(() => {
                     slug={event.slug}
                     location={event.location_city}
                     price={event.starting_price}
-                    creatorImg={event.has_creator.image}
-                    creator={event.has_creator.name}
+                    creatorImg={event.has_creator?.image}
+                    creator={event.has_creator?.name}
                     event_status_id={event.event_status_id}
                   />
                 ))}
@@ -202,8 +202,8 @@ useEffect(() => {
                     slug={event.slug}
                     location={event.location_city}
                     price={event.starting_price}
-                    creatorImg={event.has_creator.image}
-                    creator={event.has_creator.name}
+                    creatorImg={event.has_creator?.image}
+                    creator={event.has_creator?.name}
                     event_status_id={event.event_status_id}
 
                   />
@@ -250,8 +250,8 @@ useEffect(() => {
                     slug={event.slug}
                     location={event.location_city}
                     price={event.starting_price}
-                    creatorImg={event.has_creator.image}
-                    creator={event.has_creator.name}
+                    creatorImg={event.has_creator?.image}
+                    creator={event.has_creator?.name}
                     event_status_id={event.event_status_id}
 
                   />

@@ -33,7 +33,7 @@ const Merch = () => {
     if (loading.includes('getdata') || !user?.has_creator) return;
     setLoading.append('getdata');
     Get(`product`, {
-      creator_id: user?.has_creator.id
+      creator_id: user?.has_creator?.id
     })
     .then((res: any) => {
       setMerchList(res.data);

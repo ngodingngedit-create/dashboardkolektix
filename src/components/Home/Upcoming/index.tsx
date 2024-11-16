@@ -45,8 +45,8 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                     slug={event.slug}
                     location={event.location_city}
                     price={event.starting_price}
-                    creatorImg={event.has_creator.image}
-                    creator={event.has_creator.name}
+                    creatorImg={event.has_creator?.image}
+                    creator={event.has_creator?.name}
                   />
                 </div>
               ))
