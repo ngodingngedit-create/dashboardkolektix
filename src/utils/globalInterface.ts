@@ -213,7 +213,7 @@ export interface UserProps {
   otp_expiry_time: Date;
   created_at: Date;
   updated_at: Date;
-  has_creator: CreatorProps;
+  has_creator?: CreatorProps;
   event_status_id: number;
 }
 
@@ -243,6 +243,10 @@ export interface InboxListProps {
   has_replies?: any[];
   
   
+}
+
+export type GetCreatorResponse = CreatorProps & {
+  has_user: UserProps;
 }
 
 interface ChatProps {

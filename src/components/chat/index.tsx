@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Accordion, AccordionItem, Input } from '@nextui-org/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperclip, faPaperPlane, faCommentDots } from '@fortawesome/free-solid-svg-icons';
-import { UserProps } from '@/utils/globalInterface';
+import { GetCreatorResponse, UserProps } from '@/utils/globalInterface';
 import InputField from '@/components/Input';
 import { formatDate, formatDateDiff } from '@/utils/useFormattedDate';
 import { Get, Post } from '@/utils/REST';
@@ -22,6 +22,8 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import Link from 'next/link';
 import paperplane from '../../assets/icon/paperplane.png';
 import Image from 'next/image';
+import fetch from '@/utils/fetch';
+import moment from 'moment';
 
 interface ChatProps {
     inbox_id: number;
@@ -104,17 +106,17 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
                 readMsg(inbox);
                 setMessages({ ...messages, to: id, inbox_id: inbox });
             }}
-            className={`flex justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
+            className={`flex gap-3 justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
         >
             <div className="flex gap-3 items-center">
                 <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
                 <div>
-                    <p className="font-semibold text-dark">{name}</p>
+                    <p className="font-semibold text-dark truncate max-w-[240px]">{name}</p>
                     <p className="text-xs text-dark">{lastMsg}</p>
                 </div>
             </div>
             <div className="flex flex-col items-center">
-                <p className="text-xs text-primary-base">{time}</p>
+                <p className="text-xs text-primary-base whitespace-nowrap">{time}</p>
                 {(countMsg ?? 0) > 0 && <div className="bg-primary-base text-white w-6 flex items-center justify-center rounded-full text-xs mt-1">{countMsg}</div>}
             </div>
         </div>
@@ -123,6 +125,7 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
 
 const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: number }) => {
     const [chat, setChat] = useState<InboxListProps[]>([]);
+    const [chatFetched, setChatFetched] = useState(false);
     const [selected, setSelected] = useState<number>(0);
     const [messagerName, setName] = useState<string>('');
     const [user, setUser] = useState<UserProps>();
@@ -141,6 +144,77 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
     });
     const [newMessage, setNewMessage] = useState<string>('');
     const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (creatorIdOpen) {
+            const creatorExist = chat.find(e => e.from?.has_creator?.id == creatorIdOpen);
+            if (creatorExist) {
+                setSelected(creatorExist?.from.id);
+                setName(creatorExist?.from.has_creator?.name ?? '-');
+            } else {
+                if (chatFetched) {
+                    getCreator();
+                }
+            }
+        }
+    }, [openTab]);
+
+    const getCreator = async () => {
+        if (Boolean(creatorIdOpen)) {
+            await fetch<{}, GetCreatorResponse>({
+                url: `creator/${creatorIdOpen}`,
+                method: 'GET',
+                success: ({ data }) => {
+                    if (data) {
+                        setSelected(data?.has_user.id);
+                        setName(data?.name);
+                        setMessages({
+                            from: users?.id ?? 0,
+                            to: data.has_user.id,
+                            inbox_id: 0,
+                            message: ''
+                        });
+                        setChat([
+                            {
+                                lastMsg: '',
+                                id: 0,
+                                from: {
+                                    ...data.has_user,
+                                    email: data.has_user.email,
+                                    role_id: data.has_user.role_id,
+                                    email_verified_at: data.has_user.email_verified_at,
+                                    otp_code: null,
+                                    otp_expiry_time: data.has_user.otp_expiry_time,
+                                    event_status_id: 0,
+                                    has_creator: {
+                                        ...data
+                                    }
+                                },
+                                to: {
+                                    id: users?.id ?? 0,
+                                    name: users?.name ?? '',
+                                    role_id: users?.role_id ?? 0,
+                                    email: users?.email ?? '',
+                                    email_verified_at: new Date(),
+                                    otp_code: null,
+                                    otp_expiry_time: new Date(),
+                                    created_at: new Date(),
+                                    updated_at: new Date(),
+                                    event_status_id: 0
+                                },
+                                created_at: moment(new Date()).format('YYYY-MM-DD'),
+                                updated_at: moment(new Date()).format('YYYY-MM-DD'),
+                                deleted_at: null,
+                                chats: []
+                            },
+                            ...chat
+                        ])
+                    }
+                },
+                error: () => alert('failed get Creator'),
+            });
+        }
+    }
 
     const handleButtonClick = (form?: React.FormEvent) => {
         form?.preventDefault();
@@ -203,8 +277,9 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
     const getData = () => {
         Get('inbox', {})
             .then((res: any) => {
-                setChat(res);
+                setChat(res.filter((e: any) => (Boolean(e.from) && (Boolean(e.to)))));
                 console.log(res, 'chat');
+                setChatFetched(true);
             })
             .catch((err: any) => {
                 console.log(err);
@@ -247,7 +322,10 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
     const sendMessage = (form?: React.FormEvent) => {
         form?.preventDefault();
         if (newMessage.trim()) {
-            Post('inbox-chat', { ...messages, message: newMessage })
+            Post(messages.inbox_id == 0 ? 'inbox' : 'inbox-chat',
+                messages.inbox_id == 0 ? {...messages, from: messages.to, to: messages.from, message: newMessage } :
+                { ...messages, message: newMessage }
+            )
                 .then((res: any) => {
                     console.log(res);
                     getData();
@@ -315,7 +393,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
 
     useEffect(() => {
       if (Boolean(searchQuery)) {
-        setSearchedChats(chat.filter(e => e.from.name?.toLowerCase().includes(searchQuery.toLowerCase())));
+        setSearchedChats(chat.filter(e => e.from.has_creator?.name?.toLowerCase().includes(searchQuery.toLowerCase())));
       } else {
         setSearchedChats([]);
       }
@@ -333,7 +411,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
             <div className="[&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-6 right-6 transition-all duration-300 bg-white shadow-xl rounded-lg z-50 opacity-100">
-                <Accordion selectedKeys={openTab ? "1" : "2"}>
+                <Accordion selectedKeys={openTab ? "1" : undefined}>
                     <AccordionItem
                         key="1"
                         title={
@@ -382,7 +460,20 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                                     {chat.length > 0 ? (
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id !== user?.id)
-                                            .map((item: InboxListProps) => <ChatList countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length} name={item.from.has_creator.name} lastMsg={item.chats[0].message} time={formatDate(item.chats[0].created_at)} key={item.from.id} setSelected={setSelected} selected={selected} id={item.from.id} setName={setName} setMessages={setMessages} messages={messages} inbox={item.id} />)
+                                            .sort((a, b) => (!a.chats[0] || !b.chats[0]) ? -1 : new Date(b.chats[b.chats.length - 1].created_at).getTime() - new Date(a.chats[a.chats.length - 1].created_at).getTime())
+                                            .map((item: InboxListProps) => <ChatList
+                                                countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
+                                                name={item.from.has_creator?.name ?? '-'}
+                                                lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
+                                                time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
+                                                key={item.from.id} setSelected={setSelected}
+                                                selected={selected}
+                                                id={item.from.id}
+                                                setName={setName}
+                                                setMessages={setMessages}
+                                                messages={messages}
+                                                inbox={item.id}
+                                            />)
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
                                     )}
@@ -392,7 +483,7 @@ const Chat = ({ openTab, creatorIdOpen }: { openTab?: boolean, creatorIdOpen?: n
                                 <div className="flex-1 flex flex-col">
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-primary-base"></div>
+                                            <ImageM src={'/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
                                             <div>
                                                 <p className="font-semibold text-dark">{messagerName}</p>
                                             </div>
