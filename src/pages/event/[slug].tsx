@@ -856,7 +856,7 @@ const EventDetails = () => {
                                     <p className="font-semibold">{detail?.has_creator?.name}</p>
                                 </div>
                                 <ActionIcon color="#0B387C" variant="transparent" size="lg">
-                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`}/>
+                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)}/>
                                 </ActionIcon>
                             </div>
                             <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-5">
