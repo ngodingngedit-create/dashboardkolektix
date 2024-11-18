@@ -490,9 +490,11 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full w-full`}>
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
-                                            <ActionIcon className={`md:hidden`} variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
-                                                <Icon icon="uiw:left" />
-                                            </ActionIcon>
+                                            <div className={`md:!hidden`}>
+                                                <ActionIcon variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
+                                                    <Icon icon="uiw:left" />
+                                                </ActionIcon>
+                                            </div>
                                             <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
                                             <div>
                                                 <p className="font-semibold text-dark">{messagerName}</p>
