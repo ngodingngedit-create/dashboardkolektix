@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useRouter } from 'next/router';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Get, Post } from '@/utils/REST';
-import { useListState } from '@mantine/hooks';
+import { useClickOutside, useListState } from '@mantine/hooks';
 import { NumberFormatter, Button, Flex, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import _ from 'lodash';
@@ -15,6 +15,8 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
 import { AppMainContext } from '../_app';
+import AuthModal from '@/components/AuthModal';
+import ChatBox from '@/components/chat';
 
 export type CartStorage = {
     variant_id: number,
@@ -31,11 +33,16 @@ const MerchandiseDetail = () => {
     const [imageActive, setImage] = useState<number>(0);
     const [loading, setLoading] = useListState<string>();
     const [selectedVariant, setSelectedVariant] = useState<number>();
+    const [openChat, setOpenChat] = useState(false);
     const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;
 
     const { cartCount, setCartCount } = useContext(AppMainContext);
+
+    const clickOutsideChat = useClickOutside(() => {
+
+    });
 
     useEffect(() => {
         setIsr(true);
@@ -145,6 +152,11 @@ const MerchandiseDetail = () => {
     if (!mainData) return <></>;
 
     return (
+    <>
+        <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
+            <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={mainData.creator_id} />
+            <AuthModal visible={openChat && !user?.id} onClose={() => setOpenChat(false)} />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 auto-rows-min">
                 <div className="col-span-2 md:col-span-4">
@@ -251,15 +263,6 @@ const MerchandiseDetail = () => {
                         Beli Sekarang
                     </Button>
                     <Flex mt={7} align="center" justify="space-between" gap={10} w="100%">
-                        <Button
-                            leftSection={<Icon icon="fluent:chat-12-regular" className={`!text-[20px]`} />}
-                            color="#0B387C"
-                            variant="outline"
-                            radius="xl"
-                        >
-                            Chat Creator
-                        </Button>
-
                         <Flex gap={5} align="center">
                             <ActionIcon variant="transparent" size="lg" color="#0B387C">
                                 <Icon icon="lineicons:share-1" className={`!text-[24px]`} />
@@ -268,9 +271,20 @@ const MerchandiseDetail = () => {
                                 <Icon icon="ri:heart-add-line" className={`!text-[24px]`} />
                             </ActionIcon>
                         </Flex>
+
+                        <Button
+                            leftSection={<Icon icon="fluent:chat-12-regular" className={`!text-[20px]`} />}
+                            color="#0B387C"
+                            variant="outline"
+                            radius="xl"
+                            onClick={() => setOpenChat(true)}
+                        >
+                            Chat Creator
+                        </Button>
                     </Flex>
             </div>
         </div>
+    </>
     );
 };
 
