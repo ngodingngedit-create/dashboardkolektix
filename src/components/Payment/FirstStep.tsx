@@ -57,16 +57,21 @@ interface StepPaymentProps {
 const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { width } = useWindowSize();
     const userData = useLoggedUser();
-
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
+
+    const formValidation = (data: Form) => {
+        return (detail.is_noidentity == 1 ? Boolean(data.nik) : true) &&
+        (detail.is_name == 1 ? Boolean(data.full_name) : true) &&
+        (detail.is_email == 1 ? Boolean(data.email) : true) &&
+        (detail.is_phone_number == 1 ? Boolean(data.no_telp) : true);
+    };
+
     const handleInput = (index: number, field: keyof Form, value: string) => {
         let newForm = [...form];
         newForm[index] = { ...newForm[index], [field]: value };
         setForm(newForm);
 
-        const isFormValid = newForm.every((item) => {
-            return (!detail.is_noidentity || item.nik !== '') && (!detail.is_name || item.full_name !== '') && (!detail.is_email || item.email !== '') && (!detail.is_phone_number || item.no_telp !== '');
-        });
+        const isFormValid = newForm.every(formValidation);
 
         setFormValid(isFormValid);
     };
@@ -84,7 +89,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
             let newForm = [...form];
             newForm[targetIndex] = { ...newForm[0] };
             setForm(newForm);
-            const isFormValid = newForm.every((item) => detail.is_noidentity && item.nik !== '' && detail.is_name && item.full_name !== '' && detail.is_email && item.email !== '' && detail.is_phone_number && item.no_telp !== '');
+            const isFormValid = newForm.every(formValidation);
 
             setFormValid(isFormValid);
         }
@@ -104,7 +109,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                 event_ticket_id: 1
             };
             setForm(newForm);
-            const isFormValid = newForm.every((item) => detail.is_noidentity && item.nik !== '' && detail.is_name && item.full_name !== '' && detail.is_email && item.email !== '' && detail.is_phone_number && item.no_telp !== '');
+            const isFormValid = newForm.every(formValidation);
 
             setFormValid(isFormValid);
         }

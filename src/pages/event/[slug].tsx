@@ -95,7 +95,7 @@ const EventDetails = () => {
     const [selected, setSelected] = useState(people[1]);
     const [payment, setPayment] = useState<string>('');
     const [paymentMethod, setPaymentMethod] = useState<any>(null);
-    const [paymentList, setPaymentList] = useState<any>(null);
+    const [paymentList, setPaymentList] = useState<PaymentMethod[]>([]);
     const [form, setForm] = useState<Form[]>([]);
     const [error, setError] = useState<ErrorForm>({
         nik: false,
@@ -342,11 +342,13 @@ const EventDetails = () => {
             tickets: ticket,
             grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
             bank_code: bank,
-            expiration_date: isoString
+            expiration_date: isoString,
+            payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
         };
 
         if (payment) payload.payment_method = payment;
 
+        setLoading(true);
         Post('transaction', payload)
             .then((res: any) => {
                 if (res?.isFree) {
@@ -360,6 +362,7 @@ const EventDetails = () => {
                     console.log(res.xendit_invoice);
                     setXenditInvoice(res.xendit_invoice.va_number[0]);
                 }
+
                 if (res.data) {
                     setStep(100);
                     setLoading(false);
@@ -379,6 +382,9 @@ const EventDetails = () => {
                 if (err.response?.data?.message === 'The account is not registered yet') {
                     router.push('/auth');
                 }
+            })
+            .finally(() => {
+                setLoading(false);
             });
     };
 
@@ -460,21 +466,18 @@ const EventDetails = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    const isOnePayment = (detail?.has_event_payment_method.length ?? 2) <= 1;
+
     const submitForm = () => {
-        if (detail && detail.is_noidentity) {
-            setStep(66);
-            // if (form.nik.length > 15) {
-            //   setError({ ...error, nik: false });
-            //   setStep(66);
-            //   scrollToTop();
-            // } else {
-            //   setError({ ...error, nik: true });
-            //   scrollToTop();
-            // }
-        } else {
-            setStep(66);
-            scrollToTop();
+        if (detail) {
+            if (isOnePayment) {
+                setPayment((paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString())
+                submitData();
+            } else {
+                setStep(66);
+            }
         }
+        scrollToTop();
     };
 
     const getPaymentMethodById = (id: string) => {
@@ -644,6 +647,7 @@ const EventDetails = () => {
                                     </div>
                                     <div className="">
                                         <button
+                                            disabled={loading}
                                             className="text-white text-xs mb-1"
                                             // onClick={() => (step === 33 ? setStep(66) : setStep(100))}
                                         >
@@ -658,7 +662,7 @@ const EventDetails = () => {
                             <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
                                 <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                                 {step === 66 ? (
-                                    <Button color="primary" label="Selanjutnya" disabled={loading || payment === ''} onClick={submitData} />
+                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
                                 ) : step === 100 && transactionData ? (
                                     <Button
                                         color="primary"
@@ -682,7 +686,7 @@ const EventDetails = () => {
                                         }
                                     />
                                 ) : (
-                                    <Button color="primary" label="Selanjutnya" disabled={!isFormValid} onClick={() => (step === 33 ? setStep(66) : setStep(100))} />
+                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
                                 )}
                             </div>
                         </>
@@ -690,7 +694,7 @@ const EventDetails = () => {
                         <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
                             <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                             {step === 66 ? (
-                                <Button color="primary" label="Selanjutnya" disabled={loading || payment === ''} onClick={submitData} />
+                                <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
                             ) : step === 100 && transactionData ? (
                                 <Button
                                     color="primary"
@@ -714,7 +718,7 @@ const EventDetails = () => {
                                     }
                                 />
                             ) : (
-                                <Button color="primary" label="Selanjutnya" onClick={() => (step === 33 ? ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
+                                <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
                             )}
                         </div>
                     ))}
@@ -881,7 +885,7 @@ const EventDetails = () => {
                     ))}
 
                 {stepParams === '33' && <FirstStep detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} form={form} setForm={setForm} error={error} onSubmit={submitForm} setFormValid={setIsFormValid} />}
-                {stepParams === '66' && <SecondStep detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={paymentList} />}
+                {stepParams === '66' && <SecondStep detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
                 {stepParams === '100' && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
                 {step === 2 && transactionData && (
                     <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
