@@ -271,11 +271,17 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             </div>
                             <div className={`${(collapse ? pop : true) ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
                                 <div className="flex justify-between mb-2">
-                                    <p className="text-sm">Saldo</p>
+                                    <Flex align="center" gap={7}>
+                                        <Icon icon="hugeicons:money-03" />
+                                        <p className="text-sm">Saldo</p>
+                                    </Flex>
                                     <p className="text-sm ">Rp.0</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-sm">Kredit</p>
+                                    <Flex align="center" gap={7}>
+                                        <Icon icon="ph:money-wavy" />
+                                        <p className="text-sm">Kredit</p>
+                                    </Flex>
                                     <p className="text-sm ">Rp.0</p>
                                 </div>
                                 <div className="items-center">
@@ -295,7 +301,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             {sidebarData
                                 .filter((el) => el.role === role)
                                 .map((el) => (
-                                    <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? 'opacity-0' : ''}`} key={el.id}>
+                                    <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? '!opacity-0' : ''}`} key={el.id}>
                                     <li key={el.id} className={`${router.pathname === el.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px]  text-primary-light-200'} list-none transition-transform-colors`}>
                                         {el.link ? (
                                             <Link href={el.link} className="" onClick={handleItemClick}>
@@ -334,7 +340,6 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 {el.submenu
                                                     .filter((subEl) => subEl.role === role)
                                                     .map((subEl, i) => (
-                                                        <Tooltip key={i} label={subEl.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? 'opacity-0' : ''}`}>
                                                         <li key={i} className={`list-none ${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
                                                             <Link href={subEl.link ?? '#'}>
                                                                 <div className="flex px-5 items-center">
@@ -347,7 +352,6 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                                 </div>
                                                             </Link>
                                                         </li>
-                                                        </Tooltip>
                                                     ))}
                                             </ul>
                                         )}
