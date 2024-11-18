@@ -564,6 +564,14 @@ const eventItems = useMemo(() => {
                 onClick={() => router.push(`/dashboard/my-event/checkout/${data.slug}`)}
               />
           </div>
+          <div className='text-center w-full my-4'>
+              <Button
+                label='Penjualan'
+                color='primary'
+                className='w-full'
+                onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)}
+              />
+          </div>
           {/* <div className='text-center w-full my-4'>
               <Button
                 label='Penjualan'
