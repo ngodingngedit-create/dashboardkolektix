@@ -1,5 +1,5 @@
 import { Get } from '@/utils/REST';
-import { Badge, Box, Card, Flex, LoadingOverlay, ScrollArea, Select, Stack, Table, Tabs, Text, Title } from '@mantine/core';
+import { Badge, Box, Card, Flex, LoadingOverlay, ScrollArea, SegmentedControl, Select, Stack, Table, Tabs, Text, Title } from '@mantine/core';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDidUpdate, useListState } from '@mantine/hooks';
 import _ from 'lodash';
@@ -17,6 +17,7 @@ const Merch = () => {
     const [selectedEvent, setSelectedEvent] = useState<number>();
     const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
     const [loading, setLoading] = useListState<string>();
+    const [transactionSegment, setTransactionSegment] = useState<string>('all');
     const user = useLoggedUser();
 
     useEffect(() => {
@@ -80,17 +81,17 @@ const Merch = () => {
     }, [dataList]);
 
     const listTransaksi = useMemo(() => {
-        return dataList?.map(e => ({
+        return dataList?.filter(e => transactionSegment == 'all' ? true : e.type_transaction == transactionSegment).map(e => ({
             'ID': e.id,
             'Email': e.identities.find(e => e.is_pemesan == 1)?.email ?? '-',
             'No. Invoice': e.invoice_no,
             'Waktu Dikirim': moment(e.payment_date).format('HH:mm:ss DD MMM YYYY'),
-            'Status': <Badge className={`!text-[14px]`} size="sm" color={transactionStatus?.find(z => z.id == e.transaction_status_id)?.bgcolor}>
+            'Status': <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find(z => z.id == e.transaction_status_id)?.bgcolor}>
                 {transactionStatus?.find(z => z.id == e.transaction_status_id)?.name}
             </Badge>,
             'Type': <Text className={`capitalize`}>{e.type_transaction}</Text>
         }))
-    }, [dataList]);
+    }, [dataList, transactionSegment]);
 
     if (!isr) return <></>;
 
@@ -114,13 +115,14 @@ const Merch = () => {
 
             <Tabs defaultValue="pemesan">
                 <Tabs.List>
-                    <Tabs.Tab value="pemesan">Pemesan</Tabs.Tab>
-                    <Tabs.Tab value="transaksi">Transaksi</Tabs.Tab>
+                    <Tabs.Tab value="pemesan">Data Pemesan</Tabs.Tab>
+                    <Tabs.Tab value="transaksi">Data Penjualan</Tabs.Tab>
                 </Tabs.List>
 
                 <Tabs.Panel value="pemesan">
                     <Box mt={20}>
                         <TableData
+                            loading={loading.includes('getdata')}
                             tablekey="pemesan"
                             withRowIndex
                             data={listPemesan}
@@ -130,6 +132,20 @@ const Merch = () => {
                 <Tabs.Panel value="transaksi">
                     <Box mt={20}>
                         <TableData
+                            loading={loading.includes('getdata')}
+                            headers={
+                                <SegmentedControl
+                                    value={transactionSegment}
+                                    onChange={e => setTransactionSegment(e)}
+                                    data={[
+                                        { label: 'All', value: 'all' },
+                                        { label: 'Online', value: 'online' },
+                                        { label: 'Offline', value: 'offline' },
+                                    ]}
+                                    radius="xl"
+                                    color="#0b387c"
+                                />
+                            }
                             tablekey="transaksi"
                             withRowIndex
                             data={listTransaksi}

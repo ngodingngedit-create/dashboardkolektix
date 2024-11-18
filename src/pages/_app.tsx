@@ -38,7 +38,7 @@ const theme = createTheme({
         defaultProps: {
             className: `
                 [&_thead]:!bg-[#f0f0f0] [&_*]:text-[14px] [&_tbody_td]:bg-white [&_tr:hover_td]:!bg-gray-50 [&_th]:!bg-gray-100
-                [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100 [&_thead_th]:!border-b [&_thead_th]:!border-gray
+                [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100
             `,
             horizontalSpacing: 20,
         }
