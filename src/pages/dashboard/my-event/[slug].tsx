@@ -40,6 +40,8 @@ import TarikDanaModal from '@/components/Dashboard/Modal/Withdraw';
 import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { Flex } from '@mantine/core';
 
 
 
@@ -589,7 +591,7 @@ const eventItems = useMemo(() => {
             <Accordion
             selectedKeys={selectedKeys}
             onSelectionChange={setSelectedKeys}
-            className="rounded-lg p-4 md:p-4 shadow-sm"
+            className="rounded-lg shadow-sm p-0"
             aria-label="Event Data Accordion"
             >
               <AccordionItem
@@ -597,28 +599,40 @@ const eventItems = useMemo(() => {
                 title="Statistik Event"
                 className="border border-primary-light-200 px-4 rounded-lg"
               >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
               {/* Total View */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total View</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total View</p>
+                  <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_views || 0}</p>
               </div>
 
               {/* Total Bookmarks */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Bookmarks</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Bookmarks</p>
+                  <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">0</p>
               </div>
 
               {/* Total Tiket Terjual */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Tiket Terjual</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Tiket Terjual</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_paid || 0}</p>
               </div>
 
               {/* Total Penjualan */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Penjualan</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Penjualan</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell || 0).toLocaleString('id-ID')}
                 </p>
@@ -626,46 +640,70 @@ const eventItems = useMemo(() => {
 
               {/* Data Event Lainnya */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Admin Fee</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Admin Fee</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
-                  Rp{(eventData?.total_admin_fee || 0).toLocaleString('id-ID')}
+                  Rp {(eventData?.total_admin_fee || 0).toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Tiket</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Tiket</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_ticket || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Pembelian</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Pembelian</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_buy || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Online</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Online</p>
+                  <Icon icon="icon-park-outline:web-page" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_online || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Offline</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Offline</p>
+                  <Icon icon="hugeicons:cashier" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_offline || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Pembayaran Belum Lunas</p>
+                  <Icon icon="hugeicons:money-not-found-03" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_unpaid || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Penjualan Online</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell_online || 0).toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Penjualan Offline</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell_offline || 0).toLocaleString('id-ID')}
                 </p>
