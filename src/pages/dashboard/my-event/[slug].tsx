@@ -41,7 +41,7 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Flex } from '@mantine/core';
+import { Card, Divider, Flex, NumberFormatter, Stack, Text } from '@mantine/core';
 
 
 
@@ -584,18 +584,46 @@ const eventItems = useMemo(() => {
           </div>
           
           <div className="w-full flex flex-col gap-4 text-dark px-4 md:px-6 lg:px-8">
-            <div className="border border-primary-light-200 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm px-4 py-3">
-              <div className="mb-3 md:mb-0">
-                <p className="text-grey">Dana yang belum di tarik</p>
-                <h6>Rp0</h6>
-              </div>
-              <Button 
-              color="primary" 
-              label="Tarik Dana" 
-              className="w-full md:w-auto"
-              onClick={() => setIsModalOpen(true)} 
-              />
-            </div>
+              <Accordion
+                className="border border-primary-light-200 rounded-lg shadow-sm py-0 pr-5">
+                <AccordionItem
+                  title={(
+                  <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
+                    <div className="mb-3 md:mb-0">
+                      <p className="text-grey">Dana yang belum di tarik</p>
+                      <h6>Rp0</h6>
+                    </div>
+                    <Button 
+                      color="primary" 
+                      label="Tarik Dana" 
+                      className="w-full md:w-auto"
+                      onClick={() => setIsModalOpen(true)} 
+                    />
+                  </div>
+                  )}
+                >
+                  <Stack p={20} pt={0} gap={10}>
+                    <Divider />
+                    <Text size="sm" fw={600} c="gray">Riwayat Tarik Dana</Text>
+                    {Array(3).fill('A').map((e, i) => (
+                      <Card key={i} withBorder radius={10} py={8} px={16} bg="#fafafa">
+                        <Flex justify="space-between" gap={15}>
+                          <Stack gap={0}>
+                            <Text>18 Nov 2024</Text>
+                            <Text size="sm" c="gray">Bank BCA, a.n ical</Text>
+                          </Stack>
+                          <Stack gap={0} align="end">
+                            <Text fw={600}>
+                              <NumberFormatter value={-100000}/>
+                            </Text>
+                            <Text size="sm" c='green' fw={600}>Berhasil</Text>
+                          </Stack>
+                        </Flex>
+                      </Card>
+                    ))}
+                  </Stack>
+                </AccordionItem>
+              </Accordion>
             
             <Accordion
             selectedKeys={selectedKeys}
