@@ -38,6 +38,7 @@ import { validateHeaderName } from 'node:http';
 import { Flex, Stack, Text, Image as ImageM, ActionIcon } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useClickOutside } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 
 interface Form {
     nik: string;
@@ -365,19 +366,27 @@ const EventDetails = () => {
 
                 if (res.data) {
                     setStep(100);
-                    setLoading(false);
                     scrollToTop();
                 }
             })
             .catch((err: any) => {
-                if (err.response?.out_of_stock) {
-                    toast.error(`Maaf, tiket yang tersedia tidak mencukupi. ${err?.response?.message}`);
-                    router.push('/event');
+                if (err?.response?.data?.out_of_stock) {
+                    // toast.error(`Maaf, tiket yang tersedia tidak mencukupi`);
+                    notifications.show({
+                        color: 'red',
+                        position: 'top-right',
+                        message: `Maaf, tiket yang tersedia tidak mencukupi`
+                    });
+                    // router.push('/event');
                 } else {
-                    toast.error(err.response?.message || err?.message || 'Terjadi kesalahan.');
+                    // toast.error(err?.response?.data?.message || err?.message || 'Terjadi kesalahan.');
+                    notifications.show({
+                        color: 'red',
+                        position: 'top-right',
+                        message: err.response?.data?.message
+                    });
                 }
-                setLoading(false);
-                if ((err?.response?.message ?? err?.message) === 'The account is not registered yet') {
+                if ((err?.response?.data?.message ?? err?.message) === 'The account is not registered yet') {
                     router.push('/auth');
                 }
             })

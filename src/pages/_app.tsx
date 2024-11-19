@@ -18,6 +18,8 @@ import { useRouter } from 'next/router';
 import { MantineProvider, MantineTheme, Modal, ModalProps, NumberFormatter, Table, createTheme } from '@mantine/core';
 
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
@@ -105,9 +107,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <main className={inter.className}>
       <NextUIProvider locale='en-UK'>
+        <ToastContainer className={`z-[999]`} />
         <MantineProvider theme={theme}>
+          <Notifications />
           <ModalsProvider>
-            <ToastContainer />
             {router.pathname.startsWith('/dashboard') ? (
               <SidebarComponent>
                 <Component {...pageProps} />
