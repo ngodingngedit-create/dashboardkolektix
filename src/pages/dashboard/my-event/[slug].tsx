@@ -993,7 +993,7 @@ const eventItems = useMemo(() => {
       </div>
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={''} />
+    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
