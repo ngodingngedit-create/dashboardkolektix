@@ -547,6 +547,7 @@ const eventItems = useMemo(() => {
               creatorImg={data.has_creator?.image}
               creator={data.has_creator?.name}
               withoutButton
+              shareLink={window.location.origin + '/event/' + data.slug}
             />
           <div className='text-center w-full my-4'>
               <Button
