@@ -271,15 +271,14 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                 }
             })
             .catch((err: any) => {
-                console.log(err);
                 setLoading(false);
 
                 // Check for 400 error and out_of_stock condition
-                if (err.error === 400 || err.out_of_stock) {
+                if (err?.out_of_stock || err?.response?.out_of_stock) {
                     toast.error('Tiket sudah habis terjual');
                     router.push('/event'); // Redirect to /event page
                 } else {
-                    toast.error('Tiket sudah habis terjual');
+                    toast.error(err?.response?.message ?? err?.message);
                 }
             });
     };

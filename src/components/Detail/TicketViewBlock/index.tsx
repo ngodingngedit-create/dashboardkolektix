@@ -61,7 +61,7 @@ const TicketViewBlock = ({
           <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>
         </div>
         <div className='flex gap-4 items-center'>
-          <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>
+          {/* <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p> */}
           {isLogin ? (
             <button
               className='bg-primary-base text-white px-4 py-2 font-semibold text-sm rounded-2xl disabled:bg-primary-disabled disabled:cursor-not-allowed'

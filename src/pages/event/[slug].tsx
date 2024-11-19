@@ -370,16 +370,14 @@ const EventDetails = () => {
                 }
             })
             .catch((err: any) => {
-                console.log(err, 'tes');
-                // Memeriksa apakah error memiliki properti `out_of_stock`
-                if (err.response?.data?.out_of_stock) {
-                    toast.error(`Maaf, tiket yang tersedia tidak mencukupi. ${err.response.data.message}`);
-                    router.push('/event'); // Redirect ke halaman event
+                if (err.response?.out_of_stock) {
+                    toast.error(`Maaf, tiket yang tersedia tidak mencukupi. ${err?.response?.message}`);
+                    router.push('/event');
                 } else {
-                    toast.error(err.response?.data?.message || 'Terjadi kesalahan.');
+                    toast.error(err.response?.message || err?.message || 'Terjadi kesalahan.');
                 }
                 setLoading(false);
-                if (err.response?.data?.message === 'The account is not registered yet') {
+                if ((err?.response?.message ?? err?.message) === 'The account is not registered yet') {
                     router.push('/auth');
                 }
             })
