@@ -6,13 +6,14 @@ import _ from 'lodash';
 import moment from 'moment';
 import { Tab } from '@nextui-org/react';
 import TableData from '@/components/TableData';
-import { EventListResponse, TransactionListResponse, TransactionStatusResponse } from './type';
+import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 
 const Merch = () => {
     const [isr, setIsr] = useState(false);
     const [dataList, setDataList] = useState<TransactionListResponse[]>();
+    const [dataListEticket, setDataListEticket] = useState<EticketListResponse[]>();
     const [eventList, setEventList] = useState<EventListResponse[]>();
     const [selectedEvent, setSelectedEvent] = useState<number>();
     const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
@@ -75,6 +76,13 @@ const Merch = () => {
             success: ({ data }) => data && setDataList(data),
             complete: () => setLoading.filter(e => e != 'getdata'),
         });
+        await fetch<any, EticketListResponse[]>({
+            url: `eticket/showcheckin/${selectedEvent}`,
+            method: 'GET',
+            before: () => setLoading.append('getdata'),
+            success: (data) => data && setDataListEticket(data as EticketListResponse[]),
+            complete: () => setLoading.filter(e => e != 'getdata'),
+        });
     };
 
     const listPemesan = useMemo(() => {
@@ -99,6 +107,13 @@ const Merch = () => {
             'Type': <Text className={`capitalize`}>{e.type_transaction}</Text>
         }))
     }, [dataList, transactionSegment]);
+
+    const listCheckin = useMemo(() => {
+        return dataListEticket?.filter(e => Boolean(e.is_checkin)).map(e => ({
+            'Eticket': e.eticket_number,
+            'Waktu Checkin': moment(e.checkin_date).format('HH:mm:ss DD MMM YYYY')
+        }));
+    }, [dataListEticket]);
 
     if (!isr) return <></>;
 
@@ -167,7 +182,7 @@ const Merch = () => {
                             loading={loading.includes('getdata')}
                             tablekey="transaksi"
                             withRowIndex
-                            data={[]}
+                            data={listCheckin}
                         />
                     </Box>
                 </Tabs.Panel>
