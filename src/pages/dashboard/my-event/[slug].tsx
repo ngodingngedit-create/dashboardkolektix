@@ -41,9 +41,11 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
+import fetch from '@/utils/fetch';
+import { notifications } from '@mantine/notifications';
 
 
 
@@ -205,7 +207,25 @@ const [invitationFilter, setInvitationFilter] = useState('');
   };
   
   
-  
+  const handleDownloadTransaction = async () => {
+    await fetch<any, any>({
+      url: `list-transaction-by-event?event_id=${data?.id}&download=true`,
+      method: 'GET',
+      success: ({ data }) => {
+          const link = document.createElement('a');
+          link.href = data?.url as string;
+          link.download = 'TransactionExport.xlsx';
+          link.click();
+      },
+      error: () => {
+        notifications.show({
+          message: 'Terjadi Kesalahan',
+          position: 'top-right',
+          color: 'red'
+        })
+      },
+    });
+  }
 
 
   useEffect(() => {
@@ -805,7 +825,7 @@ const eventItems = useMemo(() => {
                         </div>
 
                         {/* Transaction Type Buttons */}
-                        <div className="flex gap-4 mb-4">
+                        <div className="flex gap-4 mb-4 items-center">
                           <Button
                             label="All"
                             onClick={() => setTransactionFilter('all')}
@@ -824,6 +844,9 @@ const eventItems = useMemo(() => {
                             color={transactionFilter === 'offline' ? 'primary' : 'secondary'}
                             fullWidth
                           />
+                          <ActionIcon variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
+                              <Icon icon="uiw:download" className={`text-[20px]`} />
+                          </ActionIcon>
                         </div>
 
                         {/* Single Transaction Table */}

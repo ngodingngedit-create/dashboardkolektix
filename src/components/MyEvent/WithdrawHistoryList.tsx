@@ -38,7 +38,7 @@ export default function WithdrawHistoryList({ user_id }: Readonly<ComponentProps
                 url: 'withdraw',
                 method: 'GET',
                 before: () => setLoading.append('getdata'),
-                success: (data) => data && setList((data as WithdrawHistory[]).filter((e) => e.user_id == 5)),
+                success: (data) => data && setList((data as WithdrawHistory[]).filter((e) => e.user_id == user_id)),
                 complete: () => setLoading.filter((e) => e != 'getdata')
             });
         }
