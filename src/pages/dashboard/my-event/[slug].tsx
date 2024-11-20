@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, use } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
 import { useAsyncList } from '@react-stately/data';
 import config from '@/Config';
 import { useRouter } from 'next/router';
@@ -35,13 +35,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload,faEye, faPaperPlane, faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx';
 import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Legend } from 'chart.js';
 import TarikDanaModal from '@/components/Dashboard/Modal/Withdraw';
 import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Card, Divider, Flex, NumberFormatter, Stack, Text } from '@mantine/core';
+import { Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 
 
 

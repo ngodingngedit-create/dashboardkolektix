@@ -68,6 +68,13 @@ const Merch = () => {
             success: ({ data }) => data && setDataList(data),
             complete: () => setLoading.filter(e => e != 'getdata'),
         });
+        await fetch<any, TransactionListResponse[]>({
+            url: `checkin-list/${selectedEvent}`,
+            method: 'GET',
+            before: () => setLoading.append('getdata'),
+            success: ({ data }) => data && setDataList(data),
+            complete: () => setLoading.filter(e => e != 'getdata'),
+        });
     };
 
     const listPemesan = useMemo(() => {
@@ -117,6 +124,8 @@ const Merch = () => {
                 <Tabs.List>
                     <Tabs.Tab value="pemesan">Data Pemesan</Tabs.Tab>
                     <Tabs.Tab value="transaksi">Data Penjualan</Tabs.Tab>
+                    <Tabs.Tab value="checkin">Data Checkin</Tabs.Tab>
+                    <Tabs.Tab value="invitation">Data Invitation</Tabs.Tab>
                 </Tabs.List>
 
                 <Tabs.Panel value="pemesan">
@@ -149,6 +158,26 @@ const Merch = () => {
                             tablekey="transaksi"
                             withRowIndex
                             data={listTransaksi}
+                        />
+                    </Box>
+                </Tabs.Panel>
+                <Tabs.Panel value="checkin">
+                    <Box mt={20}>
+                        <TableData
+                            loading={loading.includes('getdata')}
+                            tablekey="transaksi"
+                            withRowIndex
+                            data={[]}
+                        />
+                    </Box>
+                </Tabs.Panel>
+                <Tabs.Panel value="invitation">
+                    <Box mt={20}>
+                        <TableData
+                            loading={loading.includes('getdata')}
+                            tablekey="transaksi"
+                            withRowIndex
+                            data={[]}
                         />
                     </Box>
                 </Tabs.Panel>
