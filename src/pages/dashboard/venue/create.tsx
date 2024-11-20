@@ -117,8 +117,6 @@ export default function create({}: Readonly<ComponentProps>) {
             <Divider />
 
             <Stack gap={20} maw={700}>
-                {JSON.stringify(form.values)}
-                {JSON.stringify(form.errors)}
                 <Flex gap={10} align="center">
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
                     <Text size="lg" fw={600}>Informasi Venue</Text>
