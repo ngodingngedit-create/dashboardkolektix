@@ -77,7 +77,7 @@ export default function DateTab({
   return (
     <div className='flex flex-col'>
       <TabGroup manual selectedIndex={selected} onChange={setSelected}>
-        <TabList className='flex gap-2 overflow-x-scroll'>
+        <TabList className={`${groupedTickets.length > 1 ? 'flex' : 'hidden'} gap-2 overflow-x-scroll mb-2`}>
           {groupedTickets.map(({ date }) => (
             <Tab
               key={date}
@@ -87,7 +87,7 @@ export default function DateTab({
             </Tab>
           ))}
         </TabList>
-        <TabPanels className='mt-2'>
+        <TabPanels>
           {groupedTickets.map(({ date, tickets }) => (
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
               {tickets.map((item) => (
