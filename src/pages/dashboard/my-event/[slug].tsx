@@ -42,6 +42,8 @@ import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
+import useLoggedUser from '@/utils/useLoggedUser';
 
 
 
@@ -80,6 +82,7 @@ const MyEventDetail = () => {
     description: '',
   };
   const router = useRouter();
+  const user = useLoggedUser();
   const { slug } = router.query;
   const [data, setData] = useState<EventProps>();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
@@ -605,22 +608,7 @@ const eventItems = useMemo(() => {
                   <Stack p={20} pt={0} gap={10}>
                     <Divider />
                     <Text size="sm" fw={600} c="gray">Riwayat Tarik Dana</Text>
-                    {Array(3).fill('A').map((e, i) => (
-                      <Card key={i} withBorder radius={10} py={8} px={16} bg="#fafafa">
-                        <Flex justify="space-between" gap={15}>
-                          <Stack gap={0}>
-                            <Text>18 Nov 2024</Text>
-                            <Text size="sm" c="gray">Bank BCA, a.n ical</Text>
-                          </Stack>
-                          <Stack gap={0} align="end">
-                            <Text fw={600}>
-                              <NumberFormatter value={-100000}/>
-                            </Text>
-                            <Text size="sm" c='green' fw={600}>Berhasil</Text>
-                          </Stack>
-                        </Flex>
-                      </Card>
-                    ))}
+                    <WithdrawHistoryList user_id={user?.id ?? 0} />
                   </Stack>
                 </AccordionItem>
               </Accordion>
