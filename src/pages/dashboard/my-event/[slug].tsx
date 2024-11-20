@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, use } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
 import { useAsyncList } from '@react-stately/data';
 import config from '@/Config';
 import { useRouter } from 'next/router';
@@ -35,11 +35,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload,faEye, faPaperPlane, faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import * as XLSX from 'xlsx';
 import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Legend } from 'chart.js';
 import TarikDanaModal from '@/components/Dashboard/Modal/Withdraw';
 import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
+import useLoggedUser from '@/utils/useLoggedUser';
+import fetch from '@/utils/fetch';
+import { notifications } from '@mantine/notifications';
 
 
 
@@ -78,6 +84,7 @@ const MyEventDetail = () => {
     description: '',
   };
   const router = useRouter();
+  const user = useLoggedUser();
   const { slug } = router.query;
   const [data, setData] = useState<EventProps>();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
@@ -200,7 +207,9 @@ const [invitationFilter, setInvitationFilter] = useState('');
   };
   
   
-  
+  const handleDownloadTransaction = async () => {
+    window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`)
+  }
 
 
   useEffect(() => {
@@ -545,6 +554,7 @@ const eventItems = useMemo(() => {
               creatorImg={data.has_creator?.image}
               creator={data.has_creator?.name}
               withoutButton
+              shareLink={window.location.origin + '/event/' + data.slug}
             />
           <div className='text-center w-full my-4'>
               <Button
@@ -562,6 +572,14 @@ const eventItems = useMemo(() => {
                 onClick={() => router.push(`/dashboard/my-event/checkout/${data.slug}`)}
               />
           </div>
+          <div className='text-center w-full my-4'>
+              <Button
+                label='Penjualan'
+                color='primary'
+                className='w-full'
+                onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)}
+              />
+          </div>
           {/* <div className='text-center w-full my-4'>
               <Button
                 label='Penjualan'
@@ -573,23 +591,36 @@ const eventItems = useMemo(() => {
           </div>
           
           <div className="w-full flex flex-col gap-4 text-dark px-4 md:px-6 lg:px-8">
-            <div className="border border-primary-light-200 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm px-4 py-3">
-              <div className="mb-3 md:mb-0">
-                <p className="text-grey">Dana yang belum di tarik</p>
-                <h6>Rp0</h6>
-              </div>
-              <Button 
-              color="primary" 
-              label="Tarik Dana" 
-              className="w-full md:w-auto"
-              onClick={() => setIsModalOpen(true)} 
-              />
-            </div>
+              <Accordion
+                className="border border-primary-light-200 rounded-lg shadow-sm py-0 pr-5">
+                <AccordionItem
+                  title={(
+                  <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
+                    <div className="mb-3 md:mb-0">
+                      <p className="text-grey">Dana yang belum di tarik</p>
+                      <h6>Rp0</h6>
+                    </div>
+                    <Button 
+                      color="primary" 
+                      label="Tarik Dana" 
+                      className="w-full md:w-auto"
+                      onClick={() => setIsModalOpen(true)} 
+                    />
+                  </div>
+                  )}
+                >
+                  <Stack p={20} pt={0} gap={10}>
+                    <Divider />
+                    <Text size="sm" fw={600} c="gray">Riwayat Tarik Dana</Text>
+                    <WithdrawHistoryList user_id={user?.id ?? 0} />
+                  </Stack>
+                </AccordionItem>
+              </Accordion>
             
             <Accordion
             selectedKeys={selectedKeys}
             onSelectionChange={setSelectedKeys}
-            className="rounded-lg p-4 md:p-4 shadow-sm"
+            className="rounded-lg shadow-sm p-0"
             aria-label="Event Data Accordion"
             >
               <AccordionItem
@@ -597,28 +628,40 @@ const eventItems = useMemo(() => {
                 title="Statistik Event"
                 className="border border-primary-light-200 px-4 rounded-lg"
               >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
               {/* Total View */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total View</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total View</p>
+                  <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_views || 0}</p>
               </div>
 
               {/* Total Bookmarks */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Bookmarks</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Bookmarks</p>
+                  <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">0</p>
               </div>
 
               {/* Total Tiket Terjual */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Tiket Terjual</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Tiket Terjual</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_paid || 0}</p>
               </div>
 
               {/* Total Penjualan */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Penjualan</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Penjualan</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell || 0).toLocaleString('id-ID')}
                 </p>
@@ -626,46 +669,70 @@ const eventItems = useMemo(() => {
 
               {/* Data Event Lainnya */}
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Admin Fee</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Admin Fee</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
-                  Rp{(eventData?.total_admin_fee || 0).toLocaleString('id-ID')}
+                  Rp {(eventData?.total_admin_fee || 0).toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Tiket</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Tiket</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_ticket || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Pembelian</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Pembelian</p>
+                  <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_buy || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Online</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Online</p>
+                  <Icon icon="icon-park-outline:web-page" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_online || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                <p className="text-grey">Total Offline</p>
+                <Flex align="center" gap={7}>
+                  <p className="text-grey">Total Offline</p>
+                  <Icon icon="hugeicons:cashier" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_offline || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Pembayaran Belum Lunas</p>
+                  <Icon icon="hugeicons:money-not-found-03" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">{eventData?.total_unpaid || 0}</p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Penjualan Online</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell_online || 0).toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                <Flex align="center" gap={7}>
                 <p className="text-grey">Total Penjualan Offline</p>
+                  <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                </Flex>
                 <p className="font-semibold">
                   Rp{(eventData?.total_price_sell_offline || 0).toLocaleString('id-ID')}
                 </p>
@@ -742,7 +809,7 @@ const eventItems = useMemo(() => {
                         </div>
 
                         {/* Transaction Type Buttons */}
-                        <div className="flex gap-4 mb-4">
+                        <div className="flex gap-4 mb-4 items-center">
                           <Button
                             label="All"
                             onClick={() => setTransactionFilter('all')}
@@ -761,6 +828,9 @@ const eventItems = useMemo(() => {
                             color={transactionFilter === 'offline' ? 'primary' : 'secondary'}
                             fullWidth
                           />
+                          <ActionIcon variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
+                              <Icon icon="uiw:download" className={`text-[20px]`} />
+                          </ActionIcon>
                         </div>
 
                         {/* Single Transaction Table */}
@@ -803,16 +873,20 @@ const eventItems = useMemo(() => {
                                 </TableCell>
                                 <TableCell className='border-b-1 text-sm'>{item.type_transaction}</TableCell> 
                                 <TableCell className='border-b-1'>
-                                  <FontAwesomeIcon 
-                                    icon={faPaperPlane} 
-                                    className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                    onClick={() => sendETicket(item.invoice_no, item.has_user.email)}
-                                  />
-                                  <FontAwesomeIcon 
-                                    icon={faEye} 
-                                    className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" 
-                                    onClick={() => openDetailModal(item)} 
-                                  />
+                                  <Tooltip label="Kirim Ulang">
+                                    <FontAwesomeIcon 
+                                      icon={faPaperPlane} 
+                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                      onClick={() => sendETicket(item.invoice_no, item.has_user.email)}
+                                    />
+                                  </Tooltip>
+                                  <Tooltip label="Lihat Detail">
+                                    <FontAwesomeIcon 
+                                      icon={faEye} 
+                                      className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" 
+                                      onClick={() => openDetailModal(item)} 
+                                    />
+                                  </Tooltip>
                                 </TableCell>
                               </TableRow>
                             )}
@@ -843,11 +917,13 @@ const eventItems = useMemo(() => {
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
-                          <FontAwesomeIcon 
-                            className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"  
-                            onClick={openAddModal} 
-                            icon={faPlus} 
-                          />
+                          <Tooltip label="Tambah Invitation Baru">
+                            <FontAwesomeIcon 
+                              className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"  
+                              onClick={openAddModal} 
+                              icon={faPlus} 
+                            />
+                          </Tooltip>
                         </div>
                         {loading ? (
                           <p>Loading...</p> // Show loading indicator
@@ -881,16 +957,20 @@ const eventItems = useMemo(() => {
                                   </TableCell>
                                   <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell>
                                   <TableCell className='border-b-1'>
-                                    <FontAwesomeIcon 
-                                      icon={faPaperPlane} 
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => sendEventETicket(item.invoice_no, item.has_user.email)}
-                                    />
-                                    <FontAwesomeIcon 
-                                      icon={faEye} 
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => openInvitationModal(item)} 
-                                    />
+                                    <Tooltip label="Kirim Ulang">
+                                      <FontAwesomeIcon 
+                                        icon={faPaperPlane} 
+                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                        onClick={() => sendEventETicket(item.invoice_no, item.has_user.email)}
+                                      />
+                                    </Tooltip>
+                                    <Tooltip label="Lihat Detail">
+                                      <FontAwesomeIcon 
+                                        icon={faEye} 
+                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                        onClick={() => openInvitationModal(item)} 
+                                      />
+                                    </Tooltip>
                                     {/* <FontAwesomeIcon 
                                       icon={faPencil} 
                                       className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
@@ -913,7 +993,9 @@ const eventItems = useMemo(() => {
                         <h6>Ringkasan</h6>
                         <p onClick={downloadLaporan} className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer">
                           <span>
-                            <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                            <Tooltip label="download">
+                              <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                            </Tooltip>
                           </span>
                           Download Laporan
                         </p>
@@ -947,7 +1029,7 @@ const eventItems = useMemo(() => {
       </div>
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={''} />
+    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />

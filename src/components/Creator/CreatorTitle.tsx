@@ -1,3 +1,5 @@
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { Flex } from '@mantine/core';
 import Image, { StaticImageData } from 'next/image';
 import Link from 'next/link';
 
@@ -20,7 +22,10 @@ const CreatorTitle = ({
         className='w-8 h-8 border border-primary-light-200 rounded-full object-contain'
       />
       <div>
-        <p className='font-semibold'>{creator}</p>
+        <Flex gap={8} align="center">
+          <p className='font-semibold'>{creator}</p>
+          <Icon icon="tdesign:verified-filled" className={`text-primary-base`}/>
+        </Flex>
         <p className='text-grey text-xs'>{location}</p>
       </div>
     </Link>

@@ -52,12 +52,12 @@ const TicketContainer = ({
           >
             <FontAwesomeIcon icon={faPenToSquare} size='lg' />
           </button>
-          <button
+          {/* <button
             onClick={onDelete}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
           >
             <FontAwesomeIcon icon={faTrashCan} size='lg' />
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

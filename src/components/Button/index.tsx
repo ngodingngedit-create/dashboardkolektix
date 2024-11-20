@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import React from 'react';
+import { LoadingOverlay } from '@mantine/core';
 
 interface ButtonProps {
   className?: string;
@@ -11,6 +12,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   label?: string;
   startIcon?: IconProp;
+  loading?: boolean;
 }
 
 const Button = ({
@@ -21,6 +23,7 @@ const Button = ({
   fullWidth,
   label,
   startIcon,
+  loading,
 }: ButtonProps) => {
   return (
     <>
@@ -34,9 +37,10 @@ const Button = ({
             : 'bg-primary-base'
         } ${
           fullWidth && 'w-full'
-        }  px-4 py-2 font-semibold text-sm rounded-3xl disabled:bg-primary-disabled disabled:cursor-not-allowed transition-background ${className}`}
+        } relative px-4 py-2 font-semibold text-sm rounded-3xl disabled:bg-primary-disabled disabled:cursor-not-allowed transition-background ${className}`}
         onClick={onClick}
       >
+        <LoadingOverlay visible={loading} loaderProps={{  size: 'sm', color: '#0b387c' }} />
         {startIcon ? (
           <p>
             <span>

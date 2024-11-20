@@ -192,7 +192,7 @@ export default function TableData<T extends Record<string, ReactNode>>({
                 </Card>
             ) : (
                 <>
-                    <Card p={0} withBorder className={`[&_td]:!whitespace-nowrap`} component={ScrollArea}>
+                    <Card radius={15} p={0} withBorder className={`[&_td]:!whitespace-nowrap`} component={ScrollArea}>
                         <LoadingOverlay visible={loading} />
                         <Table {...{ stickyHeader: true, ...options, verticalSpacing: settings.verticalSpacing ?? options?.verticalSpacing ?? 'xs' }}>
                             <Table.Thead>

@@ -246,3 +246,23 @@ export type TransactionStatusResponse = {
     description: string;
     bgcolor: string;
 };
+
+export type EticketListResponse = {
+    id: number;
+    eticket_number: string;
+    is_checkin: number;
+    checkin_date: string;
+    event_id: number;
+    event_ticket_id: number | null;
+    transaction_id: number;
+    transaction_ticket_id: number | null;
+    transaction_identity_id: number | null;
+    is_checkout: number | null;
+    status: string;
+    created_by: string;
+    updated_by: string | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+    transaction_status_id: number;
+}

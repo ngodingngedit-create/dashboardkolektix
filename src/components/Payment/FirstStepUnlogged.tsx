@@ -20,6 +20,7 @@ import { toast } from 'react-toastify';
 import { faCopy } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 import { Stack } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 
 interface FormTicket {
     event_id: number;
@@ -271,15 +272,24 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                 }
             })
             .catch((err: any) => {
-                console.log(err);
                 setLoading(false);
 
                 // Check for 400 error and out_of_stock condition
-                if (err.error === 400 || err.out_of_stock) {
-                    toast.error('Tiket sudah habis terjual');
-                    router.push('/event'); // Redirect to /event page
+                if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+                    // toast.error('Tiket sudah habis terjual');
+                    notifications.show({
+                        color: 'red',
+                        position: 'top-right',
+                        message: 'Tiket sudah habis terjual'
+                    });
+                    // router.push('/event'); // Redirect to /event page
                 } else {
-                    toast.error('Tiket sudah habis terjual');
+                    // toast.error(err?.response?.data?.message ?? err?.message);
+                    notifications.show({
+                        color: 'red',
+                        position: 'top-right',
+                        message: err.response?.data?.message
+                    });
                 }
             });
     };

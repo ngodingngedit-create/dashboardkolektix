@@ -14,7 +14,7 @@ const VenueCard = ({ title, image, location, price }: VenueCardProps) => {
       {image && (
         <Link href={`/venue/detail`}>
           <Images
-            path={image}
+            src={image}
             type='venue'
             alt={title}
             className='w-48 h-48 object-cover rounded-md'

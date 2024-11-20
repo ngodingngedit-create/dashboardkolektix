@@ -106,12 +106,12 @@ const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelec
                 readMsg(inbox);
                 setMessages({ ...messages, to: id, inbox_id: inbox });
             }}
-            className={`flex gap-3 justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
+            className={`flex gap-3 justify-between py-3 px-4 h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
         >
             <div className="flex gap-3 items-center">
-                <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
+                <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
                 <div>
-                    <p className="font-semibold text-dark truncate max-w-[240px]">{name}</p>
+                    <p className="font-semibold text-dark truncate max-w-[100px]">{name}</p>
                     <p className="text-xs text-dark">{lastMsg}</p>
                 </div>
             </div>
@@ -151,6 +151,12 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
             if (creatorExist) {
                 setSelected(creatorExist?.from.id);
                 setName(creatorExist?.from.has_creator?.name ?? '-');
+                setMessages({
+                    from: users?.id ?? 0,
+                    to: creatorExist.from.id,
+                    message: '',
+                    inbox_id: creatorExist.id
+                })
             } else {
                 if (chatFetched) {
                     getCreator();
@@ -484,10 +490,12 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full w-full`}>
                                     {messagerName !== '' && (
                                         <div className="flex items-center py-4 px-3 h-16 gap-3">
-                                            <ActionIcon className={`md:hidden`} variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
-                                                <Icon icon="uiw:left" />
-                                            </ActionIcon>
-                                            <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full bg-primary-base shrink-0" w={36} h={36} radius={999}/>
+                                            <div className={`md:!hidden`}>
+                                                <ActionIcon variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
+                                                    <Icon icon="uiw:left" />
+                                                </ActionIcon>
+                                            </div>
+                                            <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
                                             <div>
                                                 <p className="font-semibold text-dark">{messagerName}</p>
                                             </div>

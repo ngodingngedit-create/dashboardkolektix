@@ -15,9 +15,11 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { MantineProvider, MantineTheme, Modal, ModalProps, NumberFormatter, Table, createTheme } from '@mantine/core';
+import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme } from '@mantine/core';
 
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
@@ -26,6 +28,38 @@ config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
+    Input: Input.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    TextInput: TextInput.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    TagsInput: TagsInput.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    Textarea: Textarea.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    NumberInput: NumberInput.extend({
+      defaultProps: {
+        radius: 10,
+        thousandSeparator: '.',
+        decimalSeparator: ','
+      }
+    }),
+    Select: Select.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
     NumberFormatter: NumberFormatter.extend({
       defaultProps: {
         prefix: "Rp ",
@@ -38,7 +72,7 @@ const theme = createTheme({
         defaultProps: {
             className: `
                 [&_thead]:!bg-[#f0f0f0] [&_*]:text-[14px] [&_tbody_td]:bg-white [&_tr:hover_td]:!bg-gray-50 [&_th]:!bg-gray-100
-                [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100 [&_thead_th]:!border-b [&_thead_th]:!border-gray
+                [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100
             `,
             horizontalSpacing: 20,
         }
@@ -105,9 +139,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <main className={inter.className}>
       <NextUIProvider locale='en-UK'>
+        <ToastContainer className={`z-[999]`} />
         <MantineProvider theme={theme}>
+          <Notifications />
           <ModalsProvider>
-            <ToastContainer />
             {router.pathname.startsWith('/dashboard') ? (
               <SidebarComponent>
                 <Component {...pageProps} />

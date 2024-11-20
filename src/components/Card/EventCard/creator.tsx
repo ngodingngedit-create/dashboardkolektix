@@ -10,6 +10,8 @@ import { faLocationDot, faBookmark as bookmarkSolid } from '@fortawesome/free-so
 import Images from '@/components/Images';
 import Link from 'next/link';
 import Button from '@/components/Button';
+import { ActionIcon, Card, CopyButton, Flex, TextInput, Tooltip } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface EventCardProps {
   slug?: string;
@@ -27,9 +29,11 @@ interface EventCardProps {
   status?: string;
   eventStatus: string;
   event_status_id?: number;
+  shareLink?: string;
 }
 
 const EventCardCreator = ({
+  shareLink,
   slug,
   title,
   date,
@@ -83,6 +87,28 @@ const EventCardCreator = ({
           <FontAwesomeIcon icon={faLocationDot} className='mr-2 text-grey' />
           <span className='text-grey'>{location}</span>
         </p>
+        {Boolean(shareLink) && (
+          <Card p={0} mt={15}>
+            <Flex align="center" gap={5}>
+              <TextInput
+                variant="filled"
+                value={shareLink}
+                readOnly
+                size="xs"
+                radius={10}
+              />
+              <CopyButton value={shareLink ?? '-'} timeout={2000}>
+                {({ copied, copy }) => (
+                  <Tooltip label={'Copy'} withArrow position="right">
+                    <ActionIcon color={'#194e9e'} variant="subtle" onClick={copy}>
+                      <Icon icon="tabler:copy" />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            </Flex>
+          </Card>
+        )}
       </div>
       {!withoutButton &&
         event_status_id &&

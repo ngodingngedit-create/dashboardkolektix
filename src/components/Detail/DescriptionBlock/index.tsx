@@ -2,6 +2,7 @@ const DescriptionBlock = ({ data }: { data?: string }) => {
   return (
     <div>
       <div className='text-sm py-3 px-4 md:px-0 md:py-12 md:w-2/3 mb-60 lg:mb-0 md:mb-0'>
+        <p className='mb-5 font-semibold'>Deskripsi Tentang event</p>
         {data ? (
           <div dangerouslySetInnerHTML={{ __html: data }}></div>
         ) : (
