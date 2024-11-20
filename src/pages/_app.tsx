@@ -15,7 +15,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { MantineProvider, MantineTheme, Modal, ModalProps, NumberFormatter, Table, createTheme } from '@mantine/core';
+import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -28,6 +28,38 @@ config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
+    Input: Input.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    TextInput: TextInput.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    TagsInput: TagsInput.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    Textarea: Textarea.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    NumberInput: NumberInput.extend({
+      defaultProps: {
+        radius: 10,
+        thousandSeparator: '.',
+        decimalSeparator: ','
+      }
+    }),
+    Select: Select.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
     NumberFormatter: NumberFormatter.extend({
       defaultProps: {
         prefix: "Rp ",

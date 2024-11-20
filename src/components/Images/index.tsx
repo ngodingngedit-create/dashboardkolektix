@@ -14,7 +14,7 @@ interface ImagesProps {
 const Images = ({ path, alt, width, height, className, type }: ImagesProps) => {
   return path ? (
     <Image
-      src={`${config.assetUrl}${type}/${path}`}
+      src={path}
       alt={alt ? alt : 'images'}
       className={className ? `${className}` : 'w-full object-cover'}
       width={width ? width : 200}

@@ -426,6 +426,9 @@ export interface VenueProps {
   has_venue_category: VenueCategory;
   has_venue_capacity: VenueCapacity;
   has_venue_schedule: VenueSchedule;
+  venue_gallery: {
+      image_url: string;
+  }[];
 }
 
 export interface TalentProps {

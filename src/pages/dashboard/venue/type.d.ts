@@ -10,6 +10,13 @@ interface VenueCategory {
     deleted_at: string | null;
 }
 
+interface VenueFacility {
+    id: number;
+    name: string;
+    description: string;
+    status: string;
+}
+
 interface VenueCapacity {
     id: number;
     name: string;
@@ -44,7 +51,7 @@ interface Venue {
     creator_id?: number;
     venue_category_id: number;
     venue_capacity_id: number;
-    venue_facility_id: string; // can be parsed as an array of numbers if needed
+    venue_facility_id: string;
     name: string;
     slug: string;
     image: string;
@@ -66,6 +73,37 @@ interface Venue {
     has_venue_category?: VenueCategory;
     has_venue_capacity?: VenueCapacity;
     has_venue_schedule?: VenueSchedule;
+    venue_gallery: {
+        image_url: string;
+    }[];
 }
 
 export type VenueListResponse = Venue;
+export type VenueStoreRequest = {
+    creator_id: number;
+    venue_category_id: number;
+    venue_capacity_id: number;
+    venue_facility_id: number[];
+    venue_schedule_id: number;
+    name: string;
+    location: string;
+    location_map: string;
+    location_detail: string;
+    opening_hour: string;
+    max_capacity: number;
+    seat_capacity: number;
+    contact_person_name: string;
+    contact_person_email: string;
+    contact_person_phone: string;
+    starting_price: number;
+    description: string;
+    status: string;
+    image: Blob[];
+}
+export type VenueGalleryStoreRequest = {
+    venue_id: number;
+    name: string;
+    description: string;
+    status: string;
+    image: string;
+}
