@@ -4,17 +4,18 @@ import kolektix from '../../assets/images/kolektix-square.webp';
 
 interface ImagesProps {
   type: string;
-  path: string | null | undefined;
+  src?: string;
+  path?: string | null | undefined;
   alt: string;
   width?: number;
   height?: number;
   className?: string;
 }
 
-const Images = ({ path, alt, width, height, className, type }: ImagesProps) => {
+const Images = ({ path, src, alt, width, height, className, type }: ImagesProps) => {
   return path ? (
     <Image
-      src={path}
+      src={`${config.assetUrl}${type}/${path}`}
       alt={alt ? alt : 'images'}
       className={className ? `${className}` : 'w-full object-cover'}
       width={width ? width : 200}
@@ -22,7 +23,7 @@ const Images = ({ path, alt, width, height, className, type }: ImagesProps) => {
     />
   ) : (
     <Image
-      src={kolektix}
+      src={src ?? kolektix}
       alt={alt ? alt : 'images'}
       className={className ? `${className}` : 'w-full object-cover'}
       width={width ? width : 200}
