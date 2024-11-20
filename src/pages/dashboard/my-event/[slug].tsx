@@ -878,16 +878,20 @@ const eventItems = useMemo(() => {
                                 </TableCell>
                                 <TableCell className='border-b-1 text-sm'>{item.type_transaction}</TableCell> 
                                 <TableCell className='border-b-1'>
-                                  <FontAwesomeIcon 
-                                    icon={faPaperPlane} 
-                                    className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                    onClick={() => sendETicket(item.invoice_no, item.has_user.email)}
-                                  />
-                                  <FontAwesomeIcon 
-                                    icon={faEye} 
-                                    className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" 
-                                    onClick={() => openDetailModal(item)} 
-                                  />
+                                  <Tooltip label="Kirim Ulang">
+                                    <FontAwesomeIcon 
+                                      icon={faPaperPlane} 
+                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                      onClick={() => sendETicket(item.invoice_no, item.has_user.email)}
+                                    />
+                                  </Tooltip>
+                                  <Tooltip label="Lihat Detail">
+                                    <FontAwesomeIcon 
+                                      icon={faEye} 
+                                      className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" 
+                                      onClick={() => openDetailModal(item)} 
+                                    />
+                                  </Tooltip>
                                 </TableCell>
                               </TableRow>
                             )}
@@ -918,11 +922,13 @@ const eventItems = useMemo(() => {
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
-                          <FontAwesomeIcon 
-                            className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"  
-                            onClick={openAddModal} 
-                            icon={faPlus} 
-                          />
+                          <Tooltip label="Tambah Invitaion Baru">
+                            <FontAwesomeIcon 
+                              className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"  
+                              onClick={openAddModal} 
+                              icon={faPlus} 
+                            />
+                          </Tooltip>
                         </div>
                         {loading ? (
                           <p>Loading...</p> // Show loading indicator
@@ -956,16 +962,20 @@ const eventItems = useMemo(() => {
                                   </TableCell>
                                   <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell>
                                   <TableCell className='border-b-1'>
-                                    <FontAwesomeIcon 
-                                      icon={faPaperPlane} 
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => sendEventETicket(item.invoice_no, item.has_user.email)}
-                                    />
-                                    <FontAwesomeIcon 
-                                      icon={faEye} 
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => openInvitationModal(item)} 
-                                    />
+                                    <Tooltip label="Kirim Ulang">
+                                      <FontAwesomeIcon 
+                                        icon={faPaperPlane} 
+                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                        onClick={() => sendEventETicket(item.invoice_no, item.has_user.email)}
+                                      />
+                                    </Tooltip>
+                                    <Tooltip label="Lihat Detail">
+                                      <FontAwesomeIcon 
+                                        icon={faEye} 
+                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
+                                        onClick={() => openInvitationModal(item)} 
+                                      />
+                                    </Tooltip>
                                     {/* <FontAwesomeIcon 
                                       icon={faPencil} 
                                       className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
@@ -988,7 +998,9 @@ const eventItems = useMemo(() => {
                         <h6>Ringkasan</h6>
                         <p onClick={downloadLaporan} className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer">
                           <span>
-                            <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                            <Tooltip label="download">
+                              <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                            </Tooltip>
                           </span>
                           Download Laporan
                         </p>
