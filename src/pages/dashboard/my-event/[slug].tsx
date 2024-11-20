@@ -910,7 +910,7 @@ const eventItems = useMemo(() => {
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
-                          <Tooltip label="Tambah Invitaion Baru">
+                          <Tooltip label="Tambah Invitation Baru">
                             <FontAwesomeIcon 
                               className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"  
                               onClick={openAddModal} 
