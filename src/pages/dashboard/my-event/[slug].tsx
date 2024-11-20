@@ -208,23 +208,7 @@ const [invitationFilter, setInvitationFilter] = useState('');
   
   
   const handleDownloadTransaction = async () => {
-    await fetch<any, any>({
-      url: `list-transaction-by-event?event_id=${data?.id}&download=true`,
-      method: 'GET',
-      success: ({ data }) => {
-          const link = document.createElement('a');
-          link.href = data?.url as string;
-          link.download = 'TransactionExport.xlsx';
-          link.click();
-      },
-      error: () => {
-        notifications.show({
-          message: 'Terjadi Kesalahan',
-          position: 'top-right',
-          color: 'red'
-        })
-      },
-    });
+    window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`)
   }
 
 
