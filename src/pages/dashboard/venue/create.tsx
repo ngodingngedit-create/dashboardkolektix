@@ -35,7 +35,7 @@ export const VenueStoreRequestSchema = z.object({
     image: isBrowser ? z.array(z.instanceof(Blob)).min(1, { message: "Setidaknya satu gambar harus diunggah." }) : z.any(),
 });
 
-export default function create({}: Readonly<ComponentProps>) {
+export default function Create({}: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
