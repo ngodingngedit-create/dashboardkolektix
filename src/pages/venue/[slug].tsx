@@ -5,19 +5,23 @@ import Button from '@/components/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleChevronLeft, faCircleChevronRight } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
-import { Chip } from '@nextui-org/react';
+import { Chip, DateInput } from '@nextui-org/react';
 import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import InputField from '@/components/Input';
 import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
 import { EventListResponse } from '../dashboard/my-event/type';
-import { useListState } from '@mantine/hooks';
+import { useListState, useSetState } from '@mantine/hooks';
 import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip } from '@mantine/core';
 import { VenueListResponse } from '../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Carousel } from '@mantine/carousel';
 import Link from 'next/link';
 import Chat from '@/components/chat';
+import { DateInput as DateInputM} from '@mantine/dates';
+import moment from 'moment';
+import Cookies from 'js-cookie';
+import { VenueBookingOrder } from '../venue-order';
 
 const facility = ['Free Wifi', 'Toilet', 'Ruangan Full AC', 'Kursi', 'Lighting', 'Stage', 'Parking Area', 'Rest Area', 'Sound System', 'Back Stage'];
 
@@ -33,6 +37,10 @@ const VenueDetail = () => {
     const user = useLoggedUser();
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [date, setDate] = useSetState({
+      start: '',
+      end: ''
+    });
 
     const handleArrowClick = (direction: 'left' | 'right') => {
       if (direction === 'left') {
@@ -73,6 +81,18 @@ const VenueDetail = () => {
             complete: () => setLoading.filter((e) => e != 'getdata')
         });
     };
+
+    const handleOrder = () => {
+      if (data?.id) {
+        Cookies.set('venue_order_data', JSON.stringify({
+          id: data?.id,
+          slug: data?.slug,
+          date_start: date.start,
+          date_end: date.end
+        } satisfies VenueBookingOrder));
+        router.push('/venue-order');
+      }
+    }
 
     return (
         <div className="max-w-5xl min-h-screen mx-auto py-20 px-4 sm:px-8 md:px-12 lg:px-0">
@@ -192,15 +212,27 @@ const VenueDetail = () => {
                         <div>
                             <p className="text-primary-base mb-1">Mulai dari</p>
                             <h6>
-                                <NumberFormatter value={data?.starting_price} />
+                                <NumberFormatter value={Math.round(data?.starting_price ?? 0)} />
                                 <span className="text-grey">/Hari</span>{' '}
                             </h6>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
-                            <InputField type="text" size="sm" placeholder="Dari Tanggal" fullWidth />
-                            <InputField type="text" size="sm" placeholder="Sampai Tanggal" fullWidth />
+                          <DateInputM
+                            minDate={new Date()}
+                            value={date.start ? new Date(date.start) : undefined}
+                            onChange={e => setDate({ start: moment(e).format('YYYY-MM-DD')})}
+                            valueFormat='DD MMMM YYYY'
+                            placeholder="Dari Tanggal"
+                          />
+                          <DateInputM
+                            minDate={new Date()}
+                            value={date.end ? new Date(date.end) : undefined}
+                            onChange={e => setDate({ end: moment(e).format('YYYY-MM-DD')})}
+                            valueFormat='DD MMMM YYYY'
+                            placeholder="Sampai Tanggal"
+                          />
                         </div>
-                        <Button color="primary" label="Book" fullWidth />
+                        <Button onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
                     </div>
                     <div className="border border-primary-light-200 rounded-lg flex flex-col gap-2 shadow-sm mt-7">
                         <div className="border-b border-primary-light-200 p-4">

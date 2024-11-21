@@ -76,6 +76,7 @@ interface Venue {
     updated_at: string;
     deleted_at: string | null;
     starting_price: number;
+    minimum_price: number | null;
     image_url: string;
     creator: CreatorProps;
     has_venue_category?: VenueCategory;
@@ -104,6 +105,7 @@ export type VenueStoreRequest = {
     contact_person_email: string;
     contact_person_phone: string;
     starting_price: number;
+    minimum_price?: number;
     description: string;
     status: string;
     image: Blob[];

@@ -30,6 +30,7 @@ export const VenueStoreRequestSchema = z.object({
     contact_person_email: z.string().email({ message: "Email kontak harus berupa email yang valid." }),
     contact_person_phone: z.string().min(1, { message: "Nomor telepon kontak tidak boleh kosong." }),
     starting_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }),
+    minimum_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }).optional().nullable(),
     description: z.string().min(1, { message: "Deskripsi tidak boleh kosong." }),
     // status: z.string().min(1, { message: "Status tidak boleh kosong." }),
     image: isBrowser ? z.array(z.instanceof(Blob)).min(1, { message: "Setidaknya satu gambar harus diunggah." }) : z.any(),
@@ -122,7 +123,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                     <Text size="lg" fw={600}>Informasi Venue</Text>
                 </Flex>
 
-                <InputWrapper error={form.errors.image}>
+                <InputWrapper error={form.errors.image} withAsterisk>
                     <Flex wrap="wrap" gap={10}>
                         {Array(5).fill(null).map((e, i) => (
                             <ImageInput
@@ -137,12 +138,14 @@ export default function Create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Nama Venue"
                         placeholder="Isi Nama Venue"
                         w="100%"
                         {...form.getInputProps('name')}
                     />
                     <Select
+                        withAsterisk
                         label="Kategori Venue"
                         placeholder="Pilih Kategori Venue"
                         disabled={loading.includes('getdatacat')}
@@ -154,6 +157,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <Textarea
+                    withAsterisk
                     label="Deskripsi Venue"
                     placeholder="Isi Deskripsi Venue"
                     autosize
@@ -162,6 +166,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 />
 
                 <TagsInput
+                    withAsterisk
                     label="Fasilitas Venue"
                     placeholder="Isi Fasilitas Venue"
                     data={facility?.map(e => ({ value: String(e.id), label: e.name }))}
@@ -170,24 +175,28 @@ export default function Create({}: Readonly<ComponentProps>) {
                     onChange={e => e && form.setValues({ venue_facility_id: e.map(e => facility?.find(z => z.name == e)?.id ?? 0) })}
                 />
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                     <NumberInput
+                        withAsterisk
                         label="Maksimal Kapasitas"
                         placeholder="Masukan Maksimal Kapasitas"
                         hideControls
                         min={0}
-                        w="100%"
                         {...form.getInputProps('max_capacity')}
                     />
                     <NumberInput
+                        withAsterisk
                         label="Jumlah Kursi"
                         placeholder="Masukan Jumlah Kursi"
                         hideControls
                         min={0}
-                        w="100%"
                         {...form.getInputProps('seat_capacity')}
                     />
+                </Flex>
+
+                <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                     <NumberInput
+                        withAsterisk
                         label="Harga Per Hari"
                         placeholder="Masukan Harga Per Hari"
                         hideControls
@@ -195,6 +204,15 @@ export default function Create({}: Readonly<ComponentProps>) {
                         min={0}
                         w="100%"
                         {...form.getInputProps('starting_price')}
+                    />
+                    <NumberInput
+                        label="Minimal Pembayaran Per Hari"
+                        placeholder="Minimal Pembayaran Per Hari"
+                        hideControls
+                        prefix="Rp "
+                        min={0}
+                        w="100%"
+                        {...form.getInputProps('minimum_price')}
                     />
                 </Flex>
 
@@ -205,12 +223,14 @@ export default function Create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Daerah"
                         placeholder="Bandung, Jawa Barat"
                         w="100%"
                         {...form.getInputProps('location')}
                     />
                     <TextInput
+                        withAsterisk
                         label="Link Maps"
                         placeholder="https://maps.google.com/..."
                         w="100%"
@@ -219,6 +239,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <Textarea
+                    withAsterisk
                     label="Alamat Detail Venue"
                     placeholder="Isi Detail Alamat Venue"
                     autosize
@@ -233,12 +254,14 @@ export default function Create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Nama Kontak"
                         placeholder="Isi Nama Kontak"
                         w="100%"
                         {...form.getInputProps('contact_person_name')}
                     />
                     <TextInput
+                        withAsterisk
                         label="Email Kontak"
                         placeholder="Isi Email Kontak"
                         w="100%"
@@ -247,6 +270,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <TextInput
+                    withAsterisk
                     label="No.Telp Kontak"
                     placeholder="Isi No.Telp Kontak"
                     w="100%"

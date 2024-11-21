@@ -20,7 +20,7 @@ const MyVenue = () => {
     await fetch<any, VenueListResponse[]>({
       url: 'venue',
       method: 'GET',
-      success: ({ data }) => data && setVenue.setState(data),
+      success: ({ data }) => data && setVenue.setState(data.filter(e => e.creator_id == user?.has_creator?.id)),
       before: () => setLoading.append('getdata'),
       complete: () => setLoading.filter(e => e != 'getdata'),
     });

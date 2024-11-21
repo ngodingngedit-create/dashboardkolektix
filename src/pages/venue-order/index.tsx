@@ -1,7 +1,7 @@
 // pages/cart.tsx
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader } from '@mantine/core';
-import { useListState } from '@mantine/hooks';
+import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader, LoadingOverlay } from '@mantine/core';
+import { useListState, useSetState } from '@mantine/hooks';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Delete, Get } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -16,6 +16,8 @@ import { currencyFormat } from '@/utils/currencyFormat';
 import { z } from 'zod';
 import { VenueListResponse } from '../dashboard/venue/type';
 import moment from 'moment';
+import { DateInput } from '@mantine/dates';
+import { notifications } from '@mantine/notifications';
 
 
 type Province = {
@@ -76,39 +78,13 @@ type OrderData = {
 }[];
 
 type Checkout = {
-    user_id: number | null;
-    nama_pemesan?: string;
-    email_pemesan?: string;
-    creator_id: number;
+    user_id: number;
+    total_qty: number;
+    total_price: number;
+    venue_id: number;
     grandtotal: number;
-    product: Array<{
-        product_id: number;
-        variant_id: null | number;
-        qty: number;
-        price: number
-    }>;
     payment_method: string;
-    courier: {
-        main: string;
-        type: string;
-        price: number
-    };
-    address: {
-        id?: number;
-        is_main_address: number;
-        province_id: number;
-        city_id: number;
-        address_detail: string;
-        address_name: string;
-        zipcode: string;
-        latitude: string;
-        longitude: string;
-        nama_penerima: string;
-        phone: string;
-        is_active: number;
-    }
-    }
-;  
+};  
 
 export const formStateSchema = z.object({
     nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
@@ -128,15 +104,23 @@ export const formStateSchema = z.object({
 
 export type VenueBookingOrder = {
     id: number;
+    slug: string;
     date_start: string;
     date_end: string;
 }
 
 export default function Cart() {
     const [isr, setIsr] = useState(false);
-    const [orderData, setOrderData] = useState<VenueBookingOrder>()
+    const [orderData, setOrderData] = useSetState<VenueBookingOrder>({
+        id: 0,
+        slug: '',
+        date_start: '',
+        date_end: ''
+    })
     const [venue, setVenue] = useState<VenueListResponse>();
+    const [onEditDate, setOnEditDate] = useState(false);
     const [loading, setLoading] = useListState<string>();
+    const [paymentOption, setPaymentOption] = useState<'all' | 'divide'>('all');
     const user = useLoggedUser();
     const router = useRouter();
 
@@ -148,9 +132,11 @@ export default function Cart() {
 
     useEffect(() => {
         getData();
-        const _orderData: VenueBookingOrder = JSON.parse(Cookies.get('venue_order_data') ?? '[]');
-        if (!_orderData) router.push('/venue');
-        setOrderData(_orderData);
+        try {
+            const _orderData: VenueBookingOrder = JSON.parse(Cookies.get('venue_order_data') ?? '[]');
+            if (!_orderData) router.push('/venue');
+            setOrderData(_orderData);
+        } catch (error) {}
     }, [isr]);
 
     useEffect(() => {
@@ -158,29 +144,92 @@ export default function Cart() {
     }, [orderData]);
 
     const getData = async () => {
-        await fetch<any, VenueListResponse>({
-            url: `venue/${orderData?.id}`,
-            method: 'GET',
-            before: () => setLoading.append('getdata'),
-            success: ({ data }) => data && setVenue(data),
-            complete: () => setLoading.filter(e => e != 'getdata'),
-        });
+        if (!Boolean(venue)) {
+            await fetch<any, VenueListResponse>({
+                url: `venue/${orderData?.slug}`,
+                method: 'GET',
+                before: () => setLoading.append('getdata'),
+                success: ({ data }) => data && setVenue(data),
+                complete: () => setLoading.filter(e => e != 'getdata'),
+            });
+        }
     };
 
     const orderSummary = useMemo(() => {
+        function getDaysBetweenDates(startDateString: string, endDateString: string): number {
+            const startDate = new Date(startDateString);
+            const endDate = new Date(endDateString);
+            const differenceInTime = endDate.getTime() - startDate.getTime();
+            const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+            return Math.abs(differenceInDays);
+        }
+
+        const count = getDaysBetweenDates(orderData.date_start, orderData.date_end) + 1;
+        const subprice = Math.round((paymentOption == 'all' ? venue?.starting_price : venue?.minimum_price) ?? 0);
+        const price = count * subprice;
+        const admin = 2000;
+        const ppn = (price + admin)  * 0.11;
+        const total = price + admin + ppn;
+        
+        const subfullprice = count * Math.round(venue?.starting_price ?? 0);
+        const fullprice = (subfullprice + admin) * 1.11;
+
         return {
             array: [
-                ["Biaya Booking", 100000],
-                ["Pajak", 11000],
-                ["Biaya Admin", 2000],
-                ["Total Pembayaran", 123000],
-            ]
+                [`Booking ${count} Hari`, price],
+                ["Biaya Admin", admin],
+                ["PPN (11%)", ppn],
+                ["Total Pembayaran", total],
+            ],
+            count, subprice, price, ppn, admin, total, fullprice
         }
-    }, []);
+    }, [venue, orderData, paymentOption]);
+
+    const handleCheckout = async () => {
+        await fetch<Checkout, any>({
+            url: 'booking-venue',
+            method: 'POST',
+            data: {
+                user_id: user?.id ?? 0,
+                total_qty: orderSummary.count,
+                total_price: orderSummary.fullprice,
+                venue_id: orderData?.id,
+                grandtotal: orderSummary.total,
+                payment_method: 'xendit'
+            },
+            before: () => setLoading.append('submit'),
+            success: (data) => {
+                if (data['xendit_invoice']) {
+                    router.push(data['xendit_invoice'])
+                } else {
+                    notifications.show({
+                        position: 'top-right',
+                        color: 'red',
+                        message: data['message'] ?? 'Gagal Checkout'
+                    });
+                    setTimeout(() => {
+                        router.reload();
+                    }, 2000);
+                }
+            },
+            complete: () => setLoading.filter(e => e != 'submit'),
+            error: (err) => {
+                notifications.show({
+                    position: 'top-right',
+                    color: 'red',
+                    message: err.response.data.message ?? 'Gagal Checkout'
+                });
+                setTimeout(() => {
+                    router.reload();
+                }, 2000);
+            },
+        });
+    }
+
+    if (loading.includes('getdata')) return <LoadingOverlay visible />;
 
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
-
             <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[100px`}>
                 <Stack gap={25} mb={40}>
                     <Stack gap={0}>
@@ -203,7 +252,9 @@ export default function Cart() {
                                             <Text size="sm" c="gray">Venue</Text>
                                             <Text>{venue?.name}</Text>
                                         </Stack>
-                                        <Image src={venue?.image_url ?? '#'} bg="gray.1" radius={7} w={50} h={50} />
+                                        {Boolean(venue?.venue_gallery) && (
+                                            <Image src={venue?.venue_gallery[0].image_url ?? '#'} bg="gray.1" radius={7} w={50} h={50} />
+                                        )}
                                     </Flex>
                                     <Stack gap={0}>
                                         <Text size="sm" c="gray">Lokasi</Text>
@@ -212,20 +263,40 @@ export default function Cart() {
                                     <Flex gap={10} className={`[&>*]:!flex-grow`} wrap="wrap">
                                         <Stack gap={0}>
                                             <Text size="sm" c="gray">Maks. Kapasitas</Text>
-                                            <Text><NumberFormatter value={venue?.max_capacity} /></Text>
+                                            <Text><NumberFormatter prefix={''} value={venue?.max_capacity} /></Text>
                                         </Stack>
                                         <Stack gap={0}>
                                             <Text size="sm" c="gray">Jumlah Kursi</Text>
-                                            <Text><NumberFormatter value={venue?.seat_capacity} /></Text>
+                                            <Text><NumberFormatter prefix={''} value={venue?.seat_capacity} /></Text>
                                         </Stack>
                                     </Flex>
                                     <Flex justify="space-between" gap={20} align="center">
                                         <Stack gap={0}>
                                             <Text size="sm" c="gray">Tanggal Booking</Text>
-                                            <Text>{moment(orderData?.date_start).format('DD MMM YYYY')} - {moment(orderData?.date_end).format('DD MMM YYYY')}</Text>
+                                            {!onEditDate ? (
+                                                <Text>{moment(orderData?.date_start).format('DD MMM YYYY')} - {moment(orderData?.date_end).format('DD MMM YYYY')}</Text>
+                                            ) : (
+                                                <Flex gap={10} mt={5} wrap="wrap">
+                                                    <DateInput
+                                                        minDate={new Date()}
+                                                        maxDate={new Date(orderData?.date_end)}
+                                                        value={orderData?.date_start ? new Date(orderData?.date_start) : undefined}
+                                                        onChange={e => setOrderData({ date_start: moment(e).format('YYYY-MM-DD')})}
+                                                        valueFormat='DD MMMM YYYY'
+                                                        placeholder="Dari Tanggal"
+                                                    />
+                                                    <DateInput
+                                                        minDate={new Date(orderData?.date_start)}
+                                                        value={orderData?.date_end ? new Date(orderData?.date_end) : undefined}
+                                                        onChange={e => setOrderData({ date_end: moment(e).format('YYYY-MM-DD')})}
+                                                        valueFormat='DD MMMM YYYY'
+                                                        placeholder="Sampai Tanggal"
+                                                    />
+                                                </Flex>
+                                            )}
                                         </Stack>
-                                        <Button variant="transparent" color="#194e9e">
-                                            Edit
+                                        <Button onClick={() => setOnEditDate(!onEditDate)} variant="transparent" color="#194e9e">
+                                            {onEditDate ? 'Simpan' : 'Edit'}
                                         </Button>
                                     </Flex>
                                 </Stack>
@@ -236,24 +307,29 @@ export default function Cart() {
                                     <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
                                         <Stack gap={0}>
                                             <Text>Pembayaran Penuh</Text>
-                                            <Text maw={400} c="gray">Bayar Total (<NumberFormatter value={venue?.starting_price} />) sekarang.</Text>
+                                            <Text maw={400} c="gray">Bayar Total (<NumberFormatter value={Math.round(venue?.starting_price ?? 0)} />) sekarang.</Text>
                                         </Stack>
-                                        <Checkbox/>
+                                        <Checkbox checked={paymentOption == 'all'} onChange={e => e.target.checked ? setPaymentOption('all') : {}}/>
+                                        <Box pos="absolute" className={``} />
                                     </Flex>
-                                    <Divider />
-                                    <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
-                                        <Stack gap={0}>
-                                            <Text>Bayar Sebagian</Text>
-                                            <Text maw={400} c="gray">Bayar sebagian (<NumberFormatter value={100000} />) sekarang. Lakukan pelunasan sebelum tanggal 12 Aug 2024.</Text>
-                                        </Stack>
-                                        <Checkbox/>
-                                    </Flex>
+                                    {Boolean(venue?.minimum_price) && (
+                                        <>
+                                            <Divider />
+                                            <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
+                                                <Stack gap={0}>
+                                                    <Text>Bayar Sebagian</Text>
+                                                    <Text maw={400} c="gray">Bayar sebagian (<NumberFormatter value={Math.round(venue?.minimum_price ?? 0)} />) sekarang. Lakukan pelunasan sebelum tanggal {moment(orderData?.date_start).format('DD MMMM YYYY')}.</Text>
+                                                </Stack>
+                                                <Checkbox checked={paymentOption == 'divide'} onChange={e => e.target.checked ? setPaymentOption('divide') : {}}/>
+                                            </Flex>
+                                        </>
+                                    )}
                                 </Stack>
                             </DropdownComponent>
 
-                            <DropdownComponent title={'Metode Pembayaran'} icon={'si:money-line'} defaultOpened>
+                            {/* <DropdownComponent title={'Metode Pembayaran'} icon={'si:money-line'} defaultOpened>
 
-                            </DropdownComponent>
+                            </DropdownComponent> */}
 
                             {/* <DropdownComponent title="Metode Pembayaran" icon="fluent:payment-16-filled">
                                 <UnstyledButton>
@@ -298,8 +374,8 @@ export default function Cart() {
                     <Container size="lg" w="100%">
                         <Flex justify="end" w="100%">
                             <Button
-                                loading={loading.includes('checkout')}
-                                // onClick={handleCheckout}
+                                loading={loading.includes('submit')}
+                                onClick={handleCheckout}
                                 className={`uppercase`}
                                 color="#194E9E"
                                 rightSection={<Icon icon="uiw:check" />}

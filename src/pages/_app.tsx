@@ -20,16 +20,23 @@ import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, Tags
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
+import '@mantine/dates/styles.css';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
+import { DateInput } from '@mantine/dates';
 
 config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
     Input: Input.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    DateInput: DateInput.extend({
       defaultProps: {
         radius: 10
       }
