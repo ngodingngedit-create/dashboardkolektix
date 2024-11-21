@@ -5,26 +5,32 @@ import Link from 'next/link';
 
 const CreatorTitle = ({
   image,
+  is_verified = false,
   creator,
   location,
 }: {
-  image: StaticImageData | string;
+  image?: StaticImageData | string;
   creator: string;
   location: string;
+  is_verified?: boolean;
 }) => {
   return (
     <Link className='flex items-center gap-3' href={`/creator/${creator}`}>
-      <Image
-        width={50}
-        height={50}
-        src={image}
-        alt='image'
-        className='w-8 h-8 border border-primary-light-200 rounded-full object-contain'
-      />
+      {image && (
+        <Image
+          width={50}
+          height={50}
+          src={image}
+          alt='image'
+          className='w-8 h-8 border border-primary-light-200 rounded-full object-contain'
+        />
+      )}
       <div>
         <Flex gap={8} align="center">
           <p className='font-semibold'>{creator}</p>
-          <Icon icon="tdesign:verified-filled" className={`text-primary-base`}/>
+          {is_verified && (
+            <Icon icon="tdesign:verified-filled" className={`text-primary-base`}/>
+          )}
         </Flex>
         <p className='text-grey text-xs'>{location}</p>
       </div>

@@ -34,10 +34,11 @@ const Venue = () => {
          {data.map((item) => (
            <div key={item.id}>
              <VenueCard
-               title={item.name}
-               location={item.location}
-               price={item.starting_price}
-               image={item.venue_gallery[0] ? item.venue_gallery[0].image_url : item.image_url}
+                slug={item.slug}
+                title={item.name}
+                location={item.location}
+                price={item.starting_price}
+                image={item.venue_gallery[0] ? item.venue_gallery[0].image_url : item.image_url}
              />
            </div>
          ))}

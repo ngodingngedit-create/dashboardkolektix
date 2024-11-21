@@ -1,3 +1,5 @@
+import { CreatorProps } from "@/utils/globalInterface";
+
 interface VenueCategory {
     id: number;
     name: string;
@@ -57,6 +59,11 @@ interface Venue {
     image: string;
     description: string;
     location: string;
+    location_map: string;
+    location_detail: string;
+    opening_hour: string;
+    max_capacity: number;
+    seat_capacity: number;
     opening_hour: string;
     contact_person_name: string;
     contact_person_email: string;
@@ -70,6 +77,7 @@ interface Venue {
     deleted_at: string | null;
     starting_price: number;
     image_url: string;
+    creator: CreatorProps;
     has_venue_category?: VenueCategory;
     has_venue_capacity?: VenueCapacity;
     has_venue_schedule?: VenueSchedule;

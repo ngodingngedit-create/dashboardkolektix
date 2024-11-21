@@ -19,6 +19,7 @@ import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, Tags
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/carousel/styles.css';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
