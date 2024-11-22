@@ -20,6 +20,7 @@ import { useRouter } from 'next/router';
 import { EventProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'; 
+import { Flex } from '@mantine/core';
 
 const DetailEventTicket = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -146,7 +147,10 @@ const DetailEventTicket = () => {
                   : ''
               } ${formatYear(eventData.end_date)}`}
             </p>
-            <Button label="Check In" onClick={handleCheckinClick} color="primary" />
+            <Flex align="center" gap={8}>
+              <Button label="Check In" onClick={() => router.push(`/dashboard/my-event/checkin-eticket/${eventData.slug}`)} color="primary" />
+              <Button label="Check In Invitation" onClick={() => router.push(`/dashboard/my-event/checkin-invitation/${eventData.slug}`)} color="primary" />
+            </Flex>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
       <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 text-center">
