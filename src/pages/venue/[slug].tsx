@@ -11,7 +11,7 @@ import InputField from '@/components/Input';
 import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
 import { EventListResponse } from '../dashboard/my-event/type';
-import { useListState, useSetState } from '@mantine/hooks';
+import { useClickOutside, useListState, useSetState } from '@mantine/hooks';
 import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip } from '@mantine/core';
 import { VenueListResponse } from '../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -22,6 +22,8 @@ import { DateInput as DateInputM} from '@mantine/dates';
 import moment from 'moment';
 import Cookies from 'js-cookie';
 import { VenueBookingOrder } from '../venue-order';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import AuthModal from '@/components/AuthModal';
 
 const facility = ['Free Wifi', 'Toilet', 'Ruangan Full AC', 'Kursi', 'Lighting', 'Stage', 'Parking Area', 'Rest Area', 'Sound System', 'Back Stage'];
 
@@ -37,9 +39,18 @@ const VenueDetail = () => {
     const user = useLoggedUser();
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [openChat, setOpenChat] = useState(false);
     const [date, setDate] = useSetState({
       start: '',
       end: ''
+    });
+
+    const clickOutsideChat = useClickOutside(() => {
+        if (Boolean(user?.id) && openChat) {
+            setTimeout(() => {
+                setOpenChat(false);
+            }, 500);
+        }
     });
 
     const handleArrowClick = (direction: 'left' | 'right') => {
@@ -96,7 +107,10 @@ const VenueDetail = () => {
 
     return (
         <div className="max-w-5xl min-h-screen mx-auto py-20 px-4 sm:px-8 md:px-12 lg:px-0">
-            <Chat />
+            <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
+                <Chat toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={data?.creator_id} />
+                <AuthModal visible={openChat && !user?.id} onClose={() => setOpenChat(false)} />
+            </div>
             <div className="">
                 <Breadcrumbs>
                     <BreadcrumbItem>Beranda</BreadcrumbItem>
@@ -233,6 +247,14 @@ const VenueDetail = () => {
                           />
                         </div>
                         <Button onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
+                        <ButtonM
+                            onClick={() => setOpenChat(true)}
+                            radius="xl"
+                            color="#194e9e"
+                            variant="outline"
+                            leftSection={<Icon icon="fluent:chat-12-regular" className={`text-[20px]`} />}>
+                            Chat Creator
+                        </ButtonM>
                     </div>
                     <div className="border border-primary-light-200 rounded-lg flex flex-col gap-2 shadow-sm mt-7">
                         <div className="border-b border-primary-light-200 p-4">
