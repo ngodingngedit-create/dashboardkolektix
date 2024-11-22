@@ -22,7 +22,7 @@ const Merch = () => {
     useEffect(() => {
         setTimeout(() => {
             handleButtonClick();
-        }, 300);
+        }, 1000);
 
         qrScanner.current?.stop();
         qrScanner.current = null;
@@ -52,13 +52,13 @@ const Merch = () => {
 
         try {
             qrScanner.current?.stop();
-            await fetch<{ invitation_number: string }, any>({
+            fetch<{ invitation_number	: string }, any>({
                 method: 'POST',
                 url: 'invitations/checkin',
-                data: { invitation_number: barcode },
+                data: { invitation_number: barcode ?? code },
                 headers: { lgntkn: 'true' },
                 success: (data: any) => {
-                    if (data.success) {
+                    if (data.success || data.status == 200 || data.status == true) {
                         modals.open({
                             radius: 15,
                             centered: true,
@@ -73,7 +73,7 @@ const Merch = () => {
                                     <Card bg="gray.1" radius={10} px={25} w="100%">
                                         <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
                                             <Text ta="center">
-                                                {data?.data?.has_event_ticket?.name ?? data?.data?.eticket_number}
+                                                {data?.data?.fullname ?? barcode}
                                             </Text>
                                         </Flex>
                                     </Card>
@@ -142,7 +142,7 @@ const Merch = () => {
             // notifications.show({ title: 'Error', message: 'An error occurred while fetching barcode data.' });
             console.error('Error fetching barcode data:', error);
         } finally {
-            setLoading(undefined)
+            qrScanner.current?.stop();
             // await qrScanner.current?.start();
         }
     };

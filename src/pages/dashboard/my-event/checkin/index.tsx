@@ -98,7 +98,7 @@ const Merch = () => {
                                     <Card bg="gray.1" radius={10} px={25} w="100%">
                                         <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
                                             <Text ta="center" c="red">
-                                                {data?.message}
+                                                {data?.data?.message ?? data?.message}
                                             </Text>
                                         </Flex>
                                     </Card>
@@ -125,7 +125,7 @@ const Merch = () => {
                                 <Card bg="gray.1" radius={10} px={25} w="100%">
                                     <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
                                         <Text ta="center" c="red">
-                                            {err?.message}
+                                            {err?.response?.data?.message ?? err?.message}
                                         </Text>
                                     </Flex>
                                 </Card>
