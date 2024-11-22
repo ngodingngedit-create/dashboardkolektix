@@ -41,7 +41,7 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM } from '@mantine/core';
 import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
@@ -829,9 +829,14 @@ const eventItems = useMemo(() => {
                             color={transactionFilter === 'offline' ? 'primary' : 'secondary'}
                             fullWidth
                           />
-                          <ActionIcon variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
-                              <Icon icon="uiw:download" className={`text-[20px]`} />
-                          </ActionIcon>
+                          <ButtonM
+                            className={`shrink-0`}
+                            leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />}
+                            variant="transparent"
+                            color="#194e9e"
+                            onClick={handleDownloadTransaction}>
+                            Download  
+                          </ButtonM>
                         </div>
 
                         {/* Single Transaction Table */}
