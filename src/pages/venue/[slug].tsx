@@ -12,7 +12,7 @@ import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
 import { EventListResponse } from '../dashboard/my-event/type';
 import { useClickOutside, useListState, useSetState } from '@mantine/hooks';
-import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip } from '@mantine/core';
+import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip, Modal, Stack } from '@mantine/core';
 import { VenueListResponse } from '../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Carousel } from '@mantine/carousel';
@@ -40,6 +40,7 @@ const VenueDetail = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [openChat, setOpenChat] = useState(false);
+    const [modalBooking, setModalBooking] = useState(false);
     const [date, setDate] = useSetState({
       start: '',
       end: ''
@@ -101,6 +102,7 @@ const VenueDetail = () => {
           date_start: date.start,
           date_end: date.end
         } satisfies VenueBookingOrder));
+        setLoading.append('submit');
         router.push('/venue-order');
       }
     }
@@ -233,20 +235,22 @@ const VenueDetail = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 my-2">
                           <DateInputM
                             minDate={new Date()}
+                            maxDate={date.end ? new Date(date.end) : undefined}
                             value={date.start ? new Date(date.start) : undefined}
                             onChange={e => setDate({ start: moment(e).format('YYYY-MM-DD')})}
                             valueFormat='DD MMMM YYYY'
                             placeholder="Dari Tanggal"
                           />
                           <DateInputM
-                            minDate={new Date()}
+                            disabled={!Boolean(date?.start)}
+                            minDate={date.start ? new Date(date.start) : undefined}
                             value={date.end ? new Date(date.end) : undefined}
                             onChange={e => setDate({ end: moment(e).format('YYYY-MM-DD')})}
                             valueFormat='DD MMMM YYYY'
                             placeholder="Sampai Tanggal"
                           />
                         </div>
-                        <Button onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
+                        <Button loading={loading.includes('submit')} onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
                         <ButtonM
                             onClick={() => setOpenChat(true)}
                             radius="xl"
@@ -289,6 +293,53 @@ const VenueDetail = () => {
                     </div>
                 </div>
             </div>
+            
+            <Box mt={30} />
+
+            <Modal opened={modalBooking} onClose={() => setModalBooking(false)} title="Pilih Tanggal Booking" centered>
+                <Stack gap={10}>
+                    <DateInputM
+                        minDate={new Date()}
+                        maxDate={date.end ? new Date(date.end) : undefined}
+                        value={date.start ? new Date(date.start) : undefined}
+                        onChange={e => setDate({ start: moment(e).format('YYYY-MM-DD')})}
+                        valueFormat='DD MMMM YYYY'
+                        placeholder="Dari Tanggal"
+                    />
+                    <DateInputM
+                        disabled={!Boolean(date?.start)}
+                        minDate={date.start ? new Date(date.start) : undefined}
+                        value={date.end ? new Date(date.end) : undefined}
+                        onChange={e => setDate({ end: moment(e).format('YYYY-MM-DD')})}
+                        valueFormat='DD MMMM YYYY'
+                        placeholder="Sampai Tanggal"
+                    />
+                    <ButtonM
+                        loading={loading.includes('submit')}
+                        disabled={!date.start || !date.end}
+                        onClick={handleOrder}
+                        className={`shrink-0`}
+                        color="#194e9e"
+                        radius="xl"
+                    >
+                        Booking Sekarang
+                    </ButtonM>
+                </Stack>
+            </Modal>
+
+            <Card pos="fixed" className={`z-30 bottom-0 right-0 w-full border-t border-t-[#d0d0d0]`}>
+                <Flex w="100%" maw={1024} mx="auto" gap={10} wrap="wrap" justify="end">
+                    <ButtonM
+                        loading={loading.includes('submit')}
+                        onClick={() => setModalBooking(true)}
+                        className={`shrink-0`}
+                        color="#194e9e"
+                        radius="xl"
+                    >
+                        Booking Sekarang
+                    </ButtonM>
+                </Flex>
+            </Card>
         </div>
     );
 };
