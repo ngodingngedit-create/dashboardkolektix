@@ -84,6 +84,8 @@ type Checkout = {
     venue_id: number;
     grandtotal: number;
     payment_method: string;
+    start_date: string;
+    end_date: string;
 };  
 
 export const formStateSchema = z.object({
@@ -195,7 +197,9 @@ export default function Cart() {
                 total_price: orderSummary.fullprice,
                 venue_id: orderData?.id,
                 grandtotal: orderSummary.total,
-                payment_method: 'xendit'
+                payment_method: 'xendit',
+                start_date: orderData.date_start,
+                end_date: orderData.date_end,
             },
             before: () => setLoading.append('submit'),
             success: (data) => {

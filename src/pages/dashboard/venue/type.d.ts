@@ -108,7 +108,7 @@ export type VenueStoreRequest = {
     minimum_price?: number;
     description: string;
     status: string;
-    image: Blob[];
+    image: (string | Blob)[];
 }
 export type VenueGalleryStoreRequest = {
     venue_id: number;

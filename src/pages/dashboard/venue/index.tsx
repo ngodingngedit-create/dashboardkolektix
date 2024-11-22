@@ -55,7 +55,7 @@ const MyVenue = () => {
 
       <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-xgrow [&>*]:!w-full md:[&>*]:!max-w-[250px]`}>
         {venue?.map((e ,i) => (
-          <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.id}`} p={0}>
+          <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.slug}`} p={0}>
             <AspectRatio>
               <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />
             </AspectRatio>

@@ -12,7 +12,7 @@ import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
 import { EventListResponse } from '../dashboard/my-event/type';
 import { useClickOutside, useListState, useSetState } from '@mantine/hooks';
-import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip, Modal, Stack } from '@mantine/core';
+import { AspectRatio, Box, Card, Flex, Image as ImageM, NumberFormatter, UnstyledButton, Button as ButtonM, Tooltip, Modal, Stack, Text, ActionIcon } from '@mantine/core';
 import { VenueListResponse } from '../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Carousel } from '@mantine/carousel';
@@ -27,7 +27,7 @@ import AuthModal from '@/components/AuthModal';
 
 const facility = ['Free Wifi', 'Toilet', 'Ruangan Full AC', 'Kursi', 'Lighting', 'Stage', 'Parking Area', 'Rest Area', 'Sound System', 'Back Stage'];
 
-type FacilitiesList = { facility_name: string; facility_description: string };
+export type FacilitiesList = { facility_name: string; facility_description: string };
 
 const VenueDetail = () => {
     const router = useRouter();
@@ -130,7 +130,7 @@ const VenueDetail = () => {
                         onSlideChange={(e) =>
                             setTimeout(() => {
                                 setGalleryIndex(e);
-                            }, 500)
+                            }, 0)
                         }
                     >
                         {data?.venue_gallery.map((e, i) => (
@@ -224,7 +224,7 @@ const VenueDetail = () => {
                 </div>
 
                 <div className="w-full md:w-1/3 sticky top-[100px]">
-                    <div className="border border-primary-light-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+                    <div className="border border-primary-light-200 !hidden md:!flex rounded-lg p-4 flex-col gap-2 shadow-sm">
                         <div>
                             <p className="text-primary-base mb-1">Mulai dari</p>
                             <h6>
@@ -250,15 +250,12 @@ const VenueDetail = () => {
                             placeholder="Sampai Tanggal"
                           />
                         </div>
-                        <Button loading={loading.includes('submit')} onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
-                        <ButtonM
-                            onClick={() => setOpenChat(true)}
-                            radius="xl"
-                            color="#194e9e"
-                            variant="outline"
-                            leftSection={<Icon icon="fluent:chat-12-regular" className={`text-[20px]`} />}>
-                            Chat Creator
-                        </ButtonM>
+                        <Flex align="center" gap={10}>
+                            <Button loading={loading.includes('submit')} onClick={handleOrder} disabled={!date.start || !date.end} color="primary" label="Book" fullWidth />
+                            <ActionIcon onClick={() => setOpenChat(true)} variant="transparent" color="#194e9e" className={`shrink-0`}>
+                                <Icon icon="fluent:chat-12-regular" className={`text-[30px]`} />
+                            </ActionIcon>
+                        </Flex>
                     </div>
                     <div className="border border-primary-light-200 rounded-lg flex flex-col gap-2 shadow-sm mt-7">
                         <div className="border-b border-primary-light-200 p-4">
@@ -327,17 +324,26 @@ const VenueDetail = () => {
                 </Stack>
             </Modal>
 
-            <Card pos="fixed" className={`z-30 bottom-0 right-0 w-full border-t border-t-[#d0d0d0]`}>
-                <Flex w="100%" maw={1024} mx="auto" gap={10} wrap="wrap" justify="end">
-                    <ButtonM
-                        loading={loading.includes('submit')}
-                        onClick={() => setModalBooking(true)}
-                        className={`shrink-0`}
-                        color="#194e9e"
-                        radius="xl"
-                    >
-                        Booking Sekarang
-                    </ButtonM>
+            <Card pos="fixed" className={`z-30 bottom-0 right-0 w-full border-t border-t-[#d0d0d0]`} py={10}>
+                <Flex w="100%" maw={1024} mx="auto" gap={10} wrap="wrap" justify="space-between" align="center">
+                    <Stack gap={2}>
+                        <Text size="xs" className={`!text-primary-base`}>Mulai Dari</Text>
+                        <Text fw={600} size="sm"><NumberFormatter value={Math.round(data?.starting_price ?? 0)} /> <Text component="span" size="sm" fw={400} c="gray">/ Hari</Text></Text>
+                    </Stack>
+                    <Flex align="center" gap={7}>
+                        <ButtonM
+                            loading={loading.includes('submit')}
+                            onClick={() => setModalBooking(true)}
+                            className={`shrink-0`}
+                            color="#194e9e"
+                            radius="xl"
+                        >
+                            Booking Sekarang
+                        </ButtonM>
+                        <ActionIcon onClick={() => setOpenChat(true)} variant="transparent" color="#194e9e" className={`shrink-0`}>
+                            <Icon icon="fluent:chat-12-regular" className={`text-[24px]`} />
+                        </ActionIcon>
+                    </Flex>
                 </Flex>
             </Card>
         </div>
