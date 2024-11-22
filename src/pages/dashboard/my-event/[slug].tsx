@@ -109,8 +109,9 @@ const MyEventDetail = () => {
   const [selectedInvitation, setSelectedInvitation] =  useState(null);
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
   const [invitationData, setInvitationData] = useState<any[]>([]);
-const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
-const [invitationFilter, setInvitationFilter] = useState('');
+  const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
+  const [invitationFilter, setInvitationFilter] = useState('');
+  const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
 
 
   const openAddModal = () => {
@@ -612,7 +613,7 @@ const eventItems = useMemo(() => {
                   <Stack p={20} pt={0} gap={10}>
                     <Divider />
                     <Text size="sm" fw={600} c="gray">Riwayat Tarik Dana</Text>
-                    <WithdrawHistoryList user_id={user?.id ?? 0} />
+                    <WithdrawHistoryList user_id={user?.id ?? 0} setUpdate={updateWithdrawHistory}/>
                   </Stack>
                 </AccordionItem>
               </Accordion>
@@ -1030,8 +1031,8 @@ const eventItems = useMemo(() => {
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
     <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
-      <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
-    <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
+    <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
+    <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <ModalCreateTicket
         isOpen={addTicket}

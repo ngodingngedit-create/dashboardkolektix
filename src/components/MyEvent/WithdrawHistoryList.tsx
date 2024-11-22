@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 type ComponentProps = {
     user_id: number;
+    setUpdate?: number;
 };
 
 interface WithdrawHistory {
@@ -24,13 +25,13 @@ interface WithdrawHistory {
     deleted_at: string | null;
 }
 
-export default function WithdrawHistoryList({ user_id }: Readonly<ComponentProps>) {
+export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<ComponentProps>) {
     const [list, setList] = useState<WithdrawHistory[]>();
     const [loading, setLoading] = useListState<string>();
 
     useEffect(() => {
         getData();
-    }, [user_id]);
+    }, [user_id, setUpdate]);
 
     const getData = async () => {
         if (user_id > 0) {
