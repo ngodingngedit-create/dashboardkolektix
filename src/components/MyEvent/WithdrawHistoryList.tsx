@@ -1,5 +1,5 @@
 import fetch from '@/utils/fetch';
-import { Box, Card, Flex, NumberFormatter, ScrollArea, Stack, Text } from '@mantine/core';
+import { Alert, Box, Card, Flex, NumberFormatter, ScrollArea, Stack, Text } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { useEffect, useState } from 'react';
 
@@ -48,6 +48,9 @@ export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<Com
     return (
         <Box mah={200} w="100%" className={`overflow-y-auto`}>
             <Stack gap={7}>
+                {list?.length == 0 && (
+                    <Alert radius={8}>Belum ada riwayat tarik dana</Alert>
+                )}
                 {list?.map((e, i) => (
                     <Card key={i} withBorder radius={10} py={8} px={16} bg="#fafafa">
                         <Flex justify="space-between" gap={15}>
