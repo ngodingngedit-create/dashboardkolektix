@@ -83,7 +83,7 @@ import { notifications } from "@mantine/notifications";
           user_id: user?.id ?? 0,
           user_bank_id: selectedBank?.id ?? 0,
           amount: parseInt(amount),
-          name: selectedBank?.name ?? '-',
+          name: selectedBank?.account_name ?? '-',
           bank_account: selectedBank?.account_number ?? '0',
           status: "Pending"
         },
