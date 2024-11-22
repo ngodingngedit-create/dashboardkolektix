@@ -82,7 +82,7 @@ export default function Dashboard() {
         <Accordion defaultExpandedKeys={['event']}>
           {/* Event Section */}
           <AccordionItem key="event" title="Event Saya">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable title="Event Berjalan" value={calculateTotalEvents()} />
                 <CreatorTable title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
@@ -96,7 +96,7 @@ export default function Dashboard() {
 
           {/* Job Section */}
           <AccordionItem key="lowongan" title="Lowongan">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable title="Lowongan yang aktif" value={0} />
                 <CreatorTable title="Lowongan Draf" value={0} yBorderNone />
@@ -108,7 +108,7 @@ export default function Dashboard() {
 
           {/* Merchandise Section */}
           <AccordionItem key="merchandise" title="Merchandise">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable title="Sedang dijual" value={0} />
                 <CreatorTable title="Merchandise Draf" value={0} yBorderNone />
