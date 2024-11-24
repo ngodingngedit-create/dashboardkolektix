@@ -612,7 +612,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
-      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && !route.startsWith('/merch-cart') && !route.startsWith('/venue/') && !route.startsWith('/venue-order') && <Footer />}
+      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && !route.startsWith('/merchandise/') && !route.startsWith('/merch-cart') && !route.startsWith('/venue/') && !route.startsWith('/venue-order') && <Footer />}
     </div>
   );
 }

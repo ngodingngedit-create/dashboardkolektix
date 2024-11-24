@@ -17,7 +17,7 @@ const Event = () => {
   // Fetch data and filter based on name and category
   const getData = () => {
     setLoading(true);
-    Get('talent', {})
+    Get('talenta', {})
       .then((res: any) => {
         const allData = res.data;
         setData(allData);

@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
-import Logo from '../../assets/images/logo.png';
+import Logo from '../../assets/images/logo-creator-white.png';
 import LogoSquare from '../../assets/images/logosquare.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -233,18 +233,18 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
     return (
         <div>
-            <div className="flex max-w-[100vw] overflow-x-hidden">
+            <div className="flex max-w-[100vw] !overflow-x-hidden">
                 <nav
                     ref={outsideClick}
                     className={`
                         fixed md:static shrink-0
                         flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
-                        overflow-y-auto scrollbar-gutter transition-all ease-in-out delay-150 z-50
+                        overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-50
                         ${collapse ? 'w-[280px]' : 'w-0 md:w-[65px]'}
                     `}
                 >
-                    <ul className="w-full flex-grow">
+                    <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? '' : 'overflow-y-hidden'}`}>
                         <li className={`${collapse ? 'px-5 py-4' : 'px-3 py-3'} bg-[#031f4d]`}>
                             <Link href="/" className="flex items-center justify-center">
                                 {collapse ? <Image src={Logo} alt="Logo" className="w-1/2" /> : <Image src={LogoSquare} alt="Logo" className={` ${collapse ? 'opacity-0' : 'opacity-100 '} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />}

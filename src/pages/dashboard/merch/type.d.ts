@@ -8,6 +8,7 @@ export type MerchListResponse = {
     qty: number;
     created_by: string;
     description: string;
+    add_to_flash_sale: 0 | 1;
     product_image: {
         id: number;
         image_url: string;

@@ -599,7 +599,7 @@ const eventItems = useMemo(() => {
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
                       <p className="text-grey">Dana yang belum di tarik</p>
-                      <h6>Rp0</h6>
+                      <h6>Rp 0</h6>
                     </div>
                     <Button 
                       color="primary" 
