@@ -42,7 +42,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const merchList = useMemo(() => {
         const filterSelected = (e: MerchListResponse): MerchListResponse | null => {
             if (e.product_varian.length > 0) {
-                const variant = e.product_varian.filter(e => !selected.map(e => e.variant_id).includes(e.id));
+                const variant = e.product_varian.filter(e => e.stock_qty > 0 && !selected.map(e => e.variant_id).includes(e.id));
 
                 if (variant.length == 0) return null;
                 return {...e, product_varian: variant};
@@ -73,7 +73,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
             const variant_name = product?.product_varian.find(z => z.id == e.variant_id)?.varian_name;
             const image = (product?.product_image?.length ?? 0) > 0 ? product?.product_image[0].image_url : '#';
             const price = (!e.variant_id ? parseInt(product?.price ?? '999999') : parseInt(product?.product_varian?.find(z => z.id == e.variant_id)?.price ?? '999999')) * e.count;
-            const stock = e.variant_id ? product?.qty ?? 0 : product?.product_varian.find(z => z.id == e.variant_id)?.stock_qty ?? 0;
+            const stock = !e.variant_id ? product?.qty ?? 0 : product?.product_varian.find(z => z.id == e.variant_id)?.stock_qty ?? 0;
 
             return { name, variant_name, price, image, count: e.count, stock };
         })
@@ -156,7 +156,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     }
 
     return (
-        <Stack className={`md:!p-[20px_30px]`} gap={15}>
+        <Stack className={`md:!p-[20px_30px]`}>
             <Card radius={999} className={`!bg-primary-base !p-[5px_16px] w-fit m-[10px_10px_0]`}>
                 <Flex align="center" gap={10}>
                     <Icon icon="hugeicons:cashier" className={`text-[20px] text-white`} />
@@ -181,8 +181,8 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         <Flex gap={10}>
                                             <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
                                             <Stack gap={0}>
-                                                <Text size="sm" className={`capitalize`}>{e.name}</Text>
-                                                <Text size="sm" className={`whitespace-nowrap`}>
+                                                <Text className={`capitalize`}>{e.name}</Text>
+                                                <Text size="sm" fw={600} className={`whitespace-nowrap`}>
                                                     {(e?.price ?? [])?.map((z, i) => (
                                                         <Box key={i} component="span">
                                                             {i != 0 && <> - </>}
@@ -225,7 +225,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                 <Text fw={600} c="#0B387C">Rincian Produk</Text>
                             </Flex>
 
-                            <Stack gap={15} className={`overflow-y-auto flex-grow`} justify="start">
+                            <Stack gap={12} className={`overflow-y-auto flex-grow`} justify="start">
                                 {selectedList.map((e, i) => (
                                     <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] shrink-0`}>
                                         <Flex gap={10} wrap="wrap">
@@ -244,7 +244,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                             <Flex gap={10} align="center" className={`shrink-0`}>
                                                 <NumberInput
                                                     min={1}
-                                                    // max={e.stock}
+                                                    max={e.stock}
                                                     onChange={e => {
                                                         setSelected(selected.map((_, x) => x == i ? ({..._, count: parseInt(e as string)}) : _))
                                                     }}
