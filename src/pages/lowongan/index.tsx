@@ -66,45 +66,47 @@ const Lowongan = () => {
           </div>
         )}
 
-        <SimpleGrid className={`md:!grid-cols-3`}>
-          {loading && (
-            <>
-              <Skeleton className='h-[150px] rounded-[15px]' />
-              <Skeleton className='h-[150px] rounded-[15px]' />
-              <Skeleton className='h-[150px] rounded-[15px]' />
-            </>
-          )}
-          {!loading && filteredData?.map((e, i) => (
-            <Card key={i} className={`hover:!bg-[#fafafa] transition-colors`} withBorder radius={15} p={10} component={Link} href={`/lowongan/${e.slug}`}>
-              <Flex gap={0}>
-                <AspectRatio className={`shrink-0`}>
-                  <Image src={e.has_creator.image_url} w={64} radius={8} />
-                </AspectRatio>
+        <Card px={20} className={`-mt-5 md:!mt-0`}>
+          <SimpleGrid className={`grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3`}>
+            {loading && (
+              <>
+                <Skeleton className='h-[150px] rounded-[15px]' />
+                <Skeleton className='h-[150px] rounded-[15px]' />
+                <Skeleton className='h-[150px] rounded-[15px]' />
+              </>
+            )}
+            {!loading && filteredData?.map((e, i) => (
+              <Card key={i} className={`hover:!bg-[#fafafa] transition-colors`} withBorder radius={15} p={10} component={Link} href={`/lowongan/${e.slug}`}>
+                <Flex gap={0}>
+                  <AspectRatio className={`shrink-0`}>
+                    <Image src={e.has_creator.image_url} w={64} radius={8} />
+                  </AspectRatio>
 
-                <Card py={0} px={15} w="100%" bg="none">
-                  <Stack gap={0} w="100%">
-                    <Text fw={600}>{e.name}</Text>
-                    <Text size="sm" c="gray">{e.location}</Text>
+                  <Card py={0} px={15} w="100%" bg="none">
+                    <Stack gap={0} w="100%">
+                      <Text fw={600}>{e.name}</Text>
+                      <Text size="sm" c="gray">{e.location}</Text>
 
-                    <Divider my={7} />
+                      <Divider my={7} />
 
-                    <Flex align="center" gap={7}>
-                      <Icon icon="hugeicons:building-02" />
-                      <Text size="sm">{e.has_creator.name}</Text>
-                    </Flex>
+                      <Flex align="center" gap={7}>
+                        <Icon icon="hugeicons:building-02" />
+                        <Text size="sm">{e.has_creator.name}</Text>
+                      </Flex>
 
-                    <Flex align="center" gap={7} mt={5}>
-                      <Icon icon="hugeicons:money-03" />
-                      <Text size="sm"><NumberFormatter value={e.min_salary} /> - <NumberFormatter value={e.max_salary} /></Text>
-                    </Flex>
+                      <Flex align="center" gap={7} mt={5}>
+                        <Icon icon="hugeicons:money-03" />
+                        <Text size="sm"><NumberFormatter value={e.min_salary} /> - <NumberFormatter value={e.max_salary} /></Text>
+                      </Flex>
 
-                    <Text size="xs" mt={10} className={`!text-primary-base`}>Dibuat {moment(e.created_at).format('DD MMM YYYY')}</Text>
-                  </Stack>
-                </Card>
-              </Flex>
-            </Card>
-          ))}
-        </SimpleGrid>
+                      <Text size="xs" mt={10} className={`!text-primary-base`}>Dibuat {moment(e.created_at).format('DD MMM YYYY')}</Text>
+                    </Stack>
+                  </Card>
+                </Flex>
+              </Card>
+            ))}
+          </SimpleGrid>
+        </Card>
       </Stack>
 
       {/* {loading ? (

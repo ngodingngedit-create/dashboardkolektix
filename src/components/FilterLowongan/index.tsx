@@ -24,8 +24,8 @@ const FilterLowongan: React.FC<FilterLowonganProps> = ({ setNameFilter }) => {
   };
 
   return (
-    <div className='flex items-center drop-shadow-2xl justify-center w-full bg-transparent relative px-[20px]'>
-      <div className='bg-white rounded-full w-full max-w-[900px]'>
+    <div className='flex items-center md:drop-shadow-2xl justify-center w-full bg-transparent relative px-[20px]'>
+      <div className='bg-white mb:!border-none border border-[#d0d0d0] rounded-full w-full max-w-[900px]'>
         <div className='flex justify-between p-2'>
           <div className='flex flex-col h-full px-2 w-36'>
             <p className='text-xs px-4'>Lowongan</p>
