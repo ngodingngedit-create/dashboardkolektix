@@ -139,7 +139,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
             title: 'Pilih Metode Pembayaran',
             children: <Stack gap={15}>
                 {payment.map((e, i) => (
-                    <UnstyledButton onClick={() => {
+                    <UnstyledButton key={i} onClick={() => {
                         setPaymentMethod(e.text);
                         modals.closeAll();
                     }}>
