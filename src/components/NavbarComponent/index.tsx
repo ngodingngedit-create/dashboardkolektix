@@ -144,7 +144,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-            {/* <div className='mr-2 w-8 md:hidden'>
+            <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -165,7 +165,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div> */}
+              </div>
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
