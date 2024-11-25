@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { Button, Indicator } from '@mantine/core';
+import { Box, Button, Indicator } from '@mantine/core';
 import { useClickOutside } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -604,7 +604,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           route === '/talent' ||
           route === '/merchandise' ||
           route === '/lowongan' ? (
-            <Image src={top} alt='top' className='w-full' quality={100} />
+            <Box className={`h-[80px]`}>
+              <Image src={top} alt='top' className='z-30 mx-auto opacity-0 md:!opacity-100 !w-[1920px] min-w-[100%]' quality={100} />
+            </Box>
           ) : (
             <></>
           )}

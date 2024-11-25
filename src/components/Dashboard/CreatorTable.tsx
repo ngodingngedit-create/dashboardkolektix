@@ -4,6 +4,7 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 interface CreatorTableProps {
   title: string;
+  icon?: string;
   value: number;
   currency?: boolean;
   yBorderNone?: boolean;
