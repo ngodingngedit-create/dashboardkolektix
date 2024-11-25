@@ -228,31 +228,34 @@ export default function Index({  }: Readonly<ComponentProps>) {
                             <Stack gap={15} className={`overflow-y-auto flex-grow`} justify="start">
                                 {selectedList.map((e, i) => (
                                     <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] shrink-0`}>
-                                        <Flex gap={10}>
-                                            <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
-                                            <Stack gap={0}>
-                                                <Text size="sm" className={`capitalize`}>{e.name}</Text>
-                                                {e.variant_name && <Text size="xs" c="gray" mb={5} className={`capitalize`}>Varian: {e.variant_name}</Text>}
-                                                <Text size="sm" className={`whitespace-nowrap`}>
-                                                    <NumberFormatter value={e.price} />
-                                                </Text>
-                                            </Stack>
-                                        </Flex>
+                                        <Flex gap={10} wrap="wrap">
+                                            <Flex gap={10} className={`flex-grow`}>
+                                                <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
+                                                <Stack gap={0}>
+                                                    <Text size="sm" className={`capitalize whitespace-nowrap`}>{e.name}</Text>
+                                                    {e.variant_name && <Text size="xs" c="gray" mb={5} className={`capitalize`}>Varian: {e.variant_name}</Text>}
+                                                    <Text size="sm" className={`whitespace-nowrap`}>
+                                                        <NumberFormatter value={e.price} />
+                                                    </Text>
+                                                </Stack>
+                                            </Flex>
 
-                                        <Flex gap={10} align="center" className={`!absolute z-20 top-2/4 right-5 -translate-y-2/4`}>
-                                            <NumberInput
-                                                min={1}
-                                                max={e.stock}
-                                                onChange={e => {
-                                                    setSelected(selected.map((_, x) => x == i ? ({..._, count: parseInt(e as string)}) : _))
-                                                }}
-                                                value={!e.stock ? 0 : e.count}
-                                                size="xs"
-                                                w={80}
-                                            />
-                                            <ActionIcon onClick={() => handleDeleteItem(i)} color="red.4" variant="transparent">
-                                                <Icon icon="uiw:delete"/>
-                                            </ActionIcon>
+                                            {/* className={`!absolute z-20 top-2/4 right-5 -translate-y-2/4`} */}
+                                            <Flex gap={10} align="center" className={`shrink-0`}>
+                                                <NumberInput
+                                                    min={1}
+                                                    // max={e.stock}
+                                                    onChange={e => {
+                                                        setSelected(selected.map((_, x) => x == i ? ({..._, count: parseInt(e as string)}) : _))
+                                                    }}
+                                                    value={e.count}
+                                                    size="xs"
+                                                    w={80}
+                                                />
+                                                <ActionIcon onClick={() => handleDeleteItem(i)} color="red.4" variant="transparent">
+                                                    <Icon icon="uiw:delete"/>
+                                                </ActionIcon>
+                                            </Flex>
                                         </Flex>
                                     </Card>
                                 ))}
@@ -283,7 +286,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                     <Text>{paymentMethod ?? '-'}</Text>
                                 </Stack>
 
-                                <Button onClick={openSelectPayment} pos="relative" rightSection={<Icon icon="uiw:right" />} variant="light">
+                                <Button onClick={openSelectPayment} pos="relative" variant="light">
                                     Metode Pembayaran
                                 </Button>
                             </Flex>
