@@ -345,47 +345,37 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         Belum ada produk yang dipilih
                                     </Alert>
                                 )}
-                                <Button size="md" className={`md:!hidden`} onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
+                                <Button size="md" className={`md:!hidden shrink-0`} onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
                                     Tambah Produk
                                 </Button>
                             </Stack>
                         </Card>
 
                         <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-                            <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-                                <Stack gap={0}>
-                                    <Text size="xs" className={`!text-primary-base`}>Nama Pembeli</Text>
-                                    <Text>{custValue.name ?? '-'}</Text>
-                                </Stack>
-
+                            <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
                                 <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
                                     Data Pembeli
                                 </Button>
-                            </Flex>
-                        </Card>
-
-                        <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-                            <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-                                <Stack gap={0}>
-                                    <Text size="xs" className={`!text-primary-base`}>Metode Pembayaran</Text>
-                                    <Text>{paymentMethod ?? '-'}</Text>
-                                </Stack>
 
                                 <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                                    Metode Pembayaran
+                                    Metode Pembayaran {paymentMethod ? `(${paymentMethod})` : ''}
                                 </Button>
                             </Flex>
                         </Card>
 
                         <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-                            <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-                                <Text size="sm" className={`!text-primary-base`}>Diskon Tambahan</Text>
+                            <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
+                                <Flex gap={7} align="center">
+                                    <Icon icon="teenyicons:discount-outline" className={`text-primary-base`}/>
+                                    <Text size="sm" className={`!text-primary-base`}>Diskon Tambahan</Text>
+                                </Flex>
                                 <NumberInput
                                     prefix="Rp "
                                     hideControls
                                     placeholder="Masukan Diskon"
                                     value={discount}
                                     onChange={e => setDiscount(parseInt(e as string))}
+                                    className={`[&_*]:!text-center`}
                                 />
                             </Flex>
                         </Card>
