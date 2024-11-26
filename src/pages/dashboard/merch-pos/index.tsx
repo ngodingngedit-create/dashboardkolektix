@@ -159,7 +159,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const handleSummary = useMemo((): { total: number, detail: [string, number][] } => {
         const subtotal = selectedList.reduce((q, n) => q + (n.price), 0);
         const admin = 0;
-        const disc = discount * -1;
+        const disc = (Boolean(discount) || discount < 0 ? discount * -1 : 0) ;
         const ppn = (subtotal + admin) * 0.11;
         const total = Math.max(0, _.sum([subtotal, admin, ppn, disc]));
 
@@ -387,7 +387,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                     chevronPosition="left"
                                     mx={-20} mt={-12}
                                     className={`
-                                        ${handleSummary.detail.filter(e => e[1] != 0).length > 0 ? '' : '!hidden'}
+                                        ${handleSummary.detail.filter(e => Boolean(e[1]) || e[1] < 0).length > 0 ? '' : '!hidden'}
                                         [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
                                         [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
                                     `}>
@@ -395,7 +395,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         <Accordion.Control>Detail Pembayaran</Accordion.Control>
                                         <Accordion.Panel>
                                             <Stack px={10} gap={10}>
-                                                {handleSummary.detail.filter(e => e[1] != 0).map((e, i) => (
+                                                {handleSummary.detail.filter(e => Boolean(e[1]) || e[1] < 0).map((e, i) => (
                                                     <Flex gap={10} align="center" justify="space-between">
                                                         <Text size="sm" c="gray.8">{e[0]}</Text>
                                                         <Text size="sm" fw={600} c={e[1] < 0 ? 'red' : undefined}>
