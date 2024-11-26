@@ -27,6 +27,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
     const [searchQuery, setSearchQuery] = useState('');
     const [merch, setMerch] = useState<MerchListResponse[]>();
+    const [discount, setDiscount] = useState(0);
     const [openSelect, setOpenSelect] = useState(false);
     const [openCustForm, setOpenCustForm] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<string>();
@@ -158,15 +159,17 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const handleSummary = useMemo((): { total: number, detail: [string, number][] } => {
         const subtotal = selectedList.reduce((q, n) => q + (n.price), 0);
         const admin = 0;
+        const disc = discount * -1;
         const ppn = (subtotal + admin) * 0.11;
-        const total = _.sum([subtotal, admin, ppn]);
+        const total = Math.max(0, _.sum([subtotal, admin, ppn, disc]));
 
         return { total, detail: [
             ["Subtotal", subtotal],
+            ["Diskon", disc],
             ["Admin", 0],
             ["PPN", ppn]
         ] };
-    }, [selectedList]);
+    }, [selectedList, discount]);
 
     const openSelectPayment = () => {
         const payment = [
@@ -375,13 +378,26 @@ export default function Index({  }: Readonly<ComponentProps>) {
                         </Card>
 
                         <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
+                            <Flex gap={15} justify="space-between" align="center" wrap="wrap">
+                                <Text size="sm" className={`!text-primary-base`}>Diskon Tambahan</Text>
+                                <NumberInput
+                                    prefix="Rp "
+                                    hideControls
+                                    placeholder="Masukan Diskon"
+                                    value={discount}
+                                    onChange={e => setDiscount(parseInt(e as string))}
+                                />
+                            </Flex>
+                        </Card>
+
+                        <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
                             <Stack>
                                 <Accordion
                                     w="calc(100% + 40px)"
                                     chevronPosition="left"
                                     mx={-20} mt={-12}
                                     className={`
-                                        ${handleSummary.detail.filter(e => Boolean(e[1])).length > 0 ? '' : '!hidden'}
+                                        ${handleSummary.detail.filter(e => e[1] != 0).length > 0 ? '' : '!hidden'}
                                         [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
                                         [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
                                     `}>
@@ -389,10 +405,10 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         <Accordion.Control>Detail Pembayaran</Accordion.Control>
                                         <Accordion.Panel>
                                             <Stack px={10} gap={10}>
-                                                {handleSummary.detail.filter(e => e[1] > 0).map((e, i) => (
+                                                {handleSummary.detail.filter(e => e[1] != 0).map((e, i) => (
                                                     <Flex gap={10} align="center" justify="space-between">
                                                         <Text size="sm" c="gray.8">{e[0]}</Text>
-                                                        <Text size="sm" fw={600}>
+                                                        <Text size="sm" fw={600} c={e[1] < 0 ? 'red' : undefined}>
                                                             <NumberFormatter prefix="Rp " value={e[1]} />
                                                         </Text>
                                                     </Flex>
