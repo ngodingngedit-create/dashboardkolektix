@@ -31,6 +31,11 @@ config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
+    Notifications: Notifications.extend({
+      defaultProps: {
+        position: 'top-right'
+      }
+    }),
     Button: Button.extend({
       defaultProps: {
         radius: "xl",

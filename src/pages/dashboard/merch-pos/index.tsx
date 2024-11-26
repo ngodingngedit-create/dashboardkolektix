@@ -1,15 +1,26 @@
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { ActionIcon, Alert, Box, Button, Card, Flex, Image, Menu, NumberFormatter, NumberInput, ScrollArea, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
+import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
 import { useListState } from "@mantine/hooks";
 import fetch from "@/utils/fetch";
 import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
+import { useForm, zodResolver } from "@mantine/form";
+import { z } from "zod";
+import _ from "lodash";
 
 type ComponentProps = {
     
 };
+
+type CustomerData = {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+}
 
 export default function Index({  }: Readonly<ComponentProps>) {
     const user = useLoggedUser();
@@ -17,12 +28,26 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const [searchQuery, setSearchQuery] = useState('');
     const [merch, setMerch] = useState<MerchListResponse[]>();
     const [openSelect, setOpenSelect] = useState(false);
+    const [openCustForm, setOpenCustForm] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<string>();
     const [selected, setSelected] = useState<{
         id: number;
         variant_id?: number;
         count: number;
     }[]>([]);
+
+    const { values: custValue, getInputProps: custProps, errors: custError, validate: custValidate } = useForm<CustomerData>({
+        onValuesChange: (val) => {
+            val.phone = (val.phone ?? '').replaceAll(/\D/g, '');
+            return val;
+        },
+        validate: zodResolver(z.object({
+            name: z.string().optional().nullable(),
+            email: z.string().email().optional().nullable(),
+            phone: z.string().optional().nullable(),
+            address: z.string().optional().nullable(),
+        }))
+    })
 
     useEffect(() => {
         if (user) getMerchList();
@@ -40,18 +65,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     }
 
     const merchList = useMemo(() => {
-        const filterSelected = (e: MerchListResponse): MerchListResponse | null => {
-            if (e.product_varian.length > 0) {
-                const variant = e.product_varian.filter(e => e.stock_qty > 0 && !selected.map(e => e.variant_id).includes(e.id));
-
-                if (variant.length == 0) return null;
-                return {...e, product_varian: variant};
-            } else {
-                return !selected.map(e => e.id).includes(e.id) ? e : null;
-            }
-        }
-
-        return merch?.map(filterSelected)?.filter(e => Boolean(e)).filter(e => Boolean(searchQuery) ? e?.product_name.toLowerCase().includes(searchQuery) : true).map((e, i) => ({
+        return merch?.filter(e => Boolean(e)).filter(e => Boolean(searchQuery) ? e?.product_name.toLowerCase().includes(searchQuery) : true).map((e, i) => ({
             name: e?.product_name,
             price: (e?.product_varian.length ?? 0) > 0 ? e?.product_varian.map(e => parseInt(e.price)).reduce(
                 (acc, price) => [
@@ -81,12 +95,20 @@ export default function Index({  }: Readonly<ComponentProps>) {
 
     const handleAddProduct = (product: MerchListResponse) => {
         if (product.product_varian.length > 0) {
-            const selectVariant = (id: number) => {
-                setSelected([...selected, {
-                    id: product.id,
-                    variant_id: id,
-                    count: 1
-                }]);
+            const selectVariant = (variant: MerchListResponse['product_varian'][number]) => {
+                if (selected.some(e => e.variant_id == variant.id)) {
+                    const validStock = variant.stock_qty > (selected.find(e => e.variant_id == variant.id)?.count ?? 9999);
+                    if (validStock) {
+                        setSelected(selected.map(e => e.variant_id == variant.id ? {...e, count: e.count + 1} : e))
+                    } else {
+                        notifications.show({
+                            message: "Stock sudah mencapai maksimal",
+                            color: 'red'
+                        });
+                    }
+                } else {
+                    setSelected([...selected, { id: product.id, variant_id: variant.id, count: 1 }]);
+                }
                 modals.closeAll();
                 setOpenSelect(!openSelect);
             };
@@ -97,17 +119,26 @@ export default function Index({  }: Readonly<ComponentProps>) {
                 title: 'Pilih Varian',
                 children: <Stack gap={10}>
                     {product.product_varian.map((e, i) => (
-                        <Button size="md" radius={8} onClick={() => selectVariant(e.id)} key={i} variant="light" color="gray" c="gray.8" fw={400}>
+                        <Button size="md" radius={8} onClick={() => selectVariant(e)} key={i} variant="light" color="gray" c="gray.8" fw={400}>
                             {e.varian_name} (<NumberFormatter value={parseInt(e.price)} />)
                         </Button>
                     ))}
                 </Stack>
             })
         } else {
-            setSelected([...selected, {
-                id: product.id,
-                count: 1
-            }]);
+            if (selected.some(e => e.id == product.id)) {
+                const validStock = product.qty > (selected.find(e => e.id == product.id)?.count ?? 9999);
+                if (validStock) {
+                    setSelected(selected.map(e => e.id == product.id ? {...e, count: e.count + 1} : e))
+                } else {
+                    notifications.show({
+                        message: "Stock sudah mencapai maksimal",
+                        color: 'red'
+                    });
+                }
+            } else {
+                setSelected([...selected, { id: product.id, count: 1 }]);
+            }
             setOpenSelect(!openSelect);
         }
     }
@@ -124,9 +155,17 @@ export default function Index({  }: Readonly<ComponentProps>) {
         })
     }
 
-    const handleSummary = useMemo(() => {
-        const total = selectedList.reduce((q, n) => q + (n.price * n.count), 0);
-        return { total };
+    const handleSummary = useMemo((): { total: number, detail: [string, number][] } => {
+        const subtotal = selectedList.reduce((q, n) => q + (n.price), 0);
+        const admin = 0;
+        const ppn = (subtotal + admin) * 0.11;
+        const total = _.sum([subtotal, admin, ppn]);
+
+        return { total, detail: [
+            ["Subtotal", subtotal],
+            ["Admin", 0],
+            ["PPN", ppn]
+        ] };
     }, [selectedList]);
 
     const openSelectPayment = () => {
@@ -139,24 +178,63 @@ export default function Index({  }: Readonly<ComponentProps>) {
             title: 'Pilih Metode Pembayaran',
             children: <Stack gap={15}>
                 {payment.map((e, i) => (
-                    <UnstyledButton key={i} onClick={() => {
-                        setPaymentMethod(e.text);
-                        modals.closeAll();
-                    }}>
-                        <Card withBorder radius={10} p={10}>
-                            <Flex align="center" gap={10}>
-                                <Icon icon={e.icon} className={`text-gray text-[24px]`} />
-                                <Text>{e.text}</Text>
-                            </Flex>
-                        </Card>
-                    </UnstyledButton>
+                    <Button
+                        key={i}
+                        leftSection={<Icon icon={e.icon} className={`text-[24px]`} />}
+                        variant="light"
+                        color="gray"
+                        c="gray.8"
+                        onClick={() => {
+                            setPaymentMethod(e.text);
+                            modals.closeAll();
+                        }}>
+                        {e.text}
+                    </Button>
                 ))}
             </Stack>
         })
     }
 
+
+    const handleCustomerSave = () => {
+        const valid = custValidate();
+        if (valid.hasErrors) return;
+        setOpenCustForm(false);
+        modals.closeAll();
+    }
+
     return (
         <Stack className={`md:!p-[20px_30px]`}>
+            <Modal title="Data Pembeli" opened={openCustForm} onClose={handleCustomerSave} closeOnClickOutside={false} centered>
+                <Stack gap={15}>
+                    <TextInput
+                        label="Nama"
+                        placeholder="Isi Nama Pembeli"
+                        {...custProps('name')}
+                    />
+                    <TextInput
+                        label="Email"
+                        placeholder="Isi Email Pembeli"
+                        {...custProps('email')}
+                        inputMode="email"
+                    />
+                    <TextInput
+                        label="No. Telp"
+                        placeholder="Isi No.Telp Pembeli"
+                        {...custProps('phone')}
+                        inputMode="numeric"
+                    />
+                    <Textarea
+                        label="Alamat"
+                        placeholder="Isi Alamat Pembeli"
+                        {...custProps('address')}
+                        minRows={3}
+                        autosize
+                    />
+                    <Button onClick={handleCustomerSave} rightSection={<Icon icon="uiw:circle-check" />}>Simpan Data</Button>
+                </Stack>
+            </Modal>
+
             <Card radius={999} className={`!bg-primary-base !p-[5px_16px] w-fit m-[10px_10px_0]`}>
                 <Flex align="center" gap={10}>
                     <Icon icon="hugeicons:cashier" className={`text-[20px] text-white`} />
@@ -264,17 +342,21 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         Belum ada produk yang dipilih
                                     </Alert>
                                 )}
+                                <Button size="md" className={`md:!hidden`} onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
+                                    Tambah Produk
+                                </Button>
                             </Stack>
                         </Card>
 
-                        <Card p="12px 16px 16px" className={`md:!hidden border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
+                        <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
                             <Flex gap={15} justify="space-between" align="center" wrap="wrap">
                                 <Stack gap={0}>
-                                    {/* <Text><NumberFormatter className={`font-[600]`} value={100000} /></Text> */}
+                                    <Text size="xs" className={`!text-primary-base`}>Nama Pembeli</Text>
+                                    <Text>{custValue.name ?? '-'}</Text>
                                 </Stack>
 
-                                <Button onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
-                                    Tambah Produk
+                                <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
+                                    Data Pembeli
                                 </Button>
                             </Flex>
                         </Card>
@@ -286,22 +368,49 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                     <Text>{paymentMethod ?? '-'}</Text>
                                 </Stack>
 
-                                <Button onClick={openSelectPayment} pos="relative" variant="light">
+                                <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
                                     Metode Pembayaran
                                 </Button>
                             </Flex>
                         </Card>
 
                         <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-                            <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-                                <Stack gap={0}>
-                                    <Text size="xs" className={`!text-primary-base`}>Total Pembayaran</Text>
-                                    <Text><NumberFormatter className={`font-[600]`} value={handleSummary.total} /></Text>
-                                </Stack>
-                                <Button disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
-                                    Selanjutnya
-                                </Button>
-                            </Flex>
+                            <Stack>
+                                <Accordion
+                                    w="calc(100% + 40px)"
+                                    chevronPosition="left"
+                                    mx={-20} mt={-12}
+                                    className={`
+                                        ${handleSummary.detail.filter(e => Boolean(e[1])).length > 0 ? '' : '!hidden'}
+                                        [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
+                                        [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
+                                    `}>
+                                    <Accordion.Item value="summary">
+                                        <Accordion.Control>Detail Pembayaran</Accordion.Control>
+                                        <Accordion.Panel>
+                                            <Stack px={10} gap={10}>
+                                                {handleSummary.detail.filter(e => e[1] > 0).map((e, i) => (
+                                                    <Flex gap={10} align="center" justify="space-between">
+                                                        <Text size="sm" c="gray.8">{e[0]}</Text>
+                                                        <Text size="sm" fw={600}>
+                                                            <NumberFormatter prefix="Rp " value={e[1]} />
+                                                        </Text>
+                                                    </Flex>
+                                                ))}
+                                            </Stack>
+                                        </Accordion.Panel>
+                                    </Accordion.Item>
+                                </Accordion>
+                                <Flex gap={15} justify="space-between" align="center" wrap="wrap">
+                                    <Stack gap={0}>
+                                        <Text size="xs" className={`!text-primary-base`}>Total Pembayaran</Text>
+                                        <Text><NumberFormatter className={`font-[600]`} value={handleSummary.total} /></Text>
+                                    </Stack>
+                                    <Button disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
+                                        Selanjutnya
+                                    </Button>
+                                </Flex>
+                            </Stack>
                         </Card>
                     </Stack>
                 </Card>
