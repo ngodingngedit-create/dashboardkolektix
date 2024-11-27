@@ -13,7 +13,7 @@ import Cookies from 'js-cookie';
 import fetch from '@/utils/fetch';
 import { AddressData, addressDataSchema, AddressUpdateRequest } from '../dashboard/profile/address';
 import { currencyFormat } from '@/utils/currencyFormat';
-import { z } from 'zod';
+import { z, ZodAny } from 'zod';
 import { VenueListResponse } from '../dashboard/venue/type';
 import moment from 'moment';
 import { DateInput } from '@mantine/dates';
@@ -32,52 +32,10 @@ type City = {
     province?: Province;
 }
 
-type FormState = {
-    nama_pemesan?: string;
-    email_pemesan?: string;
-    receiver?: {
-        id?: number;
-        name: string;
-        phone: string;
-        address_name: string;
-        province_id: number;
-        city_id: number;
-        pos_code: number;
-        detail: string;
-    };
-    payment_method?: string;
-    courier?: {
-        name: string;
-        type?: GetCourierRes;
-    };
-}
-
-type GetCourierReq = {
-    origin: number,
-    origin_type: string,
-    destination: number,
-    destination_type: string,
-    weight: number,
-    courier: string
-};
-
-type GetCourierRes = {
-    service: string,
-    description: string,
-    cost: Array<{
-        value: number,
-        etd: string,
-        note: string
-    }>
-};
-
-type OrderData = {
-    product_id: number;
-    variant_id: number;
-    qty: number;
-}[];
-
 type Checkout = {
+    nama_pemesan: string;
+    email_pemesan: string;
+    phone_pemesan: string;
     user_id: number;
     total_qty: number;
     total_price: number;
@@ -86,7 +44,9 @@ type Checkout = {
     payment_method: string;
     start_date: string;
     end_date: string;
-};  
+};
+
+type FormInput = Omit<Checkout, 'user_id' | 'payment_method' | 'grandtotal' | 'total_qty' | 'total_price' | 'venue_id'>;
 
 export const formStateSchema = z.object({
     nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
@@ -126,7 +86,19 @@ export default function Cart() {
     const user = useLoggedUser();
     const router = useRouter();
 
-    const form = useForm<FormState>({});
+    const { setValues: setFormValues, values: fv, getInputProps: inputProps, errors: fe, validate: validateForm } = useForm<Checkout>({
+        validate: zodResolver(z.object<Record<keyof FormInput, any>>({
+            nama_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
+            email_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
+            phone_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
+            start_date: z.string().date(),
+            end_date: z.string().date()
+        })),
+        onValuesChange: (val) => {
+            val.phone_pemesan = (val.phone_pemesan ?? '').replaceAll(/\D/g, '');
+            return val;
+        }
+    });
 
     useEffect(() => {
         setIsr(true);
@@ -138,6 +110,10 @@ export default function Cart() {
             const _orderData: VenueBookingOrder = JSON.parse(Cookies.get('venue_order_data') ?? '[]');
             if (!_orderData) router.push('/venue');
             setOrderData(_orderData);
+            setFormValues({
+                start_date: _orderData.date_start,
+                end_date: _orderData.date_end,
+            });
         } catch (error) {}
     }, [isr]);
 
@@ -188,6 +164,9 @@ export default function Cart() {
     }, [venue, orderData, paymentOption]);
 
     const handleCheckout = async () => {
+        const valid = validateForm();
+        if (valid.hasErrors) return;
+
         await fetch<Checkout, any>({
             url: 'booking-venue',
             method: 'POST',
@@ -198,8 +177,11 @@ export default function Cart() {
                 venue_id: orderData?.id,
                 grandtotal: orderSummary.total,
                 payment_method: 'xendit',
-                start_date: orderData.date_start,
-                end_date: orderData.date_end,
+                start_date: fv.start_date,
+                end_date: fv.end_date,
+                nama_pemesan: fv.nama_pemesan,
+                email_pemesan: fv.email_pemesan,
+                phone_pemesan: fv.phone_pemesan
             },
             before: () => setLoading.append('submit'),
             success: (data) => {
@@ -249,6 +231,27 @@ export default function Cart() {
 
                     <Flex gap={20} w="100%" wrap="wrap" align="stretch">
                         <Stack gap={15} className={`flex-grow`}>
+                            <DropdownComponent title="Data Pemesan" icon="lucide:info" defaultOpened>
+                                <Stack>
+                                    <TextInput
+                                        label="Nama Pemesan"
+                                        placeholder="Masukan Nama Pemesan"
+                                        {...inputProps('nama_pemesan')}
+                                    />
+                                    <TextInput
+                                        label="Email"
+                                        placeholder="Masukan Email Pemesan"
+                                        {...inputProps('email_pemesan')}
+                                    />
+                                    <TextInput
+                                        label="No. Telp Pemesan"
+                                        placeholder="Masukan No. Telp Pemesan"
+                                        {...inputProps('phone_pemesan')}
+                                    />
+                                    <Text size="xs" c="gray">*Pastikan data yang dimasukan sudah sesuai</Text>
+                                </Stack>
+                            </DropdownComponent>
+
                             <DropdownComponent title="Detail Booking" icon="lucide:info" defaultOpened>
                                 <Stack>
                                     <Flex justify="space-between" gap={20} align="center">
@@ -278,21 +281,21 @@ export default function Cart() {
                                         <Stack gap={0}>
                                             <Text size="sm" c="gray">Tanggal Booking</Text>
                                             {!onEditDate ? (
-                                                <Text>{moment(orderData?.date_start).format('DD MMM YYYY')} - {moment(orderData?.date_end).format('DD MMM YYYY')}</Text>
+                                                <Text>{moment(fv?.start_date).format('DD MMM YYYY')} - {moment(fv?.end_date).format('DD MMM YYYY')}</Text>
                                             ) : (
                                                 <Flex gap={10} mt={5} wrap="wrap">
                                                     <DateInput
                                                         minDate={new Date()}
-                                                        maxDate={new Date(orderData?.date_end)}
-                                                        value={orderData?.date_start ? new Date(orderData?.date_start) : undefined}
-                                                        onChange={e => setOrderData({ date_start: moment(e).format('YYYY-MM-DD')})}
+                                                        maxDate={new Date(fv?.end_date)}
+                                                        value={fv?.start_date ? new Date(fv?.start_date) : undefined}
+                                                        onChange={e => setFormValues({ start_date: moment(e).format('YYYY-MM-DD')})}
                                                         valueFormat='DD MMMM YYYY'
                                                         placeholder="Dari Tanggal"
                                                     />
                                                     <DateInput
-                                                        minDate={new Date(orderData?.date_start)}
-                                                        value={orderData?.date_end ? new Date(orderData?.date_end) : undefined}
-                                                        onChange={e => setOrderData({ date_end: moment(e).format('YYYY-MM-DD')})}
+                                                        minDate={new Date(fv?.start_date)}
+                                                        value={fv?.end_date ? new Date(fv?.end_date) : undefined}
+                                                        onChange={e => setFormValues({ end_date: moment(e).format('YYYY-MM-DD')})}
                                                         valueFormat='DD MMMM YYYY'
                                                         placeholder="Sampai Tanggal"
                                                     />
@@ -316,7 +319,7 @@ export default function Cart() {
                                         <Checkbox checked={paymentOption == 'all'} onChange={e => e.target.checked ? setPaymentOption('all') : {}}/>
                                         <Box pos="absolute" className={``} />
                                     </Flex>
-                                    {Boolean(venue?.minimum_price) && (
+                                    {(Boolean(venue?.minimum_price) || (venue?.minimum_price ?? 0) > 0) && (
                                         <>
                                             <Divider />
                                             <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
