@@ -467,7 +467,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         <Accordion.Panel>
                                             <Stack px={10} gap={10}>
                                                 {handleSummary.detail.filter(e => Boolean(e[1]) || e[1] < 0).map((e, i) => (
-                                                    <Flex gap={10} align="center" justify="space-between">
+                                                    <Flex gap={10} align="center" justify="space-between" key={i}>
                                                         <Text size="sm" c="gray.8">{e[0]}</Text>
                                                         <Text size="sm" fw={600} c={e[1] < 0 ? 'red' : undefined}>
                                                             <NumberFormatter prefix="Rp " value={e[1]} />
