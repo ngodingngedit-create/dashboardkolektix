@@ -16,6 +16,9 @@ import {
   import { Get } from '@/utils/REST';
   import useLoggedUser from '@/utils/useLoggedUser';
 import React from "react";
+import fetch from "@/utils/fetch";
+import { useListState } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
   
   interface Bank {
     id: number;
@@ -29,9 +32,20 @@ import React from "react";
   interface TarikDanaModalProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
+    onSubmit?: () => void;
   }
+
+  type SubmitWithdraw = {
+    user_id: number,
+    user_bank_id: number,
+    amount: number,
+    name: string,
+    bank_account: string,
+    status: 'Pending'
+}
   
-  export default function TarikDanaModal({ isOpen, setIsOpen }: TarikDanaModalProps) {
+  export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit }: TarikDanaModalProps) {
+    const [loading, setLoading] = useListState<string>();
     const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
     const [banks, setBanks] = useState<Bank[]>([]);
     const [amount, setAmount] = useState("");
@@ -60,6 +74,34 @@ import React from "react";
           });
       }
     };
+
+    const handleSubmit = async (close: () => void) => {
+      await fetch<SubmitWithdraw, any>({
+        url: 'withdraw',
+        method: 'POST',
+        data: {
+          user_id: user?.id ?? 0,
+          user_bank_id: selectedBank?.id ?? 0,
+          amount: parseInt(amount),
+          name: selectedBank?.account_name ?? '-',
+          bank_account: selectedBank?.account_number ?? '0',
+          status: "Pending"
+        },
+        before: () => setLoading.append('submit'),
+        success: (data) => {
+          onSubmit && onSubmit();
+          close();
+        },
+        complete: () => setLoading.filter(e => e != 'submit'),
+        error: err => {
+          notifications.show({
+            position: 'top-right',
+            color: 'red',
+            message: err?.response?.data?.error ?? err?.response?.data?.message ?? 'Terjadi Kesalahan'
+          })
+        }
+      });
+    }
   
     // Panggil getData saat komponen dimount
     useEffect(() => {
@@ -166,7 +208,7 @@ import React from "react";
                   </div>
                 </ModalBody>
                 <ModalFooter>
-                  <Button fullWidth color="primary" onClick={onClose}>
+                  <Button isDisabled={!Boolean(parseInt(amount)) || !Boolean(selectedBank)} isLoading={loading.includes('submit')} fullWidth color="primary" onClick={() => handleSubmit(onClose)}>
                     Konfirmasi & Tarik Dana <span className="ml-auto">{formatRupiah(amount || 0)}</span>
                   </Button>
                 </ModalFooter>

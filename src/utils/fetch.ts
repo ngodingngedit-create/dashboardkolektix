@@ -9,6 +9,7 @@ type FetchResponse<T = any> = {
     errors?: any;
     message?: string | string[];
     messages?: string | string[];
+    [key: string]: any;
 }
 
 interface FetchOptions<T, D> extends AxiosRequestConfig<T> {

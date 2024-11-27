@@ -1,14 +1,15 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Button, Card, Divider, Flex, InputWrapper, NumberInput, Select, Stack, TagsInput, Text, Textarea, TextInput } from '@mantine/core';
+import { Button, Card, Divider, Flex, InputWrapper, LoadingOverlay, NumberInput, Select, Stack, TagsInput, Text, Textarea, TextInput } from '@mantine/core';
 import { useEffect, useState } from 'react';
-import { VenueCapacity, VenueCategory, VenueFacility, VenueStoreRequest } from './type';
+import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
-import { useListState } from '@mantine/hooks';
+import { useDidUpdate, useListState } from '@mantine/hooks';
 import ImageInput from '@/components/ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { z } from 'zod';
+import { FacilitiesList } from '@/pages/venue/[slug]';
 
 type ComponentProps = {};
 const isBrowser = typeof window !== 'undefined';
@@ -30,19 +31,25 @@ export const VenueStoreRequestSchema = z.object({
     contact_person_email: z.string().email({ message: "Email kontak harus berupa email yang valid." }),
     contact_person_phone: z.string().min(1, { message: "Nomor telepon kontak tidak boleh kosong." }),
     starting_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }),
+    minimum_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }).optional().nullable(),
     description: z.string().min(1, { message: "Deskripsi tidak boleh kosong." }),
     // status: z.string().min(1, { message: "Status tidak boleh kosong." }),
-    image: isBrowser ? z.array(z.instanceof(Blob)).min(1, { message: "Setidaknya satu gambar harus diunggah." }) : z.any(),
+    image: z.array(z.any()).min(1, { message: "Setidaknya satu gambar harus diunggah." }),
+    // image: isBrowser ? z.array(z.instanceof(Blob)).min(1, { message: "Setidaknya satu gambar harus diunggah." }) : z.any(),
 });
 
-export default function create({}: Readonly<ComponentProps>) {
+export default function Create({}: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
+    const [venue, setVenue] = useState<VenueListResponse>();
+    const [venueFacilities, setVenueFacilities] = useState<FacilitiesList[]>();
     const user = useLoggedUser();
     const router = useRouter();
+    const { slug } = router.query;
 
     const form = useForm<VenueStoreRequest>({
+        mode: 'controlled',
         validate: zodResolver(VenueStoreRequestSchema),
         onValuesChange: (val) => {
             if (val.contact_person_phone) val.contact_person_phone = val.contact_person_phone.replaceAll(/\D/g, '');
@@ -53,6 +60,23 @@ export default function create({}: Readonly<ComponentProps>) {
     useEffect(() => {
         getData();
     }, [user]);
+
+    useEffect(() => {
+        getVenueData();
+    }, [slug]);
+
+    useDidUpdate(() => {
+        if (venue) {
+            form.setValues({
+                ...venue,
+                venue_category_id: venue.has_venue_category?.id,
+                venue_facility_id: venueFacilities?.map(e => facility?.find(z => z.name == e.facility_name)?.id ?? 0).filter(e => e != 0),
+                minimum_price: Boolean(venue.minimum_price) && venue.minimum_price != null ? Math.round(venue.minimum_price) : 0,
+                image: venue?.venue_gallery.map(e => e.image_url),
+                starting_price: Math.round(venue?.starting_price),
+            });
+        }
+    }, [venue, category, facility]);
 
     const getData = async () => {
         await fetch<any, VenueCategory[]>({
@@ -71,12 +95,32 @@ export default function create({}: Readonly<ComponentProps>) {
         });
     }
 
+    const getVenueData = async () => {
+        if (slug) {
+            await fetch<any, VenueListResponse>({
+                url: 'venue/' + slug,
+                method: 'GET',
+                before: () => setLoading.append('getdatavenue'),
+                success: (data) => {
+                    if (data) {
+                        setVenue(data.data);
+                        setVenueFacilities(data['dataFacilities']);
+                    }
+                },
+                complete: () => setLoading.filter(e => e != 'getdatavenue'),
+            });
+        }
+    }
+
     const submitData = async () => {
         const valid = form.validate();
-        if (valid.hasErrors) return;
+        if (valid.hasErrors) {
+            console.log(form.errors);
+            return;
+        };
 
         await fetch<VenueStoreRequest, any>({
-            url: 'venue',
+            url: slug ? 'venue/' + venue?.id : 'venue',
             method: 'POST',
             data: {
                 ...form.values,
@@ -96,13 +140,14 @@ export default function create({}: Readonly<ComponentProps>) {
 
     return (
         <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
+            <LoadingOverlay visible={loading.includes('getdatavenue')} />
             <Flex gap={10} justify="space-between" align="center">
                 <Stack gap={5}>
                     <Text size="1.8rem" fw={600}>
-                        Buat Venue Baru
+                        {slug ? 'Edit Venue' : 'Buat Venue Baru'}
                     </Text>
                     <Text size="sm" c="gray">
-                        Lengkapi form untuk membuat venue baru
+                        Lengkapi form untuk {slug ? 'memperbarui' : 'membuat'} venue baru
                     </Text>
                 </Stack>
 
@@ -122,10 +167,11 @@ export default function create({}: Readonly<ComponentProps>) {
                     <Text size="lg" fw={600}>Informasi Venue</Text>
                 </Flex>
 
-                <InputWrapper error={form.errors.image}>
-                    <Flex wrap="wrap" gap={10}>
+                <InputWrapper error={form.errors.image} label="Gambar Venue" description="Direkomendasikan 1280px X 400px" withAsterisk>
+                    <Flex wrap="wrap" gap={10} pt={5}>
                         {Array(5).fill(null).map((e, i) => (
                             <ImageInput
+                                dimension={[200, 100]}
                                 value={form.values.image && form.values.image[i] ? form.values.image[i] : undefined}
                                 onChange={e => e && form.setValues({ image: [...(form.values.image ?? []), e]})}
                                 onDelete={() => form.setValues({ image: (form.values.image ?? []).filter((_, x) => x != i)})}
@@ -137,12 +183,14 @@ export default function create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Nama Venue"
                         placeholder="Isi Nama Venue"
                         w="100%"
                         {...form.getInputProps('name')}
                     />
                     <Select
+                        withAsterisk
                         label="Kategori Venue"
                         placeholder="Pilih Kategori Venue"
                         disabled={loading.includes('getdatacat')}
@@ -154,6 +202,7 @@ export default function create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <Textarea
+                    withAsterisk
                     label="Deskripsi Venue"
                     placeholder="Isi Deskripsi Venue"
                     autosize
@@ -162,6 +211,7 @@ export default function create({}: Readonly<ComponentProps>) {
                 />
 
                 <TagsInput
+                    withAsterisk
                     label="Fasilitas Venue"
                     placeholder="Isi Fasilitas Venue"
                     data={facility?.map(e => ({ value: String(e.id), label: e.name }))}
@@ -170,24 +220,28 @@ export default function create({}: Readonly<ComponentProps>) {
                     onChange={e => e && form.setValues({ venue_facility_id: e.map(e => facility?.find(z => z.name == e)?.id ?? 0) })}
                 />
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                     <NumberInput
+                        withAsterisk
                         label="Maksimal Kapasitas"
                         placeholder="Masukan Maksimal Kapasitas"
                         hideControls
                         min={0}
-                        w="100%"
                         {...form.getInputProps('max_capacity')}
                     />
                     <NumberInput
+                        withAsterisk
                         label="Jumlah Kursi"
                         placeholder="Masukan Jumlah Kursi"
                         hideControls
                         min={0}
-                        w="100%"
                         {...form.getInputProps('seat_capacity')}
                     />
+                </Flex>
+
+                <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                     <NumberInput
+                        withAsterisk
                         label="Harga Per Hari"
                         placeholder="Masukan Harga Per Hari"
                         hideControls
@@ -195,6 +249,15 @@ export default function create({}: Readonly<ComponentProps>) {
                         min={0}
                         w="100%"
                         {...form.getInputProps('starting_price')}
+                    />
+                    <NumberInput
+                        label="Minimal Pembayaran Per Hari"
+                        placeholder="Minimal Pembayaran Per Hari"
+                        hideControls
+                        prefix="Rp "
+                        min={0}
+                        w="100%"
+                        {...form.getInputProps('minimum_price')}
                     />
                 </Flex>
 
@@ -205,12 +268,14 @@ export default function create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Daerah"
                         placeholder="Bandung, Jawa Barat"
                         w="100%"
                         {...form.getInputProps('location')}
                     />
                     <TextInput
+                        withAsterisk
                         label="Link Maps"
                         placeholder="https://maps.google.com/..."
                         w="100%"
@@ -219,6 +284,7 @@ export default function create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <Textarea
+                    withAsterisk
                     label="Alamat Detail Venue"
                     placeholder="Isi Detail Alamat Venue"
                     autosize
@@ -233,12 +299,14 @@ export default function create({}: Readonly<ComponentProps>) {
 
                 <Flex gap={15}>
                     <TextInput
+                        withAsterisk
                         label="Nama Kontak"
                         placeholder="Isi Nama Kontak"
                         w="100%"
                         {...form.getInputProps('contact_person_name')}
                     />
                     <TextInput
+                        withAsterisk
                         label="Email Kontak"
                         placeholder="Isi Email Kontak"
                         w="100%"
@@ -247,6 +315,7 @@ export default function create({}: Readonly<ComponentProps>) {
                 </Flex>
 
                 <TextInput
+                    withAsterisk
                     label="No.Telp Kontak"
                     placeholder="Isi No.Telp Kontak"
                     w="100%"

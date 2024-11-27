@@ -1,10 +1,11 @@
 import fetch from '@/utils/fetch';
-import { Box, Card, Flex, NumberFormatter, ScrollArea, Stack, Text } from '@mantine/core';
+import { Alert, Box, Card, Flex, NumberFormatter, ScrollArea, Stack, Text } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { useEffect, useState } from 'react';
 
 type ComponentProps = {
     user_id: number;
+    setUpdate?: number;
 };
 
 interface WithdrawHistory {
@@ -24,13 +25,13 @@ interface WithdrawHistory {
     deleted_at: string | null;
 }
 
-export default function WithdrawHistoryList({ user_id }: Readonly<ComponentProps>) {
+export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<ComponentProps>) {
     const [list, setList] = useState<WithdrawHistory[]>();
     const [loading, setLoading] = useListState<string>();
 
     useEffect(() => {
         getData();
-    }, [user_id]);
+    }, [user_id, setUpdate]);
 
     const getData = async () => {
         if (user_id > 0) {
@@ -47,6 +48,9 @@ export default function WithdrawHistoryList({ user_id }: Readonly<ComponentProps
     return (
         <Box mah={200} w="100%" className={`overflow-y-auto`}>
             <Stack gap={7}>
+                {list?.length == 0 && (
+                    <Alert radius={8}>Belum ada riwayat tarik dana</Alert>
+                )}
                 {list?.map((e, i) => (
                     <Card key={i} withBorder radius={10} py={8} px={16} bg="#fafafa">
                         <Flex justify="space-between" gap={15}>

@@ -1,6 +1,6 @@
 import CreateMerchandise from '@/components/CreateMerchandise';
 import { Delete, Get, Post } from '@/utils/REST';
-import { Card, Center, NumberFormatter, Text, Switch, ActionIcon, Stack, Flex, Title, Image as MImage } from '@mantine/core';
+import { Card, Center, NumberFormatter, Button as ButtonM, Text, Switch, ActionIcon, Stack, Flex, Title, Image as MImage } from '@mantine/core';
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from '@nextui-org/react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,8 @@ import merchIcon from '../../../assets/svg/merch.svg';
 import Button from '@/components/Button';
 import useLoggedUser from '@/utils/useLoggedUser';
 import _ from 'lodash';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import Link from 'next/link';
 
 const Merch = () => {
   const [isRender, setIsRender] = useState(false);
@@ -110,19 +112,26 @@ const Merch = () => {
           </button>
         </div>
 
-        <button onClick={() => setModalCreate('')} className={`text-[#0B387C] flex items-center gap-[8px] p-[10px_16px] border border-[#E2EDFF] hover:border-[#0B387C] rounded-full`}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g clip-path="url(#clip0_10926_6066)">
-            <path d="M9.99984 6.66699V13.3337M6.6665 10.0003H13.3332M18.3332 10.0003C18.3332 14.6027 14.6022 18.3337 9.99984 18.3337C5.39746 18.3337 1.6665 14.6027 1.6665 10.0003C1.6665 5.39795 5.39746 1.66699 9.99984 1.66699C14.6022 1.66699 18.3332 5.39795 18.3332 10.0003Z" stroke="#0B387C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </g>
-            <defs>
-            <clipPath id="clip0_10926_6066">
-            <rect width="20" height="20" fill="white"/>
-            </clipPath>
-            </defs>
-          </svg>
-          <p>Buat Merchandise</p>
-        </button>
+        <Flex gap={10} align="center">
+          <ButtonM
+            leftSection={<Icon icon="hugeicons:cashier" className={`text-[20px]`} />}
+            radius="xl"
+            color="#0B387C"
+            component={Link}
+            href="/dashboard/merch-pos"
+          >
+            Penjualan Offline
+          </ButtonM>
+          <ButtonM
+            onClick={() => setModalCreate('')}
+            leftSection={<Icon icon="icon-park-outline:add-one" className={`text-[24px]`} />}
+            radius="xl"
+            variant="outline"
+            color="#0B387C"
+          >
+            Buat Merchandise
+          </ButtonM>
+        </Flex>
       </div>
 
       <Tabs

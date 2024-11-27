@@ -41,7 +41,7 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM } from '@mantine/core';
 import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
@@ -109,8 +109,9 @@ const MyEventDetail = () => {
   const [selectedInvitation, setSelectedInvitation] =  useState(null);
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
   const [invitationData, setInvitationData] = useState<any[]>([]);
-const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
-const [invitationFilter, setInvitationFilter] = useState('');
+  const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
+  const [invitationFilter, setInvitationFilter] = useState('');
+  const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
 
 
   const openAddModal = () => {
@@ -598,7 +599,7 @@ const eventItems = useMemo(() => {
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
                       <p className="text-grey">Dana yang belum di tarik</p>
-                      <h6>Rp0</h6>
+                      <h6><NumberFormatter value={parseInt(data.transaction_saldo_by_event.total_saldo_event ?? 0) ?? 0} /></h6>
                     </div>
                     <Button 
                       color="primary" 
@@ -612,7 +613,7 @@ const eventItems = useMemo(() => {
                   <Stack p={20} pt={0} gap={10}>
                     <Divider />
                     <Text size="sm" fw={600} c="gray">Riwayat Tarik Dana</Text>
-                    <WithdrawHistoryList user_id={user?.id ?? 0} />
+                    <WithdrawHistoryList user_id={user?.id ?? 0} setUpdate={updateWithdrawHistory}/>
                   </Stack>
                 </AccordionItem>
               </Accordion>
@@ -828,9 +829,14 @@ const eventItems = useMemo(() => {
                             color={transactionFilter === 'offline' ? 'primary' : 'secondary'}
                             fullWidth
                           />
-                          <ActionIcon variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
-                              <Icon icon="uiw:download" className={`text-[20px]`} />
-                          </ActionIcon>
+                          <ButtonM
+                            className={`shrink-0`}
+                            leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />}
+                            variant="transparent"
+                            color="#194e9e"
+                            onClick={handleDownloadTransaction}>
+                            Download  
+                          </ButtonM>
                         </div>
 
                         {/* Single Transaction Table */}
@@ -1030,8 +1036,8 @@ const eventItems = useMemo(() => {
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
     <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
-      <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
-    <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
+    <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
+    <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <ModalCreateTicket
         isOpen={addTicket}

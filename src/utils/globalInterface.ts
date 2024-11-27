@@ -313,6 +313,13 @@ export interface EventProps {
   is_noidentity: 1 | 0;
   is_phone_number: 1 | 0;
   grand_total: number;
+  transaction_saldo_by_event: {
+      event_id: number;
+      event_slug: string;
+      creator_id: number;
+      creator_name: string;
+      total_saldo_event: string;
+  }
 }
 
 interface EventSocmed {

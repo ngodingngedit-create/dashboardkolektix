@@ -12,6 +12,7 @@ import {
 import useLoggedUser from '@/utils/useLoggedUser';
 import Images from '@/components/Images';
 import Link from 'next/link';
+import { Card } from '@mantine/core';
 
 interface EventCardProps {
   slug?: string;
@@ -58,9 +59,9 @@ const EventCard = ({
   const isEventEnded = currentDate > new Date(end);
 
   return (
-    <div className='bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative'>
+    <div className='[&_.hoverCTA]:hover:!translate-y-0 bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative'>
       <Link href={`/event/${slug}`}>
-        <div className="relative">
+        <div className="relative overflow-hidden">
           <Image
             className={`${styles.cardImg} rounded-t-lg`}
             src={img}
@@ -69,10 +70,21 @@ const EventCard = ({
             height={500}
             quality={75}
           />
-          {isEventEnded && (
+          {isEventEnded ? (
             <div className="absolute top-2 right-2 bg-light-grey text-dark px-2 py-1 rounded-xl text-xs">
               Event Ended
             </div>
+          ) : (
+            <Card
+              pos="absolute"
+              p="5px 14px"
+              bg="#ffffff20"
+              radius="xl"
+              fw={600}
+              c="white"
+              className={`transition-transform hoverCTA !border !border-white translate-y-[60px] bottom-3 right-3`}>
+              Beli Tiket
+            </Card>
           )}
         </div>
       </Link>

@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { Button, Indicator } from '@mantine/core';
+import { Box, Button, Indicator } from '@mantine/core';
 import { useClickOutside } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -144,7 +144,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-            {/* <div className='mr-2 w-8 md:hidden'>
+            <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -165,7 +165,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div> */}
+              </div>
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
@@ -604,7 +604,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           route === '/talent' ||
           route === '/merchandise' ||
           route === '/lowongan' ? (
-            <Image src={top} alt='top' className='w-full' quality={100} />
+            <Box className={`h-[80px]`}>
+              <Image src={top} alt='top' className='z-30 mx-auto opacity-0 md:!opacity-100 !w-[1920px] min-w-[100%]' quality={100} />
+            </Box>
           ) : (
             <></>
           )}
@@ -612,7 +614,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
-      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && !route.startsWith('/merch-cart') && <Footer />}
+      {!route.startsWith('/event') && !route.startsWith('/transaction-woauth') && !route.startsWith('/create-event') && !route.startsWith('/merch-order') && !route.startsWith('/merchandise/') && !route.startsWith('/merch-cart') && !route.startsWith('/venue/') && !route.startsWith('/venue-order') && <Footer />}
     </div>
   );
 }

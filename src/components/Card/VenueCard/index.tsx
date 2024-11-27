@@ -6,13 +6,14 @@ interface VenueCardProps {
   image: string;
   location: string;
   price: number;
+  slug: string;
 }
-const VenueCard = ({ title, image, location, price }: VenueCardProps) => {
+const VenueCard = ({ slug, title, image, location, price }: VenueCardProps) => {
   return (
     <div className='w-48 flex flex-col text-dark text-sm gap-1'>
       {/* <Image src={foto} alt='fotos'  /> */}
       {image && (
-        <Link href={`/venue/detail`}>
+        <Link href={`/venue/${slug}`}>
           <Images
             src={image}
             type='venue'

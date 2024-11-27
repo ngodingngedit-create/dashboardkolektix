@@ -82,40 +82,40 @@ export default function Dashboard() {
         <Accordion defaultExpandedKeys={['event']}>
           {/* Event Section */}
           <AccordionItem key="event" title="Event Saya">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable title="Event Berjalan" value={calculateTotalEvents()} />
-                <CreatorTable title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
-                <CreatorTable title="Total Pengunjung" value={calculateTotal('total_views')} yBorderNone />
-                <CreatorTable title="Total Transaksi" value={calculateTotal('total_paid')} yBorderNone />
-                <CreatorTable title="Total Tiket Terjual" value={calculateTotal('total_ticket')} xBorderNone />
-                <CreatorTable title="Total Penjualan" currency value={calculateTotal('total_price_sell')} />
+                <CreatorTable icon="mdi:event-star" title="Event Berjalan" value={calculateTotalEvents()} />
+                <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
+                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={calculateTotal('total_views')} yBorderNone />
+                <CreatorTable icon="hugeicons:invoice" title="Total Transaksi" value={calculateTotal('total_paid')} yBorderNone />
+                <CreatorTable icon="heroicons-outline:ticket" title="Total Tiket Terjual" value={calculateTotal('total_ticket')} xBorderNone />
+                <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal('total_price_sell')} />
               </div>
             </div>
           </AccordionItem>
 
           {/* Job Section */}
           <AccordionItem key="lowongan" title="Lowongan">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable title="Lowongan yang aktif" value={0} />
-                <CreatorTable title="Lowongan Draf" value={0} yBorderNone />
-                <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
-                <CreatorTable title="Pelamar belum direspon" value={0} yBorderNone />
+                <CreatorTable icon="material-symbols:list-alt-outline" title="Lowongan yang aktif" value={0} />
+                <CreatorTable icon="mynaui:book-user" title="Lowongan Draf" value={0} yBorderNone />
+                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={0} yBorderNone />
+                <CreatorTable icon="hugeicons:wanted" title="Pelamar belum direspon" value={0} yBorderNone />
               </div>
             </div>
           </AccordionItem>
 
           {/* Merchandise Section */}
           <AccordionItem key="merchandise" title="Merchandise">
-            <div className="px-4 py-4 md:px-7 md:py-4">
+            <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable title="Sedang dijual" value={0} />
-                <CreatorTable title="Merchandise Draf" value={0} yBorderNone />
-                <CreatorTable title="Total Pengunjung" value={0} yBorderNone />
-                <CreatorTable title="Total Transaksi Merchandise" value={0} yBorderNone />
-                <CreatorTable title="Total Merchandise Terjual" value={0} xBorderNone />
-                <CreatorTable title="Total Penjualan Merchandise" currency value={0} />
+                <CreatorTable icon="fluent-mdl2:product-variant" title="Sedang dijual" value={0} />
+                <CreatorTable icon="fluent-mdl2:product-release" title="Merchandise Draf" value={0} yBorderNone />
+                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={0} yBorderNone />
+                <CreatorTable icon="uil:transaction" title="Total Transaksi Merchandise" value={0} yBorderNone />
+                <CreatorTable icon="mage:box-3d-check" title="Total Merchandise Terjual" value={0} xBorderNone />
+                <CreatorTable icon="ix:product-management" title="Total Penjualan Merchandise" currency value={0} />
               </div>
             </div>
           </AccordionItem>

@@ -15,20 +15,39 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme } from '@mantine/core';
+import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme, Button } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/carousel/styles.css';
+import '@mantine/dates/styles.css';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
+import { DateInput } from '@mantine/dates';
 
 config.autoAddCss = false;
 
 const theme = createTheme({
   components: {
+    Notifications: Notifications.extend({
+      defaultProps: {
+        position: 'top-right'
+      }
+    }),
+    Button: Button.extend({
+      defaultProps: {
+        radius: "xl",
+        color: "#0B387C",
+      }
+    }),
     Input: Input.extend({
+      defaultProps: {
+        radius: 10
+      }
+    }),
+    DateInput: DateInput.extend({
       defaultProps: {
         radius: 10
       }
