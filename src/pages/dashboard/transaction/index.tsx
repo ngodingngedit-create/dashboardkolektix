@@ -1,5 +1,7 @@
+import ModalTransactionMerchDetail from "@/components/Transaction/ModalTransactionMerchDetail";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Alert, Button, Card, Divider, Flex, Image, NumberFormatter, Stack, Tabs, Text } from "@mantine/core";
+import { modals } from "@mantine/modals";
 import moment from "moment";
 
 type ComponentProps = {
@@ -7,6 +9,16 @@ type ComponentProps = {
 };
 
 export default function Transaction({  }: Readonly<ComponentProps>) {
+
+    const handleOpenMerchDetail = () => {
+        modals.open({
+            title: 'Detail Transaksi',
+            centered: true,
+            size: 'xl',
+            children: <ModalTransactionMerchDetail />
+        });
+    }
+
     return (
         <Stack className={`p-[20px] md:!p-[30px]`}>
 
@@ -51,10 +63,10 @@ export default function Transaction({  }: Readonly<ComponentProps>) {
                                             </Flex>
 
                                             <Card withBorder radius={999} p="5px 16px">
-                                                <Text size="sm" fw={600} className={`whitespace-nowrap`}>Status Pesanan: Dikirim</Text>
+                                                <Text size="xs" className={`whitespace-nowrap`}>Status Pesanan: <Text fw={600} component="span">Dikirim</Text></Text>
                                             </Card>
 
-                                            <Button variant="subtle" size="sm" className={`!text-primary-base`}>
+                                            <Button onClick={handleOpenMerchDetail} variant="subtle" size="xs" className={`!text-primary-base`}>
                                                 Lihat Detail
                                             </Button>
                                         </Flex>
