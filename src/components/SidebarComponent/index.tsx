@@ -106,7 +106,7 @@ const sidebarData: SidebarData = [
         }
     ] },
     { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
-    { id: 2, name: 'Transaksi Lainnya', iconify: 'icon-park-solid:transaction', link: '/dashboard/transaction', role: 'Pembeli' },
+    { id: 20, name: 'Transaksi Lainnya', iconify: 'icon-park-solid:transaction', link: '/dashboard/transaction', role: 'Pembeli' },
     { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
     { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
     { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface CreatorTableProps {
   title: string;
@@ -11,10 +12,10 @@ interface CreatorTableProps {
   xBorderNone?: boolean;
 }
 
-const CreatorTable = ({ title, value, currency, xBorderNone, yBorderNone }: CreatorTableProps) => {
+const CreatorTable = ({ title, value, currency, xBorderNone, yBorderNone, icon }: CreatorTableProps) => {
   return (
     <div
-      className={`flex flex-col justify-between gap-2 p-4 border border-primary-light-200 rounded-md ${
+      className={`overflow-hidden relative flex flex-col justify-between gap-2 p-4 border border-primary-light-200 rounded-md ${
         currency ? 'col-span-1 lg:col-span-2' : 'col-span-1'
       } ${xBorderNone ? '!border-l-0' : ''} ${yBorderNone ? '!border-t-0' : ''} bg-white shadow-sm`}
     >
@@ -33,6 +34,7 @@ const CreatorTable = ({ title, value, currency, xBorderNone, yBorderNone }: Crea
         {currency ? 'Rp. ' : ''}
         {value.toLocaleString()} {/* Ensure number formatting */}
       </h3>
+      {icon && <Icon icon={icon} className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />}
     </div>
   );
 };
