@@ -1,6 +1,6 @@
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
+import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
 import { useListState } from "@mantine/hooks";
@@ -10,6 +10,8 @@ import { notifications } from "@mantine/notifications";
 import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
 import _ from "lodash";
+import Cookies from 'js-cookie';
+import { useRouter } from "next/router";
 
 type ComponentProps = {
     
@@ -20,7 +22,27 @@ type CustomerData = {
     email: string;
     phone: string;
     address: string;
-}
+};
+
+export type MerchCheckoutOffline = {
+    product: {
+        id: number;
+        variant_id?: number;
+        qty: number;
+        price: number;
+        subtotal: number;
+    }[];
+    invoice_num?: string;
+    customer_name?: string;
+    customer_email?: string;
+    customer_phone?: string;
+    customer_address?: string;
+    discount?: number;
+    summary?: { [key: string]: number; };
+    grandtotal: number;
+    creator_id: number;
+    payment_method?: string;
+};
 
 export default function Index({  }: Readonly<ComponentProps>) {
     const user = useLoggedUser();
@@ -36,6 +58,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
         variant_id?: number;
         count: number;
     }[]>([]);
+    const router = useRouter();
 
     const { values: custValue, getInputProps: custProps, errors: custError, validate: custValidate } = useForm<CustomerData>({
         onValuesChange: (val) => {
@@ -58,9 +81,9 @@ export default function Index({  }: Readonly<ComponentProps>) {
         await fetch<any, MerchListResponse[]>({
             url: 'product' + `?creator_id=${user?.has_creator?.id}`,
             method: 'GET',
-            before: () => setLoading.append(''),
+            before: () => setLoading.append('getdata'),
             success: ({ data }) => data && setMerch(data.filter(e => e.product_status_id == 2)),
-            complete: () => setLoading.filter(e => e != ''),
+            complete: () => setLoading.filter(e => e != 'getdata'),
             error: () => {},
         });
     }
@@ -87,10 +110,11 @@ export default function Index({  }: Readonly<ComponentProps>) {
             const name = product?.product_name;
             const variant_name = product?.product_varian.find(z => z.id == e.variant_id)?.varian_name;
             const image = (product?.product_image?.length ?? 0) > 0 ? product?.product_image[0].image_url : '#';
-            const price = (!e.variant_id ? parseInt(product?.price ?? '999999') : parseInt(product?.product_varian?.find(z => z.id == e.variant_id)?.price ?? '999999')) * e.count;
+            const price = (!e.variant_id ? parseInt(product?.price ?? '999999') : parseInt(product?.product_varian?.find(z => z.id == e.variant_id)?.price ?? '999999'));
+            const subtotal = price * e.count;
             const stock = !e.variant_id ? product?.qty ?? 0 : product?.product_varian.find(z => z.id == e.variant_id)?.stock_qty ?? 0;
 
-            return { name, variant_name, price, image, count: e.count, stock };
+            return { id: e.id, variant_id: e.variant_id, name, variant_name, price, image, count: e.count, stock, subtotal };
         })
     }, [selected]);
 
@@ -174,6 +198,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
     const openSelectPayment = () => {
         const payment = [
             {icon: 'ph:money-wavy', text: 'CASH'},
+            {icon: 'basil:card-outline', text: 'Credit Card'},
         ];
 
         modals.open({
@@ -204,6 +229,51 @@ export default function Index({  }: Readonly<ComponentProps>) {
         if (valid.hasErrors) return;
         setOpenCustForm(false);
         modals.closeAll();
+    }
+
+    const handleSave = async () => {
+        const summary: MerchCheckoutOffline['summary'] = {};
+        for (const s of handleSummary.detail) summary[s[0]] = s[1];
+
+        const data: MerchCheckoutOffline = {
+            product: selectedList.map(e => ({
+                id: e.id,
+                variant_id: e.variant_id,
+                qty: e.count,
+                price: e.price,
+                subtotal: e.subtotal,
+            })),
+            customer_name: custValue.name,
+            customer_email: custValue.email,
+            customer_phone: custValue.phone,
+            customer_address: custValue.address,
+            grandtotal: handleSummary.total,
+            creator_id: user?.has_creator?.id ?? 0,
+            summary,
+            discount,
+            payment_method: paymentMethod,
+        }
+        const next = () => {
+            Cookies.set('merch_pos_submit', JSON.stringify(data satisfies MerchCheckoutOffline));
+            router.push('/dashboard/merch-pos-invoice');
+        }
+        await fetch<MerchCheckoutOffline, any>({
+            url: 'merch-offline',
+            method: 'POST',
+            data,
+            before: () => setLoading.append('submit'),
+            success: () => {
+                next();
+            },
+            complete: () => setLoading.filter(e => e != 'submit'),
+            error: (err) => {
+                next();
+                notifications.show({
+                    message: err?.response?.data?.message ?? 'Terjadi Kesalahan',
+                    color: 'red'
+                });
+            },
+        });
     }
 
     return (
@@ -247,6 +317,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
 
             <Flex gap={15} className={`!h-[calc(100vh_-_140px)] md:!h-[calc(100vh_-_180px)]`} pos="relative">
                 <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? '' : 'translate-x-[120%] md:!translate-x-0'} md:!static`}>
+                    <LoadingOverlay visible={loading.includes('getdata')} />
                     <Stack gap={20} h="100%">
                         <Text fw={600} c="#0B387C">Pilih Produk</Text>
                         <TextInput
@@ -316,7 +387,7 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                                     <Text size="sm" className={`capitalize whitespace-nowrap`}>{e.name}</Text>
                                                     {e.variant_name && <Text size="xs" c="gray" mb={5} className={`capitalize`}>Varian: {e.variant_name}</Text>}
                                                     <Text size="sm" className={`whitespace-nowrap`}>
-                                                        <NumberFormatter value={e.price} />
+                                                        <NumberFormatter value={e.subtotal} />
                                                     </Text>
                                                 </Stack>
                                             </Flex>
@@ -412,8 +483,8 @@ export default function Index({  }: Readonly<ComponentProps>) {
                                         <Text size="xs" className={`!text-primary-base`}>Total Pembayaran</Text>
                                         <Text><NumberFormatter className={`font-[600]`} value={handleSummary.total} /></Text>
                                     </Stack>
-                                    <Button disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
-                                        Selanjutnya
+                                    <Button loading={loading.includes('submit')} onClick={handleSave} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
+                                        Bayar
                                     </Button>
                                 </Flex>
                             </Stack>
