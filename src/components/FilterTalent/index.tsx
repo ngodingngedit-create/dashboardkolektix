@@ -22,7 +22,7 @@ const FilterTalent: React.FC<FilterTalentProps> = ({ setNameFilter, setCategoryF
   };
 
   return (
-    <div className='flex items-center drop-shadow-2xl justify-center w-full bg-transparent relative lg:top-[-5rem] lg:mt-0'>
+    <div className='flex items-center md:drop-shadow-lg justify-center w-full bg-transparent relative px-[20px]'>
     <div className='bg-white rounded-full w-full max-w-[900px]'>
       <div className='flex p-2'>
         <div className='flex flex-col h-full px-2 w-36'>

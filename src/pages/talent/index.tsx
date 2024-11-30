@@ -17,7 +17,7 @@ const Event = () => {
   // Fetch data and filter based on name and category
   const getData = () => {
     setLoading(true);
-    Get('talent', {})
+    Get('talenta', {})
       .then((res: any) => {
         const allData = res.data;
         setData(allData);
@@ -65,17 +65,17 @@ const Event = () => {
         <FilterTalent
           setNameFilter={setNameFilter}
           setCategoryFilter={setCategoryFilter}
-          categories={Array.from(new Set(data.map((item) => item.has_category.name)))}
+          categories={Array.from(new Set(data.map((item) => item?.has_category?.name)))}
         />
         {filteredData.length > 0 ? (
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4 content-center justify-items-center gap-y-10 '>
+          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 !mt-10 content-center justify-items-center gap-y-10 '>
             {filteredData.map((item) => (
               <TalentCard
                 key={item.id}
                 id={item.id}
                 name={item.name}
                 image={item.image} 
-                skills={item.has_category.name}
+                skills={item?.has_category?.name ?? '-'}
               />
             ))}
           </div>

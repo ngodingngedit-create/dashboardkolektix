@@ -32,18 +32,20 @@ const TalentDetail = () => {
   const router = useRouter();
   const { id } = router.query;
   const getData = () => {
-    Get(`talent/${id}`, {})
+    Get(`talenta/${id}`, {})
       .then((res: any) => {
         console.log(res);
         setData(res.data);
       })
       .catch((err: any) => console.log(err));
   };
+
   useEffect(() => {
     if (id) {
       getData();
     }
   }, [id]);
+
   return (
     data && (
       <div className='max-w-5xl min-h-screen mx-auto pb-20 pt-24 px-4 sm:px-6 lg:px-8'>
@@ -63,7 +65,7 @@ const TalentDetail = () => {
           <Image src={Foto} alt='creator' className='mt-[-25px] w-[96px] h-[96px] object-cover rounded-full border-white border-5' />
           <div className='flex flex-col gap-[0]'>
             <h3 className='text-lg font-bold text-center md:text-left'>{data.name}</h3>
-            <p className='text-sm text-primary-dark text-center md:text-left'>{data.has_category.name}</p>
+            <p className='text-sm text-primary-dark text-center md:text-left'>{data?.has_category?.name ?? '-'}</p>
           </div>
         </div>
         <div className='flex gap-2 items-center'>
@@ -114,10 +116,10 @@ const TalentDetail = () => {
         <ModalHeader className='flex flex-col gap-1 px-5'>Hire Talenta</ModalHeader>
         <ModalBody className='px-0'>
           <div className='flex items-center gap-4 border-t border-b border-primary-light-200 py-4 px-6'>
-            <Image src={Foto} alt='creator' className='w-16 h-10 object-cover' />
+            <Image src={data?.image_url ?? Foto} alt='creator' className='w-16 h-10 object-cover' />
             <div className='flex flex-col'>
               <p className='font-bold'>{data.name}</p>
-              <p>{data.has_category.name}</p>
+              <p>{data?.has_category?.name ?? '-'}</p>
             </div>
           </div>
 
