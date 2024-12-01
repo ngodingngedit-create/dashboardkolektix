@@ -1,5 +1,8 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { AspectRatio, Button, Card, Center, Flex, Image, Stack, Text } from "@mantine/core";
+import bgCTA from '../assets/images/hero-bg.png';
+import bg1 from '../assets/images/Foto=1.png';
+import bg2 from '../assets/images/Foto=4.png';
 
 type ComponentProps = {
     
@@ -10,7 +13,7 @@ export default function wristband({  }: Readonly<ComponentProps>) {
         <Stack gap={50} px={30} pb={50} pt={90} mx="auto" maw={1080}>
             <Flex justify="space-between" gap={20} align="center" className={`flex-col-reverse md:flex-row`}>
                 <Stack gap={10} maw={500}>
-                    <Text className={`!leading-[130%]`} component="h1" fw={600} size="1.6rem">Cetak Tiket Gelang Jadi Lebih Praktis Dengan Kolektix</Text>
+                    <Text className={`!leading-[130%]`} component="h1" fw={600} size="1.6rem">Cetak Tiket Gelang Jadi Lebih Praktis di Kolektix</Text>
                     <Text c="gray">Solusi lengkap untuk para Event Creator dalam pengelolaan tiket event. Mengingat banyaknya hal yang harus diperhatikan selama proses pembuatan event, dengan ini Kolektix menawarkan kemudahan. Mulai dari penjualan hingga pencetakan tiket gelang, semua sudah bisa di Kolektix. Dicetak dengan bahan berkualitas dan tahan lama, tiket gelang dirancang untuk tahan lama sepanjang acara. </Text>
                     <Flex mt={20} justify="space-between" gap={20}>
                         <Flex gap={10} align="center">
@@ -37,13 +40,13 @@ export default function wristband({  }: Readonly<ComponentProps>) {
                     </Flex>
                 </Stack>
                 <AspectRatio w="100%" className={`max-w-[100%] md:!max-w-[400px]`} ratio={3/3.5}>
-                    <Image src="#" bg="gray.1" radius={10} w="100%"/>
+                    <Image src={bg1.src ?? "#"} bg="gray.1" radius={10} w="100%"/>
                 </AspectRatio>
             </Flex>
 
             <Flex justify="space-between" gap={20} align="center" className={`flex-col-reverse md:flex-row`}>
                 <AspectRatio w="100%" ratio={5/3} maw={500} className={`hidden md:block`}>
-                    <Image src="#" bg="gray.1" radius={10} w="100%"/>
+                    <Image src={bg2.src} bg="gray.1" radius={10} w="100%"/>
                 </AspectRatio>
                 <Stack gap={20} className={`max-w-[100%] md:max-w-[400px]`}>
                     <Text ta="start" className={`!leading-[130%]`} component="h2" fw={600} size="1.6rem">Keuntungan Cetak Tiket Gelang Dengan Kami</Text>
@@ -72,12 +75,16 @@ export default function wristband({  }: Readonly<ComponentProps>) {
                 </Stack>
             </Flex>
 
-            <Card bg="gray.1" radius={15} h={200} pos="relative">
+            <Card bg="none" radius={15} pos="relative">
                 <Center h="100%" className={`z-20`}>
-                    <Button size="md" rightSection={<Icon icon="bi:whatsapp" className={`text-[20px]`} />}>Hubungi Kami</Button>
+                    <Button
+                        // bg="white"
+                        // className={`!text-primary-base [&_*]:!text-primary-base`}
+                        size="lg"
+                        rightSection={<Icon icon="bi:whatsapp" className={`text-[20px]`} />}>Hubungi Kami</Button>
                 </Center>
 
-                <Image src={'#'} className={`absolute w-full h-full top-0 left-0 z-10`} />
+                {/* <Image src={bgCTA.src ?? '#'} className={`absolute w-full h-full top-0 left-0 z-10`} /> */}
             </Card>
         </Stack>
     );
