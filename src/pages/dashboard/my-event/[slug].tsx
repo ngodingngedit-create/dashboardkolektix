@@ -1047,6 +1047,7 @@ const eventItems = useMemo(() => {
         data={editTicket}
         setIdx={setIdxTicket}
         idx={idxTicket}
+        eventId={data.id}
         endDate={data.end_date}
         />
     </>
