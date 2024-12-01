@@ -15,6 +15,7 @@ const FooterData = [
       { id: 5, name: 'Syarat & Ketentuan', link: '/terms' },
       { id: 6, name: 'Prosedur Pembatalan', link: '/terms/return-policy' },
       { id: 7, name: 'Syarat Pengembalian Dana', link: '/terms/refund' },
+      { id: 7, name: 'Tiket Gelang', link: '/wristband' },
       { id: 8, name: 'Laporan', link: '/' },
       { id: 9, name: 'Setting', link: '/' },
     ],
