@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import OrderCounter from '../OrderCounter';
 import { TicketProps } from '@/utils/globalInterface';
+import moment from 'moment';
 
 interface GroupTicket {
   date: string;
@@ -76,6 +77,14 @@ export default function DateTab({
     setGroupedTickets(combineTicketsByDate(data).reverse());
   }, [data]);
 
+  const sortedTicket = useCallback((data: GroupTicket['tickets']) => {
+    return data.sort((a, b) => {
+      const dateA = moment(`${a.ticket_date} ${a.starting_time}`, 'YYYY-MM-DD HH:mm');
+      const dateB = moment(`${b.ticket_end} ${b.ending_time}`, 'YYYY-MM-DD HH:mm');
+      return dateA.diff(dateB); // Mengurutkan berdasarkan selisih waktu
+    });
+  }, [groupedTickets]);
+
   return (
     <div className='flex flex-col'>
       <TabGroup manual selectedIndex={selected} onChange={setSelected}>
@@ -92,7 +101,7 @@ export default function DateTab({
         <TabPanels>
           {groupedTickets.map(({ date, tickets }) => (
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
-              {tickets.map((item) => (
+              {sortedTicket(tickets).map((item) => (
                 <OrderCounter
                   maxOrder={maxOrder}
                   ticketData={item}
