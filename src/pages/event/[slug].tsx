@@ -157,6 +157,7 @@ const EventDetails = () => {
     const [localStorage, setLocalStorage] = useLocalStorage(key, initialValue, {
         initializeWithValue: false
     });
+
     const openDatabase = (): Promise<IDBDatabase> => {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('myDatabase', 1);
@@ -637,7 +638,7 @@ const EventDetails = () => {
                                             setMenu(2);
                                         }}
                                     >
-                                        Lihat Tiket
+                                        {isGratis ? 'Registrasi' : 'Lihat'} Tiket
                                     </button>
                                 </Link>
                             </div>
@@ -827,7 +828,7 @@ const EventDetails = () => {
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
                                 {menu === 2 && (
                                     <div id="ticket-view">
-                                        <TicketViewBlock selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
+                                        <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
                                     </div>
                                 )}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
@@ -894,7 +895,7 @@ const EventDetails = () => {
                             </div>
                             <div className="px-5 w-full text-dark">
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                                {menu === 2 && <TicketViewBlock selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
+                                {menu === 2 && <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                             </div>
                         </>

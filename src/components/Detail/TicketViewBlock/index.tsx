@@ -8,6 +8,8 @@ interface Props {
   counts: { [key: number]: number };
   setCounts: (counts: { [key: string]: number }) => void;
   data: TicketProps[];
+  isGratis?: boolean;
+  maxOrder?: number;
   isLogin: boolean;
   totalCount: number;
   totalSubtotalPrice: number;
@@ -19,6 +21,8 @@ interface Props {
 }
 
 const TicketViewBlock = ({
+  maxOrder,
+  isGratis,
   counts,
   setCounts,
   data,
@@ -46,6 +50,7 @@ const TicketViewBlock = ({
         id='ticket-picker'
       >
         <DateTab
+          maxOrder={maxOrder}
           counts={counts}
           setCounts={setCounts}
           data={data}
@@ -72,7 +77,7 @@ const TicketViewBlock = ({
               }}
               disabled={totalCount === 0}
             >
-              Beli Tiket
+              {isGratis ? 'Registrasi' : 'Beli'} Tiket
             </button>
           ) : (
             <button
@@ -80,7 +85,7 @@ const TicketViewBlock = ({
               onClick={storeLocalStorage}
               disabled={totalCount === 0}
             >
-              Beli Tiket
+              {isGratis ? 'Registrasi' : 'Beli'} Tiket
             </button>
           )}
         </div>

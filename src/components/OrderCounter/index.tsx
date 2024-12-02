@@ -16,6 +16,7 @@ interface OrderCounterProps {
     isLogin: boolean;
     description?: string;
     ticketData: TicketProps;
+    maxOrder?: number;
 }
 
 function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
@@ -31,7 +32,7 @@ function isDatePassed(dateString: string) {
     return date.isBefore(moment());
 }
 
-const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     const router = useRouter();
 
     const StatusComponent = () => {
@@ -60,7 +61,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            Penjualan tiket dimulai {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
@@ -77,7 +78,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        Penjualan Selesai
+                        {price <= 0 ? 'Registrasi' : 'Penjualan'} Selesai
                     </Badge>
                 </>
             );
@@ -87,7 +88,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            Penjualan tiket berakhir {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
@@ -98,7 +99,7 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                             <Icon icon="uiw:minus" />
                         </ActionIcon>
                         <Text>{count}</Text>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={ticketData.max_buy_ticket == count}>
+                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
                             <Icon icon="uiw:plus" />
                         </ActionIcon>
                     </Flex>
@@ -124,7 +125,9 @@ const OrderCounter = ({ count, ticketData, setCount, isSoldOut, title, price, is
                             {ticketData.name}
                         </Text>
                         <Text size="sm" c="gray">
-                            {ticketData.description}
+                            {ticketData.description.split('\n').map((e, i) => (
+                                <Text key={i}>{e}</Text>
+                            ))}
                         </Text>
                     </Stack>
                     <Text size="lg" fw={600}>
