@@ -131,7 +131,11 @@ const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title,
                         </Text>
                     </Stack>
                     <Text size="lg" fw={600}>
-                        <NumberFormatter value={ticketData.price} />
+                        {ticketData.price <= 0 ? (
+                            <Text c="green" component="span" fw={600}>FREE</Text>
+                        ) : (
+                            <NumberFormatter value={ticketData.price} />
+                        )}
                     </Text>
                 </Flex>
                 <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>

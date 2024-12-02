@@ -338,12 +338,12 @@ const EventDetails = () => {
         var payload: { [key: string]: any } = {
             user_id: userId,
             event_id: detail?.id,
-            admin_fee: detail?.admin_fee,
+            admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
             identities: form,
             tickets: ticket,
             grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
-            bank_code: bank,
+            bank_code: bank ?? 'xendit',
             expiration_date: isoString,
             payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
         };

@@ -493,7 +493,6 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                         onChange={(e) => {
                                                             setPayment('3');
                                                             handlePaymentChange(e.target.value, 'bank');
-                                                            console.log(e.target.value);
                                                         }}
                                                     >
                                                         {el.has_payment_method.has_payment_link[0].has_payment_channel.map((item: any) => (
