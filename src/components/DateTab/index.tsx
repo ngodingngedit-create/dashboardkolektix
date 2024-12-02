@@ -22,9 +22,11 @@ interface Props {
   isLogin: boolean;
   selected: number;
   setSelected: (index: number) => void;
+  maxOrder?: number;
 }
 
 export default function DateTab({
+  maxOrder,
   counts,
   setCounts,
   data,
@@ -92,6 +94,7 @@ export default function DateTab({
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
               {tickets.map((item) => (
                 <OrderCounter
+                  maxOrder={maxOrder}
                   ticketData={item}
                   description={item.description}
                   key={item.id}

@@ -66,7 +66,7 @@ const Event = () => {
   return (
     <>
       <Chat />
-      <div className='text-dark max-w-6xl mx-auto min-h-screen py-10'>
+      <div className='text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24'>
         <div className='pl-4'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>

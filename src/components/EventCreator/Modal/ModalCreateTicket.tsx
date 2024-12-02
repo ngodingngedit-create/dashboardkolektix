@@ -15,6 +15,8 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
+import { TicketProps, TicketPropsInputRequest } from '@/utils/globalInterface';
+import fetch from '@/utils/fetch';
 
 interface ModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface ModalProps {
   data: EventTicket;
   idx?: number | null;
   setIdx: (idx: number | null) => void;
+  eventId?: number;
 }
 
 export default function ModalCreateTicket({
@@ -36,6 +39,7 @@ export default function ModalCreateTicket({
   data,
   idx,
   setIdx,
+  eventId,
 }: ModalProps) {
   const defaultForm = {
     ticket_type: data.ticket_type,
@@ -50,16 +54,27 @@ export default function ModalCreateTicket({
   };
   const [form, setForm] = useState<EventTicket>(defaultForm);
   const [step, setStep] = useState(0);
-  const submitTicket = () => {
-    let arr = [...ticket];
-    if (typeof idx === 'number') {
-      arr[idx] = form;
-    } else {
-      arr.push(form);
-    }
-    setTicket(arr);
-    setIsOpen(false);
-    setIdx(null);
+  const submitTicket = async () => {
+    await fetch<TicketPropsInputRequest, any>({
+      url: `event-ticket/${idx}`,
+      method: 'OUT',
+      data: {
+        ...form,
+        event_id: String(eventId)
+      } as TicketPropsInputRequest,
+      success: () => {
+        let arr = [...ticket];
+        if (typeof idx === 'number') {
+          arr[idx] = form;
+        } else {
+          arr.push(form);
+        }
+        setTicket(arr);
+        setIsOpen(false);
+        setIdx(null);
+      },
+      error: () => {},
+    });
   };
 
   useEffect(() => {

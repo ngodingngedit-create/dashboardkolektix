@@ -24,6 +24,8 @@ export interface TicketProps {
   event_schedule_date: string | null;
 }
 
+export type TicketPropsInputRequest = Pick<TicketProps, 'event_id' | 'name' | 'qty' | 'price' | 'description' | 'ticket_date' | 'ticket_end'>
+
 export interface VacancyProps {
   id: number;
   vacancy_category_id: number;

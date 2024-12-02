@@ -4,7 +4,7 @@ import config from '@/Config';
 import Image from 'next/image';
 import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { TicketProps, TransactionProps, EventProps } from '@/utils/globalInterface';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
@@ -157,6 +157,7 @@ const EventDetails = () => {
     const [localStorage, setLocalStorage] = useLocalStorage(key, initialValue, {
         initializeWithValue: false
     });
+
     const openDatabase = (): Promise<IDBDatabase> => {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('myDatabase', 1);
@@ -337,12 +338,12 @@ const EventDetails = () => {
         var payload: { [key: string]: any } = {
             user_id: userId,
             event_id: detail?.id,
-            admin_fee: detail?.admin_fee,
+            admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
             identities: form,
             tickets: ticket,
             grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
-            bank_code: bank,
+            bank_code: bank ?? 'xendit',
             expiration_date: isoString,
             payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
         };
@@ -596,6 +597,15 @@ const EventDetails = () => {
     const minutes = padToTwoDigits(targetDate.getMinutes());
 
     const formattedDate = `${dayName}, ${day} ${month} ${year} ${hours}:${minutes}`;
+    
+    const isGratis = useMemo(() => {
+        if (data) {
+            const total = data.reduce((q, n) => q + (n.price ?? 0), 0);
+            return total <= 0;
+        } else {
+            return false;
+        }
+    }, [data]);
 
     return !firstLoad && detail ? (
         detail && (
@@ -628,7 +638,7 @@ const EventDetails = () => {
                                             setMenu(2);
                                         }}
                                     >
-                                        Lihat Tiket
+                                        {isGratis ? 'Registrasi' : 'Lihat'} Tiket
                                     </button>
                                 </Link>
                             </div>
@@ -809,7 +819,7 @@ const EventDetails = () => {
                                           </div>
 
                                           <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)}/>
-                                          <Button onClick={() => setMenu(2)} label="Beli Tiket" color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
+                                          <Button onClick={() => setMenu(2)} label={ isGratis ? "Registrasi" : "Beli Tiket" } color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
                                         </Stack>
                                     </div>
                                 </div>
@@ -818,7 +828,7 @@ const EventDetails = () => {
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
                                 {menu === 2 && (
                                     <div id="ticket-view">
-                                        <TicketViewBlock selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
+                                        <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
                                     </div>
                                 )}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
@@ -876,7 +886,7 @@ const EventDetails = () => {
                                         Deskripsi
                                     </button>
                                     <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
-                                        Tiket
+                                        {isGratis ? "Registrasi" : "Tiket"}
                                     </button>
                                     <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
                                         Syarat & Ketentuan
@@ -885,7 +895,7 @@ const EventDetails = () => {
                             </div>
                             <div className="px-5 w-full text-dark">
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                                {menu === 2 && <TicketViewBlock selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
+                                {menu === 2 && <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                             </div>
                         </>
