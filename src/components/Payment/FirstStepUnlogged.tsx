@@ -228,7 +228,6 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
     const router = useRouter();
 
     const submitForm = () => {
-        setLoading(true);
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
@@ -244,10 +243,11 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         };
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
-        if (ticketPriceTotal == 0) {
-            return;
-        }
+        // if (ticketPriceTotal == 0) {
+        //     return;
+        // }
 
+        setLoading(true);
         Post('transaction-without-auth', payload)
             .then((res: any) => {
                 setTransactionData(res.data);
