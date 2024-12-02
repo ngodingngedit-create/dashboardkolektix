@@ -61,10 +61,10 @@ const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title,
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
-                            Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
+                            {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Badge color="gray" className={`shrink-0`}>
@@ -88,10 +88,10 @@ const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title,
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')}
+                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
-                            Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
+                            {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Flex align="center" gap={15}>

@@ -35,10 +35,11 @@ import AuthModal from '@/components/AuthModal';
 import React from 'react';
 import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
-import { Flex, Stack, Text, Image as ImageM, ActionIcon } from '@mantine/core';
+import { Flex, Stack, Text, Image as ImageM, ActionIcon, Box, Card, AspectRatio } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useClickOutside } from '@mantine/hooks';
+import { randomId, useClickOutside, useInterval, useTimeout } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
+import moment from 'moment';
 
 interface Form {
     nik: string;
@@ -120,6 +121,9 @@ const EventDetails = () => {
     const initialValue = { transactionStorage: 'value' };
     const [alert, setAlert] = useState('');
     const [openChat, setOpenChat] = useState(false);
+
+    const [timoutHash, setTimeoutHash] = useState('');
+    const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
 
     const clickOutsideChat = useClickOutside(() => {
         if (isLogin && openChat) {
@@ -318,6 +322,7 @@ const EventDetails = () => {
         setShowModalTransaction(!showModalTransaction);
     };
     useEffect(() => {
+        interval.start();
         const userData = Cookies.get('token');
         userData !== undefined ? setIsLogin(true) : setIsLogin(false);
     }, []);
@@ -607,6 +612,47 @@ const EventDetails = () => {
         }
     }, [data]);
 
+    const timeToEvent = useMemo((): [number, string][] => {
+        const date = `${detail?.start_date} ${detail?.start_time}`;
+        const targetDate = new Date(date);
+        const now = new Date();
+        const diffInSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
+
+        if (diffInSeconds < 0) {
+            return []; // Jika tanggal sudah lewat, kembalikan array kosong
+        }
+
+        const secondsInMinute = 60;
+        const secondsInHour = 3600;
+        const secondsInDay = 86400;
+
+        const days = Math.floor(diffInSeconds / secondsInDay);
+        const hours = Math.floor((diffInSeconds % secondsInDay) / secondsInHour);
+        const minutes = Math.floor((diffInSeconds % secondsInHour) / secondsInMinute);
+        const seconds = diffInSeconds % secondsInMinute;
+
+        const result: [number, string][] = [];
+        if (days > 0) result.push([days, "Hari"]);
+        if (hours > 0) result.push([hours, "Jam"]);
+        if (minutes > 0) result.push([minutes, "Menit"]);
+        if (seconds > 0) result.push([seconds, "Detik"]);
+        console.log(date, result);
+        return result;
+    }, [timoutHash, detail]);
+
+    function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
+        const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        const now = moment();
+
+        return now.isBetween(start, end, undefined, '[]');
+    }
+
+    function isDatePassed(dateString: string) {
+        const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
+        return date.isBefore(moment());
+    }
+
     return !firstLoad && detail ? (
         detail && (
             <div className="text-dark w-full">
@@ -752,7 +798,35 @@ const EventDetails = () => {
                                     </div>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
                                           <Stack w="100%">
-                                            {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
+                                            <Box pos="relative">
+                                                {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
+
+                                                {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
+                                                    <Card className={`!absolute z-20 top-5 right-5 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
+                                                        <Flex gap={10} align="center">
+                                                            <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
+                                                            <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
+                                                            <Text fw={600} c="white">Live Event</Text>
+                                                        </Flex>
+                                                    </Card>
+                                                )}
+
+                                                {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                                    <Flex align="center" gap={7} className={`!absolute bottom-5 right-5`}>
+                                                        {timeToEvent.map((e, i) => (
+                                                            <AspectRatio key={i}>
+                                                                <Card w={55} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
+                                                                    <Stack align="center" justify="center" h="100%" gap={0} c="white">
+                                                                        <Text fw={600} size="24px">{e[0]}</Text>
+                                                                        <Text size="xs">{e[1]}</Text>
+                                                                    </Stack>
+                                                                </Card>
+                                                            </AspectRatio>
+                                                        ))}
+                                                    </Flex>
+                                                )}
+                                            </Box>
+
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">
                                                     {detail.has_event_social_meida?.instagram && (
