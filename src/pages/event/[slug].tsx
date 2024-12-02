@@ -4,7 +4,7 @@ import config from '@/Config';
 import Image from 'next/image';
 import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { TicketProps, TransactionProps, EventProps } from '@/utils/globalInterface';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
