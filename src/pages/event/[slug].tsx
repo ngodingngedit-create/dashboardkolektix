@@ -596,6 +596,15 @@ const EventDetails = () => {
     const minutes = padToTwoDigits(targetDate.getMinutes());
 
     const formattedDate = `${dayName}, ${day} ${month} ${year} ${hours}:${minutes}`;
+    
+    const isGratis = useMemo(() => {
+        if (data) {
+            const total = data.reduce((q, n) => q + (n.price ?? 0), 0);
+            return total <= 0;
+        } else {
+            return false;
+        }
+    }, [data]);
 
     return !firstLoad && detail ? (
         detail && (
@@ -809,7 +818,7 @@ const EventDetails = () => {
                                           </div>
 
                                           <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)}/>
-                                          <Button onClick={() => setMenu(2)} label="Beli Tiket" color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
+                                          <Button onClick={() => setMenu(2)} label={ isGratis ? "Registrasi" : "Beli Tiket" } color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
                                         </Stack>
                                     </div>
                                 </div>
@@ -876,7 +885,7 @@ const EventDetails = () => {
                                         Deskripsi
                                     </button>
                                     <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
-                                        Tiket
+                                        {isGratis ? "Registrasi" : "Tiket"}
                                     </button>
                                     <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
                                         Syarat & Ketentuan
