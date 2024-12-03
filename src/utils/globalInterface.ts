@@ -512,4 +512,5 @@ interface IdentityProps {
   created_at: Date;
   updated_at: Date;
   deleted_at: Date | null;
+  is_pemesan?: 1 | 0;
 }

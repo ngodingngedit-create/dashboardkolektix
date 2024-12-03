@@ -1,207 +1,259 @@
-import React, { useEffect, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faClock } from '@fortawesome/free-regular-svg-icons';
-import elips from '../../assets/images/Ellipse 40.png';
-import Image from 'next/image';
-import { Get } from '@/utils/REST';
-import { TransactionProps } from '@/utils/globalInterface';
-import { Spinner } from '@nextui-org/react';
-import Countdown, { CountdownRendererFn } from 'react-countdown';
-import { useRouter } from 'next/router';
-import Button from '@/components/Button';
-import Config from '@/Config'; 
-import { Transition } from '@headlessui/react';
-import { TransactionStatusResponse } from '../dashboard/my-event/type';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { Alert, AspectRatio, Box, Button, Card, Container, Divider, Flex, Image, NumberFormatter, ScrollArea, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import _ from 'lodash';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import fetch from '@/utils/fetch';
+import { useListState } from '@mantine/hooks';
+import { useRouter } from 'next/router';
+import moment from 'moment';
+import { City, Province } from '../dashboard/profile/address';
+import { TransactionProps } from '@/utils/globalInterface';
+import { formatDate, formatYear } from '@/utils/useFormattedDate';
+import { TransactionStatusResponse } from '../dashboard/my-event/type';
+import config from '@/Config';
 
-const SuccessWithInvoice = () => {
-  const [isRendered, setIsRendered] = useState(false);
-  const [data, setData] = useState<TransactionProps>();
-  const [loading, setLoading] = useState(false);
-  const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
-  const router = useRouter();
-  const { invoice } = router.query;
 
-  useEffect(() => {
-    setIsRendered(true);
-  }, []);
 
-  // const renderer: CountdownRendererFn = ({ seconds, completed }) => {
-  //   if (completed) {
-  //     router.push('/dashboard/my-ticket');
-  //   } else {
-  //     return (
-  //       <span className='text-white w-full text-center'>{`Ke halaman dashboard dalam ${String(
-  //         seconds
-  //       )} detik`}</span>
-  //     );
-  //   }
-  // };
+export default function Invoice() {
+    const [isr, setIsr] = useState(false);
+    const [data, setData] = useState<TransactionProps>();
+    const [loading, setLoading] = useListState<string>();
+    const router = useRouter();
+    const { invoice } = router.query;
+    const [city, setCity] = useState<City>();
+    const [province, setProvince] = useState<Province>();
+    const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
 
-  const getData = async () => {
-    setLoading(true);
-    Get('transaction-finish', { external_id: invoice })
-      .then((res: any) => {
-        setData(res.data);
-        console.log('Success', res.data);
-        setLoading(false);
-      })
-      .catch((err: any) => {
-        console.log(err);
-        setLoading(false);
-      });
+    useEffect(() => {
+        setIsr(true);
+    }, []);
 
-    await fetch<any, any>({
-      url: 'transaction-statuses',
-      method: 'GET',
-      success: (_data) => {
-          const data = _data as TransactionStatusResponse[];
-          if ((data?.length ?? 0) > 0 && data) {
-            console.log(data)
-              setTransactionStatus(data);
-          }
-      },
-    });
-  };
+    useEffect(() => {
+        getData();
+    }, [isr, invoice]);
 
-  useEffect(() => {
-    if (isRendered && invoice) {
-      getData();
-    }
-  }, [isRendered, invoice]);
-
-  const formatTime = (date: string) => {
-    const dateString = new Date(date);
-    const hours = dateString.getUTCHours().toString().padStart(2, '0');
-    const minutes = dateString.getUTCMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getUTCDate();
-    const month = date.toLocaleString('default', { month: 'short' });
-    const year = date.getUTCFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  return !loading && data ? (
-    <div className='min-h-[80vh]'>
-      <Image src={elips} alt='elips' className='w-full absolute' />
-      <div className='flex flex-col py-5 px-3 min-h-[50vh] justify-center text-dark text-center max-w-[20rem] border border-primary-light-200 mx-auto mb-20 top-20 relative bg-white rounded-xl shadow-sm'>
-      {data.transaction_status_id !== 1 && data.transaction_status_id !== 3 && data.transaction_status_id !== 4 ? (
-          <FontAwesomeIcon icon={faCheckCircle} size='3x' className='text-[#06c258] mb-2' />
-        ) : (
-          <FontAwesomeIcon icon={faClock} size='3x' className='text-[#fe9d36] mb-2' />
-        )}
-       <h1 className='text-[20px] text-center'>
-          {data.transaction_status_id === 1
-            ? 'Transaksi Pending'
-            : data.transaction_status_id === 3
-            ? 'Transaksi Failed'
-            : data.transaction_status_id === 4
-            ? 'Transaksi Expired'
-            : 'Transaksi Berhasil'}
-        </h1>
-
-        <p className='mt-2 text-grey text-sm'>
-          {transactionStatus?.find(e => e.id == data.transaction_status_id)?.description}
-        </p>
-
-        <div className='border-b border-b-primary-light-200'>
-          {data.payment_method && data.payment_method?.payment_name.toLowerCase() !== 'xendit' && (
-            <div className='flex justify-between my-3'>
-              <p className='text-grey'>Metode Pembayaran</p>
-              <p className='text-dark'>{data.payment_method.payment_name}</p>
-            </div>
-          )}
-          <div className='flex justify-between my-3'>
-            <p className='text-grey'>Status</p>
-            <p className='text-dark'>{data.payment_status}</p>
-          </div>
-          <div className='flex justify-between my-3'>
-            <p className='text-grey'>Waktu</p>
-            <p className='text-dark'>{formatTime(data.updated_at)}</p>
-          </div>
-          <div className='flex justify-between my-3'>
-            <p className='text-grey'>Tanggal</p>
-            <p className='text-dark'>{formatDate(data.updated_at)}</p>
-          </div>
-        </div>
-        {/* {data.tickets.map((ticket, index) => (
-        <div className='border-b border-b-primary-light-200'>
-            <div className='flex justify-between my-3'>
-              <p className='text-grey' key={index}>{ticket.transaction_id}</p>
-            </div>
-        </div> 
-        ))} */}
-        <div className='border-b border-b-primary-light-200'>
-          <div className='flex justify-between my-3'>
-            <p className='text-grey'>{`Ticket (x${data.total_qty})`}</p>
-            <p className='text-dark'>Rp{data.total_price.toLocaleString('id-ID')}</p>
-          </div>
-          {data.admin_fee && (
-            <div className='flex justify-between my-3'>
-              <p className='text-grey'>Biaya Admin</p>
-              <p className='text-dark'>Rp{data.admin_fee.toLocaleString('id-ID')}</p>
-            </div>
-          )}
-        </div>
-        <div className='flex justify-between my-3 font-semibold'>
-          <p className='text-dark text-[15px]'>Total</p>
-          <p className='text-dark text-[15px]'>Rp{data.grandtotal.toLocaleString('id-ID')}</p>
-        </div>
-      </div>
-      <div className='max-w-xs mx-auto'>
-  {data.transaction_status_id === 1 ? (
-    <Button
-      label='Lanjutkan Pembayaran'
-      color='primary'
-      className='mb-10 mt-5'
-      fullWidth
-      onClick={() => {
-        if (data.xendit_url) {
-          router.push(data.xendit_url);
-        } else if (data.id) {
-          router.push(`/payment/${data.id}`);
-        } else {
-          console.error('URL pembayaran atau ID tidak ditemukan');
+    const getData = async () => {
+        if (invoice) {
+            await fetch<any, TransactionProps>({
+                url: `transaction-finish?external_id=${invoice}`,
+                method: 'GET',
+                data: {},
+                before: () => setLoading.append('getdata'),
+                success: ({ data }) => {
+                    if (data) {
+                        setData(data);
+                    }
+                },
+                complete: () => setLoading.filter(e => e != 'getdata'),
+                error: () => {},
+            });
+            await fetch<any, any>({
+                url: 'transaction-statuses',
+                method: 'GET',
+                success: (_data) => {
+                    const data = _data as TransactionStatusResponse[];
+                    if ((data?.length ?? 0) > 0 && data) {
+                        setTransactionStatus(data);
+                    }
+                },
+            });
         }
-      }}
-    />
-  ) : data.transaction_status_id === 3 || data.transaction_status_id === 4 ? (
-    <Button
-      label='Kembali ke Event'
-      color='secondary'
-      className='my-10'
-      fullWidth
-      onClick={() => router.push('/event')}
-    />
-  ) : (
-    <>
-      <a
-        href={`${Config.wsUrl}transaction-document/${invoice}`}
-        className='block bg-primary-dark text-white text-center px-4 py-2 font-semibold rounded-md mb-5'
-        target='_blank'
-        rel='noopener noreferrer'
-      >
-        Lihat Tiket
-      </a>
-      <Button
-        label='Kembali ke Home'
-        color='secondary'
-        className='mb-10'
-        fullWidth
-        onClick={() => router.push('/')}
-      />
-    </>
-  )}
-</div>
+    }
 
-    </div>
-  ) : (
-    <Spinner color='primary' size='lg' className='min-h-screen flex items-center justify-center' />
-  );
-};
+    const iconStatus: {[key: string]: string} = {
+        'FAILED': 'ooui:alert',
+        'EXPIRED': 'ooui:alert',
+        'Pending': 'icon-park-solid:time',
+        'PAID': 'uiw:circle-check',
+    }
 
-export default SuccessWithInvoice;
+    // const summaryPrice = useMemo(() => {
+    //     const admin = 2000;
+    //     const totalProductPrice = data?.detail.reduce((q, n) => q + (Boolean(n.product_varian_id) ? parseInt(n.variant.price) : parseInt(n.product.price)), 0);
+    //     const courier = parseInt(data?.courier.price ?? '0');
+    //     const ppn = (courier + admin + (totalProductPrice ?? 0)) * 0.11;
+
+    //     return { ppn, admin, courier }
+    // }, [data]);
+
+    const dataPemesan = useMemo(() => {
+      return undefined;
+      // return data?.identities.find(e => e.);
+    }, [data]);
+
+    const transStatus = useMemo(() => {
+        return transactionStatus ? transactionStatus.find(e => e.id == data?.transaction_status_id) : null;
+    }, [data, transactionStatus]);
+
+    return (
+        <div className={`bg-primary-light mt-[-10px] pt-[20px] pb-[30px] mb-[-20px]`}>
+            <Container px={0} className={`py-[44px] md:py-[100px]`}>
+                <Card p={0} radius={8} className={`!shadow-lg`}>
+                    <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
+                        <Stack gap={30}>
+                            <Flex justify="space-between" align="center" wrap="wrap" gap={20}>
+                                <Flex gap={15} align="center">
+                                    <Icon icon="iconamoon:invoice-light" className={`text-[48px]`} />
+                                    <Stack gap={0}>
+                                        <Title order={1} className={`uppercase !text-[20px] md:!text-[1.8rem]`}>
+                                            Invoice Pesanan
+                                        </Title>
+                                        <Text size="sm">{invoice}</Text>
+                                    </Stack>
+                                </Flex>
+
+                                <Stack gap={5} className={`items-start md:!items-end`}>
+                                    <Card px={15} py={5} radius={10} withBorder className={`!overflow-visible`}>
+                                        <Flex align="center" gap={10}>
+                                            <Text size="sm" c="gray.8">
+                                                Status Pembayaran :
+                                            </Text>
+                                            <Flex gap={5} align="center">
+                                                <Icon
+                                                    icon={iconStatus[transStatus?.name ?? 'Pending']}
+                                                    className={`
+                                                        text-[18px]
+                                                    `}
+                                                    style={{ 
+                                                        color: transStatus?.bgcolor
+                                                    }}
+                                                />
+                                                <Text size="md" fw={400}>
+                                                    {transStatus?.name}
+                                                </Text>
+                                            </Flex>
+                                        </Flex>
+                                    </Card>
+                                </Stack>
+                            </Flex>
+                        </Stack>
+                    </Card>
+
+                    <Stack py={25} gap={30} className={`px-[20px] md:!px-[30px]`}>
+
+                        <Flex gap={20} className={`[&>*]:flex-grow flex-col md:flex-row`}>
+                            <Stack className={`min-w-[250px]`}>
+                                <AspectRatio ratio={16/5}>
+                                    <Image src={data?.has_event.image_url} bg="gray" radius={10} />
+                                </AspectRatio>
+                            </Stack>
+
+                            <Card withBorder className={`!border-dashed shrink-0 md:max-w-[250px]`} radius={10}>
+                                <Stack gap={10}>
+                                    <Text fw={600} size="lg">{data?.has_event.name}</Text>
+
+                                    <Flex align="center" gap={10}>
+                                        <Icon icon="solar:calendar-bold" className={`shrink-0 text-primary-base text-[20px]`} />
+                                        <Text size="sm" c="gray">{data?.has_event && `${formatDate(data?.has_event.start_date)} ${data?.has_event.start_date !== data?.has_event.end_date ? '- ' + formatDate(data?.has_event.end_date) : ''} ${formatYear(data?.has_event.end_date)}`}</Text>
+                                    </Flex>
+
+                                    <Flex align="center" gap={10}>
+                                        <Icon icon="tabler:clock-filled" className={`shrink-0 text-primary-base text-[20px]`} />
+                                        <Text size="sm" c="gray">{data?.has_event?.start_time.toString()} - {data?.has_event?.end_time.toString()}</Text>
+                                    </Flex>
+
+                                    <Flex align="start" gap={10}>
+                                        <Icon icon="tdesign:location-filled" className={`shrink-0 text-primary-base text-[20px]`} />
+                                        <Text size="sm" c="gray">{data?.has_event.location_name}</Text>
+                                    </Flex>
+
+                                    <Alert radius={10} mt={10} className={`md:hidden`}>
+                                        {transStatus?.description}
+                                    </Alert>
+
+                                    {transStatus?.name == 'PAID' && (
+                                        <Button
+                                            component={Link}
+                                            href={`${config.wsUrl}transaction-document/${invoice}`}
+                                            target="_blank"
+                                            mt={5}
+                                            rightSection={<Icon icon="uiw:download" />}>
+                                            Unduh Tiket
+                                        </Button>
+                                    )}
+                                </Stack>
+                            </Card>
+                        </Flex>
+
+                        <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
+                            <Stack gap={10}>
+                                <Text fw={600} c="gray.8">
+                                    Informasi Pemesan
+                                </Text>
+                                <Card withBorder>
+                                    <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
+                                        <Stack gap={0}>
+                                            <Text size="xs" fw={300}>
+                                                Nama Pemesan
+                                            </Text>
+                                            <Text size="sm" fw={600}>
+                                                {data?.identities.find(e => e.is_pemesan == 1)?.full_name}
+                                            </Text>
+                                        </Stack>
+                                        <Stack gap={0}>
+                                            <Text size="xs" fw={300}>
+                                                Email Pemesan
+                                            </Text>
+                                            <Text size="sm">{data?.identities.find(e => e.is_pemesan == 1)?.email}</Text>
+                                        </Stack>
+                                        <Stack gap={0}>
+                                            <Text size="xs" fw={300}>
+                                                Tanggal Pesanan Dibuat
+                                            </Text>
+                                            <Text size="sm">{moment(data?.created_at).format('HH:mm, DD MMMM YYYY')}</Text>
+                                        </Stack>
+                                    </SimpleGrid>
+                                </Card>
+                            </Stack>
+
+                            {(data?.grandtotal ?? 0) > 0 && (
+                                <Stack gap={10} className={`md:max-w-[250px] shrink-0`}>
+                                    <Text fw={600} c="gray.8">
+                                        Total Pembayaran
+                                    </Text>
+                                    <Card bg="gray.1">
+                                        <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
+                                            <Text size="xl" fw={600}>
+                                                {(data?.grandtotal ?? 0) > 0 ? (
+                                                    <NumberFormatter value={data?.grandtotal ?? 999999} />
+                                                ) : (
+                                                    <Text fw={600} c="green">Free</Text>
+                                                )}
+                                            </Text>
+
+                                            {(data?.grandtotal ?? 0) > 0 && (
+                                                <>
+                                                    <Stack gap={0}>
+                                                        <Text size="xs" fw={300}>
+                                                            Metode Pembayaran
+                                                        </Text>
+                                                        <Text size="sm" className='capitalize'>{data?.payment_method.payment_name ?? 'PAYMENT_METHOD'}</Text>
+                                                    </Stack>
+                                                    <Link href={data?.xendit_url ?? '#'} target="_blank">
+                                                        <Text size="xs" className={`hover:underline !text-primary-base`}>
+                                                            Buka Halaman Pembayaran
+                                                        </Text>
+                                                    </Link>
+                                                </>
+                                            )}
+                                        </SimpleGrid>
+                                    </Card>
+                                </Stack>
+                            )}
+                        </Flex>
+
+                        <Stack>
+                            <Text fw={600} c="gray.8">
+                                Syarat dan Ketentuan
+                            </Text>
+                            <Box px={20}>
+                                <div dangerouslySetInnerHTML={{ __html: data?.has_event.term_condition ?? '' }}></div>
+                            </Box>
+                        </Stack>
+                    </Stack>
+                </Card>
+            </Container>
+        </div>
+    );
+}
