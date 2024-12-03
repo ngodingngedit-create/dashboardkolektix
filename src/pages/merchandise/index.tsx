@@ -39,7 +39,7 @@ const Merchandise = () => {
   const category = ['Merchandise', 'Merchandise 2', 'Merchandise 3', 'Merchandise 4'];
 
   return (
-    <div className='py-10 md:pt-24 max-w-5xl mx-auto text-dark mt-[20px] md:mt-0'>
+    <div className='py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0'>
       {/* <FilterMerchandise /> */}
 
       <div className='pl-7'>

@@ -28,11 +28,12 @@ const EventList = ({ data, loading }: ListProps) => {
         </div>
         {!loading ? (
           <div
-            className={`${styles.eventContainer} min-h-80 gap-6 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}
+            className={`${styles.eventContainer} min-h-80 gap-1 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}
           >
             {data.map((event: any) => (
               <div className={styles.eventCard} key={event.id}>
                 <EventCard
+                  maxWidth={300}
                   title={event.name}
                   img={event.image_url}
                   date={event.start_date}

@@ -430,7 +430,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
                                 <p className="ml-2 text-[18px]">Chat</p>
                                 {totalUnread > 0 && (
-                                    <Badge color="red" ml={10} pos="absolute" className={`top-[-10px] right-[-10px] indicatorTotalBadge`}>
+                                    <Badge color="red" ml={10} pos="absolute" className={`top-[-18px] right-[-30px] indicatorTotalBadge`}>
                                         {totalUnread}
                                     </Badge>
                                 )}

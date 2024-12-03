@@ -22,7 +22,7 @@ const Venue = () => {
   }, []);
   return (
     <div className='min-h-screen'>
-      <div className='pt-5 md:pt-24 lg:mt-0 md:mt-10 sm:mt-20 max-w-4xl mx-auto text-dark'>
+      <div className='pt-5 md:pt-12 lg:mt-0 md:mt-5 sm:mt-20 max-w-4xl mx-auto text-dark'>
         <div className='pl-7'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>

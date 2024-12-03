@@ -97,13 +97,13 @@ export default function ModalPaymentDataConfirmation({
                 <Button
                   label='Edit Data'
                   color='secondary'
-                  disabled={loading}
+                  loading={loading}
                   onClick={() => setIsOpen(false)}
                 />
                 <Button
                   color='primary'
                   label='Saya Mengerti'
-                  disabled={loading}
+                  loading={loading}
                   onClick={onConfirm}
                 />
               </ModalFooter>

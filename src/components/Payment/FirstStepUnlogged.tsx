@@ -19,8 +19,9 @@ import Images from '../Images';
 import { toast } from 'react-toastify';
 import { faCopy } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
-import { Stack } from '@mantine/core';
+import { NumberFormatter, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { Numans } from 'next/font/google';
 
 interface FormTicket {
     event_id: number;
@@ -348,11 +349,23 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                             ))}
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                                <p className="font-semibold">Rp{totalSubtotalPrice.toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {(totalSubtotalPrice) > 0 ? (
+                                        <NumberFormatter value={totalSubtotalPrice} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Biaya Admin</p>
-                                <p className="font-semibold">Rp{(detail.admin_fee * totalCount).toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {(detail?.admin_fee * totalCount) > 0 ? (
+                                        <NumberFormatter value={detail?.admin_fee * totalCount} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                             {detail.ppn ? (
                                 <div className="py-3 px-4 flex justify-between items-center">
@@ -362,7 +375,13 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                             ) : null}
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Total Pembayaran</p>
-                                <p className="font-semibold">Rp{(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))).toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) > 0 ? (
+                                        <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                         </div>
                         {form.map((item, index) => {
@@ -650,21 +669,39 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                     ))}
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                                        <p className="font-semibold">Rp{totalSubtotalPrice.toLocaleString('id-ID')}</p>
+                                        <p className="font-semibold">
+                                            {(totalSubtotalPrice) > 0 ? (
+                                                <NumberFormatter value={(totalSubtotalPrice)} />
+                                            ) : (
+                                                <Text>Free</Text>
+                                            )}
+                                        </p>
                                     </div>
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>Admin Fee</p>
-                                        <p className="font-semibold">Rp{((detail.admin_fee ?? 0) * totalCount).toLocaleString('id-ID')}</p>
+                                        <p className="font-semibold">
+                                            {(detail.admin_fee) > 0 ? (
+                                                <NumberFormatter value={(detail.admin_fee)} />
+                                            ) : (
+                                                <Text>Free</Text>
+                                            )}
+                                        </p>
                                     </div>
                                     {detail.ppn ? (
                                         <div className="py-3 px-4 flex justify-between items-center">
                                             <p>Tax</p>
-                                            <p className="font-semibold">Rp{detail.ppn.toLocaleString('id-ID')}</p>
+                                            <p className="font-semibold">Rp {detail.ppn.toLocaleString('id-ID')}</p>
                                         </div>
                                     ) : null}
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>Total Pembayaran</p>
-                                        <p className="font-semibold">Rp{(totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0)).toLocaleString('id-ID')}</p>
+                                        <p className="font-semibold">
+                                            {((totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
+                                                <NumberFormatter value={((totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0)))} />
+                                            ) : (
+                                                <Text>Free</Text>
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
                                 {detail && detail.has_event_payment_method.length > 1 ? (
@@ -782,17 +819,32 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                     <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                         <div className="flex justify-between">
                             <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
-                            <p className="text-xs mb-1">Rp{transactionData.total_price.toLocaleString('id-ID')}</p>
+                            <p className="text-xs mb-1">
+                                {transactionData.total_price ? (
+                                    <NumberFormatter value={transactionData.total_price} />
+                                ) : (
+                                    <Text>Free</Text>
+                                )}
+                            </p>
                         </div>
                         <div className="flex justify-between items-center">
                             <p className="text-xs text-grey mb-1">Pajak</p>
-                            <p className="text-xs mb-1">Rp{transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}</p>
+                            <p className="text-xs mb-1">
+                                {transactionData.ppn ? (
+                                    <NumberFormatter value={transactionData.ppn} />
+                                ) : (
+                                    <Text>Free</Text>
+                                )}
+                            </p>
                         </div>
                         <div className="flex justify-between items-center">
                             <p className="text-xs text-grey mb-1">Biaya Admin</p>
                             <p className="text-xs mb-1">
-                                Rp
-                                {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString('id-ID') : 0}
+                                {transactionData.admin_fee ? (
+                                    <NumberFormatter value={transactionData.admin_fee} />
+                                ) : (
+                                    <Text>Free</Text>
+                                )}
                             </p>
                         </div>
                         <div className="border-t-2 border-primary-light">

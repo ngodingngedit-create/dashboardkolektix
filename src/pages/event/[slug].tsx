@@ -802,7 +802,7 @@ const EventDetails = () => {
                                                 {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
 
                                                 {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
-                                                    <Card className={`!absolute z-20 top-5 right-5 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
+                                                    <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                                                         <Flex gap={10} align="center">
                                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
                                                             <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
@@ -812,13 +812,13 @@ const EventDetails = () => {
                                                 )}
 
                                                 {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                                    <Flex align="center" gap={7} className={`!absolute bottom-5 right-5`}>
+                                                    <Flex align="center" gap={5} className={`!absolute bottom-3 right-3`}>
                                                         {timeToEvent.map((e, i) => (
                                                             <AspectRatio key={i}>
-                                                                <Card w={50} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
-                                                                    <Stack align="center" justify="center" h="100%" gap={0} c="white">
-                                                                        <Text fw={600} size="20px">{e[0]}</Text>
-                                                                        <Text size="xs">{e[1]}</Text>
+                                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
+                                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                                        <Text fw={600} size="16px">{e[0]}</Text>
+                                                                        <Text size="9px">{e[1]}</Text>
                                                                     </Stack>
                                                                 </Card>
                                                             </AspectRatio>
@@ -927,10 +927,10 @@ const EventDetails = () => {
                                     <Flex align="center" gap={5} className={`!absolute bottom-7 right-7`}>
                                         {timeToEvent.map((e, i) => (
                                             <AspectRatio key={i}>
-                                                <Card w={50} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
-                                                    <Stack align="center" justify="center" h="100%" gap={0} c="white">
-                                                        <Text fw={600} size="18px">{e[0]}</Text>
-                                                        <Text size="12px">{e[1]}</Text>
+                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
+                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                        <Text fw={600} size="14px">{e[0]}</Text>
+                                                        <Text size="9px">{e[1]}</Text>
                                                     </Stack>
                                                 </Card>
                                             </AspectRatio>

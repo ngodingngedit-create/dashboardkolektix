@@ -62,11 +62,11 @@ const Event = () => {
             <BreadcrumbItem>List Talent</BreadcrumbItem>
           </Breadcrumbs>
         </div> */}
-        <FilterTalent
+        {/* <FilterTalent
           setNameFilter={setNameFilter}
           setCategoryFilter={setCategoryFilter}
           categories={Array.from(new Set(data.map((item) => item?.has_category?.name)))}
-        />
+        /> */}
         {filteredData.length > 0 ? (
           <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 !mt-10 content-center justify-items-center gap-y-10 '>
             {filteredData.map((item) => (

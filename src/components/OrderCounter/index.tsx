@@ -124,11 +124,13 @@ const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title,
                         <Text size="lg" className={`uppercase`}>
                             {ticketData.name}
                         </Text>
-                        <Text size="sm" c="gray">
-                            {ticketData.description.split('\n').map((e, i) => (
-                                <Text key={i}>{e}</Text>
-                            ))}
-                        </Text>
+                        {ticketData.description && (
+                            <Text size="sm" c="gray">
+                                {ticketData.description?.split('\n').map((e, i) => (
+                                    <Text key={i}>{e}</Text>
+                                ))}
+                            </Text>
+                        )}
                     </Stack>
                     <Text size="lg" fw={600}>
                         {ticketData.price <= 0 ? (
