@@ -119,8 +119,12 @@ const Chat = () => {
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
-        setChat((res as InboxListProps[]).filter(e => e.to.id == users?.id));
-        console.log(res);
+        const chatlist = (res as InboxListProps[])
+        .filter(e => (Boolean(e.from) && (Boolean(e.to))))
+        .filter(e => e.to.id == users?.id)
+
+        setChat(chatlist)
+        console.log(chatlist, res, users?.id);
       })
       .catch((err: any) => {
         console.log(err);
@@ -186,18 +190,18 @@ const Chat = () => {
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id).length == 0 && (
+            .filter((item: InboxListProps) => item.to.id == user?.id).length == 0 && (
               <Text p={10} size="sm" c="gray">Tidak Ada Chat Yang Tersedia</Text>
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id)
+            .filter((item: InboxListProps) => item.to.id == user?.id)
             .map((item: InboxListProps) => (
               <ChatList
                 name={item.from.name}
                 lastMsg={item.chats[0].message}
                 time={formatDate(item.chats[0].created_at)}
-                countMsg={item.chats.filter(e => e.status == "unread").length}
+                countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
                 key={item.from.id}
                 setSelected={setSelected}
                 selected={selected}
@@ -254,12 +258,12 @@ const Chat = () => {
                       {/* Pesan Masuk */}
                       <div
                         className={`flex flex-col gap-2 px-16 ${
-                          chat.fromId !== user.id ? 'items-end' : ''
+                          chat.user_id == user.id ? 'items-end' : ''
                         }`}
                       >
                         <div
                           className={`${
-                            chat.fromId !== user.id
+                            chat.user_id == user.id
                               ? 'bg-white text-dark'
                               : 'bg-primary-base text-white'
                           } rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}
@@ -267,7 +271,7 @@ const Chat = () => {
                           <p className='flex-grow'>{chat.message}</p>
                           <span
                             className={`text-[11px] ml-2 ${
-                              chat.fromId !== user.id ? 'text-grey' : 'text-primary-light-200'
+                              chat.user_id == user.id ? 'text-grey' : 'text-primary-light-200'
                             }`}
                           >
                             {new Date(chat.createdAt).toLocaleTimeString('en-US', {
@@ -276,7 +280,7 @@ const Chat = () => {
                               hour12: false,
                             })}
                           </span>
-                          {chat.fromId !== user.id && (
+                          {chat.user_id == user.id && (
                             <Icon
                               icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
                               className={`text-grey text-[18px] ml-[3px]`}

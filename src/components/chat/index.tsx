@@ -147,13 +147,14 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
 
     useEffect(() => {
         if (creatorIdOpen) {
-            const creatorExist = chat.find(e => e.from?.has_creator?.id == creatorIdOpen);
+            const creatorExist = chat.find(e => e.to?.has_creator?.id == creatorIdOpen);
+            console.log('list', creatorExist, creatorIdOpen)
             if (creatorExist) {
-                setSelected(creatorExist?.from.id);
-                setName(creatorExist?.from.has_creator?.name ?? '-');
+                setSelected(creatorExist?.to.id);
+                setName(creatorExist?.to.has_creator?.name ?? '-');
                 setMessages({
                     from: users?.id ?? 0,
-                    to: creatorExist.from.id,
+                    to: creatorExist.to.id,
                     message: '',
                     inbox_id: creatorExist.id
                 })
@@ -184,7 +185,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                             {
                                 lastMsg: '',
                                 id: 0,
-                                from: {
+                                to: {
                                     ...data.has_user,
                                     email: data.has_user.email,
                                     role_id: data.has_user.role_id,
@@ -196,7 +197,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                         ...data
                                     }
                                 },
-                                to: {
+                                from: {
                                     id: users?.id ?? 0,
                                     name: users?.name ?? '',
                                     role_id: users?.role_id ?? 0,
@@ -283,8 +284,11 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const getData = () => {
         Get('inbox', {})
             .then((res: any) => {
-                setChat(res.filter((e: any) => (Boolean(e.from) && (Boolean(e.to)))));
-                console.log(res, 'chat');
+                const chatlist = (res as InboxListProps[])
+                .filter(e => (Boolean(e.from) && (Boolean(e.to))))
+                .filter(e => e.from.id == users?.id)
+
+                setChat(chatlist);
                 setChatFetched(true);
             })
             .catch((err: any) => {
@@ -329,7 +333,6 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
         form?.preventDefault();
         if (newMessage.trim()) {
             Post(messages.inbox_id == 0 ? 'inbox' : 'inbox-chat',
-                messages.inbox_id == 0 ? {...messages, from: messages.to, to: messages.from, message: newMessage } :
                 { ...messages, message: newMessage }
             )
                 .then((res: any) => {
@@ -389,9 +392,11 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     };
 
     useEffect(() => {
-        getData();
+        if (users) {
+            getData();
+        }
         getChatSupportData();
-    }, []);
+    }, [users]);
 
     const totalUnread = useMemo(() => {
         return chat.reduce((q, n) => q + n.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length, 0);
@@ -465,21 +470,21 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                     {/* Kontak Lain */}
                                     {chat.length > 0 ? (
                                         (searchQuery ? searchedChats : chat)
-                                            .filter((item: InboxListProps) => item.from.id !== user?.id)
+                                            .filter((item: InboxListProps) => item.from.id == user?.id)
                                             .sort((a, b) => (!a.chats[0] || !b.chats[0]) ? -1 : new Date(b.chats[b.chats.length - 1].created_at).getTime() - new Date(a.chats[a.chats.length - 1].created_at).getTime())
                                             .map((item: InboxListProps) => <ChatList
                                                 countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
-                                                name={item.from.has_creator?.name ?? '-'}
+                                                name={item.to.has_creator?.name ?? '-'}
                                                 lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
                                                 time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
-                                                key={item.from.id} setSelected={setSelected}
+                                                key={item.to.id} setSelected={setSelected}
                                                 selected={selected}
-                                                id={item.from.id}
+                                                id={item.to.id}
                                                 setName={setName}
                                                 setMessages={setMessages}
                                                 messages={messages}
                                                 inbox={item.id}
-                                                image={item.from.has_creator?.image_url}
+                                                image={item.to.has_creator?.image_url}
                                             />)
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
@@ -584,17 +589,17 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                                     </div>
                                                                 )}
                                                                 {/* Balikkan penempatan dan warna chat pengguna */}
-                                                                <div className={`flex flex-col gap-2 ${chat.fromId !== user.id ? 'items-end' : ''} px-4 lg:px-16`}>
-                                                                    <div className={`${chat.fromId !== user.id ? 'bg-white text-dark' : ' bg-primary-base text-white'} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}>
+                                                                <div className={`flex flex-col gap-2 ${chat.user_id == user.id ? 'items-end' : ''} px-4 lg:px-16`}>
+                                                                    <div className={`${chat.user_id == user.id ? 'bg-white text-dark' : ' bg-primary-base text-white'} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}>
                                                                         <p className="flex-grow">{chat.message}</p>
-                                                                        <span className={`text-[11px] ml-2 ${chat.fromId !== user.id ? 'text-grey' : ' text-primary-light-200'}`}>
+                                                                        <span className={`text-[11px] ml-2 ${chat.user_id == user.id ? 'text-grey' : ' text-primary-light-200'}`}>
                                                                             {new Date(chat.createdAt).toLocaleTimeString('en-US', {
                                                                                 hour: '2-digit',
                                                                                 minute: '2-digit',
                                                                                 hour12: false
                                                                             })}
                                                                         </span>
-                                                                        {chat.fromId !== user.id && (
+                                                                        {chat.user_id == user.id && (
                                                                           <Icon
                                                                             icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
                                                                             className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px]`}

@@ -63,7 +63,7 @@ const ChatList = ({
         setSelected(id);
         name && setName(name);
         readMsg(inbox);
-        setMessages({ ...messages, to: id, inbox_id: inbox });
+        setMessages({ ...messages, from: id, inbox_id: inbox });
       }}
       className={`flex justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${
         selected === id && 'bg-primary-light-200'
@@ -98,8 +98,8 @@ const Chat = () => {
   const users = useLoggedUser();
   const [messages, setMessages] = useState<ChatProps>({
     inbox_id: 0,
-    from: 0,
-    to: selected,
+    from: selected,
+    to: 0,
     message: '',
   });
 
@@ -110,7 +110,7 @@ const Chat = () => {
         getData();
         setMessages({
           ...messages,
-          from: users.id,
+          to: users.id,
         });
       }
     }
@@ -119,8 +119,11 @@ const Chat = () => {
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
-        setChat((res as InboxListProps[]).filter(e => e.from.id == users?.id));
-        console.log(res);
+        const chatlist = (res as InboxListProps[])
+        .filter(e => (Boolean(e.from) && (Boolean(e.to))))
+        .filter(e => e.from.id == users?.id)
+
+        setChat(chatlist)
       })
       .catch((err: any) => {
         console.log(err);
@@ -148,7 +151,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (Boolean(searchQuery)) {
-      setSearchedChats(chat.filter(e => e.from.name?.toLowerCase().includes(searchQuery.toLowerCase())));
+      setSearchedChats(chat.filter(e => e.to.name?.toLowerCase().includes(searchQuery.toLowerCase())));
     } else {
       setSearchedChats([]);
     }
@@ -186,22 +189,22 @@ const Chat = () => {
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id).length == 0 && (
+            .filter((item: InboxListProps) => item.to.id !== user?.id).length == 0 && (
               <Text p={10} size="sm" c="gray">Tidak Ada Chat Yang Tersedia</Text>
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id)
+            .filter((item: InboxListProps) => item.to.id !== user?.id)
             .map((item: InboxListProps) => (
               <ChatList
-                name={item.from.name}
+                name={item.to.has_creator?.name ?? item.to.name}
                 lastMsg={item.chats[0].message}
                 time={formatDate(item.chats[0].created_at)}
                 countMsg={item.chats.filter(e => e.status == "unread").length}
-                key={item.from.id}
+                key={item.to.id}
                 setSelected={setSelected}
                 selected={selected}
-                id={item.from.id}
+                id={item.to.id}
                 setName={setName}
                 setMessages={setMessages}
                 messages={messages}
@@ -254,12 +257,12 @@ const Chat = () => {
                       {/* Pesan Masuk */}
                       <div
                         className={`flex flex-col gap-2 px-16 ${
-                          chat.fromId !== user.id ? 'items-end' : ''
+                          chat.user_id == user.id ? 'items-end' : ''
                         }`}
                       >
                         <div
                           className={`${
-                            chat.fromId !== user.id
+                            chat.user_id == user.id
                               ? 'bg-white text-dark'
                               : 'bg-primary-base text-white'
                           } rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}
@@ -267,7 +270,7 @@ const Chat = () => {
                           <p className='flex-grow'>{chat.message}</p>
                           <span
                             className={`text-[11px] ml-2 ${
-                              chat.fromId !== user.id ? 'text-grey' : 'text-primary-light-200'
+                              chat.user_id == user.id ? 'text-grey' : 'text-primary-light-200'
                             }`}
                           >
                             {new Date(chat.createdAt).toLocaleTimeString('en-US', {
@@ -276,7 +279,7 @@ const Chat = () => {
                               hour12: false,
                             })}
                           </span>
-                          {chat.fromId !== user.id && (
+                          {chat.user_id == user.id && (
                             <Icon
                               icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
                               className={`text-grey text-[18px] ml-[3px]`}
