@@ -11,7 +11,7 @@ import paperplane from '../../../assets/icon/paperplane.png';
 import { InboxListProps } from '@/utils/globalInterface';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
-import { Box, Card, Text, TextInput } from '@mantine/core';
+import { Box, Card, Text, TextInput, Image as ImageM } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface ChatProps {
@@ -33,9 +33,11 @@ interface ChatListProps {
   setMessages: (messages: ChatProps) => void;
   inbox: number;
   messages: ChatProps;
+  image?: string;
 }
 
 const ChatList = ({
+  image,
   id,
   name,
   lastMsg,
@@ -70,7 +72,7 @@ const ChatList = ({
       }`}
     >
       <div className='flex gap-3 items-center'>
-        <div className='w-10 h-10 rounded-full bg-primary-base'></div>
+        <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
         <div>
           <p className='font-semibold'>{name}</p>
           <p className='text-xs'>{lastMsg}</p>
@@ -209,13 +211,14 @@ const Chat = () => {
                 setMessages={setMessages}
                 messages={messages}
                 inbox={item.id}
+                image={item.to.has_creator?.image_url}
               />
             ))}
         </div>
         <div className='w-full flex flex-col divide-y divide-primary-light-200 border-l border-l-primary-light-200'>
           {messagerName !== '' && (
             <div className='flex items-center py-4 px-3 h-16 gap-3'>
-              <div className='w-10 h-10 rounded-full bg-primary-base'></div>
+              <ImageM src={chat.find(e => e.to.id == selected)?.to.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
               <div>
                 <p className='font-semibold'>{messagerName}</p>
               </div>
