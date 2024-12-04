@@ -520,31 +520,16 @@ const EventDetails = () => {
             });
     };
 
-    const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
-        return (
-            <div className="flex flex-col items-center justify-center  font-semibold">
-                <h3 className="text-[15px] my-5">Waktu untuk Pembayaran Tersisa</h3>
-                <div className="bg-primary-light border-2 border-primary-light-200 text-[40px] px-6 py-2 rounded-xl">
-                    <div className="flex">
-                        <div className="pr-4">
-                            {String(hours).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Jam</p>
-                        </div>
-                        <div className="border-2 border-x-primary-light-200 border-y-primary-light px-4">
-                            {String(minutes).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Menit</p>
-                        </div>
-                        <div className="pl-4">
-                            {String(seconds).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Detik</p>
-                        </div>
-                    </div>
-                </div>
-                <p className="text-sm text-center font-light my-5 px-4">
-                    Batas pembayaran sampai dengan <span className="font-semibold">{formattedDate}</span> Harap selesaikan pembayaran sebelum waktu tersebut untuk menghindari pembatalan otomatis.
-                </p>
-            </div>
-        );
+    const renderer: CountdownRendererFn = ({ minutes, seconds, completed }) => {
+        if (completed) {
+            router.back();
+        } else {
+            return (
+            <p className='font-semibold'>
+                {String(minutes).padStart(2, '0')} : {String(seconds).padStart(2, '0')}
+            </p>
+            );
+        }
     };
 
     const params = useSearchParams();
@@ -653,6 +638,13 @@ const EventDetails = () => {
         return date.isBefore(moment());
     }
 
+    const countdownTime = useMemo(() => {
+        const targetDate = new Date();
+        targetDate.setMinutes(targetDate.getMinutes() + 15);
+
+        return targetDate;
+    }, []);
+
     return !firstLoad && detail ? (
         detail && (
             <div className="text-dark w-full">
@@ -722,7 +714,52 @@ const EventDetails = () => {
 
                                 <Progress size="sm" color="success" aria-label="Loading..." value={step} />
                             </div>
-                            <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                            <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                                <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
+                                    <Countdown date={countdownTime} renderer={renderer} />
+                                    <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
+                                    <p className='text-xs'>Segera selesaikan pesananmu</p>
+                                </div>
+                                <Flex align="center" gap={10}>
+                                    <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
+                                    {step === 66 ? (
+                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
+                                    ) : step === 100 && transactionData ? (
+                                        <Button
+                                            color="primary"
+                                            label="Bayar Sekarang"
+                                            disabled={loading || payment === ''}
+                                            onClick={
+                                                payment === '4' && transactionData.xendit_url
+                                                    ? () => {
+                                                        setLoading(true);
+                                                        router.push(transactionData.xendit_url);
+                                                    }
+                                                    : payment === '3'
+                                                    ? () => {
+                                                        setStep(3);
+                                                        scrollToTop();
+                                                    }
+                                                    : () => {
+                                                        setStep(2);
+                                                        scrollToTop();
+                                                    }
+                                            }
+                                        />
+                                    ) : (
+                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                    )}
+                                </Flex>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                            <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
+                                <Countdown date={countdownTime} renderer={renderer} />
+                                <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
+                                <p className='text-xs'>Segera selesaikan pesananmu</p>
+                            </div>
+                            <Flex align="center" gap={10}>
                                 <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                                 {step === 66 ? (
                                     <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
@@ -734,55 +771,24 @@ const EventDetails = () => {
                                         onClick={
                                             payment === '4' && transactionData.xendit_url
                                                 ? () => {
-                                                      setLoading(true);
-                                                      router.push(transactionData.xendit_url);
-                                                  }
+                                                    setLoading(true);
+                                                    router.push(transactionData.xendit_url);
+                                                }
                                                 : payment === '3'
                                                 ? () => {
-                                                      setStep(3);
-                                                      scrollToTop();
-                                                  }
+                                                    setStep(3);
+                                                    scrollToTop();
+                                                }
                                                 : () => {
-                                                      setStep(2);
-                                                      scrollToTop();
-                                                  }
+                                                    setStep(2);
+                                                    scrollToTop();
+                                                }
                                         }
                                     />
                                 ) : (
-                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                    <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
                                 )}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
-                            <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
-                            {step === 66 ? (
-                                <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
-                            ) : step === 100 && transactionData ? (
-                                <Button
-                                    color="primary"
-                                    label="Bayar Sekarang"
-                                    disabled={loading || payment === ''}
-                                    onClick={
-                                        payment === '4' && transactionData.xendit_url
-                                            ? () => {
-                                                  setLoading(true);
-                                                  router.push(transactionData.xendit_url);
-                                              }
-                                            : payment === '3'
-                                            ? () => {
-                                                  setStep(3);
-                                                  scrollToTop();
-                                              }
-                                            : () => {
-                                                  setStep(2);
-                                                  scrollToTop();
-                                              }
-                                    }
-                                />
-                            ) : (
-                                <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
-                            )}
+                            </Flex>
                         </div>
                     ))}
 
