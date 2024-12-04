@@ -5,6 +5,7 @@ import Button from '@/components/Button';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import Footer from '@/components/FooterComponent';
 import React from 'react';
+import { useRouter } from 'next/router';
 
 // Interface definitions
 interface FormTicket {
@@ -88,10 +89,12 @@ const TransactionWithoutAuth = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [formValid, setFormValid] = useState(false);
   const [step, setStep] = useState<number>(0);
+  const router = useRouter();
 
   const renderer: CountdownRendererFn = ({ minutes, seconds, completed }) => {
     if (completed) {
-      return <p>Time Out</p>;
+      router.back();
+      // return <p>Time Out</p>;
     } else {
       return (
         <p className='font-semibold'>
