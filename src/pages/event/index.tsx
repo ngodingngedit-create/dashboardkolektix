@@ -105,6 +105,10 @@ const Event = () => {
                     creatorImg={event.has_creator?.image}
                     creator={event.has_creator?.name}
                     creatorSlug={event.has_creator?.slug}
+                    start_date={event.start_date}
+                    start_time={event.start_time}
+                    end_date={event.end_date}
+                    end_time={event.end_time}
                   />
                 ))
               ) : (

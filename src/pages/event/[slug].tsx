@@ -811,8 +811,8 @@ const EventDetails = () => {
                                                     <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                                                         <Flex gap={10} align="center">
                                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
-                                                            <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
-                                                            <Text fw={600} c="white" size="sm">Live Event</Text>
+                                                            <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
+                                                            <Text fw={600} c="white" size="xs">Live Event</Text>
                                                         </Flex>
                                                     </Card>
                                                 )}
@@ -926,8 +926,8 @@ const EventDetails = () => {
                                     <Card className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                                         <Flex gap={10} align="center">
                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
-                                            <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
-                                            <Text fw={600} c="white">Live Event</Text>
+                                            <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
+                                            <Text fw={600} c="white" size="xs">Live Event</Text>
                                         </Flex>
                                     </Card>
                                 )}
