@@ -749,7 +749,7 @@ const EventDetails = () => {
                                         }
                                     />
                                 ) : (
-                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
                                 )}
                             </div>
                         </>
