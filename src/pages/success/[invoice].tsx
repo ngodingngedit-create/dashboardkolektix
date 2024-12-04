@@ -12,6 +12,7 @@ import { TransactionProps } from '@/utils/globalInterface';
 import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { TransactionStatusResponse } from '../dashboard/my-event/type';
 import config from '@/Config';
+import { modals } from '@mantine/modals';
 
 
 
@@ -46,7 +47,19 @@ export default function Invoice() {
                     }
                 },
                 complete: () => setLoading.filter(e => e != 'getdata'),
-                error: () => {},
+                error: () => {
+                    modals.open({
+                        centered: true,
+                        closeOnClickOutside: false,
+                        withCloseButton: false,
+                        children: <Stack gap={10}> 
+                            <Text ta="center">Data tidak ditemukan</Text>
+                            <Button onClick={() => {modals.closeAll(); router.push('/')}}>
+                                Ke Halaman Utama
+                            </Button>
+                        </Stack>
+                    })
+                },
             });
             await fetch<any, any>({
                 url: 'transaction-statuses',
