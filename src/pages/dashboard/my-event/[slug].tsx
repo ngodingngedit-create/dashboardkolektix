@@ -546,7 +546,7 @@ const eventItems = useMemo(() => {
               key={data.id}
               eventStatus={data.has_event_status.name}
               title={data.name}
-              img={data.image}
+              img={data.image_url}
               end={data.end_date}
               date={data.start_date}
               slug={data.slug}
