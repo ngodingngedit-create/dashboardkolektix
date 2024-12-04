@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TalentCard from '@/components/Card/TalentCard';
 import JobsCard from '@/components/Card/JobsCard';
 import { formatDateDiff } from '@/utils/useFormattedDate';
-import empty from '@/assets/icon/vacancy.png';
+import empty from '../../assets/icon/vacancy.png';
 import { VacancyProps } from '@/utils/globalInterface';
 import { Get } from '@/utils/REST';
 import JobList from '@/components/Card/JobsCard/JobList';
@@ -55,18 +55,18 @@ const Lowongan = () => {
   }, []);
 
   return (
-    <div className='max-w-6xl mx-auto text-dark min-h-screen'>
-      <Stack gap={30}>
-        <FilterLowongan setNameFilter={handleNameFilterChange} />
+    <div className='max-w-6xl mx-auto text-dark min-h-screen md:pt-[20px]'>
+      <Stack gap={30} mt={20}>
+        {/* <FilterLowongan setNameFilter={handleNameFilterChange} /> */}
 
         {!loading && filteredData.length == 0 && (
           <div className='min-h-[80vh] flex flex-col gap-3 items-center justify-center'>
-          <Image src={empty} alt='Vacancy' />
+          <Image src={empty.src} w={24} alt='Vacancy' />
           <h3 className='text-grey'>Belum ada lowongan</h3>
           </div>
         )}
 
-        <Card px={20} className={`-mt-5 md:!mt-0`}>
+        <Card bg="none" px={20} className={` md:!mt-0`}>
           <SimpleGrid className={`grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3`}>
             {loading && (
               <>

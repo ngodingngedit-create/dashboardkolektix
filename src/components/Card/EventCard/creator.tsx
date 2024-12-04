@@ -1,5 +1,4 @@
 import Foto from '@images/Foto=2.png';
-import Image from 'next/image';
 import { useState } from 'react';
 import styles from './index.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,7 +9,7 @@ import { faLocationDot, faBookmark as bookmarkSolid } from '@fortawesome/free-so
 import Images from '@/components/Images';
 import Link from 'next/link';
 import Button from '@/components/Button';
-import { ActionIcon, Card, CopyButton, Flex, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Card, CopyButton, Flex, TextInput, Tooltip, Image, AspectRatio } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface EventCardProps {
@@ -54,21 +53,20 @@ const EventCardCreator = ({
     return month;
   };
   return (
-    <div className='relative max-w-full min-w-full lg:min-w-60 lg:max-w-60 bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200'>
+    <div className='relative max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200'>
       <Link href={`/dashboard/my-event/${slug}`}>
         <div className='absolute right-0 top-0 p-3'>
           <div className='bg-light-grey text-dark py-1 px-3 rounded-full shadow-sm'>
             <p className='text-xs'>{eventStatus}</p>
           </div>
         </div>
-        <Images
-          className={`w-full h-[150px] object-cover rounded-t-xl`}
-          path={img}
-          type='event'
-          alt='Banner'
-          width={500}
-          height={500}
-        />
+        <AspectRatio ratio={1062/365}>
+          <Image
+            className={`!rounded-t-xl`}
+            src={img}
+            alt='Banner'
+          />
+        </AspectRatio>
       </Link>
       <div className='p-3'>
         <Link href={`/event/${slug}`}>

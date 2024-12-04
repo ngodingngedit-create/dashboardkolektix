@@ -83,7 +83,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   return (
     <div className='bg-hero'>
       {width && width > 768 ? (
-        <div className='py-20' id='hero'>
+        <div className='pt-20 ' id='hero'>
           <Slider {...settings}>
             {sliderData.map((el) => (
               <div key={el.id} className='mx-40'>

@@ -10,6 +10,7 @@ import Foto from '../../assets/images/amis-banner.png';
 import { Skeleton, Card } from '@nextui-org/react';
 import { TransactionProps } from '@/utils/globalInterface';
 import { formatYear } from '@/utils/useFormattedDate';
+import { AspectRatio, Image } from '@mantine/core';
 
 interface TicketCardProps {
   data: TransactionProps;
@@ -126,16 +127,12 @@ const TicketCard = ({ data }: TicketCardProps) => {
             </div>
           </div>
           {data.has_event && (
-            <div>
-              <Images
-                type='event'
-                path={data.has_event.image}
-                alt='image'
-                className='h-full w-52 object-cover rounded-md'
-                width={200}
-                height={200}
+            <AspectRatio ratio={1062/365} w="clamp(100px, 30%, 400px)">
+              <Image
+                radius={10}
+                src={data.has_event.image_url}
               />
-            </div>
+            </AspectRatio>
           )}
         </div>
       </div>

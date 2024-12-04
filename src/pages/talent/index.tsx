@@ -6,6 +6,7 @@ import { Get } from '@/utils/REST';
 import empty from '@/assets/icon/vacancy.png';
 import Image from 'next/image';
 import FilterTalent from '@/components/FilterTalent';
+import { Text } from '@mantine/core';
 
 const Event = () => {
   const [data, setData] = useState<TalentProps[]>([]);
@@ -55,27 +56,28 @@ const Event = () => {
 
   return (
     <>
-      <div className='py-10 max-w-4xl mx-auto text-dark'>
+      <div className='md:!py-10 pb-5 max-w-5xl mx-auto text-dark !mt-0 px-[20px]'>
         {/* <div className='pl-2'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>
             <BreadcrumbItem>List Talent</BreadcrumbItem>
           </Breadcrumbs>
         </div> */}
-        <FilterTalent
+        {/* <FilterTalent
           setNameFilter={setNameFilter}
           setCategoryFilter={setCategoryFilter}
           categories={Array.from(new Set(data.map((item) => item?.has_category?.name)))}
-        />
+        /> */}
+        <Text mb={10} fw={600}>Semua Talenta</Text>
         {filteredData.length > 0 ? (
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 !mt-10 content-center justify-items-center gap-y-10 '>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center '>
             {filteredData.map((item) => (
               <TalentCard
                 key={item.id}
                 id={item.id}
                 name={item.name}
-                image={item.image} 
-                skills={item?.has_category?.name ?? '-'}
+                image={item.image_url} 
+                skills={item?.has_category?.name ?? undefined}
               />
             ))}
           </div>

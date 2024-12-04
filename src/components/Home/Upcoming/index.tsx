@@ -20,7 +20,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
   const upcomingEvents = data.filter(event => new Date(event.end_date) > currentDate);
 
   return (
-    <div className='my-12 md:mx-auto md:max-w-7xl md:px-10'>
+    <div className='mb-12 md:mx-auto md:max-w-7xl md:px-10'>
     {!loading && upcomingEvents.length === 0 ? null : (
       <>
         <div className='flex justify-between items-center mb-4 px-6 [&_*]:!text-white'>
@@ -38,6 +38,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
               upcomingEvents.map((event: EventProps) => (
                 <div className={styles.eventCard} key={event.id}>
                   <EventCard
+                    maxWidth={300}
                     title={event.name}
                     img={event.image_url ?? ''}
                     date={new Date(event.start_date)}

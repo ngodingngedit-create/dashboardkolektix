@@ -11,7 +11,7 @@ import paperplane from '../../../assets/icon/paperplane.png';
 import { InboxListProps } from '@/utils/globalInterface';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
-import { Box, Card, Text, TextInput } from '@mantine/core';
+import { Box, Card, Text, TextInput, Image as ImageM } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface ChatProps {
@@ -33,6 +33,7 @@ interface ChatListProps {
   setMessages: (messages: ChatProps) => void;
   inbox: number;
   messages: ChatProps;
+  image?: string;
 }
 
 const ChatList = ({
@@ -47,6 +48,7 @@ const ChatList = ({
   setMessages,
   inbox,
   messages,
+  image,
 }: ChatListProps) => {
   const readMsg = (id: number) => {
     Post(`${id}/inbox-read`, {})
@@ -70,7 +72,7 @@ const ChatList = ({
       }`}
     >
       <div className='flex gap-3 items-center'>
-        <div className='w-10 h-10 rounded-full bg-primary-base'></div>
+        <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
         <div>
           <p className='font-semibold'>{name}</p>
           <p className='text-xs'>{lastMsg}</p>
@@ -119,8 +121,12 @@ const Chat = () => {
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
-        setChat((res as InboxListProps[]).filter(e => e.to.id == users?.id));
-        console.log(res);
+        const chatlist = (res as InboxListProps[])
+        .filter(e => (Boolean(e.from) && (Boolean(e.to))))
+        .filter(e => e.to.id == users?.id)
+
+        setChat(chatlist)
+        console.log(chatlist, res, users?.id);
       })
       .catch((err: any) => {
         console.log(err);
@@ -186,18 +192,18 @@ const Chat = () => {
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id).length == 0 && (
+            .filter((item: InboxListProps) => item.to.id == user?.id).length == 0 && (
               <Text p={10} size="sm" c="gray">Tidak Ada Chat Yang Tersedia</Text>
           )}
 
           {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.from.id !== user?.id)
+            .filter((item: InboxListProps) => item.to.id == user?.id)
             .map((item: InboxListProps) => (
               <ChatList
                 name={item.from.name}
                 lastMsg={item.chats[0].message}
                 time={formatDate(item.chats[0].created_at)}
-                countMsg={item.chats.filter(e => e.status == "unread").length}
+                countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
                 key={item.from.id}
                 setSelected={setSelected}
                 selected={selected}
@@ -212,7 +218,7 @@ const Chat = () => {
         <div className='w-full flex flex-col divide-y divide-primary-light-200 border-l border-l-primary-light-200'>
           {messagerName !== '' && (
             <div className='flex items-center py-4 px-3 h-16 gap-3'>
-              <div className='w-10 h-10 rounded-full bg-primary-base'></div>
+              <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
               <div>
                 <p className='font-semibold'>{messagerName}</p>
               </div>
@@ -254,12 +260,12 @@ const Chat = () => {
                       {/* Pesan Masuk */}
                       <div
                         className={`flex flex-col gap-2 px-16 ${
-                          chat.fromId !== user.id ? 'items-end' : ''
+                          chat.user_id == user.id ? 'items-end' : ''
                         }`}
                       >
                         <div
                           className={`${
-                            chat.fromId !== user.id
+                            chat.user_id == user.id
                               ? 'bg-white text-dark'
                               : 'bg-primary-base text-white'
                           } rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}
@@ -267,7 +273,7 @@ const Chat = () => {
                           <p className='flex-grow'>{chat.message}</p>
                           <span
                             className={`text-[11px] ml-2 ${
-                              chat.fromId !== user.id ? 'text-grey' : 'text-primary-light-200'
+                              chat.user_id == user.id ? 'text-grey' : 'text-primary-light-200'
                             }`}
                           >
                             {new Date(chat.createdAt).toLocaleTimeString('en-US', {
@@ -276,7 +282,7 @@ const Chat = () => {
                               hour12: false,
                             })}
                           </span>
-                          {chat.fromId !== user.id && (
+                          {chat.user_id == user.id && (
                             <Icon
                               icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
                               className={`text-grey text-[18px] ml-[3px]`}

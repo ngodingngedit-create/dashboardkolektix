@@ -1,5 +1,4 @@
 import Foto from '@images/Foto=2.png';
-import Image from 'next/image';
 import { useState } from 'react';
 import styles from './index.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,7 +11,7 @@ import {
 import useLoggedUser from '@/utils/useLoggedUser';
 import Images from '@/components/Images';
 import Link from 'next/link';
-import { Card } from '@mantine/core';
+import { AspectRatio, Card, Image } from '@mantine/core';
 
 interface EventCardProps {
   slug?: string;
@@ -30,9 +29,11 @@ interface EventCardProps {
   has_creator?: {
     slug: string;
   }; 
+  maxWidth?: number
 }
 
 const EventCard = ({
+  maxWidth,
   slug,
   title,
   date,
@@ -59,17 +60,17 @@ const EventCard = ({
   const isEventEnded = currentDate > new Date(end);
 
   return (
-    <div className='[&_.hoverCTA]:hover:!translate-y-0 bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative'>
+    <div style={{  maxWidth }} className='[&_.hoverCTA]:hover:!translate-y-0 bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative'>
       <Link href={`/event/${slug}`}>
         <div className="relative overflow-hidden">
-          <Image
-            className={`${styles.cardImg} rounded-t-lg`}
-            src={img}
-            alt='Banner'
-            width={500}
-            height={500}
-            quality={75}
-          />
+          <AspectRatio ratio={1062/365}>
+            <Image
+              className={`!rounded-t-lg`}
+              src={img}
+              alt='Banner'
+            />
+          </AspectRatio>
+
           {isEventEnded ? (
             <div className="absolute top-2 right-2 bg-light-grey text-dark px-2 py-1 rounded-xl text-xs">
               Event Ended

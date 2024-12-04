@@ -87,7 +87,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
     const copyOrderer = (targetIndex: number) => {
         if (form.length > 0 && targetIndex > 0 && targetIndex < form.length) {
             let newForm = [...form];
-            newForm[targetIndex] = { ...newForm[0] };
+            newForm[targetIndex] = { ...newForm[0], is_pemesan: 0 };
             setForm(newForm);
             const isFormValid = newForm.every(formValidation);
 
