@@ -812,16 +812,19 @@ const EventDetails = () => {
                                                         <Flex gap={10} align="center">
                                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
                                                             <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
-                                                            <Text fw={600} c="white">Live Event</Text>
+                                                            <Text fw={600} c="white" size="sm">Live Event</Text>
                                                         </Flex>
                                                     </Card>
                                                 )}
 
+                                            </Box>
+
+                                            <Flex justify="end">
                                                 {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                                    <Flex align="center" gap={5} className={`!absolute bottom-3 right-3`}>
+                                                    <Flex align="center" gap={5} className={`! bottom-3 right-3`}>
                                                         {timeToEvent.map((e, i) => (
                                                             <AspectRatio key={i}>
-                                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
+                                                                <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/50`} key={i}>
                                                                     <Stack align="center" justify="center" h="100%" gap={3} c="white">
                                                                         <Text fw={600} size="16px">{e[0]}</Text>
                                                                         <Text size="9px">{e[1]}</Text>
@@ -831,7 +834,7 @@ const EventDetails = () => {
                                                         ))}
                                                     </Flex>
                                                 )}
-                                            </Box>
+                                            </Flex>
 
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">
@@ -929,12 +932,15 @@ const EventDetails = () => {
                                     </Card>
                                 )}
 
+                            </Box>
+
+                            <Flex justify="end" px={20}>
                                 {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                    <Flex align="center" gap={5} className={`!absolute bottom-7 right-7`}>
+                                    <Flex align="center" gap={5} className={` bottom-7 right-7`}>
                                         {timeToEvent.map((e, i) => (
                                             <AspectRatio key={i}>
-                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
-                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                <Card w={42} radius={10} p={0} className={`border border-black/50 backdrop-blur-sm`} key={i}>
+                                                    <Stack align="center" justify="center" h="100%" gap={3} c="black">
                                                         <Text fw={600} size="14px">{e[0]}</Text>
                                                         <Text size="9px">{e[1]}</Text>
                                                     </Stack>
@@ -943,7 +949,8 @@ const EventDetails = () => {
                                         ))}
                                     </Flex>
                                 )}
-                            </Box>
+                            </Flex>
+
                             <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                                 <Flex gap={10} justify="space-between" mb={5} align="center">
                                   {/* <Stack gap={5}> */}

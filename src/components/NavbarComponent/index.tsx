@@ -30,7 +30,7 @@ import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
 import { Box, Button, Indicator } from '@mantine/core';
-import { useClickOutside } from '@mantine/hooks';
+import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
 
@@ -127,6 +127,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
       : (active = false);
     setBgNav(active);
   };
+
+  useHotkeys([
+    ['ctrl+F', () => setShowFilter(!showFilter)]
+  ]);
 
   // const cartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
 
