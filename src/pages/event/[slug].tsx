@@ -798,10 +798,27 @@ const EventDetails = () => {
                         <>
                             <div className="bg-primary-dark">
                                 <div className="max-w-7xl mx-auto">
-                                    <div className="px-8 pt-20 pb-3">
-                                        <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
-                                        <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
-                                    </div>
+                                    <Flex justify="space-between" align="end" className="px-8 pt-20 pb-3">
+                                        <div>
+                                            <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
+                                            <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
+                                        </div>
+
+                                        {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                            <Flex align="center" gap={5} className={`! bottom-3 right-3`}>
+                                                {timeToEvent.map((e, i) => (
+                                                    <AspectRatio key={i}>
+                                                        <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/30`} key={i}>
+                                                            <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                                <Text fw={600} size="16px">{e[0]}</Text>
+                                                                <Text size="9px">{e[1]}</Text>
+                                                            </Stack>
+                                                        </Card>
+                                                    </AspectRatio>
+                                                ))}
+                                            </Flex>
+                                        )}
+                                    </Flex>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
                                           <Stack w="100%">
                                             <Box pos="relative">
@@ -816,25 +833,7 @@ const EventDetails = () => {
                                                         </Flex>
                                                     </Card>
                                                 )}
-
                                             </Box>
-
-                                            <Flex justify="end">
-                                                {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                                    <Flex align="center" gap={5} className={`! bottom-3 right-3`}>
-                                                        {timeToEvent.map((e, i) => (
-                                                            <AspectRatio key={i}>
-                                                                <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/50`} key={i}>
-                                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
-                                                                        <Text fw={600} size="16px">{e[0]}</Text>
-                                                                        <Text size="9px">{e[1]}</Text>
-                                                                    </Stack>
-                                                                </Card>
-                                                            </AspectRatio>
-                                                        ))}
-                                                    </Flex>
-                                                )}
-                                            </Flex>
 
                                             <div className="flex justify-between items-center text-white px-5 py-4">
                                                 <div className="flex items-center gap-4">

@@ -40,7 +40,7 @@ export default function BlogPage({  }: Readonly<ComponentProps>) {
 
                 <Stack gap={15}>
                     <Text size="sm" c="gray">Baca Blog Lainnya</Text>
-                    <Stack gap={15}>
+                    <Stack gap={20}>
                         {Array(4).fill(1).map(() => ({
                             image: '#',
                             title: 'Cara Membeli Tiket Konser Dengan Mudah Di Website Kolektix',
