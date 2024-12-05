@@ -41,7 +41,7 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import { toast } from 'react-toastify';
 import { get } from 'http';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM } from '@mantine/core';
+import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM, Box, Center } from '@mantine/core';
 import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
@@ -541,7 +541,7 @@ const eventItems = useMemo(() => {
     </Breadcrumbs>
     <div className="p-5 flex flex-col md:flex-row lg:flex gap-2">
 
-          <div className=''>     
+          <div className='max-w-[300px]'>     
             <EventCardCreator
               key={data.id}
               eventStatus={data.has_event_status.name}
@@ -1052,7 +1052,11 @@ const eventItems = useMemo(() => {
         />
     </>
   ) : (
-    <Spinner />
+    <Box w="100%" mih={300} h={300}>
+      <Center h="100%">
+        <Spinner />
+      </Center>
+    </Box>
   );
 };
 
