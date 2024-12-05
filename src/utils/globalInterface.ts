@@ -232,6 +232,7 @@ export interface SliderProps {
   deleted_at: null;
   image: string;
   image_url: string;
+  link?: string;
 }
 
 export interface InboxListProps {
