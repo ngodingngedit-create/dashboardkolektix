@@ -8,7 +8,8 @@ import { useRouter } from 'next/router';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Get } from '@/utils/REST';
 import { Accordion, AccordionItem } from '@nextui-org/react';
-import { Card } from '@mantine/core';
+import { Alert, Box, Card } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface EventData {
   creator_id: string;
@@ -74,11 +75,19 @@ export default function Dashboard() {
           {formatDay(now.toString())} &bull; {formatDateNoCheck(now.toString())},{' '}
           {formatYear(now.toString())}
         </p>
-        <h3 className="font-semibold text-xl md:text-2xl">Halo, {user?.name}</h3>
+        <h3 className="font-semibold text-xl md:text-2xl capitalize">Halo, {user?.has_creator?.name}</h3>
         <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p>
       </div>
 
       <Card>
+        <Box px={0}>
+          {!user?.is_verified && (
+            <Alert color="red" icon={<Icon icon="uiw:information-o" />} radius={8}>
+              Akun Anda belum terverifikasi. Verifikasi sekarang untuk melanjutkan
+            </Alert>
+          )}
+        </Box>
+
         <Accordion defaultExpandedKeys={['event']}>
           {/* Event Section */}
           <AccordionItem key="event" title="Event Saya">

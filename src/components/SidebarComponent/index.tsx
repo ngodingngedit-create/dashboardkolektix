@@ -81,6 +81,7 @@ const profileData: SidebarData[number]['submenu'] = [
 
 const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
         {
@@ -193,7 +194,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     }, [current, hasCreator]);
 
     useEffect(() => {
-        if (route === '/dashboard/my-ticket') {
+        if (route === '/dashboard/user') {
             Cookies.set('hasCreator', 'false');
             setRole('Pembeli');
         }
@@ -456,7 +457,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                         onClick={() => {
                                                             setShowUserMenu(!showUserMenu);
                                                             role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                                                            role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
+                                                            role === 'Creator' ? router.push('/dashboard/user') : router.push('/dashboard');
                                                             role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
                                                             role === 'Creator'
                                                                 ? toast.success('Beralih ke dashboard pembeli', {

@@ -211,6 +211,7 @@ export interface UserProps {
   id: number;
   name: string | null;
   role_id: number;
+  is_verified?: 0 | 1;
   email: string;
   email_verified_at: Date;
   otp_code: string | null;
