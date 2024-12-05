@@ -15,7 +15,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme, Button } from '@mantine/core';
+import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme, Button, ActionIcon } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -39,6 +39,11 @@ const theme = createTheme({
     Button: Button.extend({
       defaultProps: {
         radius: "xl",
+        color: "#0B387C",
+      }
+    }),
+    ActionIcon: ActionIcon.extend({
+      defaultProps: {
         color: "#0B387C",
       }
     }),

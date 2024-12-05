@@ -11,6 +11,7 @@ interface OrderCounterProps {
     isSoldOut?: boolean;
     isFinish?: boolean;
     isReady?: boolean;
+    isFullbook?: boolean;
     title: string;
     price: number;
     isLogin: boolean;
@@ -32,10 +33,20 @@ function isDatePassed(dateString: string) {
     return date.isBefore(moment());
 }
 
-const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     const router = useRouter();
 
     const StatusComponent = () => {
+        if (isFullbook)
+            return (
+                <>
+                    <Box></Box>
+                    <Badge color="gray" className={`shrink-0`}>
+                        Full Booked
+                    </Badge>
+                </>
+            );
+
         if (isSoldOut)
             return (
                 <>
