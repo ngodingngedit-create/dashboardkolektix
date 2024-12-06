@@ -112,6 +112,7 @@ export interface CreatorProps {
   category_id: string;
   name: string;
   image: string;
+  slug?: string;
   image_url?: string;
   description: null;
   longitude: string;

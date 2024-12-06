@@ -18,6 +18,7 @@ import fetch from '@/utils/fetch';
 import { BookmarkRequest } from '@/types/bookmark';
 import { useDidUpdate, useListState } from '@mantine/hooks';
 import { toast } from 'react-toastify';
+import { modals } from '@mantine/modals';
 
 interface EventCardProps {
   id: number | string;
@@ -62,8 +63,9 @@ const EventCard = ({
   start_time,
   end_date,
   end_time,
+  bookmark: bookmarked,
 }: EventCardProps) => {
-  const [bookmark, setBookmark] = useState<boolean>(false);
+  const [bookmark, setBookmark] = useState<boolean>(bookmarked ?? false);
   const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
   const currentDate = new Date();
@@ -84,13 +86,22 @@ const EventCard = ({
     return now.isBetween(start, end, undefined, '[]');
   }
 
-  useDidUpdate(() => {
-    if (bookmark) {
-      toggleBookmark();
+  const toggleBookmark = () => {
+    if (!bookmark) {
+      toggleBookmarkFetch();
+      setBookmark(true);
+    } else {
+      modals.openConfirmModal({
+        centered: true,
+        title: 'Hapus dari bookmark',
+        children: 'Apakah kamu yakin ingin menghapus event ini dari bookmark?',
+        labels: { cancel: 'Batal', confirm: 'Hapus' },
+        onConfirm: () => {setBookmark(false)}
+      })
     }
-  }, [bookmark]);
+  }
 
-  const toggleBookmark = async () => {
+  const toggleBookmarkFetch = async () => {
     await fetch<BookmarkRequest, any>({
       url: 'bookmark-user',
       method: 'POST',
@@ -163,7 +174,7 @@ const EventCard = ({
           <p>{price === 0 ? 'Free' : `Rp${price?.toLocaleString('id-ID')}`}</p>
           {users?.name && (
             <button
-              onClick={() => setBookmark(!bookmark)}
+              onClick={toggleBookmark}
               className='inline-flex items-center py-2 text-base font-medium text-center text-dark rounded-lg'
             >
               <FontAwesomeIcon
