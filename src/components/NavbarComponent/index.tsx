@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { Box, Button, Indicator } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -148,7 +148,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-            <div className='mr-2 w-8 md:hidden'>
+              {/* <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -158,8 +158,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
                 </button>
-              </div>
-              <div className='mr-2 w-8 hidden md:inline lg:inline'>
+              </div> */}
+              {/* <div className='mr-2 w-8 hidden md:inline lg:inline'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -169,7 +169,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div>
+              </div> */}
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
@@ -234,7 +234,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 <div className='flex items-center'>
                 <button
                   type='button'
-                  className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
+                  className='relative hidden rounded-full font-semibold md:flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
                 >
                   <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
                     <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
@@ -285,7 +285,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </div>
                     ) : (
                       <>
-                        <Button
+                        {/* <Button
                           size="compact-lg"
                           radius="xl"
                           bg="white"
@@ -293,7 +293,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           onClick={() => router.push('/auth')}
                         >
                           Login
-                        </Button>
+                        </Button> */}
                         {/* <button
                           type='button'
                           className='w-full relative flex items-center rounded-full justify-around text-[20px] text-primary-base font-semibold hover:text-primary-dark'
@@ -306,6 +306,40 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </button> */}
                       </>
                     )}
+                    {/* <ActionIcon mr={15} variant="transparent" color="white">
+                      <Icon icon="uiw:search" className={`text-[20px]`} />
+                    </ActionIcon> */}
+                    <Menu offset={20} width="250px" radius={10}>
+                      <Menu.Target>
+                        <ActionIcon variant="transparent" color="white">
+                          <Icon icon="uiw:menu" className={`text-[20px]`} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Label>Event</Menu.Label>
+                        <Menu.Item leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
+                        <Menu.Label>Akun</Menu.Label>
+                        {!isLogin ? (
+                          <>
+                            <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
+                            {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
+                          </>
+                        ) : (
+                          <>
+                            <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
+                            <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
+                            <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red">Logout</Menu.Item>
+                          </>
+                        )}
+                        <Menu.Divider/>
+                        <Menu.Label>Halaman</Menu.Label>
+                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
+                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
+                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
+                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
+                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                     <Fade isShowing={showNotifications}>
                       <div
                         className={`absolute right-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
