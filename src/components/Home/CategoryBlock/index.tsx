@@ -28,7 +28,7 @@ const CategoryBlock = () => {
 
   return (
     <div className=''>
-      <div className='text-dark bg-primary-dark my-32 block md:flex justify-center items-center h-16'>
+      <div className='text-dark bg-primary-dark mt-12 mb-32 block md:flex justify-center items-center h-16'>
         <div className='w-full md:w-1/4 md:px-24 px-2 py-2'>
           <h3 className='text-white'>Kategori Rekomendasi</h3>
         </div>
