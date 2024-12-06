@@ -15,10 +15,11 @@ import { AspectRatio, Box, Card, Flex, Image, Text } from '@mantine/core';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import fetch from '@/utils/fetch';
-import { BookmarkRequest } from '@/types/bookmark';
+import { BookmarkListResponse, BookmarkRequest } from '@/types/bookmark';
 import { useDidUpdate, useListState } from '@mantine/hooks';
 import { toast } from 'react-toastify';
 import { modals } from '@mantine/modals';
+import Cookies from 'js-cookie';
 
 interface EventCardProps {
   id: number | string;
@@ -63,11 +64,11 @@ const EventCard = ({
   start_time,
   end_date,
   end_time,
-  bookmark: bookmarked,
 }: EventCardProps) => {
-  const [bookmark, setBookmark] = useState<boolean>(bookmarked ?? false);
+  const [bookmark, setBookmark] = useState<boolean>(false);
   const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
+
   const currentDate = new Date();
 
   const eventDate = (event: Date) => {
@@ -85,6 +86,13 @@ const EventCard = ({
 
     return now.isBetween(start, end, undefined, '[]');
   }
+
+  useDidUpdate(() => {
+    if (users) {
+      const bookmarked = (users?.bookmarked ?? [])?.find(e => e.event_id == id);
+      if (bookmarked != undefined) setBookmark(true);
+    }
+  }, [users]);
 
   const toggleBookmark = () => {
     if (!bookmark) {
@@ -106,19 +114,28 @@ const EventCard = ({
 
   const toggleBookmarkFetch = async (status: boolean = true) => {
     if (!status) {
+      const bookid = users?.bookmarked?.find(e => e.event_id == id)?.id;
+      if (!bookid) {
+        toast.error('Gagal Menghapus');
+        return;
+      }
+
       await fetch<any, any>({
-        url: 'bookmark/',
+        url: 'bookmark/' + bookid,
         method: 'DELETE',
         before: () => setLoading.append('bookmark'),
         success: () => {
-          toast.info('Berhasil menghapus ke bookmark')
+          const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+          Cookies.set('bookmarked', JSON.stringify(data.filter(e => e.event_id != id)));
+          toast.info('Berhasil menghapus ke bookmark');
         },
         complete: () => setLoading.filter(e => e != 'bookmark'),
+        error: () => toast.error('Gagal Menghapus')
       });
       return;
     }
 
-    await fetch<BookmarkRequest, any>({
+    await fetch<BookmarkRequest, BookmarkListResponse>({
       url: 'bookmark-user',
       method: 'POST',
       data: {
@@ -127,7 +144,9 @@ const EventCard = ({
         event_id: id as number
       },
       before: () => setLoading.append('bookmark'),
-      success: () => {
+      success: ({ data: newData }) => {
+        const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+        Cookies.set('bookmarked', JSON.stringify([...data, newData]));
         toast.info('Berhasil menambahkan ke bookmark')
       },
       complete: () => setLoading.filter(e => e != 'bookmark'),

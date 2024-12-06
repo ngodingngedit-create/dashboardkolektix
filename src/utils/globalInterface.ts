@@ -221,6 +221,16 @@ export interface UserProps {
   updated_at: Date;
   has_creator?: CreatorProps;
   event_status_id: number;
+  bookmarked?: {
+    id: number;
+    user_id: number;
+    module_id: number;
+    type: string;
+    event_id?: number;
+    product_id?: number;
+    lowongan_id?: number;
+    talenta_id?: number;
+  }[]
 }
 
 export interface SliderProps {
