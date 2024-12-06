@@ -42,7 +42,7 @@ export default function PageCreator({  }: Readonly<ComponentProps>) {
                     <Text c="white" fw={600} className={`!text-[1.3rem] md:!text-[2.5rem] max-w-[700px] !leading-[110%]`}>Jadilah Kreator Event di Kolektix Sekarang Juga!</Text>
                     <Flex gap={15} mt={15}>
                         {data.listtop.map((e, i) => (
-                            <Card withBorder radius={15}>
+                            <Card withBorder radius={15} key={i}>
                                 <Flex gap={10} align="center">
                                     <Icon icon="majesticons:ticket-check-line" className={`text-[40px] text-primary-base`} />
                                     <Stack gap={2}>
