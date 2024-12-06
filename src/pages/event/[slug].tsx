@@ -880,8 +880,8 @@ const EventDetails = () => {
                                             </div>
                                           </Stack>
                                         
-                                        <Stack className={`w-full md:max-w-[300px] pb-[20px]`}>
-                                          <div className="p-[25px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
+                                        <Stack className={`w-full md:max-w-[300px] pb-[20px]`} gap={10}>
+                                          <div className="px-[25px] pt-[15px] pb-[10px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
                                             <Stack gap={12}>
                                               <Flex align="center" gap={10}>
                                                 <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
