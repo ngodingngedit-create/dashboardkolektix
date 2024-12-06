@@ -805,10 +805,10 @@ const EventDetails = () => {
                                         </div>
 
                                         {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                            <Flex align="center" gap={5} className={`! bottom-3 right-3`}>
+                                            <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
                                                 {timeToEvent.map((e, i) => (
                                                     <AspectRatio key={i}>
-                                                        <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/30`} key={i}>
+                                                        <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
                                                             <Stack align="center" justify="center" h="100%" gap={3} c="white">
                                                                 <Text fw={600} size="16px">{e[0]}</Text>
                                                                 <Text size="9px">{e[1]}</Text>
@@ -933,18 +933,29 @@ const EventDetails = () => {
 
                             </Box>
 
-                            <Flex justify="end" px={20}>
+                            <Flex justify="space-between" gap={10} px={20}>
+                                <Box>
+                                    {detail.has_event_social_meida?.ig_name	 && (
+                                        <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
+                                            <Flex gap={8} align="center">
+                                                <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
+                                                <Text size="sm" className={`!text-primary-base`}>{detail.has_event_social_meida?.ig_name}</Text>
+                                            </Flex>
+                                        </Link>
+                                    )}
+                                </Box>
+
                                 {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
                                     <Flex align="center" gap={5} className={` bottom-7 right-7`}>
                                         {timeToEvent.map((e, i) => (
-                                            <AspectRatio key={i}>
-                                                <Card w={42} radius={10} p={0} className={`border border-black/50 backdrop-blur-sm`} key={i}>
-                                                    <Stack align="center" justify="center" h="100%" gap={3} c="black">
+                                            // <AspectRatio key={i}>
+                                                <Card key={i} radius={10} p={0} className={`border border-black/50 backdrop-blur-sm`} py={5} px={10}>
+                                                    <Flex align="center" justify="center" h="100%" gap={3} c="black">
                                                         <Text fw={600} size="14px">{e[0]}</Text>
                                                         <Text size="9px">{e[1]}</Text>
-                                                    </Stack>
+                                                    </Flex>
                                                 </Card>
-                                            </AspectRatio>
+                                            // </AspectRatio>
                                         ))}
                                     </Flex>
                                 )}
@@ -954,15 +965,6 @@ const EventDetails = () => {
                                 <Flex gap={10} justify="space-between" mb={5} align="center">
                                   {/* <Stack gap={5}> */}
                                     <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
-
-                                    {detail.has_event_social_meida?.ig_name	 && (
-                                        <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
-                                            <Flex gap={8} align="center">
-                                                <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
-                                                <Text size="sm" className={`!text-primary-base`}>{detail.has_event_social_meida?.ig_name}</Text>
-                                            </Flex>
-                                        </Link>
-                                    )}
                                   {/* </Stack> */}
                                 </Flex>
                                 <h3 className="mb-3">{detail?.name}</h3>
