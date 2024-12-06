@@ -33,6 +33,7 @@ import { ActionIcon, Box, Button, Indicator, Menu } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
+import { modals } from '@mantine/modals';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -72,15 +73,23 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = () => {
-    Cookies.remove('token', { path: '/' });
-    Cookies.remove('user_data', { path: '/' });
-    Cookies.remove('prevPath', { path: '/' });
-    Cookies.remove('ticketCount', { path: '/' });
-    if (route !== '/') {
-      router.push('/').then(() => window.location.reload());
-    } else {
-      window.location.reload();
-    }
+    modals.openConfirmModal({
+      title: 'Keluar Akun',
+      centered: true,
+      children: 'Apakah kamu yakin ingin keluar akun?',
+      labels: { cancel: "Batal", confirm: "Keluar" },
+      onConfirm: () => {
+        Cookies.remove('token', { path: '/' });
+        Cookies.remove('user_data', { path: '/' });
+        Cookies.remove('prevPath', { path: '/' });
+        Cookies.remove('ticketCount', { path: '/' });
+        if (route !== '/') {
+          router.push('/').then(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
+      }
+    })
   };
 
   useEffect(() => {
@@ -266,7 +275,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
 
                   <div className='relative ml-3'>
                     {isLogin ? (
-                      <div className='bg-white rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16'>
+                      <div className='bg-white hidden rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16'>
                           <button
                             type='button'
                             className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
@@ -326,9 +335,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </>
                         ) : (
                           <>
+                            <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
                             <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
                             <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
-                            <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red">Logout</Menu.Item>
+                            <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
                           </>
                         )}
                         <Menu.Divider/>
