@@ -96,12 +96,28 @@ const EventCard = ({
         title: 'Hapus dari bookmark',
         children: 'Apakah kamu yakin ingin menghapus event ini dari bookmark?',
         labels: { cancel: 'Batal', confirm: 'Hapus' },
-        onConfirm: () => {setBookmark(false)}
+        onConfirm: () => {
+          toggleBookmarkFetch(false);
+          setBookmark(false);
+        }
       })
     }
   }
 
-  const toggleBookmarkFetch = async () => {
+  const toggleBookmarkFetch = async (status: boolean = true) => {
+    if (!status) {
+      await fetch<any, any>({
+        url: 'bookmark/',
+        method: 'DELETE',
+        before: () => setLoading.append('bookmark'),
+        success: () => {
+          toast.info('Berhasil menghapus ke bookmark')
+        },
+        complete: () => setLoading.filter(e => e != 'bookmark'),
+      });
+      return;
+    }
+
     await fetch<BookmarkRequest, any>({
       url: 'bookmark-user',
       method: 'POST',

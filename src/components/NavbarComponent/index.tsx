@@ -325,9 +325,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Label>Event</Menu.Label>
-                        <Menu.Item leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
-                        <Menu.Divider/>
+                        <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
+                        <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
+                        <Menu.Divider className={`md:!hidden`}/>
                         <Menu.Label>Akun</Menu.Label>
                         {!isLogin ? (
                           <>

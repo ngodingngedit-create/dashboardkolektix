@@ -618,10 +618,9 @@ const EventDetails = () => {
 
         const result: [number, string][] = [];
         if (days > 0) result.push([days, "Hari"]);
-        if (hours > 0) result.push([hours, "Jam"]);
-        if (minutes > 0) result.push([minutes, "Menit"]);
-        if (seconds > 0) result.push([seconds, "Detik"]);
-        console.log(date, result);
+        result.push([hours, "Jam"]);
+        result.push([minutes, "Menit"]);
+        result.push([seconds, "Detik"]);
         return result;
     }, [timoutHash, detail]);
 
@@ -805,18 +804,21 @@ const EventDetails = () => {
                                         </div>
 
                                         {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                            <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
-                                                {timeToEvent.map((e, i) => (
-                                                    <AspectRatio key={i}>
-                                                        <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
-                                                            <Stack align="center" justify="center" h="100%" gap={3} c="white">
-                                                                <Text fw={600} size="16px">{e[0]}</Text>
-                                                                <Text size="9px">{e[1]}</Text>
-                                                            </Stack>
-                                                        </Card>
-                                                    </AspectRatio>
-                                                ))}
-                                            </Flex>
+                                            <Stack gap={12} align="end">
+                                                <Text size="xs" c="white">Event Dimulai Dalam</Text>
+                                                <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
+                                                    {timeToEvent.map((e, i) => (
+                                                        <AspectRatio key={i}>
+                                                            <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
+                                                                <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                                    <Text fw={600} size="16px">{e[0]}</Text>
+                                                                    <Text size="9px">{e[1]}</Text>
+                                                                </Stack>
+                                                            </Card>
+                                                        </AspectRatio>
+                                                    ))}
+                                                </Flex>
+                                            </Stack>
                                         )}
                                     </Flex>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
@@ -896,7 +898,7 @@ const EventDetails = () => {
                                                 </Flex>
                                               </Link>
                                               <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
-                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
+                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
                                             </Stack>
                                           </div>
 
@@ -933,19 +935,11 @@ const EventDetails = () => {
 
                             </Box>
 
-                            <Flex justify="space-between" gap={10} px={20}>
+                            <Flex justify="space-between" gap={10} px={20} display="none">
                                 <Box>
-                                    {detail.has_event_social_meida?.ig_name	 && (
-                                        <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
-                                            <Flex gap={8} align="center">
-                                                <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
-                                                <Text size="sm" className={`!text-primary-base`}>{detail.has_event_social_meida?.ig_name}</Text>
-                                            </Flex>
-                                        </Link>
-                                    )}
                                 </Box>
 
-                                {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                {/* {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
                                     <Flex align="center" gap={5} className={` bottom-7 right-7`}>
                                         {timeToEvent.map((e, i) => (
                                             // <AspectRatio key={i}>
@@ -958,13 +952,21 @@ const EventDetails = () => {
                                             // </AspectRatio>
                                         ))}
                                     </Flex>
-                                )}
+                                )} */}
                             </Flex>
 
                             <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                                 <Flex gap={10} justify="space-between" mb={5} align="center">
                                   {/* <Stack gap={5}> */}
                                     <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
+                                    {detail.has_event_social_meida?.ig_name	 && (
+                                        <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
+                                            <Flex gap={8} align="center">
+                                                <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
+                                                <Text size="sm" className={`!text-primary-base`}>{detail.has_event_social_meida?.ig_name}</Text>
+                                            </Flex>
+                                        </Link>
+                                    )}
                                   {/* </Stack> */}
                                 </Flex>
                                 <h3 className="mb-3">{detail?.name}</h3>
