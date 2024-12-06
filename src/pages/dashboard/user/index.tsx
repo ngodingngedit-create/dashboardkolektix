@@ -21,9 +21,9 @@ export default function DashboardUser({  }: Readonly<ComponentProps>) {
                 <h3 className="font-semibold text-xl md:text-2xl">Halo, {user?.name}</h3>
                 {/* <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p> */}
             </div>
-            <Alert>
+            {/* <Alert>
                 Akunmu belum terverifikasi, verifikasi akun sekarang
-            </Alert>
+            </Alert> */}
         </div>
     );
 }

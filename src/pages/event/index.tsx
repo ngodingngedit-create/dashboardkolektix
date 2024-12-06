@@ -67,15 +67,15 @@ const Event = () => {
     <>
       <Chat />
       <div className='text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24'>
-        <div className='pl-4'>
+        {/* <div className='pl-4'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>
             <BreadcrumbItem>List Event</BreadcrumbItem>
           </Breadcrumbs>
-        </div>
+        </div> */}
         {!loading ? (
           <>
-            <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-3'>
+            <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-0'>
               {topic.map((item) => (
                 <div
                   key={item.id}
