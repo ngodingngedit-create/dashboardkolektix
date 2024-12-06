@@ -1,8 +1,9 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { AspectRatio, Box, Card, Container, Flex, Image, Stack, Text } from "@mantine/core";
+import { AspectRatio, Box, Button, Card, Container, Flex, Image, Stack, Text } from "@mantine/core";
 import bg1 from '../assets/images/Foto=1.png';
 import logo from '../assets/images/logosquare.png';
 import BlogItem from "@/components/Blog/BlogItem";
+import Link from "next/link";
 
 type ComponentProps = {
     
@@ -71,19 +72,27 @@ export default function PageCreator({  }: Readonly<ComponentProps>) {
                         />
                     ))}
                 </Flex>
-                <Stack align="center">
-                    <Flex align="center" gap={15} justify="center">
-                        <Icon icon="" />
-                        <Text size="sm" c="gray">Instagram Kolektix</Text>
-                    </Flex>
-                    <Flex>
-                        <Card bg="#0B387C" w="fit-content" radius={999}>
-                            <Image src={logo.src} w={48} h={48} />
-                        </Card>
-                        <Stack>
-                        </Stack>
-                    </Flex>
-                </Stack>
+                <Card withBorder className={`!border-b-0`} maw={600} radius={20} mx="auto" w="100%" mt={20}>
+                    <Stack align="center">
+                        <Flex align="center" gap={5} justify="center">
+                            <Icon icon="ri:instagram-fill" className={`text-grey/50`} />
+                            <Text size="sm" c="gray">Instagram Kolektix</Text>
+                        </Flex>
+
+                        <Flex gap={15}>
+                            <Card bg="#0B387C" w="fit-content" h="fit-content" radius={999} className={`!shrink-0`}>
+                                <Image src={logo.src} w={48} h={48} />
+                            </Card>
+                            <Stack gap={5}>
+                                <Text size="xl" fw={600} c="gray.8">Kolektix</Text>
+                                <Text size="sm" fw={600} c="gray" mt={-10} mb={10}>5% Engagement Rate</Text>
+                                <Button variant="outline" size="xs" component={Link} href="https://instagram.com/kolektix" target="_blank">
+                                    Lihat Profil
+                                </Button>
+                            </Stack>
+                        </Flex>
+                    </Stack>
+                </Card>
             </Stack>
         </Box>
     );
