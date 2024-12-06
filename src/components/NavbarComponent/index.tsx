@@ -327,6 +327,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       <Menu.Dropdown>
                         <Menu.Label>Event</Menu.Label>
                         <Menu.Item leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
+                        <Menu.Divider/>
                         <Menu.Label>Akun</Menu.Label>
                         {!isLogin ? (
                           <>
@@ -341,13 +342,13 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                             <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
                           </>
                         )}
-                        <Menu.Divider/>
-                        <Menu.Label>Halaman</Menu.Label>
-                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
-                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
-                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
-                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
-                        <Menu.Item rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                        <Menu.Divider className={`md:!hidden`}/>
+                        <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
+                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
+                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
+                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
+                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
+                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
                       </Menu.Dropdown>
                     </Menu>
                     <Fade isShowing={showNotifications}>
