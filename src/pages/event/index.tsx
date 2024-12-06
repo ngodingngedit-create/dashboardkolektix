@@ -94,6 +94,7 @@ const Event = () => {
               {filteredData.length > 0 ? (
                 filteredData.map((event: any) => (
                   <EventCard
+                    id={event.id}
                     key={event.id}
                     title={event.name}
                     img={event.image_url}

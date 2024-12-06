@@ -14,8 +14,13 @@ import Link from 'next/link';
 import { AspectRatio, Box, Card, Flex, Image, Text } from '@mantine/core';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import fetch from '@/utils/fetch';
+import { BookmarkRequest } from '@/types/bookmark';
+import { useDidUpdate, useListState } from '@mantine/hooks';
+import { toast } from 'react-toastify';
 
 interface EventCardProps {
+  id: number | string;
   slug?: string;
   title?: string;
   date: Date;
@@ -39,6 +44,7 @@ interface EventCardProps {
 }
 
 const EventCard = ({
+  id,
   maxWidth,
   slug,
   title,
@@ -58,6 +64,7 @@ const EventCard = ({
   end_time,
 }: EventCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
+  const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
   const currentDate = new Date();
 
@@ -75,6 +82,29 @@ const EventCard = ({
     const now = moment();
 
     return now.isBetween(start, end, undefined, '[]');
+  }
+
+  useDidUpdate(() => {
+    if (bookmark) {
+      toggleBookmark();
+    }
+  }, [bookmark]);
+
+  const toggleBookmark = async () => {
+    await fetch<BookmarkRequest, any>({
+      url: 'bookmark-user',
+      method: 'POST',
+      data: {
+        module_id: 1,
+        type: 'Event',
+        event_id: id as number
+      },
+      before: () => setLoading.append('bookmark'),
+      success: () => {
+        toast.info('Berhasil menambahkan ke bookmark')
+      },
+      complete: () => setLoading.filter(e => e != 'bookmark'),
+    });
   }
 
   return (

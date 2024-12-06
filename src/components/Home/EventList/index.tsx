@@ -33,6 +33,7 @@ const EventList = ({ data, loading }: ListProps) => {
             {data.map((event: any) => (
               <div className={styles.eventCard} key={event.id}>
                 <EventCard
+                  id={event.id}
                   maxWidth={300}
                   title={event.name}
                   img={event.image_url}

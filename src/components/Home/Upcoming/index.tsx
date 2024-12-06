@@ -38,6 +38,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
               upcomingEvents.map((event: EventProps) => (
                 <div className={styles.eventCard} key={event.id}>
                   <EventCard
+                    id={event.id}
                     maxWidth={300}
                     title={event.name}
                     img={event.image_url ?? ''}
