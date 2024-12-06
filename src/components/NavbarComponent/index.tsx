@@ -383,16 +383,18 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <FontAwesomeIcon icon={faTableColumns} className='mr-2' />
                           Dashboard
                         </Link>
-                        <Link
-                          href='/'
-                          className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                          role='menuitem'
-                          tabIndex={-1}
-                          id='user-menu-item-0'
-                        >
-                          <FontAwesomeIcon icon={faBookmark} className='mr-2' />
-                          Bookmark
-                        </Link>
+                        {users?.id && (
+                          <Link
+                            href='/dashboard/bookmark'
+                            className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
+                            role='menuitem'
+                            tabIndex={-1}
+                            id='user-menu-item-0'
+                          >
+                            <FontAwesomeIcon icon={faBookmark} className='mr-2' />
+                            Bookmark
+                          </Link>
+                        )}
                         {/* <a
                           href='#'
                           className='block px-4 py-2 text-xs text-dark hover:bg-primary-light'
