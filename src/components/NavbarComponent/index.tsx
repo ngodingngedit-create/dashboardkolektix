@@ -243,7 +243,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 <div className='flex items-center'>
                 <button
                   type='button'
-                  className='relative hidden rounded-full font-semibold md:flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
+                  className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
                 >
                   <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
                     <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
@@ -315,9 +315,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </button> */}
                       </>
                     )}
-                    {/* <ActionIcon mr={15} variant="transparent" color="white">
+                    <ActionIcon mr={15} variant="transparent" color="white" className={`md:!hidden`}>
                       <Icon icon="uiw:search" className={`text-[20px]`} />
-                    </ActionIcon> */}
+                    </ActionIcon>
                     <Menu offset={20} width="250px" radius={10}>
                       <Menu.Target>
                         <ActionIcon variant="transparent" color="white">
@@ -325,9 +325,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
+                        {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
                         <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
-                        <Menu.Divider className={`md:!hidden`}/>
+                        <Menu.Divider className={`md:!hidden`}/> */}
                         <Menu.Label>Akun</Menu.Label>
                         {!isLogin ? (
                           <>
