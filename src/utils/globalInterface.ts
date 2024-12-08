@@ -221,6 +221,7 @@ export interface UserProps {
   updated_at: Date;
   has_creator?: CreatorProps;
   event_status_id: number;
+  verified_status_id?: number;
   bookmarked?: {
     id: number;
     user_id: number;
