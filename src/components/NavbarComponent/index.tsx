@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -315,42 +315,45 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </button> */}
                       </>
                     )}
-                    <ActionIcon mr={15} variant="transparent" color="white" className={`md:!hidden`}>
-                      <Icon icon="uiw:search" className={`text-[20px]`} />
-                    </ActionIcon>
-                    <Menu offset={20} width="250px" radius={10}>
-                      <Menu.Target>
-                        <ActionIcon variant="transparent" color="white">
-                          <Icon icon="uiw:menu" className={`text-[20px]`} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
-                        <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
-                        <Menu.Divider className={`md:!hidden`}/> */}
-                        <Menu.Label>Akun</Menu.Label>
-                        {!isLogin ? (
-                          <>
-                            <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
-                            {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
-                          </>
-                        ) : (
-                          <>
-                            <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
-                            <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
-                            <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
-                            <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
-                          </>
-                        )}
-                        <Menu.Divider className={`md:!hidden`}/>
-                        <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
-                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
-                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
-                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
-                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
-                        <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
+
+                    <Flex gap={10}>
+                      <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
+                        <Icon icon="uiw:search" className={`text-[20px]`} />
+                      </ActionIcon>
+                      <Menu offset={20} width="250px" radius={10}>
+                        <Menu.Target>
+                          <ActionIcon variant="transparent" color="white">
+                            <Icon icon="uiw:menu" className={`text-[20px]`} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
+                          <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
+                          <Menu.Divider className={`md:!hidden`}/> */}
+                          <Menu.Label>Akun</Menu.Label>
+                          {!isLogin ? (
+                            <>
+                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
+                              {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
+                            </>
+                          ) : (
+                            <>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
+                            </>
+                          )}
+                          <Menu.Divider className={`md:!hidden`}/>
+                          <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Flex>
                     <Fade isShowing={showNotifications}>
                       <div
                         className={`absolute right-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
