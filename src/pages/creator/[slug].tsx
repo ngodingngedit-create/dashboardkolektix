@@ -196,6 +196,7 @@ const CreatoMenu: React.FC = () => {
                 filterEvents(true).length > 0 ? (
                   filterEvents(true).map((event) => (
                     <EventCard
+                      id={event.id}
                       key={event.id}
                       title={event.name}
                       img={event.image_url}
@@ -216,6 +217,7 @@ const CreatoMenu: React.FC = () => {
                 filterEvents(false).length > 0 ? (
                   filterEvents(false).map((event) => (
                     <EventCard
+                      id={event.id}
                       key={event.id}
                       title={event.name}
                       img={event.image_url}

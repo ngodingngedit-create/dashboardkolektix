@@ -8,7 +8,7 @@ type ComponentProps = {
     
 };
 
-export default function wristband({  }: Readonly<ComponentProps>) {
+export default function Wristband({  }: Readonly<ComponentProps>) {
     return (
         <Stack gap={50} px={30} pb={50} pt={90} mx="auto" maw={1080}>
             <Flex justify="space-between" gap={20} align="center" className={`flex-col-reverse md:flex-row`}>

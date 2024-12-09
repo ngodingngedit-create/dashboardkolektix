@@ -2,6 +2,7 @@ import React from 'react';
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatDate } from '@/utils/useFormattedDate';
+import { Flex, Stack, Text } from '@mantine/core';
 
 interface TicketContainerProps {
   type: string;
@@ -29,8 +30,16 @@ const TicketContainer = ({
   return (
     <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-md mb-5'>
       <div className='p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0'>
-        <p className='font-semibold'>{name}</p>
-        <p className='text-grey text-sm'>{category}</p>
+        <Flex justify="space-between" wrap="wrap" gap={10}>
+          <Stack gap={0}>
+            <p className='font-semibold'>{name}</p>
+            <p className='text-grey text-sm'>{category}</p>
+          </Stack>
+          {/* <Stack gap={0} align="end">
+            <Text size="xs" c="gray">Total 0 Tiket</Text>
+            <Text size="xs" c="gray">Terjual 0 Tiket</Text>
+          </Stack> */}
+        </Flex>
       </div>
       <div className='p-4 flex justify-between'>
         <div>
@@ -46,12 +55,14 @@ const TicketContainer = ({
           </p>
         </div>
         <div className='flex gap-2'>
-          <button
-            onClick={onEdit}
-            className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
-          >
-            <FontAwesomeIcon icon={faPenToSquare} size='lg' />
-          </button>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
+            >
+              <FontAwesomeIcon icon={faPenToSquare} size='lg' />
+            </button>
+          )}
           {/* <button
             onClick={onDelete}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'

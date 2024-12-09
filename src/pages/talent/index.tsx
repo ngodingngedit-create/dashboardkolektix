@@ -78,6 +78,7 @@ const Event = () => {
                 name={item.name}
                 image={item.image_url} 
                 skills={item?.has_category?.name ?? undefined}
+                description={item?.description ?? '-'}
               />
             ))}
           </div>

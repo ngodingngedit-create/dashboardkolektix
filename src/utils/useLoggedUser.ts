@@ -5,7 +5,9 @@ import Cookies from 'js-cookie';
 export default function useLoggedUser() {
   const [userData, setUserData] = useState<UserProps>();
   useEffect(() => {
-    setUserData(JSON.parse(Cookies.get('user_data') || '{}'));
+    const bookmarked = JSON.parse(Cookies.get('bookmarked') || '[]');
+    const user = JSON.parse(Cookies.get('user_data') || '{}')
+    setUserData({...user, bookmarked: bookmarked});
   }, []);
 
   return userData;

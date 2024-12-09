@@ -81,6 +81,8 @@ const profileData: SidebarData[number]['submenu'] = [
 
 const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
+    { id: 1, name: 'Bookmark', link: '/dashboard/bookmark', role: 'Pembeli', iconify: 'material-symbols:bookmark' },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
         {
@@ -193,7 +195,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     }, [current, hasCreator]);
 
     useEffect(() => {
-        if (route === '/dashboard/my-ticket') {
+        if (route === '/dashboard/user') {
             Cookies.set('hasCreator', 'false');
             setRole('Pembeli');
         }
@@ -316,7 +318,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 </div>
                                             </Link>
                                         ) : (
-                                            <div onClick={() => toggleSubmenu(el.id)} className="cursor-pointer">
+                                            <div onClick={() => {toggleSubmenu(el.id); setCollapse(true);}} className="cursor-pointer">
                                                 <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
                                                     <div className="flex items-center">
                                                         <div className="w-5 h-5 flex justify-center items-center">
@@ -456,7 +458,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                         onClick={() => {
                                                             setShowUserMenu(!showUserMenu);
                                                             role === 'Creator' ? setRole('Pembeli') : setRole('Creator');
-                                                            role === 'Creator' ? router.push('/dashboard/my-ticket') : router.push('/dashboard');
+                                                            role === 'Creator' ? router.push('/dashboard/user') : router.push('/dashboard');
                                                             role === 'Creator' ? Cookies.set('hasCreator', 'false') : Cookies.set('hasCreator', 'true');
                                                             role === 'Creator'
                                                                 ? toast.success('Beralih ke dashboard pembeli', {
@@ -479,7 +481,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
                                                     Transaksi
                                                 </Link>
-                                                <Link href="/" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
                                                     <FontAwesomeIcon icon={faBookmark} className="mr-2" />
                                                     Bookmark
                                                 </Link>

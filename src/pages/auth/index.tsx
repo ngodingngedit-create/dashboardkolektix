@@ -172,6 +172,7 @@ const Auth = () => {
         console.log(res);
         Cookies.set('token', res.access_token);
         Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('bookmarked', JSON.stringify(res.bookmarked));
         setLoading(false);
         ticketCount && prevPath ? router.push(prevPath) : router.push('/');
         prevPath ? router.push(prevPath) : router.push('/');

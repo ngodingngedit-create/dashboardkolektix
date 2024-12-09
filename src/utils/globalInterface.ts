@@ -11,6 +11,7 @@ export interface TicketProps {
   starting_time?: string;
   ending_time?: string;
   ticket_end: string;
+  is_fullbook: number;
   is_soldout: number;
   is_finish: number;
   is_ready: number;
@@ -111,6 +112,7 @@ export interface CreatorProps {
   category_id: string;
   name: string;
   image: string;
+  slug?: string;
   image_url?: string;
   description: null;
   longitude: string;
@@ -210,6 +212,7 @@ export interface UserProps {
   id: number;
   name: string | null;
   role_id: number;
+  is_verified?: 0 | 1;
   email: string;
   email_verified_at: Date;
   otp_code: string | null;
@@ -218,6 +221,17 @@ export interface UserProps {
   updated_at: Date;
   has_creator?: CreatorProps;
   event_status_id: number;
+  verified_status_id?: number;
+  bookmarked?: {
+    id: number;
+    user_id: number;
+    module_id: number;
+    type: string;
+    event_id?: number;
+    product_id?: number;
+    lowongan_id?: number;
+    talenta_id?: number;
+  }[]
 }
 
 export interface SliderProps {
@@ -232,6 +246,7 @@ export interface SliderProps {
   deleted_at: null;
   image: string;
   image_url: string;
+  link?: string;
 }
 
 export interface InboxListProps {

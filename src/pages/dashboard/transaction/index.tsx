@@ -36,7 +36,7 @@ export default function Transaction({  }: Readonly<ComponentProps>) {
 
                 <Tabs.Panel value="merch">
                     <Stack py={20} gap={15}>
-                        {Array(2).fill('').map((e, i) => (
+                        {Array(0).fill('').map((e, i) => (
                             <Card key={i} withBorder radius={8} p={0}>
                                 <Stack gap={0}>
                                     <Card className={`!bg-primary-light`} p={15}>
@@ -74,7 +74,7 @@ export default function Transaction({  }: Readonly<ComponentProps>) {
                                 </Stack>
                             </Card>
                         ))}
-                        {false && (
+                        {true && (
                             <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
                                 Tidak ada transaksi merchandise
                             </Alert>

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Upcoming from '@/components/Home/Upcoming';
 import { Get } from '@/utils/REST';
 import { EventProps, SliderProps } from '@/utils/globalInterface';
+import { useRouter } from 'next/router';
 
 interface HeroProps {
   data: EventProps[];
@@ -18,6 +19,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   const [onLoad, setOnLoad] = useState(false);
   const [sliderData, setSliderData] = useState<SliderProps[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -86,7 +88,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
         <div className='pt-20 ' id='hero'>
           <Slider {...settings}>
             {sliderData.map((el) => (
-              <div key={el.id} className='mx-40'>
+              <div key={el.id} className={`mx-40 ${el.link ? 'cursor-pointer' : ''}`} onClick={() => el.link ? router.push(el.link) : {}}>
                 <Image 
                   src={el.image_url} 
                   alt={el.name} 

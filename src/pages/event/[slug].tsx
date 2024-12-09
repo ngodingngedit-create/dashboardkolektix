@@ -15,7 +15,6 @@ import { faBookmark as faBookmarkOutlined, faCopy } from '@fortawesome/free-regu
 import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { faArrowLeft, faCalendar, faCheck, faClock, faLocationDot, faShareNodes, faTicket } from '@fortawesome/free-solid-svg-icons';
 import { faFacebook, faInstagram } from '@fortawesome/free-brands-svg-icons';
-import Cookies from 'js-cookie';
 import { Progress, Spinner } from '@nextui-org/react';
 import xendit from '../../assets/images/xendit.png';
 import DescriptionBlock from '@/components/Detail/DescriptionBlock';
@@ -37,9 +36,15 @@ import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
 import { Flex, Stack, Text, Image as ImageM, ActionIcon, Box, Card, AspectRatio } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { randomId, useClickOutside, useInterval, useTimeout } from '@mantine/hooks';
+import { randomId, useClickOutside, useInterval, useListState, useTimeout } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import moment from 'moment';
+import fetch from '@/utils/fetch';
+import { BookmarkListResponse, BookmarkRequest } from '@/types/bookmark';
+import Cookies from 'js-cookie';
+import useLoggedUser from '@/utils/useLoggedUser';
+import { faBookmark as bookmarkSolid } from '@fortawesome/free-solid-svg-icons';
+import { modals } from '@mantine/modals';
 
 interface Form {
     nik: string;
@@ -121,6 +126,9 @@ const EventDetails = () => {
     const initialValue = { transactionStorage: 'value' };
     const [alert, setAlert] = useState('');
     const [openChat, setOpenChat] = useState(false);
+    const [bookmark, setBookmark] = useState(false);
+    const [loadings, setLoadings] = useListState<string>();
+    const user = useLoggedUser();
 
     const [timoutHash, setTimeoutHash] = useState('');
     const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
@@ -132,6 +140,70 @@ const EventDetails = () => {
             }, 500);
         }
     });
+
+    useEffect(() => {
+        const bookmarked = user?.bookmarked?.find(e => Boolean(e.event_id) && e.event_id == detail?.id);
+        setBookmark(Boolean(bookmarked));
+    }, [user]);
+
+    const toggleBookmark = () => {
+        if (!bookmark) {
+            toggleBookmarkFetch();
+            setBookmark(true);
+        } else {
+            modals.openConfirmModal({
+                centered: true,
+                title: 'Hapus dari bookmark',
+                children: 'Apakah kamu yakin ingin menghapus event ini dari bookmark?',
+                labels: { cancel: 'Batal', confirm: 'Hapus' },
+                onConfirm: () => {
+                    toggleBookmarkFetch(false);
+                    setBookmark(false);
+                }
+            })
+        }
+    }
+
+    const toggleBookmarkFetch = async (status: boolean = true) => {
+        if (!status) {
+            const bookid = user?.bookmarked?.find(e => e.event_id == detail?.id)?.id;
+            if (!bookid) {
+                toast.error('Gagal Menghapus');
+                return;
+            }
+
+            await fetch<any, any>({
+                url: 'bookmark/' + bookid,
+                method: 'DELETE',
+                before: () => setLoadings.append('bookmark'),
+                success: () => {
+                    const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+                    Cookies.set('bookmarked', JSON.stringify(data.filter(e => e.event_id != detail?.id)));
+                    toast.info('Berhasil menghapus ke bookmark');
+                },
+                complete: () => setLoadings.filter(e => e != 'bookmark'),
+                error: () => toast.error('Gagal Menghapus')
+            });
+            return;
+        }
+
+        await fetch<BookmarkRequest, BookmarkListResponse>({
+            url: 'bookmark-user',
+            method: 'POST',
+            data: {
+                module_id: 1,
+                type: 'Event',
+                event_id: detail?.id ?? 0
+            },
+            before: () => setLoadings.append('bookmark'),
+            success: ({ data: newData }) => {
+                const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+                Cookies.set('bookmarked', JSON.stringify([...data, newData]));
+                toast.info('Berhasil menambahkan ke bookmark')
+            },
+            complete: () => setLoadings.filter(e => e != 'bookmark'),
+        });
+    }
 
     const handleShare = () => {
         const url = window.location.href;
@@ -192,7 +264,7 @@ const EventDetails = () => {
             store.put({ id: 'transactionStorage', data });
 
             transaction.oncomplete = () => {
-                console.log('Data berhasil disimpan ke IndexedDB');
+                //console.log('Data berhasil disimpan ke IndexedDB');
                 router.push('/transaction-woauth');
             };
 
@@ -205,7 +277,7 @@ const EventDetails = () => {
     };
 
     const setLocalStorageValue = () => {
-        console.log('Menghapus data dari IndexedDB');
+        //console.log('Menghapus data dari IndexedDB');
 
         openDatabase()
             .then((db) => {
@@ -214,7 +286,7 @@ const EventDetails = () => {
                 store.delete('transactionStorage');
 
                 transaction.oncomplete = () => {
-                    console.log('Data berhasil dihapus dari IndexedDB');
+                    //console.log('Data berhasil dihapus dari IndexedDB');
                 };
 
                 transaction.onerror = (error) => {
@@ -287,10 +359,10 @@ const EventDetails = () => {
         const availableIndex = data.findIndex((ticket) => ticket.is_soldout === 0 && ticket.is_finish === 0);
         if (selectedTab) {
             setSelectedDate(selectedTab);
-            console.log(selectedTab);
+            //console.log(selectedTab);
         } else if (availableIndex !== -1 && selectedDate === null) {
             setSelectedDate(availableIndex);
-            console.log(`Available Index: ${availableIndex}`);
+            //console.log(`Available Index: ${availableIndex}`);
         }
     }, [selectedTab, data]);
 
@@ -300,7 +372,7 @@ const EventDetails = () => {
         setFirstLoad(true);
         Get(`event/${slug}`, {})
             .then((res: any) => {
-                console.log('Response Data:', res.data); // Log data respons
+                //console.log('Response Data:', res.data); // Log data respons
 
                 setDetail(res.data);
                 setData(res.data.has_event_ticket);
@@ -312,7 +384,7 @@ const EventDetails = () => {
                 setFirstLoad(false);
             })
             .catch((err: any) => {
-                console.log('Error:', err); // Log error
+                //console.log('Error:', err); // Log error
 
                 setFirstLoad(false);
             });
@@ -338,7 +410,7 @@ const EventDetails = () => {
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
-        console.log(userId);
+        //console.log(userId);
 
         var payload: { [key: string]: any } = {
             user_id: userId,
@@ -366,7 +438,7 @@ const EventDetails = () => {
                 setTransactionData(res.data);
 
                 if (res.xendit_invoice && res.xendit_invoice.va_number) {
-                    console.log(res.xendit_invoice);
+                    //console.log(res.xendit_invoice);
                     setXenditInvoice(res.xendit_invoice.va_number[0]);
                 }
 
@@ -424,7 +496,7 @@ const EventDetails = () => {
             }));
 
         setTicket(newData);
-        // console.log(newData, 'aw');
+        // //console.log(newData, 'aw');
     };
 
     const triggerCounter = (id: string) => {
@@ -433,12 +505,12 @@ const EventDetails = () => {
             if (!triggered) {
                 Post('event-counter', { event_id: id })
                     .then((res) => {
-                        console.log(res);
+                        //console.log(res);
                         setFirstLoad(false);
                         setTriggered(true);
                     })
                     .catch((err) => {
-                        console.log(err);
+                        //console.log(err);
                         setTriggered(true);
                         setFirstLoad(false);
                     });
@@ -497,11 +569,11 @@ const EventDetails = () => {
         setLoading(true);
         Get(`payment-method/${id}`, {})
             .then((res: any) => {
-                // console.log(res);
+                // //console.log(res);
                 setPaymentMethod(res.data);
             })
             .catch((err: any) => {
-                console.log(err);
+                //console.log(err);
                 setLoading(false);
             });
     };
@@ -510,41 +582,26 @@ const EventDetails = () => {
         setFirstLoad(true);
         Get(`payment-method`, {})
             .then((res: any) => {
-                console.log(res, 'metod');
+                //console.log(res, 'metod');
                 setPaymentList(res);
                 setFirstLoad(false);
             })
             .catch((err: any) => {
-                console.log(err);
+                //console.log(err);
                 setFirstLoad(false);
             });
     };
 
-    const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
-        return (
-            <div className="flex flex-col items-center justify-center  font-semibold">
-                <h3 className="text-[15px] my-5">Waktu untuk Pembayaran Tersisa</h3>
-                <div className="bg-primary-light border-2 border-primary-light-200 text-[40px] px-6 py-2 rounded-xl">
-                    <div className="flex">
-                        <div className="pr-4">
-                            {String(hours).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Jam</p>
-                        </div>
-                        <div className="border-2 border-x-primary-light-200 border-y-primary-light px-4">
-                            {String(minutes).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Menit</p>
-                        </div>
-                        <div className="pl-4">
-                            {String(seconds).padStart(2, '0')}
-                            <p className="text-sm font-medium text-center text-grey">Detik</p>
-                        </div>
-                    </div>
-                </div>
-                <p className="text-sm text-center font-light my-5 px-4">
-                    Batas pembayaran sampai dengan <span className="font-semibold">{formattedDate}</span> Harap selesaikan pembayaran sebelum waktu tersebut untuk menghindari pembatalan otomatis.
-                </p>
-            </div>
-        );
+    const renderer: CountdownRendererFn = ({ minutes, seconds, completed }) => {
+        if (completed) {
+            router.back();
+        } else {
+            return (
+            <p className='font-semibold'>
+                {String(minutes).padStart(2, '0')} : {String(seconds).padStart(2, '0')}
+            </p>
+            );
+        }
     };
 
     const params = useSearchParams();
@@ -633,10 +690,9 @@ const EventDetails = () => {
 
         const result: [number, string][] = [];
         if (days > 0) result.push([days, "Hari"]);
-        if (hours > 0) result.push([hours, "Jam"]);
-        if (minutes > 0) result.push([minutes, "Menit"]);
-        if (seconds > 0) result.push([seconds, "Detik"]);
-        console.log(date, result);
+        result.push([hours, "Jam"]);
+        result.push([minutes, "Menit"]);
+        result.push([seconds, "Detik"]);
         return result;
     }, [timoutHash, detail]);
 
@@ -652,6 +708,13 @@ const EventDetails = () => {
         const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
         return date.isBefore(moment());
     }
+
+    const countdownTime = useMemo(() => {
+        const targetDate = new Date();
+        targetDate.setMinutes(targetDate.getMinutes() + 15);
+
+        return targetDate;
+    }, []);
 
     return !firstLoad && detail ? (
         detail && (
@@ -722,7 +785,52 @@ const EventDetails = () => {
 
                                 <Progress size="sm" color="success" aria-label="Loading..." value={step} />
                             </div>
-                            <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                            <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                                <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
+                                    <Countdown date={countdownTime} renderer={renderer} />
+                                    <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
+                                    <p className='text-xs'>Segera selesaikan pesananmu</p>
+                                </div>
+                                <Flex align="center" gap={10}>
+                                    <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
+                                    {step === 66 ? (
+                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
+                                    ) : step === 100 && transactionData ? (
+                                        <Button
+                                            color="primary"
+                                            label="Bayar Sekarang"
+                                            disabled={loading || payment === ''}
+                                            onClick={
+                                                payment === '4' && transactionData.xendit_url
+                                                    ? () => {
+                                                        setLoading(true);
+                                                        router.push(transactionData.xendit_url);
+                                                    }
+                                                    : payment === '3'
+                                                    ? () => {
+                                                        setStep(3);
+                                                        scrollToTop();
+                                                    }
+                                                    : () => {
+                                                        setStep(2);
+                                                        scrollToTop();
+                                                    }
+                                            }
+                                        />
+                                    ) : (
+                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                    )}
+                                </Flex>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+                            <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
+                                <Countdown date={countdownTime} renderer={renderer} />
+                                <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
+                                <p className='text-xs'>Segera selesaikan pesananmu</p>
+                            </div>
+                            <Flex align="center" gap={10}>
                                 <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                                 {step === 66 ? (
                                     <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
@@ -734,55 +842,24 @@ const EventDetails = () => {
                                         onClick={
                                             payment === '4' && transactionData.xendit_url
                                                 ? () => {
-                                                      setLoading(true);
-                                                      router.push(transactionData.xendit_url);
-                                                  }
+                                                    setLoading(true);
+                                                    router.push(transactionData.xendit_url);
+                                                }
                                                 : payment === '3'
                                                 ? () => {
-                                                      setStep(3);
-                                                      scrollToTop();
-                                                  }
+                                                    setStep(3);
+                                                    scrollToTop();
+                                                }
                                                 : () => {
-                                                      setStep(2);
-                                                      scrollToTop();
-                                                  }
+                                                    setStep(2);
+                                                    scrollToTop();
+                                                }
                                         }
                                     />
                                 ) : (
-                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                    <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
                                 )}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="w-full fixed flex justify-end gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
-                            <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
-                            {step === 66 ? (
-                                <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
-                            ) : step === 100 && transactionData ? (
-                                <Button
-                                    color="primary"
-                                    label="Bayar Sekarang"
-                                    disabled={loading || payment === ''}
-                                    onClick={
-                                        payment === '4' && transactionData.xendit_url
-                                            ? () => {
-                                                  setLoading(true);
-                                                  router.push(transactionData.xendit_url);
-                                              }
-                                            : payment === '3'
-                                            ? () => {
-                                                  setStep(3);
-                                                  scrollToTop();
-                                              }
-                                            : () => {
-                                                  setStep(2);
-                                                  scrollToTop();
-                                              }
-                                    }
-                                />
-                            ) : (
-                                <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
-                            )}
+                            </Flex>
                         </div>
                     ))}
 
@@ -792,10 +869,30 @@ const EventDetails = () => {
                         <>
                             <div className="bg-primary-dark">
                                 <div className="max-w-7xl mx-auto">
-                                    <div className="px-8 pt-20 pb-3">
-                                        <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
-                                        <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
-                                    </div>
+                                    <Flex justify="space-between" align="end" className="px-8 pt-20 pb-3">
+                                        <div>
+                                            <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
+                                            <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
+                                        </div>
+
+                                        {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                            <Stack gap={12} align="end">
+                                                <Text size="xs" c="white">Event Dimulai Dalam</Text>
+                                                <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
+                                                    {timeToEvent.map((e, i) => (
+                                                        <AspectRatio key={i}>
+                                                            <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
+                                                                <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                                                    <Text fw={600} size="16px">{e[0]}</Text>
+                                                                    <Text size="9px">{e[1]}</Text>
+                                                                </Stack>
+                                                            </Card>
+                                                        </AspectRatio>
+                                                    ))}
+                                                </Flex>
+                                            </Stack>
+                                        )}
+                                    </Flex>
                                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
                                           <Stack w="100%">
                                             <Box pos="relative">
@@ -805,25 +902,10 @@ const EventDetails = () => {
                                                     <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                                                         <Flex gap={10} align="center">
                                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
-                                                            <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
-                                                            <Text fw={600} c="white">Live Event</Text>
+                                                            <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
+                                                            <Text fw={600} c="white" size="xs">Live Event</Text>
                                                         </Flex>
                                                     </Card>
-                                                )}
-
-                                                {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                                    <Flex align="center" gap={5} className={`!absolute bottom-3 right-3`}>
-                                                        {timeToEvent.map((e, i) => (
-                                                            <AspectRatio key={i}>
-                                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
-                                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
-                                                                        <Text fw={600} size="16px">{e[0]}</Text>
-                                                                        <Text size="9px">{e[1]}</Text>
-                                                                    </Stack>
-                                                                </Card>
-                                                            </AspectRatio>
-                                                        ))}
-                                                    </Flex>
                                                 )}
                                             </Box>
 
@@ -854,7 +936,11 @@ const EventDetails = () => {
                                                         </button>
                                                         {alert && <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">Copy</div>}
                                                     </div>
-                                                    {isLogin && <FontAwesomeIcon icon={faBookmarkOutlined} className="text-xl " />}
+                                                    {isLogin && (
+                                                        <Box onClick={toggleBookmark}>
+                                                            <FontAwesomeIcon  icon={bookmark ? bookmarkSolid : faBookmarkOutlined} className="text-xl " />
+                                                        </Box>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
@@ -870,8 +956,8 @@ const EventDetails = () => {
                                             </div>
                                           </Stack>
                                         
-                                        <Stack className={`w-full md:max-w-[300px] pb-[20px]`}>
-                                          <div className="p-[25px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
+                                        <Stack className={`w-full md:max-w-[300px] pb-[20px]`} gap={10}>
+                                          <div className="px-[25px] pt-[15px] pb-[10px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
                                             <Stack gap={12}>
                                               <Flex align="center" gap={10}>
                                                 <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
@@ -888,7 +974,7 @@ const EventDetails = () => {
                                                 </Flex>
                                               </Link>
                                               <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
-                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="50%" miw={100} mah={300} />
+                                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
                                             </Stack>
                                           </div>
 
@@ -917,32 +1003,38 @@ const EventDetails = () => {
                                     <Card className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                                         <Flex gap={10} align="center">
                                             <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
-                                            <Icon icon="mynaui:video" className={`!text-[30px] !text-red-500`} />
-                                            <Text fw={600} c="white">Live Event</Text>
+                                            <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
+                                            <Text fw={600} c="white" size="xs">Live Event</Text>
                                         </Flex>
                                     </Card>
                                 )}
 
-                                {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                    <Flex align="center" gap={5} className={`!absolute bottom-7 right-7`}>
+                            </Box>
+
+                            <Flex justify="space-between" gap={10} px={20} display="none">
+                                <Box>
+                                </Box>
+
+                                {/* {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                    <Flex align="center" gap={5} className={` bottom-7 right-7`}>
                                         {timeToEvent.map((e, i) => (
-                                            <AspectRatio key={i}>
-                                                <Card w={42} bg="#00000050" radius={10} p={0} className={`border border-white/50 backdrop-blur-sm`} key={i}>
-                                                    <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                                            // <AspectRatio key={i}>
+                                                <Card key={i} radius={10} p={0} className={`border border-black/50 backdrop-blur-sm`} py={5} px={10}>
+                                                    <Flex align="center" justify="center" h="100%" gap={3} c="black">
                                                         <Text fw={600} size="14px">{e[0]}</Text>
                                                         <Text size="9px">{e[1]}</Text>
-                                                    </Stack>
+                                                    </Flex>
                                                 </Card>
-                                            </AspectRatio>
+                                            // </AspectRatio>
                                         ))}
                                     </Flex>
-                                )}
-                            </Box>
+                                )} */}
+                            </Flex>
+
                             <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                                 <Flex gap={10} justify="space-between" mb={5} align="center">
                                   {/* <Stack gap={5}> */}
                                     <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
-
                                     {detail.has_event_social_meida?.ig_name	 && (
                                         <Link href={detail.has_event_social_meida?.instagram + '/' + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
                                             <Flex gap={8} align="center">

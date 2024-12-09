@@ -103,6 +103,7 @@ export default function DateTab({
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
               {sortedTicket(tickets).map((item) => (
                 <OrderCounter
+                  isFullbook={(item?.is_fullbook ?? 0) == 1}
                   maxOrder={maxOrder}
                   ticketData={item}
                   description={item.description}

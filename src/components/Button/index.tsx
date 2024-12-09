@@ -29,7 +29,9 @@ const Button = ({
     <>
       <button
         disabled={disabled}
-        className={`${
+        className={`
+          ${loading ? 'pointer-events-none' : ''}
+        ${
           color === 'primary'
             ? 'bg-primary-dark text-white hover:bg-primary-base'
             : color === 'secondary'

@@ -29,10 +29,11 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { Box, Button, Indicator } from '@mantine/core';
-import { useClickOutside } from '@mantine/hooks';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex } from '@mantine/core';
+import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
+import { modals } from '@mantine/modals';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -72,15 +73,23 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = () => {
-    Cookies.remove('token', { path: '/' });
-    Cookies.remove('user_data', { path: '/' });
-    Cookies.remove('prevPath', { path: '/' });
-    Cookies.remove('ticketCount', { path: '/' });
-    if (route !== '/') {
-      router.push('/').then(() => window.location.reload());
-    } else {
-      window.location.reload();
-    }
+    modals.openConfirmModal({
+      title: 'Keluar Akun',
+      centered: true,
+      children: 'Apakah kamu yakin ingin keluar akun?',
+      labels: { cancel: "Batal", confirm: "Keluar" },
+      onConfirm: () => {
+        Cookies.remove('token', { path: '/' });
+        Cookies.remove('user_data', { path: '/' });
+        Cookies.remove('prevPath', { path: '/' });
+        Cookies.remove('ticketCount', { path: '/' });
+        if (route !== '/') {
+          router.push('/').then(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
+      }
+    })
   };
 
   useEffect(() => {
@@ -128,6 +137,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
     setBgNav(active);
   };
 
+  useHotkeys([
+    ['ctrl+F', () => setShowFilter(!showFilter)]
+  ]);
+
   // const cartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
 
   return (
@@ -144,7 +157,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-            <div className='mr-2 w-8 md:hidden'>
+              {/* <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -154,8 +167,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
                 </button>
-              </div>
-              <div className='mr-2 w-8 hidden md:inline lg:inline'>
+              </div> */}
+              {/* <div className='mr-2 w-8 hidden md:inline lg:inline'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -165,7 +178,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div>
+              </div> */}
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
@@ -262,7 +275,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
 
                   <div className='relative ml-3'>
                     {isLogin ? (
-                      <div className='bg-white rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16'>
+                      <div className='bg-white hidden rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16'>
                           <button
                             type='button'
                             className='w-full relative flex max-w-xs items-center rounded-full text-sm justify-around'
@@ -281,7 +294,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </div>
                     ) : (
                       <>
-                        <Button
+                        {/* <Button
                           size="compact-lg"
                           radius="xl"
                           bg="white"
@@ -289,7 +302,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           onClick={() => router.push('/auth')}
                         >
                           Login
-                        </Button>
+                        </Button> */}
                         {/* <button
                           type='button'
                           className='w-full relative flex items-center rounded-full justify-around text-[20px] text-primary-base font-semibold hover:text-primary-dark'
@@ -302,6 +315,45 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </button> */}
                       </>
                     )}
+
+                    <Flex gap={10}>
+                      {/* <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
+                        <Icon icon="uiw:search" className={`text-[20px]`} />
+                      </ActionIcon> */}
+                      <Menu offset={20} width="250px" radius={10}>
+                        <Menu.Target>
+                          <ActionIcon variant="transparent" color="white">
+                            <Icon icon="uiw:menu" className={`text-[20px]`} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
+                          <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
+                          <Menu.Divider className={`md:!hidden`}/> */}
+                          <Menu.Label>Akun</Menu.Label>
+                          {!isLogin ? (
+                            <>
+                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
+                              {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
+                            </>
+                          ) : (
+                            <>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
+                            </>
+                          )}
+                          <Menu.Divider className={`md:!hidden`}/>
+                          <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Flex>
                     <Fade isShowing={showNotifications}>
                       <div
                         className={`absolute right-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${
@@ -379,16 +431,18 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <FontAwesomeIcon icon={faTableColumns} className='mr-2' />
                           Dashboard
                         </Link>
-                        <Link
-                          href='/'
-                          className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
-                          role='menuitem'
-                          tabIndex={-1}
-                          id='user-menu-item-0'
-                        >
-                          <FontAwesomeIcon icon={faBookmark} className='mr-2' />
-                          Bookmark
-                        </Link>
+                        {users?.id && (
+                          <Link
+                            href='/dashboard/bookmark'
+                            className='block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md'
+                            role='menuitem'
+                            tabIndex={-1}
+                            id='user-menu-item-0'
+                          >
+                            <FontAwesomeIcon icon={faBookmark} className='mr-2' />
+                            Bookmark
+                          </Link>
+                        )}
                         {/* <a
                           href='#'
                           className='block px-4 py-2 text-xs text-dark hover:bg-primary-light'

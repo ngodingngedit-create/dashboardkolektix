@@ -11,7 +11,7 @@ import { Switch } from '@nextui-org/react';
 import useLoggedUser from '@/utils/useLoggedUser';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import React from 'react';
-import { Stack } from '@mantine/core';
+import { NumberFormatter, Stack, Text } from '@mantine/core';
 
 interface FormTicket {
     event_id: number;
@@ -164,21 +164,45 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                     ))}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                        <p className="font-semibold">Rp{totalSubtotalPrice.toLocaleString('id-ID')}</p>
+                        <p className="font-semibold">
+                            {(totalSubtotalPrice) > 0 ? (
+                                <NumberFormatter value={totalSubtotalPrice} />
+                            ) : (
+                                <Text>Free</Text>
+                            )}
+                        </p>
                     </div>
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Biaya Admin</p>
-                        <p className="font-semibold">Rp{(detail.admin_fee ?? 0).toLocaleString('id-ID')}</p>
+                        <p className="font-semibold">
+                            {(detail?.admin_fee * totalCount) > 0 ? (
+                                <NumberFormatter value={detail?.admin_fee * totalCount} />
+                            ) : (
+                                <Text>Free</Text>
+                            )}
+                        </p>
                     </div>
                     {detail.ppn ? (
                         <div className="py-3 px-4 flex justify-between items-center">
                             <p>Tax</p>
-                            <p className="font-semibold">Rp{detail.ppn.toLocaleString('id-ID')}</p>
+                            <p className="font-semibold">
+                                {(detail.ppn) > 0 ? (
+                                    <NumberFormatter value={detail.ppn} />
+                                ) : (
+                                    <Text>Free</Text>
+                                )}
+                            </p>
                         </div>
                     ) : null}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Total Pembayaran</p>
-                        <p className="font-semibold">Rp{(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))).toLocaleString('id-ID')}</p>
+                        <p className="font-semibold">
+                            {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))) > 0 ? (
+                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))} />
+                            ) : (
+                                <Text>Free</Text>
+                            )}
+                        </p>
                     </div>
                 </div>
                 {form.map((item, index) => {
@@ -397,21 +421,45 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             ))}
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                                <p className="font-semibold">Rp{totalSubtotalPrice.toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {(totalSubtotalPrice) > 0 ? (
+                                        <NumberFormatter value={totalSubtotalPrice} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Biaya Admin</p>
-                                <p className="font-semibold">Rp{(detail.admin_fee * totalCount).toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {(detail?.admin_fee * totalCount) > 0 ? (
+                                        <NumberFormatter value={detail?.admin_fee * totalCount} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                             {detail.ppn ? (
                                 <div className="py-3 px-4 flex justify-between items-center">
                                     <p>Tax</p>
-                                    <p className="font-semibold">Rp{detail.ppn.toLocaleString('id-ID')}</p>
+                                    <p className="font-semibold">
+                                        {(detail.ppn) > 0 ? (
+                                            <NumberFormatter value={detail.ppn} />
+                                        ) : (
+                                            <Text>Free</Text>
+                                        )}
+                                    </p>
                                 </div>
                             ) : null}
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Total Pembayaran</p>
-                                <p className="font-semibold">Rp{(totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0)).toLocaleString('id-ID')}</p>
+                                <p className="font-semibold">
+                                    {((totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
+                                        <NumberFormatter value={(totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))} />
+                                    ) : (
+                                        <Text>Free</Text>
+                                    )}
+                                </p>
                             </div>
                         </div>
                     </div>

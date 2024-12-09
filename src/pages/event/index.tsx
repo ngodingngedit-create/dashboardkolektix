@@ -67,15 +67,15 @@ const Event = () => {
     <>
       <Chat />
       <div className='text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24'>
-        <div className='pl-4'>
+        {/* <div className='pl-4'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>
             <BreadcrumbItem>List Event</BreadcrumbItem>
           </Breadcrumbs>
-        </div>
+        </div> */}
         {!loading ? (
           <>
-            <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-3'>
+            <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-0'>
               {topic.map((item) => (
                 <div
                   key={item.id}
@@ -90,10 +90,11 @@ const Event = () => {
                 </div>
               ))}
             </ScrollShadow>
-            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5'>
+            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 my-5'>
               {filteredData.length > 0 ? (
                 filteredData.map((event: any) => (
                   <EventCard
+                    id={event.id}
                     key={event.id}
                     title={event.name}
                     img={event.image_url}
@@ -105,6 +106,10 @@ const Event = () => {
                     creatorImg={event.has_creator?.image}
                     creator={event.has_creator?.name}
                     creatorSlug={event.has_creator?.slug}
+                    start_date={event.start_date}
+                    start_time={event.start_time}
+                    end_date={event.end_date}
+                    end_time={event.end_time}
                   />
                 ))
               ) : (
