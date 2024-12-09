@@ -7,6 +7,8 @@ import Button from '@/components/Button';
 import { Post, Get, Put } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
+import { notifications } from '@mantine/notifications';
+import { useListState } from '@mantine/hooks';
 
 interface FormLegalProps {
   creator_id: number;
@@ -24,6 +26,7 @@ interface FormLegalProps {
 }
 
 const Legal = () => {
+  const [loading, setLoading] = useListState<string>();
   const [ktpImg, setKtpImg] = useState<string | null>(null);
   const [npwpImg, setNpwpImg] = useState<string | null>(null);
   const [hasData, setHasData] = useState(false);
@@ -69,25 +72,39 @@ const Legal = () => {
   };
 
   const onSubmit = () => {
+    setLoading.append('post');
     Post('creator-information-legal', form)
       .then((res) => {
         console.log(res);
-        toast.success('Berhasil menyimpan data');
+        notifications.show({
+          message: 'Berhasil menyimpan data',
+          color: 'green'
+        });
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setLoading.filter(e => e != 'post');
       });
   };
 
   const onUpdate = () => {
+    setLoading.append('post');
     Put(`creator-information-legal/${form.creator_id}`, form)
       .then((res) => {
         console.log(res);
-        toast.success('Berhasil mengupdate data');
+        notifications.show({
+          message: 'Berhasil mengupdate data',
+          color: 'green'
+        });
         getData(form.creator_id);
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setLoading.filter(e => e != 'post');
       });
   };
   const handleImage = (e: any, type: string) => {
@@ -254,11 +271,11 @@ const Legal = () => {
           </div>
         </div>
       </div>
-      <div className='w-full flex justify-end px-2'>
+      <div className='w-full flex justify-end px-2 !sticky bottom-0 z-20'>
         {hasData ? (
-          <Button label='Update Dokumen' color='primary' onClick={onUpdate} />
+          <Button disabled={!form.is_snk} label='Update Dokumen' color='primary' loading={loading.includes('post')} onClick={onUpdate} />
         ) : (
-          <Button label='Kirim Dokumen' color='primary' onClick={onSubmit} />
+          <Button disabled={!form.is_snk} label='Kirim Dokumen' color='primary' loading={loading.includes('post')} onClick={onSubmit} />
         )}
       </div>
     </div>
