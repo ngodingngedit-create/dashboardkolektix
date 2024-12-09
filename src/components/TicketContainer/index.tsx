@@ -55,12 +55,14 @@ const TicketContainer = ({
           </p>
         </div>
         <div className='flex gap-2'>
-          {/* <button
-            onClick={onEdit}
-            className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
-          >
-            <FontAwesomeIcon icon={faPenToSquare} size='lg' />
-          </button> */}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
+            >
+              <FontAwesomeIcon icon={faPenToSquare} size='lg' />
+            </button>
+          )}
           {/* <button
             onClick={onDelete}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
