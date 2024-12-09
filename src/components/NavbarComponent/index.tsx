@@ -317,9 +317,9 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     )}
 
                     <Flex gap={10}>
-                      <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
+                      {/* <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
                         <Icon icon="uiw:search" className={`text-[20px]`} />
-                      </ActionIcon>
+                      </ActionIcon> */}
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
                           <ActionIcon variant="transparent" color="white">

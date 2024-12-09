@@ -35,10 +35,10 @@ const TicketContainer = ({
             <p className='font-semibold'>{name}</p>
             <p className='text-grey text-sm'>{category}</p>
           </Stack>
-          <Stack gap={0} align="end">
+          {/* <Stack gap={0} align="end">
             <Text size="xs" c="gray">Total 0 Tiket</Text>
             <Text size="xs" c="gray">Terjual 0 Tiket</Text>
-          </Stack>
+          </Stack> */}
         </Flex>
       </div>
       <div className='p-4 flex justify-between'>
@@ -55,12 +55,12 @@ const TicketContainer = ({
           </p>
         </div>
         <div className='flex gap-2'>
-          <button
+          {/* <button
             onClick={onEdit}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
           >
             <FontAwesomeIcon icon={faPenToSquare} size='lg' />
-          </button>
+          </button> */}
           {/* <button
             onClick={onDelete}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'

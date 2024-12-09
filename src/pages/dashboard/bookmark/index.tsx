@@ -33,7 +33,7 @@ export default function BookmarkPage({  }: Readonly<ComponentProps>) {
     };
 
     const eventList = useMemo(() => {
-        return data?.filter(e => e.type == "Event").map(e => e.has_event);
+        return data?.filter(e => e.type == "Event").map(e => ({...e.has_event, bookmark_id: e.id }));
     }, [data]);
 
     return (
@@ -64,6 +64,7 @@ export default function BookmarkPage({  }: Readonly<ComponentProps>) {
                         {eventList?.map((e, i) => (
                             <Box key={i} className={`!max-w-[280px]`}>
                                 <EventCard
+                                    bookmark_id={e.bookmark_id}
                                     id={e.id}
                                     slug={e.slug}
                                     title={e.name}

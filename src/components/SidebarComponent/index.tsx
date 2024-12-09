@@ -318,7 +318,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 </div>
                                             </Link>
                                         ) : (
-                                            <div onClick={() => toggleSubmenu(el.id)} className="cursor-pointer">
+                                            <div onClick={() => {toggleSubmenu(el.id); setCollapse(true);}} className="cursor-pointer">
                                                 <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
                                                     <div className="flex items-center">
                                                         <div className="w-5 h-5 flex justify-center items-center">

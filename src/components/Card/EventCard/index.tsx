@@ -33,6 +33,7 @@ interface EventCardProps {
   creatorImg?: string;
   creator: string;
   bookmark?: boolean;
+  bookmark_id?: number;
   price?: number;
   creatorSlug?: string;
   has_creator?: {
@@ -64,6 +65,7 @@ const EventCard = ({
   start_time,
   end_date,
   end_time,
+  bookmark_id
 }: EventCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const [loading, setLoading] = useListState<string>();
@@ -95,7 +97,7 @@ const EventCard = ({
   }, [users]);
 
   const toggleBookmark = () => {
-    if (!bookmark) {
+    if (!bookmark && !bookmark_id) {
       toggleBookmarkFetch();
       setBookmark(true);
     } else {
@@ -115,13 +117,13 @@ const EventCard = ({
   const toggleBookmarkFetch = async (status: boolean = true) => {
     if (!status) {
       const bookid = users?.bookmarked?.find(e => e.event_id == id)?.id;
-      if (!bookid) {
+      if (!bookid && !bookmark_id) {
         toast.error('Gagal Menghapus');
         return;
       }
 
       await fetch<any, any>({
-        url: 'bookmark/' + bookid,
+        url: 'bookmark/' + (bookmark_id ?? bookid),
         method: 'DELETE',
         before: () => setLoading.append('bookmark'),
         success: () => {
@@ -213,7 +215,7 @@ const EventCard = ({
               className='inline-flex items-center py-2 text-base font-medium text-center text-dark rounded-lg'
             >
               <FontAwesomeIcon
-                icon={bookmark ? bookmarkSolid : faBookmark}
+                icon={(bookmark || bookmark_id) ? bookmarkSolid : faBookmark}
                 className='text-dark'
               />
             </button>

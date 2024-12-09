@@ -15,7 +15,6 @@ import { faBookmark as faBookmarkOutlined, faCopy } from '@fortawesome/free-regu
 import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { faArrowLeft, faCalendar, faCheck, faClock, faLocationDot, faShareNodes, faTicket } from '@fortawesome/free-solid-svg-icons';
 import { faFacebook, faInstagram } from '@fortawesome/free-brands-svg-icons';
-import Cookies from 'js-cookie';
 import { Progress, Spinner } from '@nextui-org/react';
 import xendit from '../../assets/images/xendit.png';
 import DescriptionBlock from '@/components/Detail/DescriptionBlock';
@@ -37,9 +36,15 @@ import ChatBox from '@/components/chat';
 import { validateHeaderName } from 'node:http';
 import { Flex, Stack, Text, Image as ImageM, ActionIcon, Box, Card, AspectRatio } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { randomId, useClickOutside, useInterval, useTimeout } from '@mantine/hooks';
+import { randomId, useClickOutside, useInterval, useListState, useTimeout } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import moment from 'moment';
+import fetch from '@/utils/fetch';
+import { BookmarkListResponse, BookmarkRequest } from '@/types/bookmark';
+import Cookies from 'js-cookie';
+import useLoggedUser from '@/utils/useLoggedUser';
+import { faBookmark as bookmarkSolid } from '@fortawesome/free-solid-svg-icons';
+import { modals } from '@mantine/modals';
 
 interface Form {
     nik: string;
@@ -121,6 +126,9 @@ const EventDetails = () => {
     const initialValue = { transactionStorage: 'value' };
     const [alert, setAlert] = useState('');
     const [openChat, setOpenChat] = useState(false);
+    const [bookmark, setBookmark] = useState(false);
+    const [loadings, setLoadings] = useListState<string>();
+    const user = useLoggedUser();
 
     const [timoutHash, setTimeoutHash] = useState('');
     const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
@@ -132,6 +140,70 @@ const EventDetails = () => {
             }, 500);
         }
     });
+
+    useEffect(() => {
+        const bookmarked = user?.bookmarked?.find(e => Boolean(e.event_id) && e.event_id == detail?.id);
+        setBookmark(Boolean(bookmarked));
+    }, [user]);
+
+    const toggleBookmark = () => {
+        if (!bookmark) {
+            toggleBookmarkFetch();
+            setBookmark(true);
+        } else {
+            modals.openConfirmModal({
+                centered: true,
+                title: 'Hapus dari bookmark',
+                children: 'Apakah kamu yakin ingin menghapus event ini dari bookmark?',
+                labels: { cancel: 'Batal', confirm: 'Hapus' },
+                onConfirm: () => {
+                    toggleBookmarkFetch(false);
+                    setBookmark(false);
+                }
+            })
+        }
+    }
+
+    const toggleBookmarkFetch = async (status: boolean = true) => {
+        if (!status) {
+            const bookid = user?.bookmarked?.find(e => e.event_id == detail?.id)?.id;
+            if (!bookid) {
+                toast.error('Gagal Menghapus');
+                return;
+            }
+
+            await fetch<any, any>({
+                url: 'bookmark/' + bookid,
+                method: 'DELETE',
+                before: () => setLoadings.append('bookmark'),
+                success: () => {
+                    const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+                    Cookies.set('bookmarked', JSON.stringify(data.filter(e => e.event_id != detail?.id)));
+                    toast.info('Berhasil menghapus ke bookmark');
+                },
+                complete: () => setLoadings.filter(e => e != 'bookmark'),
+                error: () => toast.error('Gagal Menghapus')
+            });
+            return;
+        }
+
+        await fetch<BookmarkRequest, BookmarkListResponse>({
+            url: 'bookmark-user',
+            method: 'POST',
+            data: {
+                module_id: 1,
+                type: 'Event',
+                event_id: detail?.id ?? 0
+            },
+            before: () => setLoadings.append('bookmark'),
+            success: ({ data: newData }) => {
+                const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
+                Cookies.set('bookmarked', JSON.stringify([...data, newData]));
+                toast.info('Berhasil menambahkan ke bookmark')
+            },
+            complete: () => setLoadings.filter(e => e != 'bookmark'),
+        });
+    }
 
     const handleShare = () => {
         const url = window.location.href;
@@ -192,7 +264,7 @@ const EventDetails = () => {
             store.put({ id: 'transactionStorage', data });
 
             transaction.oncomplete = () => {
-                console.log('Data berhasil disimpan ke IndexedDB');
+                //console.log('Data berhasil disimpan ke IndexedDB');
                 router.push('/transaction-woauth');
             };
 
@@ -205,7 +277,7 @@ const EventDetails = () => {
     };
 
     const setLocalStorageValue = () => {
-        console.log('Menghapus data dari IndexedDB');
+        //console.log('Menghapus data dari IndexedDB');
 
         openDatabase()
             .then((db) => {
@@ -214,7 +286,7 @@ const EventDetails = () => {
                 store.delete('transactionStorage');
 
                 transaction.oncomplete = () => {
-                    console.log('Data berhasil dihapus dari IndexedDB');
+                    //console.log('Data berhasil dihapus dari IndexedDB');
                 };
 
                 transaction.onerror = (error) => {
@@ -287,10 +359,10 @@ const EventDetails = () => {
         const availableIndex = data.findIndex((ticket) => ticket.is_soldout === 0 && ticket.is_finish === 0);
         if (selectedTab) {
             setSelectedDate(selectedTab);
-            console.log(selectedTab);
+            //console.log(selectedTab);
         } else if (availableIndex !== -1 && selectedDate === null) {
             setSelectedDate(availableIndex);
-            console.log(`Available Index: ${availableIndex}`);
+            //console.log(`Available Index: ${availableIndex}`);
         }
     }, [selectedTab, data]);
 
@@ -300,7 +372,7 @@ const EventDetails = () => {
         setFirstLoad(true);
         Get(`event/${slug}`, {})
             .then((res: any) => {
-                console.log('Response Data:', res.data); // Log data respons
+                //console.log('Response Data:', res.data); // Log data respons
 
                 setDetail(res.data);
                 setData(res.data.has_event_ticket);
@@ -312,7 +384,7 @@ const EventDetails = () => {
                 setFirstLoad(false);
             })
             .catch((err: any) => {
-                console.log('Error:', err); // Log error
+                //console.log('Error:', err); // Log error
 
                 setFirstLoad(false);
             });
@@ -338,7 +410,7 @@ const EventDetails = () => {
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
-        console.log(userId);
+        //console.log(userId);
 
         var payload: { [key: string]: any } = {
             user_id: userId,
@@ -366,7 +438,7 @@ const EventDetails = () => {
                 setTransactionData(res.data);
 
                 if (res.xendit_invoice && res.xendit_invoice.va_number) {
-                    console.log(res.xendit_invoice);
+                    //console.log(res.xendit_invoice);
                     setXenditInvoice(res.xendit_invoice.va_number[0]);
                 }
 
@@ -424,7 +496,7 @@ const EventDetails = () => {
             }));
 
         setTicket(newData);
-        // console.log(newData, 'aw');
+        // //console.log(newData, 'aw');
     };
 
     const triggerCounter = (id: string) => {
@@ -433,12 +505,12 @@ const EventDetails = () => {
             if (!triggered) {
                 Post('event-counter', { event_id: id })
                     .then((res) => {
-                        console.log(res);
+                        //console.log(res);
                         setFirstLoad(false);
                         setTriggered(true);
                     })
                     .catch((err) => {
-                        console.log(err);
+                        //console.log(err);
                         setTriggered(true);
                         setFirstLoad(false);
                     });
@@ -497,11 +569,11 @@ const EventDetails = () => {
         setLoading(true);
         Get(`payment-method/${id}`, {})
             .then((res: any) => {
-                // console.log(res);
+                // //console.log(res);
                 setPaymentMethod(res.data);
             })
             .catch((err: any) => {
-                console.log(err);
+                //console.log(err);
                 setLoading(false);
             });
     };
@@ -510,12 +582,12 @@ const EventDetails = () => {
         setFirstLoad(true);
         Get(`payment-method`, {})
             .then((res: any) => {
-                console.log(res, 'metod');
+                //console.log(res, 'metod');
                 setPaymentList(res);
                 setFirstLoad(false);
             })
             .catch((err: any) => {
-                console.log(err);
+                //console.log(err);
                 setFirstLoad(false);
             });
     };
@@ -864,7 +936,11 @@ const EventDetails = () => {
                                                         </button>
                                                         {alert && <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">Copy</div>}
                                                     </div>
-                                                    {isLogin && <FontAwesomeIcon icon={faBookmarkOutlined} className="text-xl " />}
+                                                    {isLogin && (
+                                                        <Box onClick={toggleBookmark}>
+                                                            <FontAwesomeIcon  icon={bookmark ? bookmarkSolid : faBookmarkOutlined} className="text-xl " />
+                                                        </Box>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
