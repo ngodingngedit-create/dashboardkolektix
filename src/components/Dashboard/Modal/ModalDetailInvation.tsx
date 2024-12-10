@@ -6,8 +6,10 @@ import { useState } from "react";
 import { CategoryResponse } from "./ModalAddInvation";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
+import config from "@/Config";
 
 interface InvitationDetail {
+  id: number;
   event_id: number;
   invitation_cat_id: number;
   invitation_title: string;
@@ -22,9 +24,11 @@ interface InvitationDetail {
 const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: InvitationDetail | null; isOpen: boolean; onClose: () => void }) => {
   const [loading, setLoading] = useListState<string>();
   const [category, setCategory] = useState<CategoryResponse[]>();
+  const [data, setData] = useState<EventInvitationResponse>();
 
   useDidUpdate(() => {
     if (isOpen && !category && invitation) getCategory();
+    if (!data) getData();
   }, [isOpen]);
 
   const getCategory = async () => {
@@ -35,6 +39,18 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
       before: () => setLoading.append('getcategory'),
       success: ({ data }) => data && setCategory(data),
       complete: () => setLoading.filter(e => e != 'getcategory'),
+      error: () => {},
+    });
+  }
+
+  const getData = async () => {
+    await fetch<any, any>({
+      url: `invitations/${invitation?.id}`,
+      method: 'GET',
+      data: {},
+      before: () => setLoading.append('getdata'),
+      success: (data) => data && setData(data as EventInvitationResponse),
+      complete: () => setLoading.filter(e => e != 'getdata'),
       error: () => {},
     });
   }
@@ -86,16 +102,22 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
               </Stack>
               <Stack gap={10} className={`[&_th]:font-[400]`}>
                 <Text c="gray" size="sm">Data Penerima</Text>
-                <Card className={`w-fit`} p={0} radius={10} withBorder>
+                <Card className={``} p={0} radius={10} withBorder>
                   <ScrollArea>
                     <Table
+                      w="100%"
                       data={{
                         head: ['Nama', 'Email', 'No. Telp', 'E-ticket'],
-                        body: Array(3).fill('A').map(e => [
-                          "Nama Penerima",
-                          "email@mail.com",
-                          "8572285581232",
-                          <ButtonM size="xs" variant="light" component={Link} href="#" target="_blank">
+                        body: (data?.event_invitation_detail ?? []).map(e => [
+                          e.fullname,
+                          e.email,
+                          e.phone,
+                          <ButtonM
+                            size="xs"
+                            variant="light"
+                            component={Link}
+                            href={`${config['wsUrl']}invitations/eticket/${e.id}`}
+                            target="_blank">
                             Unduh Etiket
                           </ButtonM>
                         ]),
