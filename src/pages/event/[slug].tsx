@@ -130,9 +130,6 @@ const EventDetails = () => {
     const [loadings, setLoadings] = useListState<string>();
     const user = useLoggedUser();
 
-    const [timoutHash, setTimeoutHash] = useState('');
-    const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
-
     const clickOutsideChat = useClickOutside(() => {
         if (isLogin && openChat) {
             setTimeout(() => {
@@ -394,7 +391,6 @@ const EventDetails = () => {
         setShowModalTransaction(!showModalTransaction);
     };
     useEffect(() => {
-        interval.start();
         const userData = Cookies.get('token');
         userData !== undefined ? setIsLogin(true) : setIsLogin(false);
     }, []);
@@ -669,33 +665,6 @@ const EventDetails = () => {
         }
     }, [data]);
 
-    const timeToEvent = useMemo((): [number, string][] => {
-        const date = `${detail?.start_date} ${detail?.start_time}`;
-        const targetDate = new Date(date);
-        const now = new Date();
-        const diffInSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-
-        if (diffInSeconds < 0) {
-            return []; // Jika tanggal sudah lewat, kembalikan array kosong
-        }
-
-        const secondsInMinute = 60;
-        const secondsInHour = 3600;
-        const secondsInDay = 86400;
-
-        const days = Math.floor(diffInSeconds / secondsInDay);
-        const hours = Math.floor((diffInSeconds % secondsInDay) / secondsInHour);
-        const minutes = Math.floor((diffInSeconds % secondsInHour) / secondsInMinute);
-        const seconds = diffInSeconds % secondsInMinute;
-
-        const result: [number, string][] = [];
-        if (days > 0) result.push([days, "Hari"]);
-        result.push([hours, "Jam"]);
-        result.push([minutes, "Menit"]);
-        result.push([seconds, "Detik"]);
-        return result;
-    }, [timoutHash, detail]);
-
     function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
         const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
         const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
@@ -878,18 +847,7 @@ const EventDetails = () => {
                                         {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
                                             <Stack gap={12} align="end">
                                                 <Text size="xs" c="white">Event Dimulai Dalam</Text>
-                                                <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
-                                                    {timeToEvent.map((e, i) => (
-                                                        <AspectRatio key={i}>
-                                                            <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
-                                                                <Stack align="center" justify="center" h="100%" gap={3} c="white">
-                                                                    <Text fw={600} size="16px">{e[0]}</Text>
-                                                                    <Text size="9px">{e[1]}</Text>
-                                                                </Stack>
-                                                            </Card>
-                                                        </AspectRatio>
-                                                    ))}
-                                                </Flex>
+                                                <EventCountdown startdate={detail?.start_date} starttime={detail?.start_time} />
                                             </Stack>
                                         )}
                                     </Flex>
@@ -1070,7 +1028,7 @@ const EventDetails = () => {
                                     <p className="font-semibold">{detail?.has_creator?.name}</p>
                                 </div>
                                 <ActionIcon color="#0B387C" variant="transparent" size="lg">
-                                  <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)}/>
+                                    <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)}/>
                                 </ActionIcon>
                             </div>
                             <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-5">
@@ -1247,5 +1205,56 @@ const EventDetails = () => {
         <Spinner color="primary" size="lg" className="min-h-screen flex items-center justify-center" />
     );
 };
+
+const EventCountdown = ({ startdate, starttime }: { startdate?: string, starttime?: string}) => {
+    const [timoutHash, setTimeoutHash] = useState('');
+    const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
+
+    useEffect(() => {
+        interval.start();
+    }, []);
+
+    const timeToEvent = useMemo((): [number, string][] => {
+        const date = `${startdate} ${starttime}`;
+        const targetDate = new Date(date);
+        const now = new Date();
+        const diffInSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
+
+        if (diffInSeconds < 0) {
+            return []; // Jika tanggal sudah lewat, kembalikan array kosong
+        }
+
+        const secondsInMinute = 60;
+        const secondsInHour = 3600;
+        const secondsInDay = 86400;
+
+        const days = Math.floor(diffInSeconds / secondsInDay);
+        const hours = Math.floor((diffInSeconds % secondsInDay) / secondsInHour);
+        const minutes = Math.floor((diffInSeconds % secondsInHour) / secondsInMinute);
+        const seconds = diffInSeconds % secondsInMinute;
+
+        const result: [number, string][] = [];
+        if (days > 0) result.push([days, "Hari"]);
+        result.push([hours, "Jam"]);
+        result.push([minutes, "Menit"]);
+        result.push([seconds, "Detik"]);
+        return result;
+    }, [timoutHash]);
+
+    return (
+        <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
+            {timeToEvent.map((e, i) => (
+                <AspectRatio key={i}>
+                    <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
+                        <Stack align="center" justify="center" h="100%" gap={3} c="white">
+                            <Text fw={600} size="16px">{e[0]}</Text>
+                            <Text size="9px">{e[1]}</Text>
+                        </Stack>
+                    </Card>
+                </AspectRatio>
+            ))}
+        </Flex>
+    );
+}
 
 export default EventDetails;
