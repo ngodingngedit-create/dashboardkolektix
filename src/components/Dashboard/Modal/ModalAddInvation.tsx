@@ -6,7 +6,7 @@ import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
 import ImageInput from "@/components/ImageInput.tsx";
 import { notifications } from "@mantine/notifications";
-import { Box, Flex, LoadingOverlay } from "@mantine/core";
+import { Box, Checkbox, Flex, LoadingOverlay } from "@mantine/core";
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -28,6 +28,7 @@ type InvitationStore<T = {
   total_qty: number;
   details: T;
   image?: Blob;
+  is_one_receiver?: boolean;
 }
 
 const isBrowser = typeof window !== 'undefined';
@@ -58,9 +59,14 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
       total_qty: 1,
       details: [
         { fullname: '', email: '', phone: '' }
-      ]
+      ],
+      is_one_receiver: false
     },
-    validate: zodResolver(invitationStoreSchema)
+    validate: zodResolver(invitationStoreSchema),
+    onValuesChange: val => {
+      if (val.is_one_receiver) val.details = [...[val.details[0]]];
+      return val;
+    }
   })
 
   useEffect(() => {
@@ -98,7 +104,10 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
     await fetch<InvitationStore<string>, any>({
       url: 'invitations',
       method: 'POST',
-      data: { ...form.values, details: JSON.stringify(form.values.details) },
+      data: {
+        ...form.values,
+        details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details)
+      },
       before: () => setLoading.append('submit'),
       success: () => { onClose() },
       complete: () => setLoading.filter(e => e != 'submit'),
@@ -149,17 +158,6 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
                 onChange={(e) =>  form.setValues({ invitation_title: e.target.value })}
                 labelPlacement="outside" // Label di atas input
               />
-              <Input
-                isInvalid={Boolean(form.errors.total_qty)}
-                description={form.errors.total_qty}
-                min={1}
-                type="number"
-                className="flex-1 max-w-[20%]"
-                label={<span className="text-dark">Total Qty</span>}
-                value={String(form.values.total_qty)}
-                onChange={(e) =>  form.setValues({ total_qty: parseInt(e.target.value) })}
-                labelPlacement="outside" // Label di atas input
-              />
             </div>
             <div className="flex flex-wrap gap-4">
               <Textarea
@@ -174,7 +172,28 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
                 maxRows={6}
               />
             </div>
-            {form.values.details.map((detail, index) => (
+
+            <Flex className={`gap-[15px] md:gap-[30px]`} align="end">
+              <Input
+                isInvalid={Boolean(form.errors.total_qty)}
+                description={form.errors.total_qty}
+                min={1}
+                type="number"
+                className="flex-1 max-w-[20%]"
+                label={<span className="text-dark">Total Qty</span>}
+                value={String(form.values.total_qty)}
+                onChange={(e) =>  form.setValues({ total_qty: parseInt(e.target.value) })}
+                labelPlacement="outside" // Label di atas input
+              />
+              <Checkbox
+                className={`md:mb-[10px]`}
+                label="Kirim ke satu penerima"
+                checked={form.values.is_one_receiver}
+                onChange={e => form.setValues({ is_one_receiver: e.target.checked })}
+              />
+            </Flex>
+
+            {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
               <div key={index} className="flex flex-wrap gap-4">
                 <Input
                   isInvalid={Boolean(form.errors[`details.${index}.fullname`])}
