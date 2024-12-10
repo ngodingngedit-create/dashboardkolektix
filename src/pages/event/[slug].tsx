@@ -482,7 +482,7 @@ const EventDetails = () => {
             .filter((id) => counts[parseInt(id)] > 0)
             .map((id, idx) => ({
                 id: parseInt(id),
-                event_id: 1,
+                event_id: detail?.id ?? 0,
                 event_ticket_id: parseInt(id),
                 price: data[data.findIndex((el) => el.id === parseInt(id))].price,
                 name: data[data.findIndex((el) => el.id === parseInt(id))].name,

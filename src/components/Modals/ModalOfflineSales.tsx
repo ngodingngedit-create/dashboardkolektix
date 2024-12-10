@@ -16,12 +16,14 @@ import {
   faTriangleExclamation,
   faCheckCircle,
 } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Images from '../Images';
 import { Post } from '@/utils/REST';
 import { EventProps } from '@/utils/globalInterface';
 import { AsyncListData } from '@react-stately/data';
 import { useRouter } from 'next/router';
+import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter } from '@mantine/core';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface FormTicket {
   event_id: number;
@@ -54,9 +56,10 @@ export default function ModalOfflineSales({
   setParentStep,
 }: ModalProps) {
   const [payment, setPayment] = useState<string>('');
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [openForm, setOpenForm] = useState<boolean>(true);
 
   const classAcc = {
     base: '!p-0 !shadow-sm border-2 border-primary-light-200 rounded-md',
@@ -103,6 +106,13 @@ export default function ModalOfflineSales({
           setLoading(false);
         });
   };
+
+  const splittedTicket = useMemo(() => {
+    return ticket.reduce<FormTicket[]>((accumulator, currentTicket) => {
+      return [...accumulator, ...Array(currentTicket.qty_ticket).fill(currentTicket)];
+    }, []);
+  }, [ticket]);  
+
   return (
     <div className='flex flex-col gap-2'>
       <Modal
@@ -111,6 +121,7 @@ export default function ModalOfflineSales({
         onOpenChange={setIsOpen}
         className='text-dark'
         scrollBehavior='inside'
+        size="2xl"
       >
         <ModalContent>
           {(onClose) => (
@@ -156,9 +167,63 @@ export default function ModalOfflineSales({
                     </div>
                     <div className='bg-white'>
                       <div className='py-4 px-4 border-b border-b-primary-light-200'>
+                        <h6>Data Pemilik</h6>
+                      </div>
+                      <div className={`${openForm ? '' : 'hidden'}`}>
+                        <Card mah={500} className={`!overflow-y-auto`} p={0}>
+                          <AccordionM multiple>
+                            {(splittedTicket ?? []).map((e, i) => (
+                              <AccordionM.Item key={i} value={String(i)}>
+                                <AccordionM.Control bg="#fafafa">
+                                  <Flex gap={8} align="start">
+                                    <FontAwesomeIcon icon={faTicket} className='text-primary-dark mt-[3px]' />
+                                    <Stack gap={2}>
+                                      <Text fw={600} size="sm">{i + 1}. Pemilik Tiket {e.name}</Text>
+                                      <Text size='xs' c="gray">1x Tiket <NumberFormatter value={e.price} /></Text>
+                                    </Stack>
+                                  </Flex>
+                                </AccordionM.Control>
+                                <AccordionM.Panel py={10}>
+                                  <Card p={0} key={i} radius={10}>
+                                    <Stack>
+
+                                      <Switch
+                                        display={i == 0 ? 'none' : undefined}
+                                        label="Gunakan Data Pertama"
+                                      />
+
+                                      <TextInput
+                                        label="Nama"
+                                        placeholder="Isi Nama"
+                                      />
+
+                                      <TextInput
+                                        label="Email"
+                                        placeholder="Isi Email"
+                                      />
+
+                                      <TextInput
+                                        label="No. Telepon"
+                                        placeholder="Isi No. Telepon"
+                                      />
+
+                                    </Stack>
+                                  </Card>
+                                </AccordionM.Panel>
+                              </AccordionM.Item>
+                            ))}
+                          </AccordionM>
+                        </Card>
+                      </div>
+                    </div>
+                    <div className='bg-white'>
+                      <div className='py-4 px-4 border-b border-b-primary-light-200'>
                         <h6>Metode Pembayaran</h6>
                       </div>
-                      <div className='py-4'>
+                      <div className={`py-4 ${openForm || step == 0 ? 'hidden' : ''}`}>
+                        {payment}
+                      </div>
+                      <div className={`py-4 ${openForm ? 'hidden' : ''}`}>
                         <Accordion variant='splitted' itemClasses={classAcc}>
                           {paymentList &&
                             paymentList.map((el: any) => (
@@ -167,19 +232,18 @@ export default function ModalOfflineSales({
                                 aria-label='Anchor'
                                 className=''
                                 indicator={
-                                  <FontAwesomeIcon
-                                    icon={faChevronCircleDown}
-                                    className='px-2 text-lg'
-                                  />
+                                  <Icon icon="uiw:down" className={`text-[16px]`} />
                                 }
-                                title={el.payment_name}
+                                title={
+                                  <Text fw={600}>{el.payment_name}</Text>
+                                }
                               >
                                 <RadioGroup
                                   color='primary'
                                   name='payment-method'
                                   onChange={(e) => setPayment(e.target.value)}
                                 >
-                                  <div className='flex items-center justify-between py-2'>
+                                  <div className='flex items-center justify-between'>
                                     <div className='flex items-center gap-3'>
                                       <Images
                                         type='logo'
@@ -386,12 +450,18 @@ export default function ModalOfflineSales({
                         konfirmasi pembayaran.
                       </p>
                     </div>
-                    <button
-                      className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
-                      onClick={() => setStep(1)}
-                    >
-                      Lanjutkan
-                    </button>
+
+                    <Flex gap={10} align="center">
+                      <ActionIcon variant="transparent" display={openForm ? 'none' : undefined} onClick={() => setOpenForm(true)}>
+                        <Icon icon="uiw:left" />
+                      </ActionIcon>
+                      <button
+                        className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
+                        onClick={() => openForm ? setOpenForm(false) : setStep(1)}
+                      >
+                        Lanjutkan
+                      </button>
+                    </Flex>
                   </div>
                 ) : step === 1 ? (
                   <div className='flex flex-col w-full'>
@@ -416,13 +486,19 @@ export default function ModalOfflineSales({
                         konfirmasi pembayaran.
                       </p>
                     </div>
-                    <button
-                      className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
-                      onClick={onSubmit}
-                      disabled={loading}
-                    >
-                      {payment === '3' ? 'Bayar Sekarang' : 'Konfirmasi Pembayaran'}
-                    </button>
+
+                    <Flex gap={10} align="center">
+                      <ActionIcon variant="transparent" onClick={() => setStep(0)}>
+                        <Icon icon="uiw:left" />
+                      </ActionIcon>
+                      <button
+                        className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
+                        onClick={onSubmit}
+                        disabled={loading}
+                      >
+                        {payment === '3' ? 'Bayar Sekarang' : 'Konfirmasi Pembayaran'}
+                      </button>
+                    </Flex>
                   </div>
                 ) : (
                   <button
