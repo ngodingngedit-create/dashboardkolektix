@@ -1039,17 +1039,17 @@ const eventItems = useMemo(() => {
     <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
-      <ModalCreateTicket
-        isOpen={addTicket}
-        setIsOpen={showAddTicket}
-        ticket={ticket}
-        setTicket={setTicket}
-        data={editTicket}
-        setIdx={setIdxTicket}
-        idx={idxTicket}
-        eventId={data.id}
-        endDate={data.end_date}
-        />
+    <ModalCreateTicket
+      isOpen={addTicket}
+      setIsOpen={showAddTicket}
+      ticket={ticket}
+      setTicket={setTicket}
+      data={editTicket}
+      setIdx={setIdxTicket}
+      idx={idxTicket}
+      eventId={data.id}
+      endDate={data.end_date}
+      />
     </>
   ) : (
     <Box w="100%" mih={300} h={300}>

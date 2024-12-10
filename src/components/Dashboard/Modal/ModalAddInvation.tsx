@@ -14,7 +14,7 @@ interface AddEventModalProps {
   eventId?: number;
 }
 
-type CategoryResponse = { id: number, name: string };
+export type CategoryResponse = { id: number, name: string };
 
 type InvitationStore<T = {
   fullname: string;
