@@ -65,9 +65,9 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
           <ModalBody className="text-dark">
             <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap">
               <Stack maw={350}>
-                {(invitation?.image_url || invitation?.image) && (
+                {(data?.image) && (
                   <AspectRatio ratio={3/1}>
-                    <Image radius={10} src={invitation?.image_url ?? invitation?.image ?? '#'} bg="gray.1" />
+                    <Image radius={10} src={invitation?.image_url ?? data?.image ?? '#'} bg="gray.1" />
                   </AspectRatio>
                 )}
                 
