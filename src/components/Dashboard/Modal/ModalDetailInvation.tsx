@@ -1,5 +1,5 @@
 import fetch from "@/utils/fetch";
-import { AspectRatio, Flex, Image, Stack, Textarea, TextInput, Button as ButtonM, Card, Text } from "@mantine/core";
+import { AspectRatio, Flex, Image, Stack, Textarea, TextInput, Button as ButtonM, Card, Text, Table, ScrollArea } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Accordion, AccordionItem } from "@nextui-org/react";
 import { useState } from "react";
@@ -48,7 +48,7 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
           </ModalHeader>
           <ModalBody className="text-dark">
             <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap">
-              <Stack>
+              <Stack maw={350}>
                 {(invitation?.image_url || invitation?.image) && (
                   <AspectRatio ratio={3/1}>
                     <Image radius={10} src={invitation?.image_url ?? invitation?.image ?? '#'} bg="gray.1" />
@@ -84,39 +84,34 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
                   />
                 </Flex>
               </Stack>
-              <Stack>
-                <Text c="gray" size="sm">Penerima</Text>
-                <Card withBorder radius={10}>
-                  <TextInput
-                    readOnly
-                    size="xs"
-                    label="Nama"
-                    value={"Invitation Fullname"}
-                  />
-                  <Flex gap={10} wrap="wrap" className={`[&>*]:flex-grow`} mt={10}>
-                    <TextInput
-                      readOnly
-                      size="xs"
-                      label="Email"
-                      value={"test@mail.com"}
+              <Stack gap={10} className={`[&_th]:font-[400]`}>
+                <Text c="gray" size="sm">Data Penerima</Text>
+                <Card className={`w-fit`} p={0} radius={10} withBorder>
+                  <ScrollArea>
+                    <Table
+                      data={{
+                        head: ['Nama', 'Email', 'No. Telp', 'E-ticket'],
+                        body: Array(3).fill('A').map(e => [
+                          "Nama Penerima",
+                          "email@mail.com",
+                          "8572285581232",
+                          <ButtonM size="xs" variant="light" component={Link} href="#" target="_blank">
+                            Unduh Etiket
+                          </ButtonM>
+                        ]),
+                      }}
                     />
-                    <TextInput
-                      readOnly
-                      size="xs"
-                      label="No. Telp"
-                      value={"0812312312"}
-                    />
-                  </Flex>
+                  </ScrollArea>
                 </Card>
               </Stack>
             </Flex>
           </ModalBody>
           <ModalFooter>
             <Flex gap={10}>
-              <ButtonM component={Link} href="#" target="_blank" rightSection={<Icon icon="mdi:invoice-text-outline" />}>
+              {/* <ButtonM component={Link} href="#" target="_blank" rightSection={<Icon icon="mdi:invoice-text-outline" />}>
                 Unduh Etiket
-              </ButtonM>
-              <ButtonM variant="light" onClick={onClose} rightSection={<Icon icon="uiw:down" />}>
+              </ButtonM> */}
+              <ButtonM variant="light" color="gray" onClick={onClose} rightSection={<Icon icon="uiw:down" />}>
                 Tutup Detail
               </ButtonM>
             </Flex>

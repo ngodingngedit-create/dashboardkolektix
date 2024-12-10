@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import DetailModal from '@/components/Dashboard/Modal/ModalInvation';
 import EditEventModal from '@/components/Dashboard/Modal/ModalEditInvation';
-import AddEventModal from '@/components/Dashboard/Modal/ModalAddInvation';
+import AddEventModal, { CategoryResponse } from '@/components/Dashboard/Modal/ModalAddInvation';
 import InvitationDetailModal from '@/components/Dashboard/Modal/ModalDetailInvation';
 import {
   Spinner,
@@ -113,6 +113,18 @@ const MyEventDetail = () => {
   const [invitationFilter, setInvitationFilter] = useState('');
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
 
+  const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
+
+  const getInvitationCategory = async () => {
+    await fetch<any, CategoryResponse[]>({
+      url: 'invitation-category',
+      method: 'GET',
+      data: {},
+      success: ({ data }) => data && setInvitationCategory(data),
+      error: () => {},
+    });
+  }
+
 
   const openAddModal = () => {
     setIsAddModalOpen(true);
@@ -216,6 +228,7 @@ const MyEventDetail = () => {
   useEffect(() => {
     if (slug) {
       getData();
+      getInvitationCategory();
     }
   }, [slug]);
 
@@ -943,9 +956,11 @@ const eventItems = useMemo(() => {
                             <TableHeader>
                               <TableColumn className='font-bold text-md'>ID</TableColumn>
                               <TableColumn className='font-bold text-md'>Judul Undangan</TableColumn>
-                              <TableColumn className='font-bold text-md'>Deskripsi</TableColumn>
-                              <TableColumn className='font-bold text-md'>Status Undangan</TableColumn>
-                              <TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn>
+                              <TableColumn className='font-bold text-md'>Type</TableColumn>
+                              <TableColumn className='font-bold text-md'>Qty</TableColumn>
+                              {/* <TableColumn className='font-bold text-md'>Deskripsi</TableColumn> */}
+                              {/* <TableColumn className='font-bold text-md'>Status Undangan</TableColumn>
+                              <TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn> */}
                               <TableColumn className='font-bold text-md'>Aksi</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
@@ -953,7 +968,9 @@ const eventItems = useMemo(() => {
                                 <TableRow key={item?.id}>
                                   <TableCell className='border-b-1'>{item?.id}</TableCell>
                                   <TableCell className='border-b-1'>{item?.invitation_title}</TableCell>
-                                  <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
+                                  <TableCell className='border-b-1'>{invitationCategory?.find(e => e.id == item?.invitation_cat_id)?.name ?? '-'}</TableCell>
+                                  <TableCell className='border-b-1'>{item?.total_qty}</TableCell>
+                                  {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
                                   <TableCell className='border-b-1'>
                                     <span 
                                       className={`px-2 py-1 rounded-md text-white ${getEventStatusClass(item.invitation_status)}`}
@@ -961,7 +978,7 @@ const eventItems = useMemo(() => {
                                       {getEventStatusText(item.invitation_status)}
                                     </span>
                                   </TableCell>
-                                  <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell>
+                                  <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell> */}
                                   <TableCell className='border-b-1'>
                                     <Tooltip label="Kirim Ulang">
                                       <FontAwesomeIcon 
@@ -1049,7 +1066,7 @@ const eventItems = useMemo(() => {
       idx={idxTicket}
       eventId={data.id}
       endDate={data.end_date}
-      />
+    />
     </>
   ) : (
     <Box w="100%" mih={300} h={300}>
