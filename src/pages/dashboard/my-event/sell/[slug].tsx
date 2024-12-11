@@ -569,22 +569,22 @@ return (
                 }}
               >
                 <TableHeader>
-                  <TableColumn key="name" allowsSorting>
+                  {/* <TableColumn key="name" allowsSorting>
                     Nama
-                  </TableColumn>
-                  <TableColumn key="invoice_no" allowsSorting>
+                  </TableColumn> */}
+                  <TableColumn key="invoice_no" allowsSorting={false}>
                     Nomor Invoice
                   </TableColumn>
-                  <TableColumn key="created_at" allowsSorting>
+                  <TableColumn key="created_at" allowsSorting={false}>
                     Tanggal & Waktu Pembelian
                   </TableColumn>
-                  <TableColumn key="total_qty" allowsSorting>
+                  <TableColumn key="total_qty" allowsSorting={false}>
                     Jumlah Tiket
                   </TableColumn>
-                  <TableColumn key="transaction_status_id" allowsSorting>
+                  <TableColumn key="transaction_status_id" allowsSorting={false}>
                     Status
                   </TableColumn>
-                  <TableColumn key="total_price" allowsSorting>
+                  <TableColumn key="total_price" allowsSorting={false}>
                     Jumlah Pembayaran
                   </TableColumn>
                   <TableColumn key="actions">
@@ -600,13 +600,13 @@ return (
                   {(item: any) => (
                     <TableRow key={item.id}>
                       {(columnKey) => {
-                        if (columnKey === "name") {
-                          return (
-                            <TableCell>
-                              {item.has_user ? item.has_user.name : "Tidak Ada"}
-                            </TableCell>
-                          );
-                        }
+                        // if (columnKey === "name") {
+                        //   return (
+                        //     <TableCell>
+                        //       {item.has_user ? item.has_user.name : "Tidak Ada"}
+                        //     </TableCell>
+                        //   );
+                        // }
                         if (columnKey === "total_price") {
                           return (
                             <TableCell>

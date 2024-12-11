@@ -134,7 +134,15 @@ export default function ModalOfflineSales({
         payment_method: payment,
         admin_fee: eventData.admin_fee,
         tickets: ticket,
-        identities: fv.data
+        identities: fv.data.map((e, i) => ({
+          nik: e.identity,
+          full_name: e.name,
+          email: e.email,
+          no_telp: e.phone,
+          is_pemesan: 0,
+          identity_type_id: 1,
+          event_ticket_id: splittedTicket[i].event_ticket_id,
+        }))
       })
         .then((res: any) => {
           console.log(res);
