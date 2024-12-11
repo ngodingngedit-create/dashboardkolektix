@@ -80,18 +80,29 @@ const DetailEventTicket = () => {
   const [onlinePage, setOnlinePage] = useState(1);
   const rowsPerPage = 25;
   const rowsPerPages = 25;
-  
-  
-
-  
-  
-  
 
   useEffect(() => {
-    console.log(ticket);
-  }, [ticket]);
+    if (data.length > 0) updateDataBasedOnCounts();
+  }, [counts]);
 
-  
+  const updateDataBasedOnCounts = () => {
+    const newData = Object.keys(counts)
+        .filter((id) => counts[parseInt(id)] > 0)
+        .map((id, idx) => ({
+            id: parseInt(id),
+            event_id: 1,
+            event_ticket_id: parseInt(id),
+            price: data[data.findIndex((el) => el.id === parseInt(id))].price,
+            name: data[data.findIndex((el) => el.id === parseInt(id))].name,
+            subtotal_price: data[data.findIndex((el) => el.id === parseInt(id))].price * counts[id],
+            qty_ticket: counts[id],
+            payment_status: 'pending',
+            grand_total: 0
+        }));
+
+    setTicket(newData);
+    // //console.log(newData, 'aw');
+  };
 
   const getData = () => {
     setIsLoading(true);

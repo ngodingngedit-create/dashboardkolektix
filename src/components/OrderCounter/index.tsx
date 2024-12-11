@@ -4,6 +4,8 @@ import { ActionIcon, Badge, Box, Card, Divider, Flex, NumberFormatter, Stack, Te
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { useEffect, useMemo, useState } from 'react';
+import { randomId, useInterval } from '@mantine/hooks';
 
 interface OrderCounterProps {
     count: number;
@@ -33,8 +35,15 @@ function isDatePassed(dateString: string) {
     return date.isBefore(moment());
 }
 
-const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
-    const router = useRouter();
+const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+    const [timeoutHash, setTimeoutHash] = useState('');
+    const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
+
+    useEffect(() => {
+        interval.start();
+    }, []);
+
+    const ticketData = useMemo(() => _ticketData, [timeoutHash]);
 
     const StatusComponent = () => {
         if (isFullbook)

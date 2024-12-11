@@ -69,10 +69,12 @@ export default function TicketPicker({
     const combineTicketsByDate = (tickets: TicketProps[]): GroupTicket[] => {
       const groupedByDate = tickets.reduce((acc: { [key: string]: TicketProps[] }, item) => {
         const date = item.ticket_date;
-        if (!acc[date]) {
-          acc[date] = [];
+        if (date) {
+          if (!acc[date]) {
+            acc[date] = [];
+          }
+          acc[date].push(item);
         }
-        acc[date].push(item);
         return acc;
       }, {});
 
@@ -113,6 +115,7 @@ export default function TicketPicker({
                   isReady={item.is_ready === 1}
                   title={item.name}
                   price={item.price}
+                  max={item.max_buy_ticket}
                 />
               ))}
             </TabPanel>
