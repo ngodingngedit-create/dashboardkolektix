@@ -22,8 +22,11 @@ import { Post } from '@/utils/REST';
 import { EventProps } from '@/utils/globalInterface';
 import { AsyncListData } from '@react-stately/data';
 import { useRouter } from 'next/router';
-import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter } from '@mantine/core';
+import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import { useForm, zodResolver } from '@mantine/form';
+import { z } from 'zod';
+import config from '@/Config';
 
 interface FormTicket {
   event_id: number;
@@ -32,6 +35,17 @@ interface FormTicket {
   price: number;
   subtotal_price: number;
   qty_ticket: number;
+}
+
+type IdentityProps = {
+  data: {
+    name?: string;
+    identity?: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    birthdate?: string;
+  }[];
 }
 
 interface ModalProps {
@@ -61,6 +75,27 @@ export default function ModalOfflineSales({
   const router = useRouter();
   const [openForm, setOpenForm] = useState<boolean>(true);
 
+  const identity = useForm<IdentityProps>({
+    validate: zodResolver(z.object({
+      data: z.array(z.object<Record<keyof IdentityProps['data'][number], any>>({
+        name: eventData?.is_name ? z.string({ message: 'Wajib Diisi' }) : z.string().nullable().optional(),
+        identity: eventData?.is_noidentity ? z.string({ message: 'Wajib Diisi' }).min(8, { message: 'Format tidak valid' }) : z.string().nullable().optional(),
+        email: eventData?.is_email ? z.string({ message: 'Wajib Diisi' }).email({ message: 'Format email tidak sesuai' }) : z.string().nullable().optional(),
+        phone: eventData?.is_phone_number ? z.string({ message: 'Wajib Diisi' }).min(8, { message: 'Format tidak valid' }) : z.string().nullable().optional(),
+        gender: eventData?.is_gender ? z.string({ message: 'Wajib Diisi' }) : z.string().nullable().optional(),
+        birthdate: eventData?.is_birthdate ? z.string({ message: 'Wajib Diisi' }) : z.string().nullable().optional(),
+      }))
+    })),
+    onValuesChange: val => ({ data: val?.data?.map((e) => {
+      if (e.phone) e.phone = e.phone?.replaceAll(/\D/g, '');
+      if (e.identity) e.identity = e.identity?.replaceAll(/\D/g, '');
+
+      return e;
+    }) }),
+    initialValues: { data: [] }
+  });
+  const { values: fv, setFieldValue: sv, setValues, errors: fe } = identity;
+
   const classAcc = {
     base: '!p-0 !shadow-sm border-2 border-primary-light-200 rounded-md',
     heading: 'bg-primary-light px-4 rounded-t-xl',
@@ -73,15 +108,25 @@ export default function ModalOfflineSales({
     content: 'px-4',
   };
 
+  const splittedTicket = useMemo(() => {
+    return ticket.reduce<FormTicket[]>((accumulator, currentTicket) => {
+      return [...accumulator, ...Array(currentTicket.qty_ticket).fill(currentTicket)];
+    }, []);
+  }, [ticket]); 
+
   useEffect(() => {
     console.log(payment);
   }, [payment]);
 
   useEffect(() => {
     setStep(0);
+    setValues({ data: splittedTicket.map(() => ({}))});
+    setOpenForm(true);
   }, [isOpen]);
 
   const onSubmit = () => {
+    if (identity.validate().hasErrors) return;
+
     setLoading(true);
     eventData &&
       Post('transaction-offline', {
@@ -89,10 +134,11 @@ export default function ModalOfflineSales({
         payment_method: payment,
         admin_fee: eventData.admin_fee,
         tickets: ticket,
+        identities: fv.data
       })
         .then((res: any) => {
           console.log(res);
-          if (payment === '3') {
+          if (payment === '3' || res.xendit_invoice.invoice_url) {
             console.log(res);
             router.push(res.xendit_invoice.invoice_url);
           } else {
@@ -105,13 +151,14 @@ export default function ModalOfflineSales({
           console.log(err);
           setLoading(false);
         });
-  };
+  }; 
 
-  const splittedTicket = useMemo(() => {
-    return ticket.reduce<FormTicket[]>((accumulator, currentTicket) => {
-      return [...accumulator, ...Array(currentTicket.qty_ticket).fill(currentTicket)];
-    }, []);
-  }, [ticket]);  
+  const handleNext = () => {
+    if (identity.validate().hasErrors) return;
+    openForm ? setOpenForm(false) : setStep(1);
+  }
+
+  const selectedPayment = useMemo(() => paymentList.find((e: any) => e.id == payment), [payment]);
 
   return (
     <div className='flex flex-col gap-2'>
@@ -171,10 +218,10 @@ export default function ModalOfflineSales({
                       </div>
                       <div className={`${openForm ? '' : 'hidden'}`}>
                         <Card mah={500} className={`!overflow-y-auto`} p={0}>
-                          <AccordionM multiple>
+                          <AccordionM multiple defaultValue={["0"]}>
                             {(splittedTicket ?? []).map((e, i) => (
                               <AccordionM.Item key={i} value={String(i)}>
-                                <AccordionM.Control bg="#fafafa">
+                                <AccordionM.Control bg={Object.keys(fe).some(e => e.includes(`data.${i}`)) ? "red.1" : "#fafafa"}>
                                   <Flex gap={8} align="start">
                                     <FontAwesomeIcon icon={faTicket} className='text-primary-dark mt-[3px]' />
                                     <Stack gap={2}>
@@ -192,20 +239,67 @@ export default function ModalOfflineSales({
                                         label="Gunakan Data Pertama"
                                       />
 
-                                      <TextInput
-                                        label="Nama"
-                                        placeholder="Isi Nama"
-                                      />
+                                      <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
+                                        {Boolean(eventData?.is_name) && (
+                                          <TextInput
+                                            label="Nama"
+                                            placeholder="Isi Nama"
+                                            value={fv.data[i] ? fv.data[i].name : undefined}
+                                            onChange={e => sv(`data.${i}.name`, e.target.value)}
+                                            error={fe[`data.${i}.name`]}
+                                          />
+                                        )}
 
-                                      <TextInput
-                                        label="Email"
-                                        placeholder="Isi Email"
-                                      />
+                                        {Boolean(eventData?.is_noidentity) && (
+                                          <TextInput
+                                            label="No KTP"
+                                            placeholder="Isi No KTP"
+                                            value={fv.data[i] ? fv.data[i].identity : undefined}
+                                            onChange={e => sv(`data.${i}.identity`, e.target.value)}
+                                            error={fe[`data.${i}.identity`]}
+                                          />
+                                        )}
 
-                                      <TextInput
-                                        label="No. Telepon"
-                                        placeholder="Isi No. Telepon"
-                                      />
+                                        {Boolean(eventData?.is_email) && (
+                                          <TextInput
+                                            label="Email"
+                                            placeholder="Isi Email"
+                                            value={fv.data[i] ? fv.data[i].email : undefined}
+                                            onChange={e => sv(`data.${i}.email`, e.target.value)}
+                                            error={fe[`data.${i}.email`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_phone_number) && (
+                                          <TextInput
+                                            label="No. Telp"
+                                            placeholder="Isi No. Telp"
+                                            value={fv.data[i] ? fv.data[i].phone : undefined}
+                                            onChange={e => sv(`data.${i}.phone`, e.target.value)}
+                                            error={fe[`data.${i}.phone`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_birthdate) && (
+                                          <TextInput
+                                            label="Tanggal Lahir"
+                                            placeholder="Isi Tanggal Lahir"
+                                            value={fv.data[i] ? fv.data[i].birthdate : undefined}
+                                            onChange={e => sv(`data.${i}.birthdate`, e.target.value)}
+                                            error={fe[`data.${i}.birthdate`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_gender) && (
+                                          <TextInput
+                                            label="Gender"
+                                            placeholder="Isi Gender"
+                                            value={fv.data[i] ? fv.data[i].gender : undefined}
+                                            onChange={e => sv(`data.${i}.gender`, e.target.value)}
+                                            error={fe[`data.${i}.gender`]}
+                                          />
+                                        )}
+                                      </Flex>
 
                                     </Stack>
                                   </Card>
@@ -245,12 +339,18 @@ export default function ModalOfflineSales({
                                 >
                                   <div className='flex items-center justify-between'>
                                     <div className='flex items-center gap-3'>
-                                      <Images
-                                        type='logo'
-                                        path={el.logo}
-                                        alt={el.payment_name}
-                                        className='w-8 h-8 object-contain'
-                                      />
+                                      {el.icon ? (
+                                        <Icon icon={el.icon} className={`text-[36px] text-primary-base`} />
+                                      ) : (
+                                        <Image
+                                          fit="contain"
+                                          src={el.logo}
+                                          alt={el.payment_name}
+                                          w={48}
+                                          h={48}
+                                          radius={7}
+                                        />
+                                      )}
                                       <p className='text-sm'>{el.payment_name}</p>
                                     </div>
                                     <Radio value={el.id}></Radio>
@@ -333,8 +433,135 @@ export default function ModalOfflineSales({
                     </div>
                     <div className='bg-white'>
                       <div className='py-4 px-4 border-b border-b-primary-light-200'>
+                        <h6>Data Pemilik</h6>
+                      </div>
+                      <div className={``}>
+                        <Card mah={500} className={`!overflow-y-auto`} p={0} radius={0}>
+                          <AccordionM multiple>
+                            {(splittedTicket ?? []).map((e, i) => (
+                              <AccordionM.Item key={i} value={String(i)}>
+                                <AccordionM.Control bg="#fafafa">
+                                  <Flex gap={8} align="start">
+                                    <FontAwesomeIcon icon={faTicket} className='text-primary-dark mt-[3px]' />
+                                    <Stack gap={2}>
+                                      <Text fw={600} size="sm">{i + 1}. Pemilik Tiket {e.name}</Text>
+                                      <Text size='xs' c="gray">1x Tiket <NumberFormatter value={e.price} /></Text>
+                                    </Stack>
+                                  </Flex>
+                                </AccordionM.Control>
+                                <AccordionM.Panel py={10}>
+                                  <Card p={0} key={i} radius={0}>
+                                    <Stack>
+
+                                      <Switch
+                                        display={i == 0 ? 'none' : undefined}
+                                        label="Gunakan Data Pertama"
+                                      />
+
+                                      <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
+                                        {Boolean(eventData?.is_name) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="Nama"
+                                            placeholder="Isi Nama"
+                                            value={fv.data[i] ? fv.data[i].name : undefined}
+                                            onChange={e => sv(`data.${i}.name`, e.target.value)}
+                                            error={fe[`data.${i}.name`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_noidentity) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="No KTP"
+                                            placeholder="Isi No KTP"
+                                            value={fv.data[i] ? fv.data[i].identity : undefined}
+                                            onChange={e => sv(`data.${i}.identity`, e.target.value)}
+                                            error={fe[`data.${i}.identity`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_email) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="Email"
+                                            placeholder="Isi Email"
+                                            value={fv.data[i] ? fv.data[i].email : undefined}
+                                            onChange={e => sv(`data.${i}.email`, e.target.value)}
+                                            error={fe[`data.${i}.email`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_phone_number) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="No. Telp"
+                                            placeholder="Isi No. Telp"
+                                            value={fv.data[i] ? fv.data[i].phone : undefined}
+                                            onChange={e => sv(`data.${i}.phone`, e.target.value)}
+                                            error={fe[`data.${i}.phone`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_birthdate) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="Tanggal Lahir"
+                                            placeholder="Isi Tanggal Lahir"
+                                            value={fv.data[i] ? fv.data[i].birthdate : undefined}
+                                            onChange={e => sv(`data.${i}.birthdate`, e.target.value)}
+                                            error={fe[`data.${i}.birthdate`]}
+                                          />
+                                        )}
+
+                                        {Boolean(eventData?.is_gender) && (
+                                          <TextInput
+                                            readOnly
+                                            variant="unstyled"
+                                            description="Gender"
+                                            placeholder="Isi Gender"
+                                            value={fv.data[i] ? fv.data[i].gender : undefined}
+                                            onChange={e => sv(`data.${i}.gender`, e.target.value)}
+                                            error={fe[`data.${i}.gender`]}
+                                          />
+                                        )}
+                                      </Flex>
+
+                                    </Stack>
+                                  </Card>
+                                </AccordionM.Panel>
+                              </AccordionM.Item>
+                            ))}
+                          </AccordionM>
+                        </Card>
+                      </div>
+                    </div>
+                    <div className='bg-white'>
+                      <div className='py-4 px-4 border-b border-b-primary-light-200'>
                         <h6>Metode Pembayaran</h6>
                       </div>
+                      {selectedPayment && (
+                        <div className='flex items-center gap-3 mt-[5px] px-[20px] py-[10px]'>
+                          {selectedPayment?.icon ? (
+                            <Icon icon={selectedPayment?.icon} className={`text-[36px] text-primary-base`} />
+                          ) : (
+                            <Image
+                              fit="contain"
+                              src={selectedPayment?.logo}
+                              alt={payment ?? '-'}
+                              w={48}
+                              h={48}
+                              radius={7}
+                            />
+                          )}
+                          <p className='text-sm'>{selectedPayment?.payment_name ?? '-'}</p>
+                        </div>
+                      )}
                     </div>
                     <div className='bg-white'>
                       <div className='py-4 px-4 border-b border-b-primary-light-200'>
@@ -457,7 +684,7 @@ export default function ModalOfflineSales({
                       </ActionIcon>
                       <button
                         className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
-                        onClick={() => openForm ? setOpenForm(false) : setStep(1)}
+                        onClick={handleNext}
                       >
                         Lanjutkan
                       </button>

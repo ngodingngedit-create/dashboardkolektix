@@ -27,6 +27,7 @@ import * as XLSX from 'xlsx';
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faEye } from '@fortawesome/free-solid-svg-icons';
+import logo from '../../../../assets/images/kolektix-square.webp';
 
 
 
@@ -681,8 +682,9 @@ return (
             </>
           ) : (
             <>
-              <div className="min-h-[75vh] max-w-2xl mx-auto">
+              <div className="min-h-[60vh] max-w-2xl mx-auto">
                 <TicketPicker
+                  eventData={eventData}
                   counts={counts}
                   setCounts={setCounts}
                   data={data}
@@ -721,7 +723,7 @@ return (
   <ModalOfflineSales
     isOpen={showModal}
     setIsOpen={setShowModal}
-    paymentList={paymentList}
+    paymentList={[...paymentList, { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
     ticket={ticket}
     eventData={eventData}
     subtotal={totalSubtotalPrice}
