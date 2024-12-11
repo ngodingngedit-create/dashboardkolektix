@@ -158,7 +158,7 @@ export default function ModalOfflineSales({
     openForm ? setOpenForm(false) : setStep(1);
   }
 
-  const selectedPayment = useMemo(() => paymentList.find((e: any) => e.id == payment), [payment]);
+  const selectedPayment = useMemo(() => paymentList?.find((e: any) => e.id == payment), [payment]);
 
   return (
     <div className='flex flex-col gap-2'>

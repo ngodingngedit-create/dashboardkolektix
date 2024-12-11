@@ -723,7 +723,7 @@ return (
   <ModalOfflineSales
     isOpen={showModal}
     setIsOpen={setShowModal}
-    paymentList={[...paymentList, { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
+    paymentList={[...(paymentList ?? []), { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
     ticket={ticket}
     eventData={eventData}
     subtotal={totalSubtotalPrice}
