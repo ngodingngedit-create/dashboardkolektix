@@ -35,15 +35,15 @@ function isDatePassed(dateString: string) {
     return date.isBefore(moment());
 }
 
-const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
-    const [timeoutHash, setTimeoutHash] = useState('');
-    const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
+const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+    // const [timeoutHash, setTimeoutHash] = useState('');
+    // const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
 
-    useEffect(() => {
-        interval.start();
-    }, []);
+    // useEffect(() => {
+    //     interval.start();
+    // }, []);
 
-    const ticketData = useMemo(() => _ticketData, [timeoutHash]);
+    // const ticketData = useMemo(() => _ticketData, [timeoutHash]);
 
     const StatusComponent = () => {
         if (isFullbook)

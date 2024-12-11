@@ -1031,7 +1031,7 @@ const EventDetails = () => {
                                     <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)}/>
                                 </ActionIcon>
                             </div>
-                            <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-5">
+                            <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-20">
                                 <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">
                                     <button onClick={() => setMenu(1)} className={` py-2 cursor-pointer ${menu === 1 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
                                         Deskripsi
