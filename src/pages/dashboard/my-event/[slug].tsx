@@ -563,7 +563,7 @@ const eventItems = useMemo(() => {
               end={data.end_date}
               date={data.start_date}
               slug={data.slug}
-              location={data.location_city}
+              location={data.location_name}
               price={data.starting_price}
               creatorImg={data.has_creator?.image}
               creator={data.has_creator?.name}
