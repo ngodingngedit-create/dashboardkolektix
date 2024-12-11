@@ -27,7 +27,9 @@ import * as XLSX from 'xlsx';
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faEye } from '@fortawesome/free-solid-svg-icons';
-import logo from '../../../../assets/images/kolektix-square.webp';
+import { ResponseData } from './offline';
+import { Flex, Stack, Text } from '@mantine/core';
+import { modals } from '@mantine/modals';
 
 
 
@@ -215,7 +217,7 @@ const DetailEventTicket = () => {
         // Update UI atau state dengan total panjang data
         setIsLoading(false);
   
-        return { items: json.data, total: totalDataLength };
+        return { items: json.data as ResponseData['data'], total: totalDataLength };
       } catch (error) {
         console.error('Error fetching transaction data:', error);
         setIsLoading(false);
@@ -301,7 +303,7 @@ console.log(list.items); // Untuk cek apakah datanya benar
 // Get the items for the current page
 const currentItems = useMemo(() => {
   const start = (page - 1) * rowsPerPage;
-  return list.items.slice(start, start + rowsPerPage);
+  return list.items.slice(start, start + rowsPerPage) as ResponseData['data'];
 }, [page, list.items]);
 
 const currentItemsOnline = useMemo(() => {
@@ -325,6 +327,15 @@ const filteredOfflineTransactions = list.items.filter((transaction: any) =>
 const filteredOnlineTransactions = onlineList.filter((transaction: any) =>
     transaction.invoice_no.toLowerCase().includes(searchQuery.toLowerCase())
 );
+
+const handleOpenDetailOffline = (data: ResponseData['data'][number]) => {
+  modals.open({
+    title: 'Detail Transaksi',
+    children: <ModalOfflineDetail data={data} />,
+    centered: true,
+    size: '80vw',
+  })
+}
 
 return (
   <>
@@ -597,7 +608,7 @@ return (
                   loadingContent={<Spinner label="Loading..." />}
                   emptyContent="Tidak ada transaksi"
                 >
-                  {(item: any) => (
+                  {(item) => (
                     <TableRow key={item.id}>
                       {(columnKey) => {
                         // if (columnKey === "name") {
@@ -622,11 +633,11 @@ return (
                             <TableCell>
                               <span
                                 className={`px-2 py-1 rounded-full text-md font-medium ${
-                                  item.transaction_status_id === 4
+                                  item.transaction_status_id === "4"
                                     ? 'bg-red-500 text-white' // Warna background danger
-                                    : item.transaction_status_id === 2
+                                    : item.transaction_status_id === "2"
                                     ? 'bg-green-500 text-white' // Warna background success
-                                    : item.transaction_status_id === 1
+                                    : item.transaction_status_id === "1"
                                     ? 'bg-yellow-500 text-white' // Warna background untuk Pending
                                     : 'bg-gray-200 text-black' // Default jika status tidak Expired, Verified, atau Pending
                                 }`}
@@ -651,10 +662,10 @@ return (
                           return (
                             <TableCell>
                               <div className="flex space-x-2">
-                                <button>
+                                {/* <button>
                                   <FontAwesomeIcon icon={faEnvelope} className="text-gray-600 hover:text-gray-800" />
-                                </button>
-                                <button>
+                                </button> */}
+                                <button onClick={() => handleOpenDetailOffline(item)}>
                                   <FontAwesomeIcon icon={faEye} className="text-gray-600 hover:text-gray-800" />
                                 </button>
                               </div>
@@ -723,7 +734,8 @@ return (
   <ModalOfflineSales
     isOpen={showModal}
     setIsOpen={setShowModal}
-    paymentList={[...(paymentList ?? []), { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
+    // paymentList={[...(paymentList ?? []), { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
+    paymentList={paymentList}
     ticket={ticket}
     eventData={eventData}
     subtotal={totalSubtotalPrice}
@@ -737,3 +749,16 @@ return (
 };
 
 export default DetailEventTicket;
+
+const ModalOfflineDetail = ({ data }: { data: ResponseData['data'][number] }) => {
+  return (
+    <Flex gap={20} wrap="wrap" className={`[&>*]:flex-grow`}>
+      <Stack>
+        <Text fw={600}>{data.invoice_no}</Text>
+      </Stack>
+      <Stack>
+        <Text c="gray">Pemilik Tiket</Text>
+      </Stack>
+    </Flex>
+  )
+}

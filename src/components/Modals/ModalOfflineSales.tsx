@@ -168,6 +168,14 @@ export default function ModalOfflineSales({
 
   const selectedPayment = useMemo(() => paymentList?.find((e: any) => e.id == payment), [payment]);
 
+  const handleCopyData = (status: boolean, index: number) => {
+    setValues({
+      data: fv.data.map((e, i) => i == index ? status ? (fv.data[0]) : ({
+        
+      }) : e)
+    });
+  }
+
   return (
     <div className='flex flex-col gap-2'>
       <Modal
@@ -245,6 +253,7 @@ export default function ModalOfflineSales({
                                       <Switch
                                         display={i == 0 ? 'none' : undefined}
                                         label="Gunakan Data Pertama"
+                                        onChange={e => handleCopyData(e.target.checked, i)}
                                       />
 
                                       <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
@@ -252,7 +261,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="Nama"
                                             placeholder="Isi Nama"
-                                            value={fv.data[i] ? fv.data[i].name : undefined}
+                                            value={fv.data[i] ? fv.data[i].name : ''}
                                             onChange={e => sv(`data.${i}.name`, e.target.value)}
                                             error={fe[`data.${i}.name`]}
                                           />
@@ -262,7 +271,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="No KTP"
                                             placeholder="Isi No KTP"
-                                            value={fv.data[i] ? fv.data[i].identity : undefined}
+                                            value={fv.data[i] ? fv.data[i].identity : ''}
                                             onChange={e => sv(`data.${i}.identity`, e.target.value)}
                                             error={fe[`data.${i}.identity`]}
                                           />
@@ -272,7 +281,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="Email"
                                             placeholder="Isi Email"
-                                            value={fv.data[i] ? fv.data[i].email : undefined}
+                                            value={fv.data[i] ? fv.data[i].email : ''}
                                             onChange={e => sv(`data.${i}.email`, e.target.value)}
                                             error={fe[`data.${i}.email`]}
                                           />
@@ -282,7 +291,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="No. Telp"
                                             placeholder="Isi No. Telp"
-                                            value={fv.data[i] ? fv.data[i].phone : undefined}
+                                            value={fv.data[i] ? fv.data[i].phone : ''}
                                             onChange={e => sv(`data.${i}.phone`, e.target.value)}
                                             error={fe[`data.${i}.phone`]}
                                           />
@@ -292,7 +301,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="Tanggal Lahir"
                                             placeholder="Isi Tanggal Lahir"
-                                            value={fv.data[i] ? fv.data[i].birthdate : undefined}
+                                            value={fv.data[i] ? fv.data[i].birthdate : ''}
                                             onChange={e => sv(`data.${i}.birthdate`, e.target.value)}
                                             error={fe[`data.${i}.birthdate`]}
                                           />
@@ -302,7 +311,7 @@ export default function ModalOfflineSales({
                                           <TextInput
                                             label="Gender"
                                             placeholder="Isi Gender"
-                                            value={fv.data[i] ? fv.data[i].gender : undefined}
+                                            value={fv.data[i] ? fv.data[i].gender : ''}
                                             onChange={e => sv(`data.${i}.gender`, e.target.value)}
                                             error={fe[`data.${i}.gender`]}
                                           />
@@ -353,7 +362,7 @@ export default function ModalOfflineSales({
                                         <Image
                                           fit="contain"
                                           src={el.logo}
-                                          alt={el.payment_name}
+                                          // alt={el.payment_name}
                                           w={48}
                                           h={48}
                                           radius={7}
@@ -561,7 +570,6 @@ export default function ModalOfflineSales({
                             <Image
                               fit="contain"
                               src={selectedPayment?.logo}
-                              alt={payment ?? '-'}
                               w={48}
                               h={48}
                               radius={7}

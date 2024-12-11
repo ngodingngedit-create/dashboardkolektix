@@ -83,7 +83,7 @@ export default function TicketPicker({
       return Object.keys(groupedByDate).map((date) => ({
         date,
         tickets: groupedByDate[date],
-      }));
+      })).reverse();
     };
 
     setGroupedTickets(combineTicketsByDate(data));

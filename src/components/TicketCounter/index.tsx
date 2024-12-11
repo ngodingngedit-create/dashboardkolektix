@@ -67,8 +67,8 @@ const TicketCounter = ({
               </button>
               <p className='font-semibold min-w-10 text-center'>{count}</p>
               <button
-                disabled={count == max}
-                className={`${count == max ? 'opacity-50' : ''} border-2 w-5 h-5 text-center border-primary-base flex items-center justify-center leading-none text-primary-base rounded-full font-semibold`}
+                // disabled={count == max}
+                className={`border-2 w-5 h-5 text-center border-primary-base flex items-center justify-center leading-none text-primary-base rounded-full font-semibold`}
                 onClick={() => setCount(count + 1)}
               >
                 <FontAwesomeIcon icon={faPlus} className='w-5' size='xs' />
