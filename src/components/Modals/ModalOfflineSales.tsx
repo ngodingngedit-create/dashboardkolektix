@@ -37,7 +37,7 @@ interface FormTicket {
   qty_ticket: number;
 }
 
-type IdentityProps = {
+export type IdentityProps = {
   data: {
     name?: string;
     identity?: string;

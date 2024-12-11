@@ -28,8 +28,13 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faEye } from '@fortawesome/free-solid-svg-icons';
 import { ResponseData } from './offline';
-import { Flex, Stack, Text } from '@mantine/core';
+import { Flex, ScrollArea, Stack, Text, Table as TableM, Card, Button as ButtonM, TextInput, Divider, NumberFormatter, ActionIcon } from '@mantine/core';
 import { modals } from '@mantine/modals';
+import Link from 'next/link';
+import { Icon } from '@iconify/react/dist/iconify.js';
+import { currencyFormat } from '@/utils/currencyFormat';
+import _ from 'lodash';
+import moment from 'moment';
 
 
 
@@ -665,9 +670,16 @@ return (
                                 {/* <button>
                                   <FontAwesomeIcon icon={faEnvelope} className="text-gray-600 hover:text-gray-800" />
                                 </button> */}
-                                <button onClick={() => handleOpenDetailOffline(item)}>
-                                  <FontAwesomeIcon icon={faEye} className="text-gray-600 hover:text-gray-800" />
-                                </button>
+                                <ActionIcon onClick={() => handleOpenDetailOffline(item)} variant="transparent">
+                                  <Icon icon="iconamoon:eye" className={`text-[24px]`} />
+                                </ActionIcon>
+                                <ActionIcon
+                                  component={Link}
+                                  href={`${config['wsUrl']}transaction-document/${item.invoice_no}`}
+                                  target="_blank"
+                                  variant="transparent">
+                                  <Icon icon="uiw:download" className={`text-[20px]`} />
+                                </ActionIcon>
                               </div>
                             </TableCell>
                           );
@@ -752,12 +764,65 @@ export default DetailEventTicket;
 
 const ModalOfflineDetail = ({ data }: { data: ResponseData['data'][number] }) => {
   return (
-    <Flex gap={20} wrap="wrap" className={`[&>*]:flex-grow`}>
-      <Stack>
-        <Text fw={600}>{data.invoice_no}</Text>
-      </Stack>
-      <Stack>
+    <Flex gap={30} wrap="wrap" className={`[&>*]:flex-grow`}>
+      <Card withBorder radius={10} maw={400}>
+        <Stack>
+          <Text fw={600}>No Invoice: {data.invoice_no}</Text>
+          <Divider />
+          <Flex gap={10} wrap="wrap" className={`[&>*]:flex-grow`}>
+            <TextInput
+              label="Waktu Transaksi"
+              variant="filled"
+              value={moment(data.created_at).format('DD MMMM YYYY - HH:mm')}
+              readOnly
+            />
+            <TextInput
+              label="Total Tiket"
+              variant="filled"
+              value={data.total_qty}
+              readOnly
+            />
+            <TextInput
+              label="Jumlah Pembayaran"
+              variant="filled"
+              value={currencyFormat(parseInt(data.grandtotal))}
+              readOnly
+            />
+            <TextInput
+              label="Metode Pembayaran"
+              variant="filled"
+              value={_.capitalize(data?.payment_method?.account_name ?? '-')}
+              readOnly
+            />
+          </Flex>
+          <Divider />
+          <ButtonM
+            w="fit-content"
+            component={Link}
+            href={`${config['wsUrl']}transaction-document/${data.invoice_no}`}
+            target="_blank"
+            rightSection={<Icon icon="uiw:download" />}>
+            Unduh Etiket
+          </ButtonM>
+        </Stack>
+      </Card>
+      <Stack gap={8}>
         <Text c="gray">Pemilik Tiket</Text>
+        <Card className={``} p={0} radius={10} withBorder>
+          <ScrollArea>
+            <TableM
+              w="100%"
+              data={{
+                head: ['Nama', 'Email', 'No. Telp'],
+                body: (data?.identities ?? []).map((e, i) => [
+                  e.full_name,
+                  e.email,
+                  e.no_telp,
+                ]),
+              }}
+            />
+          </ScrollArea>
+        </Card>
       </Stack>
     </Flex>
   )

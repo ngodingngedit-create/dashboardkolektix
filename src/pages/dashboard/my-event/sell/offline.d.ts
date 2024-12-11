@@ -1,3 +1,5 @@
+import { IdentityProps } from "@/components/Modals/ModalOfflineSales";
+
 interface PaymentMethod {
     id: number;
     payment_type_id: number;
@@ -146,7 +148,15 @@ interface Transaction {
     payment_date: string | null;
     has_user: string | null;
     has_event: Event;
-    identities: any[];
+    identities: {
+        nik: string;
+        full_name: string;
+        email: string;
+        no_telp: string;
+        is_pemesan: string;
+        identity_type_id: string | number;
+        event_ticket_id: string | number;
+    }[];
     tickets: Ticket[];
 }
 
