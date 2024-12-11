@@ -351,7 +351,7 @@ return (
       <BreadcrumbItem onClick={() => setStep(0)}>Penjualan</BreadcrumbItem>
       {step === 1 && <BreadcrumbItem>Tiket</BreadcrumbItem>}
     </Breadcrumbs>
-    <div className='flex gap-2 mb-4'>
+    <div className='flex gap-2 mb-4 items-center'>
       <Button
         label="Online"
         color={activeTab === 'Offline' ? 'primary' : 'secondary'}
@@ -362,6 +362,9 @@ return (
         color={activeTab === 'Online' ? 'primary' : 'secondary'}
         onClick={() => setActiveTab('Online')}
       />
+      {(activeTab === 'Online' && step == 1) && (
+        <Text fw={600} ml={10}>Tiket - OTS</Text>
+      )}
     </div>
     {activeTab === 'Offline' ? (
         <div>
@@ -536,7 +539,7 @@ return (
               <div className=" mb-4">
                 <div>
                   <h3 className="mb-3">{eventData.name}</h3>
-                  <p className="text-sm text-grey mb-3">12 Juni - 14 Juni 2024</p>
+                  <p className="text-sm text-grey mb-3">{moment(eventData.start_date).format('DD MMM YYYY')} - {moment(eventData.end_date).format('DD MMM YYYY')}</p>
                   <p className='text-black'>{eventData.grand_total}</p>
                   <Button
                     color="primary"
@@ -747,7 +750,11 @@ return (
     isOpen={showModal}
     setIsOpen={setShowModal}
     // paymentList={[...(paymentList ?? []), { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
-    paymentList={paymentList}
+    paymentList={
+      eventData?.has_event_payment_method.map((e) => paymentList.find((z: any) => z.id == e.payment_method_id)).length == 0 ?
+      paymentList.filter((e: any) => e.id == '4') :
+      eventData?.has_event_payment_method.map((e) => paymentList.find((z: any) => z.id == e.payment_method_id))
+    }
     ticket={ticket}
     eventData={eventData}
     subtotal={totalSubtotalPrice}

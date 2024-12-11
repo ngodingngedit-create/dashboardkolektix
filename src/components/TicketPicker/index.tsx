@@ -108,7 +108,9 @@ export default function TicketPicker({
             <TabPanel key={date} className='rounded-xl bg-white/5 py-3'>
               {tickets.map((item) => (
                 <TicketCounter
+                  ticketData={item}
                   key={item.id}
+                  isFullbook={item.is_fullbook == 1}
                   isLogin={isLogin}
                   count={counts[item.id]}
                   setCount={(newCount) => handleCount(item.id, newCount)}

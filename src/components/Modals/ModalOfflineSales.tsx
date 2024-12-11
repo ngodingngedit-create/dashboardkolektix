@@ -16,17 +16,20 @@ import {
   faTriangleExclamation,
   faCheckCircle,
 } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Images from '../Images';
 import { Post } from '@/utils/REST';
 import { EventProps } from '@/utils/globalInterface';
 import { AsyncListData } from '@react-stately/data';
 import { useRouter } from 'next/router';
-import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image } from '@mantine/core';
+import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import config from '@/Config';
+import { useReactToPrint } from 'react-to-print';
+import useLoggedUser from '@/utils/useLoggedUser';
+import moment from 'moment';
 
 interface FormTicket {
   event_id: number;
@@ -70,10 +73,14 @@ export default function ModalOfflineSales({
   setParentStep,
 }: ModalProps) {
   const [payment, setPayment] = useState<string>('');
-  const [step, setStep] = useState(-1);
+  const [transactionData, setTransactionData] = useState<any>();
+  const [step, setStep] = useState(2);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [openForm, setOpenForm] = useState<boolean>(true);
+  const contentRef = useRef(null);
+  const printContent = useReactToPrint({ contentRef });
+  const user = useLoggedUser();
 
   const identity = useForm<IdentityProps>({
     validate: zodResolver(z.object({
@@ -87,7 +94,11 @@ export default function ModalOfflineSales({
       }))
     })),
     onValuesChange: val => ({ data: val?.data?.map((e) => {
-      if (e.phone) e.phone = e.phone?.replaceAll(/\D/g, '');
+      if (e.phone) {
+        e.phone = e.phone.replaceAll(/\D/g, '');
+        e.phone = e.phone.replace(/^(?!0|6)(\d+)/, '628$1');
+        e.phone = e.phone.replace(/^0/, '62');
+      }
       if (e.identity) e.identity = e.identity?.replaceAll(/\D/g, '');
 
       return e;
@@ -130,9 +141,9 @@ export default function ModalOfflineSales({
     setLoading(true);
     eventData &&
       Post('transaction-offline', {
-        event_id: eventData.id,
+        event_id: eventData?.id,
         payment_method: payment,
-        admin_fee: eventData.admin_fee,
+        admin_fee: eventData?.admin_fee,
         tickets: ticket,
         identities: fv.data.map((e, i) => ({
           nik: e.identity,
@@ -146,7 +157,8 @@ export default function ModalOfflineSales({
       })
         .then((res: any) => {
           console.log(res);
-          if (payment === '3' || res.xendit_invoice.invoice_url) {
+          setTransactionData(res);
+          if (res.xendit_invoice.invoice_url) {
             console.log(res);
             router.push(res.xendit_invoice.invoice_url);
           } else {
@@ -170,9 +182,7 @@ export default function ModalOfflineSales({
 
   const handleCopyData = (status: boolean, index: number) => {
     setValues({
-      data: fv.data.map((e, i) => i == index ? status ? (fv.data[0]) : ({
-        
-      }) : e)
+      data: fv.data.map((e, i) => i == index ? status ? (fv.data[0]) : ({}) : e)
     });
   }
 
@@ -361,7 +371,7 @@ export default function ModalOfflineSales({
                                       ) : (
                                         <Image
                                           fit="contain"
-                                          src={el.logo}
+                                          src={`${config.assetUrl}logo/${el.logo}`}
                                           // alt={el.payment_name}
                                           w={48}
                                           h={48}
@@ -399,14 +409,14 @@ export default function ModalOfflineSales({
                         <div className='flex justify-between items-center mb-2'>
                           <p className='text-dark-grey'>{`Pajak`}</p>
                           <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.ppn ? eventData.ppn.toLocaleString('id-ID') : 0
+                            eventData && eventData?.ppn ? eventData?.ppn.toLocaleString('id-ID') : 0
                           }`}</p>
                         </div>
                         <div className='flex justify-between items-center mb-2'>
                           <p className='text-dark-grey '>{`Biaya Admin`}</p>
                           <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.admin_fee
-                              ? eventData.admin_fee.toLocaleString('id-ID')
+                            eventData && eventData?.admin_fee
+                              ? eventData?.admin_fee.toLocaleString('id-ID')
                               : 0
                           }`}</p>
                         </div>
@@ -469,12 +479,6 @@ export default function ModalOfflineSales({
                                 <AccordionM.Panel py={10}>
                                   <Card p={0} key={i} radius={0}>
                                     <Stack>
-
-                                      <Switch
-                                        display={i == 0 ? 'none' : undefined}
-                                        label="Gunakan Data Pertama"
-                                      />
-
                                       <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
                                         {Boolean(eventData?.is_name) && (
                                           <TextInput
@@ -569,7 +573,7 @@ export default function ModalOfflineSales({
                           ) : (
                             <Image
                               fit="contain"
-                              src={selectedPayment?.logo}
+                              src={`${config.assetUrl}logo/${selectedPayment.logo}`}
                               w={48}
                               h={48}
                               radius={7}
@@ -600,14 +604,14 @@ export default function ModalOfflineSales({
                         <div className='flex justify-between items-center mb-2'>
                           <p className='text-dark-grey'>{`Pajak`}</p>
                           <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.ppn ? eventData.ppn.toLocaleString('id-ID') : 0
+                            eventData && eventData?.ppn ? eventData?.ppn.toLocaleString('id-ID') : 0
                           }`}</p>
                         </div>
                         <div className='flex justify-between items-center mb-2'>
                           <p className='text-dark-grey '>{`Biaya Admin`}</p>
                           <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.admin_fee
-                              ? eventData.admin_fee.toLocaleString('id-ID')
+                            eventData && eventData?.admin_fee
+                              ? eventData?.admin_fee.toLocaleString('id-ID')
                               : 0
                           }`}</p>
                         </div>
@@ -616,6 +620,94 @@ export default function ModalOfflineSales({
                   </div>
                 ) : (
                   <div className='flex flex-col py-5 px-3 justify-center text-dark text-center top-20 bg-white rounded-xl shadow-sm'>
+                    <Box display="none">
+                      <Card w="100%" ref={contentRef}>
+                        <Stack mb={20} gap={5}>
+                            <Text fw={600} ta="center" className={`uppercase !italic !underline`}>{user?.has_creator?.name}</Text>
+                            <Text ta="center" className={``}>{user?.has_creator?.website ?? 'www.kolektix.com'}</Text>
+                        </Stack>
+                        <Table unstyled className={`
+                            mb-[20px]
+                            [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
+                            [&_th]:text-start [&_th]:!font-[600] [&_td:last-child]:!text-end
+                        `}>
+                            <Table.Tbody>
+                                <Table.Tr>
+                                    <Table.Td>Tel: {user?.has_creator?.phone_number}</Table.Td>
+                                    <Table.Td>Invoice #{transactionData?.data?.invoice_no}</Table.Td>
+                                </Table.Tr>
+                                <Table.Tr>
+                                    <Table.Td>Customer: Walk-in</Table.Td>
+                                    <Table.Td>{moment(new Date()).format('DD/MM/YYYY')}</Table.Td>
+                                </Table.Tr>
+                                <Table.Tr>
+                                    <Table.Td>{fv?.data?.map(e => e.name).join(', ') ?? '-'}</Table.Td>
+                                    <Table.Td>{moment(new Date()).format('HH:mm:ss')}</Table.Td>
+                                </Table.Tr>
+                            </Table.Tbody>
+                        </Table>
+                        <Table unstyled className={`
+                            [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
+                            [&_th]:text-start [&_th]:!font-[600] [&_th]:!italic
+                        `}>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>#</Table.Th>
+                                    <Table.Th>Tiket</Table.Th>
+                                    <Table.Th>Qty</Table.Th>
+                                    <Table.Th style={{ textAlign: 'end' }}>Subtotal</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {ticket?.map((e, i) => (
+                                    <Table.Tr key={i}>
+                                        <Table.Td>{i + 1}</Table.Td>
+                                        <Table.Td className={`text-start`}>{e.name}</Table.Td>
+                                        <Table.Td className={`text-start`}>{e.qty_ticket}</Table.Td>
+                                        <Table.Td className={`text-end`}><NumberFormatter prefix="" value={e.subtotal_price} /></Table.Td>
+                                    </Table.Tr>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+                        <Table unstyled className={`
+                            mt-[10px]
+                            [&_td:first-child]:!text-start
+                            [&_tr:first-child_td]:pt-[10px]
+                            [&_tr:last-child_td]:pb-[10px]
+                            border-t border-t-[#838383]
+                            border-b border-b-[#838383]
+                            [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
+                            [&_th]:text-start [&_th]:!font-[600] [&_td:last-child]:!text-end
+                        `}>
+                            <Table.Tbody>
+                                <Table.Tr>
+                                    <Table.Td>PPN</Table.Td>
+                                    <Table.Td><NumberFormatter value={eventData?.ppn ?? 0} /></Table.Td>
+                                </Table.Tr>
+                                <Table.Tr>
+                                    <Table.Td>Admin</Table.Td>
+                                    <Table.Td><NumberFormatter value={eventData?.admin_fee ?? 0} /></Table.Td>
+                                </Table.Tr>
+                                <Table.Tr className={`[&_*]:font-[600] border-t [&_*]:pt-[7px] [&_*]:mt-[7px]`}>
+                                    <Table.Td>Jumlah Dibayar</Table.Td>
+                                    <Table.Td>
+                                      <NumberFormatter value={eventData
+                                        ? subtotal + eventData?.ppn + eventData?.admin_fee
+                                        : subtotal} />
+                                    </Table.Td>
+                                </Table.Tr>
+                                {selectedPayment?.payment_name && (
+                                    <Table.Tr>
+                                        <Table.Td>Metode</Table.Td>
+                                        <Table.Td>{selectedPayment?.payment_name ?? '-'}</Table.Td>
+                                    </Table.Tr>
+                                )}
+                            </Table.Tbody>
+                        </Table>
+                        <Text size="sm" ta="center" my={20}>Terima Kasih Banyak Sudah Berbelanja!</Text>
+                      </Card>
+                    </Box>
+
                     <FontAwesomeIcon
                       icon={faCheckCircle}
                       size='3x'
@@ -633,7 +725,7 @@ export default function ModalOfflineSales({
                             key={el.event_ticket_id}
                           >
                             <p className='text-dark-grey'>{`${el.name} (x${el.qty_ticket})`}</p>
-                            <p className='text-dark-grey'>{`Rp${el.subtotal_price.toLocaleString(
+                            <p className='text-dark-grey'>{`Rp ${el.subtotal_price.toLocaleString(
                               'id-ID'
                             )}`}</p>
                           </div>
@@ -642,15 +734,15 @@ export default function ModalOfflineSales({
                       <div className='border-b border-b-primary-light-200 py-2'>
                         <div className='flex justify-between items-center mb-2'>
                           <p className='text-dark-grey'>{`Pajak`}</p>
-                          <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.ppn ? eventData.ppn.toLocaleString('id-ID') : 0
+                          <p className='text-dark-grey'>{`Rp ${
+                            eventData && eventData?.ppn ? eventData?.ppn.toLocaleString('id-ID') : 0
                           }`}</p>
                         </div>
                         <div className='flex justify-between items-center  mb-2'>
                           <p className='text-dark-grey '>{`Biaya Admin`}</p>
-                          <p className='text-dark-grey'>{`Rp${
-                            eventData && eventData.admin_fee
-                              ? eventData.admin_fee.toLocaleString('id-ID')
+                          <p className='text-dark-grey'>{`Rp ${
+                            eventData && eventData?.admin_fee
+                              ? eventData?.admin_fee.toLocaleString('id-ID')
                               : 0
                           }`}</p>
                         </div>
@@ -744,15 +836,20 @@ export default function ModalOfflineSales({
                     </Flex>
                   </div>
                 ) : (
-                  <button
-                    className='w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed'
-                    onClick={() => {
-                      setIsOpen(false);
-                      setParentStep(0);
-                    }}
-                  >
-                    Selesai
-                  </button>
+                  <Flex gap={10} w="100%" justify="end">
+                    <Button onClick={() => printContent()} rightSection={<Icon icon="iconamoon:invoice-light" />}>
+                      Cetak Faktur
+                    </Button>
+                    <Button
+                      rightSection={<Icon icon="uiw:check" />}
+                      variant="light"
+                      onClick={() => {
+                        setIsOpen(false);
+                        setParentStep(0);
+                      }}>
+                      Selesai
+                    </Button>
+                  </Flex>
                 )}
               </ModalFooter>
             </>
