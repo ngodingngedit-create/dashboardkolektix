@@ -108,11 +108,12 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
                       w="100%"
                       data={{
                         head: ['Nama', 'Email', 'No. Telp', 'E-ticket'],
-                        body: (data?.event_invitation_detail ?? []).map(e => [
+                        body: (data?.event_invitation_detail ?? []).map((e, i) => [
                           e.fullname,
                           e.email,
                           e.phone,
                           <ButtonM
+                            key={i}
                             size="xs"
                             variant="light"
                             component={Link}
