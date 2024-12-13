@@ -109,7 +109,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
         down: () => { setIsCanvasMove(true) },
         up: () => { setIsCanvasMove(false) },
         move: (event: React.MouseEvent<HTMLDivElement>) => {
-            if (isCanvasMove) {
+            if (isCanvasMove && selected == null) {
                 setCanvasPos([canvasPos[0] + event.movementX, canvasPos[1] + event.movementY]);
             }
         }
@@ -160,12 +160,12 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
     };
 
     return (
-        <div onWheel={handleWheel} className={`h-full relative z-20`}>
-            <Card withBorder radius={10} pos="relative" h="100%" className={`overflow-auto`} component={Center}>
+        <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} onMouseDown={handleMouse.down} className={`h-full relative z-20`}>
+            <Card withBorder radius={10} bg="gray.3" pos="relative" h="100%" className={`overflow-auto`} component={Center}>
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
                 {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify([scale, data])}</Text> */}
                 <Box className={`!absolute bottom-4 left-2/4 -translate-x-2/4 z-50`}>
-                    <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" c="gray.6" leftSection={<Icon icon="uiw:plus" />}>
+                    <Button onClick={() => setModalArea('new')} size="xs" bg="gray.2" c="gray.6" leftSection={<Icon icon="uiw:plus" />}>
                         Tambah Area
                     </Button>
                 </Box>
@@ -179,6 +179,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                 </Flex>
 
                 <Card
+                    bg="transparent"
                     pos="relative"
                     style={{
                         scale: `${scale * 100}%`,
@@ -350,9 +351,6 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                 </Card>
 
                 <div
-                    onMouseMove={handleMouse.move}
-                    onMouseDown={handleMouse.down}
-                    onMouseUp={handleMouse.up}
                     style={{
                         height: '100%',
                         width: '100%',
