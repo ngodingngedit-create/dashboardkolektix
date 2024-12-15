@@ -162,6 +162,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         return (detail.is_noidentity == 1 ? Boolean(data.nik) : true) &&
         (detail.is_name == 1 ? Boolean(data.full_name) : true) &&
         (detail.is_email == 1 ? Boolean(data.email) : true) &&
+        (detail.is_email == 1 ? data.email.includes('@') && data.email.includes('.') : true) &&
         (detail.is_phone_number == 1 ? Boolean(data.no_telp) : true);
     };
 
