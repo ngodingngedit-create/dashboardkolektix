@@ -45,34 +45,15 @@ export interface FormEvent {
   tickets: EventTicket[];
 }
 
-type SeatmapObjectData = {
-  position: [number, number];
-  size?: [number, number];
-  rotation?: number;
-  background?: string;
-}
-
-// type SeatmapCategory = | {
-//   type: 'box';
-//   text: string;
-// } | {
-//   type: 'seat';
-//   text?: string;
-//   seatdata: {
-//     seatnumber: string[];
-//     col: number;
-//   };
-// } | {
-//   type: 'festival';
-//   text?: string;
-// };
-
-type SeatmapCategory = {
+export type SeatmapData = {
   type?: string;
   text?: string;
   row?: number;
   prefix?: string;
   col?: number;
+  position: [number, number];
+  size?: [number, number];
+  rotation?: number;
+  background?: string;
+  seatcolor?: string;
 };
-
-export type SeatmapData = SeatmapObjectData & SeatmapCategory;

@@ -1,21 +1,23 @@
 import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip } from "@mantine/core";
+import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import SeatmapComponent from "./SeatmapComponent";
 import { modals } from "@mantine/modals";
-import Moveable, { OnDrag, OnDragEnd, OnResize, OnResizeEnd, OnRotate, OnRotateEnd } from 'react-moveable';
+import Moveable, { MoveableRefType, OnDrag, OnDragEnd, OnResize, OnResizeEnd, OnRotate, OnRotateEnd } from 'react-moveable';
 import { Athiti } from "next/font/google";
 import chunk from "@/utils/chunk";
 import _ from "lodash";
 import { isNotEmpty, useForm } from "@mantine/form";
+import { contrastColor } from "contrast-color";
 
 type ComponentProps = {
     editable?: boolean;
 };
 
 export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
+    const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const [lastScrollTop, setLastScrollTop] = useState(0);
@@ -41,7 +43,8 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
     const { setFieldValue: areaSetValue, values: areaVal, setValues: setAreaVal, getInputProps: areaProps, reset } = areaForm;
     const contentRef = useRef<Array<HTMLParagraphElement | null>>([]);
     const canvasContainerRef = useRef(null);
-    const baseContainerRef = useRef(null);
+    const movableRef = useRef<MoveableRefType>(null);
+    const theme = useMantineTheme();
 
     useDidUpdate(() => {
         if (typeof modalArea == 'number') {
@@ -106,11 +109,29 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
     };
 
     const handleMouse = {
-        down: () => { setIsCanvasMove(true) },
-        up: () => { setIsCanvasMove(false) },
+        down: () => {
+            setIsCanvasMove(true);
+            setSelected(null);
+        },
+        up: () => {
+            setIsCanvasMove(false);
+            setIsDragSelect(undefined);
+        },
         move: (event: React.MouseEvent<HTMLDivElement>) => {
             if (isCanvasMove && selected == null) {
-                setCanvasPos([canvasPos[0] + event.movementX, canvasPos[1] + event.movementY]);
+                setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            }
+        },
+        boxDown: (index: number) => {
+            setSelected(index);
+        },
+        seatDown: (seatnumber: string, index: number) => {
+            setIsDragSelect(selectedSeat.includes(seatnumber) ? 'inactive' : 'active');
+            handleSelectSeat(seatnumber, index);
+        },
+        seatEnter: (seatnumber: string, index: number) => {
+            if (isDragSelect) {
+                handleSelectSeat(seatnumber, index, isDragSelect == 'active');
             }
         }
     }
@@ -123,13 +144,22 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
         setSelected(id);
     };
 
-    const handleSelectSeat = (seatnumber: string) => {
-        if (selectedSeat.includes(seatnumber)) {
-            setSelectedSeat.filter(e => e != seatnumber);
-        } else {
+    const handleSelectSeat = (seatnumber: string, index: number, force?: boolean) => {
+        setSelected(index);
+
+        if (force) {
             setSelectedSeat.setState(_.uniq([...selectedSeat, seatnumber]));
+            return;
         }
-    }
+
+        const isSelected = selectedSeat.includes(seatnumber);
+
+        setSelectedSeat.setState(
+            (isSelected || force == false)
+                ? selectedSeat.filter(seat => seat !== seatnumber)
+                : _.uniq([...selectedSeat, seatnumber])
+        );
+    };
 
     const handleMoved = ({ target }: OnDragEnd) => {
         const left = parseInt(target.style.left.replaceAll(/[^0-9-.]/g, ''));
@@ -159,17 +189,19 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
         );
     };
 
+    const getContrastColor = useCallback((color: string) => {
+        return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
+    }, []);
+
     return (
-        <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} onMouseDown={handleMouse.down} className={`h-full relative z-20`}>
+        <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
             <Card withBorder radius={10} bg="gray.3" pos="relative" h="100%" className={`overflow-auto`} component={Center}>
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
                 {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify([scale, data])}</Text> */}
-                <Box className={`!absolute bottom-4 left-2/4 -translate-x-2/4 z-50`}>
-                    <Button onClick={() => setModalArea('new')} size="xs" bg="gray.2" c="gray.6" leftSection={<Icon icon="uiw:plus" />}>
+                <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
+                    <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                         Tambah Area
                     </Button>
-                </Box>
-                <Flex className={`!absolute bottom-4 right-4 z-50`} gap={10}>
                     <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
                         <Icon icon="uiw:minus" className={`text-primary-base`} />
                     </ActionIcon>
@@ -191,11 +223,13 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                     <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
 
                     <Modal
+                        size="lg"
                         centered
                         opened={modalArea != undefined}
                         onClose={() => setModalArea(undefined)}
                         title={modalArea == 'new' ? "Buat Area Baru" : "Edit Area"}>
                         <Stack>
+                            {/* {JSON.stringify(areaVal)} */}
                             <TextInput
                                 label="Label Area"
                                 placeholder="Isi Label Area"
@@ -220,18 +254,51 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                                 <TextInput
                                     withAsterisk
                                     mt={5}
-                                    description="Code Seat Number"
-                                    placeholder="Isi Code"
+                                    description="Code Seat"
+                                    placeholder="Isi Code Seat"
                                     {...areaProps('prefix')}
                                 />
                             </Flex>
 
-                            <ColorInput
-                                label="Warna Area"
-                                className={`[&_.mantine-ColorPicker-body]:!hidden [&_.mantine-ColorPicker-saturation]:!hidden`}
-                                swatches={['#2e2e2e', '#868e96', '#fa5252', '#e64980', '#be4bdb', '#7950f2', '#4c6ef5', '#228be6', '#15aabf', '#12b886', '#40c057', '#82c91e', '#fab005', '#fd7e14']}
-                                {...areaProps('background')}
-                            />
+                            <Flex className={`[&>*]:flex-grow`} gap={15}>
+                                <ColorInput
+                                    disallowInput
+                                    withPicker={false}
+                                    label="Warna Background Area"
+                                    swatches={[
+                                        ...DEFAULT_THEME.colors.red,
+                                        ...DEFAULT_THEME.colors.green,
+                                        ...theme.colors.blue,
+                                        ...DEFAULT_THEME.colors.yellow,
+                                        ...DEFAULT_THEME.colors.gray,
+                                    ]}
+                                    swatchesPerRow={10}
+                                    {...areaProps('background')}
+                                    value={areaVal.background}
+                                    rightSection={areaVal.background && <ActionIcon onClick={() => setAreaVal({ background: undefined })} variant="transparent">
+                                        <Icon icon="uiw:close"/>
+                                    </ActionIcon>}
+                                />
+                                <ColorInput
+                                    display={modalArea == 0 ? 'none' : undefined}
+                                    disallowInput
+                                    withPicker={false}
+                                    label="Warna Seat"
+                                    swatches={[
+                                        ...DEFAULT_THEME.colors.red,
+                                        ...DEFAULT_THEME.colors.green,
+                                        ...theme.colors.blue,
+                                        ...DEFAULT_THEME.colors.yellow,
+                                        ...DEFAULT_THEME.colors.gray,
+                                    ]}
+                                    swatchesPerRow={10}
+                                    {...areaProps('seatcolor')}
+                                    value={areaVal.seatcolor}
+                                    rightSection={areaVal.seatcolor && <ActionIcon onClick={() => setAreaVal({ seatcolor: undefined })} variant="transparent">
+                                        <Icon icon="uiw:close"/>
+                                    </ActionIcon>}
+                                />
+                            </Flex>
 
                             <Flex gap={10} align="center" mt={10} justify="end">
                                 {(typeof modalArea == 'number' && modalArea != 0) && (
@@ -250,7 +317,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                         {data.map((e, i) => (
                             // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                                 <Box
-                                    className={`absolute z-30`}
+                                    className={`absolute z-30 [&_.hvr]:hover:!flex`}
                                     style={{
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,
@@ -260,23 +327,30 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                                     }}
                                     ref={el => changeRef(i, el)}
                                     key={i}>
-                                    <Flex className={`absolute bottom-[-35px] right-0 ${i == selected ? '' : '!hidden'}`}>
+                                    <Flex display={i == selected ? undefined : 'none'} className={`absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
+                                        <Button bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
+                                            Pilih Semua
+                                        </Button>
                                         <Tooltip label="Edit Area" position="bottom">
-                                            <ActionIcon onClick={() => setModalArea(i)} bg="gray.1" c="gray.6">
+                                            <ActionIcon onClick={() => {setModalArea(i); setSelected(i)}} bg="gray.1" c="gray.6" radius="xl">
                                                 <Icon icon="uiw:edit" />
                                             </ActionIcon>
                                         </Tooltip>
                                     </Flex>
 
                                     <Box
+                                        onMouseDown={() => handleMouse.boxDown(i)}
                                         bg={e.background ?? "gray.1"}
                                         h="100%"
-                                        className={`rounded-md`}>
-                                        <Box onClick={() => handleSelect(i)} className={`absolute w-full h-full left-0 top-0 z-20`} />
+                                        className={`rounded-md shadow-lg`}>
+                                        <Box
+                                            onClick={() => handleSelect(i)}
+                                            className={`absolute w-full h-full left-0 top-0 z-20`}
+                                        />
 
                                         {e.type == 'box' && (
                                             <Center h="100%">
-                                                <Text>{e.text}</Text>
+                                                <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
                                             </Center>
                                         )}
 
@@ -284,13 +358,19 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                                             <Stack h="100%" align="center" justify="center" gap={5} p={10}>
                                                 {e.text && <Text size="xs" c="gray">{e.text}</Text>}
                                                 <Stack gap={5} w="100%" h="100%" justify="space-between">
-                                                    {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((e, r) => (
+                                                    {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
                                                         <Flex gap={5} w="100%" h="100%" justify="space-between" key={r}>
-                                                            {e.map((e, c) => (
-                                                                <Box onClick={() => handleSelectSeat(e)} w="100%" h="100%" key={c} className={`rounded-md ${selectedSeat.includes(e) ? 'bg-primary-base' : 'bg-grey/50'} relative z-40 cursor-pointer`}>
+                                                            {x.map((z, c) => (
+                                                                <Box
+                                                                    onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                                                    onMouseDown={() => handleMouse.seatDown(z, i)}
+                                                                    onClick={() => handleSelectSeat(z, i)}
+                                                                    opacity={selectedSeat.includes(z) ? 1 : 0.3}
+                                                                    w="100%" h="100%" key={c} bg={selectedSeat.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1'}
+                                                                    className={`rounded-md relative z-40 cursor-pointer`}>
                                                                     <Center w="100%" h="100%">
-                                                                        <Text size="xs" c="white" className={`uppercase`}>
-                                                                            {e}
+                                                                        <Text size="xs" c={getContrastColor(selectedSeat.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                            {z}
                                                                         </Text>
                                                                     </Center>
                                                                 </Box>
@@ -351,6 +431,9 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                 </Card>
 
                 <div
+                    onMouseUp={handleMouse.up}
+                    onMouseDown={handleMouse.down}
+                    className={`cursor-grab active:cursor-grabbing`}
                     style={{
                         height: '100%',
                         width: '100%',

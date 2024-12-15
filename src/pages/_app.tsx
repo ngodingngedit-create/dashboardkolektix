@@ -30,6 +30,20 @@ import { DateInput } from '@mantine/dates';
 config.autoAddCss = false;
 
 const theme = createTheme({
+  colors: {
+    "blue": [
+      "#edf3fc",
+      "#d9e3f3",
+      "#afc6e9",
+      "#82a6e1",
+      "#5d8bd9",
+      "#477ad6",
+      "#3b72d5",
+      "#2e61bd",
+      "#2656a9",
+      "#184a96"
+    ]
+  },
   components: {
     Notifications: Notifications.extend({
       defaultProps: {
