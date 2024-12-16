@@ -6,12 +6,14 @@ import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
 import ImageInput from "@/components/ImageInput.tsx";
 import { notifications } from "@mantine/notifications";
-import { Box, Checkbox, Flex, LoadingOverlay } from "@mantine/core";
+import { Box, Checkbox, Flex, LoadingOverlay, Stack } from "@mantine/core";
+import { EventProps } from "@/utils/globalInterface";
 
 interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   eventId?: number;
+  eventData?: EventProps;
 }
 
 export type CategoryResponse = { id: number, name: string };
@@ -29,6 +31,7 @@ type InvitationStore<T = {
   details: T;
   image?: Blob;
   is_one_receiver?: boolean;
+  is_banner_image?: boolean;
 }
 
 const isBrowser = typeof window !== 'undefined';
@@ -47,7 +50,7 @@ export const invitationStoreSchema = z.object({
   image: z.instanceof(Blob).optional().nullable(),
 });
 
-const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
+const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalProps) => {
   const [loading, setLoading] = useListState<string>();
   const [category, setCategory] = useState<CategoryResponse[]>([]);
 
@@ -60,7 +63,8 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
       details: [
         { fullname: '', email: '', phone: '' }
       ],
-      is_one_receiver: false
+      is_one_receiver: false,
+      is_banner_image: true,
     },
     validate: zodResolver(invitationStoreSchema),
     onValuesChange: val => {
@@ -126,12 +130,19 @@ const AddEventModal = ({ isOpen, onClose, eventId }: AddEventModalProps) => {
         <ModalHeader className="text-dark">Add New Invitation</ModalHeader>
         <ModalBody>
           <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
-            <ImageInput
-              label="Gambar"
-              dimension={[300, 100]}
-              value={form.values.image}
-              onChange={e => form.setValues({ image: e ?? undefined })}
-            />
+            <Stack gap={10}>
+              <ImageInput
+                label="Gambar"
+                dimension={[300, 100]}
+                value={form.values.image ?? (form.values.is_banner_image ? eventData?.image_url : undefined)}
+                onChange={e => form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined })}
+              />
+              <Checkbox
+                label="Gunakan Gambar Event"
+                checked={form.values.is_banner_image}
+                onChange={e => form.setValues({ is_banner_image: e.target.checked })}
+              />
+            </Stack>
             <div className="flex flex-wrap gap-4">
               <Box className="flex-1 relative min-w-[30%]">
                 <Select

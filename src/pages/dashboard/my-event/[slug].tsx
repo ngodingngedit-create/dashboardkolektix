@@ -72,10 +72,10 @@ interface InvitationDataItem {
 }
 
 const MyEventDetail = () => {
-  const defaultForm = {
+  const defaultForm: EventTicket = {
     ticket_type: '',
     ticket_category_id: 1,
-    ticket_category: '',
+    ticket_category: 'Festival',
     name: '',
     ticket_date: null,
     ticket_end: null,
@@ -439,9 +439,9 @@ const eventItems = useMemo(() => {
   };
 
   const onAddTicket = () => {
-    setEditTicket({
-      ...defaultForm,
-    });
+    // setEditTicket({
+    //   ...defaultForm,
+    // });
     setIdxTicket(null);
     showAddTicket(true);
   };
@@ -954,7 +954,7 @@ const eventItems = useMemo(() => {
                             }
                           >
                             <TableHeader>
-                              <TableColumn className='font-bold text-md'>ID</TableColumn>
+                              <TableColumn className='font-bold text-md'>No</TableColumn>
                               <TableColumn className='font-bold text-md'>Judul Undangan</TableColumn>
                               <TableColumn className='font-bold text-md'>Type</TableColumn>
                               <TableColumn className='font-bold text-md'>Qty</TableColumn>
@@ -1052,7 +1052,7 @@ const eventItems = useMemo(() => {
       </div>
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
+    <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
     <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
