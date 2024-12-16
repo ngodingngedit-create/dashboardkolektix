@@ -538,14 +538,17 @@ return (
             <>
               <div className=" mb-4">
                 <div>
-                  <h3 className="mb-3">{eventData.name}</h3>
-                  <p className="text-sm text-grey mb-3">{moment(eventData.start_date).format('DD MMM YYYY')} - {moment(eventData.end_date).format('DD MMM YYYY')}</p>
-                  <p className='text-black'>{eventData.grand_total}</p>
-                  <Button
-                    color="primary"
-                    label="Penjualan Tiket Offline"
-                    onClick={() => setStep(1)}
-                  />
+                  <Flex justify="space-between" gap={20} wrap="wrap">
+                    <Stack gap={0}>
+                      <h3 className="mb-3">{eventData.name}</h3>
+                      <p className="text-sm text-grey mb-3">{moment(eventData.start_date).format('DD MMM YYYY')} - {moment(eventData.end_date).format('DD MMM YYYY')}</p>
+                      <p className='text-black'>{eventData.grand_total}</p>
+                    </Stack>
+                    <ButtonM
+                      onClick={() => setStep(1)}
+                      rightSection={<Icon icon="hugeicons:cashier" />}
+                    >Penjualan Tiket OTS</ButtonM>
+                  </Flex>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
