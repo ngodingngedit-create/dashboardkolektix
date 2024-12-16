@@ -46,6 +46,7 @@ import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
 import { notifications } from '@mantine/notifications';
+import _ from 'lodash';
 
 
 
@@ -966,7 +967,7 @@ const eventItems = useMemo(() => {
                             <TableBody items={eventItems}>
                               {(item) => (
                                 <TableRow key={item?.id}>
-                                  <TableCell className='border-b-1'>{item?.id}</TableCell>
+                                  <TableCell className='border-b-1'>{_.indexOf(eventItems.map(e => e?.id), item?.id) + 1}</TableCell>
                                   <TableCell className='border-b-1'>{item?.invitation_title}</TableCell>
                                   <TableCell className='border-b-1'>{invitationCategory?.find(e => e.id == item?.invitation_cat_id)?.name ?? '-'}</TableCell>
                                   <TableCell className='border-b-1'>{item?.total_qty}</TableCell>

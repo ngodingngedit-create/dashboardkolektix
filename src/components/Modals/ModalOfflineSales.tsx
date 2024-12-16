@@ -177,7 +177,13 @@ export default function ModalOfflineSales({
 
   const handleNext = () => {
     if (identity.validate().hasErrors) return;
-    openForm ? setOpenForm(false) : Boolean(payment) ? setStep(1) : {};
+    if (paymentList?.length == 1 && openForm) {
+      setPayment(paymentList[0].id);
+      setOpenForm(false);
+      setStep(1);
+    } else {
+      openForm ? setOpenForm(false) : Boolean(payment) ? setStep(1) : {};
+    }
     if (!Boolean(payment) && !openForm) {
       setErrorPayment('Pilih Metode Pembayaran');
     }
