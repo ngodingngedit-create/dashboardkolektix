@@ -2,7 +2,7 @@ import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useContext, useEffect } from "react";
 import SeatmapComponent from "./SeatmapComponent";
 import { modals } from "@mantine/modals";
 import Moveable, { MoveableRefType, OnDrag, OnDragEnd, OnResize, OnResizeEnd, OnRotate, OnRotateEnd } from 'react-moveable';
@@ -11,28 +11,25 @@ import chunk from "@/utils/chunk";
 import _ from "lodash";
 import { isNotEmpty, useForm } from "@mantine/form";
 import { contrastColor } from "contrast-color";
+import { Context } from "@/pages/create-event";
 
 type ComponentProps = {
     editable?: boolean;
+    selected?: string[];
+    onSelect?: (data?: string[]) => void;
+    unavailSeat?: string[];
 };
 
-export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
+export default function Seatmap({ editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat }: Readonly<ComponentProps>) {
     const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const [lastScrollTop, setLastScrollTop] = useState(0);
     const [selected, setSelected] = useState<number | null>(null);
-    const [selectedSeat, setSelectedSeat] = useListState<string>([]);
+    // const [selectedSeat, setSelectedSeat] = useListState<string>([]);
     const [modalArea, setModalArea] = useState<number | 'new'>();
     const [scale, setScale] = useState(1);
-    const [data, setData] = useListState<SeatmapData>([
-        {
-            position: [0, 0],
-            size: [300, 30],
-            type: 'box',
-            text: 'Main Stage',
-        }
-    ]);
+    const { seatmapData: data, setSeatmapData: setData } = useContext(Context);
     const areaForm = useForm<SeatmapData>({
         validate: {
             col: isNotEmpty(),
@@ -67,9 +64,9 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
         if (areaForm.validate().hasErrors && modalArea != 0) return;
 
         if (typeof modalArea == 'number') {
-            setData.setItem(modalArea, areaVal);
+            setData?.setItem(modalArea, areaVal);
         } else {
-            setData.append({
+            setData?.append({
                 ...areaVal, 
                 position: [0, 0],
                 size: [300, 200],
@@ -90,7 +87,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
             confirmProps: { color: 'red' },
             onConfirm: () => {
                 if (typeof modalArea == 'number') {
-                    setData.remove(modalArea);
+                    setData?.remove(modalArea);
                     reset();
                     setModalArea(undefined);
                 }
@@ -126,7 +123,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
             setSelected(index);
         },
         seatDown: (seatnumber: string, index: number) => {
-            setIsDragSelect(selectedSeat.includes(seatnumber) ? 'inactive' : 'active');
+            setIsDragSelect(selectedSeat?.includes(seatnumber) ? 'inactive' : 'active');
             handleSelectSeat(seatnumber, index);
         },
         seatEnter: (seatnumber: string, index: number) => {
@@ -145,27 +142,29 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
     };
 
     const handleSelectSeat = (seatnumber: string, index: number, force?: boolean) => {
-        setSelected(index);
-
-        if (force) {
-            setSelectedSeat.setState(_.uniq([...selectedSeat, seatnumber]));
-            return;
+        if (setSelectedSeat) {
+            setSelected(index);
+    
+            if (force) {
+                setSelectedSeat && setSelectedSeat(_.uniq([...(selectedSeat ?? []), seatnumber]));
+                return;
+            }
+    
+            const isSelected = selectedSeat?.includes(seatnumber);
+    
+            setSelectedSeat(
+                (isSelected || force == false)
+                    ? selectedSeat?.filter(seat => seat !== seatnumber)
+                    : _.uniq([...(selectedSeat ?? []), seatnumber])
+            );
         }
-
-        const isSelected = selectedSeat.includes(seatnumber);
-
-        setSelectedSeat.setState(
-            (isSelected || force == false)
-                ? selectedSeat.filter(seat => seat !== seatnumber)
-                : _.uniq([...selectedSeat, seatnumber])
-        );
     };
 
     const handleMoved = ({ target }: OnDragEnd) => {
         const left = parseInt(target.style.left.replaceAll(/[^0-9-.]/g, ''));
         const top = parseInt(target.style.top.replaceAll(/[^0-9-.]/g, ''));
 
-        setData.applyWhere(
+        setData?.applyWhere(
             (_, i) => i == selected,
             (e) => ({...e, position: [left, top]}),
         );
@@ -175,7 +174,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
         const width = parseInt(target.style.width.split('px')[0]);
         const height = parseInt(target.style.height.split('px')[0]);
 
-        setData.applyWhere(
+        setData?.applyWhere(
             (_, i) => i == selected,
             (e) => ({...e, size: [width, height]}),
         );
@@ -183,7 +182,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
 
     const handleRotated = ({ target }: OnRotateEnd) => {
         const rotation = parseInt(target.style.transform.split('rotate(')[1].split('px')[0]);
-        setData.applyWhere(
+        setData?.applyWhere(
             (_, i) => i == selected,
             (e) => ({...e, rotation })
         );
@@ -364,12 +363,12 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                                                                 <Box
                                                                     onMouseEnter={() => handleMouse.seatEnter(z, i)}
                                                                     onMouseDown={() => handleMouse.seatDown(z, i)}
-                                                                    onClick={() => handleSelectSeat(z, i)}
-                                                                    opacity={selectedSeat.includes(z) ? 1 : 0.3}
-                                                                    w="100%" h="100%" key={c} bg={selectedSeat.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1'}
+                                                                    onClick={() => !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
+                                                                    opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                                                    w="100%" h="100%" key={c} bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1'}
                                                                     className={`rounded-md relative z-40 cursor-pointer`}>
                                                                     <Center w="100%" h="100%">
-                                                                        <Text size="xs" c={getContrastColor(selectedSeat.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                        <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
                                                                             {z}
                                                                         </Text>
                                                                     </Center>

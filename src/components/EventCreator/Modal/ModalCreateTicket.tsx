@@ -162,7 +162,8 @@ export default function ModalCreateTicket({
 
                 <Stack gap={10} className={`overflow-y-auto`}>
                   {ticket.map((e, i) => (
-                    <UnstyledButton key={i} onClick={() => setSelected(selected == i ? undefined : i)}>
+                    // onClick={() => setSelected(selected == i ? undefined : i)}
+                    <UnstyledButton key={i}>
                       <Box className={`${selected == i ? '!border !border-primary-base rounded-lg' : ''}`}>
                         <TicketContainer
                           key={i}
@@ -356,7 +357,11 @@ export default function ModalCreateTicket({
             <Box
               className={`flex-grow`}
               display={openSeatMap ? undefined : 'none'}>
-              <Seatmap />
+              <Seatmap
+                unavailSeat={ticket.map(e => e.available_seat).reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), [])}
+                selected={form.available_seat}
+                onSelect={e => setForm({ available_seat: e })}
+              />
             </Box>
           </Flex>
         </Stack>

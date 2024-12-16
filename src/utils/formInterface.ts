@@ -44,6 +44,7 @@ export interface FormEvent {
   term_condition: string;
   save_as_draft: boolean;
   tickets: EventTicket[];
+  seatmap?: string;
 }
 
 export type SeatmapData = {
