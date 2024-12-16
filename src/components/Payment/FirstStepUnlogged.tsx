@@ -162,6 +162,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         return (detail.is_noidentity == 1 ? Boolean(data.nik) : true) &&
         (detail.is_name == 1 ? Boolean(data.full_name) : true) &&
         (detail.is_email == 1 ? Boolean(data.email) : true) &&
+        (detail.is_email == 1 ? data.email.includes('@') && data.email.includes('.') : true) &&
         (detail.is_phone_number == 1 ? Boolean(data.no_telp) : true);
     };
 
@@ -503,7 +504,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                 </div>
                                 <div className="border-b-2 p-3 border-primary-light text-xs">
                                     <Accordion variant="splitted" itemClasses={classAcc}>
-                                        {detail.has_event_payment_method.map((el: any) => (
+                                        {detail.has_event_payment_method.filter(e => e.payment_method_id != 5).map((el: any) => (
                                             <AccordionItem key={el.has_payment_method_id} aria-label="Anchor" className="" indicator={<FontAwesomeIcon icon={faChevronCircleLeft} className="px-2 text-lg" />} title={el.has_payment_method.payment_name}>
                                                 {el.has_payment_method.id === 3 && el.has_payment_method.has_payment_link && el.has_payment_method.has_payment_link.length > 0 ? (
                                                     <RadioGroup
@@ -711,7 +712,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                         </div>
                                         <div className="border-b px-3 py-5 border-primary-light text-xs">
                                             <Accordion variant="splitted" itemClasses={classAcc}>
-                                                {detail.has_event_payment_method.map((el: any) => (
+                                                {detail.has_event_payment_method.filter(e => e.payment_method_id != 5).map((el: any) => (
                                                     <AccordionItem key={el.has_payment_method_id} aria-label="Anchor" className="" indicator={<FontAwesomeIcon icon={faChevronCircleLeft} className="px-2 text-lg" />} title={el.has_payment_method.payment_name}>
                                                         {el.has_payment_method.id === 3 && el.has_payment_method.has_payment_link && el.has_payment_method.has_payment_link.length > 0 ? (
                                                             <RadioGroup

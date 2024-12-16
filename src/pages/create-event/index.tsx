@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, SetStateAction, Dispatch } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -20,7 +20,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons/faPlus';
 import ModalDate from '@/components/EventCreator/Modal/ModalDate';
 import ModalTime from '@/components/EventCreator/Modal/ModalTime';
 import ModalTicket from '@/components/EventCreator/Modal/ModalTicket';
-import { FormEvent, EventTicket } from '@/utils/formInterface';
+import { FormEvent, EventTicket, SeatmapData } from '@/utils/formInterface';
 import ModalLocation from '@/components/EventCreator/Modal/ModalLocation';
 import ModalCreateTicket from '@/components/EventCreator/Modal/ModalCreateTicket';
 import { Get, Post } from '@/utils/REST';
@@ -28,6 +28,7 @@ import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { toast } from 'react-toastify';
 import Button from '@/components/Button';
 import React from 'react';
+import { useListState, UseListStateHandlers } from '@mantine/hooks';
 
 const option = [
   { key: 1, label: '1 Tiket' },
@@ -58,6 +59,13 @@ interface ErrorResponse {
   description?: string[];
   term_condition?: string[];
 }
+
+export const Context = createContext<{
+  seatmapData: SeatmapData[],
+  setSeatmapData?: UseListStateHandlers<SeatmapData>;
+}>({
+  seatmapData: []
+})
 
 const CreateEvent = () => {
   const router = useRouter();
@@ -96,10 +104,10 @@ const CreateEvent = () => {
     save_as_draft: false,
     tickets: ticket,
   });
-  const defaultForm = {
+  const defaultForm: EventTicket = {
     ticket_type: '',
     ticket_category_id: 1,
-    ticket_category: '',
+    ticket_category: 'Festival',
     name: '',
     ticket_date: null,
     ticket_end: null,
@@ -119,6 +127,14 @@ const CreateEvent = () => {
   const [tagSuggestion, setTagSuggestion] = useState<string[]>();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<string>('info');
+  const [seatmapData, setSeatmapData] = useListState<SeatmapData>([
+    {
+        position: [0, 0],
+        size: [300, 30],
+        type: 'box',
+        text: 'Main Stage',
+    }
+  ]);
   // const [userData, setUserData] = useState<UserProps | null>(null);
   const loggedUser = useLoggedUser();
 
@@ -156,7 +172,11 @@ const CreateEvent = () => {
 
   const submitEvent = () => {
     setLoading(true); // Set loading ke true
-    Post('event', form)
+    Post('event', {
+      ...form,
+      ticket: form.tickets.map(e => ({...e, available_seat: JSON.stringify(e.available_seat)})),
+      seatmap: seatmapData ? JSON.stringify(seatmapData) : null
+    })
       .then((res) => {
         console.log(res);4
         toast.success('Event Berhasil Dibuat');
@@ -412,7 +432,7 @@ const CreateEvent = () => {
                       <p>Tambah Tiket</p>
                     </div>
                   </div>
-                  <div className='p-5'>
+                  <div className='p-5 flex flex-col gap-[10px]'>
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
                         <div key={index}>
@@ -658,16 +678,18 @@ const CreateEvent = () => {
         form={form}
         setForm={setForm}
       />
-      <ModalCreateTicket
-        isOpen={addTicket}
-        endDate={form.end_date}
-        setIsOpen={showAddTicket}
-        ticket={ticket}
-        setTicket={setTicket}
-        data={editTicket}
-        setIdx={setIdxTicket}
-        idx={idxTicket}
-      />
+      <Context.Provider value={{ seatmapData, setSeatmapData }}>
+        <ModalCreateTicket
+          isOpen={addTicket}
+          endDate={form.end_date}
+          setIsOpen={showAddTicket}
+          ticket={ticket}
+          setTicket={setTicket}
+          data={editTicket}
+          setIdx={setIdxTicket}
+          idx={idxTicket}
+        />
+      </Context.Provider>
     </>
   );
 };

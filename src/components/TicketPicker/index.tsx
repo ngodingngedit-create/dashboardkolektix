@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { TicketProps } from '@/utils/globalInterface';
+import { EventProps, TicketProps } from '@/utils/globalInterface';
 import TicketCounter from '../TicketCounter';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   isLogin: boolean;
   selected: number;
   setSelected: (index: number) => void;
+  eventData?: EventProps;
 }
 
 interface GroupTicket {
@@ -24,6 +25,7 @@ export default function TicketPicker({
   isLogin,
   selected,
   setSelected,
+  eventData,
 }: Props) {
   const handleCount = (id: number, newCount: number) => {
     setCounts({
@@ -68,7 +70,7 @@ export default function TicketPicker({
   React.useEffect(() => {
     const combineTicketsByDate = (tickets: TicketProps[]): GroupTicket[] => {
       const groupedByDate = tickets.reduce((acc: { [key: string]: TicketProps[] }, item) => {
-        const date = item.ticket_date;
+        const date = item.event_schedule_date;
         if (date) {
           if (!acc[date]) {
             acc[date] = [];
@@ -81,7 +83,7 @@ export default function TicketPicker({
       return Object.keys(groupedByDate).map((date) => ({
         date,
         tickets: groupedByDate[date],
-      }));
+      })).reverse();
     };
 
     setGroupedTickets(combineTicketsByDate(data));
@@ -106,7 +108,9 @@ export default function TicketPicker({
             <TabPanel key={date} className='rounded-xl bg-white/5 py-3'>
               {tickets.map((item) => (
                 <TicketCounter
+                  ticketData={item}
                   key={item.id}
+                  isFullbook={item.is_fullbook == 1}
                   isLogin={isLogin}
                   count={counts[item.id]}
                   setCount={(newCount) => handleCount(item.id, newCount)}
@@ -115,7 +119,7 @@ export default function TicketPicker({
                   isReady={item.is_ready === 1}
                   title={item.name}
                   price={item.price}
-                  max={item.max_buy_ticket}
+                  max={eventData?.max_buy_ticket}
                 />
               ))}
             </TabPanel>

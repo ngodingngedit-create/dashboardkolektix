@@ -1,13 +1,14 @@
 export interface EventTicket {
   ticket_type: string;
   ticket_category_id: number;
-  ticket_category: string;
+  ticket_category: 'Seated' | 'Festival';
   name: string;
   ticket_date: string | null;
   ticket_end: string | null;
   qty: number;
   price: number;
   description: string;
+  available_seat?: string[];
 }
 
 export interface FormEvent {
@@ -43,4 +44,18 @@ export interface FormEvent {
   term_condition: string;
   save_as_draft: boolean;
   tickets: EventTicket[];
+  seatmap?: string;
 }
+
+export type SeatmapData = {
+  type?: string;
+  text?: string;
+  row?: number;
+  prefix?: string;
+  col?: number;
+  position: [number, number];
+  size?: [number, number];
+  rotation?: number;
+  background?: string;
+  seatcolor?: string;
+};

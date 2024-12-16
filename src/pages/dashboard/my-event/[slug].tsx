@@ -46,6 +46,7 @@ import WithdrawHistoryList from '@/components/MyEvent/WithdrawHistoryList';
 import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
 import { notifications } from '@mantine/notifications';
+import _ from 'lodash';
 
 
 
@@ -72,10 +73,10 @@ interface InvitationDataItem {
 }
 
 const MyEventDetail = () => {
-  const defaultForm = {
+  const defaultForm: EventTicket = {
     ticket_type: '',
     ticket_category_id: 1,
-    ticket_category: '',
+    ticket_category: 'Festival',
     name: '',
     ticket_date: null,
     ticket_end: null,
@@ -439,9 +440,9 @@ const eventItems = useMemo(() => {
   };
 
   const onAddTicket = () => {
-    setEditTicket({
-      ...defaultForm,
-    });
+    // setEditTicket({
+    //   ...defaultForm,
+    // });
     setIdxTicket(null);
     showAddTicket(true);
   };
@@ -954,7 +955,7 @@ const eventItems = useMemo(() => {
                             }
                           >
                             <TableHeader>
-                              <TableColumn className='font-bold text-md'>ID</TableColumn>
+                              <TableColumn className='font-bold text-md'>No</TableColumn>
                               <TableColumn className='font-bold text-md'>Judul Undangan</TableColumn>
                               <TableColumn className='font-bold text-md'>Type</TableColumn>
                               <TableColumn className='font-bold text-md'>Qty</TableColumn>
@@ -966,7 +967,7 @@ const eventItems = useMemo(() => {
                             <TableBody items={eventItems}>
                               {(item) => (
                                 <TableRow key={item?.id}>
-                                  <TableCell className='border-b-1'>{item?.id}</TableCell>
+                                  <TableCell className='border-b-1'>{_.indexOf(eventItems.map(e => e?.id), item?.id) + 1}</TableCell>
                                   <TableCell className='border-b-1'>{item?.invitation_title}</TableCell>
                                   <TableCell className='border-b-1'>{invitationCategory?.find(e => e.id == item?.invitation_cat_id)?.name ?? '-'}</TableCell>
                                   <TableCell className='border-b-1'>{item?.total_qty}</TableCell>
@@ -1052,7 +1053,7 @@ const eventItems = useMemo(() => {
       </div>
     </div>
     <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-    <AddEventModal isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
+    <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
     <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />

@@ -66,10 +66,10 @@ const CreateEvent = () => {
     save_as_draft: false,
     tickets: ticket,
   });
-  const defaultForm = {
+  const defaultForm: EventTicket = {
     ticket_type: '',
     ticket_category_id: 1,
-    ticket_category: '',
+    ticket_category: 'Festival',
     name: '',
     ticket_date: null,
     ticket_end: null,

@@ -8,7 +8,7 @@ type ComponentProps = {
     label?: string;
     error?: string | ReactNode;
     description?: string;
-    value?: string | Blob;
+    value?: string | Blob | null;
     onChange?: (file: File | null) => void;
     dimension?: [number, number];
     required?: boolean;

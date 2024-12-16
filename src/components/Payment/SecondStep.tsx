@@ -127,7 +127,7 @@ const SecondStep = ({
           <div className='border-b-2 p-3 border-primary-light text-xs'>
             <Accordion variant='splitted' itemClasses={classAcc}>
               {detail.has_event_payment_method.length > 0
-                ? detail.has_event_payment_method.map((el: any) => (
+                ? detail.has_event_payment_method.filter(e => e.payment_method_id != 5).map((el: any) => (
                     <AccordionItem
                       key={el.has_payment_method_id}
                       aria-label='Anchor'
@@ -276,7 +276,7 @@ const SecondStep = ({
               <div className='border-b px-3 py-5 border-primary-light text-xs'>
                 <Accordion variant='splitted' itemClasses={classAcc}>
                   {detail.has_event_payment_method.length > 0
-                    ? detail.has_event_payment_method.map((el: any) => (
+                    ? detail.has_event_payment_method.filter(e => e.payment_method_id != 5).map((el: any) => (
                         <AccordionItem
                           key={el.has_payment_method_id}
                           aria-label='Anchor'

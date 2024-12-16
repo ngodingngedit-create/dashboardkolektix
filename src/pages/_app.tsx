@@ -15,7 +15,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import NavbarComponent from '@/components/NavbarComponent';
 import { useRouter } from 'next/router';
-import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme, Button, ActionIcon } from '@mantine/core';
+import { Input, MantineProvider, MantineTheme, TextInput, Select, Textarea, TagsInput, ModalProps, NumberFormatter, NumberInput, Table, createTheme, Button, ActionIcon, Tooltip } from '@mantine/core';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -30,6 +30,20 @@ import { DateInput } from '@mantine/dates';
 config.autoAddCss = false;
 
 const theme = createTheme({
+  colors: {
+    "blue": [
+      "#edf3fc",
+      "#d9e3f3",
+      "#afc6e9",
+      "#82a6e1",
+      "#5d8bd9",
+      "#477ad6",
+      "#3b72d5",
+      "#2e61bd",
+      "#2656a9",
+      "#184a96"
+    ]
+  },
   components: {
     Notifications: Notifications.extend({
       defaultProps: {
@@ -138,7 +152,13 @@ const theme = createTheme({
           },
         },
       }),
-    }
+    },
+    Tooltip: Tooltip.extend({
+      defaultProps: {
+        bg: 'gray.1',
+        c: 'gray.7'
+      }
+    })
   }
 })
 
