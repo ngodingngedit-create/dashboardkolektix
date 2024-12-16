@@ -1,13 +1,14 @@
 export interface EventTicket {
   ticket_type: string;
   ticket_category_id: number;
-  ticket_category: string;
+  ticket_category: 'Seated' | 'Festival';
   name: string;
   ticket_date: string | null;
   ticket_end: string | null;
   qty: number;
   price: number;
   description: string;
+  available_seat?: string[];
 }
 
 export interface FormEvent {

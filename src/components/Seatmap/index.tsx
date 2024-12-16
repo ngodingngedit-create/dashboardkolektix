@@ -317,7 +317,7 @@ export default function Seatmap({ editable = true }: Readonly<ComponentProps>) {
                         {data.map((e, i) => (
                             // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                                 <Box
-                                    className={`absolute z-30 [&_.hvr]:hover:!flex`}
+                                    className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
                                     style={{
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,

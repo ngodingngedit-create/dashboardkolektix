@@ -28,7 +28,7 @@ const TicketContainer = ({
   onEdit,
 }: TicketContainerProps) => {
   return (
-    <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-md mb-5'>
+    <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-md'>
       <div className='p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0'>
         <Flex justify="space-between" wrap="wrap" gap={10}>
           <Stack gap={0}>
@@ -63,12 +63,12 @@ const TicketContainer = ({
               <FontAwesomeIcon icon={faPenToSquare} size='lg' />
             </button>
           )}
-          {/* <button
+          <button
             onClick={onDelete}
             className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
           >
             <FontAwesomeIcon icon={faTrashCan} size='lg' />
-          </button> */}
+          </button>
         </div>
       </div>
     </div>
