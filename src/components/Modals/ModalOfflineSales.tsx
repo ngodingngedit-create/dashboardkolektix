@@ -73,6 +73,7 @@ export default function ModalOfflineSales({
   setParentStep,
 }: ModalProps) {
   const [payment, setPayment] = useState<string>('');
+  const [errorPayment, setErrorPayment] = useState<string>();
   const [transactionData, setTransactionData] = useState<any>();
   const [step, setStep] = useState(2);
   const [loading, setLoading] = useState(false);
@@ -127,6 +128,7 @@ export default function ModalOfflineSales({
 
   useEffect(() => {
     console.log(payment);
+    setErrorPayment(undefined);
   }, [payment]);
 
   useEffect(() => {
@@ -158,7 +160,7 @@ export default function ModalOfflineSales({
         .then((res: any) => {
           console.log(res);
           setTransactionData(res);
-          if (res.xendit_invoice.invoice_url) {
+          if (res?.xendit_invoice?.invoice_url) {
             console.log(res);
             router.push(res.xendit_invoice.invoice_url);
           } else {
@@ -175,7 +177,10 @@ export default function ModalOfflineSales({
 
   const handleNext = () => {
     if (identity.validate().hasErrors) return;
-    openForm ? setOpenForm(false) : setStep(1);
+    openForm ? setOpenForm(false) : Boolean(payment) ? setStep(1) : {};
+    if (!Boolean(payment) && !openForm) {
+      setErrorPayment('Pilih Metode Pembayaran');
+    }
   }
 
   const selectedPayment = useMemo(() => paymentList?.find((e: any) => e.id == payment), [payment]);
@@ -218,25 +223,33 @@ export default function ModalOfflineSales({
                       />
                     </div>
                     <div className='bg-white'>
-                      <div className='py-4 px-4'>
-                        <h6>Tiket</h6>
-                      </div>
-                      {ticket.map((el: any, idx: number) => (
-                        <div
-                          key={el.event_ticket_id}
-                          className='border-t border-t-primary-light-200 py-4 px-4 flex items-center gap-2'
-                        >
-                          <div className='flex items-center justify-center w-10 h-10 border border-primary-light-200 rounded-full'>
-                            <FontAwesomeIcon icon={faTicket} className='text-primary-dark' />
-                          </div>
-                          <div>
-                            <p className='font-semibold mb-0.5'>{el.name}</p>
-                            <p className='text-grey text-xs'>
-                              {el.qty_ticket} Tiket x Rp{el.subtotal_price.toLocaleString('id-ID')}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                      <AccordionM>
+                        <AccordionM.Item value="-">
+                          <AccordionM.Control>
+                            <div className=''>
+                              <h6>Tiket</h6>
+                            </div>
+                          </AccordionM.Control>
+                          <AccordionM.Panel>
+                            {ticket.map((el: any, idx: number) => (
+                              <div
+                                key={el.event_ticket_id}
+                                className='border-t border-t-primary-light-200 py-4 px-4 flex items-center gap-2'
+                              >
+                                <div className='flex items-center justify-center w-10 h-10 border border-primary-light-200 rounded-full'>
+                                  <FontAwesomeIcon icon={faTicket} className='text-primary-dark' />
+                                </div>
+                                <div>
+                                  <p className='font-semibold mb-0.5'>{el.name}</p>
+                                  <p className='text-grey text-xs'>
+                                    {el.qty_ticket} Tiket x Rp{el.subtotal_price.toLocaleString('id-ID')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </AccordionM.Panel>
+                        </AccordionM.Item>
+                      </AccordionM>
                     </div>
                     <div className='bg-white'>
                       <div className='py-4 px-4 border-b border-b-primary-light-200'>
@@ -248,23 +261,25 @@ export default function ModalOfflineSales({
                             {(splittedTicket ?? []).map((e, i) => (
                               <AccordionM.Item key={i} value={String(i)}>
                                 <AccordionM.Control bg={Object.keys(fe).some(e => e.includes(`data.${i}`)) ? "red.1" : "#fafafa"}>
-                                  <Flex gap={8} align="start">
+                                  <Flex gap={8} align="start" wrap="wrap">
                                     <FontAwesomeIcon icon={faTicket} className='text-primary-dark mt-[3px]' />
                                     <Stack gap={2}>
                                       <Text fw={600} size="sm">{i + 1}. Pemilik Tiket {e.name}</Text>
                                       <Text size='xs' c="gray">1x Tiket <NumberFormatter value={e.price} /></Text>
                                     </Stack>
+                                    <Switch
+                                      ml="auto"
+                                      mr={10}
+                                      mt={10}
+                                      display={i == 0 ? 'none' : undefined}
+                                      label="Gunakan Data Pertama"
+                                      onChange={e => handleCopyData(e.target.checked, i)}
+                                    />
                                   </Flex>
                                 </AccordionM.Control>
                                 <AccordionM.Panel py={10}>
                                   <Card p={0} key={i} radius={10}>
                                     <Stack>
-
-                                      <Switch
-                                        display={i == 0 ? 'none' : undefined}
-                                        label="Gunakan Data Pertama"
-                                        onChange={e => handleCopyData(e.target.checked, i)}
-                                      />
 
                                       <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
                                         {Boolean(eventData?.is_name) && (
@@ -340,6 +355,7 @@ export default function ModalOfflineSales({
                     <div className='bg-white'>
                       <div className='py-4 px-4 border-b border-b-primary-light-200'>
                         <h6>Metode Pembayaran</h6>
+                        {errorPayment && <Text size="xs" c="red">{errorPayment}</Text>}
                       </div>
                       <div className={`py-4 ${openForm || step == 0 ? 'hidden' : ''}`}>
                         {payment}
