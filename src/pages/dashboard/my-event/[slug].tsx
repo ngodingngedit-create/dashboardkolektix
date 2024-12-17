@@ -785,7 +785,7 @@ const eventItems = useMemo(() => {
                   <div className="px-3">
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
-                        <div key={index}>
+                        <div key={index} className={`mb-3`}>
                           <TicketContainer
                             type={el.ticket_type}
                             category={el.ticket_category}
@@ -795,7 +795,7 @@ const eventItems = useMemo(() => {
                             description={el.description}
                             name={el.name}
                             // onEdit={() => onEditTicket(el, index)}
-                            onDelete={() => deleteTicket(index)}
+                            // onDelete={() => deleteTicket(index)}
                           />
                         </div>
                       ))}
@@ -867,7 +867,7 @@ const eventItems = useMemo(() => {
                           }
                         >
                           <TableHeader>
-                            <TableColumn className='font-bold text-sm'>ID</TableColumn>
+                            <TableColumn className='font-bold text-sm'>No</TableColumn>
                             <TableColumn className='font-bold text-sm'>Email</TableColumn>
                             <TableColumn className='font-bold text-sm'>No.Invoice</TableColumn>
                             <TableColumn className='font-bold text-sm'>Waktu Dikirim</TableColumn>
@@ -878,7 +878,7 @@ const eventItems = useMemo(() => {
                           <TableBody items={filteredItems}>
                             {(item) => (
                               <TableRow key={item?.id}>
-                                <TableCell className='border-b-1 text-sm'>{item?.id}</TableCell>
+                                <TableCell className='border-b-1 text-sm'>{_.indexOf(filteredItems.map(e => e?.id), item?.id) + 1}</TableCell>
                                 <TableCell className='border-b-1 text-sm'>{item?.has_user?.email}</TableCell>
                                 <TableCell className='border-b-1 text-sm'>{item?.invoice_no}</TableCell>
                                 <TableCell className='border-b-1 text-sm'>

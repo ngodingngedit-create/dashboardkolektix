@@ -344,7 +344,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     .filter((subEl) => subEl.role === role)
                                                     .map((subEl, i) => (
                                                         <li key={i} className={`list-none ${openMenu[el.id] && visible ? 'visible opacity-100' : 'invisible opacity-0'} ${router.pathname === subEl.link ? 'bg-[#1b3a6a] border-l-3 border-white text-white' : 'pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200'} py-3 transition-transform-colors-opacity`}>
-                                                            <Link href={subEl.link ?? '#'}>
+                                                            <Link href={subEl.link ?? '#'} onClick={handleItemClick}>
                                                                 <div className="flex px-5 items-center">
                                                                     <div className="w-5 h-5 flex justify-center items-center">
                                                                         {subEl.iconify ? (
