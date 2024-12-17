@@ -19,9 +19,10 @@ type ComponentProps = {
     onSelect?: (data?: string[]) => void;
     unavailSeat?: string[];
     onSelectAll?: (data?: string[]) => void;
+    onEdit?: boolean;
 };
 
-export default function Seatmap({ editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
+export default function Seatmap({ onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
     const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
@@ -385,12 +386,12 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                                                             {x.map((z, c) => (
                                                                 <Tooltip label={z} key={c} fw={600}>
                                                                     <Box
-                                                                        onMouseEnter={() => handleMouse.seatEnter(z, i)}
-                                                                        onMouseDown={() => handleMouse.seatDown(z, i)}
-                                                                        onClick={() => !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
+                                                                        onMouseEnter={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatEnter(z, i)}
+                                                                        onMouseDown={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatDown(z, i)}
+                                                                        onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
                                                                         opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
                                                                         w="100%" h="100%" key={c}
-                                                                        className={`rounded-md relative overflow-hidden relative z-40 cursor-pointer`}>
+                                                                        className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                                         {/* <Center w="100%" h="100%">
                                                                             <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
                                                                                 {z}

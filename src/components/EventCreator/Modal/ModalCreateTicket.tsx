@@ -387,6 +387,7 @@ export default function ModalCreateTicket({
                 selected={form.available_seat}
                 onSelect={e => setForm({ available_seat: e })}
                 onSelectAll={e => setForm({ available_seat: e })}
+                onEdit={openForm !== undefined}
               />
             </Box>
           </Flex>
