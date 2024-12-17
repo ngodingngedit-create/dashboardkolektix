@@ -351,21 +351,28 @@ return (
       <BreadcrumbItem onClick={() => setStep(0)}>Penjualan</BreadcrumbItem>
       {step === 1 && <BreadcrumbItem>Tiket</BreadcrumbItem>}
     </Breadcrumbs>
-    <div className='flex gap-2 mb-4 items-center'>
+    <Flex align="center" justify="space-between" gap={20} wrap="wrap">
+      <div className='flex gap-2 mb-4 items-center'>
+        <Button
+          label="Online"
+          color={activeTab === 'Offline' ? 'primary' : 'secondary'}
+          onClick={() => setActiveTab('Offline')}
+        />
+        <Button
+          label="Offline"
+          color={activeTab === 'Online' ? 'primary' : 'secondary'}
+          onClick={() => setActiveTab('Online')}
+        />
+        {(activeTab === 'Online' && step == 1) && (
+          <Text fw={600} ml={10}>Tiket - OTS</Text>
+        )}
+      </div>
       <Button
-        label="Online"
-        color={activeTab === 'Offline' ? 'primary' : 'secondary'}
-        onClick={() => setActiveTab('Offline')}
-      />
-      <Button
-        label="Offline"
-        color={activeTab === 'Online' ? 'primary' : 'secondary'}
-        onClick={() => setActiveTab('Online')}
-      />
-      {(activeTab === 'Online' && step == 1) && (
-        <Text fw={600} ml={10}>Tiket - OTS</Text>
-      )}
-    </div>
+          label="List Transaksi"
+          color={'secondary'}
+          onClick={() => setStep(0)}
+        />
+    </Flex>
     {activeTab === 'Offline' ? (
         <div>
         <div className="">

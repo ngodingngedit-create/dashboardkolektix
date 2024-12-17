@@ -174,11 +174,11 @@ const CreateEvent = () => {
     setLoading(true); // Set loading ke true
     Post('event', {
       ...form,
-      ticket: form.tickets.map(e => ({...e, available_seat: JSON.stringify(e.available_seat)})),
+      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(',')})),
       seatmap: seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
-        console.log(res);4
+        console.log(res);
         toast.success('Event Berhasil Dibuat');
         router.push('/create-event/success');
       })
