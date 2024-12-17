@@ -2,6 +2,8 @@ export interface EventTicket {
   ticket_type: string;
   ticket_category_id: number;
   ticket_category: 'Seated' | 'Festival';
+  starting_time?: string;
+  ending_time?: string;
   name: string;
   ticket_date: string | null;
   ticket_end: string | null;
