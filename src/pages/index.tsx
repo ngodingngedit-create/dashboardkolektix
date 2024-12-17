@@ -39,7 +39,9 @@ export default function Home() {
     handleRequestStart();
     Get('event', {})
       .then((res: any) => {
-        setData(res.data);
+        setData(res.data.sort((b: any, a: any) => {
+          return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      }));
         handleRequestEnd();
       })
       .catch((err) => {
