@@ -18,9 +18,11 @@ type ComponentProps = {
     selected?: string[];
     onSelect?: (data?: string[]) => void;
     unavailSeat?: string[];
+    onSelectAll?: (data?: string[]) => void;
+    onEdit?: boolean;
 };
 
-export default function Seatmap({ editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat }: Readonly<ComponentProps>) {
+export default function Seatmap({ onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
     const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
@@ -97,7 +99,6 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
     };
 
     const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-        console.log(event.deltaY)
         if (event.deltaY > 0) {
             scale > 0.5 && setScale(scale - 0.1);
         } else if (event.deltaY < 0) {
@@ -192,6 +193,23 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
         return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
     }, []);
 
+    const handleSelectAllSeat = (index: number) => {
+        const val = data[index];
+
+        if (val) {
+            const seatnumber = Array((val?.col ?? 0) * (val?.row ?? 0))
+                .fill(val?.prefix)
+                .map((e, i) => (`${e}${i + 1}`))
+                .filter(e => !unavailSeat?.includes(e));
+
+            if (!(selectedSeat?.length == seatnumber.length)) {
+                onSelectAll && onSelectAll(seatnumber);
+            } else {
+                onSelectAll && onSelectAll([]);
+            }
+        }
+    }
+
     return (
         <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
             <Card withBorder radius={10} bg="gray.3" pos="relative" h="100%" className={`overflow-auto`} component={Center}>
@@ -262,7 +280,7 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                             <Flex className={`[&>*]:flex-grow`} gap={15}>
                                 <ColorInput
                                     disallowInput
-                                    withPicker={false}
+                                    // withPicker={false}
                                     label="Warna Background Area"
                                     swatches={[
                                         ...DEFAULT_THEME.colors.red,
@@ -281,7 +299,7 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                                 <ColorInput
                                     display={modalArea == 0 ? 'none' : undefined}
                                     disallowInput
-                                    withPicker={false}
+                                    // withPicker={false}
                                     label="Warna Seat"
                                     swatches={[
                                         ...DEFAULT_THEME.colors.red,
@@ -327,7 +345,7 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                                     ref={el => changeRef(i, el)}
                                     key={i}>
                                     <Flex display={i == selected ? undefined : 'none'} className={`absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
-                                        <Button bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
+                                        <Button onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
                                             Pilih Semua
                                         </Button>
                                         <Tooltip label="Edit Area" position="bottom">
@@ -336,6 +354,12 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                                             </ActionIcon>
                                         </Tooltip>
                                     </Flex>
+
+                                    {e.type == 'seat' && (
+                                        <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
+                                            <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
+                                        </Flex>
+                                    )}
 
                                     <Box
                                         onMouseDown={() => handleMouse.boxDown(i)}
@@ -356,23 +380,33 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                                         {e.type == 'seat' && (
                                             <Stack h="100%" align="center" justify="center" gap={5} p={10}>
                                                 {e.text && <Text size="xs" c="gray">{e.text}</Text>}
-                                                <Stack gap={5} w="100%" h="100%" justify="space-between">
+                                                <Stack gap={3} w="100%" h="100%" justify="space-between">
                                                     {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
-                                                        <Flex gap={5} w="100%" h="100%" justify="space-between" key={r}>
+                                                        <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
                                                             {x.map((z, c) => (
-                                                                <Box
-                                                                    onMouseEnter={() => handleMouse.seatEnter(z, i)}
-                                                                    onMouseDown={() => handleMouse.seatDown(z, i)}
-                                                                    onClick={() => !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
-                                                                    opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
-                                                                    w="100%" h="100%" key={c} bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1'}
-                                                                    className={`rounded-md relative z-40 cursor-pointer`}>
-                                                                    <Center w="100%" h="100%">
-                                                                        <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
-                                                                            {z}
-                                                                        </Text>
-                                                                    </Center>
-                                                                </Box>
+                                                                <Tooltip label={z} key={c} fw={600}>
+                                                                    <Box
+                                                                        onMouseEnter={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatEnter(z, i)}
+                                                                        onMouseDown={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatDown(z, i)}
+                                                                        onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
+                                                                        opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                                                        w="100%" h="100%" key={c}
+                                                                        className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
+                                                                        {/* <Center w="100%" h="100%">
+                                                                            <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                                {z}
+                                                                            </Text>
+                                                                        </Center> */}
+                                                                        <Box
+                                                                            className={`relative z-10 rounded-sm mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                                                                            bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.2'} h="calc(100% - 7px)">
+                                                                        </Box>
+                                                                        <Box
+                                                                            className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
+                                                                            bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.2'} h="calc(100% - 5px)"
+                                                                        />
+                                                                    </Box>
+                                                                </Tooltip>
                                                             ))}
                                                         </Flex>
                                                     ))}
@@ -445,7 +479,7 @@ export default function Seatmap({ editable = true, selected: selectedSeat, onSel
                         handleSelect(null)
                     }}
                     onDragEnd={(target) => {
-                        console.log(target)
+                        // console.log(target)
                     }}
                 />
             </Card>

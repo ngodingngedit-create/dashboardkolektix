@@ -29,7 +29,9 @@ const Event = () => {
     setLoading(true);
     Get('event', {})
       .then((res: any) => {
-        setData(res.data);
+        setData(res.data.sort((b: any, a: any) => {
+          return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+      }));
         console.log("masuk", res);
         setLoading(false);
       })

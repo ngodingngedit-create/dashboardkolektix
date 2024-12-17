@@ -20,9 +20,10 @@ import fetch from '@/utils/fetch';
 import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton } from '@mantine/core';
 import Seatmap from '@/components/Seatmap';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useForm } from '@mantine/form';
+import { isNotEmpty, useForm, zodResolver } from '@mantine/form';
 import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
+import { z } from 'zod';
 
 interface ModalProps {
   isOpen: boolean;
@@ -58,7 +59,20 @@ export default function ModalCreateTicket({
     price: 0,
     description: '',
   };
-  const { values: form, setValues: setForm }= useForm<EventTicket>(defaultForm);
+  const { values: form, setValues: setForm, validate, errors } = useForm<EventTicket>({
+    initialValues: defaultForm,
+    validate: {
+      ticket_type: isNotEmpty(),
+      ticket_category_id: isNotEmpty(),
+      ticket_category: isNotEmpty(),
+      name: isNotEmpty(),
+      ticket_date: isNotEmpty(),
+      ticket_end: isNotEmpty(),
+      qty: isNotEmpty(),
+      price: isNotEmpty(),
+      description: isNotEmpty()
+    }
+  });
   const [step, setStep] = useState(0);
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
@@ -115,6 +129,8 @@ export default function ModalCreateTicket({
   }, [ticket, form]);
 
   const handleSaveTicket = () => {
+    if (validate().hasErrors) return;
+
     if (typeof openForm === 'number') {
       setTicket(ticket.map((e, i) => i == openForm ? form : e));
     } else {
@@ -151,6 +167,7 @@ export default function ModalCreateTicket({
         fullScreen={openSeatMap}
         className='text-dark'
       >
+        {/* {JSON.stringify(errors)} */}
         <Stack gap={10} h={"calc(100vh - 100px)"}>
           <Flex gap={20} h="100%">
             <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
@@ -244,7 +261,8 @@ export default function ModalCreateTicket({
                     <div className='grid grid-cols-2'>
                       <Radio
                         classNames={{
-                          base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
+                          base: `data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1
+                              ${errors['ticket_type'] ? '!border-red-400 !border-1' : ''}`,
                         }}
                         value='Berbayar'
                       >
@@ -252,7 +270,8 @@ export default function ModalCreateTicket({
                       </Radio>
                       <Radio
                         classNames={{
-                          base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
+                          base: `data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1
+                              ${errors['ticket_type'] ? '!border-red-400 !border-1' : ''}`,
                         }}
                         value='Gratis'
                       >
@@ -270,6 +289,7 @@ export default function ModalCreateTicket({
                   /> */}
 
                   <InputField
+                    error={Boolean(errors['name'])}
                     type='text'
                     label='Nama Tiket'
                     placeholder='Nama Tiket'
@@ -280,6 +300,7 @@ export default function ModalCreateTicket({
                   />
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
+                      error={Boolean(errors['ticket_date'])}
                       type='date'
                       label='Tanggal Mulai Penjualan'
                       required
@@ -290,6 +311,7 @@ export default function ModalCreateTicket({
                       }
                     />
                     <InputField
+                      error={Boolean(errors['ticket_end'])}
                       type='date'
                       label='Tanggal Berakhir Penjualan'
                       required
@@ -301,6 +323,7 @@ export default function ModalCreateTicket({
                   </div>
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
+                      error={Boolean(errors['price'])}
                       type='num'
                       label='Harga Tiket'
                       required
@@ -310,6 +333,7 @@ export default function ModalCreateTicket({
                       onChange={(e: any) => setForm({ ...form, price: e.target.value })}
                     />
                     <InputField
+                      error={Boolean(errors['qty'])}
                       type='num'
                       label='Jumlah Tiket'
                       required
@@ -319,6 +343,7 @@ export default function ModalCreateTicket({
                     />
                   </div>
                   <InputField
+                    error={Boolean(errors['description'])}
                     type='textarea'
                     label='Deskripsi'
                     placeholder='Deskripsi Tiket'
@@ -358,9 +383,11 @@ export default function ModalCreateTicket({
               className={`flex-grow`}
               display={openSeatMap ? undefined : 'none'}>
               <Seatmap
-                unavailSeat={ticket.map(e => e.available_seat).reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), [])}
+                unavailSeat={ticket.map(e => e.available_seat).reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []).filter(e => !form.available_seat?.includes(e))}
                 selected={form.available_seat}
                 onSelect={e => setForm({ available_seat: e })}
+                onSelectAll={e => setForm({ available_seat: e })}
+                onEdit={openForm !== undefined}
               />
             </Box>
           </Flex>

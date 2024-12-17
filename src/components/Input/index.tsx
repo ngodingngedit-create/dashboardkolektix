@@ -16,6 +16,7 @@ interface InputProps {
   maxDateVal?: string;
   minDateVal?: string;
   inputProps?: any;
+  error?: boolean;
 }
 
 const InputField = ({
@@ -30,6 +31,7 @@ const InputField = ({
   value,
   disabled,
   size,
+  error,
 }: InputProps) => {
   const handleKeyPress = (event: any) => {
     const key = event.key;
@@ -55,7 +57,7 @@ const InputField = ({
       {type === 'number' && (
         <input
           type='text'
-          className={`border-primary-light-200 ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
           }  shadow-sm border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
@@ -70,7 +72,7 @@ const InputField = ({
       {type === 'num' && (
         <input
           type='number'
-          className={`border-primary-light-200 ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
           }  shadow-sm border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
@@ -84,7 +86,7 @@ const InputField = ({
       {type === 'text' && (
         <input
           type='text'
-          className={`border-primary-light-200 ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
           } shadow-sm border focus:outline-primary-disabled rounded-lg disabled:bg-light-grey ${
             fullWidth ? 'w-full' : 'w-80'
@@ -107,7 +109,7 @@ const InputField = ({
           fullWidth={fullWidth}
           dateInputClassNames={{
             inputWrapper:
-              'py-2 border border-primary-light-200 hover:border-primary-disabled focus:outline-primary-disabled',
+              `py-2 border ${error ? 'border-red-400' : 'border-primary-light-200'} hover:border-primary-disabled focus:outline-primary-disabled`,
           }}
           // startContent={<FontAwesomeIcon icon={faCalendar} className='text-dark' />}
           onChange={onChange}
@@ -115,7 +117,7 @@ const InputField = ({
       )}
       {type === 'textarea' && (
         <textarea
-          className={`border-primary-light-200 px-3 py-2 border-2 focus:outline-primary-disabled rounded-lg ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} px-3 py-2 border-2 focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
           placeholder={placeholder}
@@ -127,7 +129,7 @@ const InputField = ({
         <TimeInput
           startContent={<FontAwesomeIcon icon={faClock} className='text-dark' />}
           classNames={{
-            inputWrapper: 'border-2 shadow-sm border-primary-light-200 bg-white rounded-lg',
+            inputWrapper: `border-2 shadow-sm ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,
           }}
           aria-label='time'
           fullWidth={fullWidth}

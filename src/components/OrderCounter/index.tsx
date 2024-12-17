@@ -22,28 +22,51 @@ interface OrderCounterProps {
     maxOrder?: number;
 }
 
-function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
-    const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
-    const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
-    const now = moment();
 
-    return now.isBetween(start, end, undefined, '[]');
-}
 
-function isDatePassed(dateString: string) {
-    const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
-    return date.isBefore(moment());
-}
+const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+    // const _ticketData = {...__ticketData, 
+    //     ticket_date: '2024-12-17',
+    //     ticket_end: '2024-12-19',
+    //     starting_time: '21:12:00',
+    //     ending_time: '08:50:00',
+    // };
 
-const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
-    // const [timeoutHash, setTimeoutHash] = useState('');
-    // const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
+    const [isCurrent, setIsCurrent] = useState(false);
+    const [timeoutHash, setTimeoutHash] = useState('');
+    const interval = useInterval(() => {
+        if (!isCurrent) {
+            setTimeoutHash(randomId());
+        }
+    }, 1000);
 
-    // useEffect(() => {
-    //     interval.start();
-    // }, []);
+    useEffect(() => {
+        interval.start();
+    }, []);
 
-    // const ticketData = useMemo(() => _ticketData, [timeoutHash]);
+    function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
+        const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        const now = moment();
+        const status = now.isBetween(start, end, undefined, '[]');
+    
+        if (status) {
+            setIsCurrent(true);
+            interval.stop();
+        }
+
+        return status;
+    }
+    
+    function isDatePassed(dateString: string) {
+        const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
+        return date.isBefore(moment());
+    }
+
+    const ticketData = useMemo(() => {
+        // console.log('update');
+        return _ticketData;
+    }, [timeoutHash]);
 
     const StatusComponent = () => {
         if (isFullbook)
@@ -170,37 +193,6 @@ const OrderCounter = ({ maxOrder, count, ticketData, setCount, isSoldOut, isFull
                 </Flex>
             </Stack>
         </Card>
-    );
-
-    return (
-        <div className={`border ${isSoldOut ? 'bg-[#ffebec] border-[#ffebec]' : isFinish ? 'bg-primary-light border-primary-light-200' : isReady ? 'bg-light-grey border-primary-light' : 'border-primary'} rounded-xl flex items-center shadow-sm justify-between p-4 mb-5`}>
-            <div>
-                <p>{title}</p>
-                <p>{description}</p>
-                <p className="font-semibold">{price === 0 ? 'Free' : `Rp ${price.toLocaleString('id-ID')}`}</p>
-            </div>
-            <div className="flex items-center gap-3">
-                {isSoldOut ? (
-                    <button className="bg-[#ff9292] text-[#870809] px-3 py-1 text-sm font-semibold rounded-2xl">Sold Out</button>
-                ) : isFinish ? (
-                    <button className="bg-primary-900 text-primary-disabled px-3 py-1 text-sm font-semibold rounded-2xl">Event Selesai</button>
-                ) : isReady ? (
-                    <button className="bg-primary-light-200 text-dark px-3 py-1 text-sm font-semibold rounded-2xl" disabled>
-                        Belum di mulai
-                    </button>
-                ) : (
-                    <>
-                        <button className="bg-primary-base px-2 text-lg text-white rounded-sm disabled:opacity-50" disabled={count === 0} onClick={() => setCount(count - 1)}>
-                            -
-                        </button>
-                        <p>{count}</p>
-                        <button className="bg-primary-base px-2 text-lg text-white rounded-sm" onClick={() => setCount(count + 1)}>
-                            +
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
     );
 };
 
