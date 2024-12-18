@@ -1,15 +1,19 @@
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-import { ActionIcon, Badge, Box, Card, Divider, Flex, NumberFormatter, Stack, Text } from '@mantine/core';
+import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { randomId, useInterval } from '@mantine/hooks';
+import { Context } from '@/pages/event/[slug]';
+import { SeatmapData } from '@/utils/formInterface';
+import chunk from '@/utils/chunk';
+import { contrastColor } from 'contrast-color';
 
 interface OrderCounterProps {
-    count: number;
-    setCount: (count: number) => void;
+    count: number | string[];
+    setCount: (count: number | string) => void;
     isSoldOut?: boolean;
     isFinish?: boolean;
     isReady?: boolean;
@@ -20,17 +24,26 @@ interface OrderCounterProps {
     description?: string;
     ticketData: TicketProps;
     maxOrder?: number;
+    index: number;
 }
 
 
 
-const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     // const _ticketData = {...__ticketData, 
     //     ticket_date: '2024-12-17',
     //     ticket_end: '2024-12-19',
     //     starting_time: '21:12:00',
     //     ending_time: '08:50:00',
     // };
+    const count = useMemo(() => {
+        return typeof _count == 'number' ? _count : _count.length;
+    }, [_count])
+    const { seatmapData, seatmapOpen, setSeatmapOpen, ticket } = useContext(Context);
+    
+    const selectedSeat = useMemo(() => {
+        return ticket?.map(e => e.seat_number).reduce((c, n) => ([ ...(c ?? []), ...(n ?? []) ]), [])
+    }, [ticket]);
 
     const [isCurrent, setIsCurrent] = useState(false);
     const [timeoutHash, setTimeoutHash] = useState('');
@@ -137,15 +150,21 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
                             {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
-                    <Flex align="center" gap={15}>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
-                            <Icon icon="uiw:minus" />
-                        </ActionIcon>
-                        <Text>{count}</Text>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
-                            <Icon icon="uiw:plus" />
-                        </ActionIcon>
-                    </Flex>
+                    {ticketData.ticket_category == 'Seated' ? (
+                        <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)}>
+                            Pilih Seat
+                        </Button>
+                    ): (
+                        <Flex align="center" gap={15}>
+                            <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+                                <Icon icon="uiw:minus" />
+                            </ActionIcon>
+                            <Text>{count}</Text>
+                            <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
+                                <Icon icon="uiw:plus" />
+                            </ActionIcon>
+                        </Flex>
+                    )}
                 </>
             );
 
@@ -160,13 +179,32 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
     };
     //194e9e
     return (
-        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
+        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[100px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
+            {/* {JSON.stringify(ticket)} */}
+            {seatmapOpen == index && (
+                <Card bg="gray.3" radius={10} className={`!absolute w-full h-full top-0 left-0 z-[100] !border-primary-disabled/35 !border`}>
+                    <Button className={`!absolute z-[100] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                        Kembali
+                    </Button>
+
+                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[100] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
+
+                    <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} />
+                </Card>
+            )}
+
             <Stack gap={10}>
                 <Flex gap={20} justify="space-between">
+                    {/* ml={ticketData.ticket_category == 'Seated' ? 40 : undefined} */}
                     <Stack gap={0}>
-                        <Text size="lg" className={`uppercase`}>
-                            {ticketData.name}
-                        </Text>
+                        <Flex align="center" gap={15}>
+                            <Text size="lg" className={`uppercase`}>
+                                {ticketData.name}
+                            </Text>
+                            {ticketData.ticket_category == 'Seated' && (
+                                <Badge className={`bg-primary-base`}>Seated</Badge>
+                            )}
+                        </Flex>
                         {ticketData.description && (
                             <Text size="sm" c="gray">
                                 {ticketData.description?.split('\n').map((e, i) => (
@@ -182,6 +220,7 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
                             <NumberFormatter value={ticketData.price} />
                         )}
                     </Text>
+                    {/* <Box className={`w-[300px] h-[100px] bg-primary-base absolute rotate-[-30deg] top-[-20px] left-[-200px]`}/> */}
                 </Flex>
                 <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>
                     <Box className={`bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
@@ -197,3 +236,131 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
 };
 
 export default OrderCounter;
+
+type SeatmapViewerProps = {
+    data?: SeatmapData[];
+    selectedSeat?: string[];
+    setSelectSeat?: (data: string) => void;
+}
+
+const SeatmapViewer = ({ data, selectedSeat, setSelectSeat }: SeatmapViewerProps) => {
+    const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
+    const [isCanvasMove, setIsCanvasMove] = useState(false);
+    const [scale, setScale] = useState(1);
+    const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
+    const getContrastColor = useCallback((color: string) => {
+        return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
+    }, []);
+
+    const handleMouse = {
+        down: () => {
+            setIsCanvasMove(true);
+            // setSelected(null);
+        },
+        up: () => {
+            setIsCanvasMove(false);
+            setIsDragSelect(undefined);
+        },
+        move: (event: React.MouseEvent<HTMLDivElement>) => {
+            if (isCanvasMove) {
+                setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            }
+        },
+    }
+
+    if (!data) return <></>;
+
+    return (
+        <div onMouseDown={handleMouse.down} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-50 [&_*]:!select-none`}>
+            <Card
+                bg="transparent"
+                pos="relative"
+                style={{
+                    scale: `${scale * 100}%`,
+                    transform: `translate(${canvasPos[0]}px,${canvasPos[1]}px)`
+                }}
+                className={`z-30 !overflow-visible`}
+            >
+                <Box className={`absolute z-30 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
+                    {data.map((e, i) => (
+                        // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
+                            <Box
+                                className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
+                                style={{
+                                    top: `${e.position[1]}px`,
+                                    left: `${e.position[0]}px`,
+                                    width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
+                                    height: e.size && e.size[1] ? `${e.size[1]}px` : undefined
+                                }}
+                                key={i}>
+
+                                {e.type == 'seat' && (
+                                    <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
+                                        <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
+                                    </Flex>
+                                )}
+
+                                <Box
+                                    bg={e.background ?? "gray.1"}
+                                    h="100%"
+                                    className={`rounded-md shadow-lg`}>
+                                    <Box
+                                        // onClick={() => handleSelect(i)}
+                                        className={`absolute w-full h-full left-0 top-0 z-20`}
+                                    />
+
+                                    {e.type == 'box' && (
+                                        <Center h="100%">
+                                            <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
+                                        </Center>
+                                    )}
+
+                                    {e.type == 'seat' && (
+                                        <Stack h="100%" align="center" justify="center" gap={5} p={10}>
+                                            {e.text && <Text size="xs" c="gray">{e.text}</Text>}
+                                            <Stack gap={3} w="100%" h="100%" justify="space-between">
+                                                {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
+                                                    <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
+                                                        {x.map((z, c) => (
+                                                            <Tooltip label={z} key={c} fw={600}>
+                                                                <Box
+                                                                    onClick={() => setSelectSeat && setSelectSeat(z)}
+                                                                    opacity={selectedSeat?.includes(z) ? 0.5 : 1}
+                                                                    w="100%" h="100%" key={c}
+                                                                    className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
+                                                                    {/* <Center w="100%" h="100%">
+                                                                        <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                            {z}
+                                                                        </Text>
+                                                                    </Center> */}
+                                                                    <Box
+                                                                        className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                                                                        h="calc(100% - 7px)"
+                                                                        bg={!selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                                    />
+                                                                    <Box
+                                                                        className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
+                                                                        h="calc(100% - 5px)"
+                                                                        bg={!selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                                    />
+                                                                </Box>
+                                                            </Tooltip>
+                                                        ))}
+                                                    </Flex>
+                                                ))}
+                                            </Stack>
+                                        </Stack>
+                                    )}
+
+                                </Box>
+                                {/* <Text className={`absolute top-[calc(100%_+_8px)] left-0 text-[8px]`} c="blue" size="8px">
+                                    {JSON.stringify(e)}
+                                </Text> */}
+                            </Box>
+                        // </Tooltip>
+                    ))}
+                </Box>
+            </Card>
+        </div>
+    )
+}

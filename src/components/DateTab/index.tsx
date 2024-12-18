@@ -3,6 +3,7 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import OrderCounter from '../OrderCounter';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
+import { SeatmapData } from '@/utils/formInterface';
 
 interface GroupTicket {
   date: string;
@@ -17,13 +18,14 @@ interface TicketTabsProps {
 }
 
 interface Props {
-  counts: { [key: number]: number };
-  setCounts: (counts: { [key: string]: number }) => void;
+  counts: { [key: number]: number | string[] };
+  setCounts: (counts: { [key: string]: number | string[] }) => void;
   data: TicketProps[];
   isLogin: boolean;
   selected: number;
   setSelected: (index: number) => void;
   maxOrder?: number;
+  seatmapData?: SeatmapData;
 }
 
 export default function DateTab({
@@ -34,11 +36,12 @@ export default function DateTab({
   isLogin,
   selected,
   setSelected,
+  seatmapData,
 }: Props) {
-  const handleCount = (id: number, newCount: number) => {
+  const handleCount = (id: number, newCount: number | string) => {
     setCounts({
       ...counts,
-      [id]: newCount,
+      [id]: typeof newCount == 'number' ? newCount : [newCount],
     });
   };
   const [groupedTickets, setGroupedTickets] = React.useState<GroupTicket[]>([]);
@@ -101,8 +104,9 @@ export default function DateTab({
         <TabPanels>
           {groupedTickets.map(({ date, tickets }) => (
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
-              {sortedTicket(tickets).map((item) => (
+              {sortedTicket(tickets).map((item, index) => (
                 <OrderCounter
+                  index={index}
                   isFullbook={(item?.is_fullbook ?? 0) == 1}
                   maxOrder={maxOrder}
                   ticketData={item}

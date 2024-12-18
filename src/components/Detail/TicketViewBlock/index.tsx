@@ -5,8 +5,8 @@ import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
 
 interface Props {
-  counts: { [key: number]: number };
-  setCounts: (counts: { [key: string]: number }) => void;
+  counts: { [key: number]: number | string[] };
+  setCounts: (counts: { [key: string]: number | string[] }) => void;
   data: TicketProps[];
   isGratis?: boolean;
   maxOrder?: number;

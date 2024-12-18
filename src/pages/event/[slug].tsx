@@ -4,7 +4,7 @@ import config from '@/Config';
 import Image from 'next/image';
 import { useLocalStorage } from 'usehooks-ts';
 import { useRouter } from 'next/router';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, createContext, Dispatch, SetStateAction } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { TicketProps, TransactionProps, EventProps } from '@/utils/globalInterface';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
@@ -45,6 +45,7 @@ import Cookies from 'js-cookie';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { faBookmark as bookmarkSolid } from '@fortawesome/free-solid-svg-icons';
 import { modals } from '@mantine/modals';
+import { SeatmapData } from '@/utils/formInterface';
 
 interface Form {
     nik: string;
@@ -73,6 +74,7 @@ interface FormTicket {
     subtotal_price: number;
     qty_ticket: number;
     payment_status: string;
+    seat_number?: string[];
 }
 
 interface Transaction {
@@ -86,6 +88,13 @@ const people = [
     { id: 4, name: '+3' },
     { id: 5, name: '+4' }
 ];
+
+export const Context = createContext<{
+    seatmapData?: SeatmapData[];
+    seatmapOpen?: number;
+    setSeatmapOpen?: Dispatch<SetStateAction<number | undefined>>;
+    ticket?: FormTicket[];
+}>({});
 
 const EventDetails = () => {
     const { width } = useWindowSize();
@@ -114,11 +123,11 @@ const EventDetails = () => {
     const [bank, setBank] = useState<string>('');
     const [data, setData] = useState<TicketProps[]>([]);
     const [detail, setDetail] = useState<EventProps>();
-    const [counts, setCounts] = useState<{ [key: string]: number }>({});
+    const [counts, setCounts] = useState<{ [key: string]: number | string[] }>({});
     const [isLogin, setIsLogin] = useState<boolean>(false);
     const [triggered, setTriggered] = useState<boolean>(false);
     const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
-    const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    const totalCount = Object.values(counts).reduce((sum, count) => (sum as number) + ((typeof count == 'number' ? count : count.length) as number), 0) as number;
     const router = useRouter();
     const { slug } = router.query;
     const selectedTab = Number(Cookies.get('selected'));
@@ -128,6 +137,7 @@ const EventDetails = () => {
     const [openChat, setOpenChat] = useState(false);
     const [bookmark, setBookmark] = useState(false);
     const [loadings, setLoadings] = useListState<string>();
+    const [seatmapOpen, setSeatmapOpen] = useState<number>();
     const user = useLoggedUser();
 
     const clickOutsideChat = useClickOutside(() => {
@@ -371,8 +381,8 @@ const EventDetails = () => {
             .then((res: any) => {
                 //console.log('Response Data:', res.data); // Log data respons
 
-                setDetail(res.data);
-                setData(res.data.has_event_ticket);
+                setDetail({...res.data, seatmap: res?.data?.seatmap ? JSON.parse(res?.data?.seatmap) : undefined});
+                setData(res.data.has_event_ticket.map((e: any) => ({...e, avaliable_seat_number: e?.avaliable_seat_number?.split(',')})));
                 ticketCount && prevPath === router.asPath ? setCounts(JSON.parse(ticketCount)) : initializeCounts(res.data.has_event_ticket);
                 ticketCount && setMenu(2);
                 if (!triggered) {
@@ -478,17 +488,18 @@ const EventDetails = () => {
     };
 
     const updateDataBasedOnCounts = () => {
-        const newData = Object.keys(counts)
-            .filter((id) => counts[parseInt(id)] > 0)
+        const newData: FormTicket[] = Object.keys(counts)
+            .filter((id) => (typeof counts[parseInt(id)] == 'number' ? counts[parseInt(id)] : (counts[parseInt(id)] as string[]).length) as number > 0)
             .map((id, idx) => ({
                 id: parseInt(id),
                 event_id: detail?.id ?? 0,
                 event_ticket_id: parseInt(id),
                 price: data[data.findIndex((el) => el.id === parseInt(id))].price,
                 name: data[data.findIndex((el) => el.id === parseInt(id))].name,
-                subtotal_price: data[data.findIndex((el) => el.id === parseInt(id))].price * counts[id],
-                qty_ticket: counts[id],
-                payment_status: 'pending'
+                subtotal_price: data[data.findIndex((el) => el.id === parseInt(id))].price * (typeof counts[id] == 'number' ? counts[id] : counts[id].length),
+                qty_ticket: (typeof counts[parseInt(id)] == 'number' ? counts[parseInt(id)] : (counts[parseInt(id)] as string[]).length) as number,
+                payment_status: 'pending',
+                seat_number: (typeof counts[parseInt(id)] == 'object' ? counts[parseInt(id)] : undefined) as (string[] | undefined)
             }));
 
         setTicket(newData);
@@ -687,6 +698,7 @@ const EventDetails = () => {
 
     return !firstLoad && detail ? (
         detail && (
+            <Context.Provider value={{ seatmapData: detail.seatmap, seatmapOpen, setSeatmapOpen, ticket }}>
             <div className="text-dark w-full">
                 <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
                     <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
@@ -1200,6 +1212,7 @@ const EventDetails = () => {
                     </div>
                 )}
             </div>
+            </Context.Provider>
         )
     ) : (
         <Spinner color="primary" size="lg" className="min-h-screen flex items-center justify-center" />

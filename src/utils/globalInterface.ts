@@ -1,4 +1,5 @@
 import { EXPORT_DETAIL } from 'next/dist/shared/lib/constants';
+import { SeatmapData } from './formInterface';
 
 export interface TicketProps {
   id: number;
@@ -23,6 +24,8 @@ export interface TicketProps {
   has_event: EventProps;
   max_buy_ticket?: number;
   event_schedule_date: string | null;
+  available_seat_number?: string;
+  ticket_category?: 'Seated' | 'Festival';
 }
 
 export type TicketPropsInputRequest = Pick<TicketProps, 'event_id' | 'name' | 'qty' | 'price' | 'description' | 'ticket_date' | 'ticket_end'>
@@ -337,6 +340,7 @@ export interface EventProps {
       creator_name: string;
       total_saldo_event: string;
   }
+  seatmap?: SeatmapData[];
 }
 
 interface EventSocmed {
