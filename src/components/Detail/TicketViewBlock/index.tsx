@@ -39,7 +39,7 @@ const TicketViewBlock = ({
   storeLocalStorage,
 }: Props) => {
   const [edit, setEdit] = useState(false);
-  const { ticket } = useContext(Context);
+  const { ticket, setTicket } = useContext(Context);
 
   const router = useRouter();
   const redirectLogin = () => {
@@ -52,6 +52,12 @@ const TicketViewBlock = ({
   const total = useMemo(() => {
     return ticket?.reduce((c, n) => c + (n.subtotal_price * (n.seat_number?.length ?? n.qty_ticket ?? 1)), 0)
   }, [ticket]);
+
+  const handleDelete = (index: number) => {
+    if (ticket && setTicket) {
+      setTicket(ticket?.filter((_, i) => i != index));
+    }
+  }
 
   return (
     <div className='text-dark my-5 '>
@@ -100,7 +106,7 @@ const TicketViewBlock = ({
 
                   {edit && (
                     <Tooltip label="Hapus Tiket">
-                      <ActionIcon variant="transparent" color="red" p={0} size="xs">
+                      <ActionIcon onClick={() => handleDelete(i)} variant="transparent" color="red" p={0} size="xs">
                         <Icon icon="uiw:close" />
                       </ActionIcon>
                     </Tooltip>
