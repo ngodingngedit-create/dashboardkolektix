@@ -1,9 +1,9 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import DateTab from '@/components/DateTab';
 import { TicketProps } from '@/utils/globalInterface';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
-import { Card, Divider, Flex, NumberFormatter, Stack, Text, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Alert, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Context } from '@/pages/event/[slug]';
 
@@ -38,6 +38,7 @@ const TicketViewBlock = ({
   setSelected,
   storeLocalStorage,
 }: Props) => {
+  const [edit, setEdit] = useState(false);
   const { ticket } = useContext(Context);
 
   const router = useRouter();
@@ -47,6 +48,10 @@ const TicketViewBlock = ({
     selected && Cookies.set('selected', selected.toString());
     router.push('/auth');
   };
+
+  const total = useMemo(() => {
+    return ticket?.reduce((c, n) => c + (n.subtotal_price * (n.seat_number?.length ?? n.qty_ticket ?? 1)), 0)
+  }, [ticket]);
 
   return (
     <div className='text-dark my-5 '>
@@ -67,20 +72,20 @@ const TicketViewBlock = ({
           <button></button>
         </div>
         <Card withBorder className={`flex-grow h-fit md:max-w-[400px]`} radius={10} p={20}>
-          <Stack gap={10}>
+          <Stack gap={15}>
             <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
               <Text size="sm" fw={600}>Tiket Dipilih</Text>
-              <UnstyledButton>
-                <Flex align="center" className={`[&_*]:!text-primary-base`} gap={8}>
-                  <Text fw={600} size="sm">Edit</Text>
-                  <Icon icon="iconoir:edit" />
+              <UnstyledButton onClick={() => setEdit(!edit)}>
+                <Flex align="center" className={`${edit ? '[&_*]:!text-grey' : '[&_*]:!text-primary-base'}`} gap={8}>
+                  <Text fw={600} size="sm">{edit ? 'Tutup Edit' : 'Edit'}</Text>
+                  {!edit && <Icon icon="iconoir:edit" />}
                 </Flex>
               </UnstyledButton>
             </Flex>
 
             <Divider />
 
-            <Stack gap={10}>
+            <Stack gap={15}>
               {ticket?.map((e, i) => (
                 <Flex gap={10} wrap="wrap" justify="space-between" key={i}>
                   <Flex gap={10}>
@@ -90,9 +95,35 @@ const TicketViewBlock = ({
                       {e.seat_number && <Text size="xs" c="gray">{e.seat_number.join(', ')}</Text>}
                     </Stack>
                   </Flex>
-                  <Text fw={600} size="sm"><NumberFormatter value={100000}/></Text>
+
+                  <Text fw={600} ml="auto" size="sm"><NumberFormatter value={e.subtotal_price * (e.seat_number?.length ?? e.qty_ticket ?? 1)}/></Text>
+
+                  {edit && (
+                    <Tooltip label="Hapus Tiket">
+                      <ActionIcon variant="transparent" color="red" p={0} size="xs">
+                        <Icon icon="uiw:close" />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
                 </Flex>
               ))}
+
+              {(ticket?.length ?? 0) == 0 && (
+                <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
+                  Pilih tiket terlebih dahulu
+                </Alert>
+              )}
+
+              {(ticket?.length ?? 0) > 0 && (
+                <>
+                  <Divider />
+
+                  <Flex gap={10} wrap="wrap" justify="space-between">
+                    <Text size="sm">Total</Text>
+                    <Text fw={600} ml="auto" size="sm"><NumberFormatter value={total ?? 0}/></Text>
+                  </Flex>
+                </>
+              )}
             </Stack>
           </Stack>
         </Card>
