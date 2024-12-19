@@ -94,6 +94,7 @@ export const Context = createContext<{
     seatmapOpen?: number;
     setSeatmapOpen?: Dispatch<SetStateAction<number | undefined>>;
     ticket?: FormTicket[];
+    eventData?: EventProps;
 }>({});
 
 const EventDetails = () => {
@@ -698,7 +699,7 @@ const EventDetails = () => {
 
     return !firstLoad && detail ? (
         detail && (
-            <Context.Provider value={{ seatmapData: detail.seatmap, seatmapOpen, setSeatmapOpen, ticket }}>
+            <Context.Provider value={{ seatmapData: detail.seatmap, seatmapOpen, setSeatmapOpen, ticket, eventData: detail }}>
             <div className="text-dark w-full">
                 <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
                     <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />

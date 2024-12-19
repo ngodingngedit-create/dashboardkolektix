@@ -1,9 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import OrderCounter from '../OrderCounter';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { SeatmapData } from '@/utils/formInterface';
+import { Context } from '@/pages/event/[slug]';
+import { notifications } from '@mantine/notifications';
 
 interface GroupTicket {
   date: string;
@@ -25,7 +27,6 @@ interface Props {
   selected: number;
   setSelected: (index: number) => void;
   maxOrder?: number;
-  seatmapData?: SeatmapData;
 }
 
 export default function DateTab({
@@ -36,14 +37,26 @@ export default function DateTab({
   isLogin,
   selected,
   setSelected,
-  seatmapData,
 }: Props) {
+  const { eventData } = useContext(Context);
+
   const handleCount = (id: number, newCount: number | string) => {
+    const data = counts[id];
     const countData = typeof newCount == 'number' ?
       newCount :
-      (counts[id] as string[]).includes(newCount) ? 
-        (counts[id] as string[]).filter(e => e != newCount) :
-        [...((typeof counts[id] != 'number' ? counts[id] : []) ?? []), newCount]
+      ((typeof data != 'number' ? data : [])).includes(newCount) ? 
+        (data as string[]).filter(e => e != newCount) :
+        [...((typeof data != 'number' ? data : []) ?? []), newCount]
+
+    const length = typeof countData == 'number' ? countData : countData.length;
+
+    if (length > (eventData?.max_buy_ticket ?? 999)) {
+      notifications.show({
+        message: `Maksimal ${eventData?.max_buy_ticket} tiket`,
+        color: 'red',
+      });
+      return;
+    }
 
     setCounts({
       ...counts,
