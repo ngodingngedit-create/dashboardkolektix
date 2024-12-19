@@ -39,9 +39,15 @@ export default function DateTab({
   seatmapData,
 }: Props) {
   const handleCount = (id: number, newCount: number | string) => {
+    const countData = typeof newCount == 'number' ?
+      newCount :
+      (counts[id] as string[]).includes(newCount) ? 
+        (counts[id] as string[]).filter(e => e != newCount) :
+        [...((typeof counts[id] != 'number' ? counts[id] : []) ?? []), newCount]
+
     setCounts({
       ...counts,
-      [id]: typeof newCount == 'number' ? newCount : [newCount],
+      [id]: countData,
     });
   };
   const [groupedTickets, setGroupedTickets] = React.useState<GroupTicket[]>([]);
