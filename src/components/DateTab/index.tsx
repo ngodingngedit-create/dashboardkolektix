@@ -41,7 +41,9 @@ export default function DateTab({
   const { eventData } = useContext(Context);
 
   const handleCount = (id: number, newCount: number | string) => {
-    const data = counts[id];
+    var data = counts[id];
+    if (!data) data = 0;
+
     const countData = typeof newCount == 'number' ?
       newCount :
       ((typeof data != 'number' ? data : [])).includes(newCount) ? 

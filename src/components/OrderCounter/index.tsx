@@ -12,7 +12,7 @@ import chunk from '@/utils/chunk';
 import { contrastColor } from 'contrast-color';
 
 interface OrderCounterProps {
-    count: number | string[];
+    count?: number | string[];
     setCount: (count: number | string) => void;
     isSoldOut?: boolean;
     isFinish?: boolean;
@@ -37,6 +37,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     //     ending_time: '08:50:00',
     // };
     const count = useMemo(() => {
+        if (!_count) return 0;
         return typeof _count == 'number' ? _count : _count.length;
     }, [_count])
     const { seatmapData, seatmapOpen, setSeatmapOpen, ticket } = useContext(Context);

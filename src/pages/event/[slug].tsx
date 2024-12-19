@@ -67,6 +67,7 @@ interface ErrorForm {
 }
 
 interface FormTicket {
+    id?: number;
     event_id: number;
     event_ticket_id: number;
     name: string;
@@ -96,6 +97,8 @@ export const Context = createContext<{
     ticket?: FormTicket[];
     setTicket?: Dispatch<SetStateAction<FormTicket[]>>;
     eventData?: EventProps;
+    counts?: { [key: string]: number | string[] };
+    setCounts?: Dispatch<SetStateAction<{ [key: string]: number | string[] }>>;
 }>({});
 
 const EventDetails = () => {
@@ -700,7 +703,7 @@ const EventDetails = () => {
 
     return !firstLoad && detail ? (
         detail && (
-            <Context.Provider value={{ seatmapData: detail.seatmap, seatmapOpen, setSeatmapOpen, ticket, setTicket, eventData: detail }}>
+            <Context.Provider value={{ seatmapData: detail.seatmap, seatmapOpen, setSeatmapOpen, ticket, setTicket, counts, setCounts, eventData: detail }}>
             <div className="text-dark w-full">
                 <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
                     <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />

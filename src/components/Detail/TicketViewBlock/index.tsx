@@ -55,6 +55,16 @@ const TicketViewBlock = ({
 
   const handleDelete = (index: number) => {
     if (ticket && setTicket) {
+      const id = ticket[index].event_ticket_id;
+      const newCount = Object.keys(counts).reduce((acc, q) => {
+        if (parseInt(q) !== id) {
+          acc[parseInt(q)] = counts[parseInt(q)];
+        }
+        return acc;
+      }, {} as { [key: number]: number | string[] });
+
+      setCounts(newCount ?? {});
+
       setTicket(ticket?.filter((_, i) => i != index));
     }
   }
