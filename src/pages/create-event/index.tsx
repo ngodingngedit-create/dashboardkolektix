@@ -169,7 +169,7 @@ const CreateEvent = () => {
     Post('event', {
       ...form,
       tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(',')})),
-      seatmap: seatmapData ? JSON.stringify(seatmapData) : null
+      seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
         console.log(res);
