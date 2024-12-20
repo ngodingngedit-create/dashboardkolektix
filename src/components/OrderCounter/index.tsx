@@ -341,7 +341,7 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                                 {x.map((z, c) => (
                                                     <Tooltip label={z} key={c} fw={600}>
                                                         <Box
-                                                            onClick={() => setSelectSeat && setSelectSeat(z)}
+                                                            onClick={() => availableSeat?.includes(z) && setSelectSeat && setSelectSeat(z)}
                                                             opacity={selectedSeat?.includes(z) ? 0.5 : 1}
                                                             w="100%" h="100%" key={c}
                                                             className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
