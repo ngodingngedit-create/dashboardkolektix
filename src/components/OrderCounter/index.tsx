@@ -183,14 +183,14 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
         <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[100px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
             {/* {JSON.stringify(ticket)} */}
             {seatmapOpen == index && (
-                <Card bg="gray.3" radius={10} className={`!absolute w-full h-full top-0 left-0 z-[100] !border-primary-disabled/35 !border`}>
-                    <Button className={`!absolute z-[100] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                <Card bg="gray.3" radius={10} className={`!absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
+                    <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
                         Kembali
                     </Button>
 
-                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[100] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
+                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
 
-                    <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} />
+                    <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                 </Card>
             )}
 
@@ -242,16 +242,13 @@ type SeatmapViewerProps = {
     data?: SeatmapData[];
     selectedSeat?: string[];
     setSelectSeat?: (data: string) => void;
+    available?: string;
 }
 
-const SeatmapViewer = ({ data, selectedSeat, setSelectSeat }: SeatmapViewerProps) => {
-    const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
+const SeatmapViewer = ({ data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [scale, setScale] = useState(1);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
-    const getContrastColor = useCallback((color: string) => {
-        return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
-    }, []);
 
     const handleMouse = {
         down: () => {
@@ -260,7 +257,6 @@ const SeatmapViewer = ({ data, selectedSeat, setSelectSeat }: SeatmapViewerProps
         },
         up: () => {
             setIsCanvasMove(false);
-            setIsDragSelect(undefined);
         },
         move: (event: React.MouseEvent<HTMLDivElement>) => {
             if (isCanvasMove) {
@@ -272,7 +268,7 @@ const SeatmapViewer = ({ data, selectedSeat, setSelectSeat }: SeatmapViewerProps
     if (!data) return <></>;
 
     return (
-        <div onMouseDown={handleMouse.down} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-50 [&_*]:!select-none`}>
+        <div onMouseDown={handleMouse.down} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-30 [&_*]:!select-none`}>
             <Card
                 bg="transparent"
                 pos="relative"
@@ -280,88 +276,106 @@ const SeatmapViewer = ({ data, selectedSeat, setSelectSeat }: SeatmapViewerProps
                     scale: `${scale * 100}%`,
                     transform: `translate(${canvasPos[0]}px,${canvasPos[1]}px)`
                 }}
-                className={`z-30 !overflow-visible`}
+                className={`z-20 !overflow-visible`}
             >
-                <Box className={`absolute z-30 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
-                    {data.map((e, i) => (
-                        // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
-                            <Box
-                                className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
-                                style={{
-                                    top: `${e.position[1]}px`,
-                                    left: `${e.position[0]}px`,
-                                    width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
-                                    height: e.size && e.size[1] ? `${e.size[1]}px` : undefined
-                                }}
-                                key={i}>
-
-                                {e.type == 'seat' && (
-                                    <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
-                                        <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
-                                    </Flex>
-                                )}
-
-                                <Box
-                                    bg={e.background ?? "gray.1"}
-                                    h="100%"
-                                    className={`rounded-md shadow-lg`}>
-                                    <Box
-                                        // onClick={() => handleSelect(i)}
-                                        className={`absolute w-full h-full left-0 top-0 z-20`}
-                                    />
-
-                                    {e.type == 'box' && (
-                                        <Center h="100%">
-                                            <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
-                                        </Center>
-                                    )}
-
-                                    {e.type == 'seat' && (
-                                        <Stack h="100%" align="center" justify="center" gap={5} p={10}>
-                                            {e.text && <Text size="xs" c="gray">{e.text}</Text>}
-                                            <Stack gap={3} w="100%" h="100%" justify="space-between">
-                                                {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
-                                                    <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
-                                                        {x.map((z, c) => (
-                                                            <Tooltip label={z} key={c} fw={600}>
-                                                                <Box
-                                                                    onClick={() => setSelectSeat && setSelectSeat(z)}
-                                                                    opacity={selectedSeat?.includes(z) ? 0.5 : 1}
-                                                                    w="100%" h="100%" key={c}
-                                                                    className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
-                                                                    {/* <Center w="100%" h="100%">
-                                                                        <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
-                                                                            {z}
-                                                                        </Text>
-                                                                    </Center> */}
-                                                                    <Box
-                                                                        className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
-                                                                        h="calc(100% - 7px)"
-                                                                        bg={!selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
-                                                                    />
-                                                                    <Box
-                                                                        className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
-                                                                        h="calc(100% - 5px)"
-                                                                        bg={!selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
-                                                                    />
-                                                                </Box>
-                                                            </Tooltip>
-                                                        ))}
-                                                    </Flex>
-                                                ))}
-                                            </Stack>
-                                        </Stack>
-                                    )}
-
-                                </Box>
-                                {/* <Text className={`absolute top-[calc(100%_+_8px)] left-0 text-[8px]`} c="blue" size="8px">
-                                    {JSON.stringify(e)}
-                                </Text> */}
-                            </Box>
-                        // </Tooltip>
-                    ))}
+                <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
+                    <SeatmapItem data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
                 </Box>
             </Card>
         </div>
+    )
+}
+
+const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+    const getContrastColor = useCallback((color: string) => {
+        return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
+    }, []);
+
+    const availableSeat = useMemo(() => {
+        return available?.split(',');
+    }, [available]);
+
+    if (!data) return <></>;
+
+    return (
+        <>
+            {data.map((e, i) => (
+                // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
+                    <Box
+                        className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
+                        style={{
+                            top: `${e.position[1]}px`,
+                            left: `${e.position[0]}px`,
+                            width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
+                            height: e.size && e.size[1] ? `${e.size[1]}px` : undefined
+                        }}
+                        key={i}>
+
+                        {e.type == 'seat' && (
+                            <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
+                                <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
+                            </Flex>
+                        )}
+
+                        <Box
+                            bg={e.background ?? "gray.1"}
+                            h="100%"
+                            className={`rounded-md shadow-lg`}>
+                            <Box
+                                // onClick={() => handleSelect(i)}
+                                className={`absolute w-full h-full left-0 top-0 z-20`}
+                            />
+
+                            {e.type == 'box' && (
+                                <Center h="100%">
+                                    <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
+                                </Center>
+                            )}
+
+                            {e.type == 'seat' && (
+                                <Stack h="100%" align="center" justify="center" gap={5} p={10}>
+                                    {e.text && <Text size="xs" c="gray">{e.text}</Text>}
+                                    <Stack gap={3} w="100%" h="100%" justify="space-between">
+                                        {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
+                                            <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
+                                                {x.map((z, c) => (
+                                                    <Tooltip label={z} key={c} fw={600}>
+                                                        <Box
+                                                            onClick={() => setSelectSeat && setSelectSeat(z)}
+                                                            opacity={selectedSeat?.includes(z) ? 0.5 : 1}
+                                                            w="100%" h="100%" key={c}
+                                                            className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
+                                                            {/* <Center w="100%" h="100%">
+                                                                <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                    {z}
+                                                                </Text>
+                                                            </Center> */}
+                                                            <Box
+                                                                className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                                                                h="calc(100% - 7px)"
+                                                                bg={!selectedSeat?.includes(z) && availableSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                            />
+                                                            <Box
+                                                                className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
+                                                                h="calc(100% - 5px)"
+                                                                bg={!selectedSeat?.includes(z) && availableSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                            />
+                                                        </Box>
+                                                    </Tooltip>
+                                                ))}
+                                            </Flex>
+                                        ))}
+                                    </Stack>
+                                </Stack>
+                            )}
+
+                        </Box>
+                        {/* <Text className={`absolute top-[calc(100%_+_8px)] left-0 text-[8px]`} c="blue" size="8px">
+                            {JSON.stringify(e)}
+                        </Text> */}
+                    </Box>
+                // </Tooltip>
+            ))}
+        </>
     )
 }
