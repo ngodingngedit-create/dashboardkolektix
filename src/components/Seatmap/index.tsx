@@ -1,6 +1,6 @@
 import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme } from "@mantine/core";
+import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme, SegmentedControl } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import { useRef, useState, useCallback, useContext, useEffect } from "react";
 import SeatmapComponent from "./SeatmapComponent";
@@ -22,6 +22,13 @@ type ComponentProps = {
     onEdit?: boolean;
 };
 
+export const defaultSeatmapData: SeatmapData[] = [
+    {"position":[0,-165],"size":[300,66],"type":"box","text":"Main Stage"},
+    {"type":"box","text":"REGULER","position":[-228,-17],"size":[134,200]},
+    {"col":12,"row":8,"prefix":"A","type":"seat","position":[0,-17],"size":[300,200]},
+    {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
+];
+
 export default function Seatmap({ onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
     const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
@@ -39,7 +46,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
             row: isNotEmpty(),
         }
     });
-    const { setFieldValue: areaSetValue, values: areaVal, setValues: setAreaVal, getInputProps: areaProps, reset } = areaForm;
+    const { setFieldValue: areaSetValue, values: areaVal, setErrors, setValues: setAreaVal, getInputProps: areaProps, reset } = areaForm;
     const contentRef = useRef<Array<HTMLParagraphElement | null>>([]);
     const canvasContainerRef = useRef(null);
     const movableRef = useRef<MoveableRefType>(null);
@@ -63,7 +70,12 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
     }, [modalArea]);
 
     const handleSaveArea = () => {
-        if (areaForm.validate().hasErrors && modalArea != 0) return;
+        if (areaForm.validate().hasErrors && modalArea != 0 && areaVal?.type == 'seat') {
+            return;
+        } else if ((!areaVal?.text || areaVal?.text == '') && areaVal?.type == 'box') {
+            setErrors({ text: 'Required' });
+            return;
+        }
 
         if (typeof modalArea == 'number') {
             setData?.setItem(modalArea, areaVal);
@@ -72,7 +84,6 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                 ...areaVal, 
                 position: [0, 0],
                 size: [300, 200],
-                type: 'seat',
             });
         }
 
@@ -214,7 +225,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
         <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
             <Card withBorder radius={10} bg="gray.3" pos="relative" h="100%" className={`overflow-auto`} component={Center}>
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
-                {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify([scale, data])}</Text> */}
+                {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify(data)}</Text> */}
                 <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
                     <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                         Tambah Area
@@ -247,13 +258,23 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                         title={modalArea == 'new' ? "Buat Area Baru" : "Edit Area"}>
                         <Stack>
                             {/* {JSON.stringify(areaVal)} */}
+                            <SegmentedControl
+                                display={modalArea == 'new' ? undefined : 'none'}
+                                data={[
+                                    { value: 'seat', label: 'Seated' },
+                                    { value: 'box', label: 'Festival' },
+                                ]}
+                                radius="xl"
+                                {...areaProps('type')}
+                            />
+
                             <TextInput
                                 label="Label Area"
                                 placeholder="Isi Label Area"
                                 {...areaProps('text')}
                             />
 
-                            <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 ? 'none' : undefined}>
+                            <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == 'box' ? 'none' : undefined}>
                                 <NumberInput
                                     withAsterisk
                                     hideControls

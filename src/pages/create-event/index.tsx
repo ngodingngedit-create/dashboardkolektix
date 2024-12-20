@@ -29,6 +29,7 @@ import { toast } from 'react-toastify';
 import Button from '@/components/Button';
 import React from 'react';
 import { useListState, UseListStateHandlers } from '@mantine/hooks';
+import { defaultSeatmapData } from '@/components/Seatmap';
 
 const option = [
   { key: 1, label: '1 Tiket' },
@@ -127,14 +128,7 @@ const CreateEvent = () => {
   const [tagSuggestion, setTagSuggestion] = useState<string[]>();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<string>('info');
-  const [seatmapData, setSeatmapData] = useListState<SeatmapData>([
-    {
-        position: [0, 0],
-        size: [300, 30],
-        type: 'box',
-        text: 'Main Stage',
-    }
-  ]);
+  const [seatmapData, setSeatmapData] = useListState<SeatmapData>(defaultSeatmapData);
   // const [userData, setUserData] = useState<UserProps | null>(null);
   const loggedUser = useLoggedUser();
 
