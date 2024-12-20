@@ -102,6 +102,7 @@ export default function DateTab({
   }, [data]);
 
   const sortedTicket = useCallback((data: GroupTicket['tickets']) => {
+    return data;
     return data.sort((a, b) => {
       const dateA = moment(`${a.ticket_date} ${a.starting_time}`, 'YYYY-MM-DD HH:mm');
       const dateB = moment(`${b.ticket_end} ${b.ending_time}`, 'YYYY-MM-DD HH:mm');
