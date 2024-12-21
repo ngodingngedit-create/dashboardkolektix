@@ -154,8 +154,7 @@ const Auth = () => {
         Cookies.set('token', res.access_token);
         Cookies.set('user_data', JSON.stringify(res.data));
         setLoading(false);
-        ticketCount && prevPath ? router.push(prevPath) : router.push('/');
-        prevPath ? router.push(prevPath) : router.push('/');
+        router.push('/dashboard');
       })
       .catch((err: any) => {
         setOtp('');
@@ -171,11 +170,10 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true }));
         Cookies.set('bookmarked', JSON.stringify(res.bookmarked));
         setLoading(false);
-        ticketCount && prevPath ? router.push(prevPath) : router.push('/');
-        prevPath ? router.push(prevPath) : router.push('/');
+        router.push('/dashboard');
       })
       .catch((err: any) => {
         setOtp('');
@@ -234,11 +232,11 @@ const Auth = () => {
               }`}
             >
               <Image src={Logo} alt='Logo' className='w-1/3' />
-              <h2 className='text-dark font-semibold text-xl mt-4'>Masuk ke akunmu</h2>
+              <h2 className='text-dark font-semibold text-xl mt-4'>Masuk sebagai Creator/Staff</h2>
               <div className='flex'>
-                <p className='text-grey text-sm text-center my-2'>
-                  Belum memiliki akun di Kolektix?
-                  <span
+                <p className='text-grey text-[12px] text-center mb-2 mx-4'>
+                  Masukan akunmu yang sudah terdaftar sebagai Creator/Staff
+                  {/* <span
                     className='cursor-pointer text-primary-base font-semibold'
                     onClick={() => {
                       setStep(1);
@@ -247,7 +245,7 @@ const Auth = () => {
                   >
                     {' '}
                     Daftar
-                  </span>
+                  </span> */}
                 </p>
               </div>
               <div className='flex flex-col w-4/5 my-2'>
@@ -266,95 +264,6 @@ const Auth = () => {
                     {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
                   </button>
                 </form>
-              </div>
-            </div>
-          )}
-          {step === 1 && (
-            <div
-              className={`transition-opacity duration-300 opacity-0 ${step === 1 && 'opacity-100'}`}
-            >
-              <div className='flex justify-center flex-col items-center'>
-                <Image src={Logo} alt='Logo' className='w-1/3' />
-                <h2 className='text-dark font-semibold text-xl my-2'>Daftar di Kolektix.com</h2>
-                <div className='flex'>
-                  <p className='text-grey text-sm text-center mb-3'>
-                    Sudah punya akun Kolektix?
-                    <span
-                      className='cursor-pointer text-primary-base font-semibold'
-                      onClick={() => {
-                        setStep(0);
-                        setErrors([]);
-                      }}
-                    >
-                      {' '}
-                      Masuk
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <div className='flex flex-col w-full px-5'>
-                <div>
-                  <Form
-                    placeholder='Nama Lengkap'
-                    onChange={(e: any) => setData({ ...data, name: e.target.value })}
-                  />
-                  {errors.name &&
-                    errors.name.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                <div>
-                  <Form
-                    placeholder='Email'
-                    value={data.email}
-                    onChange={(e: any) => setData({ ...data, email: e.target.value })}
-                  />
-                  {errors.email &&
-                    errors.email.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                {/* <div>
-                  <Form
-                    placeholder='Password'
-                    label='Password'
-                    type='password'
-                    onChange={(e: any) => setData({ ...data, password: e.target.value })}
-                  />
-                  {errors.password &&
-                    errors.password.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                <div>
-                  <Form
-                    placeholder='Konfirmasi Password'
-                    label='Konfirmasi Password'
-                    type='password'
-                    onChange={(e: any) =>
-                      setData({ ...data, password_confirmation: e.target.value })
-                    }
-                  />
-                  {errors.password_confirmation &&
-                    errors.password_confirmation.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px]'>
-                        {error}
-                      </p>
-                    ))}
-                </div> */}
-
-                <button
-                  className='bg-primary-base text-white w-full rounded-full p-2 text-xs'
-                  onClick={submitRegister}
-                >
-                  {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
-                </button>
               </div>
             </div>
           )}

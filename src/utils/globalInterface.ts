@@ -225,6 +225,7 @@ export interface UserProps {
   has_creator?: CreatorProps;
   event_status_id: number;
   verified_status_id?: number;
+  force_creator?: boolean;
   bookmarked?: {
     id: number;
     user_id: number;
