@@ -794,7 +794,7 @@ const eventItems = useMemo(() => {
                             price={el.price}
                             description={el.description}
                             name={el.name}
-                            // onEdit={() => onEditTicket(el, index)}
+                            onEdit={() => onEditTicket(el, index)}
                             // onDelete={() => deleteTicket(index)}
                           />
                         </div>

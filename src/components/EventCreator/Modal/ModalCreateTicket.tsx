@@ -205,7 +205,7 @@ export default function ModalCreateTicket({
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2`}>
+            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2 py-4`}>
               <Flex display={ticket.length > 0 ? undefined : 'none'}>
                 <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
                   Kembali
