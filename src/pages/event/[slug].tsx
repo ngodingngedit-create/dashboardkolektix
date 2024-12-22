@@ -429,7 +429,7 @@ const EventDetails = () => {
             admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
             identities: form,
-            tickets: ticket,
+            tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
             bank_code: bank ?? 'xendit',
             expiration_date: isoString,
