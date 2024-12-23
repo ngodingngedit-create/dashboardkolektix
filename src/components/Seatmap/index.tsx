@@ -12,6 +12,7 @@ import _ from "lodash";
 import { isNotEmpty, useForm } from "@mantine/form";
 import { contrastColor } from "contrast-color";
 import { Context } from "@/pages/create-event";
+import { Guide } from "../Guide";
 
 type ComponentProps = {
     editable?: boolean;
@@ -227,9 +228,11 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
                 {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify(data)}</Text> */}
                 <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
-                    <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
-                        Tambah Area
-                    </Button>
+                    <Guide key="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
+                        <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
+                            Tambah Area
+                        </Button>
+                    </Guide>
                     <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
                         <Icon icon="uiw:minus" className={`text-primary-base`} />
                     </ActionIcon>
@@ -382,6 +385,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                                         </Flex>
                                     )}
 
+                                    <Guide key="guide-create-seatmap" opened={i == 2} text="Posisikan area sesuai yang diinginkan" order={2}>
                                     <Box
                                         onMouseDown={() => handleMouse.boxDown(i)}
                                         bg={e.background ?? "gray.1"}
@@ -436,6 +440,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                                         )}
 
                                     </Box>
+                                    </Guide>
                                     {/* <Text className={`absolute top-[calc(100%_+_8px)] left-0 text-[8px]`} c="blue" size="8px">
                                         {JSON.stringify(e)}
                                     </Text> */}

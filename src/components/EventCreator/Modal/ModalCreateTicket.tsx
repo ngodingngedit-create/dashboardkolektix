@@ -11,19 +11,21 @@ import {
 } from '@nextui-org/react';
 import { EventTicket } from '@/utils/formInterface';
 import InputField from '@/components/Input';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, PropsWithChildren } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { TicketProps, TicketPropsInputRequest } from '@/utils/globalInterface';
 import fetch from '@/utils/fetch';
-import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text } from '@mantine/core';
+import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text, Popover, Overlay, Portal } from '@mantine/core';
 import Seatmap from '@/components/Seatmap';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { isNotEmpty, useForm, zodResolver } from '@mantine/form';
 import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
 import { z } from 'zod';
+import { Guide } from '@/components/Guide';
+import { useLocalStorage } from 'usehooks-ts';
 
 interface ModalProps {
   isOpen: boolean;
@@ -206,9 +208,11 @@ export default function ModalCreateTicket({
                   Tambah Tiket
                 </Button>
 
-                <Button display={addSeatMap ? 'none' : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
-                  Buat Seatmap
-                </Button>
+                <Guide text="Buat Seatmap untuk mengatur posisi seat" key="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
+                  <Button w="100%" display={addSeatMap ? 'none' : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
+                    Buat Seatmap
+                  </Button>
+                </Guide>
               </Stack>
             </Card>
 
