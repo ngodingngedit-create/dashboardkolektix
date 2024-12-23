@@ -406,7 +406,7 @@ export default function ModalCreateTicket({
               setIsOpen(false);
             }}
             // rightSection={<Icon icon="uiw:check" />}
-            display={!(openForm === undefined) ? 'none' : undefined}>
+            display={ticket.length > 0 && addSeatMap ? undefined : 'none'}>
             Simpan Tiket
           </Button>
         </Stack>
