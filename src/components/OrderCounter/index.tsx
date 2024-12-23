@@ -337,7 +337,7 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                     {e.text && <Text size="xs" c="gray">{e.text}</Text>}
                                     <Stack gap={3} w="100%" h="100%" justify="space-between">
                                         {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
-                                            <Flex w="100%" h="100%" justify="space-between" key={r} className={`!gap-[7x] md:!gap-[5px]`}>
+                                            <Flex w="100%" h="100%" justify="space-between" key={r} className={`!gap-[7px] md:!gap-[5px]`}>
                                                 {x.map((z, c) => (
                                                     <Tooltip label={z} key={c} fw={600}>
                                                         <Box
