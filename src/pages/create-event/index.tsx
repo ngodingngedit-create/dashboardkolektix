@@ -5,7 +5,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { UserProps } from '@/utils/globalInterface';
 import imagePlus from '../../assets/icon/image-plus.png';
 import { faCalendar, faClock } from '@fortawesome/free-regular-svg-icons';
-import { TagsInput } from '@mantine/core';
+import { Alert, TagsInput } from '@mantine/core';
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from '@nextui-org/react';
 import {
   faLocationDot,
@@ -30,6 +30,7 @@ import Button from '@/components/Button';
 import React from 'react';
 import { useListState, UseListStateHandlers } from '@mantine/hooks';
 import { defaultSeatmapData } from '@/components/Seatmap';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 const option = [
   { key: 1, label: '1 Tiket' },
@@ -427,6 +428,11 @@ const CreateEvent = () => {
                     </div>
                   </div>
                   <div className='p-5 flex flex-col gap-[10px]'>
+                    {ticket.length == 0 && (
+                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
+                        Belum ada tiket yang dibuat
+                      </Alert>
+                    )}
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
                         <div key={index}>

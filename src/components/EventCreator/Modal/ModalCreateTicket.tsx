@@ -76,6 +76,7 @@ export default function ModalCreateTicket({
   const [step, setStep] = useState(0);
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
+  const [addSeatMap, setAddSeatMap] = useState(false);
 
   useEffect(() => {
     if (typeof openForm == 'number') {
@@ -125,8 +126,8 @@ export default function ModalCreateTicket({
   }, [data]);
 
   const openSeatMap = useMemo(() => {
-    return ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated');
-  }, [ticket, form]);
+    return addSeatMap;// && (ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated'));
+  }, [ticket, form, addSeatMap]);
 
   const handleSaveTicket = () => {
     if (validate().hasErrors) return;
@@ -168,16 +169,16 @@ export default function ModalCreateTicket({
         className='text-dark'
       >
         {/* {JSON.stringify(errors)} */}
-        <Stack gap={10} h={"calc(100vh - 100px)"}>
+        <Stack gap={10} h={addSeatMap ? "calc(100vh - 100px)" : "calc(100vh - 160px)"} pb={10}>
           <Flex gap={20} h="100%">
-            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
+            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full h-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
               <Stack gap={15} h="100%">
                 <TextInput
                   leftSection={<Icon icon="uiw:search" />}
                   placeholder="Cari Tiket"
                 />
 
-                <Stack gap={10} className={`overflow-y-auto`}>
+                <Stack gap={10} className={`overflow-y-auto h-full `}>
                   {ticket.map((e, i) => (
                     // onClick={() => setSelected(selected == i ? undefined : i)}
                     <UnstyledButton key={i}>
@@ -202,10 +203,14 @@ export default function ModalCreateTicket({
                 <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
+
+                <Button display={addSeatMap ? 'none' : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
+                  Buat Seatmap
+                </Button>
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2 py-4`}>
+            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2 pb-4`}>
               <Flex display={ticket.length > 0 ? undefined : 'none'}>
                 <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
                   Kembali
@@ -237,7 +242,7 @@ export default function ModalCreateTicket({
                       </Radio>
                       <Radio
                         classNames={{
-                          base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
+                          base: 'opacity-50 md:!opacity-100 pointer-events-none md:!pointer-events-auto data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
                         }}
                         value='Seated'
                       >
@@ -367,9 +372,9 @@ export default function ModalCreateTicket({
                 </div>
               )}
 
-              <Flex justify="end">
+              <Flex justify="end" py={10} className={`sticky bottom-[-15px] bg-white`}>
                 <button
-                  className='w-[200px] ml-auto mt-[15px] text-white bg-primary-dark rounded-full py-2'
+                  className='w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2'
                   onClick={() => {
                     handleSaveTicket();
                     // step === 0 ? submitTicket() : setStep(1);
@@ -391,6 +396,19 @@ export default function ModalCreateTicket({
               />
             </Box>
           </Flex>
+
+          <Button
+            ml="auto"
+            w="fit-content"
+            size="md"
+            onClick={() => {
+              setIdx(null);
+              setIsOpen(false);
+            }}
+            // rightSection={<Icon icon="uiw:check" />}
+            display={!(openForm === undefined) ? 'none' : undefined}>
+            Simpan Tiket
+          </Button>
         </Stack>
       </ModalM>
     </div>
