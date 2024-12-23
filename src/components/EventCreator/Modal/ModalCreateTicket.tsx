@@ -17,7 +17,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { TicketProps, TicketPropsInputRequest } from '@/utils/globalInterface';
 import fetch from '@/utils/fetch';
-import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton } from '@mantine/core';
+import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text } from '@mantine/core';
 import Seatmap from '@/components/Seatmap';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { isNotEmpty, useForm, zodResolver } from '@mantine/form';
@@ -70,7 +70,9 @@ export default function ModalCreateTicket({
       ticket_end: isNotEmpty(),
       qty: isNotEmpty(),
       price: isNotEmpty(),
-      description: isNotEmpty()
+      description: isNotEmpty(),
+      starting_time: isNotEmpty(),
+      ending_time: isNotEmpty(),
     }
   });
   const [step, setStep] = useState(0);
@@ -324,6 +326,26 @@ export default function ModalCreateTicket({
                       minDateVal={form.ticket_date ? form.ticket_date : undefined}
                       maxDateVal={endDate ? endDate : undefined}
                       onChange={(e: any) => e && setForm({ ...form, ticket_end: e.toString() })}
+                    />
+                  </div>
+                  <div className='grid grid-cols-2 gap-2 my-2'>
+                    <InputField
+                      error={Boolean(errors['starting_time'])}
+                      type='time'
+                      label='Jam Mulai Penjualan'
+                      required
+                      value={form.starting_time && form.starting_time}
+                      onChange={(e: any) =>
+                        e && setForm({ ...form, starting_time: e.toString() })
+                      }
+                    />
+                    <InputField
+                      error={Boolean(errors['ending_time'])}
+                      type='time'
+                      label='Jam Berakhir Penjualan'
+                      required
+                      value={form.ending_time && form.ending_time}
+                      onChange={(e: any) => e && setForm({ ...form, ending_time: e.toString() })}
                     />
                   </div>
                   <div className='grid grid-cols-2 gap-2 my-2'>
