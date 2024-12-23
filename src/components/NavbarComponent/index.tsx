@@ -340,7 +340,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           ) : (
                             <>
                               <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
-                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/user">Dashboard</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href={users?.force_creator ? "/dashboard/" : "/dashboard/user"}>Dashboard</Menu.Item>
                               <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
                               <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
                             </>
