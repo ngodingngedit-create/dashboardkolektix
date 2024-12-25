@@ -4,7 +4,7 @@ import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Flex, NumberForm
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { randomId, useInterval } from '@mantine/hooks';
 import { Context } from '@/pages/event/[slug]';
 import { SeatmapData } from '@/utils/formInterface';
@@ -228,7 +228,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     <Divider className={`!border-dashed w-full`} />
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
-                <Flex justify="space-between" gap={20} align="center">
+                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`} wrap="wrap">
                     <StatusComponent />
                 </Flex>
             </Stack>
@@ -268,7 +268,14 @@ const SeatmapViewer = ({ data, selectedSeat, setSelectSeat, available }: Seatmap
     if (!data) return <></>;
 
     return (
-        <div onMouseDown={handleMouse.down} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-30 [&_*]:!select-none`}>
+        <div
+            onMouseDown={handleMouse.down}
+            onMouseUp={handleMouse.up}
+            onMouseMove={handleMouse.move}
+            onTouchStart={handleMouse.down}
+            onTouchEnd={handleMouse.up}
+            // onTouchMove={handleMouse.move}
+            className={`h-full relative z-30 [&_*]:!select-none`}>
             <Card
                 bg="transparent"
                 pos="relative"
