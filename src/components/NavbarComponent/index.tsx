@@ -334,7 +334,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           {!isLogin ? (
                             <>
                               <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
-                              <Menu.Item leftSection={<Icon icon="hugeicons:account-setting-03" className={`text-[18px]`}/>} color="#0B387C" component={Link} href="/auth-creator">Login Creator</Menu.Item>
+                              {/* <Menu.Item leftSection={<Icon icon="hugeicons:account-setting-03" className={`text-[18px]`}/>} color="#0B387C" component={Link} href="/auth-creator">Login Creator</Menu.Item> */}
                               {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
                             </>
                           ) : (

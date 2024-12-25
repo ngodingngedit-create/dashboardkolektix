@@ -2,7 +2,7 @@ import React from 'react';
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatDate } from '@/utils/useFormattedDate';
-import { Button, Flex, Stack, Text } from '@mantine/core';
+import { Button, ColorInput, Flex, Stack, Text } from '@mantine/core';
 
 interface TicketContainerProps {
   type: string;
@@ -15,6 +15,8 @@ interface TicketContainerProps {
   onDelete?: () => void;
   onEdit?: () => void;
   onSelectSeatButton?: () =>  void;
+  onSelectSeatColor?: (color: string) =>  void;
+  seatColor?: string;
 }
 
 const TicketContainer = ({
@@ -28,6 +30,8 @@ const TicketContainer = ({
   onDelete,
   onEdit,
   onSelectSeatButton,
+  onSelectSeatColor,
+  seatColor,
 }: TicketContainerProps) => {
   return (
     <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-xl'>
@@ -45,6 +49,17 @@ const TicketContainer = ({
             <Button onClick={onSelectSeatButton} variant="light" size="xs">
               Pilih Seat
             </Button>
+          )}
+          {onSelectSeatColor && !onSelectSeatButton && (
+            <Flex gap={8} align="center">
+              <Text c="gray" size="xs" fw={600}>Seat Color</Text>
+              <ColorInput
+                size="xs"
+                w={50}
+                value={seatColor}
+                onChange={e => onSelectSeatColor(e)}
+              />
+            </Flex>
           )}
         </Flex>
       </div>

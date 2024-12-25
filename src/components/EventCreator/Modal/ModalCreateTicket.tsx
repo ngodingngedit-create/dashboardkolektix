@@ -79,6 +79,7 @@ export default function ModalCreateTicket({
   const [selected, setSelected] = useState<number>();
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
+  const [hoveredTicket, setHoveredTicket] = useState<number>();
 
   useEffect(() => {
     if (typeof openForm == 'number') {
@@ -172,8 +173,12 @@ export default function ModalCreateTicket({
       .map(e => e.available_seat)
       .reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []);
 
+    if (hoveredTicket !== undefined) {
+      return result.filter(e => ticket[hoveredTicket].available_seat?.includes(e))
+    }
+
     return result;
-  }, [ticket, onSelectSeat]);
+  }, [ticket, onSelectSeat, hoveredTicket]);
 
   return (
     <div className='flex flex-col gap-2'>
@@ -216,7 +221,10 @@ export default function ModalCreateTicket({
                   {ticket.map((e, i) => (
                     // onClick={() => setSelected(selected == i ? undefined : i)}
                     <UnstyledButton key={i}>
-                      <Box className={`${selected == i ? '!border !border-primary-base rounded-lg' : ''}`}>
+                      <Box
+                        onMouseEnter={() => setHoveredTicket(i)}
+                        onMouseLeave={() => setHoveredTicket(undefined)}
+                        className={`${selected == i ? '!border !border-primary-base rounded-lg' : ''}`}>
                         <TicketContainer
                           key={i}
                           type={e.ticket_type}
@@ -231,6 +239,8 @@ export default function ModalCreateTicket({
                           onSelectSeatButton={e.ticket_category == 'Seated' && onSelectSeat === undefined && addSeatMap ?
                             () => setOnSelectSeat(i) :
                             undefined}
+                          seatColor={e.seat_color}
+                          onSelectSeatColor={onSelectSeat == i ? e => setTicket(ticket?.map((z, _i) => i == _i ? ({...z, seat_color: e}) : z)) : undefined}
                         />
                       </Box>
                     </UnstyledButton>

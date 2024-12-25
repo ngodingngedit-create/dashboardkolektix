@@ -2,7 +2,7 @@ import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme, SegmentedControl } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
-import { useRef, useState, useCallback, useContext, useEffect } from "react";
+import { useRef, useState, useCallback, useContext, useEffect, useMemo } from "react";
 import SeatmapComponent from "./SeatmapComponent";
 import { modals } from "@mantine/modals";
 import Moveable, { MoveableRefType, OnDrag, OnDragEnd, OnResize, OnResizeEnd, OnRotate, OnRotateEnd } from 'react-moveable';
@@ -27,7 +27,7 @@ type ComponentProps = {
 export const defaultSeatmapData: SeatmapData[] = [
     {"position":[0,-165],"size":[300,66],"type":"box","text":"Main Stage"},
     // {"type":"box","text":"REGULER","position":[-228,-17],"size":[134,200]},
-    {"col":12,"row":8,"prefix":"A","type":"seat","position":[0,-17],"size":[300,200]},
+    // {"col":12,"row":8,"prefix":"A","type":"seat","position":[0,-17],"size":[300,200]},
     // {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
 ];
 
@@ -40,7 +40,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     // const [selectedSeat, setSelectedSeat] = useListState<string>([]);
     const [modalArea, setModalArea] = useState<number | 'new'>();
     const [scale, setScale] = useState(1);
-    const { seatmapData: data, setSeatmapData: setData } = useContext(Context);
+    const { seatmapData: _data, setSeatmapData: setData, ticket } = useContext(Context);
     const areaForm = useForm<SeatmapData>({
         validate: {
             col: isNotEmpty(),
@@ -56,7 +56,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
 
     useDidUpdate(() => {
         if (typeof modalArea == 'number') {
-            setAreaVal(data[modalArea]);
+            setAreaVal(_data[modalArea]);
         } else {
             setAreaVal({
                 position: [0, 0],
@@ -215,7 +215,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     }, []);
 
     const handleSelectAllSeat = (index: number) => {
-        const val = data[index];
+        const val = _data[index];
 
         if (val) {
             const seatnumber = Array((val?.col ?? 0) * (val?.row ?? 0))
@@ -230,6 +230,13 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
             }
         }
     }
+
+    const data = useMemo<SeatmapData[]>(() => {
+        return _data.map(e => ({
+            ...e,
+            seat: chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+        }));
+    }, [_data])
 
     return (
         <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
@@ -429,7 +436,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                             <Stack h="100%" align="center" justify="center" gap={5} p={10}>
                                                 {e.text && <Text size="xs" c="gray">{e.text}</Text>}
                                                 <Stack gap={3} w="100%" h="100%" justify="space-between">
-                                                    {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
+                                                    {(e.seat ?? []).map((x, r) => (
                                                         <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
                                                             {x.map((z, c) => (
                                                                 <Tooltip label={z} key={c} fw={600}>
@@ -446,13 +453,9 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                                                                 {z}
                                                                             </Text>
                                                                         </Center> */}
-                                                                        <Box
-                                                                            className={`relative z-10 rounded-sm mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
-                                                                            bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.2'} h="calc(100% - 7px)">
-                                                                        </Box>
-                                                                        <Box
-                                                                            className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
-                                                                            bg={selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.2'} h="calc(100% - 5px)"
+                                                                        <SeatBox
+                                                                            active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
+                                                                            color={ticket.find(e => e.available_seat?.includes(z))?.seat_color ?? e.seatcolor}
                                                                         />
                                                                     </Box>
                                                                 </Tooltip>
@@ -535,4 +538,19 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
             </Card>
         </div>
     );
+}
+
+const SeatBox = ({ active, color }: { active: boolean, color?: string }) => {
+    return (
+        <>
+            <Box
+                className={`relative z-10 rounded-sm mt-[5px] border ${active ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                bg={active ? color ?? '#194e9e' : 'gray.2'} h="calc(100% - 7px)">
+            </Box>
+            <Box
+                className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active ? '' : 'border border-[#d0d0d0]'}`}
+                bg={active ? color ?? '#194e9e' : 'gray.2'} h="calc(100% - 5px)"
+            />
+        </>
+    )
 }

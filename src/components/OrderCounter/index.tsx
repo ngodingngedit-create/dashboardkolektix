@@ -190,7 +190,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
 
                     <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
 
-                    <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                    <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                 </Card>
             )}
 
@@ -200,8 +200,9 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
                 position="bottom"
                 radius={25}
+                size="58vh"
                 overlayProps={{  opacity: 0.3 }}>
-                    <Card bg="gray.3" h="42vh" radius={10} className={`!border-primary-disabled/35 !border`}>
+                    <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
                         <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                     </Card>
 
@@ -259,9 +260,10 @@ type SeatmapViewerProps = {
     selectedSeat?: string[];
     setSelectSeat?: (data: string) => void;
     available?: string;
+    ticketData?: TicketProps;
 }
 
-const SeatmapViewer = ({ data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [scale, setScale] = useState(1);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
@@ -302,14 +304,14 @@ const SeatmapViewer = ({ data, selectedSeat, setSelectSeat, available }: Seatmap
                 className={`z-20 !overflow-visible`}
             >
                 <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
-                    <SeatmapItem data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
+                    <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
                 </Box>
             </Card>
         </div>
     )
 }
 
-const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
     const getContrastColor = useCallback((color: string) => {
         return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
     }, []);
@@ -319,7 +321,10 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
     }, [available]);
 
     const filteredArea = useMemo(() => {
-        return (data ?? []);
+        return (data ?? []).map(e => ({
+            ...e,
+            seat: chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+        }));
     }, [selectedSeat]);
 
     if (!data) return <></>;
@@ -363,7 +368,7 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                 <Stack h="100%" align="center" justify="center" gap={5} p={10}>
                                     {e.text && <Text size="xs" c="gray">{e.text}</Text>}
                                     <Stack gap={3} w="100%" h="100%" justify="space-between">
-                                        {chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1)).map((x, r) => (
+                                        {(e.seat ?? []).map((x, r) => (
                                             <Flex w="100%" h="100%" justify="space-between" key={r} className={`!gap-[7px] md:!gap-[5px]`}>
                                                 {x.map((z, c) => (
                                                     <Tooltip label={z} key={c} fw={600}>
@@ -380,12 +385,12 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                                             <Box
                                                                 className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 7px)"
-                                                                bg={e.seatcolor ?? '#194e9e'}
+                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
                                                             />
                                                             <Box
                                                                 className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 5px)"
-                                                                bg={e.seatcolor ?? '#194e9e'}
+                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
                                                             />
                                                         </Box>
                                                     </Tooltip>

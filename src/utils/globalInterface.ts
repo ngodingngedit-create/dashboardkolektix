@@ -25,6 +25,7 @@ export interface TicketProps {
   max_buy_ticket?: number;
   event_schedule_date: string | null;
   available_seat_number?: string;
+  seat_color?: string;
   ticket_category?: 'Seated' | 'Festival';
 }
 

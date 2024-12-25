@@ -65,8 +65,10 @@ interface ErrorResponse {
 export const Context = createContext<{
   seatmapData: SeatmapData[],
   setSeatmapData?: UseListStateHandlers<SeatmapData>;
+  ticket: EventTicket[];
 }>({
-  seatmapData: []
+  seatmapData: [],
+  ticket: [],
 })
 
 const CreateEvent = () => {
@@ -169,7 +171,7 @@ const CreateEvent = () => {
     setLoading(true); // Set loading ke true
     Post('event', {
       ...form,
-      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(',')})),
+      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color})),
       seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
@@ -678,7 +680,7 @@ const CreateEvent = () => {
         form={form}
         setForm={setForm}
       />
-      <Context.Provider value={{ seatmapData, setSeatmapData }}>
+      <Context.Provider value={{ seatmapData, setSeatmapData, ticket }}>
         <ModalCreateTicket
           isOpen={addTicket}
           endDate={form.end_date}
