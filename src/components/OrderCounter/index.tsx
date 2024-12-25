@@ -302,11 +302,15 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
         return available?.split(',');
     }, [available]);
 
+    const filteredArea = useMemo(() => {
+        return (data ?? []);
+    }, [selectedSeat]);
+
     if (!data) return <></>;
 
     return (
         <>
-            {data.map((e, i) => (
+            {filteredArea.map((e, i) => (
                 // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                     <Box
                         className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
@@ -349,7 +353,7 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                                     <Tooltip label={z} key={c} fw={600}>
                                                         <Box
                                                             onClick={() => availableSeat?.includes(z) && setSelectSeat && setSelectSeat(z)}
-                                                            opacity={selectedSeat?.includes(z) ? 0.5 : 1}
+                                                            opacity={available?.includes(z) ? selectedSeat?.includes(z) ? 0.5 : 1 : 0.1}
                                                             w="100%" h="100%" key={c}
                                                             className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                             {/* <Center w="100%" h="100%">
@@ -360,12 +364,12 @@ const SeatmapItem = ({ data, selectedSeat, setSelectSeat, available }: SeatmapVi
                                                             <Box
                                                                 className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 7px)"
-                                                                bg={!selectedSeat?.includes(z) && availableSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                                bg={e.seatcolor ?? '#194e9e'}
                                                             />
                                                             <Box
                                                                 className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 5px)"
-                                                                bg={!selectedSeat?.includes(z) && availableSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : '#194e9e'}
+                                                                bg={e.seatcolor ?? '#194e9e'}
                                                             />
                                                         </Box>
                                                     </Tooltip>
