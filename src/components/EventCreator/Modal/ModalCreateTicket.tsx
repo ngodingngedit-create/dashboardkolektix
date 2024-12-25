@@ -17,15 +17,13 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { TicketProps, TicketPropsInputRequest } from '@/utils/globalInterface';
 import fetch from '@/utils/fetch';
-import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text, Popover, Overlay, Portal } from '@mantine/core';
+import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text, Popover, Overlay, Portal, HoverCard } from '@mantine/core';
 import Seatmap from '@/components/Seatmap';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { isNotEmpty, useForm, zodResolver } from '@mantine/form';
+import { isNotEmpty, useForm } from '@mantine/form';
 import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
-import { z } from 'zod';
 import { Guide } from '@/components/Guide';
-import { useLocalStorage } from 'usehooks-ts';
 
 interface ModalProps {
   isOpen: boolean;
@@ -81,6 +79,7 @@ export default function ModalCreateTicket({
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
   const [addSeatMap, setAddSeatMap] = useState(false);
+  const [onSelectSeat, setOnSelectSeat] = useState<number>();
 
   useEffect(() => {
     if (typeof openForm == 'number') {
@@ -144,6 +143,10 @@ export default function ModalCreateTicket({
     setOpenForm(undefined);
   }
 
+  const handleSelectSeat = (data?: string[]) => {
+    setTicket(ticket.map((e, i) => i == onSelectSeat ? ({...e, available_seat: data}) : e));
+  };
+
   const handleDeleteTicket = (index: number) => {
     modals.openConfirmModal({
       title: 'Hapus Tiket',
@@ -158,10 +161,38 @@ export default function ModalCreateTicket({
     });
   }
 
+  const unavailSeat = useMemo(() => {
+    return onSelectSeat === undefined ? [] : ticket
+      .map(e => e.available_seat)
+      .reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), [])
+      .filter(e => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
+  }, [onSelectSeat]);
+
+  const allSeat = useMemo(() => {
+    const result = ticket
+      .map(e => e.available_seat)
+      .reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []);
+
+    return result;
+  }, [ticket, onSelectSeat]);
+
   return (
     <div className='flex flex-col gap-2'>
       <ModalM
-        title={'Kelola Tiket'}
+        title={(
+          <HoverCard>
+            <HoverCard.Target>
+              <Text component='span'>Kelola Tiket</Text>
+            </HoverCard.Target>
+            <HoverCard.Dropdown maw={400}>
+              {ticket.map((e, i) => (
+                <Text size="xs" key={i}>
+                  {JSON.stringify(e).replaceAll(',', ', ')}
+                </Text>
+              ))}
+            </HoverCard.Dropdown>
+          </HoverCard>
+        )}
         opened={isOpen}
         centered
         onClose={() => {
@@ -198,6 +229,9 @@ export default function ModalCreateTicket({
                           name={e.name}
                           onEdit={() => setOpenForm(i)}
                           onDelete={() => handleDeleteTicket(i)}
+                          onSelectSeatButton={e.ticket_category == 'Seated' && onSelectSeat === undefined && addSeatMap ?
+                            () => setOnSelectSeat(i) :
+                            undefined}
                         />
                       </Box>
                     </UnstyledButton>
@@ -216,7 +250,7 @@ export default function ModalCreateTicket({
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2 pb-4`}>
+            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} overflow-auto flex-col gap-2 pb-4`}>
               <Flex display={ticket.length > 0 ? undefined : 'none'}>
                 <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
                   Kembali
@@ -362,8 +396,10 @@ export default function ModalCreateTicket({
                       fullWidth
                       value={form.price > 0 && form.price}
                       onChange={(e: any) => setForm({ ...form, price: e.target.value })}
+                      placeholder='Masukan Harga'
                     />
                     <InputField
+                      className={`${form.ticket_category == 'Seated' ? 'hidden' : ''}`}
                       error={Boolean(errors['qty'])}
                       type='num'
                       label='Jumlah Tiket'
@@ -371,6 +407,7 @@ export default function ModalCreateTicket({
                       fullWidth
                       value={form.qty > 0 && form.qty}
                       onChange={(e: any) => setForm({ ...form, qty: e.target.value })}
+                      placeholder='Masukan Jumlah'
                     />
                   </div>
                   <InputField
@@ -410,15 +447,17 @@ export default function ModalCreateTicket({
                 </button>
               </Flex>
             </div>
+
             <Box
               className={`flex-grow`}
               display={openSeatMap ? undefined : 'none'}>
               <Seatmap
-                unavailSeat={ticket.map(e => e.available_seat).reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []).filter(e => !form.available_seat?.includes(e))}
-                selected={form.available_seat}
-                onSelect={e => setForm({ available_seat: e })}
-                onSelectAll={e => setForm({ available_seat: e })}
-                onEdit={openForm !== undefined}
+                unavailSeat={unavailSeat}
+                selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
+                onSelect={handleSelectSeat}
+                onSelectAll={handleSelectSeat}
+                onEdit={onSelectSeat !== undefined}
+                onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
               />
             </Box>
           </Flex>

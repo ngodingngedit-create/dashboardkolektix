@@ -17,6 +17,7 @@ interface InputProps {
   minDateVal?: string;
   inputProps?: any;
   error?: boolean;
+  className?: string;
 }
 
 const InputField = ({
@@ -32,6 +33,7 @@ const InputField = ({
   disabled,
   size,
   error,
+  className,
 }: InputProps) => {
   const handleKeyPress = (event: any) => {
     const key = event.key;
@@ -47,7 +49,7 @@ const InputField = ({
     }
   };
   return (
-    <div className='text-dark'>
+    <div className={`text-dark ${className}`}>
       {label && (
         <p className='mb-1 text-grey'>
           {label}

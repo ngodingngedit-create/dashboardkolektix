@@ -21,17 +21,18 @@ type ComponentProps = {
     unavailSeat?: string[];
     onSelectAll?: (data?: string[]) => void;
     onEdit?: boolean;
+    onFinishSelectSeat?: () =>  void;
 };
 
 export const defaultSeatmapData: SeatmapData[] = [
     {"position":[0,-165],"size":[300,66],"type":"box","text":"Main Stage"},
-    {"type":"box","text":"REGULER","position":[-228,-17],"size":[134,200]},
+    // {"type":"box","text":"REGULER","position":[-228,-17],"size":[134,200]},
     {"col":12,"row":8,"prefix":"A","type":"seat","position":[0,-17],"size":[300,200]},
-    {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
+    // {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
 ];
 
-export default function Seatmap({ onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
-    const [isDragSelect, setIsDragSelect] = useState<'active' | 'inactive'>();
+export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
+    const [isDragSelect, setIsDragSelect] = useState<string[]>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const [lastScrollTop, setLastScrollTop] = useState(0);
@@ -133,15 +134,23 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
             }
         },
         boxDown: (index: number) => {
-            setSelected(index);
+            if (!onFinishSelectSeat) {
+                setSelected(index);
+            }
         },
         seatDown: (seatnumber: string, index: number) => {
-            setIsDragSelect(selectedSeat?.includes(seatnumber) ? 'inactive' : 'active');
-            handleSelectSeat(seatnumber, index);
+            if (onEdit && !unavailSeat?.includes(seatnumber)) {
+                setIsDragSelect([seatnumber]);
+            }
+        },
+        seatUp: () => {
+            setIsDragSelect(undefined);
+            handleSelectSeat(isDragSelect ?? [], undefined, !selectedSeat?.includes(isDragSelect ? isDragSelect[0] : ''));
         },
         seatEnter: (seatnumber: string, index: number) => {
-            if (isDragSelect) {
-                handleSelectSeat(seatnumber, index, isDragSelect == 'active');
+            if (isDragSelect !== undefined && onEdit && !unavailSeat?.includes(seatnumber)) {
+                // setIsDragSelect(seatnumber, index, isDragSelect !== undefined);
+                setIsDragSelect([...isDragSelect, seatnumber]);
             }
         }
     }
@@ -154,22 +163,22 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
         setSelected(id);
     };
 
-    const handleSelectSeat = (seatnumber: string, index: number, force?: boolean) => {
+    const handleSelectSeat = (_seatnumber: string | string[], index?: number, action?: boolean) => {
         if (setSelectedSeat) {
-            setSelected(index);
+            index !== undefined && setSelected(index);
+            const seatnumber = typeof _seatnumber == 'string' ? [_seatnumber] : _seatnumber
     
-            if (force) {
-                setSelectedSeat && setSelectedSeat(_.uniq([...(selectedSeat ?? []), seatnumber]));
+            if (action) {
+                setSelectedSeat && setSelectedSeat(_.uniq([...(selectedSeat ?? []), ...seatnumber]));
                 return;
             }
     
-            const isSelected = selectedSeat?.includes(seatnumber);
-    
-            setSelectedSeat(
-                (isSelected || force == false)
-                    ? selectedSeat?.filter(seat => seat !== seatnumber)
-                    : _.uniq([...(selectedSeat ?? []), seatnumber])
-            );
+            const isSelected = selectedSeat?.some(e => seatnumber.includes(e));
+            const result = (isSelected || action == false)
+                ? selectedSeat?.filter(seat => !seatnumber.includes(seat))
+                : _.uniq([...(selectedSeat ?? []), ...seatnumber]);
+
+            setSelectedSeat(result);
         }
     };
 
@@ -239,6 +248,16 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                     <ActionIcon color="gray.1" radius="xl" onClick={() => scale < 2 && setScale(scale + 0.1)}>
                         <Icon icon="uiw:plus" className={`text-primary-base`} />
                     </ActionIcon>
+                </Flex>
+
+                <Flex className={`!absolute bottom-4 left-2/4 -translate-x-2/4 z-50`} gap={10}>
+                    {onFinishSelectSeat && (
+                        <Guide key="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
+                            <Button onClick={onFinishSelectSeat} size="sm" rightSection={<Icon icon="uiw:check" />}>
+                                Selesai Pilih Seat
+                            </Button>
+                        </Guide>
+                    )}
                 </Flex>
 
                 <Card
@@ -369,14 +388,18 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                                     ref={el => changeRef(i, el)}
                                     key={i}>
                                     <Flex display={i == selected ? undefined : 'none'} className={`absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
-                                        <Button onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
-                                            Pilih Semua
-                                        </Button>
-                                        <Tooltip label="Edit Area" position="bottom">
-                                            <ActionIcon onClick={() => {setModalArea(i); setSelected(i)}} bg="gray.1" c="gray.6" radius="xl">
-                                                <Icon icon="uiw:edit" />
-                                            </ActionIcon>
-                                        </Tooltip>
+                                        {onFinishSelectSeat && (
+                                            <Button onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
+                                                Pilih Semua
+                                            </Button>
+                                        )}
+                                        {!onFinishSelectSeat && (
+                                            <Tooltip label="Edit Area" position="bottom">
+                                                <ActionIcon onClick={() => {setModalArea(i); setSelected(i)}} bg="gray.1" c="gray.6" radius="xl">
+                                                    <Icon icon="uiw:edit" />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                        )}
                                     </Flex>
 
                                     {e.type == 'seat' && (
@@ -392,7 +415,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                                         h="100%"
                                         className={`rounded-md shadow-lg`}>
                                         <Box
-                                            onClick={() => handleSelect(i)}
+                                            onClick={!onFinishSelectSeat ? () => handleSelect(i) : undefined}
                                             className={`absolute w-full h-full left-0 top-0 z-20`}
                                         />
 
@@ -411,9 +434,10 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                                                             {x.map((z, c) => (
                                                                 <Tooltip label={z} key={c} fw={600}>
                                                                     <Box
-                                                                        onMouseEnter={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatEnter(z, i)}
-                                                                        onMouseDown={() => onEdit && !unavailSeat?.includes(z) && handleMouse.seatDown(z, i)}
-                                                                        onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
+                                                                        onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                                                        onMouseDown={() => handleMouse.seatDown(z, i)}
+                                                                        onMouseUp={() => handleMouse.seatUp()}
+                                                                        // onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
                                                                         opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
                                                                         w="100%" h="100%" key={c}
                                                                         className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
@@ -450,7 +474,7 @@ export default function Seatmap({ onEdit = true, editable = true, selected: sele
                     </Box>
 
                     {
-                        (editable && selected != null) && (
+                        (editable && selected != null && !onFinishSelectSeat) && (
                             <>
                                 <Moveable
                                     origin
