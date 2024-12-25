@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Flex, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, Modal, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -182,8 +182,8 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     return (
         <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[100px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
             {/* {JSON.stringify(ticket)} */}
-            {seatmapOpen == index && (
-                <Card bg="gray.3" radius={10} className={`!absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
+            {seatmapOpen == index && window?.innerWidth > 767 && (
+                <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
                     <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
                         Kembali
                     </Button>
@@ -193,6 +193,22 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                 </Card>
             )}
+
+            <Drawer
+                title={`Pilih Seat ${ticketData.name}`}
+                opened={seatmapOpen == index && window?.innerWidth < 767}
+                onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
+                position="bottom"
+                radius={25}
+                overlayProps={{  opacity: 0.3 }}>
+                    <Card bg="gray.3" h="42vh" radius={10} className={`!border-primary-disabled/35 !border`}>
+                        <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                    </Card>
+
+                    <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                        Selesai
+                    </Button>
+            </Drawer>
 
             <Stack gap={10}>
                 <Flex gap={20} justify="space-between">
