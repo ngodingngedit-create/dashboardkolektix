@@ -70,7 +70,6 @@ export default function ModalCreateTicket({
       ticket_end: isNotEmpty(),
       qty: isNotEmpty(),
       price: isNotEmpty(),
-      description: isNotEmpty(),
       starting_time: isNotEmpty(),
       ending_time: isNotEmpty(),
     }
@@ -388,6 +387,7 @@ export default function ModalCreateTicket({
                   </div>
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
+                      className={`${form.ticket_type == 'Gratis' ? 'hidden' : ''}`}
                       error={Boolean(errors['price'])}
                       type='num'
                       label='Harga Tiket'
@@ -415,7 +415,6 @@ export default function ModalCreateTicket({
                     type='textarea'
                     label='Deskripsi'
                     placeholder='Deskripsi Tiket'
-                    required
                     fullWidth
                     value={form.description}
                     onChange={(e: any) => setForm({ ...form, description: e.target.value })}
