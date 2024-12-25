@@ -421,7 +421,7 @@ export default function ModalCreateTicket({
                   />
                 </>
               )}
-              {step === 1 && (
+              {/* {step === 1 && (
                 <div className='flex flex-col gap-3'>
                   <div className='grid grid-cols-2 gap-5'>
                     <InputField type='date' label='Tanggal Mulai' required />
@@ -432,13 +432,14 @@ export default function ModalCreateTicket({
                     <InputField type='time' label='Jam Berakhir' required />
                   </div>
                 </div>
-              )}
+              )} */}
 
               <Flex justify="end" py={10} className={`sticky bottom-[-15px] bg-white`}>
                 <button
                   className='w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2'
                   onClick={() => {
                     handleSaveTicket();
+                    !!eventId && submitTicket();
                     // step === 0 ? submitTicket() : setStep(1);
                   }}
                 >
