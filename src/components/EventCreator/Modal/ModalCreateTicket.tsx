@@ -24,6 +24,7 @@ import { isNotEmpty, useForm } from '@mantine/form';
 import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
 import { Guide } from '@/components/Guide';
+import { notifications } from '@mantine/notifications';
 
 interface ModalProps {
   isOpen: boolean;
@@ -118,6 +119,11 @@ export default function ModalCreateTicket({
           setTicket(arr);
           setIsOpen(false);
           setIdx(undefined);
+
+          notifications.show({
+            message: 'Berhasil Update Tiket',
+            color: 'green'
+          });
         },
         error: () => {},
       });
