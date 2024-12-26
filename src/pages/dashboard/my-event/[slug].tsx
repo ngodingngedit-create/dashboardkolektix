@@ -91,7 +91,7 @@ const MyEventDetail = () => {
   const [ticket, setTicket] = useState<EventTicket[]>([]);
   const [editTicket, setEditTicket] = useState<EventTicket>(defaultForm);
   const [addTicket, showAddTicket] = useState<boolean>(false);
-  const [idxTicket, setIdxTicket] = useState<number | null>(null);
+  const [idxTicket, setIdxTicket] = useState<number>();
   const [loading, setLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [grandTotal, setGrandTotal] = useState(0); 
@@ -443,7 +443,7 @@ const eventItems = useMemo(() => {
     // setEditTicket({
     //   ...defaultForm,
     // });
-    setIdxTicket(null);
+    setIdxTicket(undefined);
     showAddTicket(true);
   };
 

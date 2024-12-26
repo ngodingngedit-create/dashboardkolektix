@@ -33,7 +33,7 @@ interface ModalProps {
   endDate: string | null;
   data: EventTicket;
   idx?: number | null;
-  setIdx: (idx: number | null) => void;
+  setIdx: (idx?: number) => void;
   eventId?: number;
 }
 
@@ -99,7 +99,7 @@ export default function ModalCreateTicket({
       }
       setTicket(arr);
       setIsOpen(false);
-      setIdx(null);
+      setIdx(undefined);
     } else {
       await fetch<TicketPropsInputRequest, any>({
         url: `event-ticket/${idx}`,
@@ -117,7 +117,7 @@ export default function ModalCreateTicket({
           }
           setTicket(arr);
           setIsOpen(false);
-          setIdx(null);
+          setIdx(undefined);
         },
         error: () => {},
       });
@@ -200,7 +200,7 @@ export default function ModalCreateTicket({
         opened={isOpen}
         centered
         onClose={() => {
-          setIdx(null);
+          setIdx(undefined);
           setIsOpen(false);
         }}
         size={openSeatMap ? 'xl' : undefined}
@@ -234,7 +234,10 @@ export default function ModalCreateTicket({
                           ticketEnd={e.ticket_end}
                           description={e.description}
                           name={e.name}
-                          onEdit={() => setOpenForm(i)}
+                          onEdit={() => {
+                            setIdx(e?.id)
+                            setOpenForm(i);
+                          }}
                           onDelete={() => handleDeleteTicket(i)}
                           onSelectSeatButton={e.ticket_category == 'Seated' && onSelectSeat === undefined && addSeatMap ?
                             () => setOnSelectSeat(i) :
@@ -477,7 +480,7 @@ export default function ModalCreateTicket({
             w="fit-content"
             size="md"
             onClick={() => {
-              setIdx(null);
+              setIdx(undefined);
               setIsOpen(false);
             }}
             // rightSection={<Icon icon="uiw:check" />}

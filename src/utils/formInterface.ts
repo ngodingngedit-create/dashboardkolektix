@@ -1,4 +1,5 @@
 export interface EventTicket {
+  id?: number;
   ticket_type: string;
   ticket_category_id: number;
   ticket_category: 'Seated' | 'Festival';
