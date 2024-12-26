@@ -246,8 +246,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     }
 
     const data = useMemo<SeatmapData[]>(() => {
-        console.log('seat', __data, _data)
-        return (__data ?? _data ?? []).map(e => {
+        return ((__data?.length ?? 0) > 0 ? __data ?? [] : _data ?? []).map(e => {
             const seat = chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
             return { ...e, seat, type: e?.type ?? 'seat' }
         });

@@ -249,7 +249,7 @@ export default function ModalCreateTicket({
                             setOpenForm(i);
                           }}
                           onDelete={() => handleDeleteTicket(i)}
-                          onSelectSeatButton={e.ticket_category == 'Seated' && onSelectSeat === undefined && addSeatMap ?
+                          onSelectSeatButton={e.ticket_category == 'Seated' && !eventId && onSelectSeat === undefined && addSeatMap ?
                             () => setOnSelectSeat(i) :
                             undefined}
                           seatColor={e.seat_color}
@@ -260,7 +260,7 @@ export default function ModalCreateTicket({
                   ))}
                 </Stack>
 
-                <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button display={!eventId ? undefined : 'none'} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
 
@@ -486,6 +486,7 @@ export default function ModalCreateTicket({
           </Flex>
 
           <Button
+            className={`shrink-0 h-fit`}
             ml="auto"
             w="fit-content"
             size="md"
