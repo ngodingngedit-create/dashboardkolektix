@@ -78,7 +78,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
             setErrors({ text: 'Required' });
             return;
         }
-
+        console.log(areaVal)
         if (typeof modalArea == 'number') {
             setData?.setItem(modalArea, areaVal);
         } else {
@@ -232,10 +232,10 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     }
 
     const data = useMemo<SeatmapData[]>(() => {
-        return _data.map(e => ({
-            ...e,
-            seat: chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
-        }));
+        return _data.map(e => {
+            const seat = chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+            return { ...e, seat, type: e?.type ?? 'seat' }
+        });
     }, [_data])
 
     return (
@@ -547,6 +547,7 @@ const SeatBox = ({ active, color }: { active: boolean, color?: string }) => {
                 className={`relative z-10 rounded-sm mt-[5px] border ${active ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
                 bg={active ? color ?? '#194e9e' : 'gray.2'} h="calc(100% - 7px)">
             </Box>
+            s
             <Box
                 className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active ? '' : 'border border-[#d0d0d0]'}`}
                 bg={active ? color ?? '#194e9e' : 'gray.2'} h="calc(100% - 5px)"
