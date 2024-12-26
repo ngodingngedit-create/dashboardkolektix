@@ -11,6 +11,7 @@ import chunk from "@/utils/chunk";
 import _ from "lodash";
 import { isNotEmpty, useForm } from "@mantine/form";
 import { contrastColor } from "contrast-color";
+import { Context as EditContext } from "@/pages/dashboard/my-event/[slug]";
 import { Context } from "@/pages/create-event";
 import { Guide } from "../Guide";
 
@@ -40,6 +41,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     // const [selectedSeat, setSelectedSeat] = useListState<string>([]);
     const [modalArea, setModalArea] = useState<number | 'new'>();
     const [scale, setScale] = useState(1);
+    const { seatmapData: __data } = useContext(EditContext);
     const { seatmapData: _data, setSeatmapData: setData, ticket } = useContext(Context);
     const areaForm = useForm<SeatmapData>({
         validate: {
@@ -53,6 +55,8 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     const canvasContainerRef = useRef(null);
     const movableRef = useRef<MoveableRefType>(null);
     const theme = useMantineTheme();
+
+    const canvasWrap = useRef<HTMLDivElement>(null);
 
     useDidUpdate(() => {
         if (typeof modalArea == 'number') {
@@ -129,8 +133,18 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
             setIsDragSelect(undefined);
         },
         move: (event: React.MouseEvent<HTMLDivElement>) => {
-            if (isCanvasMove && selected == null) {
-                setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            if (isCanvasMove && selected == null && canvasWrap?.current) {
+                const [x, y] = canvasWrap?.current?.style?.transform
+                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                    ?.slice(1)
+                    .map(Number) || [0, 0];
+
+                const newX = x + event.movementX / scale;
+                const newY = y + event.movementY / scale;
+
+                if (canvasWrap?.current?.style) {
+                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                }
             }
         },
         boxDown: (index: number) => {
@@ -232,11 +246,12 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     }
 
     const data = useMemo<SeatmapData[]>(() => {
-        return _data.map(e => {
+        console.log('seat', __data, _data)
+        return (__data ?? _data ?? []).map(e => {
             const seat = chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
             return { ...e, seat, type: e?.type ?? 'seat' }
         });
-    }, [_data])
+    }, [_data, __data])
 
     return (
         <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
@@ -267,7 +282,109 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                     )}
                 </Flex>
 
+                <Modal
+                    size="lg"
+                    centered
+                    opened={modalArea != undefined}
+                    onClose={() => setModalArea(undefined)}
+                    title={modalArea == 'new' ? "Buat Area Baru" : "Edit Area"}>
+                    <Stack>
+                        {/* {JSON.stringify(areaVal)} */}
+                        <SegmentedControl
+                            display={modalArea == 'new' ? undefined : 'none'}
+                            data={[
+                                { value: 'seat', label: 'Seated' },
+                                { value: 'box', label: 'Festival' },
+                            ]}
+                            radius="xl"
+                            {...areaProps('type')}
+                        />
+
+                        <TextInput
+                            label="Label Area"
+                            placeholder="Isi Label Area"
+                            {...areaProps('text')}
+                        />
+
+                        <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == 'box' ? 'none' : undefined}>
+                            <NumberInput
+                                withAsterisk
+                                hideControls
+                                label="Jumlah Kolom"
+                                placeholder="Isi Jumlah Kolom"
+                                {...areaProps('col')}
+                            />
+                            <NumberInput
+                                withAsterisk
+                                hideControls
+                                label="Jumlah Baris"
+                                placeholder="Isi Jumlah Baris"
+                                {...areaProps('row')}
+                            />
+                            <TextInput
+                                withAsterisk
+                                mt={5}
+                                description="Code Seat"
+                                placeholder="Isi Code Seat"
+                                {...areaProps('prefix')}
+                            />
+                        </Flex>
+
+                        <Flex className={`[&>*]:flex-grow`} gap={15}>
+                            <ColorInput
+                                disallowInput
+                                // withPicker={false}
+                                label="Warna Background Area"
+                                swatches={[
+                                    ...DEFAULT_THEME.colors.red,
+                                    ...DEFAULT_THEME.colors.green,
+                                    ...theme.colors.blue,
+                                    ...DEFAULT_THEME.colors.yellow,
+                                    ...DEFAULT_THEME.colors.gray,
+                                ]}
+                                swatchesPerRow={10}
+                                {...areaProps('background')}
+                                value={areaVal.background}
+                                rightSection={areaVal.background && <ActionIcon onClick={() => setAreaVal({ background: undefined })} variant="transparent">
+                                    <Icon icon="uiw:close"/>
+                                </ActionIcon>}
+                            />
+                            <ColorInput
+                                display={modalArea == 0 ? 'none' : undefined}
+                                disallowInput
+                                // withPicker={false}
+                                label="Warna Seat"
+                                swatches={[
+                                    ...DEFAULT_THEME.colors.red,
+                                    ...DEFAULT_THEME.colors.green,
+                                    ...theme.colors.blue,
+                                    ...DEFAULT_THEME.colors.yellow,
+                                    ...DEFAULT_THEME.colors.gray,
+                                ]}
+                                swatchesPerRow={10}
+                                {...areaProps('seatcolor')}
+                                value={areaVal.seatcolor}
+                                rightSection={areaVal.seatcolor && <ActionIcon onClick={() => setAreaVal({ seatcolor: undefined })} variant="transparent">
+                                    <Icon icon="uiw:close"/>
+                                </ActionIcon>}
+                            />
+                        </Flex>
+
+                        <Flex gap={10} align="center" mt={10} justify="end">
+                            {(typeof modalArea == 'number' && modalArea != 0) && (
+                                <ActionIcon color="red" onClick={handleDeleteArea} variant="transparent">
+                                    <Icon icon="uiw:delete" className={`text-[24px]`} />
+                                </ActionIcon>
+                            )}
+                            <Button onClick={handleSaveArea}>
+                                {modalArea == 'new' ? 'Tambah' : 'Simpan'} Area
+                            </Button>
+                        </Flex>
+                    </Stack>
+                </Modal>
+
                 <Card
+                    ref={canvasWrap}
                     bg="transparent"
                     pos="relative"
                     style={{
@@ -278,107 +395,6 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                 >
                     <Box className={`absolute top-2/4 left-2/4 w-[2px] h-[999vh] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
                     <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
-
-                    <Modal
-                        size="lg"
-                        centered
-                        opened={modalArea != undefined}
-                        onClose={() => setModalArea(undefined)}
-                        title={modalArea == 'new' ? "Buat Area Baru" : "Edit Area"}>
-                        <Stack>
-                            {/* {JSON.stringify(areaVal)} */}
-                            <SegmentedControl
-                                display={modalArea == 'new' ? undefined : 'none'}
-                                data={[
-                                    { value: 'seat', label: 'Seated' },
-                                    { value: 'box', label: 'Festival' },
-                                ]}
-                                radius="xl"
-                                {...areaProps('type')}
-                            />
-
-                            <TextInput
-                                label="Label Area"
-                                placeholder="Isi Label Area"
-                                {...areaProps('text')}
-                            />
-
-                            <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == 'box' ? 'none' : undefined}>
-                                <NumberInput
-                                    withAsterisk
-                                    hideControls
-                                    label="Jumlah Kolom"
-                                    placeholder="Isi Jumlah Kolom"
-                                    {...areaProps('col')}
-                                />
-                                <NumberInput
-                                    withAsterisk
-                                    hideControls
-                                    label="Jumlah Baris"
-                                    placeholder="Isi Jumlah Baris"
-                                    {...areaProps('row')}
-                                />
-                                <TextInput
-                                    withAsterisk
-                                    mt={5}
-                                    description="Code Seat"
-                                    placeholder="Isi Code Seat"
-                                    {...areaProps('prefix')}
-                                />
-                            </Flex>
-
-                            <Flex className={`[&>*]:flex-grow`} gap={15}>
-                                <ColorInput
-                                    disallowInput
-                                    // withPicker={false}
-                                    label="Warna Background Area"
-                                    swatches={[
-                                        ...DEFAULT_THEME.colors.red,
-                                        ...DEFAULT_THEME.colors.green,
-                                        ...theme.colors.blue,
-                                        ...DEFAULT_THEME.colors.yellow,
-                                        ...DEFAULT_THEME.colors.gray,
-                                    ]}
-                                    swatchesPerRow={10}
-                                    {...areaProps('background')}
-                                    value={areaVal.background}
-                                    rightSection={areaVal.background && <ActionIcon onClick={() => setAreaVal({ background: undefined })} variant="transparent">
-                                        <Icon icon="uiw:close"/>
-                                    </ActionIcon>}
-                                />
-                                <ColorInput
-                                    display={modalArea == 0 ? 'none' : undefined}
-                                    disallowInput
-                                    // withPicker={false}
-                                    label="Warna Seat"
-                                    swatches={[
-                                        ...DEFAULT_THEME.colors.red,
-                                        ...DEFAULT_THEME.colors.green,
-                                        ...theme.colors.blue,
-                                        ...DEFAULT_THEME.colors.yellow,
-                                        ...DEFAULT_THEME.colors.gray,
-                                    ]}
-                                    swatchesPerRow={10}
-                                    {...areaProps('seatcolor')}
-                                    value={areaVal.seatcolor}
-                                    rightSection={areaVal.seatcolor && <ActionIcon onClick={() => setAreaVal({ seatcolor: undefined })} variant="transparent">
-                                        <Icon icon="uiw:close"/>
-                                    </ActionIcon>}
-                                />
-                            </Flex>
-
-                            <Flex gap={10} align="center" mt={10} justify="end">
-                                {(typeof modalArea == 'number' && modalArea != 0) && (
-                                    <ActionIcon color="red" onClick={handleDeleteArea} variant="transparent">
-                                        <Icon icon="uiw:delete" className={`text-[24px]`} />
-                                    </ActionIcon>
-                                )}
-                                <Button onClick={handleSaveArea}>
-                                    {modalArea == 'new' ? 'Tambah' : 'Simpan'} Area
-                                </Button>
-                            </Flex>
-                        </Stack>
-                    </Modal>
 
                     <Box className={`absolute z-30 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
                         {data.map((e, i) => (

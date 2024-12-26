@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
+import React, { useState, useMemo, useCallback, useEffect, createContext } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
 import { useAsyncList } from '@react-stately/data';
 import config from '@/Config';
 import { useRouter } from 'next/router';
@@ -24,7 +24,7 @@ import {
   Accordion, AccordionItem, Selection
 } from '@nextui-org/react';
 import { EventProps } from '@/utils/globalInterface';
-import { EventTicket } from '@/utils/formInterface';
+import { EventTicket, SeatmapData } from '@/utils/formInterface';
 import { Tabs, Tab } from '@nextui-org/react';
 import { Get } from '@/utils/REST';
 import Button from '@/components/Button';
@@ -47,6 +47,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import fetch from '@/utils/fetch';
 import { notifications } from '@mantine/notifications';
 import _ from 'lodash';
+import { useListState, UseListStateHandlers } from '@mantine/hooks';
 
 
 
@@ -71,6 +72,15 @@ interface InvitationDataItem {
   invoice_no: string;
   // Add other properties as needed
 }
+
+export const Context = createContext<{
+  seatmapData?: SeatmapData[],
+  setSeatmapData?: UseListStateHandlers<SeatmapData>;
+  ticket?: EventTicket[];
+}>({
+  seatmapData: [],
+  ticket: [],
+});
 
 const MyEventDetail = () => {
   const defaultForm: EventTicket = {
@@ -113,6 +123,7 @@ const MyEventDetail = () => {
   const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
   const [invitationFilter, setInvitationFilter] = useState('');
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
+  const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
 
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
 
@@ -172,6 +183,7 @@ const MyEventDetail = () => {
           .then((res: any) => {
               if (res.data) {
                   setData(res.data);
+                  res?.data?.seatmap && setSeatmap.setState(JSON.parse(res?.data?.seatmap));
                   console.log("masuk", res);
                   const eventId = res.data.id;
                   setTicket(res.data.has_event_ticket);
@@ -1057,17 +1069,19 @@ const eventItems = useMemo(() => {
     <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
     <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
     <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
-    <ModalCreateTicket
-      isOpen={addTicket}
-      setIsOpen={showAddTicket}
-      ticket={ticket}
-      setTicket={setTicket}
-      data={editTicket}
-      setIdx={setIdxTicket}
-      idx={idxTicket}
-      eventId={data.id}
-      endDate={data.end_date}
-    />
+    <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
+      <ModalCreateTicket
+        isOpen={addTicket}
+        setIsOpen={showAddTicket}
+        ticket={ticket}
+        setTicket={setTicket}
+        data={editTicket}
+        setIdx={setIdxTicket}
+        idx={idxTicket}
+        eventId={data.id}
+        endDate={data.end_date}
+      />
+    </Context.Provider>
     </>
   ) : (
     <Box w="100%" mih={300} h={300}>

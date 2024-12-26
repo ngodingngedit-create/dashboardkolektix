@@ -83,6 +83,10 @@ export default function ModalCreateTicket({
   const [hoveredTicket, setHoveredTicket] = useState<number>();
 
   useEffect(() => {
+    setAddSeatMap(!!eventId);
+  }, [eventId])
+
+  useEffect(() => {
     if (typeof openForm == 'number') {
       setForm(ticket[openForm]);
     } else {

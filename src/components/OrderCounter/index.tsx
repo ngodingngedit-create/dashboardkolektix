@@ -4,7 +4,7 @@ import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, Mo
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { randomId, useInterval } from '@mantine/hooks';
 import { Context } from '@/pages/event/[slug]';
 import { SeatmapData } from '@/utils/formInterface';
@@ -180,7 +180,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     };
     //194e9e
     return (
-        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[100px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
+        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[150px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
             {/* {JSON.stringify(ticket)} */}
             {seatmapOpen == index && window?.innerWidth > 767 && (
                 <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
@@ -267,6 +267,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [scale, setScale] = useState(1);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
+    const canvasWrap = useRef<HTMLDivElement>(null);
 
     const handleMouse = {
         down: () => {
@@ -276,10 +277,23 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
         up: () => {
             setIsCanvasMove(false);
         },
-        move: (event: React.MouseEvent<HTMLDivElement>) => {
-            if (isCanvasMove) {
-                setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+        move: (event: React.MouseEvent | React.MouseEvent<HTMLDivElement>) => {
+            if (isCanvasMove && canvasWrap?.current) {
+                const [x, y] = canvasWrap?.current?.style?.transform
+                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                    ?.slice(1)
+                    .map(Number) || [0, 0];
+
+                const newX = x + event.movementX / scale;
+                const newY = y + event.movementY / scale;
+
+                if (canvasWrap?.current?.style) {
+                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                }
             }
+            // if (isCanvasMove) {
+            //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            // }
         },
     }
 
@@ -295,6 +309,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             // onTouchMove={handleMouse.move}
             className={`h-full relative z-30 [&_*]:!select-none`}>
             <Card
+                ref={canvasWrap}
                 bg="transparent"
                 pos="relative"
                 style={{
@@ -343,11 +358,11 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                         }}
                         key={i}>
 
-                        {e.type == 'seat' && (
+                        {/* {e.type == 'seat' && (
                             <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
                                 <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
                             </Flex>
-                        )}
+                        )} */}
 
                         <Box
                             bg={e.background ?? "gray.1"}
