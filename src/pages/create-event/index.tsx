@@ -122,7 +122,7 @@ const CreateEvent = () => {
   const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);
   const [editTicket, setEditTicket] = useState<EventTicket>(defaultForm);
-  const [idxTicket, setIdxTicket] = useState<number | null>(null);
+  const [idxTicket, setIdxTicket] = useState<number>();
   const [showDate, setShowDate] = useState<boolean>(false);
   const [showTime, setShowTime] = useState<boolean>(false);
   const [showTicket, setShowTicket] = useState<boolean>(false);
@@ -250,7 +250,7 @@ const CreateEvent = () => {
       ...defaultForm,
     });
     // console.log(editTicket);
-    setIdxTicket(null);
+    setIdxTicket(undefined);
     showAddTicket(true);
   };
 
