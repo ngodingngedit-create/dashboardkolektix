@@ -198,13 +198,13 @@ export default function ModalCreateTicket({
             <HoverCard.Target>
               <Text component='span'>Kelola Tiket</Text>
             </HoverCard.Target>
-            <HoverCard.Dropdown maw={400}>
+            {/* <HoverCard.Dropdown maw={400}>
               {ticket.map((e, i) => (
                 <Text size="xs" key={i}>
                   {JSON.stringify(e).replaceAll(',', ', ')}
                 </Text>
               ))}
-            </HoverCard.Dropdown>
+            </HoverCard.Dropdown> */}
           </HoverCard>
         )}
         opened={isOpen}
