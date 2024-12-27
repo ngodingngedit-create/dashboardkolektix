@@ -41,6 +41,7 @@ interface Form {
     is_pemesan: number;
     identity_type_id: number;
     event_ticket_id: number;
+    seat_number?: string;
 }
 
 interface StepPaymentProps {
@@ -223,6 +224,8 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                         }
                         if (ticketForOwner) break;
                     }
+ 
+                    handleInput(index, 'seat_number', item.seat_number ?? '');
 
                     return (
                         <div className="bg-white mt-4 last:mb-16" key={index}>
@@ -330,13 +333,15 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
                                     if (currentIndex === index - 1) {
                                         // Pemilik ditemukan, simpan tiket untuk pemilik ini
-                                ticketForOwner = {...ticketItem, seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined} as FormTicket;
+                                        ticketForOwner = {...ticketItem, seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined} as FormTicket;
                                         break;
                                     }
                                     currentIndex++;
                                 }
                                 if (ticketForOwner) break;
                             }
+
+                            handleInput(index, 'seat_number', item.seat_number ?? '');
 
                             return (
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
