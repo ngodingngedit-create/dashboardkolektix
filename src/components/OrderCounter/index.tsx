@@ -5,11 +5,12 @@ import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { randomId, useInterval } from '@mantine/hooks';
+import { randomId, useDidUpdate, useInterval } from '@mantine/hooks';
 import { Context } from '@/pages/event/[slug]';
 import { SeatmapData } from '@/utils/formInterface';
 import chunk from '@/utils/chunk';
 import { contrastColor } from 'contrast-color';
+import _ from 'lodash';
 
 interface OrderCounterProps {
     count?: number | string[];
@@ -194,22 +195,24 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 </Card>
             )}
 
-            <Drawer
-                title={`Pilih Seat ${ticketData.name}`}
-                opened={seatmapOpen == index && window?.innerWidth < 767}
-                onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
-                position="bottom"
-                radius={25}
-                size="58vh"
-                overlayProps={{  opacity: 0.3 }}>
-                    <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
-                        <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
-                    </Card>
+            {window?.innerWidth < 767 && (
+                <Drawer
+                    title={`Pilih Seat ${ticketData.name}`}
+                    opened={seatmapOpen == index}
+                    onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
+                    position="bottom"
+                    radius={25}
+                    size="58vh"
+                    overlayProps={{  opacity: 0.3 }}>
+                        <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
+                            <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                        </Card>
 
-                    <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
-                        Selesai
-                    </Button>
-            </Drawer>
+                        <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                            Selesai
+                        </Button>
+                </Drawer>
+            )}
 
             <Stack gap={10}>
                 <Flex gap={20} justify="space-between">
@@ -268,16 +271,42 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
     const [scale, setScale] = useState(1);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const canvasWrap = useRef<HTMLDivElement>(null);
+    const { seatmapData, seatmapOpen } = useContext(Context);
+
+    useEffect(() => {
+        if (seatmapOpen !== undefined) {
+            const area = seatmapData
+            ?.filter(e => Array((e.col ?? 1) * (e.row ?? 1))
+                .fill(e.prefix)
+                .map((_, i) => `${e.prefix}${i+1}`)
+                .some(x => ticketData?.available_seat_number?.includes(x))
+            )
+    
+            if (area) {
+                const [x, y]: [number, number] = area.map(e => e.position)
+                .reduce<[number[], number[]]>((c, n) => ([[...c[0], n[0]], [...c[1], n[1]]]), [[], []])
+                .map(e => (e.reduce((sum, num) => sum + num, 0) / e.length)) as [number, number]
+
+                setCanvasPos([x * -1, y * -1]);
+            }
+        }
+    }, [ticketData]);
 
     const handleMouse = {
         down: () => {
             setIsCanvasMove(true);
             // setSelected(null);
+            const [x, y] = canvasWrap?.current?.style?.transform
+            ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+            ?.slice(1)
+            .map(Number) || [0, 0];
+
+            setCanvasPos([x, y]);
         },
         up: () => {
             setIsCanvasMove(false);
         },
-        move: (event: React.MouseEvent | React.MouseEvent<HTMLDivElement>) => {
+        move: (event: React.MouseEvent<HTMLDivElement>) => {
             if (isCanvasMove && canvasWrap?.current) {
                 const [x, y] = canvasWrap?.current?.style?.transform
                     ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
@@ -297,6 +326,12 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
         },
     }
 
+    useEffect(() => {
+        if (window) {
+            window.addEventListener('mouseup', handleMouse.up);
+        }
+    }, []);
+
     if (!data) return <></>;
 
     return (
@@ -307,17 +342,21 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             onTouchStart={handleMouse.down}
             onTouchEnd={handleMouse.up}
             // onTouchMove={handleMouse.move}
-            className={`h-full relative z-30 [&_*]:!select-none`}>
+            className={`h-full w-full relative z-30 [&_*]:!select-none`}>
             <Card
                 ref={canvasWrap}
                 bg="transparent"
                 pos="relative"
                 style={{
                     scale: `${scale * 100}%`,
-                    transform: `translate(${canvasPos[0]}px,${canvasPos[1]}px)`
+                    transform: `translate(${canvasPos[0]}px, ${canvasPos[1]}px)`
                 }}
-                className={`z-20 !overflow-visible`}
+                className={`z-20 !overflow-visible top-2/4`}
             >
+
+                <Box className={`absolute top-2/4 left-2/4 w-[2px] h-[999vh] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
+                <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
+
                 <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
                     <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
                 </Box>
