@@ -91,7 +91,7 @@ const TicketViewBlock = ({
               <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`}/>
               <Stack gap={0}>
                 <Text size="sm">Tiket {e.name} ({e.seat_number?.length ?? e.qty_ticket}x)</Text>
-                {e.seat_number && <Text size="xs" c="gray">{e.seat_number.join(', ')}</Text>}
+                {e.seat_number && <Text size="xs" c="gray">Seat No: {e.seat_number.join(', ')}</Text>}
               </Stack>
             </Flex>
 

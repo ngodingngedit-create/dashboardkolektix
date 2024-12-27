@@ -205,7 +205,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     size="58vh"
                     overlayProps={{  opacity: 0.3 }}>
                         <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
-                            <SeatmapViewer data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                            <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                         </Card>
 
                         <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
@@ -290,7 +290,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 setCanvasPos([x * -1, y * -1]);
             }
         }
-    }, [ticketData]);
+    }, [seatmapOpen]);
 
     const handleMouse = {
         down: () => {
