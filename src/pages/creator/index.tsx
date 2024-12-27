@@ -12,6 +12,7 @@ import { Spinner } from '@nextui-org/react';
 import { Post } from '@/utils/REST';
 import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
+import { PasswordInput, TextInput } from '@mantine/core';
 
 interface RegisterForm {
   name: string;
@@ -154,8 +155,7 @@ const Auth = () => {
         Cookies.set('token', res.access_token);
         Cookies.set('user_data', JSON.stringify(res.data));
         setLoading(false);
-        ticketCount && prevPath ? router.push(prevPath) : router.push('/');
-        prevPath ? router.push(prevPath) : router.push('/');
+        router.push('/dashboard');
       })
       .catch((err: any) => {
         setOtp('');
@@ -171,11 +171,10 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true }));
         Cookies.set('bookmarked', JSON.stringify(res.bookmarked));
         setLoading(false);
-        ticketCount && prevPath ? router.push(prevPath) : router.push('/');
-        prevPath ? router.push(prevPath) : router.push('/');
+        router.push('/dashboard');
       })
       .catch((err: any) => {
         setOtp('');
@@ -216,7 +215,7 @@ const Auth = () => {
   }, [otp]);
 
   return (
-    <div className='flex min-h-screen items-center bg-primary-base px-5 md:px-20'>
+    <div className='flex min-h-screen justify-center items-center bg-primary-base px-5 !py-4 md:px-20'>
       <div className='lg:w-1/2 xs:hidden md:flex flex-col justify-center items-center gap-8'>
         <Image
           src={LogoWhite}
@@ -225,8 +224,8 @@ const Auth = () => {
         />
         <h3 className={`text-white`}>{displayedText}</h3>
       </div>
-      <div className='sm:w-full lg:w-1/2 flex flex-col justify-center items-center lg:px-10 max-w-2xl'>
-        <div className='bg-white rounded-2xl flex flex-col justify-center w-full sm:w-[20rem] h-[22rem]'>
+      <div className='sm:w-full lg:max-w-[450px] flex flex-col justify-center items-center lg:px-10 max-w-xl'>
+        <div className='bg-white rounded-2xl flex flex-col justify-center w-full pt-6 pb-2 px-6'>
           {step === 0 && (
             <div
               className={`flex flex-col justify-center items-center transition-opacity duration-100 ${
@@ -234,11 +233,11 @@ const Auth = () => {
               }`}
             >
               <Image src={Logo} alt='Logo' className='w-1/3' />
-              <h2 className='text-dark font-semibold text-xl mt-4'>Masuk ke akunmu</h2>
+              <h2 className='text-dark font-semibold text-xl mt-4 text-center'>Masuk sebagai Creator/Staff</h2>
               <div className='flex'>
-                <p className='text-grey text-sm text-center my-2'>
-                  Belum memiliki akun di Kolektix?
-                  <span
+                <p className='text-grey text-[12px] mb-2 text-center'>
+                  Masukan akunmu yang sudah terdaftar sebagai Creator/Staff
+                  {/* <span
                     className='cursor-pointer text-primary-base font-semibold'
                     onClick={() => {
                       setStep(1);
@@ -247,15 +246,26 @@ const Auth = () => {
                   >
                     {' '}
                     Daftar
-                  </span>
+                  </span> */}
                 </p>
               </div>
-              <div className='flex flex-col w-4/5 my-2'>
+              <div className='flex flex-col w-full mt-2'>
                 <form onSubmit={login}>
-                  <Form
+                  <TextInput
+                    labelProps={{ size: 'xs' }}
+                    label="Email"
+                    placeholder='Masukan Email'
+                    mb={10}
+                  />
+                  <PasswordInput
+                    labelProps={{ size: 'xs' }}
+                    label="Password"
+                    placeholder="Masukan Password"
+                  />
+                  {/* <Form
                     placeholder='Alamat Email'
                     onChange={(e: any) => setData({ ...data, email: e.target.value })}
-                  />
+                  /> */}
                   {errors && <p className='text-danger text-[10px] mt-1'>{errors.message}</p>}
                   <button
                     className='bg-primary-base text-white w-full rounded-full p-2 text-xs my-4 flex items-center justify-center disabled:bg-primary-disabled'
@@ -266,95 +276,6 @@ const Auth = () => {
                     {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
                   </button>
                 </form>
-              </div>
-            </div>
-          )}
-          {step === 1 && (
-            <div
-              className={`transition-opacity duration-300 opacity-0 ${step === 1 && 'opacity-100'}`}
-            >
-              <div className='flex justify-center flex-col items-center'>
-                <Image src={Logo} alt='Logo' className='w-1/3' />
-                <h2 className='text-dark font-semibold text-xl my-2'>Daftar di Kolektix.com</h2>
-                <div className='flex'>
-                  <p className='text-grey text-sm text-center mb-3'>
-                    Sudah punya akun Kolektix?
-                    <span
-                      className='cursor-pointer text-primary-base font-semibold'
-                      onClick={() => {
-                        setStep(0);
-                        setErrors([]);
-                      }}
-                    >
-                      {' '}
-                      Masuk
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <div className='flex flex-col w-full px-5'>
-                <div>
-                  <Form
-                    placeholder='Nama Lengkap'
-                    onChange={(e: any) => setData({ ...data, name: e.target.value })}
-                  />
-                  {errors.name &&
-                    errors.name.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                <div>
-                  <Form
-                    placeholder='Email'
-                    value={data.email}
-                    onChange={(e: any) => setData({ ...data, email: e.target.value })}
-                  />
-                  {errors.email &&
-                    errors.email.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                {/* <div>
-                  <Form
-                    placeholder='Password'
-                    label='Password'
-                    type='password'
-                    onChange={(e: any) => setData({ ...data, password: e.target.value })}
-                  />
-                  {errors.password &&
-                    errors.password.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
-                <div>
-                  <Form
-                    placeholder='Konfirmasi Password'
-                    label='Konfirmasi Password'
-                    type='password'
-                    onChange={(e: any) =>
-                      setData({ ...data, password_confirmation: e.target.value })
-                    }
-                  />
-                  {errors.password_confirmation &&
-                    errors.password_confirmation.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px]'>
-                        {error}
-                      </p>
-                    ))}
-                </div> */}
-
-                <button
-                  className='bg-primary-base text-white w-full rounded-full p-2 text-xs'
-                  onClick={submitRegister}
-                >
-                  {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
-                </button>
               </div>
             </div>
           )}

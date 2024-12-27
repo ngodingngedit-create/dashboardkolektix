@@ -1,15 +1,20 @@
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-import { ActionIcon, Badge, Box, Card, Divider, Flex, NumberFormatter, Stack, Text } from '@mantine/core';
+import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, Modal, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useEffect, useMemo, useState } from 'react';
-import { randomId, useInterval } from '@mantine/hooks';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { randomId, useDidUpdate, useInterval } from '@mantine/hooks';
+import { Context } from '@/pages/event/[slug]';
+import { SeatmapData } from '@/utils/formInterface';
+import chunk from '@/utils/chunk';
+import { contrastColor } from 'contrast-color';
+import _ from 'lodash';
 
 interface OrderCounterProps {
-    count: number;
-    setCount: (count: number) => void;
+    count?: number | string[];
+    setCount: (count: number | string) => void;
     isSoldOut?: boolean;
     isFinish?: boolean;
     isReady?: boolean;
@@ -20,17 +25,27 @@ interface OrderCounterProps {
     description?: string;
     ticketData: TicketProps;
     maxOrder?: number;
+    index: number;
 }
 
 
 
-const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
     // const _ticketData = {...__ticketData, 
     //     ticket_date: '2024-12-17',
     //     ticket_end: '2024-12-19',
     //     starting_time: '21:12:00',
     //     ending_time: '08:50:00',
     // };
+    const count = useMemo(() => {
+        if (!_count) return 0;
+        return typeof _count == 'number' ? _count : _count.length;
+    }, [_count])
+    const { seatmapData, seatmapOpen, setSeatmapOpen, ticket } = useContext(Context);
+    
+    const selectedSeat = useMemo(() => {
+        return ticket?.map(e => e.seat_number).reduce((c, n) => ([ ...(c ?? []), ...(n ?? []) ]), [])
+    }, [ticket]);
 
     const [isCurrent, setIsCurrent] = useState(false);
     const [timeoutHash, setTimeoutHash] = useState('');
@@ -137,15 +152,21 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
                             {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
-                    <Flex align="center" gap={15}>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
-                            <Icon icon="uiw:minus" />
-                        </ActionIcon>
-                        <Text>{count}</Text>
-                        <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
-                            <Icon icon="uiw:plus" />
-                        </ActionIcon>
-                    </Flex>
+                    {ticketData.ticket_category == 'Seated' ? (
+                        <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)}>
+                            Pilih Seat
+                        </Button>
+                    ): (
+                        <Flex align="center" gap={15}>
+                            <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+                                <Icon icon="uiw:minus" />
+                            </ActionIcon>
+                            <Text>{count}</Text>
+                            <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
+                                <Icon icon="uiw:plus" />
+                            </ActionIcon>
+                        </Flex>
+                    )}
                 </>
             );
 
@@ -160,13 +181,51 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
     };
     //194e9e
     return (
-        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
+        <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[150px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
+            {/* {JSON.stringify(ticket)} */}
+            {seatmapOpen == index && window?.innerWidth > 767 && (
+                <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
+                    <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                        Kembali
+                    </Button>
+
+                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
+
+                    <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                </Card>
+            )}
+
+            {window?.innerWidth < 767 && (
+                <Drawer
+                    title={`Pilih Seat ${ticketData.name}`}
+                    opened={seatmapOpen == index}
+                    onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
+                    position="bottom"
+                    radius={25}
+                    size="58vh"
+                    overlayProps={{  opacity: 0.3 }}>
+                        <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
+                            <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                        </Card>
+
+                        <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+                            Selesai
+                        </Button>
+                </Drawer>
+            )}
+
             <Stack gap={10}>
                 <Flex gap={20} justify="space-between">
+                    {/* ml={ticketData.ticket_category == 'Seated' ? 40 : undefined} */}
                     <Stack gap={0}>
-                        <Text size="lg" className={`uppercase`}>
-                            {ticketData.name}
-                        </Text>
+                        <Flex align="center" gap={15}>
+                            <Text size="lg" className={`uppercase`}>
+                                {ticketData.name}
+                            </Text>
+                            {ticketData.ticket_category == 'Seated' && (
+                                <Badge className={`bg-primary-base`}>Seated</Badge>
+                            )}
+                        </Flex>
                         {ticketData.description && (
                             <Text size="sm" c="gray">
                                 {ticketData.description?.split('\n').map((e, i) => (
@@ -182,13 +241,14 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
                             <NumberFormatter value={ticketData.price} />
                         )}
                     </Text>
+                    {/* <Box className={`w-[300px] h-[100px] bg-primary-base absolute rotate-[-30deg] top-[-20px] left-[-200px]`}/> */}
                 </Flex>
                 <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>
                     <Box className={`bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                     <Divider className={`!border-dashed w-full`} />
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
-                <Flex justify="space-between" gap={20} align="center">
+                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`} wrap="wrap">
                     <StatusComponent />
                 </Flex>
             </Stack>
@@ -197,3 +257,211 @@ const OrderCounter = ({ maxOrder, count, ticketData: _ticketData, setCount, isSo
 };
 
 export default OrderCounter;
+
+type SeatmapViewerProps = {
+    data?: SeatmapData[];
+    selectedSeat?: string[];
+    setSelectSeat?: (data: string) => void;
+    available?: string;
+    ticketData?: TicketProps;
+}
+
+const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+    const [isCanvasMove, setIsCanvasMove] = useState(false);
+    const [scale, setScale] = useState(1);
+    const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
+    const canvasWrap = useRef<HTMLDivElement>(null);
+    const { seatmapData, seatmapOpen } = useContext(Context);
+
+    useEffect(() => {
+        if (seatmapOpen !== undefined) {
+            const area = seatmapData
+            ?.filter(e => Array((e.col ?? 1) * (e.row ?? 1))
+                .fill(e.prefix)
+                .map((_, i) => `${e.prefix}${i+1}`)
+                .some(x => ticketData?.available_seat_number?.includes(x))
+            )
+    
+            if (area) {
+                const [x, y]: [number, number] = area.map(e => e.position)
+                .reduce<[number[], number[]]>((c, n) => ([[...c[0], n[0]], [...c[1], n[1]]]), [[], []])
+                .map(e => (e.reduce((sum, num) => sum + num, 0) / e.length)) as [number, number]
+
+                setCanvasPos([x * -1, y * -1]);
+            }
+        }
+    }, [seatmapOpen]);
+
+    const handleMouse = {
+        down: () => {
+            setIsCanvasMove(true);
+            // setSelected(null);
+            const [x, y] = canvasWrap?.current?.style?.transform
+            ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+            ?.slice(1)
+            .map(Number) || [0, 0];
+
+            setCanvasPos([x, y]);
+        },
+        up: () => {
+            setIsCanvasMove(false);
+        },
+        move: (event: React.MouseEvent<HTMLDivElement>) => {
+            if (isCanvasMove && canvasWrap?.current) {
+                const [x, y] = canvasWrap?.current?.style?.transform
+                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                    ?.slice(1)
+                    .map(Number) || [0, 0];
+
+                const newX = x + event.movementX / scale;
+                const newY = y + event.movementY / scale;
+
+                if (canvasWrap?.current?.style) {
+                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                }
+            }
+            // if (isCanvasMove) {
+            //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            // }
+        },
+    }
+
+    useEffect(() => {
+        if (window) {
+            window.addEventListener('mouseup', handleMouse.up);
+        }
+    }, []);
+
+    if (!data) return <></>;
+
+    return (
+        <div
+            onMouseDown={handleMouse.down}
+            onMouseUp={handleMouse.up}
+            onMouseMove={handleMouse.move}
+            onTouchStart={handleMouse.down}
+            onTouchEnd={handleMouse.up}
+            // onTouchMove={handleMouse.move}
+            className={`h-full w-full relative z-30 [&_*]:!select-none`}>
+            <Card
+                ref={canvasWrap}
+                bg="transparent"
+                pos="relative"
+                style={{
+                    scale: `${scale * 100}%`,
+                    transform: `translate(${canvasPos[0]}px, ${canvasPos[1]}px)`
+                }}
+                className={`z-20 !overflow-visible top-2/4`}
+            >
+
+                <Box className={`absolute top-2/4 left-2/4 w-[2px] h-[999vh] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
+                <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
+
+                <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
+                    <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
+                </Box>
+            </Card>
+        </div>
+    )
+}
+
+const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+    const getContrastColor = useCallback((color: string) => {
+        return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
+    }, []);
+
+    const availableSeat = useMemo(() => {
+        return available?.split(',');
+    }, [available]);
+
+    const filteredArea = useMemo(() => {
+        return (data ?? []).map(e => ({
+            ...e,
+            seat: chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+        }));
+    }, [selectedSeat]);
+
+    if (!data) return <></>;
+
+    return (
+        <>
+            {filteredArea.map((e, i) => (
+                // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
+                    <Box
+                        className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
+                        style={{
+                            top: `${e.position[1]}px`,
+                            left: `${e.position[0]}px`,
+                            width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
+                            height: e.size && e.size[1] ? `${e.size[1]}px` : undefined
+                        }}
+                        key={i}>
+
+                        {/* {e.type == 'seat' && (
+                            <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
+                                <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
+                            </Flex>
+                        )} */}
+
+                        <Box
+                            bg={e.background ?? "gray.1"}
+                            h="100%"
+                            className={`rounded-md shadow-lg`}>
+                            <Box
+                                // onClick={() => handleSelect(i)}
+                                className={`absolute w-full h-full left-0 top-0 z-20`}
+                            />
+
+                            {e.type == 'box' && (
+                                <Center h="100%">
+                                    <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
+                                </Center>
+                            )}
+
+                            {e.type == 'seat' && (
+                                <Stack h="100%" align="center" justify="center" gap={5} p={10}>
+                                    {e.text && <Text size="xs" c="gray">{e.text}</Text>}
+                                    <Stack gap={3} w="100%" h="100%" justify="space-between">
+                                        {(e.seat ?? []).map((x, r) => (
+                                            <Flex w="100%" h="100%" justify="space-between" key={r} className={`!gap-[7px] md:!gap-[5px]`}>
+                                                {x.map((z, c) => (
+                                                    <Tooltip label={z} key={c} fw={600}>
+                                                        <Box
+                                                            onClick={() => availableSeat?.includes(z) && setSelectSeat && setSelectSeat(z)}
+                                                            opacity={available?.includes(z) ? selectedSeat?.includes(z) ? 0.5 : 1 : 0.1}
+                                                            w="100%" h="100%" key={c}
+                                                            className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
+                                                            {/* <Center w="100%" h="100%">
+                                                                <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                    {z}
+                                                                </Text>
+                                                            </Center> */}
+                                                            <Box
+                                                                className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                                                                h="calc(100% - 7px)"
+                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
+                                                            />
+                                                            <Box
+                                                                className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
+                                                                h="calc(100% - 5px)"
+                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
+                                                            />
+                                                        </Box>
+                                                    </Tooltip>
+                                                ))}
+                                            </Flex>
+                                        ))}
+                                    </Stack>
+                                </Stack>
+                            )}
+
+                        </Box>
+                        {/* <Text className={`absolute top-[calc(100%_+_8px)] left-0 text-[8px]`} c="blue" size="8px">
+                            {JSON.stringify(e)}
+                        </Text> */}
+                    </Box>
+                // </Tooltip>
+            ))}
+        </>
+    )
+}

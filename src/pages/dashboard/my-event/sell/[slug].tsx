@@ -368,6 +368,7 @@ return (
         )}
       </div>
       <Button
+          className={`${step == 1 ? undefined : 'hidden'}`}
           label="List Transaksi"
           color={'secondary'}
           onClick={() => setStep(0)}
@@ -421,6 +422,9 @@ return (
           }}
         >
           <TableHeader>
+            <TableColumn key="no" allowsSorting>
+              No
+            </TableColumn>
             <TableColumn key="name" allowsSorting>
               Nama
             </TableColumn>
@@ -452,6 +456,9 @@ return (
             {(item: any) => (
               <TableRow key={item.id}>
                 {(columnKey) => {
+                  if (columnKey === "no") {
+                    return <TableCell className='border-b-1 text-sm'>{_.indexOf(currentItemsOnline.map(e => e?.id), item?.id) + 1}</TableCell>
+                  }
                   if (columnKey === "name") {
                     return (
                       <TableCell>
@@ -598,6 +605,9 @@ return (
                 }}
               >
                 <TableHeader>
+                  <TableColumn key="no" allowsSorting={false}>
+                    No
+                  </TableColumn>
                   {/* <TableColumn key="name" allowsSorting>
                     Nama
                   </TableColumn> */}
@@ -629,6 +639,13 @@ return (
                   {(item) => (
                     <TableRow key={item.id}>
                       {(columnKey) => {
+                        if (columnKey === "no") {
+                          return (
+                            <TableCell>
+                              {_.indexOf(currentItems.map(e => e?.id), item?.id) + 1}
+                            </TableCell>
+                          );
+                        }
                         // if (columnKey === "name") {
                         //   return (
                         //     <TableCell>

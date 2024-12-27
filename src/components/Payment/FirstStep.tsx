@@ -21,6 +21,7 @@ interface FormTicket {
     subtotal_price: number;
     qty_ticket: number;
     payment_status: string;
+    seat_number?: string[];
 }
 
 interface ErrorForm {
@@ -40,6 +41,7 @@ interface Form {
     is_pemesan: number;
     identity_type_id: number;
     event_ticket_id: number;
+    seat_number?: string;
 }
 
 interface StepPaymentProps {
@@ -212,23 +214,25 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
 
                     // Loop untuk mencari tiket yang sesuai dengan index pemilik tiket
                     for (const ticketItem of ticket) {
-                        for (let i = 0; i < ticketItem.qty_ticket; i++) {
+                        for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
                             if (currentIndex === index - 1) {
                                 // Pemilik ditemukan, simpan tiket untuk pemilik ini
-                                ticketForOwner = ticketItem;
+                                ticketForOwner = {...ticketItem, seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined} as FormTicket;
                                 break;
                             }
                             currentIndex++;
                         }
                         if (ticketForOwner) break;
                     }
+ 
+                    handleInput(index, 'seat_number', item.seat_number ?? '');
 
                     return (
                         <div className="bg-white mt-4 last:mb-16" key={index}>
                             <div className="border-b py-3 px-5 border-primary-light flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                                 {index > 0 && <FontAwesomeIcon icon={faTicket} className='text-primary shrink-0 mr-[10px]' />}
                                 <Stack gap={0} className={`flex-grow`}>
-                                  <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}</p>
+                                  <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : 'Data Pemesan'}</p>
                                   {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                 </Stack>
                                 <button className="text-grey">
@@ -326,10 +330,10 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
 
                             // Loop untuk mencari tiket yang sesuai dengan index pemilik tiket
                             for (const ticketItem of ticket) {
-                                for (let i = 0; i < ticketItem.qty_ticket; i++) {
+                                for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
                                     if (currentIndex === index - 1) {
                                         // Pemilik ditemukan, simpan tiket untuk pemilik ini
-                                        ticketForOwner = ticketItem;
+                                        ticketForOwner = {...ticketItem, seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined} as FormTicket;
                                         break;
                                     }
                                     currentIndex++;
@@ -337,12 +341,14 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 if (ticketForOwner) break;
                             }
 
+                            handleInput(index, 'seat_number', item.seat_number ?? '');
+
                             return (
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
                                     <div className="border-b border-b-primary-light-200 cursor-pointer px-5 py-3 flex items-center justify-between" onClick={() => toggleCollapse(index)}>
                                       {index > 0 && <FontAwesomeIcon icon={faTicket} className='text-primary shrink-0 mr-[10px]' />}
                                       <Stack gap={0} className={`flex-grow`}>
-                                        <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name}` : 'Data Pemesan'}</p>
+                                        <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : 'Data Pemesan'}</p>
                                         {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                       </Stack>
                                       <button className="text-grey">

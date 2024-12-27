@@ -17,6 +17,7 @@ interface InputProps {
   minDateVal?: string;
   inputProps?: any;
   error?: boolean;
+  className?: string;
 }
 
 const InputField = ({
@@ -32,6 +33,7 @@ const InputField = ({
   disabled,
   size,
   error,
+  className,
 }: InputProps) => {
   const handleKeyPress = (event: any) => {
     const key = event.key;
@@ -47,7 +49,7 @@ const InputField = ({
     }
   };
   return (
-    <div className='text-dark'>
+    <div className={`text-dark ${className}`}>
       {label && (
         <p className='mb-1 text-grey'>
           {label}
@@ -72,7 +74,7 @@ const InputField = ({
       {type === 'num' && (
         <input
           type='number'
-          className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} border-spacing-1 ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
           }  shadow-sm border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
@@ -117,7 +119,7 @@ const InputField = ({
       )}
       {type === 'textarea' && (
         <textarea
-          className={`${error ? 'border-red-400' : 'border-primary-light-200'} px-3 py-2 border-2 focus:outline-primary-disabled rounded-lg ${
+          className={`${error ? 'border-red-400' : 'border-primary-light-200'} px-3 py-2 border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
           placeholder={placeholder}
@@ -129,7 +131,7 @@ const InputField = ({
         <TimeInput
           startContent={<FontAwesomeIcon icon={faClock} className='text-dark' />}
           classNames={{
-            inputWrapper: `border-2 shadow-sm ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,
+            inputWrapper: `border shadow-sm ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,
           }}
           aria-label='time'
           fullWidth={fullWidth}

@@ -2,7 +2,7 @@ import React from 'react';
 import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { formatDate } from '@/utils/useFormattedDate';
-import { Flex, Stack, Text } from '@mantine/core';
+import { Button, ColorInput, Flex, Stack, Text } from '@mantine/core';
 
 interface TicketContainerProps {
   type: string;
@@ -14,6 +14,9 @@ interface TicketContainerProps {
   ticketEnd: string | null;
   onDelete?: () => void;
   onEdit?: () => void;
+  onSelectSeatButton?: () =>  void;
+  onSelectSeatColor?: (color: string) =>  void;
+  seatColor?: string;
 }
 
 const TicketContainer = ({
@@ -26,19 +29,38 @@ const TicketContainer = ({
   ticketEnd,
   onDelete,
   onEdit,
+  onSelectSeatButton,
+  onSelectSeatColor,
+  seatColor,
 }: TicketContainerProps) => {
   return (
-    <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-md'>
+    <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-xl'>
       <div className='p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0'>
-        <Flex justify="space-between" wrap="wrap" gap={10}>
+        <Flex justify="space-between" wrap="wrap" gap={10} align="center">
           <Stack gap={0}>
-            <p className='font-semibold'>{name}</p>
+            <p className='font-semibold capitalize'>{name}</p>
             <p className='text-grey text-sm'>{category}</p>
           </Stack>
           {/* <Stack gap={0} align="end">
             <Text size="xs" c="gray">Total 0 Tiket</Text>
             <Text size="xs" c="gray">Terjual 0 Tiket</Text>
           </Stack> */}
+          {onSelectSeatButton && (
+            <Button onClick={onSelectSeatButton} variant="light" size="xs">
+              Pilih Seat
+            </Button>
+          )}
+          {onSelectSeatColor && !onSelectSeatButton && (
+            <Flex gap={8} align="center">
+              <Text c="gray" size="xs" fw={600}>Seat Color</Text>
+              <ColorInput
+                size="xs"
+                w={50}
+                value={seatColor}
+                onChange={e => onSelectSeatColor(e)}
+              />
+            </Flex>
+          )}
         </Flex>
       </div>
       <div className='p-4 flex justify-between'>

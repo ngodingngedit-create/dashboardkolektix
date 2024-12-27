@@ -5,7 +5,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { UserProps } from '@/utils/globalInterface';
 import imagePlus from '../../assets/icon/image-plus.png';
 import { faCalendar, faClock } from '@fortawesome/free-regular-svg-icons';
-import { TagsInput } from '@mantine/core';
+import { Alert, TagsInput } from '@mantine/core';
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from '@nextui-org/react';
 import {
   faLocationDot,
@@ -29,6 +29,8 @@ import { toast } from 'react-toastify';
 import Button from '@/components/Button';
 import React from 'react';
 import { useListState, UseListStateHandlers } from '@mantine/hooks';
+import { defaultSeatmapData } from '@/components/Seatmap';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 const option = [
   { key: 1, label: '1 Tiket' },
@@ -63,8 +65,10 @@ interface ErrorResponse {
 export const Context = createContext<{
   seatmapData: SeatmapData[],
   setSeatmapData?: UseListStateHandlers<SeatmapData>;
+  ticket: EventTicket[];
 }>({
-  seatmapData: []
+  seatmapData: [],
+  ticket: [],
 })
 
 const CreateEvent = () => {
@@ -118,7 +122,7 @@ const CreateEvent = () => {
   const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);
   const [editTicket, setEditTicket] = useState<EventTicket>(defaultForm);
-  const [idxTicket, setIdxTicket] = useState<number | null>(null);
+  const [idxTicket, setIdxTicket] = useState<number>();
   const [showDate, setShowDate] = useState<boolean>(false);
   const [showTime, setShowTime] = useState<boolean>(false);
   const [showTicket, setShowTicket] = useState<boolean>(false);
@@ -127,14 +131,7 @@ const CreateEvent = () => {
   const [tagSuggestion, setTagSuggestion] = useState<string[]>();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<string>('info');
-  const [seatmapData, setSeatmapData] = useListState<SeatmapData>([
-    {
-        position: [0, 0],
-        size: [300, 30],
-        type: 'box',
-        text: 'Main Stage',
-    }
-  ]);
+  const [seatmapData, setSeatmapData] = useListState<SeatmapData>(defaultSeatmapData);
   // const [userData, setUserData] = useState<UserProps | null>(null);
   const loggedUser = useLoggedUser();
 
@@ -174,8 +171,8 @@ const CreateEvent = () => {
     setLoading(true); // Set loading ke true
     Post('event', {
       ...form,
-      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(',')})),
-      seatmap: seatmapData ? JSON.stringify(seatmapData) : null
+      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color})),
+      seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
         console.log(res);
@@ -253,7 +250,7 @@ const CreateEvent = () => {
       ...defaultForm,
     });
     // console.log(editTicket);
-    setIdxTicket(null);
+    setIdxTicket(undefined);
     showAddTicket(true);
   };
 
@@ -433,6 +430,11 @@ const CreateEvent = () => {
                     </div>
                   </div>
                   <div className='p-5 flex flex-col gap-[10px]'>
+                    {ticket.length == 0 && (
+                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
+                        Belum ada tiket yang dibuat
+                      </Alert>
+                    )}
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
                         <div key={index}>
@@ -678,7 +680,7 @@ const CreateEvent = () => {
         form={form}
         setForm={setForm}
       />
-      <Context.Provider value={{ seatmapData, setSeatmapData }}>
+      <Context.Provider value={{ seatmapData, setSeatmapData, ticket }}>
         <ModalCreateTicket
           isOpen={addTicket}
           endDate={form.end_date}

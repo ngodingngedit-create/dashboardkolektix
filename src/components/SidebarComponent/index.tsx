@@ -451,7 +451,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     <Text size="sm" c="gray.8" fw={600}>Hi, {users?.name}</Text>
                                                     <Text size="xs" c="gray" mt={-3}>{users?.email}</Text>
                                                 </Stack>
-                                                {hasCreator && (
+                                                {hasCreator && !!!userData?.force_creator && (
                                                     <button
                                                         className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
                                                         role="menuitem"

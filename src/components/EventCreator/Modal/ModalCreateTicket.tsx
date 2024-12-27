@@ -11,19 +11,20 @@ import {
 } from '@nextui-org/react';
 import { EventTicket } from '@/utils/formInterface';
 import InputField from '@/components/Input';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, PropsWithChildren } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { TicketProps, TicketPropsInputRequest } from '@/utils/globalInterface';
 import fetch from '@/utils/fetch';
-import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton } from '@mantine/core';
+import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text, Popover, Overlay, Portal, HoverCard } from '@mantine/core';
 import Seatmap from '@/components/Seatmap';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { isNotEmpty, useForm, zodResolver } from '@mantine/form';
+import { isNotEmpty, useForm } from '@mantine/form';
 import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
-import { z } from 'zod';
+import { Guide } from '@/components/Guide';
+import { notifications } from '@mantine/notifications';
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ interface ModalProps {
   endDate: string | null;
   data: EventTicket;
   idx?: number | null;
-  setIdx: (idx: number | null) => void;
+  setIdx: (idx?: number) => void;
   eventId?: number;
 }
 
@@ -70,12 +71,20 @@ export default function ModalCreateTicket({
       ticket_end: isNotEmpty(),
       qty: isNotEmpty(),
       price: isNotEmpty(),
-      description: isNotEmpty()
+      starting_time: isNotEmpty(),
+      ending_time: isNotEmpty(),
     }
   });
   const [step, setStep] = useState(0);
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
+  const [addSeatMap, setAddSeatMap] = useState(false);
+  const [onSelectSeat, setOnSelectSeat] = useState<number>();
+  const [hoveredTicket, setHoveredTicket] = useState<number>();
+
+  useEffect(() => {
+    setAddSeatMap(!!eventId);
+  }, [eventId])
 
   useEffect(() => {
     if (typeof openForm == 'number') {
@@ -95,7 +104,7 @@ export default function ModalCreateTicket({
       }
       setTicket(arr);
       setIsOpen(false);
-      setIdx(null);
+      setIdx(undefined);
     } else {
       await fetch<TicketPropsInputRequest, any>({
         url: `event-ticket/${idx}`,
@@ -113,7 +122,12 @@ export default function ModalCreateTicket({
           }
           setTicket(arr);
           setIsOpen(false);
-          setIdx(null);
+          setIdx(undefined);
+
+          notifications.show({
+            message: 'Berhasil Update Tiket',
+            color: 'green'
+          });
         },
         error: () => {},
       });
@@ -125,8 +139,8 @@ export default function ModalCreateTicket({
   }, [data]);
 
   const openSeatMap = useMemo(() => {
-    return ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated');
-  }, [ticket, form]);
+    return addSeatMap;// && (ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated'));
+  }, [ticket, form, addSeatMap]);
 
   const handleSaveTicket = () => {
     if (validate().hasErrors) return;
@@ -138,6 +152,10 @@ export default function ModalCreateTicket({
     }
     setOpenForm(undefined);
   }
+
+  const handleSelectSeat = (data?: string[]) => {
+    setTicket(ticket.map((e, i) => i == onSelectSeat ? ({...e, available_seat: data}) : e));
+  };
 
   const handleDeleteTicket = (index: number) => {
     modals.openConfirmModal({
@@ -153,14 +171,46 @@ export default function ModalCreateTicket({
     });
   }
 
+  const unavailSeat = useMemo(() => {
+    return onSelectSeat === undefined ? [] : ticket
+      .map(e => e.available_seat)
+      .reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), [])
+      .filter(e => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
+  }, [onSelectSeat]);
+
+  const allSeat = useMemo(() => {
+    const result = ticket
+      .map(e => e.available_seat)
+      .reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []);
+
+    if (hoveredTicket !== undefined) {
+      return result.filter(e => ticket[hoveredTicket].available_seat?.includes(e))
+    }
+
+    return result;
+  }, [ticket, onSelectSeat, hoveredTicket]);
+
   return (
     <div className='flex flex-col gap-2'>
       <ModalM
-        title={'Kelola Tiket'}
+        title={(
+          <HoverCard>
+            <HoverCard.Target>
+              <Text component='span'>Kelola Tiket</Text>
+            </HoverCard.Target>
+            {/* <HoverCard.Dropdown maw={400}>
+              {ticket.map((e, i) => (
+                <Text size="xs" key={i}>
+                  {JSON.stringify(e).replaceAll(',', ', ')}
+                </Text>
+              ))}
+            </HoverCard.Dropdown> */}
+          </HoverCard>
+        )}
         opened={isOpen}
         centered
         onClose={() => {
-          setIdx(null);
+          setIdx(undefined);
           setIsOpen(false);
         }}
         size={openSeatMap ? 'xl' : undefined}
@@ -168,20 +218,23 @@ export default function ModalCreateTicket({
         className='text-dark'
       >
         {/* {JSON.stringify(errors)} */}
-        <Stack gap={10} h={"calc(100vh - 100px)"}>
+        <Stack gap={10} h={addSeatMap ? "calc(100vh - 100px)" : "calc(100vh - 160px)"} pb={10}>
           <Flex gap={20} h="100%">
-            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
+            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full h-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
               <Stack gap={15} h="100%">
                 <TextInput
                   leftSection={<Icon icon="uiw:search" />}
                   placeholder="Cari Tiket"
                 />
 
-                <Stack gap={10} className={`overflow-y-auto`}>
+                <Stack gap={10} className={`overflow-y-auto h-full `}>
                   {ticket.map((e, i) => (
                     // onClick={() => setSelected(selected == i ? undefined : i)}
                     <UnstyledButton key={i}>
-                      <Box className={`${selected == i ? '!border !border-primary-base rounded-lg' : ''}`}>
+                      <Box
+                        onMouseEnter={() => setHoveredTicket(i)}
+                        onMouseLeave={() => setHoveredTicket(undefined)}
+                        className={`${selected == i ? '!border !border-primary-base rounded-lg' : ''}`}>
                         <TicketContainer
                           key={i}
                           type={e.ticket_type}
@@ -191,21 +244,35 @@ export default function ModalCreateTicket({
                           ticketEnd={e.ticket_end}
                           description={e.description}
                           name={e.name}
-                          onEdit={() => setOpenForm(i)}
+                          onEdit={() => {
+                            setIdx(e?.id)
+                            setOpenForm(i);
+                          }}
                           onDelete={() => handleDeleteTicket(i)}
+                          onSelectSeatButton={e.ticket_category == 'Seated' && !eventId && onSelectSeat === undefined && addSeatMap ?
+                            () => setOnSelectSeat(i) :
+                            undefined}
+                          seatColor={e.seat_color}
+                          onSelectSeatColor={onSelectSeat == i ? e => setTicket(ticket?.map((z, _i) => i == _i ? ({...z, seat_color: e}) : z)) : undefined}
                         />
                       </Box>
                     </UnstyledButton>
                   ))}
                 </Stack>
 
-                <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button display={!eventId ? undefined : 'none'} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
+
+                <Guide text="Buat Seatmap untuk mengatur posisi seat" key="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
+                  <Button w="100%" display={addSeatMap ? 'none' : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
+                    Buat Seatmap
+                  </Button>
+                </Guide>
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} w-full ${openSeatMap ? 'max-w-[370px]' : ''} flex-col gap-2`}>
+            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} overflow-auto flex-col gap-2 pb-4`}>
               <Flex display={ticket.length > 0 ? undefined : 'none'}>
                 <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
                   Kembali
@@ -237,7 +304,7 @@ export default function ModalCreateTicket({
                       </Radio>
                       <Radio
                         classNames={{
-                          base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
+                          base: 'opacity-50 md:!opacity-100 pointer-events-none md:!pointer-events-auto data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1',
                         }}
                         value='Seated'
                       >
@@ -323,6 +390,27 @@ export default function ModalCreateTicket({
                   </div>
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
+                      error={Boolean(errors['starting_time'])}
+                      type='time'
+                      label='Jam Mulai Penjualan'
+                      required
+                      value={form.starting_time && form.starting_time}
+                      onChange={(e: any) =>
+                        e && setForm({ ...form, starting_time: e.toString() })
+                      }
+                    />
+                    <InputField
+                      error={Boolean(errors['ending_time'])}
+                      type='time'
+                      label='Jam Berakhir Penjualan'
+                      required
+                      value={form.ending_time && form.ending_time}
+                      onChange={(e: any) => e && setForm({ ...form, ending_time: e.toString() })}
+                    />
+                  </div>
+                  <div className='grid grid-cols-2 gap-2 my-2'>
+                    <InputField
+                      className={`${form.ticket_type == 'Gratis' ? 'hidden' : ''}`}
                       error={Boolean(errors['price'])}
                       type='num'
                       label='Harga Tiket'
@@ -331,8 +419,10 @@ export default function ModalCreateTicket({
                       fullWidth
                       value={form.price > 0 && form.price}
                       onChange={(e: any) => setForm({ ...form, price: e.target.value })}
+                      placeholder='Masukan Harga'
                     />
                     <InputField
+                      className={`${form.ticket_category == 'Seated' ? 'hidden' : ''}`}
                       error={Boolean(errors['qty'])}
                       type='num'
                       label='Jumlah Tiket'
@@ -340,6 +430,7 @@ export default function ModalCreateTicket({
                       fullWidth
                       value={form.qty > 0 && form.qty}
                       onChange={(e: any) => setForm({ ...form, qty: e.target.value })}
+                      placeholder='Masukan Jumlah'
                     />
                   </div>
                   <InputField
@@ -347,14 +438,13 @@ export default function ModalCreateTicket({
                     type='textarea'
                     label='Deskripsi'
                     placeholder='Deskripsi Tiket'
-                    required
                     fullWidth
                     value={form.description}
                     onChange={(e: any) => setForm({ ...form, description: e.target.value })}
                   />
                 </>
               )}
-              {step === 1 && (
+              {/* {step === 1 && (
                 <div className='flex flex-col gap-3'>
                   <div className='grid grid-cols-2 gap-5'>
                     <InputField type='date' label='Tanggal Mulai' required />
@@ -365,13 +455,14 @@ export default function ModalCreateTicket({
                     <InputField type='time' label='Jam Berakhir' required />
                   </div>
                 </div>
-              )}
+              )} */}
 
-              <Flex justify="end">
+              <Flex justify="end" py={10} className={`sticky bottom-[-15px] bg-white`}>
                 <button
-                  className='w-[200px] ml-auto mt-[15px] text-white bg-primary-dark rounded-full py-2'
+                  className='w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2'
                   onClick={() => {
                     handleSaveTicket();
+                    !!eventId && submitTicket();
                     // step === 0 ? submitTicket() : setStep(1);
                   }}
                 >
@@ -379,18 +470,34 @@ export default function ModalCreateTicket({
                 </button>
               </Flex>
             </div>
+
             <Box
               className={`flex-grow`}
               display={openSeatMap ? undefined : 'none'}>
               <Seatmap
-                unavailSeat={ticket.map(e => e.available_seat).reduce<string[]>((c, n) => ([...c, ...(n ?? [])]), []).filter(e => !form.available_seat?.includes(e))}
-                selected={form.available_seat}
-                onSelect={e => setForm({ available_seat: e })}
-                onSelectAll={e => setForm({ available_seat: e })}
-                onEdit={openForm !== undefined}
+                unavailSeat={unavailSeat}
+                selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
+                onSelect={handleSelectSeat}
+                onSelectAll={handleSelectSeat}
+                onEdit={onSelectSeat !== undefined}
+                onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
               />
             </Box>
           </Flex>
+
+          <Button
+            className={`shrink-0 h-fit`}
+            ml="auto"
+            w="fit-content"
+            size="md"
+            onClick={() => {
+              setIdx(undefined);
+              setIsOpen(false);
+            }}
+            // rightSection={<Icon icon="uiw:check" />}
+            display={ticket.length > 0 && addSeatMap ? undefined : 'none'}>
+            Simpan Tiket
+          </Button>
         </Stack>
       </ModalM>
     </div>

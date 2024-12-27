@@ -1,8 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import OrderCounter from '../OrderCounter';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
+import { SeatmapData } from '@/utils/formInterface';
+import { Context } from '@/pages/event/[slug]';
+import { notifications } from '@mantine/notifications';
 
 interface GroupTicket {
   date: string;
@@ -17,8 +20,8 @@ interface TicketTabsProps {
 }
 
 interface Props {
-  counts: { [key: number]: number };
-  setCounts: (counts: { [key: string]: number }) => void;
+  counts: { [key: number]: number | string[] };
+  setCounts: (counts: { [key: string]: number | string[] }) => void;
   data: TicketProps[];
   isLogin: boolean;
   selected: number;
@@ -35,10 +38,31 @@ export default function DateTab({
   selected,
   setSelected,
 }: Props) {
-  const handleCount = (id: number, newCount: number) => {
+  const { eventData } = useContext(Context);
+
+  const handleCount = (id: number, newCount: number | string) => {
+    var data = counts[id];
+    if (!data) data = 0;
+
+    const countData = typeof newCount == 'number' ?
+      newCount :
+      ((typeof data != 'number' ? data : [])).includes(newCount) ? 
+        (data as string[]).filter(e => e != newCount) :
+        [...((typeof data != 'number' ? data : []) ?? []), newCount]
+
+    const length = typeof countData == 'number' ? countData : countData.length;
+
+    if (length > (eventData?.max_buy_ticket ?? 999)) {
+      notifications.show({
+        message: `Maksimal ${eventData?.max_buy_ticket} tiket`,
+        color: 'red',
+      });
+      return;
+    }
+
     setCounts({
       ...counts,
-      [id]: newCount,
+      [id]: countData,
     });
   };
   const [groupedTickets, setGroupedTickets] = React.useState<GroupTicket[]>([]);
@@ -78,6 +102,7 @@ export default function DateTab({
   }, [data]);
 
   const sortedTicket = useCallback((data: GroupTicket['tickets']) => {
+    return data;
     return data.sort((a, b) => {
       const dateA = moment(`${a.ticket_date} ${a.starting_time}`, 'YYYY-MM-DD HH:mm');
       const dateB = moment(`${b.ticket_end} ${b.ending_time}`, 'YYYY-MM-DD HH:mm');
@@ -101,8 +126,9 @@ export default function DateTab({
         <TabPanels>
           {groupedTickets.map(({ date, tickets }) => (
             <TabPanel key={date} className='rounded-xl bg-white/5 pt-3 flex-col gap-3 flex'>
-              {sortedTicket(tickets).map((item) => (
+              {sortedTicket(tickets).map((item, index) => (
                 <OrderCounter
+                  index={index}
                   isFullbook={(item?.is_fullbook ?? 0) == 1}
                   maxOrder={maxOrder}
                   ticketData={item}

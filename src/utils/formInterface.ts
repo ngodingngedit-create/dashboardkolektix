@@ -1,4 +1,5 @@
 export interface EventTicket {
+  id?: number;
   ticket_type: string;
   ticket_category_id: number;
   ticket_category: 'Seated' | 'Festival';
@@ -11,6 +12,7 @@ export interface EventTicket {
   price: number;
   description: string;
   available_seat?: string[];
+  seat_color?: string;
 }
 
 export interface FormEvent {
@@ -60,4 +62,5 @@ export type SeatmapData = {
   rotation?: number;
   background?: string;
   seatcolor?: string;
+  seat?: string[][];
 };
