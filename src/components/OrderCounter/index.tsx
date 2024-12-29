@@ -371,8 +371,9 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
     }, []);
 
     const availableSeat = useMemo(() => {
-        return available?.split(',');
-    }, [available]);
+        const soldSeat = ticketData?.has_ordered_seatnumber?.map(e => e.seatnumber_ticket  ?? '') ?? [];
+        return available?.split(',').filter(e => !soldSeat.includes(e));
+    }, [available, ticketData]);
 
     const filteredArea = useMemo(() => {
         return (data ?? []).map(e => ({
@@ -428,7 +429,7 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                                                     <Tooltip label={z} key={c} fw={600}>
                                                         <Box
                                                             onClick={() => availableSeat?.includes(z) && setSelectSeat && setSelectSeat(z)}
-                                                            opacity={available?.includes(z) ? selectedSeat?.includes(z) ? 0.5 : 1 : 0.1}
+                                                            opacity={availableSeat?.includes(z) ? selectedSeat?.includes(z) ? 0.5 : 1 : 0.1}
                                                             w="100%" h="100%" key={c}
                                                             className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                             {/* <Center w="100%" h="100%">
