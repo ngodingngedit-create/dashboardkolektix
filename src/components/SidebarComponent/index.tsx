@@ -30,7 +30,7 @@ type SidebarData = {
     icon?: IconDefinition;
     iconify?: string;
     link?: string;
-    role: "Creator" | "Pembeli";
+    role: "Creator" | "Pembeli" | "Staff";
     submenu?: Omit<SidebarData, 'submenu'>;
 }[];
 
@@ -81,9 +81,26 @@ const profileData: SidebarData[number]['submenu'] = [
 
 const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Staff', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
     { id: 1, name: 'Bookmark', link: '/dashboard/bookmark', role: 'Pembeli', iconify: 'material-symbols:bookmark' },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
+    { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Staff', submenu: [
+        {
+            id: 1,
+            name: 'Check In Event',
+            iconify: 'lets-icons:in',
+            link: '/dashboard/my-event/checkin',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'Report Event',
+            iconify: 'carbon:report',
+            link: '/dashboard/my-event/report',
+            role: 'Creator'
+        }
+    ] },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
         {
             id: 1,

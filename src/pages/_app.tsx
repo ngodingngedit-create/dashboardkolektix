@@ -196,7 +196,7 @@ export default function App({ Component, pageProps }: AppProps) {
               <SidebarComponent>
                 <Component {...pageProps} />
               </SidebarComponent>
-            ) : router.pathname.startsWith('/auth') ? (
+            ) : router.pathname.startsWith('/auth') || router.pathname.startsWith('/creator') ? (
               <Component {...pageProps} />
             ) : (
               <AppMainContext.Provider value={{ cartCount, setCartCount }}>

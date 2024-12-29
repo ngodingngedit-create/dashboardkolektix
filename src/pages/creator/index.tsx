@@ -13,10 +13,13 @@ import { Post } from '@/utils/REST';
 import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import { PasswordInput, TextInput } from '@mantine/core';
+import { useSetState } from '@mantine/hooks';
 
 interface RegisterForm {
   name: string;
   email: string;
+  password: string;
+  password_confirm: string;
   otp_code: string;
 }
 
@@ -59,13 +62,15 @@ const Auth = () => {
   const router = useRouter();
   const [step, setStep] = useState<number>(0);
   const [otp, setOtp] = useState<string>('');
-  const [data, setData] = useState<RegisterForm>({
+  const [data, setData] = useSetState<RegisterForm>({
     name: '',
     email: '',
+    password: '',
+    password_confirm: '',
     otp_code: '',
   });
   const [imageOpacity, setImageOpacity] = useState<number>(0);
-  const [errors, setErrors] = useState<any>([]);
+  const [errors, setErrors] = useSetState<Partial<RegisterForm & { message: string; error: string; }>>({});
   const [errorRegister, setErrorRegister] = useState<ErrorRegisterProps>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [countdownEndTime, setCountdownEndTime] = useState<Date | null>(null);
@@ -110,9 +115,28 @@ const Auth = () => {
     login();
   };
 
+  useEffect(() => {
+    setErrors({
+      name: undefined,
+      email: undefined,
+      password: undefined,
+      password_confirm: undefined,
+      otp_code: undefined,
+      message: undefined,
+      error: undefined,
+    })
+  }, [data, step]);
+
   const submitRegister = () => {
+    if (data.name == '') setErrors({ name: 'Wajib Diisi' });
+    if (data.email == '') setErrors({ email: 'Wajib Diisi' });
+    if (data.password == '') setErrors({ password: 'Wajib Diisi' });
+    if (data.password.length < 8) setErrors({ password: 'Minimal 8 Karakter' });
+    if (data.password != data.password_confirm) setErrors({ password_confirm: 'Password Tidak Sama' });
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
-    Post('register', data)
+    Post('register-auth', data)
       .then((res: any) => {
         setLoading(false);
         setCountdownEndTime(new Date(Date.now() + 120000));
@@ -128,8 +152,12 @@ const Auth = () => {
   };
 
   const login = () => {
+    if (data.email == '') setErrors({ email: 'Wajib Diisi' });
+    if (data.password == '') setErrors({ password: 'Wajib Diisi' });
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
-    Post('login', data)
+    Post('login-auth', data)
       .then((res: any) => {
         console.log(res);
         setLoading(false);
@@ -153,7 +181,7 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true, role: 'Staff' }));
         setLoading(false);
         router.push('/dashboard');
       })
@@ -171,7 +199,7 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true }));
+        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true, role: 'Staff' }));
         Cookies.set('bookmarked', JSON.stringify(res.bookmarked));
         setLoading(false);
         router.push('/dashboard');
@@ -232,21 +260,20 @@ const Auth = () => {
                 step === 0 ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              <Image src={Logo} alt='Logo' className='w-1/3' />
+              <Image src={Logo} alt='Logo' className='w-1/2' />
               <h2 className='text-dark font-semibold text-xl mt-4 text-center'>Masuk sebagai Creator/Staff</h2>
               <div className='flex'>
                 <p className='text-grey text-[12px] mb-2 text-center'>
-                  Masukan akunmu yang sudah terdaftar sebagai Creator/Staff
-                  {/* <span
+                  Masukan akunmu yang sudah terdaftar sebagai Creator/Staff, 
+                  <span
                     className='cursor-pointer text-primary-base font-semibold'
                     onClick={() => {
                       setStep(1);
-                      setErrors([]);
                     }}
                   >
                     {' '}
-                    Daftar
-                  </span> */}
+                    Daftar Akun
+                  </span>
                 </p>
               </div>
               <div className='flex flex-col w-full mt-2'>
@@ -256,11 +283,17 @@ const Auth = () => {
                     label="Email"
                     placeholder='Masukan Email'
                     mb={10}
+                    value={data.email}
+                    onChange={e => setData({ email: e.target.value })}
+                    error={errors.email}
                   />
                   <PasswordInput
                     labelProps={{ size: 'xs' }}
                     label="Password"
                     placeholder="Masukan Password"
+                    value={data.password}
+                    onChange={e => setData({ password: e.target.value })}
+                    error={errors.password}
                   />
                   {/* <Form
                     placeholder='Alamat Email'
@@ -276,6 +309,108 @@ const Auth = () => {
                     {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
                   </button>
                 </form>
+              </div>
+            </div>
+          )}
+          {step === 1 && (
+            <div
+              className={`transition-opacity duration-300 opacity-0 ${step === 1 && 'opacity-100'}`}
+            >
+              <div className='flex justify-center flex-col items-center'>
+                <Image src={Logo} alt='Logo' className='w-1/3 mb-[20px]' />
+                <h2 className='text-dark font-semibold text-xl mt-2'>Daftar Akun Staff</h2>
+                <div className='flex'>
+                  <p className='text-grey text-sm text-center mb-3'>
+                    Sudah punya akun?
+                    <span
+                      className='cursor-pointer text-primary-base font-semibold'
+                      onClick={() => {
+                        setStep(0);
+                      }}
+                    >
+                      {' '}
+                      Masuk
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className='flex flex-col w-full px-5'>
+                <div>
+                  <TextInput
+                    labelProps={{ size: 'xs' }}
+                    label="Nama Lengkap"
+                    placeholder='Masukan Nama Lengkap'
+                    mb={10}
+                    value={data.name}
+                    onChange={e => setData({ name: e.target.value })}
+                    error={errors.name}
+                  />
+                </div>
+                <div>
+                  <TextInput
+                    labelProps={{ size: 'xs' }}
+                    label="Email"
+                    placeholder='Masukan Email'
+                    mb={10}
+                    value={data.email}
+                    onChange={e => setData({ email: e.target.value })}
+                    error={errors.email}
+                  />
+                  <PasswordInput
+                    labelProps={{ size: 'xs' }}
+                    label="Password"
+                    placeholder="Masukan Password"
+                    value={data.password}
+                    onChange={e => setData({ password: e.target.value })}
+                    error={errors.password}
+                  />
+                  <PasswordInput
+                    mt={10}
+                    labelProps={{ size: 'xs' }}
+                    label="Konfirmasi Password"
+                    placeholder="Masukan Konfirmasi Password"
+                    value={data.password_confirm}
+                    onChange={e => setData({ password_confirm: e.target.value })}
+                    error={errors.password_confirm}
+                  />
+                </div>
+                {/* <div>
+                  <Form
+                    placeholder='Password'
+                    label='Password'
+                    type='password'
+                    onChange={(e: any) => setData({ ...data, password: e.target.value })}
+                  />
+                  {errors.password &&
+                    errors.password.map((error: string, index: number) => (
+                      <p key={index} className='text-red-500 text-[10px] '>
+                        {error}
+                      </p>
+                    ))}
+                </div>
+                <div>
+                  <Form
+                    placeholder='Konfirmasi Password'
+                    label='Konfirmasi Password'
+                    type='password'
+                    onChange={(e: any) =>
+                      setData({ ...data, password_confirmation: e.target.value })
+                    }
+                  />
+                  {errors.password_confirmation &&
+                    errors.password_confirmation.map((error: string, index: number) => (
+                      <p key={index} className='text-red-500 text-[10px]'>
+                        {error}
+                      </p>
+                    ))}
+                </div> */}
+
+                <button
+                  className='bg-primary-base mt-[20px] mb-[20px] text-white w-full rounded-full p-2 text-xs'
+                  onClick={submitRegister}
+                >
+                  {loading ? <Spinner color='default' size='sm' /> : 'Selanjutnya'}
+                </button>
               </div>
             </div>
           )}

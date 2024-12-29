@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu, Flex } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -157,7 +157,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-              {/* <div className='mr-2 w-8 md:hidden'>
+              <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -167,8 +167,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
                 </button>
-              </div> */}
-              {/* <div className='mr-2 w-8 hidden md:inline lg:inline'>
+              </div>
+              <div className='mr-2 w-8 hidden md:inline lg:inline'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -178,7 +178,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div> */}
+              </div>
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
@@ -322,8 +322,13 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </ActionIcon> */}
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <ActionIcon variant="transparent" color="white">
-                            <Icon icon="uiw:menu" className={`text-[20px]`} />
+                          <ActionIcon size="xl" variant="transparent" c={"white"} bg={"#02255A"} radius="xl">
+                            {isLogin ? (
+                              <Icon icon="uiw:menu" className={`text-[24px] mr-[4px]`} />
+                            ) : (
+                              <Icon icon="solar:login-2-broken" className={`text-[24px] mr-[4px]`} />
+                            )}
+                            {/* <Icon icon="uiw:menu" className={`text-[20px]`} /> */}
                           </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
@@ -333,7 +338,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Label>Akun</Menu.Label>
                           {!isLogin ? (
                             <>
-                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login / Daftar</Menu.Item>
                               {/* <Menu.Item leftSection={<Icon icon="hugeicons:account-setting-03" className={`text-[18px]`}/>} color="#0B387C" component={Link} href="/auth-creator">Login Creator</Menu.Item> */}
                               {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
                             </>
@@ -346,12 +351,12 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                             </>
                           )}
                           <Menu.Divider className={`md:!hidden`}/>
-                          <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
+                          {/* <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item> */}
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
