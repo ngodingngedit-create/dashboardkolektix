@@ -202,7 +202,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
                     position="bottom"
                     radius={25}
-                    size="58vh"
+                    size="65vh"
                     overlayProps={{  opacity: 0.3 }}>
                         <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
                             <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
@@ -272,6 +272,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const canvasWrap = useRef<HTMLDivElement>(null);
     const { seatmapData, seatmapOpen } = useContext(Context);
+    const [lastTouch, setLastTouch] = useState<React.Touch>();
 
     useEffect(() => {
         if (seatmapOpen !== undefined) {
@@ -324,6 +325,26 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
             // }
         },
+        touchmove: (event: React.TouchEvent<HTMLDivElement>) => {
+            const touch = event.touches[0];
+            const lastTouch = JSON.parse(localStorage.getItem('lastTouch') || '{"pageX": 0, "pageY": 0}');
+        
+            if (isCanvasMove && canvasWrap?.current) {
+                const [x, y] = canvasWrap?.current?.style?.transform
+                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                    ?.slice(1)
+                    .map(Number) || [0, 0];
+        
+                const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / scale;
+                const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / scale;
+        
+                if (canvasWrap?.current?.style) {
+                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                }
+        
+                localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
+            }
+        }                
     }
 
     useEffect(() => {
@@ -341,7 +362,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             onMouseMove={handleMouse.move}
             onTouchStart={handleMouse.down}
             onTouchEnd={handleMouse.up}
-            // onTouchMove={handleMouse.move}
+            onTouchMove={handleMouse.touchmove}
             className={`h-full w-full relative z-30 [&_*]:!select-none`}>
             <Card
                 ref={canvasWrap}
