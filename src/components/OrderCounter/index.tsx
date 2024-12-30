@@ -197,7 +197,12 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
 
             {window?.innerWidth < 767 && (
                 <Drawer
-                    title={`Pilih Seat ${ticketData.name}`}
+                    title={(
+                        <Stack gap={4}>
+                            <Text>{`Pilih Seat ${ticketData.name}`}</Text>
+                            {selectedSeat !== undefined && <Text size="sm" c="gray">{`Seat No: ${selectedSeat?.join(', ')}`}</Text>}
+                        </Stack>
+                    )}
                     opened={seatmapOpen == index}
                     onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
                     position="bottom"
@@ -379,6 +384,15 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
 
                 <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
+                    <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
+                        <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
+                            <Icon icon="uiw:minus" className={`text-primary-base`} />
+                        </ActionIcon>
+                        <ActionIcon color="gray.1" radius="xl" onClick={() => scale < 2 && setScale(scale + 0.1)}>
+                            <Icon icon="uiw:plus" className={`text-primary-base`} />
+                        </ActionIcon>
+                    </Flex>
+
                     <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
                 </Box>
             </Card>

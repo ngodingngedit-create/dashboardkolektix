@@ -351,12 +351,12 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                             </>
                           )}
                           <Menu.Divider className={`md:!hidden`}/>
-                          {/* <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
+                          <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/event">Event</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item> */}
+                          <Menu.Item className={`md:!vhidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
