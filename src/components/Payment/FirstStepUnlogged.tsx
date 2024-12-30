@@ -411,7 +411,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                 if (ticketForOwner) break;
                             }
 
-                            handleInput(index, 'seat_number', item.seat_number ?? '');
+                            // handleInput(index, 'seat_number', item.seat_number ?? '');
 
                             return (
                                 <div className="bg-white mt-1" key={index}>
@@ -586,7 +586,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                         if (ticketForOwner) break;
                                     }
 
-                                    handleInput(index, 'seat_number', item.seat_number ?? '');
+                                    // handleInput(index, 'seat_number', item.seat_number ?? '');
 
                                     return (
                                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
