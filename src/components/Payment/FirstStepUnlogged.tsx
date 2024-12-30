@@ -170,7 +170,14 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
 
     const handleInput = (index: number, field: keyof Form, value: string) => {
         let newForm = [...form];
-        newForm[index] = { ...newForm[index], [field]: value };
+        if (field == 'no_telp') {
+            var phone = value.replaceAll(/\D/g, '')
+            phone = phone.replace(/^(?!0|6)(\d+)/, '628$1')
+            phone = phone.replace(/^0/, '62')
+            newForm[index] = { ...newForm[index], [field]: phone };
+        } else {
+            newForm[index] = { ...newForm[index], [field]: value };
+        }
         setForm(newForm);
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
@@ -489,7 +496,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                                                 className="mt-2 w-4/5 block rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
                                                                 placeholder="Contoh: 81233334444"
                                                                 value={item.no_telp}
-                                                                onChange={(e) => handleInput(index, 'no_telp', e.target.value.replaceAll(/\D/g, '').replace(/^(?!0|6)(\d+)/, '628$1').replace(/^0/, '62'))}
+                                                                onChange={(e) => handleInput(index, 'no_telp', e.target.value)}
                                                             />
                                                         </div>
                                                     </Field>
@@ -632,7 +639,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
 
                                                         {detail?.is_email == 1 ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} /> : <></>}
 
-                                                        {detail?.is_phone_number == 1 ? <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, 'no_telp', e.target.value.replaceAll(/\D/g, '').replace(/^(?!0|6)(\d+)/, '628$1').replace(/^0/, '62'))} value={item.no_telp} /> : <></>}
+                                                        {detail?.is_phone_number == 1 ? <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, 'no_telp', e.target.value)} value={item.no_telp} /> : <></>}
                                                     </div>
                                                 </div>
                                             </div>
