@@ -330,7 +330,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </Card>
                         </Menu.Target>
                         <Menu.Dropdown w={150}>
-                          <Menu.Label>Bahasa</Menu.Label>
+                          <Menu.Label>{t('language')}</Menu.Label>
                           <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
                             <Flex align="center" gap={10}>
                               <Icon icon="twemoji:flag-indonesia" className={`text-[24px]`} />

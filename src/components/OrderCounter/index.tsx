@@ -274,7 +274,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                     <Divider className={`!border-dashed w-full`} />
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
-                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`} wrap="wrap">
+                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`}>
                     <StatusComponent />
                 </Flex>
             </Stack>

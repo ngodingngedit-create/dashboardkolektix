@@ -43,5 +43,6 @@
     "jam": "Hour",
     "menit": "Minute",
     "detik": "Second",
-    "eventStartsIn": "Event Starts In"
+    "eventStartsIn": "Event Starts In",
+    "language": "Language"
 }
