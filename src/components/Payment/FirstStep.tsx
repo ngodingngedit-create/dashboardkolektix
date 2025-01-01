@@ -12,6 +12,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import React from 'react';
 import { NumberFormatter, Stack, Text } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
 
 interface FormTicket {
     event_id: number;
@@ -57,6 +58,7 @@ interface StepPaymentProps {
 }
 
 const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
+    const { t } = useTranslation();
     const { width } = useWindowSize();
     const userData = useLoggedUser();
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
@@ -241,7 +243,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             <div className="border-b py-3 px-5 border-primary-light flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                                 {index > 0 && <FontAwesomeIcon icon={faTicket} className='text-primary shrink-0 mr-[10px]' />}
                                 <Stack gap={0} className={`flex-grow`}>
-                                  <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : 'Data Pemesan'}</p>
+                                  <p className="font-semibold">{index > 0 ? `${index}. ${t('ticketOwner')} ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : t('registrantData')}</p>
                                   {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                 </Stack>
                                 <button className="text-grey">
@@ -250,7 +252,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             </div>
                             {index > 0 && (
                                 <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
-                                    <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
+                                    <p className="text-xs md:text-sm text-end">{t('useRegistrantData')}</p>
                                     <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                 </div>
                             )}
@@ -359,7 +361,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                     <div className="border-b border-b-primary-light-200 cursor-pointer px-5 py-3 flex items-center justify-between" onClick={() => toggleCollapse(index)}>
                                       {index > 0 && <FontAwesomeIcon icon={faTicket} className='text-primary shrink-0 mr-[10px]' />}
                                       <Stack gap={0} className={`flex-grow`}>
-                                        <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : 'Data Pemesan'}</p>
+                                        <p className="font-semibold">{index > 0 ? `${index}. ${t('ticketOwner')} ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ''}` : t('registrantData')}</p>
                                         {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticketForOwner?.price ?? 0)}</p>}
                                       </Stack>
                                       <button className="text-grey">
@@ -368,7 +370,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                     </div>
                                     {index > 0 && (
                                         <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
-                                            <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
+                                            <p className="text-xs md:text-sm text-end">{t('useRegistrantData')}</p>
                                             <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                                         </div>
                                     )}
@@ -377,23 +379,23 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                             <div className={`${collapse[index] ? 'visible' : 'invisible'} flex flex-col gap-3`}>
                                                 {detail.is_noidentity ? (
                                                     <>
-                                                        <InputField fullWidth type="number" label="No Induk KTP" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, 'nik', e.target.value)} />
+                                                        <InputField fullWidth type="number" label={t('ktpNumber')} placeholder={`${t('example')}: 123456789012345`} value={item.nik} onChange={(e) => handleInput(index, 'nik', e.target.value)} />
                                                         {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                                                     </>
                                                 ) : null}
                                                 {detail.is_name ? (
                                                     <>
-                                                        <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} />
+                                                        <InputField fullWidth type="text" label={t('fullName')} placeholder={t('fullName')} value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} />
                                                     </>
                                                 ) : null}
                                                 {detail.is_email ? (
                                                     <>
-                                                        <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} />
+                                                        <InputField fullWidth type="text" label="Email" placeholder={`${t('example')}: example@example.com`} value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} />
                                                     </>
                                                 ) : null}
                                                 {detail.is_phone_number ? (
                                                     <>
-                                                        <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, 'no_telp', e.target.value)} value={item.no_telp} />
+                                                        <InputField fullWidth type="number" label={t('phoneNumber')} placeholder={`${t('example')}: 81233334444`} onChange={(e) => handleInput(index, 'no_telp', e.target.value)} value={item.no_telp} />
                                                     </>
                                                 ) : null}
                                             </div>
@@ -422,7 +424,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                         </div>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                             <div className="border-b border-b-primary-light-200 p-3">
-                                <p className="font-semibold">Ringkasan Pesanan</p>
+                                <p className="font-semibold">{t('orderSummary')}</p>
                             </div>
                             {ticket.map((item: FormTicket) => (
                                 <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
@@ -438,7 +440,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 </div>
                             ))}
                             <div className="py-3 px-4 flex justify-between items-center">
-                                <p>{`Jumlah (${totalCount} Tiket)`}</p>
+                                <p>{`${t('jumlah')} (${totalCount} ${t('ticket')})`}</p>
                                 <p className="font-semibold">
                                     {(totalSubtotalPrice) > 0 ? (
                                         <NumberFormatter value={totalSubtotalPrice} />
@@ -448,7 +450,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 </p>
                             </div>
                             <div className="py-3 px-4 flex justify-between items-center">
-                                <p>Biaya Admin</p>
+                                <p>{t('adminFee')}</p>
                                 <p className="font-semibold">
                                     {(detail?.admin_fee * totalCount) > 0 ? (
                                         <NumberFormatter value={detail?.admin_fee * totalCount} />
@@ -470,7 +472,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 </div>
                             ) : null}
                             <div className="py-3 px-4 flex justify-between items-center">
-                                <p>Total Pembayaran</p>
+                                <p>{t('totalPayment')}</p>
                                 <p className="font-semibold">
                                     {((totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
                                         <NumberFormatter value={(totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))} />

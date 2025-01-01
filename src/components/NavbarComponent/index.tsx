@@ -29,11 +29,12 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar, Text } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
 import { modals } from '@mantine/modals';
+import { useTranslation } from 'react-i18next';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   const [hasNotification, setHasNotification] = useState<boolean>(false);
   const [bgNav, setBgNav] = useState<boolean>(false);
   const { cartCount } = useContext(AppMainContext);
+  const { t, i18n } = useTranslation();
 
   const outsideClickMenu = useClickOutside(() => {
     setShowUserMenu(false);
@@ -361,6 +363,20 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                          <Menu.Divider/>
+                          <Menu.Label>Bahasa</Menu.Label>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="twemoji:flag-indonesia" />
+                              <Text>Indonesia</Text>
+                            </Flex>
+                          </Menu.Item>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="fxemoji:greatbritainflag" />
+                              <Text>English</Text>
+                            </Flex>
+                          </Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>

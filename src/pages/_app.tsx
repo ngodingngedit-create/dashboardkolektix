@@ -26,7 +26,7 @@ import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { DateInput } from '@mantine/dates';
-import appWithTranslation from '../i18n';
+import appWithTranslation from './i18n';
 
 config.autoAddCss = false;
 

@@ -104,7 +104,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <>
                     <Box></Box>
                     <Badge color="red" className={`shrink-0`}>
-                        Habis Terjual
+                        {t('soldOut')}
                     </Badge>
                 </>
             );
@@ -114,7 +114,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        Event Selesai
+                        {t('eventDone')}
                     </Badge>
                 </>
             );
@@ -124,14 +124,14 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai
+                            {price <= 0 ? t('registrationStarted') : t('ticketSalesStarted')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        Belum dimulai
+                        {t('notStarted')}
                     </Badge>
                 </>
             );
@@ -141,7 +141,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        {price <= 0 ? 'Registrasi' : 'Penjualan'} Selesai
+                        {price <= 0 ? t('salesDone') : t('registrationDone')} 
                     </Badge>
                 </>
             );
@@ -151,7 +151,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir
+                            {price <= 0 ? t('registrationEnded') : t('ticketSalesEnded')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
@@ -179,7 +179,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
             <>
                 <Box></Box>
                 <Badge color="gray" className={`shrink-0`}>
-                    Event Selesai
+                    {t('eventDone')}
                 </Badge>
             </>
         );
@@ -191,10 +191,10 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
             {seatmapOpen == index && window?.innerWidth > 767 && !isFullscreen && (
                 <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
                     <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
-                        Kembali
+                        {t('back')}
                     </Button>
 
-                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
+                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">{t('selectSeat')}</Text>
 
                     <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                 </Card>
@@ -204,7 +204,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                 <Drawer
                     title={(
                         <Stack gap={4}>
-                            <Text>{`Pilih Seat ${ticketData.name}`}</Text>
+                            <Text>{`${t('selectSeat')} ${ticketData.name}`}</Text>
                             {((selectedSeat?.length ?? 0) > 0) && <Text size="sm" c="gray">{`Seat No: ${selectedSeat?.join(', ')}`}</Text>}
                         </Stack>
                     )}
@@ -214,20 +214,22 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                     radius={25}
                     size={isFullscreen ? "92vh" : "65vh"}
                     overlayProps={{  opacity: 0.3 }}>
-                        <Card bg="gray.3" h={isFullscreen ? "70vh" : "40vh"} radius={10} className={`!border-primary-disabled/35 !border`}>
-                            <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
-                        </Card>
+                        <Stack gap={20} align="end">
+                            <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "40vh"} radius={10} className={`!border-primary-disabled/35 !border`}>
+                                <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                            </Card>
 
-                        <Button
-                            mt={8}
-                            size="md"
-                            fullWidth={!isFullscreen}
-                            onClick={() => window?.innerWidth < 767 ? 
-                                setSeatmapOpen && setSeatmapOpen(undefined) : 
-                                setIsFullscreen(false)
-                            }>
-                            {isFullscreen ? 'Tutup Fullscreen' : 'Selesai'}
-                        </Button>
+                            <Button
+                                mt={8}
+                                size="md"
+                                fullWidth={!isFullscreen}
+                                onClick={() => window?.innerWidth < 767 ? 
+                                    setSeatmapOpen && setSeatmapOpen(undefined) : 
+                                    setIsFullscreen(false)
+                                }>
+                                {isFullscreen ? 'Tutup Fullscreen' : 'Selesai'}
+                            </Button>
+                        </Stack>
                 </Drawer>
             )}
 
@@ -237,7 +239,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                     <Stack gap={0}>
                         <Flex align="center" gap={15}>
                             <Text size="lg" className={`uppercase`}>
-                                {i18n.languages} {ticketData.name}
+                                {ticketData.name}
                             </Text>
                             {ticketData.ticket_category == 'Seated' && (
                                 <Badge className={`bg-primary-base`}>Seated</Badge>

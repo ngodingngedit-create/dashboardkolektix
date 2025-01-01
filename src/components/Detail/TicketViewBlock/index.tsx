@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Context } from '@/pages/event/[slug]';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   counts: { [key: number]: number | string[] };
@@ -38,6 +39,7 @@ const TicketViewBlock = ({
   setSelected,
   storeLocalStorage,
 }: Props) => {
+  const { t } = useTranslation();
   const [edit, setEdit] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const { ticket, setTicket } = useContext(Context);
@@ -73,10 +75,10 @@ const TicketViewBlock = ({
   const SummaryBody = () => (
     <Stack gap={15}>
       <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
-        <Text size="sm" fw={600}>Tiket Dipilih</Text>
+        <Text size="sm" fw={600}>{t('selectedTicket')}</Text>
         <UnstyledButton onClick={() => setEdit(!edit)}>
           <Flex align="center" className={`${edit ? '[&_*]:!text-grey' : '[&_*]:!text-primary-base'}`} gap={8}>
-            <Text fw={600} size="sm">{edit ? 'Tutup Edit' : 'Edit'}</Text>
+            <Text fw={600} size="sm">{edit ? t('selectedTicketEndEdit') : 'Edit'}</Text>
             {!edit && <Icon icon="iconoir:edit" />}
           </Flex>
         </UnstyledButton>
@@ -109,7 +111,7 @@ const TicketViewBlock = ({
 
         {(ticket?.length ?? 0) == 0 && (
           <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
-            Pilih tiket terlebih dahulu
+            {t('selectedTicketEmpty')}
           </Alert>
         )}
 

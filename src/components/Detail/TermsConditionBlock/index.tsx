@@ -1,9 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const TermsConditionBlock = ({ data }: { data?: string }) => {
+  const { t } = useTranslation();
   return (
     <div className='text-sm px-8 py-3 md:py-10'>
-      <p className='mb-5 font-semibold'>Syarat dan Ketentuan</p>
+      <p className='mb-5 font-semibold'>{t('termAndCondition')}</p>
       {data ? (
         <div dangerouslySetInnerHTML={{ __html: data }}></div>
       ) : (
