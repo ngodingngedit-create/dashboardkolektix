@@ -232,7 +232,9 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                         if (ticketForOwner) break;
                     }
  
-                    // handleInput(index, 'seat_number', item.seat_number ?? '');
+                    if (!ticketForOwner?.seat_number && !!item.seat_number) {
+                        handleInput(index, 'seat_number', item.seat_number ?? '');
+                    }
 
                     return (
                         <div className="bg-white mt-4 last:mb-16" key={index}>
@@ -348,7 +350,9 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 if (ticketForOwner) break;
                             }
 
-                            // handleInput(index, 'seat_number', item.seat_number ?? '');
+                            if (!ticketForOwner?.seat_number && !!item.seat_number) {
+                                handleInput(index, 'seat_number', item.seat_number ?? '');
+                            }
 
                             return (
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
