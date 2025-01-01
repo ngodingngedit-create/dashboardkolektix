@@ -92,7 +92,7 @@ const TicketViewBlock = ({
             <Flex gap={10}>
               <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`}/>
               <Stack gap={0}>
-                <Text size="sm">Tiket {e.name} <Badge ml={5} className={`translate-y-[-2px]`} size="xs" color="red">{e.seat_number?.length ?? e.qty_ticket}x</Badge></Text>
+                <Text size="sm">Tiket {e.name} <Badge ml={5} className={`translate-y-[-3px]`} size="xs" color="red">{e.seat_number?.length ?? e.qty_ticket}x</Badge></Text>
                 {e.seat_number && <Text size="xs" c="gray">Seat No: {e.seat_number.join(', ')}</Text>}
               </Stack>
             </Flex>
@@ -137,9 +137,9 @@ const TicketViewBlock = ({
         withCloseButton={false}
         position="bottom"
         radius="20px 20px 0 0"
-        size="40vh"
+        size="50vh"
       >
-        <Stack gap={20} py={20} px={10} mih="calc(40vh - 20px)">
+        <Stack gap={20} py={15} px={5} mih="calc(50vh - 30px)">
           {/* <Text c="gray" ta="center" size="sm">Detail Pembayaran</Text> */}
           <SummaryBody />
           <Button
@@ -187,7 +187,12 @@ const TicketViewBlock = ({
         <div className='flex gap-4 items-center'>
           <Button
             onClick={() => setOpenDetail(true)}
-            rightSection={<Icon icon="uiw:up" />}
+            rightSection={(
+              <Flex gap={10} align="center">
+                <Badge color="red" size="sm">{totalCount}</Badge>
+                <Icon icon="uiw:up" />
+              </Flex>
+            )}
             variant="transparent"
             className={`md:!hidden !text-primary-base`}>
             Detail

@@ -243,15 +243,17 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
             <div className='flex items-center justify-end flex-1 gap-[15px]'>
               <div className=''>
                 <div className='flex items-center'>
-                <button
-                  type='button'
-                  className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
-                >
-                  <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
-                    <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
-                    <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
-                  </Link>
-                </button>
+                  {!(route.startsWith('/event/')) && (
+                    <button
+                      type='button'
+                      className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
+                    >
+                      <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
+                        <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
+                        <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
+                      </Link>
+                    </button>
+                  )}
 
                   {(route.startsWith('/merch-order') || route.startsWith('/merch-cart') || route.startsWith('/merchandise')) && (
                     <Indicator label={String(cartCount)} size="lg" offset={8} color="red">
@@ -265,7 +267,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     </Indicator>
                   )}
 
-                  {users?.id && (
+                  {/* {users?.id && (
                     <button
                       type='button'
                       className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
@@ -273,7 +275,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     >
                       <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
                     </button>
-                  )}
+                  )} */}
 
                   <div className='relative ml-3'>
                     {isLogin ? (
@@ -318,10 +320,32 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </>
                     )}
 
-                    <Flex gap={10}>
-                      {/* <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
-                        <Icon icon="uiw:search" className={`text-[20px]`} />
-                      </ActionIcon> */}
+                    <Flex gap={15} align="center">
+                      <Menu offset={20} width="250px" radius={10}>
+                        <Menu.Target>
+                          <Card bg="white" p={i18n.language.toLowerCase() == 'id' ? 7 : 10} radius={999}>
+                            <Icon
+                              icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "cif:us"}
+                              className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[16px]'}`} />
+                          </Card>
+                        </Menu.Target>
+                        <Menu.Dropdown w={150}>
+                          <Menu.Label>Bahasa</Menu.Label>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="twemoji:flag-indonesia" className={`text-[24px]`} />
+                              <Text>IN</Text>
+                            </Flex>
+                          </Menu.Item>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="cif:us" />
+                              <Text>EN</Text>
+                            </Flex>
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
                           <UnstyledButton>
@@ -363,20 +387,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
-                          <Menu.Divider/>
-                          <Menu.Label>Bahasa</Menu.Label>
-                          <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
-                            <Flex align="center" gap={10}>
-                              <Icon icon="twemoji:flag-indonesia" />
-                              <Text>Indonesia</Text>
-                            </Flex>
-                          </Menu.Item>
-                          <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
-                            <Flex align="center" gap={10}>
-                              <Icon icon="fxemoji:greatbritainflag" />
-                              <Text>English</Text>
-                            </Flex>
-                          </Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
