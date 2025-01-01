@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, Modal, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, LoadingOverlay, Modal, NumberFormatter, Stack, Text, Tooltip } from '@mantine/core';
 import { TicketProps } from '@/utils/globalInterface';
 import moment from 'moment';
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -11,6 +11,7 @@ import { SeatmapData } from '@/utils/formInterface';
 import chunk from '@/utils/chunk';
 import { contrastColor } from 'contrast-color';
 import _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 interface OrderCounterProps {
     count?: number | string[];
@@ -30,13 +31,16 @@ interface OrderCounterProps {
 
 
 
-const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
-    // const _ticketData = {...__ticketData, 
-    //     ticket_date: '2024-12-17',
-    //     ticket_end: '2024-12-19',
-    //     starting_time: '21:12:00',
-    //     ending_time: '08:50:00',
-    // };
+const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+    const _ticketData = {...__ticketData, 
+        ticket_date: '2024-12-17',
+        ticket_end: '2025-12-19',
+        starting_time: '21:12:00',
+        ending_time: '08:50:00',
+    };
+
+    const { t, i18n } = useTranslation();
+    const { locale, locales } = useRouter();
     const count = useMemo(() => {
         if (!_count) return 0;
         return typeof _count == 'number' ? _count : _count.length;
@@ -48,6 +52,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     }, [ticket]);
 
     const [isCurrent, setIsCurrent] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [timeoutHash, setTimeoutHash] = useState('');
     const interval = useInterval(() => {
         if (!isCurrent) {
@@ -99,7 +104,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box></Box>
                     <Badge color="red" className={`shrink-0`}>
-                        Habis Terjual
+                        {t('soldOut')}
                     </Badge>
                 </>
             );
@@ -109,7 +114,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        Event Selesai
+                        {t('eventDone')}
                     </Badge>
                 </>
             );
@@ -119,14 +124,14 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai
+                            {price <= 0 ? t('registrationStarted') : t('ticketSalesStarted')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
                         </Text>
                     </Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        Belum dimulai
+                        {t('notStarted')}
                     </Badge>
                 </>
             );
@@ -136,7 +141,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        {price <= 0 ? 'Registrasi' : 'Penjualan'} Selesai
+                        {price <= 0 ? t('salesDone') : t('registrationDone')} 
                     </Badge>
                 </>
             );
@@ -146,7 +151,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box>
                         <Text size="sm" className={`!text-primary-base`}>
-                            {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir
+                            {price <= 0 ? t('registrationEnded') : t('ticketSalesEnded')}
                         </Text>
                         <Text size="xs" className={`!text-primary-base`}>
                             {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
@@ -154,7 +159,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     </Box>
                     {ticketData.ticket_category == 'Seated' ? (
                         <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)}>
-                            Pilih Seat
+                            {t('selectSeat')}
                         </Button>
                     ): (
                         <Flex align="center" gap={15}>
@@ -174,7 +179,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
             <>
                 <Box></Box>
                 <Badge color="gray" className={`shrink-0`}>
-                    Event Selesai
+                    {t('eventDone')}
                 </Badge>
             </>
         );
@@ -183,34 +188,55 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     return (
         <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? '!pb-[150px]' : ''}`} bg={isSoldOut || isReady || isFinish ? '#fafafa' : undefined}>
             {/* {JSON.stringify(ticket)} */}
-            {seatmapOpen == index && window?.innerWidth > 767 && (
+            {seatmapOpen == index && window?.innerWidth > 767 && !isFullscreen && (
                 <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
                     <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
-                        Kembali
+                        {t('back')}
                     </Button>
 
-                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">Pilih Kursi</Text>
+                    <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">{t('selectSeat')}</Text>
 
-                    <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                    <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                 </Card>
             )}
 
-            {window?.innerWidth < 767 && (
+            {(window?.innerWidth < 767 || isFullscreen) && (
                 <Drawer
-                    title={`Pilih Seat ${ticketData.name}`}
+                    title={(
+                        <Stack gap={4}>
+                            <Text>{`${t('selectSeat')} ${ticketData.name}`}</Text>
+                            {((selectedSeat?.length ?? 0) > 0) && 
+                                <Text size="sm" c="gray">Seat No: {selectedSeat?.map((e, i) => (
+                                    <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
+                                        {e}
+                                    </Badge>
+                                ))}
+                                </Text>
+                            }
+                        </Stack>
+                    )}
                     opened={seatmapOpen == index}
                     onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
                     position="bottom"
                     radius={25}
-                    size="58vh"
+                    size={isFullscreen ? "92vh" : "80vh"}
                     overlayProps={{  opacity: 0.3 }}>
-                        <Card bg="gray.3" h="40vh" radius={10} className={`!border-primary-disabled/35 !border`}>
-                            <SeatmapViewer ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
-                        </Card>
+                        <Stack gap={20} align="end">
+                            <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 330px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
+                                <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+                            </Card>
 
-                        <Button mt={8} size="md" fullWidth onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
-                            Selesai
-                        </Button>
+                            <Button
+                                mt={8}
+                                size="md"
+                                fullWidth={!isFullscreen}
+                                onClick={() => window?.innerWidth < 767 ? 
+                                    setSeatmapOpen && setSeatmapOpen(undefined) : 
+                                    setIsFullscreen(false)
+                                }>
+                                {isFullscreen ? 'Tutup Fullscreen' : 'Selesai'}
+                            </Button>
+                        </Stack>
                 </Drawer>
             )}
 
@@ -248,7 +274,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     <Divider className={`!border-dashed w-full`} />
                     <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
                 </Flex>
-                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`} wrap="wrap">
+                <Flex justify="space-between" gap={20} align="center" className={`shrink-0`}>
                     <StatusComponent />
                 </Flex>
             </Stack>
@@ -264,14 +290,17 @@ type SeatmapViewerProps = {
     setSelectSeat?: (data: string) => void;
     available?: string;
     ticketData?: TicketProps;
+    setIsFullscreen?: (data: boolean) => void;
+    isFullscreen?: boolean;
 }
 
-const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, available, setIsFullscreen, isFullscreen }: SeatmapViewerProps) => {
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [scale, setScale] = useState(1);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
     const canvasWrap = useRef<HTMLDivElement>(null);
     const { seatmapData, seatmapOpen } = useContext(Context);
+    const [lastTouch, setLastTouch] = useState<React.Touch>();
 
     useEffect(() => {
         if (seatmapOpen !== undefined) {
@@ -324,6 +353,39 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
             // }
         },
+        touchdown: (event: React.TouchEvent<HTMLDivElement>) => {
+            setIsCanvasMove(true);
+            // setSelected(null);
+            const [x, y] = canvasWrap?.current?.style?.transform
+            ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+            ?.slice(1)
+            .map(Number) || [0, 0];
+
+            // setCanvasPos([x, y]);
+        },
+        touchup: () => {
+            setIsCanvasMove(false);
+        },
+        touchmove: (event: React.TouchEvent<HTMLDivElement>) => {
+            const touch = event.touches[0];
+            const lastTouch = JSON.parse(localStorage.getItem('lastTouch') || '{"pageX": 0, "pageY": 0}');
+        
+            if (isCanvasMove && canvasWrap?.current) {
+                const [x, y] = canvasWrap?.current?.style?.transform
+                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                    ?.slice(1)
+                    .map(Number) || [0, 0];
+        
+                const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / scale;
+                const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / scale;
+        
+                if (canvasWrap?.current?.style) {
+                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                }
+        
+                localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
+            }
+        }                
     }
 
     useEffect(() => {
@@ -339,10 +401,22 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             onMouseDown={handleMouse.down}
             onMouseUp={handleMouse.up}
             onMouseMove={handleMouse.move}
-            onTouchStart={handleMouse.down}
-            onTouchEnd={handleMouse.up}
-            // onTouchMove={handleMouse.move}
+            onTouchStart={handleMouse.touchdown}
+            onTouchEnd={handleMouse.touchup}
+            onTouchMove={handleMouse.touchmove}
             className={`h-full w-full relative z-30 [&_*]:!select-none`}>
+            <Flex className={`!absolute top-0 right-0 z-50`} gap={10}>
+                <ActionIcon className={`!hidden md:!block`} color="gray.1" radius="xl" onClick={() => setIsFullscreen && setIsFullscreen(!isFullscreen)}>
+                    <Icon icon="lucide:fullscreen" className={`text-primary-base`} />
+                </ActionIcon>
+                <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
+                    <Icon icon="uiw:minus" className={`text-primary-base`} />
+                </ActionIcon>
+                <ActionIcon color="gray.1" radius="xl" onClick={() => scale < 2 && setScale(scale + 0.1)}>
+                    <Icon icon="uiw:plus" className={`text-primary-base`} />
+                </ActionIcon>
+            </Flex>
+
             <Card
                 ref={canvasWrap}
                 bg="transparent"
@@ -353,7 +427,6 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 }}
                 className={`z-20 !overflow-visible top-2/4`}
             >
-
                 <Box className={`absolute top-2/4 left-2/4 w-[2px] h-[999vh] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
                 <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
 
@@ -366,25 +439,44 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
 }
 
 const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available }: SeatmapViewerProps) => {
+    const [loading, setLoading] = useState(false);
     const getContrastColor = useCallback((color: string) => {
         return contrastColor({ bgColor: color, threshold: 255 * 0.6 });
     }, []);
 
     const availableSeat = useMemo(() => {
-        return available?.split(',');
-    }, [available]);
+        const soldSeat = ticketData?.has_ordered_seatnumber?.map(e => e.seatnumber_ticket  ?? '') ?? [];
+        return available?.split(',').filter(e => !soldSeat.includes(e));
+    }, [available, ticketData]);
 
     const filteredArea = useMemo(() => {
-        return (data ?? []).map(e => ({
+        setLoading(true);
+
+        const result = (data ?? []).map(e => ({
             ...e,
-            seat: chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+            seat: chunk(
+                (Array((e.row ?? 1) * (e.col ?? 1))
+                    .fill(e.prefix)
+                    .map((e, i) => (`${e}${i + 1}`)) ?? [])
+                    .map(s => ({ 
+                        code: s,
+                        active: availableSeat?.includes(s),
+                        color: ticketData?.seat_color ?? e.seatcolor ?? '#194e9e',
+                        selected: selectedSeat?.includes(s)
+                    }))
+                , (e.col ?? 1)
+            )
         }));
+
+        setLoading(false);
+        return result;
     }, [selectedSeat]);
 
     if (!data) return <></>;
 
     return (
         <>
+            <LoadingOverlay visible={loading} />
             {filteredArea.map((e, i) => (
                 // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                     <Box
@@ -418,33 +510,33 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                                 </Center>
                             )}
 
-                            {e.type == 'seat' && (
+                            {e.type != 'box' && (
                                 <Stack h="100%" align="center" justify="center" gap={5} p={10}>
                                     {e.text && <Text size="xs" c="gray">{e.text}</Text>}
                                     <Stack gap={3} w="100%" h="100%" justify="space-between">
                                         {(e.seat ?? []).map((x, r) => (
                                             <Flex w="100%" h="100%" justify="space-between" key={r} className={`!gap-[7px] md:!gap-[5px]`}>
                                                 {x.map((z, c) => (
-                                                    <Tooltip label={z} key={c} fw={600}>
+                                                    <Tooltip label={z.code} key={c} fw={600}>
                                                         <Box
-                                                            onClick={() => availableSeat?.includes(z) && setSelectSeat && setSelectSeat(z)}
-                                                            opacity={available?.includes(z) ? selectedSeat?.includes(z) ? 0.5 : 1 : 0.1}
+                                                            onClick={() => z.active && setSelectSeat && setSelectSeat(z.code)}
+                                                            opacity={z.active ? z.selected ? 0.5 : 1 : 0.1}
                                                             w="100%" h="100%" key={c}
                                                             className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                             {/* <Center w="100%" h="100%">
-                                                                <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
+                                                                <Text size="xs" c={getContrastColor(z.selected ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
                                                                     {z}
                                                                 </Text>
                                                             </Center> */}
                                                             <Box
-                                                                className={`relative z-10 !rounded-[5px] mt-[5px] border ${selectedSeat?.includes(z) ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
+                                                                className={`relative z-10 !rounded-[5px] mt-[5px] border ${z.selected ? 'border-[#fafafa30]' : ' border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 7px)"
-                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
+                                                                bg={z.color}
                                                             />
                                                             <Box
-                                                                className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${selectedSeat?.includes(z) ? '' : 'border border-[#d0d0d0]'}`}
+                                                                className={`w-[calc(70%)] !rounded-[5px] absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${z.selected ? '' : 'border border-[#d0d0d0]'}`}
                                                                 h="calc(100% - 5px)"
-                                                                bg={ticketData?.seat_color ?? e.seatcolor ?? '#194e9e'}
+                                                                bg={z.color}
                                                             />
                                                         </Box>
                                                     </Tooltip>

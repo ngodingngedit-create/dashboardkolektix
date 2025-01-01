@@ -46,6 +46,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { faBookmark as bookmarkSolid } from '@fortawesome/free-solid-svg-icons';
 import { modals } from '@mantine/modals';
 import { SeatmapData } from '@/utils/formInterface';
+import { useTranslation } from 'react-i18next';
 
 interface Form {
     nik: string;
@@ -102,6 +103,7 @@ export const Context = createContext<{
 }>({});
 
 const EventDetails = () => {
+    const { t } = useTranslation();
     const { width } = useWindowSize();
     const [menu, setMenu] = useState(1);
     const [step, setStep] = useState(0);
@@ -733,7 +735,7 @@ const EventDetails = () => {
                                             setMenu(2);
                                         }}
                                     >
-                                        {isGratis ? 'Registrasi' : 'Lihat'} Tiket
+                                        {isGratis ? t('registrationTicketTab') : t('openTicketTab')}
                                     </button>
                                 </Link>
                             </div>
@@ -763,7 +765,7 @@ const EventDetails = () => {
                                             className="text-white text-xs mb-1"
                                             // onClick={() => (step === 33 ? setStep(66) : setStep(100))}
                                         >
-                                            Selanjutnya
+                                            {t('next')}
                                         </button>
                                         <p className="text-white text-sm">{step === 33 ? 'Konfirmasi' : 'Pembayaran'}</p>
                                     </div>
@@ -775,12 +777,12 @@ const EventDetails = () => {
                                 <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
                                     <Countdown date={countdownTime} renderer={renderer} />
                                     <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
-                                    <p className='text-xs'>Segera selesaikan pesananmu</p>
+                                    <p className='text-xs'>{t('completeYourOrder')}</p>
                                 </div>
                                 <Flex align="center" gap={10}>
-                                    <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
+                                    <Button color="secondary" label={t('previous')} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                                     {step === 66 ? (
-                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
+                                        <Button color="primary" label={t('next')} loading={loading} disabled={loading || payment === ''} onClick={submitData} />
                                     ) : step === 100 && transactionData ? (
                                         <Button
                                             color="primary"
@@ -804,7 +806,7 @@ const EventDetails = () => {
                                             }
                                         />
                                     ) : (
-                                        <Button color="primary" label="Selanjutnya" loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                                        <Button color="primary" label={t('next')} loading={loading} disabled={!isFormValid || loading} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}/>// onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
                                     )}
                                 </Flex>
                             </div>
@@ -814,12 +816,12 @@ const EventDetails = () => {
                             <div className='hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md'>
                                 <Countdown date={countdownTime} renderer={renderer} />
                                 <div className='w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200'></div>
-                                <p className='text-xs'>Segera selesaikan pesananmu</p>
+                                <p className='text-xs'>{t('completeYourOrder')}</p>
                             </div>
                             <Flex align="center" gap={10}>
-                                <Button color="secondary" label="Sebelumnya" onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
+                                <Button color="secondary" label={t('previous')} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                                 {step === 66 ? (
-                                    <Button color="primary" label="Selanjutnya" loading={loading} disabled={loading || payment === ''} onClick={submitData} />
+                                    <Button color="primary" label={t('next')} loading={loading} disabled={loading || payment === ''} onClick={submitData} />
                                 ) : step === 100 && transactionData ? (
                                     <Button
                                         color="primary"
@@ -843,7 +845,7 @@ const EventDetails = () => {
                                         }
                                     />
                                 ) : (
-                                    <Button disabled={!isFormValid || loading} color="primary" loading={loading} label="Selanjutnya" onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
+                                    <Button disabled={!isFormValid || loading} color="primary" loading={loading} label={t('next')} onClick={() => (step === 33 ? isOnePayment ? submitForm() : ((detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))} />
                                 )}
                             </Flex>
                         </div>
@@ -863,7 +865,7 @@ const EventDetails = () => {
 
                                         {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
                                             <Stack gap={12} align="end">
-                                                <Text size="xs" c="white">Event Dimulai Dalam</Text>
+                                                <Text size="xs" c="white">{t('eventStartsIn')}</Text>
                                                 <EventCountdown startdate={detail?.start_date} starttime={detail?.start_time} />
                                             </Stack>
                                         )}
@@ -920,13 +922,13 @@ const EventDetails = () => {
                                             </div>
                                             <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
                                                 <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Deskripsi
+                                                    {t('description')}
                                                 </button>
                                                 <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Tiket
+                                                    {t('ticket')}
                                                 </button>
                                                 <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Syarat & Ketentuan
+                                                    {t('termAndCondition')}
                                                 </button>
                                             </div>
                                           </Stack>
@@ -948,13 +950,13 @@ const EventDetails = () => {
                                                     <Text>{detail?.location_name}</Text>
                                                 </Flex>
                                               </Link>
-                                              <Text size="sm" c="gray">Diselenggarakan Oleh</Text>
+                                              <Text size="sm" c="gray">{t('organizedBy')}</Text>
                                               <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
                                             </Stack>
                                           </div>
 
                                           <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)}/>
-                                          <Button onClick={() => setMenu(2)} label={ isGratis ? "Registrasi" : "Beli Tiket" } color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
+                                          <Button onClick={() => setMenu(2)} label={ isGratis ? t('registrationTicketTab') : t('buyTicket') } color="secondary" className={`${menu === 2 && 'hidden'} !text-[18px] !font-[600]`}/>
                                         </Stack>
                                     </div>
                                 </div>
@@ -1041,7 +1043,7 @@ const EventDetails = () => {
                             <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
                                 <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
                                 <div className={`w-full`}>
-                                    <p>Diselenggarakan Oleh</p>
+                                    <p>{t('organizedBy')}</p>
                                     <p className="font-semibold">{detail?.has_creator?.name}</p>
                                 </div>
                                 <ActionIcon color="#0B387C" variant="transparent" size="lg">
@@ -1051,13 +1053,13 @@ const EventDetails = () => {
                             <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-20">
                                 <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">
                                     <button onClick={() => setMenu(1)} className={` py-2 cursor-pointer ${menu === 1 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
-                                        Deskripsi
+                                        {t('description')}
                                     </button>
                                     <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
-                                        {isGratis ? "Registrasi" : "Tiket"}
+                                        {isGratis ? t('ticketRegistration') : t('ticket')}
                                     </button>
                                     <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && 'font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3'}`}>
-                                        Syarat & Ketentuan
+                                        {t('termAndCondition')}
                                     </button>
                                 </div>
                             </div>
@@ -1225,6 +1227,7 @@ const EventDetails = () => {
 };
 
 const EventCountdown = ({ startdate, starttime }: { startdate?: string, starttime?: string}) => {
+    const { t } = useTranslation();
     const [timoutHash, setTimeoutHash] = useState('');
     const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
 
@@ -1252,10 +1255,10 @@ const EventCountdown = ({ startdate, starttime }: { startdate?: string, starttim
         const seconds = diffInSeconds % secondsInMinute;
 
         const result: [number, string][] = [];
-        if (days > 0) result.push([days, "Hari"]);
-        result.push([hours, "Jam"]);
-        result.push([minutes, "Menit"]);
-        result.push([seconds, "Detik"]);
+        if (days > 0) result.push([days, t('hari')]);
+        result.push([hours, t('jam')]);
+        result.push([minutes, t('menit')]);
+        result.push([seconds, t('detik')]);
         return result;
     }, [timoutHash]);
 

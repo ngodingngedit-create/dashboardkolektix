@@ -29,11 +29,12 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu, Flex } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar, Text } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
 import { modals } from '@mantine/modals';
+import { useTranslation } from 'react-i18next';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   const [hasNotification, setHasNotification] = useState<boolean>(false);
   const [bgNav, setBgNav] = useState<boolean>(false);
   const { cartCount } = useContext(AppMainContext);
+  const { t, i18n } = useTranslation();
 
   const outsideClickMenu = useClickOutside(() => {
     setShowUserMenu(false);
@@ -157,7 +159,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-              {/* <div className='mr-2 w-8 md:hidden'>
+              <div className='mr-2 w-8 md:hidden'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -167,8 +169,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
                 </button>
-              </div> */}
-              {/* <div className='mr-2 w-8 hidden md:inline lg:inline'>
+              </div>
+              <div className='mr-2 w-8 hidden md:inline lg:inline'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -178,7 +180,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 >
                   <FontAwesomeIcon icon={showSideBar ? faXmark : faBars} />
                 </button>
-              </div> */}
+              </div>
               <div className='flex-shrink-0'>
                 <Link href='/'>
                   <Image className='w-20 md:w-20' src={Logo} alt='Kolektix Logo' />
@@ -238,18 +240,20 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </div>
-            <div className='flex items-center justify-end flex-1 gap-[5px]'>
+            <div className='flex items-center justify-end flex-1 gap-[15px]'>
               <div className=''>
                 <div className='flex items-center'>
-                <button
-                  type='button'
-                  className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
-                >
-                  <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
-                    <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
-                    <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
-                  </Link>
-                </button>
+                  {!(route.startsWith('/event/')) && !(route.startsWith('/transaction-woauth')) && (
+                    <button
+                      type='button'
+                      className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
+                    >
+                      <Link href={!userData?.has_creator ? '/register/creator' : '/create-event'} className='flex items-center'>
+                        <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
+                        <span className='ml-1 hidden lg:inline whitespace-nowrap'>Buat Event</span>
+                      </Link>
+                    </button>
+                  )}
 
                   {(route.startsWith('/merch-order') || route.startsWith('/merch-cart') || route.startsWith('/merchandise')) && (
                     <Indicator label={String(cartCount)} size="lg" offset={8} color="red">
@@ -263,7 +267,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     </Indicator>
                   )}
 
-                  {users?.id && (
+                  {/* {users?.id && (
                     <button
                       type='button'
                       className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
@@ -271,7 +275,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     >
                       <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
                     </button>
-                  )}
+                  )} */}
 
                   <div className='relative ml-3'>
                     {isLogin ? (
@@ -316,15 +320,46 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </>
                     )}
 
-                    <Flex gap={10}>
-                      {/* <ActionIcon variant="transparent" color="white" className={`md:!hidden`}>
-                        <Icon icon="uiw:search" className={`text-[20px]`} />
-                      </ActionIcon> */}
+                    <Flex gap={15} align="center">
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <ActionIcon variant="transparent" color="white">
-                            <Icon icon="uiw:menu" className={`text-[20px]`} />
-                          </ActionIcon>
+                          <Card bg="gray.3" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999}>
+                            <Icon
+                              icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "flag:us-4x3"}
+                              className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[18px]'}`} />
+                          </Card>
+                        </Menu.Target>
+                        <Menu.Dropdown w={150}>
+                          <Menu.Label>{t('language')}</Menu.Label>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="twemoji:flag-indonesia" className={`text-[24px]`} />
+                              <Text>Indonesia</Text>
+                            </Flex>
+                          </Menu.Item>
+                          <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
+                            <Flex align="center" gap={10}>
+                              <Icon icon="flag:us-4x3" className={`text-[16px]`} />
+                              <Text>English</Text>
+                            </Flex>
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+
+                      <Menu offset={20} width="250px" radius={10}>
+                        <Menu.Target>
+                          <UnstyledButton>
+                            <Card p={isLogin ? 0 : 8} c={isLogin ? "#02255A" : "white"} bg={isLogin ? "white" : "#02255A"} radius="xl">
+                              {isLogin ? (
+                                <Flex gap={15} align="center" py={4} pl={16} pr={4}>
+                                  <Icon icon="uiw:menu" className={`text-[18px]`} />
+                                  <Avatar size={30} src={users?.has_creator?.image_url} />
+                                </Flex>
+                              ) : (
+                                <Icon icon="solar:login-2-broken" className={`text-[24px] mr-[4px]`} />
+                              )}
+                            </Card>
+                          </UnstyledButton>
                         </Menu.Target>
                         <Menu.Dropdown>
                           {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
@@ -333,7 +368,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Label>Akun</Menu.Label>
                           {!isLogin ? (
                             <>
-                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken"/>} color="#0B387C" component={Link} href="/auth">Login / Daftar</Menu.Item>
                               {/* <Menu.Item leftSection={<Icon icon="hugeicons:account-setting-03" className={`text-[18px]`}/>} color="#0B387C" component={Link} href="/auth-creator">Login Creator</Menu.Item> */}
                               {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
                             </>

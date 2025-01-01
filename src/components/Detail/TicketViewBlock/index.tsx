@@ -3,9 +3,10 @@ import DateTab from '@/components/DateTab';
 import { TicketProps } from '@/utils/globalInterface';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
-import { ActionIcon, Alert, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Context } from '@/pages/event/[slug]';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   counts: { [key: number]: number | string[] };
@@ -38,6 +39,7 @@ const TicketViewBlock = ({
   setSelected,
   storeLocalStorage,
 }: Props) => {
+  const { t } = useTranslation();
   const [edit, setEdit] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const { ticket, setTicket } = useContext(Context);
@@ -73,10 +75,10 @@ const TicketViewBlock = ({
   const SummaryBody = () => (
     <Stack gap={15}>
       <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
-        <Text size="sm" fw={600}>Tiket Dipilih</Text>
+        <Text size="sm" fw={600}>{t('selectedTicket')}</Text>
         <UnstyledButton onClick={() => setEdit(!edit)}>
           <Flex align="center" className={`${edit ? '[&_*]:!text-grey' : '[&_*]:!text-primary-base'}`} gap={8}>
-            <Text fw={600} size="sm">{edit ? 'Tutup Edit' : 'Edit'}</Text>
+            <Text fw={600} size="sm">{edit ? t('selectedTicketEndEdit') : 'Edit'}</Text>
             {!edit && <Icon icon="iconoir:edit" />}
           </Flex>
         </UnstyledButton>
@@ -90,7 +92,7 @@ const TicketViewBlock = ({
             <Flex gap={10}>
               <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`}/>
               <Stack gap={0}>
-                <Text size="sm">Tiket {e.name} ({e.seat_number?.length ?? e.qty_ticket}x)</Text>
+                <Text size="sm">Tiket {e.name} <Badge ml={5} className={`translate-y-[-3px]`} size="xs" color="red">{e.seat_number?.length ?? e.qty_ticket}x</Badge></Text>
                 {e.seat_number && <Text size="xs" c="gray">Seat No: {e.seat_number.join(', ')}</Text>}
               </Stack>
             </Flex>
@@ -109,7 +111,7 @@ const TicketViewBlock = ({
 
         {(ticket?.length ?? 0) == 0 && (
           <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
-            Pilih tiket terlebih dahulu
+            {t('selectedTicketEmpty')}
           </Alert>
         )}
 
@@ -135,9 +137,9 @@ const TicketViewBlock = ({
         withCloseButton={false}
         position="bottom"
         radius="20px 20px 0 0"
-        size="40vh"
+        size="50vh"
       >
-        <Stack gap={20} py={20} px={10} mih="calc(40vh - 20px)">
+        <Stack gap={20} py={15} px={5} mih="calc(50vh - 30px)">
           {/* <Text c="gray" ta="center" size="sm">Detail Pembayaran</Text> */}
           <SummaryBody />
           <Button
@@ -185,7 +187,12 @@ const TicketViewBlock = ({
         <div className='flex gap-4 items-center'>
           <Button
             onClick={() => setOpenDetail(true)}
-            rightSection={<Icon icon="uiw:up" />}
+            rightSection={(
+              <Flex gap={10} align="center">
+                <Badge color="red" size="sm">{totalCount}</Badge>
+                <Icon icon="uiw:up" />
+              </Flex>
+            )}
             variant="transparent"
             className={`md:!hidden !text-primary-base`}>
             Detail

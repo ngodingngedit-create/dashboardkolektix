@@ -170,7 +170,14 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
 
     const handleInput = (index: number, field: keyof Form, value: string) => {
         let newForm = [...form];
-        newForm[index] = { ...newForm[index], [field]: value };
+        if (field == 'no_telp') {
+            var phone = value.replaceAll(/\D/g, '')
+            phone = phone.replace(/^(?!0|6)(\d+)/, '628$1')
+            phone = phone.replace(/^0/, '62')
+            newForm[index] = { ...newForm[index], [field]: phone };
+        } else {
+            newForm[index] = { ...newForm[index], [field]: value };
+        }
         setForm(newForm);
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
@@ -404,7 +411,9 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                 if (ticketForOwner) break;
                             }
 
-                            handleInput(index, 'seat_number', item.seat_number ?? '');
+                            if (!ticketForOwner?.seat_number && !!item.seat_number) {
+                                handleInput(index, 'seat_number', item.seat_number ?? '');
+                            }
 
                             return (
                                 <div className="bg-white mt-1" key={index}>
@@ -579,7 +588,9 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                         if (ticketForOwner) break;
                                     }
 
-                                    handleInput(index, 'seat_number', item.seat_number ?? '');
+                                    if (!ticketForOwner?.seat_number && !!item.seat_number) {
+                                        handleInput(index, 'seat_number', item.seat_number ?? '');
+                                    }
 
                                     return (
                                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>

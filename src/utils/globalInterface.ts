@@ -27,6 +27,9 @@ export interface TicketProps {
   available_seat_number?: string;
   seat_color?: string;
   ticket_category?: 'Seated' | 'Festival';
+  has_ordered_seatnumber?: {
+    seatnumber_ticket?: string;
+  }[];
 }
 
 export type TicketPropsInputRequest = Pick<TicketProps, 'event_id' | 'name' | 'qty' | 'price' | 'description' | 'ticket_date' | 'ticket_end'>
