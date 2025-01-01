@@ -31,13 +31,13 @@ interface OrderCounterProps {
 
 
 
-const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
-    const _ticketData = {...__ticketData, 
-        ticket_date: '2024-12-17',
-        ticket_end: '2025-12-19',
-        starting_time: '21:12:00',
-        ending_time: '08:50:00',
-    };
+const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData, setCount, isSoldOut, isFullbook, title, price, isLogin, isFinish, isReady, description }: OrderCounterProps) => {
+    // const _ticketData = {...__ticketData, 
+    //     ticket_date: '2024-12-17',
+    //     ticket_end: '2025-12-19',
+    //     starting_time: '21:12:00',
+    //     ending_time: '08:50:00',
+    // };
 
     const { t, i18n } = useTranslation();
     const { locale } = useRouter();
