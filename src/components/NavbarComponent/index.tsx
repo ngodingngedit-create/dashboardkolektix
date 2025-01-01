@@ -334,13 +334,13 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Item bg={i18n.language.toLowerCase() == 'id' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('id')}>
                             <Flex align="center" gap={10}>
                               <Icon icon="twemoji:flag-indonesia" className={`text-[24px]`} />
-                              <Text>IN</Text>
+                              <Text>Indonesia</Text>
                             </Flex>
                           </Menu.Item>
                           <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
                             <Flex align="center" gap={10}>
                               <Icon icon="flag:us-4x3" className={`text-[16px]`} />
-                              <Text>EN</Text>
+                              <Text>English</Text>
                             </Flex>
                           </Menu.Item>
                         </Menu.Dropdown>
