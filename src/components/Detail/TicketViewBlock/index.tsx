@@ -3,7 +3,7 @@ import DateTab from '@/components/DateTab';
 import { TicketProps } from '@/utils/globalInterface';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
-import { ActionIcon, Alert, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Context } from '@/pages/event/[slug]';
 
@@ -90,7 +90,7 @@ const TicketViewBlock = ({
             <Flex gap={10}>
               <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`}/>
               <Stack gap={0}>
-                <Text size="sm">Tiket {e.name} ({e.seat_number?.length ?? e.qty_ticket}x)</Text>
+                <Text size="sm">Tiket {e.name} <Badge ml={5} className={`translate-y-[-2px]`} size="xs" color="red">{e.seat_number?.length ?? e.qty_ticket}x</Badge></Text>
                 {e.seat_number && <Text size="xs" c="gray">Seat No: {e.seat_number.join(', ')}</Text>}
               </Stack>
             </Flex>
