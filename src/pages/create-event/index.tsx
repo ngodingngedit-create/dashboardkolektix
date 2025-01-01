@@ -171,7 +171,7 @@ const CreateEvent = () => {
     setLoading(true); // Set loading ke true
     Post('event', {
       ...form,
-      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color})),
+      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color ?? "#194e9e" })),
       seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
