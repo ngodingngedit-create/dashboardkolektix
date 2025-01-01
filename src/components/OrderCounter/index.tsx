@@ -205,7 +205,14 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                     title={(
                         <Stack gap={4}>
                             <Text>{`${t('selectSeat')} ${ticketData.name}`}</Text>
-                            {((selectedSeat?.length ?? 0) > 0) && <Text size="sm" c="gray">{`Seat No: ${selectedSeat?.join(', ')}`}</Text>}
+                            {((selectedSeat?.length ?? 0) > 0) && 
+                                <Text size="sm" c="gray">Seat No: {selectedSeat?.map((e, i) => (
+                                    <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
+                                        {e}
+                                    </Badge>
+                                ))}
+                                </Text>
+                            }
                         </Stack>
                     )}
                     opened={seatmapOpen == index}

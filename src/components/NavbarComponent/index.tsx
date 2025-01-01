@@ -243,7 +243,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
             <div className='flex items-center justify-end flex-1 gap-[15px]'>
               <div className=''>
                 <div className='flex items-center'>
-                  {!(route.startsWith('/event/')) && (
+                  {!(route.startsWith('/event/')) && !(route.startsWith('/transaction-woauth')) && (
                     <button
                       type='button'
                       className='relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5'
@@ -323,10 +323,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     <Flex gap={15} align="center">
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <Card bg="white" p={i18n.language.toLowerCase() == 'id' ? 7 : 10} radius={999}>
+                          <Card bg="white" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999}>
                             <Icon
-                              icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "cif:us"}
-                              className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[16px]'}`} />
+                              icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "flag:us-4x3"}
+                              className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[18px]'}`} />
                           </Card>
                         </Menu.Target>
                         <Menu.Dropdown w={150}>
@@ -339,7 +339,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </Menu.Item>
                           <Menu.Item bg={i18n.language.toLowerCase() == 'en' ? 'gray.1' : undefined} onClick={() => i18n.changeLanguage('en')}>
                             <Flex align="center" gap={10}>
-                              <Icon icon="cif:us" />
+                              <Icon icon="flag:us-4x3" className={`text-[16px]`} />
                               <Text>EN</Text>
                             </Flex>
                           </Menu.Item>
