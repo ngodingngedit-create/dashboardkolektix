@@ -127,13 +127,15 @@ const Auth = () => {
     })
   }, [data, step]);
 
-  const submitRegister = () => {
+  const submitRegister = (event?: React.FormEvent) => {
+    event?.preventDefault();
+
     if (data.name == '') setErrors({ name: 'Wajib Diisi' });
     if (data.email == '') setErrors({ email: 'Wajib Diisi' });
     if (data.password == '') setErrors({ password: 'Wajib Diisi' });
     if (data.password.length < 8) setErrors({ password: 'Minimal 8 Karakter' });
     if (data.password != data.password_confirm) setErrors({ password_confirm: 'Password Tidak Sama' });
-    if (Object.keys(errors).length > 0) return;
+    if (Object.values(errors).filter(e => !!e).length > 0) return;
 
     setLoading(true);
     Post('register-auth', data)
@@ -151,19 +153,25 @@ const Auth = () => {
       });
   };
 
-  const login = () => {
+  const login = (event?: React.FormEvent) => {
+    event?.preventDefault();
+
     if (data.email == '') setErrors({ email: 'Wajib Diisi' });
     if (data.password == '') setErrors({ password: 'Wajib Diisi' });
-    if (Object.keys(errors).length > 0) return;
+    if (Object.values(errors).filter(e => !!e).length > 0) return;
 
     setLoading(true);
     Post('login-auth', data)
       .then((res: any) => {
-        console.log(res);
         setLoading(false);
         setCountdownEndTime(new Date(Date.now() + 120000));
         setCountdownActive(true);
         setStep(2);
+
+        Cookies.set('token', res.access_token);
+        Cookies.set('user_data', JSON.stringify({...res.data, force_creator: true, role: 'Staff' }));
+        setLoading(false);
+        router.push('/dashboard');
       })
       .catch((err: any) => {
         if (err.response.status === 401) {

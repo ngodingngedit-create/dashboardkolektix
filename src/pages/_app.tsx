@@ -26,6 +26,7 @@ import { ModalsProvider } from '@mantine/modals';
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { DateInput } from '@mantine/dates';
+import appWithTranslation from '../i18n';
 
 config.autoAddCss = false;
 
@@ -176,7 +177,7 @@ export const AppMainContext = createContext<Context>({
   cartCount: 0
 });
 
-export default function App({ Component, pageProps }: AppProps) {
+function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [cartCount, setCartCount] = useState(0);
 
@@ -212,3 +213,5 @@ export default function App({ Component, pageProps }: AppProps) {
     </main>
   );
 }
+
+export default appWithTranslation(App);

@@ -46,6 +46,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { faBookmark as bookmarkSolid } from '@fortawesome/free-solid-svg-icons';
 import { modals } from '@mantine/modals';
 import { SeatmapData } from '@/utils/formInterface';
+import { useTranslation } from 'react-i18next';
 
 interface Form {
     nik: string;
@@ -102,6 +103,7 @@ export const Context = createContext<{
 }>({});
 
 const EventDetails = () => {
+    const { t } = useTranslation();
     const { width } = useWindowSize();
     const [menu, setMenu] = useState(1);
     const [step, setStep] = useState(0);
@@ -920,13 +922,13 @@ const EventDetails = () => {
                                             </div>
                                             <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
                                                 <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Deskripsi
+                                                    {t('description')}
                                                 </button>
                                                 <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Tiket
+                                                    {t('ticket')}
                                                 </button>
                                                 <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? 'font-semibold text-[#82b3ff]' : 'text-white'}`}>
-                                                    Syarat & Ketentuan
+                                                    {t('termAndCondition')}
                                                 </button>
                                             </div>
                                           </Stack>

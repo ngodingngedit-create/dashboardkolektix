@@ -11,6 +11,7 @@ import { SeatmapData } from '@/utils/formInterface';
 import chunk from '@/utils/chunk';
 import { contrastColor } from 'contrast-color';
 import _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 interface OrderCounterProps {
     count?: number | string[];
@@ -38,6 +39,8 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
         ending_time: '08:50:00',
     };
 
+    const { t, i18n } = useTranslation();
+    const { locale } = useRouter();
     const count = useMemo(() => {
         if (!_count) return 0;
         return typeof _count == 'number' ? _count : _count.length;
@@ -156,7 +159,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: __ticketData
                     </Box>
                     {ticketData.ticket_category == 'Seated' ? (
                         <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)}>
-                            Pilih Seat
+                            {t('selectSeat')}
                         </Button>
                     ): (
                         <Flex align="center" gap={15}>
