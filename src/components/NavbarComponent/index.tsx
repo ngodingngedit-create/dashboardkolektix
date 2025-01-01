@@ -29,7 +29,7 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
@@ -238,7 +238,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </div>
-            <div className='flex items-center justify-end flex-1 gap-[5px]'>
+            <div className='flex items-center justify-end flex-1 gap-[15px]'>
               <div className=''>
                 <div className='flex items-center'>
                 <button
@@ -322,14 +322,18 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       </ActionIcon> */}
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <ActionIcon size="xl" variant="transparent" c={"white"} bg={"#02255A"} radius="xl">
-                            {isLogin ? (
-                              <Icon icon="uiw:menu" className={`text-[24px] mr-[4px]`} />
-                            ) : (
-                              <Icon icon="solar:login-2-broken" className={`text-[24px] mr-[4px]`} />
-                            )}
-                            {/* <Icon icon="uiw:menu" className={`text-[20px]`} /> */}
-                          </ActionIcon>
+                          <UnstyledButton>
+                            <Card p={isLogin ? 0 : 8} c={isLogin ? "#02255A" : "white"} bg={isLogin ? "white" : "#02255A"} radius="xl">
+                              {isLogin ? (
+                                <Flex gap={15} align="center" py={4} pl={16} pr={4}>
+                                  <Icon icon="uiw:menu" className={`text-[18px]`} />
+                                  <Avatar size={30} src={users?.has_creator?.image_url} />
+                                </Flex>
+                              ) : (
+                                <Icon icon="solar:login-2-broken" className={`text-[24px] mr-[4px]`} />
+                              )}
+                            </Card>
+                          </UnstyledButton>
                         </Menu.Target>
                         <Menu.Dropdown>
                           {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
@@ -356,7 +360,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/talent">Talenta</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/lowongan">Lowongan</Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/merchandise">Merchandise</Menu.Item>
-                          <Menu.Item className={`md:!vhidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
+                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`}/>} component={Link} href="/venue">Venue</Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
