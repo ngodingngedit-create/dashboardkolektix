@@ -17,6 +17,7 @@ import ModalOTP from '@/components/Modals/ModalOTP';
 import { Flex, Image as ImageM } from '@mantine/core';
 import photo1 from "@images/register-creator-1.png";
 import photo2 from "@images/register-creator-2.png";
+import { Guide } from '@/components/Guide';
 
 interface FormCreator {
   image?: string;
@@ -198,20 +199,24 @@ const Creator = () => {
                   step.one ? 'h-40' : 'h-0'
                 }`}
               >
-                <InputField
-                  size='sm'
-                  type='text'
-                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                  placeholder='Nama penyelenggara event'
-                  onChange={(e) => setForm({ ...form, name_event_organizer: e.target.value })}
-                />
-                <InputField
-                  size='sm'
-                  type='text'
-                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                  placeholder='Nama Penanggung jawab'
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
+                <Guide guidekey={'create-creator'} text={'Isi Nama penyelenggara event'} order={0}>
+                  <InputField
+                    size='sm'
+                    type='text'
+                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                    placeholder='Nama penyelenggara event'
+                    onChange={(e) => setForm({ ...form, name_event_organizer: e.target.value })}
+                  />
+                </Guide>
+                <Guide guidekey={'create-creator'} text={'Isi Nama Penanggung jawab'} order={1}>
+                  <InputField
+                    size='sm'
+                    type='text'
+                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                    placeholder='Nama Penanggung jawab'
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </Guide>
 
                 <button
                   className={`text-sm px-8 py-1.5  bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
@@ -255,13 +260,15 @@ const Creator = () => {
                   step.two ? 'h-28' : 'h-0'
                 }`}
               >
-                <InputField
-                  size='sm'
-                  type='text'
-                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                  placeholder='Contoh: Jakarta'
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                />
+                <Guide guidekey={'create-creator'} text={'Masukan kota Creator seperti Jakarta/Bandung'} order={2}>
+                  <InputField
+                    size='sm'
+                    type='text'
+                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                    placeholder='Contoh: Jakarta'
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  />
+                </Guide>
 
                 <button
                   className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
@@ -307,12 +314,14 @@ const Creator = () => {
                   step.three ? 'h-28' : 'h-0'
                 }`}
               >
-                <InputField
-                  size='sm'
-                  type='number'
-                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                  placeholder='Contoh: 08123456789'
-                />
+                <Guide guidekey={'create-creator'} text={'Masukan No.Telp yang dapat dihubungi'} order={3}>
+                  <InputField
+                    size='sm'
+                    type='number'
+                    onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                    placeholder='Contoh: 08123456789'
+                  />
+                </Guide>
 
                 <button
                   className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
@@ -361,10 +370,10 @@ const Creator = () => {
                       style={{ width: '100%', height: '100%' }}
                     />
                   ) : (
-                    <>
+                    <Guide guidekey={'create-creator'} text={'Upload Logo Creator'} order={4}>
                       <Image src={imagePlus} alt='image-plus' />
                       <h3 className='font-semibold text-medium text-center'>Unggah logo creator</h3>
-                    </>
+                    </Guide>
                   )}
                 </label>
                 <button
@@ -407,15 +416,17 @@ const Creator = () => {
                   step.five ? 'h-28' : 'h-0'
                 }`}
               >
-                <InputField
-                  size='sm'
-                  type='text'
-                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                  placeholder='Contoh: johndoe@xxxx.com'
-                  disabled={userData?.email !== undefined}
-                  value={userData?.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
+                <Guide guidekey={'create-creator'} text={'Masukan Email creator'} order={5}>
+                  <InputField
+                    size='sm'
+                    type='text'
+                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                    placeholder='Contoh: johndoe@xxxx.com'
+                    disabled={userData?.email !== undefined}
+                    value={userData?.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </Guide>
                 {users?.name ? (
                   <button
                     className='text-sm px-8 py-1.5 bg-primary-base text-white rounded-md my-3 hover:bg-primary-dark transition-all disabled:bg-primary-disabled disabled:cursor-not-allowed'
