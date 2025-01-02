@@ -264,7 +264,7 @@ export default function ModalCreateTicket({
                   Tambah Tiket
                 </Button>
 
-                <Guide text="Buat Seatmap untuk mengatur posisi seat" key="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
+                <Guide text="Buat Seatmap untuk mengatur posisi seat" guidekey="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
                   <Button w="100%" display={addSeatMap ? 'none' : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
                     Buat Seatmap
                   </Button>
