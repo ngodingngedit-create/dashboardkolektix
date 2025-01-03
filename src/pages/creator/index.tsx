@@ -169,7 +169,7 @@ const Auth = () => {
         // setStep(2);
 
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify({...(res?.user_access ?? {}), force_creator: true, role: 'Staff' }));
+        Cookies.set('user_data', JSON.stringify({...(res?.data ?? {}), force_creator: true, role: 'Staff' }));
         setLoading(false);
         router.push('/dashboard');
       })

@@ -91,14 +91,14 @@ const sidebarData: SidebarData = [
             name: 'Check In Event',
             iconify: 'lets-icons:in',
             link: '/dashboard/my-event/checkin',
-            role: 'Creator'
+            role: 'Staff'
         },
         {
             id: 1,
             name: 'Report Event',
             iconify: 'carbon:report',
             link: '/dashboard/my-event/report',
-            role: 'Creator'
+            role: 'Staff'
         }
     ] },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
@@ -208,14 +208,14 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
             setRole(users?.role ?? 'Creator');
             console.log(users?.role ?? 'Creator')
         } else {
-            setRole('Pembeli');
+            setRole(users?.role ?? 'Pembeli');
         }
     }, [current, hasCreator]);
 
     useEffect(() => {
         if (route === '/dashboard/user') {
             Cookies.set('hasCreator', 'false');
-            setRole('Pembeli');
+            setRole(users?.role ?? 'Pembeli');
         } else {
             setRole(users?.role ?? 'Pembeli');
         }
@@ -497,14 +497,20 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                         Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
                                                     </button>
                                                 )}
-                                                <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                    <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                                                    Transaksi
-                                                </Link>
-                                                <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                    <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                                                    Bookmark
-                                                </Link>
+
+                                                {role != 'Staff' && (
+                                                    <>
+                                                        <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                            <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                                            Transaksi
+                                                        </Link>
+
+                                                        <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                            <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                                            Bookmark
+                                                        </Link>
+                                                    </>
+                                                )}
 
                                                 <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                                                     <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
