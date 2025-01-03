@@ -18,6 +18,7 @@ import { Flex, Image as ImageM } from '@mantine/core';
 import photo1 from "@images/register-creator-1.png";
 import photo2 from "@images/register-creator-2.png";
 import { Guide } from '@/components/Guide';
+import { notifications } from '@mantine/notifications';
 
 interface FormCreator {
   image?: string;
@@ -133,6 +134,14 @@ const Creator = () => {
   const handleFile = (e: any) => {
     const file = e.target.files?.[0];
     if (file) {
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+      if (file.size > MAX_SIZE) {
+        notifications.show({
+          message: 'Maksimal ukuran gambar adalah 2MB',
+          color: 'red',
+        })
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -157,7 +166,7 @@ const Creator = () => {
       <Flex gap={30} justify="space-evenly" align="end">
         <ImageM className={`!hidden md:!block`} src={photo1.src} w={photo1.width/11} />
 
-        <div className='text-dark w-fit py-10 min-h-screen flex flex-col items-center mt-4 px-4 sm:px-6 md:px-8 lg:px-0 '>
+        <div className='text-dark w-full px-[20px] md:w-fit py-10 flex flex-col items-center mt-4 sm:px-6 md:px-8 lg:px-0 '>
           <div className='text-start mb-8'>
             <h1 className='text-3xl font-semibold mb-2'>Memulai sebagai Creator</h1>
             <p className='text-grey'>Halo, silahkan isi detail creator dibawah ini ya!</p>
@@ -194,29 +203,27 @@ const Creator = () => {
                   )}
                 </div>
               </div>
+              <Guide guidekey={'create-creator'} text={'Masukkan detail penyelenggara'} order={0} opened={step.one}>
               <div
                 className={`my-2 flex flex-col gap-5 items-start transition-all ease-in-out delay-200 overflow-hidden ${
                   step.one ? 'h-40' : 'h-0'
                 }`}
               >
-                <Guide guidekey={'create-creator'} text={'Isi Nama penyelenggara event'} order={0}>
-                  <InputField
-                    size='sm'
-                    type='text'
-                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                    placeholder='Nama penyelenggara event'
-                    onChange={(e) => setForm({ ...form, name_event_organizer: e.target.value })}
-                  />
-                </Guide>
-                <Guide guidekey={'create-creator'} text={'Isi Nama Penanggung jawab'} order={1}>
-                  <InputField
-                    size='sm'
-                    type='text'
-                    // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                    placeholder='Nama Penanggung jawab'
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  />
-                </Guide>
+                <InputField
+                  size='sm'
+                  type='text'
+                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                  placeholder='Nama Penyelengara Event, Misal: javamusikindo'
+                  onChange={(e) => setForm({ ...form, name_event_organizer: e.target.value })}
+                />
+
+                <InputField
+                  size='sm'
+                  type='text'
+                  // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
+                  placeholder='Nama Pemilik'
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
 
                 <button
                   className={`text-sm px-8 py-1.5  bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
@@ -227,6 +234,7 @@ const Creator = () => {
                   Lanjut
                 </button>
               </div>
+              </Guide>
             </li>
             <li className='mb-10 ms-8 list-none'>
               <div className='flex items-center'>
@@ -260,12 +268,12 @@ const Creator = () => {
                   step.two ? 'h-28' : 'h-0'
                 }`}
               >
-                <Guide guidekey={'create-creator'} text={'Masukan kota Creator seperti Jakarta/Bandung'} order={2}>
+                <Guide guidekey={'create-creator'} text={'Masukan kota Creator seperti Jakarta/Bandung'} order={1} opened={step.two}>
                   <InputField
                     size='sm'
                     type='text'
                     // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
-                    placeholder='Contoh: Jakarta'
+                    placeholder='Misalnya Jakarta'
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
                   />
                 </Guide>
@@ -314,11 +322,12 @@ const Creator = () => {
                   step.three ? 'h-28' : 'h-0'
                 }`}
               >
-                <Guide guidekey={'create-creator'} text={'Masukan No.Telp yang dapat dihubungi'} order={3}>
+                <Guide guidekey={'create-creator'} text={'Masukan No.Telp yang dapat dihubungi'} order={2} opened={step.three}>
                   <InputField
                     size='sm'
                     type='number'
-                    onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                    value={form.phone_number}
+                    onChange={(e) => setForm({ ...form, phone_number: e.target.value.replaceAll(/\D/g, '').replace(/^(?!0|6)(\d+)/, '628$1').replace(/^(0)/, '62') })}
                     placeholder='Contoh: 08123456789'
                   />
                 </Guide>
@@ -358,24 +367,26 @@ const Creator = () => {
                   step.four ? 'h-40' : 'h-0'
                 }`}
               >
-                <label className='w-60 border-2 border-primary-light-200 rounded-lg border-dashed bg-primary-light flex flex-col items-center justify-center h-24 gap-4 cursor-pointer'>
-                  <input type='file' className='hidden' onChange={handleFile} />
-                  {image ? (
-                    <Image
-                      src={image}
-                      alt='image'
-                      className='object-contain'
-                      width={0}
-                      height={0}
-                      style={{ width: '100%', height: '100%' }}
-                    />
-                  ) : (
-                    <Guide guidekey={'create-creator'} text={'Upload Logo Creator'} order={4}>
-                      <Image src={imagePlus} alt='image-plus' />
-                      <h3 className='font-semibold text-medium text-center'>Unggah logo creator</h3>
-                    </Guide>
-                  )}
-                </label>
+                <Guide guidekey={'create-creator'} text={'Image size 512px x 512px & Max 2MB'} order={3} opened={step.four}>
+                  <label className='w-60 border-2 border-primary-light-200 rounded-lg border-dashed bg-primary-light flex flex-col items-center justify-center h-24 gap-4 cursor-pointer'>
+                    <input type='file' className='hidden' onChange={handleFile} accept='.jpg,.jpeg,.png' />
+                    {image ? (
+                      <Image
+                        src={image}
+                        alt='image'
+                        className='object-contain'
+                        width={0}
+                        height={0}
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    ) : (
+                      <>
+                        <Image src={imagePlus} alt='image-plus' />
+                        <h3 className='font-semibold text-medium text-center'>Unggah logo creator</h3>
+                      </>
+                    )}
+                  </label>
+                </Guide>
                 <button
                   className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
                     !step.five ? 'visible' : 'invisible'
@@ -416,7 +427,7 @@ const Creator = () => {
                   step.five ? 'h-28' : 'h-0'
                 }`}
               >
-                <Guide guidekey={'create-creator'} text={'Masukan Email creator'} order={5}>
+                <Guide guidekey={'create-creator'} text={'Masukan Email creator'} order={4} opened={step.five}>
                   <InputField
                     size='sm'
                     type='text'
