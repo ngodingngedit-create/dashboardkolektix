@@ -323,7 +323,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     <Flex gap={15} align="center">
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <Card bg="gray.3" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999} className={`!shadow-xl !overflow-visible`}>
+                          <Card bg="gray.3" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999} className={`!shadow-[3px_3px_10px_#00000065] !overflow-visible`}>
                             <Icon
                               icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "flag:us-4x3"}
                               className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[18px]'}`} />
