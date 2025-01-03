@@ -200,14 +200,14 @@ const Chat = () => {
             .filter((item: InboxListProps) => item.to.id == user?.id)
             .map((item: InboxListProps) => (
               <ChatList
-                name={item.from.name}
+                name={item.from.name ?? ''}
                 lastMsg={item.chats[0].message}
                 time={formatDate(item.chats[0].created_at)}
                 countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
                 key={item.from.id}
                 setSelected={setSelected}
                 selected={selected}
-                id={item.from.id}
+                id={item.from.id ?? 0}
                 setName={setName}
                 setMessages={setMessages}
                 messages={messages}

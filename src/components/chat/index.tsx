@@ -154,7 +154,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                 setName(creatorExist?.to.has_creator?.name ?? '-');
                 setMessages({
                     from: users?.id ?? 0,
-                    to: creatorExist.to.id,
+                    to: creatorExist?.to?.id ?? 0,
                     message: '',
                     inbox_id: creatorExist.id
                 })
@@ -177,7 +177,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                         setName(data?.name);
                         setMessages({
                             from: users?.id ?? 0,
-                            to: data.has_user.id,
+                            to: data?.has_user?.id ?? 0,
                             inbox_id: 0,
                             message: ''
                         });
@@ -479,7 +479,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                 time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
                                                 key={item.to.id} setSelected={setSelected}
                                                 selected={selected}
-                                                id={item.to.id}
+                                                id={item?.to?.id ?? 0}
                                                 setName={setName}
                                                 setMessages={setMessages}
                                                 messages={messages}
