@@ -79,8 +79,8 @@ const Profile = () => {
 
     useEffect(() => {
         if (user) {
-            setForm({ ...form, user_id: user.id });
-            getData(user.id);
+            setForm({ ...form, user_id: user.id ?? 0 });
+            getData(user.id ?? 0);
         }
     }, [user]);
 

@@ -145,7 +145,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     const [userData, setUserData] = useState<UserProps>();
     const [hasCreator, setHasCreator] = useState<boolean>(false);
     const [pop, setIsPop] = useState<boolean>(true);
-    const [role, setRole] = useState<'Creator' | 'Pembeli'>('Pembeli');
+    const [role, setRole] = useState<'Creator' | 'Pembeli' | 'Staff'>('Pembeli');
     const [open, setOpen] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [hasNotification, setHasNotification] = useState<boolean>(false);
@@ -197,7 +197,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         if (users) {
             console.log(users);
             setUserData(users);
-            if (users.has_creator) {
+            if (users.has_creator || users?.role == 'Staff') {
                 setHasCreator(true);
             }
         }
@@ -205,7 +205,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         if (current === 'true' && hasCreator) {
-            setRole('Creator');
+            setRole(users?.role ?? 'Creator');
+            console.log(users?.role ?? 'Creator')
         } else {
             setRole('Pembeli');
         }
@@ -215,6 +216,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         if (route === '/dashboard/user') {
             Cookies.set('hasCreator', 'false');
             setRole('Pembeli');
+        } else {
+            setRole(users?.role ?? 'Pembeli');
         }
     }, [route]);
 
@@ -280,7 +283,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                             <p className="text-[10px] ">{role}</p>
                                         </div>
                                         <div>
-                                            {hasCreator && (
+                                            {hasCreator && role != "Staff" && (
                                                 <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? 'opacity-100 delay-200' : 'opacity-0 delay-75'} transition-opacity `} onClick={() => setIsPop(!pop)}>
                                                     <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? 'rotate-0' : 'rotate-180'}  ${collapse ? 'opacity-100' : 'opacity-0'} transition-transform delay-100 ease-in-out duration-200 text-white`} />
                                                 </button>
@@ -289,7 +292,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                     </>
                                 )}
                             </div>
-                            <div className={`${(collapse ? pop : true) ? 'opacity-0 h-0' : 'opacity-100'} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                            <div className={`${(collapse ? pop : true) ? 'opacity-0 h-0' : 'opacity-100'} ${role == 'Staff' ? '!hidden' : ''} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
                                 <div className="flex justify-between mb-2">
                                     <Flex align="center" gap={7}>
                                         <Icon icon="hugeicons:money-03" />

@@ -51,7 +51,7 @@ export default function ModalBankForm({ isOpen, setIsOpen, user, getData }: Moda
     if (user) {
       setForm({
         ...form,
-        user_id: user.id,
+        user_id: user?.id ?? 0,
       });
     }
   }, [user]);

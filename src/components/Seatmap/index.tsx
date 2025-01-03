@@ -258,7 +258,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
                 {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify(data)}</Text> */}
                 <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
-                    <Guide key="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
+                    <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
                         <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                             Tambah Area
                         </Button>
@@ -273,7 +273,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
 
                 <Flex className={`!absolute bottom-4 left-2/4 -translate-x-2/4 z-50`} gap={10}>
                     {onFinishSelectSeat && (
-                        <Guide key="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
+                        <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
                             <Button onClick={onFinishSelectSeat} size="sm" rightSection={<Icon icon="uiw:check" />}>
                                 Selesai Pilih Seat
                             </Button>
@@ -430,7 +430,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                         </Flex>
                                     )}
 
-                                    <Guide key="guide-create-seatmap" opened={i == 2} text="Posisikan area sesuai yang diinginkan" order={2}>
+                                    <Guide guidekey="guide-create-seatmap" opened={i == 2} text="Posisikan area sesuai yang diinginkan" order={2}>
                                     <Box
                                         onMouseDown={() => handleMouse.boxDown(i)}
                                         bg={e.background ?? "gray.1"}

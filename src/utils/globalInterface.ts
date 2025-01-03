@@ -215,7 +215,7 @@ interface PaymentChannel {
   active: string;
 }
 
-export interface UserProps {
+export type UserProps = Partial<{
   id: number;
   name: string | null;
   role_id: number;
@@ -230,6 +230,7 @@ export interface UserProps {
   event_status_id: number;
   verified_status_id?: number;
   force_creator?: boolean;
+  role?: "Staff" | "Creator" | "Pembeli";
   bookmarked?: {
     id: number;
     user_id: number;
@@ -240,7 +241,7 @@ export interface UserProps {
     lowongan_id?: number;
     talenta_id?: number;
   }[]
-}
+}>
 
 export interface SliderProps {
   id: number;
