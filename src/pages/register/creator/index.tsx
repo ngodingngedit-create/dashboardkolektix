@@ -226,7 +226,7 @@ const Creator = () => {
                 />
 
                 <button
-                  className={`text-sm px-8 py-1.5  bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
+                  className={`${!form.name || !form.name_event_organizer ? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5  bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
                     !step.two ? 'visible' : 'invisible'
                   }`}
                   onClick={() => setStep({ ...step, one: !step.one, two: !step.two })}
@@ -268,7 +268,7 @@ const Creator = () => {
                   step.two ? 'h-28' : 'h-0'
                 }`}
               >
-                <Guide guidekey={'create-creator'} text={'Masukan kota Creator seperti Jakarta/Bandung'} order={1} opened={step.two}>
+                <Guide guidekey={'create-creator'} text={'Masukan Kota Asal Creator seperti Jakarta/Bandung'} order={1} opened={step.two}>
                   <InputField
                     size='sm'
                     type='text'
@@ -279,7 +279,7 @@ const Creator = () => {
                 </Guide>
 
                 <button
-                  className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
+                  className={`${!form.location ? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
                     !step.three ? 'visible' : 'invisible'
                   }`}
                   onClick={() => setStep({ ...step, two: !step.two, three: !step.three })}
@@ -333,7 +333,7 @@ const Creator = () => {
                 </Guide>
 
                 <button
-                  className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
+                  className={`${!form.phone_number ? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
                     !step.four ? 'visible' : 'invisible'
                   }`}
                   onClick={() => setStep({ ...step, three: !step.three, four: !step.four })}
@@ -388,7 +388,7 @@ const Creator = () => {
                   </label>
                 </Guide>
                 <button
-                  className={`text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
+                  className={`${!form.image ? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5 bg-primary-base text-white rounded-md hover:bg-primary-dark transition-all ${
                     !step.five ? 'visible' : 'invisible'
                   }`}
                   onClick={() => setStep({ ...step, four: !step.four, five: !step.five })}
@@ -440,7 +440,7 @@ const Creator = () => {
                 </Guide>
                 {users?.name ? (
                   <button
-                    className='text-sm px-8 py-1.5 bg-primary-base text-white rounded-md my-3 hover:bg-primary-dark transition-all disabled:bg-primary-disabled disabled:cursor-not-allowed'
+                    className={`${!form.email && userData?.email? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5 bg-primary-base text-white rounded-md my-3 hover:bg-primary-dark transition-all disabled:bg-primary-disabled disabled:cursor-not-allowed`}
                     disabled={loading}
                     onClick={submit}
                   >
@@ -448,7 +448,7 @@ const Creator = () => {
                   </button>
                 ) : (
                   <button
-                    className='text-sm px-8 py-1.5 bg-primary-base text-white rounded-md my-3 hover:bg-primary-dark transition-all disabled:bg-primary-disabled disabled:cursor-not-allowed'
+                    className={`${!form.email && userData?.email? '!pointer-events-none opacity-50' : ''} text-sm px-8 py-1.5 bg-primary-base text-white rounded-md my-3 hover:bg-primary-dark transition-all disabled:bg-primary-disabled disabled:cursor-not-allowed`}
                     disabled={loading}
                     onClick={submitRegister}
                   >
