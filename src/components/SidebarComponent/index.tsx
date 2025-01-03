@@ -89,6 +89,13 @@ const sidebarData: SidebarData = [
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Staff', submenu: [
         {
             id: 1,
+            name: 'Event Saya',
+            icon: faCalendar,
+            link: '/dashboard/my-event',
+            role: 'Staff'
+        },
+        {
+            id: 1,
             name: 'Check In Event',
             iconify: 'lets-icons:in',
             link: '/dashboard/my-event/checkin',
@@ -201,24 +208,25 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
             if (users.has_creator || users?.role == 'Staff') {
                 setHasCreator(true);
             }
+            setRole(users?.role ?? 'Pembeli');
         }
     }, [users]);
 
-    useEffect(() => {
-        if (current === 'true' && hasCreator) {
-            setRole(users?.role ?? 'Creator');
-        } else {
-            setRole(users?.role ?? 'Pembeli');
-        }
-    }, [current, hasCreator]);
+    // useEffect(() => {
+    //     if (current === 'true' && hasCreator) {
+    //         setRole(users?.role ?? 'Creator');
+    //     } else {
+    //         setRole('Pembeli');
+    //     }
+    // }, [current, hasCreator]);
 
     useEffect(() => {
-        if (route === '/dashboard/user') {
-            Cookies.set('hasCreator', 'false');
-            setRole(users?.role ?? 'Pembeli');
-        } else {
-            setRole(users?.role ?? 'Pembeli');
-        }
+        // if (route === '/dashboard/user') {
+        //     // Cookies.set('hasCreator', 'false');
+        //     setRole('Pembeli');
+        // } else {
+        //     setRole(users?.role ?? 'Pembeli');
+        // }
     }, [route]);
 
     const [visible, setIsVisible] = useState<boolean>(false);
@@ -498,7 +506,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     </button>
                                                 )}
 
-                                                {role != 'Staff' && (
+                                                {!['Staff', 'Admin'].includes(role ?? '') && (
                                                     <>
                                                         <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
                                                             <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
