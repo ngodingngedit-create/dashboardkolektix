@@ -30,7 +30,7 @@ type SidebarData = {
     icon?: IconDefinition;
     iconify?: string;
     link?: string;
-    role: "Creator" | "Pembeli" | "Staff";
+    role: UserProps['role'];
     submenu?: Omit<SidebarData, 'submenu'>;
 }[];
 
@@ -83,6 +83,7 @@ const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Staff', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/admin', role: 'Admin', iconify: undefined },
     { id: 1, name: 'Bookmark', link: '/dashboard/bookmark', role: 'Pembeli', iconify: 'material-symbols:bookmark' },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Staff', submenu: [
@@ -145,7 +146,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     const [userData, setUserData] = useState<UserProps>();
     const [hasCreator, setHasCreator] = useState<boolean>(false);
     const [pop, setIsPop] = useState<boolean>(true);
-    const [role, setRole] = useState<'Creator' | 'Pembeli' | 'Staff'>('Pembeli');
+    const [role, setRole] = useState<UserProps['role']>('Pembeli');
     const [open, setOpen] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [hasNotification, setHasNotification] = useState<boolean>(false);
@@ -206,7 +207,6 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (current === 'true' && hasCreator) {
             setRole(users?.role ?? 'Creator');
-            console.log(users?.role ?? 'Creator')
         } else {
             setRole(users?.role ?? 'Pembeli');
         }

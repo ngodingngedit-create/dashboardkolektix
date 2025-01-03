@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import { PasswordInput, TextInput } from '@mantine/core';
 import { useSetState } from '@mantine/hooks';
+import { UserProps } from '@/utils/globalInterface';
 
 interface RegisterForm {
   name: string;
@@ -154,10 +155,8 @@ const Auth = () => {
   };
 
   const getPermission = async () => {
-    Get('permissions', {})
-    .then((res: any) => {
-      Cookies.set('permission', res?.data);
-    })
+    const res = (await Get('permissions', {})) as any;
+    await Cookies.set('permissions', JSON.stringify(res.data));
   }
 
   const login = async (event?: React.FormEvent) => {
@@ -170,15 +169,16 @@ const Auth = () => {
     setLoading(true);
     Post('login-auth', data)
       .then(async (res: any) => {
+        await getPermission();
         setLoading(false);
         // setCountdownEndTime(new Date(Date.now() + 120000));
         // setCountdownActive(true);
         // setStep(2);
 
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify({...(res?.data ?? {}), force_creator: true, role: 'Staff' }));
+        const role: UserProps['role'] = res?.user_access?.some((e: any) => e?.has_role?.name == 'Admin') ? 'Admin' : 'Staff';
+        Cookies.set('user_data', JSON.stringify({...(res?.data ?? {}), force_creator: true, role }));
         setLoading(false);
-        await getPermission();
         router.push('/dashboard');
       })
       .catch((err: any) => {

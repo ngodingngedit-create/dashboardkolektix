@@ -230,7 +230,7 @@ export type UserProps = Partial<{
   event_status_id: number;
   verified_status_id?: number;
   force_creator?: boolean;
-  role?: "Staff" | "Creator" | "Pembeli";
+  role?: "Staff" | "Creator" | "Pembeli" | 'Admin';
   bookmarked?: {
     id: number;
     user_id: number;

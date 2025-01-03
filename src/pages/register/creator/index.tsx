@@ -210,6 +210,7 @@ const Creator = () => {
                 }`}
               >
                 <InputField
+                  autofocus
                   size='sm'
                   type='text'
                   // className='border-primary-light-200 text-sm px-2 py-1.5 border-2 focus:outline-primary-disabled rounded-md w-80'
