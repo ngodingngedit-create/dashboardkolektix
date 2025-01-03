@@ -135,7 +135,22 @@ const sidebarData: SidebarData = [
     { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
     { id: 20, name: 'Transaksi Lainnya', iconify: 'icon-park-solid:transaction', link: '/dashboard/transaction', role: 'Pembeli' },
     { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
-    { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
+    { id: 6, name: 'Merchandise', icon: faGift, role: 'Creator', submenu: [
+        {
+            id: 1,
+            name: 'Kelola Merchandise',
+            icon: faGift,
+            link: '/dashboard/merch',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'POS Merchandise',
+            iconify: 'hugeicons:cashier',
+            link: '/dashboard/merch-pos',
+            role: 'Creator'
+        }
+    ]},
     { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Pembeli' },
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat-creator', role: 'Creator' },

@@ -113,7 +113,7 @@ const Merch = () => {
         </div>
 
         <Flex gap={10} align="center">
-          <ButtonM
+          {/* <ButtonM
             leftSection={<Icon icon="hugeicons:cashier" className={`text-[20px]`} />}
             radius="xl"
             color="#0B387C"
@@ -121,12 +121,11 @@ const Merch = () => {
             href="/dashboard/merch-pos"
           >
             Penjualan Offline
-          </ButtonM>
+          </ButtonM> */}
           <ButtonM
             onClick={() => setModalCreate('')}
             leftSection={<Icon icon="icon-park-outline:add-one" className={`text-[24px]`} />}
             radius="xl"
-            variant="outline"
             color="#0B387C"
           >
             Buat Merchandise
