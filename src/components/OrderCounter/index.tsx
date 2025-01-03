@@ -141,7 +141,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <>
                     <Box></Box>
                     <Badge color="gray" className={`shrink-0`}>
-                        {price <= 0 ? t('salesDone') : t('registrationDone')} 
+                        {price <= 0 ? t('registrationDone') : t('salesDone')} 
                     </Badge>
                 </>
             );

@@ -9,7 +9,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
 import { Spinner } from '@nextui-org/react';
-import { Post } from '@/utils/REST';
+import { Get, Post } from '@/utils/REST';
 import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import { PasswordInput, TextInput } from '@mantine/core';
@@ -153,7 +153,14 @@ const Auth = () => {
       });
   };
 
-  const login = (event?: React.FormEvent) => {
+  const getPermission = async () => {
+    Get('permissions', {})
+    .then((res: any) => {
+      Cookies.set('permission', res?.data);
+    })
+  }
+
+  const login = async (event?: React.FormEvent) => {
     event?.preventDefault();
 
     if (data.email == '') setErrors({ email: 'Wajib Diisi' });
@@ -162,7 +169,7 @@ const Auth = () => {
 
     setLoading(true);
     Post('login-auth', data)
-      .then((res: any) => {
+      .then(async (res: any) => {
         setLoading(false);
         // setCountdownEndTime(new Date(Date.now() + 120000));
         // setCountdownActive(true);
@@ -171,6 +178,7 @@ const Auth = () => {
         Cookies.set('token', res.access_token);
         Cookies.set('user_data', JSON.stringify({...(res?.data ?? {}), force_creator: true, role: 'Staff' }));
         setLoading(false);
+        await getPermission();
         router.push('/dashboard');
       })
       .catch((err: any) => {
