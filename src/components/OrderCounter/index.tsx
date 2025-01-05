@@ -158,7 +158,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                         </Text>
                     </Box>
                     {ticketData.ticket_category == 'Seated' ? (
-                        <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)}>
+                        <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)} className={`shrink-0`}>
                             {t('selectSeat')}
                         </Button>
                     ): (
@@ -301,6 +301,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
     const canvasWrap = useRef<HTMLDivElement>(null);
     const { seatmapData, seatmapOpen } = useContext(Context);
     const [lastTouch, setLastTouch] = useState<React.Touch>();
+    const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (seatmapOpen !== undefined) {
@@ -330,7 +331,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
             ?.slice(1)
             .map(Number) || [0, 0];
 
-            setCanvasPos([x, y]);
+            // setCanvasPos([x, y]);
         },
         up: () => {
             setIsCanvasMove(false);
@@ -341,9 +342,12 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                     ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
                     ?.slice(1)
                     .map(Number) || [0, 0];
+                var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
 
-                const newX = x + event.movementX / scale;
-                const newY = y + event.movementY / scale;
+                if (currentScale <= 0.01) currentScale = 1;
+
+                const newX = x + event.movementX / currentScale;
+                const newY = y + event.movementY / currentScale;
 
                 if (canvasWrap?.current?.style) {
                     canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
@@ -355,11 +359,13 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
         },
         touchdown: (event: React.TouchEvent<HTMLDivElement>) => {
             setIsCanvasMove(true);
+            const touch = event.touches[0];
+            localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
             // setSelected(null);
-            const [x, y] = canvasWrap?.current?.style?.transform
-            ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
-            ?.slice(1)
-            .map(Number) || [0, 0];
+            // const [x, y] = canvasWrap?.current?.style?.transform
+            // ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+            // ?.slice(1)
+            // .map(Number) || [0, 0];
 
             // setCanvasPos([x, y]);
         },
@@ -369,23 +375,55 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
         touchmove: (event: React.TouchEvent<HTMLDivElement>) => {
             const touch = event.touches[0];
             const lastTouch = JSON.parse(localStorage.getItem('lastTouch') || '{"pageX": 0, "pageY": 0}');
-        
+            var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
+            if (currentScale <= 0.01) currentScale = 1;
+
             if (isCanvasMove && canvasWrap?.current) {
                 const [x, y] = canvasWrap?.current?.style?.transform
                     ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
                     ?.slice(1)
                     .map(Number) || [0, 0];
         
-                const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / scale;
-                const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / scale;
-        
+                const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / currentScale;
+                const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / currentScale;
+
                 if (canvasWrap?.current?.style) {
                     canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
                 }
         
                 localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
             }
-        }                
+        },
+        wheel: (event?: React.WheelEvent<HTMLDivElement>, force?: 'up' | 'down') => {
+            event?.preventDefault();
+            document.body.style.overflow = 'hidden';
+
+            var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
+            var scalingValue = 0.3;
+
+            if (((event?.deltaY ?? 0) > 0 || force == 'up') && currentScale > 0.5) {
+                currentScale -= scalingValue;
+            }
+
+            if (((event?.deltaY ?? 0) < 0 || force == 'down') && currentScale < 8) {
+                currentScale += scalingValue;
+            }
+
+            if (canvasWrap?.current?.style && currentScale > 0) {
+                canvasWrap.current.style.scale = `${String(currentScale)}`;
+            }
+
+                // Jika ada timeout sebelumnya, batalkan
+            if (scrollTimeout.current) {
+                clearTimeout(scrollTimeout.current);
+            }
+
+            // Izinkan kembali scroll setelah timeout
+            scrollTimeout.current = setTimeout(() => {
+                document.body.style.overflow = '';
+                scrollTimeout.current = null; // Reset timeout
+            }, 1000); // Timeout 1000ms
+        }    
     }
 
     useEffect(() => {
@@ -398,6 +436,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
 
     return (
         <div
+            onWheel={handleMouse.wheel}
             onMouseDown={handleMouse.down}
             onMouseUp={handleMouse.up}
             onMouseMove={handleMouse.move}
@@ -409,10 +448,10 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 <ActionIcon className={`!hidden md:!block`} color="gray.1" radius="xl" onClick={() => setIsFullscreen && setIsFullscreen(!isFullscreen)}>
                     <Icon icon="lucide:fullscreen" className={`text-primary-base`} />
                 </ActionIcon>
-                <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
+                <ActionIcon color="gray.1" radius="xl" onClick={() => handleMouse.wheel(undefined, 'up')}>
                     <Icon icon="uiw:minus" className={`text-primary-base`} />
                 </ActionIcon>
-                <ActionIcon color="gray.1" radius="xl" onClick={() => scale < 2 && setScale(scale + 0.1)}>
+                <ActionIcon color="gray.1" radius="xl" onClick={() => handleMouse.wheel(undefined, 'down')}>
                     <Icon icon="uiw:plus" className={`text-primary-base`} />
                 </ActionIcon>
             </Flex>
@@ -422,6 +461,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 bg="transparent"
                 pos="relative"
                 style={{
+                    overflow: 'hidden',
                     scale: `${scale * 100}%`,
                     transform: `translate(${canvasPos[0]}px, ${canvasPos[1]}px)`
                 }}
@@ -431,7 +471,7 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`}/>
 
                 <Box className={`absolute z-20 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
-                    <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={setSelectSeat} />
+                    <SeatmapItem ticketData={ticketData} data={data} selectedSeat={selectedSeat} available={available} setSelectSeat={!isCanvasMove  ? setSelectSeat : () => {}} />
                 </Box>
             </Card>
         </div>
@@ -496,9 +536,9 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                         )} */}
 
                         <Box
-                            bg={e.background ?? "gray.1"}
+                            bg={e.background ?? (e.type != 'box' ? 'transparent' : "gray.1")}
                             h="100%"
-                            className={`rounded-md shadow-lg`}>
+                            className={`rounded-md ${!e.background ? '' : 'shadow-lg'}`}>
                             <Box
                                 // onClick={() => handleSelect(i)}
                                 className={`absolute w-full h-full left-0 top-0 z-20`}
@@ -521,7 +561,7 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                                                         <Box
                                                             onClick={() => z.active && setSelectSeat && setSelectSeat(z.code)}
                                                             opacity={z.active ? z.selected ? 0.5 : 1 : 0.1}
-                                                            w="100%" h="100%" key={c}
+                                                            w={20} h={25} key={c}
                                                             className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                             {/* <Center w="100%" h="100%">
                                                                 <Text size="xs" c={getContrastColor(z.selected ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>

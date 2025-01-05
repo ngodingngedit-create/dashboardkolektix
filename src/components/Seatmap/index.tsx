@@ -54,6 +54,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
     const contentRef = useRef<Array<HTMLParagraphElement | null>>([]);
     const canvasContainerRef = useRef(null);
     const movableRef = useRef<MoveableRefType>(null);
+        const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
     const theme = useMantineTheme();
 
     const canvasWrap = useRef<HTMLDivElement>(null);
@@ -115,37 +116,71 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
         });
     };
 
-    const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-        if (event.deltaY > 0) {
-            scale > 0.5 && setScale(scale - 0.1);
-        } else if (event.deltaY < 0) {
-            scale < 2 && setScale(scale + 0.1);
+    const handleWheel = (event?: React.WheelEvent<HTMLDivElement>, force?: 'up' | 'down') => {
+        event?.preventDefault();
+        document.body.style.overflow = 'hidden';
+
+        var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
+        var scalingValue = 0.3;
+
+        if (((event?.deltaY ?? 0) > 0 || force == 'up') && currentScale > 0.5) {
+            currentScale -= scalingValue;
         }
+
+        if (((event?.deltaY ?? 0) < 0 || force == 'down') && currentScale < 8) {
+            currentScale += scalingValue;
+        }
+
+        if (canvasWrap?.current?.style && currentScale > 0) {
+            canvasWrap.current.style.scale = `${String(currentScale)}`;
+        }
+
+            // Jika ada timeout sebelumnya, batalkan
+        if (scrollTimeout.current) {
+            clearTimeout(scrollTimeout.current);
+        }
+
+        // Izinkan kembali scroll setelah timeout
+        scrollTimeout.current = setTimeout(() => {
+            document.body.style.overflow = '';
+            scrollTimeout.current = null; // Reset timeout
+        }, 1000); // Timeout 1000ms
     };
 
     const handleMouse = {
         down: () => {
             setIsCanvasMove(true);
-            setSelected(null);
+            // setSelected(null);
+            const [x, y] = canvasWrap?.current?.style?.transform
+            ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+            ?.slice(1)
+            .map(Number) || [0, 0];
+
+            // setCanvasPos([x, y]);
         },
         up: () => {
             setIsCanvasMove(false);
-            setIsDragSelect(undefined);
         },
         move: (event: React.MouseEvent<HTMLDivElement>) => {
-            if (isCanvasMove && selected == null && canvasWrap?.current) {
+            if (isCanvasMove && canvasWrap?.current) {
                 const [x, y] = canvasWrap?.current?.style?.transform
                     ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
                     ?.slice(1)
                     .map(Number) || [0, 0];
+                var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
 
-                const newX = x + event.movementX / scale;
-                const newY = y + event.movementY / scale;
+                if (currentScale <= 0.01) currentScale = 1;
+
+                const newX = x + event.movementX / currentScale;
+                const newY = y + event.movementY / currentScale;
 
                 if (canvasWrap?.current?.style) {
                     canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
                 }
             }
+            // if (isCanvasMove) {
+            //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
+            // }
         },
         boxDown: (index: number) => {
             if (!onFinishSelectSeat) {
@@ -263,10 +298,10 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                             Tambah Area
                         </Button>
                     </Guide>
-                    <ActionIcon color="gray.1" radius="xl" onClick={() => scale > 0.5 && setScale(scale - 0.1)}>
+                    <ActionIcon color="gray.1" radius="xl" onClick={() => handleWheel(undefined, 'up')}>
                         <Icon icon="uiw:minus" className={`text-primary-base`} />
                     </ActionIcon>
-                    <ActionIcon color="gray.1" radius="xl" onClick={() => scale < 2 && setScale(scale + 0.1)}>
+                    <ActionIcon color="gray.1" radius="xl" onClick={() => handleWheel(undefined, 'down')}>
                         <Icon icon="uiw:plus" className={`text-primary-base`} />
                     </ActionIcon>
                 </Flex>
@@ -461,7 +496,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                                                         onMouseUp={() => handleMouse.seatUp()}
                                                                         // onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
                                                                         opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
-                                                                        w="100%" h="100%" key={c}
+                                                                        w={20} h={25} key={c}
                                                                         className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}>
                                                                         {/* <Center w="100%" h="100%">
                                                                             <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
