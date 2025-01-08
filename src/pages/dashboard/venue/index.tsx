@@ -46,7 +46,7 @@ const MyVenue = () => {
             leftSection={<Icon icon="uiw:plus" />}
             component={Link}
             href="/dashboard/venue/create">
-            Tambah Venue
+            Buat Venue
           </Button>
         </Flex>
       </Flex>
@@ -82,9 +82,9 @@ const MyVenue = () => {
             <Icon icon="mage:building-b" className={`text-[36px] text-primary-base`} />
           </div>
           <div className='text-center'>
-            <p className='font-semibold text-lg'>Belum ada merchandise yang dibuat</p>
+            <p className='font-semibold text-lg'>Belum ada venue yang dibuat</p>
             <p className='text-grey max-w-72 mt-[10px]'>
-              Mulai buat merchandise dengan klik button “Buat Merchandise” di bawah.{' '}
+              Mulai buat venu dengan klik button “Buat Venue di bawah.{' '}
             </p>
           </div>
 
