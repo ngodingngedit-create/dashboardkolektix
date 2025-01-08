@@ -219,12 +219,14 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
                     position="bottom"
                     radius={25}
-                    size={isFullscreen ? "92vh" : "80vh"}
+                    size={isFullscreen ? "92vh" : "100vh"}
                     overlayProps={{  opacity: 0.3 }}>
-                        <Stack gap={20} align="end">
-                            <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 330px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
+                        <Stack gap={20} align="end" pos="relative">
+                            <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 170px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
                                 <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
                             </Card>
+
+                            <Text className={`!absolute top-5 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">{t('selectSeat')}</Text>
 
                             <Button
                                 mt={8}
