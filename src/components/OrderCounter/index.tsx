@@ -325,13 +325,10 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
     const handleMouse = {
         down: () => {
             setIsCanvasMove(true);
-            // setSelected(null);
             const [x, y] = canvasWrap?.current?.style?.transform
             ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
             ?.slice(1)
             .map(Number) || [0, 0];
-
-            // setCanvasPos([x, y]);
         },
         up: () => {
             setIsCanvasMove(false);
@@ -353,45 +350,58 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                     canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
                 }
             }
-            // if (isCanvasMove) {
-            //     setCanvasPos([canvasPos[0] + (event.movementX / scale), canvasPos[1] + (event.movementY / scale)]);
-            // }
         },
         touchdown: (event: React.TouchEvent<HTMLDivElement>) => {
             setIsCanvasMove(true);
             const touch = event.touches[0];
             localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
-            // setSelected(null);
-            // const [x, y] = canvasWrap?.current?.style?.transform
-            // ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
-            // ?.slice(1)
-            // .map(Number) || [0, 0];
-
-            // setCanvasPos([x, y]);
         },
         touchup: () => {
             setIsCanvasMove(false);
         },
         touchmove: (event: React.TouchEvent<HTMLDivElement>) => {
-            const touch = event.touches[0];
-            const lastTouch = JSON.parse(localStorage.getItem('lastTouch') || '{"pageX": 0, "pageY": 0}');
-            var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
-            if (currentScale <= 0.01) currentScale = 1;
+            if (event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                const distance = Math.sqrt(
+                    Math.pow(touch2.pageX - touch1.pageX, 2) +
+                    Math.pow(touch2.pageY - touch1.pageY, 2)
+                );
 
-            if (isCanvasMove && canvasWrap?.current) {
-                const [x, y] = canvasWrap?.current?.style?.transform
-                    ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
-                    ?.slice(1)
-                    .map(Number) || [0, 0];
-        
-                const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / currentScale;
-                const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / currentScale;
+                const lastDistance = parseFloat(localStorage.getItem('lastDistance') || '0');
+                var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
+                if (currentScale <= 0.01) currentScale = 1;
 
-                if (canvasWrap?.current?.style) {
-                    canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                if (lastDistance) {
+                    const scaleChange = distance / lastDistance;
+                    currentScale *= scaleChange;
+                    if (canvasWrap?.current?.style && currentScale > 0) {
+                        canvasWrap.current.style.scale = `${String(currentScale)}`;
+                    }
                 }
-        
-                localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
+
+                localStorage.setItem('lastDistance', String(distance));
+            } else {
+                const touch = event.touches[0];
+                const lastTouch = JSON.parse(localStorage.getItem('lastTouch') || '{"pageX": 0, "pageY": 0}');
+                var currentScale = parseFloat(canvasWrap?.current?.style?.scale ?? '1');
+                if (currentScale <= 0.01) currentScale = 1;
+
+                if (isCanvasMove && canvasWrap?.current) {
+                    const [x, y] = canvasWrap?.current?.style?.transform
+                        ?.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+                        ?.slice(1)
+                        .map(Number) || [0, 0];
+            
+                    const newX = x + (touch.pageX - (lastTouch.pageX ?? 0)) / currentScale;
+                    const newY = y + (touch.pageY - (lastTouch.pageY ?? 0)) / currentScale;
+
+                    if (canvasWrap?.current?.style) {
+                        canvasWrap.current.style.transform = `translate(${newX}px, ${newY}px)`;
+                    }
+            
+                    localStorage.setItem('lastTouch', JSON.stringify({ pageX: touch.pageX, pageY: touch.pageY }));
+                }
             }
         },
         wheel: (event?: React.WheelEvent<HTMLDivElement>, force?: 'up' | 'down') => {
@@ -413,16 +423,14 @@ const SeatmapViewer = ({ ticketData, data, selectedSeat, setSelectSeat, availabl
                 canvasWrap.current.style.scale = `${String(currentScale)}`;
             }
 
-                // Jika ada timeout sebelumnya, batalkan
             if (scrollTimeout.current) {
                 clearTimeout(scrollTimeout.current);
             }
 
-            // Izinkan kembali scroll setelah timeout
             scrollTimeout.current = setTimeout(() => {
                 document.body.style.overflow = '';
-                scrollTimeout.current = null; // Reset timeout
-            }, 1000); // Timeout 1000ms
+                scrollTimeout.current = null;
+            }, 1000);
         }    
     }
 
