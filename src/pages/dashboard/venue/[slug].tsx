@@ -10,12 +10,56 @@ import fetch from "@/utils/fetch";
 import { useListState } from "@mantine/hooks";
 import Link from "next/link";
 import { MonthPicker, MonthPickerInput } from "@mantine/dates";
-import Epg from 'planby';
+import {
+    useEpg,
+    Epg,
+    Layout,
+    ProgramBox,
+    ProgramContent,
+    ProgramFlex,
+    ProgramStack,
+    ProgramTitle,
+    ProgramText,
+    ProgramImage,
+    useProgram,
+    Program,
+    ProgramItem
+} from "planby";
+import moment from "moment";
 
 const monthNames = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
+
+const Item = ({ program,...rest }: ProgramItem) => {
+    const { styles, formatTime, isLive, isMinWidth } = useProgram({ program,...rest });
+
+    const { data } = program;
+    const { image, title, since, till } = data;
+
+    const sinceTime = formatTime(since);
+    const tillTime = formatTime(till);
+
+    return (
+        <ProgramBox width={styles.width} style={styles.position}>
+        <ProgramContent
+            width={styles.width}
+            isLive={isLive}
+        >
+            <ProgramFlex>
+            {isLive && isMinWidth && <ProgramImage src={image} alt="Preview" />}
+            <ProgramStack>
+                <ProgramTitle>{title}</ProgramTitle>
+                <ProgramText>
+                {sinceTime} - {tillTime}
+                </ProgramText>
+            </ProgramStack>
+            </ProgramFlex>
+        </ProgramContent>
+        </ProgramBox>
+    );
+};
 
 export default function VenuePage() {
     const [loading, setLoading] = useListState<string>();
@@ -28,6 +72,15 @@ export default function VenuePage() {
     const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;
+    const { getEpgProps, getLayoutProps } = useEpg({
+        epg: [],
+        channels: [
+            {
+                logo: 'https://via.placeholder.com',
+                uuid: '10339a4b-7c48-40ab-abad-f3bcaf95d9fa',
+            },],
+        startDate: '2022/02/02', // or 2022-02-02T00:00:00
+    });
     
     useEffect(() => {
         getData();
@@ -159,12 +212,10 @@ export default function VenuePage() {
                     </Tabs.List>
 
                     <Tabs.Panel value="book">
-                        <Card px={0}>
-                            <MonthPickerInput
-                                leftSection={<Icon icon="akar-icons:calendar" />}
-                                maw={300}
-                                defaultValue={new Date()}
-                            />
+                        <Card px={0} h={500}>
+                            <Epg {...getEpgProps()}>
+                                <Layout {...getLayoutProps()} isTimeline />
+                            </Epg>
                         </Card>
                     </Tabs.Panel>
                 </Tabs>

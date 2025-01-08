@@ -226,7 +226,7 @@ export default function Cart() {
             const subprice = parseInt((!variant ? product?.price : variant?.price) ?? '0');
             const weight = parseInt((!variant ? product?.price : variant?.weight) ?? '0');
             const price = subprice * e.qty;
-            const image = product?.product_image[0].image_url;
+            const image = product?.product_image[0] ? product?.product_image[0].image_url : '#';
             const creator_id = product?.creator_id;
 
             return { ...e, product, variant, price, subprice, image, weight, creator_id };
