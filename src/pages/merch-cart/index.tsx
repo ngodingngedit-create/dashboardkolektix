@@ -179,7 +179,18 @@ export default function Cart() {
                                             </Flex>
                                             <Flex gap={10}>
                                                 <AspectRatio className={`shrink-0`}>
-                                                    <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+                                                    {(item.product?.product_image.length ?? 0) > 0 && (
+                                                        <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+                                                    )}
+                                                    {(item.product?.product_image.length ?? 0) == 0 && (
+                                                        <AspectRatio ratio={1}>
+                                                            <Card bg="gray.1" radius={10}>
+                                                                <Center h="100%" c="gray.3">
+                                                                    <Icon icon="bi:image" style={{ fontSize: 36 }} />
+                                                                </Center>
+                                                            </Card>
+                                                        </AspectRatio>
+                                                    )}
                                                 </AspectRatio>
                                                 <div className={`w-full`}>
                                                     <Text fw={500}>{item.product?.product_name}</Text>

@@ -8,7 +8,7 @@ import { Get } from '@/utils/REST';
 import JobList from '@/components/Card/JobsCard/JobList';
 import { Breadcrumbs, BreadcrumbItem, Skeleton } from '@nextui-org/react';
 import FilterLowongan from '@/components/FilterLowongan';
-import { SimpleGrid, Stack, Card, Image, Text, Flex, AspectRatio, NumberFormatter, Divider } from '@mantine/core';
+import { SimpleGrid, Stack, Card, Image, Text, Flex, AspectRatio, NumberFormatter, Divider, Button } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import moment from 'moment';
 import Link from 'next/link';
@@ -56,7 +56,7 @@ const Lowongan = () => {
 
   return (
     <div className='max-w-6xl mx-auto text-dark min-h-screen md:pt-[20px]'>
-      <Stack gap={30} mt={20}>
+      <Stack gap={0} mt={20} mih={600} px={20}>
         {/* <FilterLowongan setNameFilter={handleNameFilterChange} /> */}
 
         {!loading && filteredData.length == 0 && (
@@ -66,7 +66,20 @@ const Lowongan = () => {
           </div>
         )}
 
-        <Card bg="none" px={20} className={` md:!mt-0`}>
+        <Text mb={10} fw={600}>Semua Lowongan</Text>
+        <Flex align="center" gap={10} mb={15}>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Photographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Videographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Sound Engineer
+          </Button>
+        </Flex>
+
+        <Card bg="none" className={` md:!mt-0`} p={0}>
           <SimpleGrid className={`grid-cols-1 sm:!grid-cols-2 md:!grid-cols-3`}>
             {loading && (
               <>
@@ -76,7 +89,7 @@ const Lowongan = () => {
               </>
             )}
             {!loading && filteredData?.map((e, i) => (
-              <Card key={i} className={`hover:!bg-[#fafafa] transition-colors`} withBorder radius={15} p={10} component={Link} href={`/lowongan/${e.slug}`}>
+              <Card key={i} className={`hover:!bg-[#fafafa] transition-colors`} withBorder radius={15} p={10} component={Link} href={`/lowongan/${e.id}`}>
                 <Flex gap={0}>
                   <AspectRatio className={`shrink-0`}>
                     <Image src={e.has_creator.image_url} w={64} radius={8} />

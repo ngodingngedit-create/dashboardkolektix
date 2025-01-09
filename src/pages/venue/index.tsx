@@ -5,6 +5,7 @@ import { Get } from '@/utils/REST';
 import { VenueProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
+import { Button, Flex, Text } from '@mantine/core';
 
 const Venue = () => {
   const [data, setData] = useState<VenueProps[]>([]);
@@ -23,12 +24,19 @@ const Venue = () => {
   return (
     <div className='min-h-screen'>
       <div className='pt-5 md:pt-12 lg:mt-0 md:mt-5 sm:mt-20 max-w-4xl mx-auto text-dark'>
-        <div className='pl-7'>
-          <Breadcrumbs>
-            <BreadcrumbItem>Beranda</BreadcrumbItem>
-            <BreadcrumbItem>List Venue</BreadcrumbItem>
-          </Breadcrumbs>
-        </div>
+        <Text mb={10} fw={600}>Semua Venue</Text>
+        {/* <Flex align="center" gap={10} mb={15}>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Photographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Videographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Sound Engineer
+          </Button>
+        </Flex> */}
+
         {data.length > 0 ? (
          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5'>
          {data.map((item) => (

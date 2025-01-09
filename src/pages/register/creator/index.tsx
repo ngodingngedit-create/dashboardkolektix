@@ -19,6 +19,9 @@ import photo1 from "@images/register-creator-1.png";
 import photo2 from "@images/register-creator-2.png";
 import { Guide } from '@/components/Guide';
 import { notifications } from '@mantine/notifications';
+import { useClickOutside } from '@mantine/hooks';
+import AuthModal from '@/components/AuthModal';
+import ChatBox from '@/components/chat';
 
 interface FormCreator {
   image?: string;
@@ -73,6 +76,15 @@ const Creator = () => {
     website: 'www.example.net',
   });
   const [loading, setLoading] = useState(false);
+      const [openChat, setOpenChat] = useState(false);
+  
+  const clickOutsideChat = useClickOutside(() => {
+      if (!!users && openChat) {
+          setTimeout(() => {
+              setOpenChat(false);
+          }, 500);
+      }
+  });
 
   const submit = () => {
     setLoading(true);
@@ -161,6 +173,11 @@ const Creator = () => {
 
   return (
     <>
+      <div ref={clickOutsideChat}>
+          <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} />
+          <AuthModal visible={openChat && !users} onClose={() => setOpenChat(false)} />
+      </div>
+
       <Image src={elips} className='w-full' alt='elips' quality={100} />
 
       <Flex gap={30} justify="space-evenly" align="end">
