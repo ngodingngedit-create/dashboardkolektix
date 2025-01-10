@@ -152,7 +152,22 @@ const sidebarData: SidebarData = [
             role: 'Creator'
         }
     ]},
-    { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
+    { id: 7, name: 'Venue', icon: faLocationDot, role: 'Creator', submenu: [
+        {
+            id: 1,
+            name: 'Kelola Venue',
+            icon: faLocationDot,
+            link: '/dashboard/venue',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'POS Venue',
+            iconify: 'fluent:form-48-regular',
+            link: '/dashboard/venue-pos',
+            role: 'Creator'
+        }
+    ]},
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Pembeli' },
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat-creator', role: 'Creator' },
     { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Creator', submenu: profileData },
