@@ -92,7 +92,7 @@ const Event = () => {
                 </div>
               ))}
             </ScrollShadow>
-            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 my-5'>
+            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 gap-x-5 my-5'>
               {filteredData.length > 0 ? (
                 filteredData.map((event: any) => (
                   <EventCard

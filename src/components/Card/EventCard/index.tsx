@@ -156,13 +156,13 @@ const EventCard = ({
   }
 
   return (
-    <div style={{  maxWidth }} className='[&_.hoverCTA]:hover:!translate-y-0 bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative'>
+    <div style={{  maxWidth }} className='[&_.hoverCTA]:hover:!translate-y-0 bg-white rounded-lg shadow-md mx-1 md:mx-2 border border-primary-light-200 relative w-full'>
       <Link href={`/event/${slug}`}>
         <div className="relative overflow-hidden">
           <Box pos="relative">
             <AspectRatio ratio={1062/365}>
               <Image
-                className={`!rounded-t-lg`}
+                className={`!rounded-t-lg !w-full`}
                 src={img}
                 alt='Banner'
               />

@@ -17,10 +17,11 @@ const MyVenue = () => {
   }, [user]);
 
   const getData = async () => {
+    if (loading.includes('getdata')) return;
     await fetch<any, VenueListResponse[]>({
-      url: 'venue',
+      url: 'creator-data/venue',
       method: 'GET',
-      success: ({ data }) => data && setVenue.setState(data.filter(e => e.creator_id == user?.has_creator?.id)),
+      success: ({ data }) => data && setVenue.setState(data),
       before: () => setLoading.append('getdata'),
       complete: () => setLoading.filter(e => e != 'getdata'),
     });
@@ -57,7 +58,7 @@ const MyVenue = () => {
         {venue?.map((e ,i) => (
           <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.slug}`} p={0}>
             <AspectRatio>
-              <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />
+              {e.venue_gallery[0] && <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />}
             </AspectRatio>
 
             <Card>

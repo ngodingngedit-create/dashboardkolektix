@@ -100,6 +100,7 @@ export default function VenuePos() {
                         value={dummyDate.date ? new Date(dummyDate.date) : undefined}
                         onChange={e => setDummyDate({ date: e ? moment(e).format('YYYY-MM-DD') : undefined })}
                     />
+
                     <Flex className={`[&>*]:flex-grow`} gap={15}>
                         <TimeInput
                             label="Jam Awal"
