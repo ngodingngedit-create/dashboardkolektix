@@ -114,6 +114,7 @@ export default function VenuePos() {
                             onChange={e => setDummyDate({ end_time: e.target.value })}
                         />
                     </Flex>
+
                     <Button
                         onClick={() => {
                             setDate.append(dummyDate);
@@ -122,6 +123,22 @@ export default function VenuePos() {
                         disabled={!dummyDate.date || !dummyDate.end_time || !dummyDate.start_time}
                         rightSection={<Icon icon="uiw:plus" />}>
                         Tambah Booking
+                    </Button>
+                </Stack>
+            </Modal>
+
+            <Modal
+                title="Pilih Metode Pembayaran"
+                centered
+                opened={open == 'payment'}
+                onClose={() => setOpen(undefined)}>
+                <Stack>
+                    <Button
+                        color="gray"
+                        variant="light"
+                        onClick={() => setOpen(undefined)}
+                        leftSection={<Icon icon="ep:money" className={`text-[16px]`} />}>
+                        Cash
                     </Button>
                 </Stack>
             </Modal>

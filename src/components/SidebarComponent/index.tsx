@@ -162,7 +162,7 @@ const sidebarData: SidebarData = [
         },
         {
             id: 1,
-            name: 'POS Venue',
+            name: 'Buat Booking Venue',
             iconify: 'fluent:form-48-regular',
             link: '/dashboard/venue-pos',
             role: 'Creator'
