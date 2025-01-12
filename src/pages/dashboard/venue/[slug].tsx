@@ -81,47 +81,39 @@ export default function VenuePage() {
             },],
         startDate: '2022/02/02', // or 2022-02-02T00:00:00
     });
-    
-    useEffect(() => {
-        getData();
-    }, [user]);
 
     useEffect(() => {
-        getVenueData();
-    }, [slug]);
+        slug && getData();
+    }, []);
 
     const getData = async () => {
-        await fetch<any, VenueCategory[]>({
-            url: 'venue-category',
-            method: 'GET',
-            success: ({ data }) => data && setCategory(data),
-            before: () => setLoading.append('getdatacat'),
-            complete: () => setLoading.filter(e => e != 'getdatacat'),
-        });
-        await fetch<any, VenueFacility[]>({
-            url: 'venue-facility',
-            method: 'GET',
-            success: ({ data }) => data && setFacility(data),
-            before: () => setLoading.append('getdatacat'),
-            complete: () => setLoading.filter(e => e != 'getdatacat'),
-        });
-    }
+        if (loading.includes('getdata')) return;
+        setLoading.append('getdata');
 
-    const getVenueData = async () => {
-        if (slug) {
-            await fetch<any, VenueListResponse>({
-                url: 'venue/' + slug,
-                method: 'GET',
-                before: () => setLoading.append('getdatavenue'),
-                success: (data) => {
-                    if (data) {
-                        setVenue(data.data);
-                        setVenueFacilities(data['dataFacilities']);
-                    }
-                },
-                complete: () => setLoading.filter(e => e != 'getdatavenue'),
-            });
-        }
+        await fetch<any, VenueListResponse>({
+            url: 'creator-data/venue/' + slug,
+            method: 'GET',
+            success: async (data) => {
+                if (data) {
+                    setVenue(data.data);
+
+                    await fetch<any, VenueCategory[]>({
+                        url: 'venue-category',
+                        method: 'GET',
+                        success: ({ data }) => data && setCategory(data),
+                    });
+                    await fetch<any, VenueFacility[]>({
+                        url: 'venue-facility',
+                        method: 'GET',
+                        success: ({ data }) => data && setFacility(data),
+                    });
+
+                    setVenueFacilities(data['dataFacilities']);
+                    setLoading.filter(e => e != 'getdata');
+                }
+            },
+            error: () => router.push('/dashboard/venue'),
+        });
     }
 
     const statistics = [
