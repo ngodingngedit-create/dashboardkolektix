@@ -84,7 +84,7 @@ export default function VenuePage() {
 
     useEffect(() => {
         slug && getData();
-    }, []);
+    }, [slug]);
 
     const getData = async () => {
         if (loading.includes('getdata')) return;
@@ -148,7 +148,7 @@ export default function VenuePage() {
                         <Title size="h2" >{venue?.name}</Title>
                         <Text size="sm" c="gray">{category?.find(e => e.id == venue?.venue_category_id)?.name}</Text>
                         <PillGroup mt={10}>
-                            {facility?.map((e, i) => (
+                            {facility?.filter(e => venue?.venue_facility_id?.map(e => parseInt(String(e))).includes(e.id)).map((e, i) => (
                                 <Pill key={i}>{e.name}</Pill>
                             ))}
                         </PillGroup>
