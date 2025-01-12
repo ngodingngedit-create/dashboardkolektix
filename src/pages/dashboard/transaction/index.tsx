@@ -104,7 +104,7 @@ export default function Transaction({  }: Readonly<ComponentProps>) {
                 <Tabs.Panel value="venue">
                     <Stack gap={15} py={20}>
                         {(data.venue?.length ?? 0) > 0 ? data.venue?.map((e, i) => (
-                            <Card withBorder radius={8}>
+                            <Card withBorder radius={8} key={i}>
                                 <Flex justify="space-between" gap={15} wrap="wrap">
                                     <Stack gap={0}>
                                         {e?.venue?.venue_gallery[0] && <AspectRatio ratio={16 / 5} maw={500} w="100%">

@@ -206,7 +206,7 @@ export default function VenuePage() {
                     <Tabs.Panel value="book">
                         <Stack gap={15} py={20}>
                             {(venue?.has_booking_venue?.length ?? 0) > 0 ? venue?.has_booking_venue?.map((e, i) => (
-                                <Card withBorder radius={8}>
+                                <Card withBorder radius={8} key={i}>
                                     <Flex justify="space-between" gap={15} wrap="wrap">
                                         <Stack gap={0}>
                                             {e?.event_banner && <AspectRatio ratio={16 / 5} maw={500} w="100%">

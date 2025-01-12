@@ -188,7 +188,7 @@ export default function VenuePos() {
                                 </Flex>
 
                                 {date.map((e, i) => (
-                                    <Card withBorder radius={10}>
+                                    <Card withBorder radius={10} key={i}>
                                         <Flex justify="space-between" gap={10} wrap="wrap" align="center">
                                             <Flex gap={10} wrap="wrap" align="center">
                                                 <Text>{moment(e.date).format('DD MMMM')}</Text>
