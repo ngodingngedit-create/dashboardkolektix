@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import foto from '../../assets/images/Banner-amis.png';
 import CreatorTitle from '@/components/Creator/CreatorTitle';
 import Button from '@/components/Button';
@@ -71,6 +71,10 @@ const VenueDetail = () => {
           }
       }
   };
+
+    const eventList = useMemo(() => {
+        return data?.has_booked_venue?.filter((e) => e?.start_date.slice(0, 7) == `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`);
+    }, [currentMonth]);
 
     const monthNames = [
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -273,18 +277,24 @@ const VenueDetail = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="mt-4 flex flex-col md:flex-row">
-                                <div className="w-full md:w-[15%] mt-[5px]">
-                                    <p>Sen</p>
-                                    <p className="font-semibold text-lg">15</p>
-                                </div>
-                                <div className="w-full md:w-[85%] border border-primary-light-200 rounded-md p-3 mt-2 md:mt-0">
-                                    <AspectRatio ratio={16 / 5} mb={10}>
-                                        <ImageM src="#" bg="gray.1" radius={8} />
-                                    </AspectRatio>
-                                    <p className="font-semibold">We The Fest</p>
-                                    <p className="text-grey">12:00 - 14:00</p>
-                                </div>
+                            <div className="mt-4 flex flex-col w-full">
+                                {eventList?.map((e, i) => (
+                                    <div key={i} className="!w-full flex gap-4 mt-4">
+                                        <div className="w-full md:w-[15%] mt-[5px]">
+                                            <p>{moment(e?.start_date).format('dd')}</p>
+                                            <p className="font-semibold text-lg">{moment(e?.start_date).format('DD')}</p>
+                                        </div>
+                                        <Stack gap={10} w="100%">
+                                            <div className="w-full md:w-[85%] border border-primary-light-200 rounded-md p-3 mt-2 md:mt-0">
+                                                <AspectRatio ratio={16 / 5} mb={10} w="100%">
+                                                    <ImageM src={e?.event_banner} bg="gray.1" radius={8} />
+                                                </AspectRatio>
+                                                <p className="font-semibold capitalize">{e?.event_name}</p>
+                                                {/* <p className="text-grey">12:00 - 14:00</p> */}
+                                            </div>
+                                        </Stack>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>

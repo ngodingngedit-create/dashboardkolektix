@@ -1,6 +1,6 @@
 import TableData from "@/components/TableData";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, Card, SimpleGrid, Stack, Text, Title, Flex, Image, AspectRatio, PillGroup, Pill, Button, ActionIcon, Tabs } from "@mantine/core";
+import { Accordion, Card, SimpleGrid, Stack, Text, Title, Flex, Image, AspectRatio, PillGroup, Pill, Button, ActionIcon, Tabs, Badge, Divider, Alert, NumberFormatter } from "@mantine/core";
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import { useEffect, useState } from "react";
 import { FacilitiesList } from "@/pages/venue/[slug]";
@@ -95,7 +95,7 @@ export default function VenuePage() {
             method: 'GET',
             success: async (data) => {
                 if (data) {
-                    setVenue(data.data);
+                    setVenue(data?.data);
 
                     await fetch<any, VenueCategory[]>({
                         url: 'venue-category',
@@ -119,22 +119,22 @@ export default function VenuePage() {
     const statistics = [
         {
             text: 'Visitor',
-            value: 1000,
+            value: 0,
             icon: 'famicons:people-outline',
         },
         {
             text: 'Total Bookmarks',
-            value: 1000,
+            value: 0,
             icon: 'akar-icons:bookmark',
         },
         {
             text: 'Total Booking Berjalan',
-            value: 1000,
+            value: 0,
             icon: 'akar-icons:calendar',
         },
         {
             text: 'Total Pendapatan',
-            value: 1000,
+            value: 0,
             icon: 'akar-icons:money',
             isCurrency: true,
         },
@@ -204,11 +204,41 @@ export default function VenuePage() {
                     </Tabs.List>
 
                     <Tabs.Panel value="book">
-                        <Card px={0} h={500}>
-                            <Epg {...getEpgProps()}>
-                                <Layout {...getLayoutProps()} isTimeline />
-                            </Epg>
-                        </Card>
+                        <Stack gap={15} py={20}>
+                            {(venue?.has_booking_venue?.length ?? 0) > 0 ? venue?.has_booking_venue?.map((e, i) => (
+                                <Card withBorder radius={8}>
+                                    <Flex justify="space-between" gap={15} wrap="wrap">
+                                        <Stack gap={0}>
+                                            {e?.event_banner && <AspectRatio ratio={16 / 5} maw={500} w="100%">
+                                                <Image src={e?.event_banner} radius={8} />
+                                            </AspectRatio>}
+                                            <Flex align="center" gap={8} mt={10}>
+                                                <Text size="sm" c="gray">{moment(e.start_date).format('DD MMMM YYYY')}</Text>
+                                                {e?.start_date != e?.end_date && <Text size="sm" c="gray">- {moment(e.end_date).format('DD MMMM YYYY')}</Text>}
+                                            </Flex>
+                                            <Text size="lg" fw={600} className={`capitalize`}>{e?.event_name}</Text>
+                                        </Stack>
+                                        <Stack gap={5} align="end" h="100%" justify="space-between">
+                                            <Flex align="center" gap={8}>
+                                                <Text size="sm" c="gray">Status Pembayaran:</Text>
+                                                <Badge variant="light" className={`capitalize`} size="lg" color={
+                                                    e?.payment_status.toLowerCase() == 'pending' ? 'yellow' :
+                                                    e?.payment_status.toLowerCase() == 'verified' ? 'green' : 'red'
+                                                }>{e?.payment_status}</Badge>
+                                            </Flex>
+                                            <Text size="lg" fw={600}>Total Dibayar <NumberFormatter value={e?.grandtotal ?? 0} /></Text>
+                                            {/* <Button variant="transparent" size="sm" component={Link} href={`/venue-invoice/${e?.invoice_no}`}>
+                                                Lihat Invoice
+                                            </Button> */}
+                                        </Stack>
+                                    </Flex>
+                                </Card>
+                            )) : (
+                                <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
+                                    Tidak ada transaksi venue
+                                </Alert>
+                            )}
+                        </Stack>
                     </Tabs.Panel>
                 </Tabs>
             </Stack>

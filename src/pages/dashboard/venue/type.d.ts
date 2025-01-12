@@ -86,6 +86,13 @@ interface Venue {
     venue_gallery: {
         image_url: string;
     }[];
+    has_booked_venue?: {
+        event_name: string;
+        event_banner: string;
+        start_date: string;
+        end_date: string;
+    }[]
+    has_booking_venue?: any[];
 }
 
 export type VenueListResponse = Venue;

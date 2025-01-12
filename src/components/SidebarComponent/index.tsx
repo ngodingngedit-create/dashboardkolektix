@@ -234,12 +234,15 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     };
     useEffect(() => {
         if (users) {
-            console.log(users);
             setUserData(users);
-            if (users.has_creator || users?.role == 'Staff') {
-                setHasCreator(true);
+            if (route === '/dashboard/user') {
+                setRole('Pembeli');
+            } else {
+                if (users.has_creator || users?.role == 'Staff') {
+                    setHasCreator(true);
+                }
+                setRole(users?.role ?? 'Pembeli');
             }
-            setRole(users?.role ?? 'Pembeli');
         }
     }, [users]);
 
@@ -253,10 +256,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         // if (route === '/dashboard/user') {
-        //     // Cookies.set('hasCreator', 'false');
         //     setRole('Pembeli');
-        // } else {
-        //     setRole(users?.role ?? 'Pembeli');
         // }
     }, [route]);
 
