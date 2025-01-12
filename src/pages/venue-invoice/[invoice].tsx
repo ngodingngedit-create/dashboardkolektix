@@ -53,6 +53,8 @@ export default function Invoice() {
         'verified': 'uiw:circle-check',
     }
 
+    if (!data) return null;
+
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
             <Container px={0} className={`py-[54px] md:py-[100px] !px-[10px]`}>
@@ -103,20 +105,20 @@ export default function Invoice() {
                         <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap">
                             <Stack className={`min-w-[250px]`}>
                                 <AspectRatio ratio={16/5} w="100%">
-                                    <Image src={data.venue.venue_gallery[0].image} bg="gray" radius={10} />
+                                    {data?.venue?.venue_gallery[0] && <Image src={data?.venue?.venue_gallery[0].image} bg="gray" radius={10} />}
                                 </AspectRatio>
                             </Stack>
 
                             <Stack className={`shrink-0 max-w-[250px]`} gap={0}>
-                                <Text fw={600}>{data.venue.name}</Text>
-                                <Text size="sm" c="gray">{data.venue.location_name}</Text>
+                                <Text fw={600}>{data?.venue.name}</Text>
+                                <Text size="sm" c="gray">{data?.venue.location_name}</Text>
                                 <Divider my={15} />
                                 <Text size="sm" c="gray">Tanggal Booking</Text>
-                                <Text>{moment(data.start_date).format('DD MMMM YYYY')}</Text>
-                                {data.start_date != data.end_date && (
+                                <Text>{moment(data?.start_date).format('DD MMMM YYYY')}</Text>
+                                {data?.start_date != data?.end_date && (
                                     <>
                                         <Text size="sm" c="gray" mt={10}>Sampai</Text>
-                                        <Text>{moment(data.end_date).format('DD MMMM YYYY')}</Text>
+                                        <Text>{moment(data?.end_date).format('DD MMMM YYYY')}</Text>
                                     </>
                                 )}
                             </Stack>
