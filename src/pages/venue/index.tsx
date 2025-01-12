@@ -44,7 +44,7 @@ const Venue = () => {
              <VenueCard
                 slug={item.slug}
                 title={item.name}
-                location={item.location}
+                location={item?.location_name ?? ''}
                 price={Math.round(item.starting_price)}
                 image={item.venue_gallery[0] ? item.venue_gallery[0].image_url : item.image_url}
              />

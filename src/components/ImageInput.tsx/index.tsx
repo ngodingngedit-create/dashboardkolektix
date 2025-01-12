@@ -18,7 +18,7 @@ type ComponentProps = {
 export default function ImageInput({ floattext, label, error, description, value, onChange, dimension, required, onDelete }: Readonly<ComponentProps>) {
     return (
         <InputWrapper {...{ label, description, error }} withAsterisk={required}>
-            <Box pos="relative" className={`[&_.clsBtn]:hover:!block`}>
+            <Box pos="relative" className={`[&_.clsBtn]:hover:!block`} py={10}>
                 {floattext && (
                     <Card radius={8} bg="#0B387C" w="calc(100% - 14px)" className={`z-10 !absolute !bottom-[7px] left-2/4 -translate-x-2/4 !text-white text-center !p-[2px]`}>
                         <Text size="xs">{floattext}</Text>

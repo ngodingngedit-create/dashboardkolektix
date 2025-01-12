@@ -444,6 +444,8 @@ export interface VenueProps {
   image: string;
   description: string;
   location: string;
+  location_name?: string;
+  location_detail?: string;
   opening_hour: string;
   starting_price: number;
   contact_person_name: string;

@@ -18,6 +18,7 @@ import { VenueListResponse } from '../dashboard/venue/type';
 import moment from 'moment';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
+import ImageInput from '@/components/ImageInput.tsx';
 
 
 type Province = {
@@ -33,6 +34,8 @@ type City = {
 }
 
 type Checkout = {
+    event_name: string;
+    event_banner?: Blob;
     nama_pemesan: string;
     email_pemesan: string;
     phone_pemesan: string;
@@ -87,13 +90,6 @@ export default function Cart() {
     const router = useRouter();
 
     const { setValues: setFormValues, values: fv, getInputProps: inputProps, errors: fe, validate: validateForm } = useForm<Checkout>({
-        validate: zodResolver(z.object<Record<keyof FormInput, any>>({
-            nama_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
-            email_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
-            phone_pemesan: z.string().min(1, { message: 'Wajib Diisi' }),
-            start_date: z.string().date(),
-            end_date: z.string().date()
-        })),
         onValuesChange: (val) => {
             val.phone_pemesan = (val.phone_pemesan ?? '').replaceAll(/\D/g, '');
             return val;
@@ -144,9 +140,9 @@ export default function Cart() {
 
         const count = getDaysBetweenDates(orderData.date_start, orderData.date_end) + 1;
         const subprice = Math.round((paymentOption == 'all' ? venue?.starting_price : venue?.minimum_price) ?? 0);
-        const price = count * subprice;
+        const price = paymentOption == 'all' ? count * subprice : subprice;
         const admin = 2000;
-        const ppn = (price + admin)  * 0.11;
+        const ppn = (price + admin) * 0.11;
         const total = price + admin + ppn;
         
         const subfullprice = count * Math.round(venue?.starting_price ?? 0);
@@ -172,6 +168,8 @@ export default function Cart() {
             method: 'POST',
             data: {
                 user_id: user?.id ?? 0,
+                event_name: fv.event_name,
+                event_banner: fv.event_banner,
                 total_qty: orderSummary.count,
                 total_price: orderSummary.fullprice,
                 venue_id: orderData?.id,
@@ -231,6 +229,25 @@ export default function Cart() {
 
                     <Flex gap={20} w="100%" wrap="wrap" align="stretch">
                         <Stack gap={15} className={`flex-grow`}>
+                            <DropdownComponent title="Data Event" icon="lucide:info" defaultOpened>
+                                <Stack>
+                                    <TextInput
+                                        label="Nama Event"
+                                        placeholder="Masukan Nama Event"
+                                        {...inputProps('event_name')}
+                                    />
+
+                                    <ImageInput
+                                        dimension={[724, 340]}
+                                        label="Banner Event"
+                                        description='Ukuran gambar 724x340 px, Maks 2MB'
+                                        value={fv?.event_banner}
+                                        onChange={e => setFormValues({ event_banner: e ? e : undefined })}
+                                        error={fe?.event_banner}
+                                    />
+                                </Stack>
+                            </DropdownComponent>
+
                             <DropdownComponent title="Data Pemesan" icon="lucide:info" defaultOpened>
                                 <Stack>
                                     <TextInput
