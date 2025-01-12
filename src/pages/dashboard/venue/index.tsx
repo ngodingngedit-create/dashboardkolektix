@@ -2,19 +2,25 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { AspectRatio, Badge, Button, Card, Center, Divider, Flex, Image, Stack, Text, TextInput } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import Link from 'next/link';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { VenueListResponse } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 
 const MyVenue = () => {
   const [loading, setLoading] = useListState<string>();
-  const [venue, setVenue] = useListState<VenueListResponse>();
+  const [search, setSearch] = useState<string>('');
+  const [_venue, setVenue] = useListState<VenueListResponse>();
   const user = useLoggedUser();
 
   useEffect(() => {
     getData();
   }, [user]);
+
+  const venue = useMemo(() => {
+    if (!search) return _venue;
+    return _venue?.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  }, [_venue, search]);
 
   const getData = async () => {
     if (loading.includes('getdata')) return;
@@ -37,6 +43,8 @@ const MyVenue = () => {
 
         <Flex align="center" gap={10}>
           <TextInput
+            value={search}
+            onChange={e => setSearch(e.currentTarget.value)}
             radius="xl"
             leftSection={<Icon icon="uiw:search" />}
             placeholder='Cari Nama Venue'
@@ -83,7 +91,7 @@ const MyVenue = () => {
             <Icon icon="mage:building-b" className={`text-[36px] text-primary-base`} />
           </div>
           <div className='text-center'>
-            <p className='font-semibold text-lg'>Belum ada venue yang dibuat</p>
+            <p className='font-semibold text-lg'>Tidak ada venue yang tersedia</p>
             <p className='text-grey max-w-72 mt-[10px]'>
               Mulai buat venu dengan klik button “Buat Venue di bawah.{' '}
             </p>

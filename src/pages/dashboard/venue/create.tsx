@@ -251,8 +251,8 @@ export default function Create({}: Readonly<ComponentProps>) {
                         {...form.getInputProps('starting_price')}
                     />
                     <NumberInput
-                        label="Minimal Pembayaran Per Hari"
-                        placeholder="Minimal Pembayaran Per Hari"
+                        label="Down Payment (DP)"
+                        placeholder="Masukan Down Payment"
                         hideControls
                         prefix="Rp "
                         min={0}
