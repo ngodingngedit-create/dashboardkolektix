@@ -192,12 +192,10 @@ const VenueDetail = () => {
                         <div className="mt-4">
                             <p className="text-grey text-sm mb-2">Fasilitas</p>
                             <div className="flex flex-wrap">
-                                {facilities?.map((el, idx) => (
-                                    <Tooltip key={idx} label={el.facility_description} openDelay={500} withArrow>
-                                        <Chip color="default" size="sm" key={idx} classNames={{ base: 'mr-2 mb-2', content: 'font-semibold' }}>
-                                            {el.facility_name}
-                                        </Chip>
-                                    </Tooltip>
+                                {data?.facility?.map((el, idx) => (
+                                    <Chip color="default" size="sm" key={idx} classNames={{ base: 'mr-2 mb-2', content: 'font-semibold' }}>
+                                        {el}
+                                    </Chip>
                                 ))}
                             </div>
                         </div>

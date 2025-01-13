@@ -93,6 +93,7 @@ interface Venue {
         end_date: string;
     }[]
     has_booking_venue?: any[];
+    facility?: string[];
 }
 
 export type VenueListResponse = Venue;
