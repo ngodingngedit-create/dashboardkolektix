@@ -236,9 +236,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         if (users) {
             setUserData(users);
             if (route === '/dashboard/user') {
+                if (!!users.has_creator) setHasCreator(true);
                 setRole('Pembeli');
             } else {
-                if (users.has_creator || users?.role == 'Staff') {
+                if (!!users.has_creator || users?.role == 'Staff') {
                     setHasCreator(true);
                 }
                 setRole(users?.role ?? 'Pembeli');
