@@ -36,7 +36,7 @@ export default function ImageInput({ floattext, label, error, description, value
                     ><Icon icon="uiw:close" className={`text-[12px]`} /></ActionIcon>
                 )}
 
-                <AspectRatio ratio={dimension ? dimension[0] / dimension[1]: 1} w="100%>
+                <AspectRatio ratio={dimension ? dimension[0] / dimension[1]: 1} w={dimension[0]} maw="100%">
                     <Card
                         bg={value ? undefined : "gray.1"}
                         withBorder
