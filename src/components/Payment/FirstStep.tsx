@@ -11,8 +11,9 @@ import { Switch } from '@nextui-org/react';
 import useLoggedUser from '@/utils/useLoggedUser';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import React from 'react';
-import { NumberFormatter, Stack, Text } from '@mantine/core';
+import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface FormTicket {
     event_id: number;
@@ -157,6 +158,18 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                         <p className="text-xs text-grey">{totalCount} Tiket</p>
                     </div>
                 </div>
+                <Card withBorder radius={10} p={20}>
+                    <Stack gap={20}>
+                        <Flex gap={10} align="center">
+                            <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
+                            <Text fw={600}>Voucher</Text>
+                        </Flex>
+
+                        <TextInput
+                            placeholder="Masukan Kode Voucher"
+                        />
+                    </Stack>
+                </Card>
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                     <div className="border-b border-b-primary-light-200 p-3">
                         <p className="font-semibold">Ringkasan Pesanan</p>
@@ -422,6 +435,18 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                 </div>
                             </div>
                         </div>
+                        <Card withBorder radius={10} p={20}>
+                            <Stack gap={20}>
+                                <Flex gap={10} align="center">
+                                    <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
+                                    <Text fw={600}>Voucher</Text>
+                                </Flex>
+
+                                <TextInput
+                                    placeholder="Masukan Kode Voucher"
+                                />
+                            </Stack>
+                        </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                             <div className="border-b border-b-primary-light-200 p-3">
                                 <p className="font-semibold">{t('orderSummary')}</p>

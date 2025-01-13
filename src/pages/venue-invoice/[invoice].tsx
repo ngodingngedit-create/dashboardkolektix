@@ -32,7 +32,7 @@ export default function Invoice() {
     const getData = async () => {
         if (invoice) {
             await fetch<any, VenueInvoiceResponse>({
-                url: `order-product-invoice/${invoice}`,
+                url: `booking-venue/${invoice}`,
                 method: 'GET',
                 data: {},
                 before: () => setLoading.append('getdata'),
@@ -52,6 +52,8 @@ export default function Invoice() {
         'pending': 'icon-park-solid:time',
         'verified': 'uiw:circle-check',
     }
+
+    if (!data) return null;
 
     return (
         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
@@ -103,13 +105,22 @@ export default function Invoice() {
                         <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap">
                             <Stack className={`min-w-[250px]`}>
                                 <AspectRatio ratio={16/5} w="100%">
-                                    <Image src={"#"} bg="gray" radius={10} />
+                                    {data?.venue?.venue_gallery[0] && <Image src={data?.venue?.venue_gallery[0].image} bg="gray" radius={10} />}
                                 </AspectRatio>
                             </Stack>
 
                             <Stack className={`shrink-0 max-w-[250px]`} gap={0}>
-                                <Text fw={600}>Nama Venue Nama Venue</Text>
-                                <Text size="sm" c="gray">Jakarta Jakarta</Text>
+                                <Text fw={600}>{data?.venue.name}</Text>
+                                <Text size="sm" c="gray">{data?.venue.location_name}</Text>
+                                <Divider my={15} />
+                                <Text size="sm" c="gray">Tanggal Booking</Text>
+                                <Text>{moment(data?.start_date).format('DD MMMM YYYY')}</Text>
+                                {data?.start_date != data?.end_date && (
+                                    <>
+                                        <Text size="sm" c="gray" mt={10}>Sampai</Text>
+                                        <Text>{moment(data?.end_date).format('DD MMMM YYYY')}</Text>
+                                    </>
+                                )}
                             </Stack>
                         </Flex>
 
@@ -159,11 +170,13 @@ export default function Invoice() {
                                             </Text>
                                             <Text size="sm" className='capitalize'>{data?.payment_method ?? 'PAYMENT_METHOD'}</Text>
                                         </Stack>
-                                        <Link href={data?.xendit_url ?? '#'} target="_blank">
-                                            <Text size="xs" className={`hover:underline !text-primary-base`}>
-                                                Buka Halaman Pembayaran
-                                            </Text>
-                                        </Link>
+                                        {data?.payment_status.toLowerCase() == 'pending' && (
+                                            <Link href={data?.xendit_url ?? '#'} target="_blank">
+                                                <Text size="xs" className={`hover:underline !text-primary-base`}>
+                                                    Buka Halaman Pembayaran
+                                                </Text>
+                                            </Link>
+                                        )}
                                     </SimpleGrid>
                                 </Card>
                             </Stack>

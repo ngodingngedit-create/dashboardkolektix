@@ -49,11 +49,11 @@ interface VenueSchedule {
 }
 
 interface Venue {
-    id: number;
+    id?: number;
     creator_id?: number;
-    venue_category_id: number;
-    venue_capacity_id: number;
-    venue_facility_id: string;
+    venue_category_id?: number;
+    venue_capacity_id?: number;
+    venue_facility_id?: number[];
     name: string;
     slug: string;
     image: string;
@@ -76,7 +76,8 @@ interface Venue {
     updated_at: string;
     deleted_at: string | null;
     starting_price: number;
-    minimum_price: number | null;
+    minimum_price?: number;
+    per_hour_price?: number;
     image_url: string;
     creator: CreatorProps;
     has_venue_category?: VenueCategory;
@@ -85,11 +86,17 @@ interface Venue {
     venue_gallery: {
         image_url: string;
     }[];
+    has_booked_venue?: {
+        event_name: string;
+        event_banner: string;
+        start_date: string;
+        end_date: string;
+    }[]
+    has_booking_venue?: any[];
 }
 
 export type VenueListResponse = Venue;
 export type VenueStoreRequest = {
-    creator_id: number;
     venue_category_id: number;
     venue_capacity_id: number;
     venue_facility_id: number[];
@@ -105,7 +112,8 @@ export type VenueStoreRequest = {
     contact_person_email: string;
     contact_person_phone: string;
     starting_price: number;
-    minimum_price?: number;
+    minimum_price: number;
+    per_hour_price?: number;
     description: string;
     status: string;
     image: (string | Blob)[];

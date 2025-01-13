@@ -30,7 +30,7 @@ type SidebarData = {
     icon?: IconDefinition;
     iconify?: string;
     link?: string;
-    role: "Creator" | "Pembeli" | "Staff";
+    role: UserProps['role'];
     submenu?: Omit<SidebarData, 'submenu'>;
 }[];
 
@@ -83,22 +83,31 @@ const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Creator', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard', role: 'Staff', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
+    { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/admin', role: 'Admin', iconify: undefined },
+    { id: 1, name: 'Event', iconify: 'mdi:event-star', link: '/dashboard/admin/event', role: 'Admin' },
     { id: 1, name: 'Bookmark', link: '/dashboard/bookmark', role: 'Pembeli', iconify: 'material-symbols:bookmark' },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Staff', submenu: [
         {
             id: 1,
+            name: 'Event Saya',
+            icon: faCalendar,
+            link: '/dashboard/my-event',
+            role: 'Staff'
+        },
+        {
+            id: 1,
             name: 'Check In Event',
             iconify: 'lets-icons:in',
             link: '/dashboard/my-event/checkin',
-            role: 'Creator'
+            role: 'Staff'
         },
         {
             id: 1,
             name: 'Report Event',
             iconify: 'carbon:report',
             link: '/dashboard/my-event/report',
-            role: 'Creator'
+            role: 'Staff'
         }
     ] },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Creator', submenu: [
@@ -127,8 +136,38 @@ const sidebarData: SidebarData = [
     { id: 4, name: 'Lowongan', icon: faBriefcase, link: '/dashboard/vacancy', role: 'Creator' },
     { id: 20, name: 'Transaksi Lainnya', iconify: 'icon-park-solid:transaction', link: '/dashboard/transaction', role: 'Pembeli' },
     { id: 5, name: 'Profile Talenta', icon: faStar, link: '/dashboard/talenta', role: 'Pembeli' },
-    { id: 6, name: 'Merchandise', icon: faGift, link: '/dashboard/merch', role: 'Creator' },
-    { id: 7, name: 'Venue', icon: faLocationDot, link: '/dashboard/venue', role: 'Creator' },
+    { id: 6, name: 'Merchandise', icon: faGift, role: 'Creator', submenu: [
+        {
+            id: 1,
+            name: 'Kelola Merchandise',
+            icon: faGift,
+            link: '/dashboard/merch',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'POS Merchandise',
+            iconify: 'hugeicons:cashier',
+            link: '/dashboard/merch-pos',
+            role: 'Creator'
+        }
+    ]},
+    { id: 7, name: 'Venue', icon: faLocationDot, role: 'Creator', submenu: [
+        {
+            id: 1,
+            name: 'Kelola Venue',
+            icon: faLocationDot,
+            link: '/dashboard/venue',
+            role: 'Creator'
+        },
+        {
+            id: 1,
+            name: 'Buat Booking Venue',
+            iconify: 'fluent:form-48-regular',
+            link: '/dashboard/venue-pos',
+            role: 'Creator'
+        }
+    ]},
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat', role: 'Pembeli' },
     { id: 8, name: 'Pesan', icon: faMessage, link: '/dashboard/chat-creator', role: 'Creator' },
     { id: 9, name: 'Account Saya', icon: faIdBadge, role: 'Creator', submenu: profileData },
@@ -145,7 +184,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     const [userData, setUserData] = useState<UserProps>();
     const [hasCreator, setHasCreator] = useState<boolean>(false);
     const [pop, setIsPop] = useState<boolean>(true);
-    const [role, setRole] = useState<'Creator' | 'Pembeli' | 'Staff'>('Pembeli');
+    const [role, setRole] = useState<UserProps['role']>('Pembeli');
     const [open, setOpen] = useState<boolean>(false);
     const [showNotifications, setShowNotifications] = useState<boolean>(false);
     const [hasNotification, setHasNotification] = useState<boolean>(false);
@@ -195,30 +234,31 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     };
     useEffect(() => {
         if (users) {
-            console.log(users);
             setUserData(users);
-            if (users.has_creator || users?.role == 'Staff') {
-                setHasCreator(true);
+            if (route === '/dashboard/user') {
+                if (!!users.has_creator) setHasCreator(true);
+                setRole('Pembeli');
+            } else {
+                if (!!users.has_creator || users?.role == 'Staff') {
+                    setHasCreator(true);
+                }
+                setRole(users?.role ?? 'Pembeli');
             }
         }
     }, [users]);
 
-    useEffect(() => {
-        if (current === 'true' && hasCreator) {
-            setRole(users?.role ?? 'Creator');
-            console.log(users?.role ?? 'Creator')
-        } else {
-            setRole('Pembeli');
-        }
-    }, [current, hasCreator]);
+    // useEffect(() => {
+    //     if (current === 'true' && hasCreator) {
+    //         setRole(users?.role ?? 'Creator');
+    //     } else {
+    //         setRole('Pembeli');
+    //     }
+    // }, [current, hasCreator]);
 
     useEffect(() => {
-        if (route === '/dashboard/user') {
-            Cookies.set('hasCreator', 'false');
-            setRole('Pembeli');
-        } else {
-            setRole(users?.role ?? 'Pembeli');
-        }
+        // if (route === '/dashboard/user') {
+        //     setRole('Pembeli');
+        // }
     }, [route]);
 
     const [visible, setIsVisible] = useState<boolean>(false);
@@ -471,7 +511,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     <Text size="sm" c="gray.8" fw={600}>Hi, {users?.name}</Text>
                                                     <Text size="xs" c="gray" mt={-3}>{users?.email}</Text>
                                                 </Stack>
-                                                {hasCreator && !!!userData?.force_creator && (
+                                                {hasCreator && (
                                                     <button
                                                         className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
                                                         role="menuitem"
@@ -497,14 +537,20 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                         Beralih ke {role === 'Creator' ? 'Pembeli' : 'Creator'}
                                                     </button>
                                                 )}
-                                                <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                    <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                                                    Transaksi
-                                                </Link>
-                                                <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                                    <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                                                    Bookmark
-                                                </Link>
+
+                                                {!['Staff', 'Admin'].includes(role ?? '') && (
+                                                    <>
+                                                        <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                            <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                                            Transaksi
+                                                        </Link>
+
+                                                        <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                                            <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                                            Bookmark
+                                                        </Link>
+                                                    </>
+                                                )}
 
                                                 <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                                                     <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />

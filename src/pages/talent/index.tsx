@@ -6,7 +6,7 @@ import { Get } from '@/utils/REST';
 import empty from '@/assets/icon/vacancy.png';
 import Image from 'next/image';
 import FilterTalent from '@/components/FilterTalent';
-import { Text } from '@mantine/core';
+import { Button, Flex, Text } from '@mantine/core';
 
 const Event = () => {
   const [data, setData] = useState<TalentProps[]>([]);
@@ -56,7 +56,7 @@ const Event = () => {
 
   return (
     <>
-      <div className='md:!py-10 pb-5 max-w-5xl mx-auto text-dark !mt-0 px-[20px]'>
+      <div className='md:!py-10 pb-5 max-w-5xl min-h-[600px] mx-auto text-dark !mt-0 px-[20px]'>
         {/* <div className='pl-2'>
           <Breadcrumbs>
             <BreadcrumbItem>Beranda</BreadcrumbItem>
@@ -69,8 +69,19 @@ const Event = () => {
           categories={Array.from(new Set(data.map((item) => item?.has_category?.name)))}
         /> */}
         <Text mb={10} fw={600}>Semua Talenta</Text>
+        <Flex align="center" gap={10} mb={15}>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Photographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Videographer
+          </Button>
+          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
+            Sound Engineer
+          </Button>
+        </Flex>
         {filteredData.length > 0 ? (
-          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center '>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 content-center justify-items-center '>
             {filteredData.map((item) => (
               <TalentCard
                 key={item.id}

@@ -1,15 +1,16 @@
-import { Box, Overlay, Popover, Portal, Text } from "@mantine/core";
+import { Box, List, Overlay, Popover, Portal, Stack, Text } from "@mantine/core";
 import { PropsWithChildren, useEffect, useState } from "react";
 
 type Guide = {
     guidekey: string;
     text: string;
+    description?: string[];
     opened?: boolean;
     className?: string;
     order: number;
 };
 
-export const Guide = ({ order, guidekey, children, text, opened, className }: PropsWithChildren<Guide>) => {
+export const Guide = ({ order, guidekey, children, text, description, opened, className }: PropsWithChildren<Guide>) => {
     const [currentStep, setCurrentStep] = useState<number>(0);
     const [r, setR] = useState(false);
 
@@ -61,7 +62,7 @@ export const Guide = ({ order, guidekey, children, text, opened, className }: Pr
         <>
             {isStepActive && (
                 <Portal className="!z-[500]">
-                    <Overlay onClick={isStepActive ? handleNextStep : undefined} opacity={0.6} className="!z-[200] !w-[5000vw] !h-[5000vh]" />
+                    <Overlay onClick={isStepActive ? handleNextStep : undefined} opacity={0.6} className="!z-[200] !w-[100vw] !h-[100vh]" />
                 </Portal>
             )}
             <Popover opened={isStepActive} withArrow arrowSize={12} arrowOffset={10} shadow="md" radius={10}>
@@ -79,9 +80,21 @@ export const Guide = ({ order, guidekey, children, text, opened, className }: Pr
                     classNames={{ arrow: `!border-l-primary-base !border-t-primary-base` }}
                     className="border !border-primary-base !p-[7px_14px] !bg-[#deebfe]"
                 >
-                    <Text size="sm" className="!text-primary-base" fw={500}>
-                        {text}
-                    </Text>
+                    <Stack gap={5} p={5}>
+                        <Text size="sm" className="!text-primary-base" fw={500}>
+                            {text}
+                        </Text>
+
+                        {description && (
+                            <List>
+                                {description.map((e, i) => (
+                                    <List.Item key={i}>
+                                        <Text className="!text-primary-base" size="sm" c="gray.8">{e}</Text>
+                                    </List.Item>
+                                ))}
+                            </List>
+                        )}
+                    </Stack>
                 </Popover.Dropdown>
             </Popover>
         </>

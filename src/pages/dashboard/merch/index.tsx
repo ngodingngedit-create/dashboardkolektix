@@ -113,7 +113,7 @@ const Merch = () => {
         </div>
 
         <Flex gap={10} align="center">
-          <ButtonM
+          {/* <ButtonM
             leftSection={<Icon icon="hugeicons:cashier" className={`text-[20px]`} />}
             radius="xl"
             color="#0B387C"
@@ -121,12 +121,11 @@ const Merch = () => {
             href="/dashboard/merch-pos"
           >
             Penjualan Offline
-          </ButtonM>
+          </ButtonM> */}
           <ButtonM
             onClick={() => setModalCreate('')}
             leftSection={<Icon icon="icon-park-outline:add-one" className={`text-[24px]`} />}
             radius="xl"
-            variant="outline"
             color="#0B387C"
           >
             Buat Merchandise
@@ -173,23 +172,18 @@ const Merch = () => {
                       <TableCell>
                         <div className="flex items-center gap-[10px]">
                           <Switch checked={e.product_status_id == 2} disabled={loading.includes('toggle-status')} onChange={z => handleToggleStatus(e.id, z.target.checked)}/>
-                          <ActionIcon variant="transparent" onClick={() => handleDelete(e.id)} loading={loading.includes(`delete${e.id}`)}>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M13.3333 5.00033V4.33366C13.3333 3.40024 13.3333 2.93353 13.1517 2.57701C12.9919 2.2634 12.7369 2.00844 12.4233 1.84865C12.0668 1.66699 11.6001 1.66699 10.6667 1.66699H9.33333C8.39991 1.66699 7.9332 1.66699 7.57668 1.84865C7.26308 2.00844 7.00811 2.2634 6.84832 2.57701C6.66667 2.93353 6.66667 3.40024 6.66667 4.33366V5.00033M8.33333 9.58366V13.7503M11.6667 9.58366V13.7503M2.5 5.00033H17.5M15.8333 5.00033V14.3337C15.8333 15.7338 15.8333 16.4339 15.5608 16.9686C15.3212 17.439 14.9387 17.8215 14.4683 18.0612C13.9335 18.3337 13.2335 18.3337 11.8333 18.3337H8.16667C6.76654 18.3337 6.06647 18.3337 5.53169 18.0612C5.06129 17.8215 4.67883 17.439 4.43915 16.9686C4.16667 16.4339 4.16667 15.7338 4.16667 14.3337V5.00033" stroke="#666666" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+
+                          <ActionIcon variant="transparent"component={Link} href={`/dashboard/merch/${e.slug}`}>
+                            <Icon icon="akar-icons:eye" className={`text-[24px]`} />
                           </ActionIcon>
-                          <button onClick={() => setModalCreate(e.slug)}>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <g clip-path="url(#clip0_9535_48088)">
-                              <path d="M9.1665 3.3332H5.6665C4.26637 3.3332 3.56631 3.3332 3.03153 3.60568C2.56112 3.84536 2.17867 4.22782 1.93899 4.69822C1.6665 5.233 1.6665 5.93307 1.6665 7.3332V14.3332C1.6665 15.7333 1.6665 16.4334 1.93899 16.9682C2.17867 17.4386 2.56112 17.821 3.03153 18.0607C3.56631 18.3332 4.26637 18.3332 5.6665 18.3332H12.6665C14.0666 18.3332 14.7667 18.3332 15.3015 18.0607C15.7719 17.821 16.1543 17.4386 16.394 16.9682C16.6665 16.4334 16.6665 15.7333 16.6665 14.3332V10.8332M6.66648 13.3332H8.06193C8.46959 13.3332 8.67341 13.3332 8.86522 13.2871C9.03528 13.2463 9.19786 13.179 9.34698 13.0876C9.51517 12.9845 9.6593 12.8404 9.94755 12.5521L17.9165 4.5832C18.6069 3.89284 18.6069 2.77355 17.9165 2.0832C17.2261 1.39284 16.1069 1.39284 15.4165 2.0832L7.44753 10.0521C7.15928 10.3404 7.01515 10.4845 6.91208 10.6527C6.8207 10.8018 6.75336 10.9644 6.71253 11.1345C6.66648 11.3263 6.66648 11.5301 6.66648 11.9378V13.3332Z" stroke="#666666" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
-                              </g>
-                              <defs>
-                              <clipPath id="clip0_9535_48088">
-                              <rect width="20" height="20" fill="white"/>
-                              </clipPath>
-                              </defs>
-                            </svg>
-                          </button>
+
+                          <ActionIcon variant="transparent" color="gray" onClick={() => setModalCreate(e.slug)}>
+                            <Icon icon="akar-icons:edit" className={`text-[24px]`} />
+                          </ActionIcon>
+
+                          <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(e.id)} loading={loading.includes(`delete${e.id}`)}>
+                            <Icon icon="uiw:delete" className={`text-[18px]`} />
+                          </ActionIcon>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Get, Post } from '@/utils/REST';
 import { useClickOutside, useListState } from '@mantine/hooks';
-import { NumberFormatter, Button, Flex, ActionIcon } from '@mantine/core';
+import { NumberFormatter, Button, Flex, ActionIcon, AspectRatio, Card, Center } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import _ from 'lodash';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -160,13 +160,24 @@ const MerchandiseDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 auto-rows-min">
                 <div className="col-span-2 md:col-span-4">
+                    {mainData.product_image.length == 0 && (
+                        <AspectRatio ratio={1}>
+                            <Card bg="gray.1" radius={10}>
+                                <Center h="100%" c="gray.3">
+                                    <Icon icon="bi:image" style={{ fontSize: 50 }} />
+                                </Center>
+                            </Card>
+                        </AspectRatio>
+                    )}
                     {mainData.product_image[imageActive] && (
                         <Image src={mainData.product_image[imageActive].image_url ?? ''} width={500} height={500} alt="merch" className="w-full h-72 object-cover rounded-md" />
                     )}
                 </div>
                 {mainData.product_image.map((e, i) => (
                     <div key={i} className="flex items-center justify-center">
-                        <Image src={e.image_url} width={500} height={500} alt="merch" className={`w-full h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? 'border-2 border-primary-dark' : 'border-2 border-primary-light-200'}`} onClick={() => setImage(i)} />
+                        <AspectRatio>
+                            <Image src={e.image_url} width={500} height={500} alt="merch" className={`w-full h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? 'border-2 border-primary-dark' : 'border-2 border-primary-light-200'}`} onClick={() => setImage(i)} />
+                        </AspectRatio>
                     </div>
                 ))}
             </div>

@@ -9,11 +9,12 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Image from 'next/image';
 import { Spinner } from '@nextui-org/react';
-import { Post } from '@/utils/REST';
+import { Get, Post } from '@/utils/REST';
 import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import { PasswordInput, TextInput } from '@mantine/core';
 import { useSetState } from '@mantine/hooks';
+import { UserProps } from '@/utils/globalInterface';
 
 interface RegisterForm {
   name: string;
@@ -153,7 +154,12 @@ const Auth = () => {
       });
   };
 
-  const login = (event?: React.FormEvent) => {
+  const getPermission = async () => {
+    const res = (await Get('permissions', {})) as any;
+    await Cookies.set('permissions', JSON.stringify(res.data));
+  }
+
+  const login = async (event?: React.FormEvent) => {
     event?.preventDefault();
 
     if (data.email == '') setErrors({ email: 'Wajib Diisi' });
@@ -162,16 +168,26 @@ const Auth = () => {
 
     setLoading(true);
     Post('login-auth', data)
-      .then((res: any) => {
+      .then(async (res: any) => {
+        await getPermission();
         setLoading(false);
         // setCountdownEndTime(new Date(Date.now() + 120000));
         // setCountdownActive(true);
         // setStep(2);
 
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify({...(res?.user_access ?? {}), force_creator: true, role: 'Staff' }));
+        const role: UserProps['role'] = res?.user_access?.some((e: any) => e?.has_role.id == 3 ? "Creator" : e?.has_role?.name == 'Admin') ? 'Admin' : 'Staff';
+
+        Cookies.set('user_data', JSON.stringify({
+          ...(res?.data ?? {}),
+          force_creator: true,
+          role,
+          ...(res?.user_access ? {
+            has_creator: res?.user_access[0]?.has_parent?.has_creator
+          } : {})
+        }));
         setLoading(false);
-        router.push('/dashboard');
+        router.push(role == 'Admin' ? '/dashboard/admin' : '/dashboard');
       })
       .catch((err: any) => {
         if (err.response.status === 401) {

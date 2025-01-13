@@ -37,7 +37,7 @@ const MyEvent = () => {
       setData(filteredData.sort((b: any, a: any) => {
         return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
       }));
-      console.log(res, 'Event Data');
+      // console.log(res, 'Event Data');
     } catch (err) {
       console.log(err);
       setData([]);

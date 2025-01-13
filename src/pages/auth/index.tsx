@@ -12,6 +12,7 @@ import { Spinner } from '@nextui-org/react';
 import { Post } from '@/utils/REST';
 import { toast } from 'react-toastify';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
+import { UserProps } from '@/utils/globalInterface';
 
 interface RegisterForm {
   name: string;
@@ -152,7 +153,7 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('user_data', JSON.stringify({...res.data, role: Boolean(res?.data?.has_creator) ? 'Creator' : 'Pembeli'} as UserProps));
         setLoading(false);
         ticketCount && prevPath ? router.push(prevPath) : router.push('/');
         prevPath ? router.push(prevPath) : router.push('/');
@@ -171,7 +172,7 @@ const Auth = () => {
       .then((res: any) => {
         console.log(res);
         Cookies.set('token', res.access_token);
-        Cookies.set('user_data', JSON.stringify(res.data));
+        Cookies.set('user_data', JSON.stringify({...res.data, role: Boolean(res?.data?.has_creator) ? 'Creator' : 'Pembeli'} as UserProps));
         Cookies.set('bookmarked', JSON.stringify(res.bookmarked));
         setLoading(false);
         ticketCount && prevPath ? router.push(prevPath) : router.push('/');

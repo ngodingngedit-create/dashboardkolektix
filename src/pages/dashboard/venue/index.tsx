@@ -2,25 +2,32 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { AspectRatio, Badge, Button, Card, Center, Divider, Flex, Image, Stack, Text, TextInput } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import Link from 'next/link';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { VenueListResponse } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 
 const MyVenue = () => {
   const [loading, setLoading] = useListState<string>();
-  const [venue, setVenue] = useListState<VenueListResponse>();
+  const [search, setSearch] = useState<string>('');
+  const [_venue, setVenue] = useListState<VenueListResponse>();
   const user = useLoggedUser();
 
   useEffect(() => {
     getData();
   }, [user]);
 
+  const venue = useMemo(() => {
+    if (!search) return _venue;
+    return _venue?.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  }, [_venue, search]);
+
   const getData = async () => {
+    if (loading.includes('getdata')) return;
     await fetch<any, VenueListResponse[]>({
-      url: 'venue',
+      url: 'creator-data/venue',
       method: 'GET',
-      success: ({ data }) => data && setVenue.setState(data.filter(e => e.creator_id == user?.has_creator?.id)),
+      success: ({ data }) => data && setVenue.setState(data),
       before: () => setLoading.append('getdata'),
       complete: () => setLoading.filter(e => e != 'getdata'),
     });
@@ -36,6 +43,8 @@ const MyVenue = () => {
 
         <Flex align="center" gap={10}>
           <TextInput
+            value={search}
+            onChange={e => setSearch(e.currentTarget.value)}
             radius="xl"
             leftSection={<Icon icon="uiw:search" />}
             placeholder='Cari Nama Venue'
@@ -46,7 +55,7 @@ const MyVenue = () => {
             leftSection={<Icon icon="uiw:plus" />}
             component={Link}
             href="/dashboard/venue/create">
-            Tambah Venue
+            Buat Venue
           </Button>
         </Flex>
       </Flex>
@@ -55,9 +64,9 @@ const MyVenue = () => {
 
       <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-xgrow [&>*]:!w-full md:[&>*]:!max-w-[250px]`}>
         {venue?.map((e ,i) => (
-          <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.slug}`} p={0}>
+          <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.id}`} p={0}>
             <AspectRatio>
-              <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />
+              {e.venue_gallery[0] && <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />}
             </AspectRatio>
 
             <Card>
@@ -82,9 +91,9 @@ const MyVenue = () => {
             <Icon icon="mage:building-b" className={`text-[36px] text-primary-base`} />
           </div>
           <div className='text-center'>
-            <p className='font-semibold text-lg'>Belum ada merchandise yang dibuat</p>
+            <p className='font-semibold text-lg'>Tidak ada venue yang tersedia</p>
             <p className='text-grey max-w-72 mt-[10px]'>
-              Mulai buat merchandise dengan klik button “Buat Merchandise” di bawah.{' '}
+              Mulai buat venu dengan klik button “Buat Venue di bawah.{' '}
             </p>
           </div>
 

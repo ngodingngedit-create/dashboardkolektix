@@ -1,14 +1,33 @@
 import ModalTransactionMerchDetail from "@/components/Transaction/ModalTransactionMerchDetail";
+import fetch from "@/utils/fetch";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Alert, Button, Card, Divider, Flex, Image, NumberFormatter, Stack, Tabs, Text } from "@mantine/core";
+import { Alert, AspectRatio, Badge, Button, Card, Divider, Flex, Image, NumberFormatter, Stack, Tabs, Text } from "@mantine/core";
+import { useListState } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import moment from "moment";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-type ComponentProps = {
-    
-};
+type ComponentProps = {};
 
 export default function Transaction({  }: Readonly<ComponentProps>) {
+    const [data, setData] = useState<Partial<Record<'venue', any[]>>>({});
+    const [loading, setLoading] = useListState<string>();
+
+    useEffect(() => {
+        getData();
+    }, []);
+
+    const getData = async () => {
+        await fetch<any, any>({
+            url: 'user-data/transactions',
+            method: 'GET',
+            before: () => setLoading.append('getdata'),
+            success: ({ data }) => setData(data),
+            complete: () => setLoading.filter(e => e != 'getdata'),
+            error: () => {},
+        });
+    }
 
     const handleOpenMerchDetail = () => {
         modals.open({
@@ -84,9 +103,41 @@ export default function Transaction({  }: Readonly<ComponentProps>) {
 
                 <Tabs.Panel value="venue">
                     <Stack gap={15} py={20}>
-                        <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
-                            Tidak ada transaksi venue
-                        </Alert>
+                        {(data.venue?.length ?? 0) > 0 ? data.venue?.map((e, i) => (
+                            <Card withBorder radius={8} key={i}>
+                                <Flex justify="space-between" gap={15} wrap="wrap">
+                                    <Stack gap={0}>
+                                        {e?.venue?.venue_gallery[0] && <AspectRatio ratio={16 / 5} maw={500} w="100%">
+                                            <Image src={e?.venue?.venue_gallery[0]?.image} radius={8} />
+                                        </AspectRatio>}
+                                        <Flex align="center" gap={8} mt={10}>
+                                            <Text size="sm" c="gray">{moment(e.start_date).format('DD MMMM YYYY')}</Text>
+                                            {e?.start_date != e?.end_date && <Text size="sm" c="gray">- {moment(e.end_date).format('DD MMMM YYYY')}</Text>}
+                                        </Flex>
+                                        <Text size="lg" fw={600}>Venue {e?.venue?.name}</Text>
+                                        <Text>{e?.venue?.location_name}</Text>
+                                    </Stack>
+                                    <Stack gap={5} align="end" h="100%" justify="space-between">
+                                        <Flex align="center" gap={8}>
+                                            <Text size="sm" c="gray">Status Pembayaran:</Text>
+                                            <Badge variant="light" className={`capitalize`} size="lg" color={
+                                                e?.payment_status.toLowerCase() == 'pending' ? 'yellow' :
+                                                e?.payment_status.toLowerCase() == 'verified' ? 'green' : 'red'
+                                            }>{e?.payment_status}</Badge>
+                                        </Flex>
+                                        <Divider my={15} />
+                                        <Text size="lg" fw={600}>Total Dibayar <NumberFormatter value={e?.grandtotal ?? 0} /></Text>
+                                        <Button variant="transparent" size="sm" component={Link} href={`/venue-invoice/${e?.invoice_no}`}>
+                                            Lihat Invoice
+                                        </Button>
+                                    </Stack>
+                                </Flex>
+                            </Card>
+                        )) : (
+                            <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
+                                Tidak ada transaksi venue
+                            </Alert>
+                        )}
                     </Stack>
                 </Tabs.Panel>
 

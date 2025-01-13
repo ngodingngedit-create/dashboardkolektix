@@ -19,9 +19,10 @@ import Images from '../Images';
 import { toast } from 'react-toastify';
 import { faCopy } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
-import { NumberFormatter, Stack, Text } from '@mantine/core';
+import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Numans } from 'next/font/google';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 interface FormTicket {
     event_id: number;
@@ -340,6 +341,18 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                 <p className="text-xs text-grey">{totalCount} Tiket</p>
                             </div>
                         </div>
+                        <Card withBorder radius={10} p={20}>
+                            <Stack gap={20}>
+                                <Flex gap={10} align="center">
+                                    <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
+                                    <Text fw={600}>Voucher</Text>
+                                </Flex>
+        
+                                <TextInput
+                                    placeholder="Masukan Kode Voucher"
+                                />
+                            </Stack>
+                        </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                             <div className="border-b border-b-primary-light-200 p-3">
                                 <p className="font-semibold">Ringkasan Pesanan</p>
@@ -668,6 +681,18 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                         </div>
                                     </div>
                                 </div>
+                                <Card withBorder radius={10} p={20}>
+                                    <Stack gap={20}>
+                                        <Flex gap={10} align="center">
+                                            <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
+                                            <Text fw={600}>Voucher</Text>
+                                        </Flex>
+                
+                                        <TextInput
+                                            placeholder="Masukan Kode Voucher"
+                                        />
+                                    </Stack>
+                                </Card>
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                                     <div className="border-b border-b-primary-light-200 p-3">
                                         <p className="font-semibold">Ringkasan Pesanan</p>

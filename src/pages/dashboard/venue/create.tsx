@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Button, Card, Divider, Flex, InputWrapper, LoadingOverlay, NumberInput, Select, Stack, TagsInput, Text, Textarea, TextInput } from '@mantine/core';
+import { Button, Card, Divider, Flex, InputWrapper, LoadingOverlay, NumberInput, Select, Space, Stack, TagsInput, Text, Textarea, TextInput } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import fetch from '@/utils/fetch';
@@ -12,57 +12,27 @@ import { z } from 'zod';
 import { FacilitiesList } from '@/pages/venue/[slug]';
 
 type ComponentProps = {};
-const isBrowser = typeof window !== 'undefined';
-
-export const VenueStoreRequestSchema = z.object({
-    // creator_id: z.number().nonnegative({ message: "ID pembuat harus berupa angka dan tidak negatif." }),
-    venue_category_id: z.number().nonnegative({ message: "ID kategori venue harus berupa angka dan tidak negatif." }),
-    // venue_capacity_id: z.number().nonnegative({ message: "ID kapasitas venue harus berupa angka dan tidak negatif." }),
-    venue_facility_id: z.array(z.number().nonnegative({ message: "ID fasilitas harus berupa angka dan tidak negatif." })).min(1, { message: "Setidaknya satu fasilitas harus dipilih." }),
-    // venue_schedule_id: z.number().nonnegative({ message: "ID jadwal venue harus berupa angka dan tidak negatif." }),
-    name: z.string().min(1, { message: "Nama venue tidak boleh kosong." }),
-    location: z.string().min(1, { message: "Lokasi tidak boleh kosong." }),
-    location_map: z.string().url({ message: "Lokasi map harus berupa URL yang valid." }),
-    location_detail: z.string(),
-    // opening_hour: z.string().min(1, { message: "Jam buka tidak boleh kosong." }),
-    max_capacity: z.number().nonnegative({ message: "Kapasitas maksimal harus berupa angka dan tidak negatif." }),
-    seat_capacity: z.number().nonnegative({ message: "Kapasitas tempat duduk harus berupa angka dan tidak negatif." }),
-    contact_person_name: z.string().min(1, { message: "Nama kontak tidak boleh kosong." }),
-    contact_person_email: z.string().email({ message: "Email kontak harus berupa email yang valid." }),
-    contact_person_phone: z.string().min(1, { message: "Nomor telepon kontak tidak boleh kosong." }),
-    starting_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }),
-    minimum_price: z.number().nonnegative({ message: "Harga mulai harus berupa angka dan tidak negatif." }).optional().nullable(),
-    description: z.string().min(1, { message: "Deskripsi tidak boleh kosong." }),
-    // status: z.string().min(1, { message: "Status tidak boleh kosong." }),
-    image: z.array(z.any()).min(1, { message: "Setidaknya satu gambar harus diunggah." }),
-    // image: isBrowser ? z.array(z.instanceof(Blob)).min(1, { message: "Setidaknya satu gambar harus diunggah." }) : z.any(),
-});
 
 export default function Create({}: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
-    const [venue, setVenue] = useState<VenueListResponse>();
+    const [venue, setVenue] = useState<Partial<VenueListResponse>>();
     const [venueFacilities, setVenueFacilities] = useState<FacilitiesList[]>();
     const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;
 
-    const form = useForm<VenueStoreRequest>({
-        mode: 'controlled',
-        validate: zodResolver(VenueStoreRequestSchema),
+    const form = useForm<Partial<VenueStoreRequest>>({
         onValuesChange: (val) => {
             if (val.contact_person_phone) val.contact_person_phone = val.contact_person_phone.replaceAll(/\D/g, '');
             return val;
         }
     });
+    const { getInputProps: inputProps } = form;
 
     useEffect(() => {
         getData();
-    }, [user]);
-
-    useEffect(() => {
-        getVenueData();
     }, [slug]);
 
     useDidUpdate(() => {
@@ -70,10 +40,10 @@ export default function Create({}: Readonly<ComponentProps>) {
             form.setValues({
                 ...venue,
                 venue_category_id: venue.has_venue_category?.id,
-                venue_facility_id: venueFacilities?.map(e => facility?.find(z => z.name == e.facility_name)?.id ?? 0).filter(e => e != 0),
                 minimum_price: Boolean(venue.minimum_price) && venue.minimum_price != null ? Math.round(venue.minimum_price) : 0,
-                image: venue?.venue_gallery.map(e => e.image_url),
-                starting_price: Math.round(venue?.starting_price),
+                image: venue?.venue_gallery?.map(e => e.image_url),
+                starting_price: Math.round(venue?.starting_price ?? 0),
+                per_hour_price: Math.round(venue?.per_hour_price ?? 0),
             });
         }
     }, [venue, category, facility]);
@@ -93,17 +63,21 @@ export default function Create({}: Readonly<ComponentProps>) {
             before: () => setLoading.append('getdatacat'),
             complete: () => setLoading.filter(e => e != 'getdatacat'),
         });
+        await getVenueData();
     }
 
     const getVenueData = async () => {
         if (slug) {
             await fetch<any, VenueListResponse>({
-                url: 'venue/' + slug,
+                url: 'creator-data/venue/' + slug,
                 method: 'GET',
                 before: () => setLoading.append('getdatavenue'),
                 success: (data) => {
                     if (data) {
-                        setVenue(data.data);
+                        setVenue({
+                            ...data.data,
+                            venue_facility_id: data?.data?.venue_facility_id?.map(e => parseInt(String(e))) ?? [],
+                        });
                         setVenueFacilities(data['dataFacilities']);
                     }
                 },
@@ -119,12 +93,11 @@ export default function Create({}: Readonly<ComponentProps>) {
             return;
         };
 
-        await fetch<VenueStoreRequest, any>({
-            url: slug ? 'venue/' + venue?.id : 'venue',
+        await fetch<Partial<VenueStoreRequest>, any>({
+            url: slug ? 'creator-data/venue/' + venue?.id : 'creator-data/venue',
             method: 'POST',
             data: {
                 ...form.values,
-                creator_id: user?.has_creator?.id ?? 0,
                 venue_capacity_id: 0,
                 venue_schedule_id: 0,
                 opening_hour: '2024-07-02T09:00:00',
@@ -135,6 +108,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 router.push('/dashboard/venue')
             },
             complete: () => setLoading.filter(e => e != 'submitdata'),
+            invalid: form.setErrors,
         });
     }
 
@@ -187,7 +161,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                         label="Nama Venue"
                         placeholder="Isi Nama Venue"
                         w="100%"
-                        {...form.getInputProps('name')}
+                        {...inputProps('name')}
                     />
                     <Select
                         withAsterisk
@@ -196,7 +170,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                         disabled={loading.includes('getdatacat')}
                         data={category?.map(e => ({ value: String(e.id), label: e.name }))}
                         miw={250}
-                        {...form.getInputProps('venue_category_id')}
+                        {...inputProps('venue_category_id')}
                         onChange={e => e && form.setValues({ venue_category_id: parseInt(e) })}
                     />
                 </Flex>
@@ -207,7 +181,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                     placeholder="Isi Deskripsi Venue"
                     autosize
                     minRows={3}
-                    {...form.getInputProps('description')}
+                    {...inputProps('description')}
                 />
 
                 <TagsInput
@@ -215,7 +189,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                     label="Fasilitas Venue"
                     placeholder="Isi Fasilitas Venue"
                     data={facility?.map(e => ({ value: String(e.id), label: e.name }))}
-                    {...form.getInputProps('venue_facility_id')}
+                    {...inputProps('venue_facilities_id')}
                     value={(form.values.venue_facility_id ?? []).map(e => facility?.find(z => z.id == e)?.name ?? '-')}
                     onChange={e => e && form.setValues({ venue_facility_id: e.map(e => facility?.find(z => z.name == e)?.id ?? 0) })}
                 />
@@ -227,7 +201,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                         placeholder="Masukan Maksimal Kapasitas"
                         hideControls
                         min={0}
-                        {...form.getInputProps('max_capacity')}
+                        {...inputProps('max_capacity')}
                     />
                     <NumberInput
                         withAsterisk
@@ -235,29 +209,39 @@ export default function Create({}: Readonly<ComponentProps>) {
                         placeholder="Masukan Jumlah Kursi"
                         hideControls
                         min={0}
-                        {...form.getInputProps('seat_capacity')}
+                        {...inputProps('seat_capacity')}
                     />
                 </Flex>
 
                 <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
+                    <Flex gap={10} align="center" className={`[&>*]:!flex-grow`}>
+                        <NumberInput
+                            withAsterisk
+                            label="Harga Per Hari"
+                            placeholder="Masukan Harga Per Hari"
+                            hideControls
+                            prefix="Rp "
+                            min={0}
+                            {...inputProps('starting_price')}
+                        />
+                        <NumberInput
+                            withAsterisk
+                            label="Harga Per Jam"
+                            placeholder="Masukan Harga Per Jam"
+                            hideControls
+                            prefix="Rp "
+                            min={0}
+                            {...inputProps('per_hour_price')}
+                        />
+                    </Flex>
                     <NumberInput
-                        withAsterisk
-                        label="Harga Per Hari"
-                        placeholder="Masukan Harga Per Hari"
+                        label="Down Payment (DP)"
+                        placeholder="Masukan Down Payment"
                         hideControls
                         prefix="Rp "
                         min={0}
                         w="100%"
-                        {...form.getInputProps('starting_price')}
-                    />
-                    <NumberInput
-                        label="Minimal Pembayaran Per Hari"
-                        placeholder="Minimal Pembayaran Per Hari"
-                        hideControls
-                        prefix="Rp "
-                        min={0}
-                        w="100%"
-                        {...form.getInputProps('minimum_price')}
+                        {...inputProps('minimum_price')}
                     />
                 </Flex>
 
@@ -272,14 +256,14 @@ export default function Create({}: Readonly<ComponentProps>) {
                         label="Daerah"
                         placeholder="Bandung, Jawa Barat"
                         w="100%"
-                        {...form.getInputProps('location')}
+                        {...inputProps('location_name')}
                     />
                     <TextInput
                         withAsterisk
                         label="Link Maps"
                         placeholder="https://maps.google.com/..."
                         w="100%"
-                        {...form.getInputProps('location_map')}
+                        {...inputProps('location')}
                     />
                 </Flex>
 
@@ -289,7 +273,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                     placeholder="Isi Detail Alamat Venue"
                     autosize
                     minRows={3}
-                    {...form.getInputProps('location_detail')}
+                    {...inputProps('location_detail')}
                 />
 
                 <Flex gap={10} align="center" mt={10}>
@@ -303,14 +287,14 @@ export default function Create({}: Readonly<ComponentProps>) {
                         label="Nama Kontak"
                         placeholder="Isi Nama Kontak"
                         w="100%"
-                        {...form.getInputProps('contact_person_name')}
+                        {...inputProps('contact_person_name')}
                     />
                     <TextInput
                         withAsterisk
                         label="Email Kontak"
                         placeholder="Isi Email Kontak"
                         w="100%"
-                        {...form.getInputProps('contact_person_email')}
+                        {...inputProps('contact_person_email')}
                     />
                 </Flex>
 
@@ -319,19 +303,24 @@ export default function Create({}: Readonly<ComponentProps>) {
                     label="No.Telp Kontak"
                     placeholder="Isi No.Telp Kontak"
                     w="100%"
-                    {...form.getInputProps('contact_person_phone')}
+                    {...inputProps('contact_person_phone')}
                 />
+
+                <Space h={50} />
             </Stack>
 
-            <Button
-                loading={loading.includes('submitdata')}
-                onClick={submitData}
-                w="fit-content"
-                color="#194e9e"
-                rightSection={<Icon icon="uiw:check" />}
-                radius="xl">
-                Simpan Venue
-            </Button>
+            <Card pos="fixed" className={`!bottom-0 !z-10 w-full !border-t !border-[#d0d0d0]`} radius={0} px={0} maw={700}>
+                <Button
+                    ml="auto"
+                    loading={loading.includes('submitdata')}
+                    onClick={submitData}
+                    w="fit-content"
+                    color="#194e9e"
+                    rightSection={<Icon icon="uiw:check" />}
+                    radius="xl">
+                    Simpan Venue
+                </Button>
+            </Card>
         </Stack>
     );
 }

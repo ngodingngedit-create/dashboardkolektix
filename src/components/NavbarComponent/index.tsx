@@ -29,12 +29,13 @@ import Lowongan from '../../pages/lowongan/index';
 import Merchandise from '../../pages/merchandise/index';
 import Talenta from '../../pages/dashboard/talenta/index';
 import React from 'react';
-import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar, Text } from '@mantine/core';
+import { ActionIcon, Box, Button, Indicator, Menu, Flex, Image as ImageM, UnstyledButton, Card, Avatar, Text, Stack, NavLink, Divider } from '@mantine/core';
 import { useClickOutside, useHotkeys } from '@mantine/hooks';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { AppMainContext } from '@/pages/_app';
 import { modals } from '@mantine/modals';
 import { useTranslation } from 'react-i18next';
+import { NavbarItem } from '@nextui-org/react';
 
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -323,7 +324,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     <Flex gap={15} align="center">
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
-                          <Card bg="gray.3" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999} className={`!shadow-xl !overflow-visible`}>
+                          <Card bg="gray.3" p={i18n.language.toLowerCase() == 'id' ? 7 : '10px 7px'} radius={999} className={`!shadow-[3px_3px_10px_#00000065] !overflow-visible`}>
                             <Icon
                               icon={i18n.language.toLowerCase() == 'id' ? "twemoji:flag-indonesia" : "flag:us-4x3"}
                               className={`${i18n.language.toLowerCase() == 'id' ? 'text-[24px]' : 'text-[18px]'}`} />
@@ -375,7 +376,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           ) : (
                             <>
                               <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href="/dashboard/my-ticket">Transaksi</Menu.Item>
-                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href={users?.force_creator ? "/dashboard/" : "/dashboard/user"}>Dashboard</Menu.Item>
+                              <Menu.Item leftSection={<Icon icon="gg:list"/>} component={Link} href={users?.force_creator && !!users.has_creator ? "/dashboard/" : "/dashboard/user"}>Dashboard</Menu.Item>
                               <Menu.Item leftSection={<Icon icon="lucide:bookmark"/>} component={Link} href="/dashboard/bookmark">Bookmark</Menu.Item>
                               <Menu.Item leftSection={<Icon icon="solar:logout-2-broken"/>} color="red" onClick={handleLogout}>Logout</Menu.Item>
                             </>
@@ -643,38 +644,39 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </Link>
               </div>
             </div>
-            <div className='mt-4 p-4 rounded-lg'>
-              <p className='text-white text-lg font-semibold mb-4'>Konten Sidebar</p>
-              <ul className='space-y-2'>
-              <li className="flex items-center space-x-2 p-2 text-lg transition duration-300 hover:bg-gray-700 rounded-lg">
-                <FontAwesomeIcon icon={faCalendarDays} className="text-white" />
-                <Link href='/event' className='text-white hover:text-white block transition'>
-                  Event
-                </Link>
-              </li>
-              <li className="flex items-center space-x-2 p-2 text-lg transition duration-300 hover:bg-gray-700 rounded-lg">
-                <FontAwesomeIcon icon={faStar} className="text-white" />
-                <Link href='/talent' className='text-white hover:text-white block transition'>
-                  Talenta
-                </Link>
-              </li>
-                <li>
-                  <Link href='/lowongan' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
-                    Lowongan
-                  </Link>
-                </li>
-                <li>
-                  <Link href='/merchandise' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
-                    Merchandise
-                  </Link>
-                </li>
-                <li>
-                  <Link href='/venue' className='block text-white hover:text-white hover:bg-gray-700 p-2 rounded-lg transition'>
-                    Venue
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            <Stack mt={20} gap={10} className={`hover:[&>*]:!text-black`}>
+              <NavLink
+                c="gray.1"
+                label="Trending"
+                leftSection={<Icon icon="fluent:data-trending-16-filled" className={`text-[24px]`} />}
+              />
+              <NavLink
+                c="gray.1"
+                label="Blog"
+                leftSection={<Icon icon="si:article-line" className={`text-[24px]`} />}
+              />
+              <Divider opacity={0.5} />
+              <NavLink
+                c="gray.1"
+                label="Syarat & Ketentuan"
+                leftSection={<Icon icon="fluent:info-32-regular" className={`text-[24px]`} />}
+              />
+              <NavLink
+                c="gray.1"
+                label="Kebijakan Privasi"
+                leftSection={<Icon icon="fluent:info-32-regular" className={`text-[24px]`} />}
+              />
+              <NavLink
+                c="gray.1"
+                label="Bantuan"
+                leftSection={<Icon icon="tabler:help" className={`text-[24px]`} />}
+              />
+              <NavLink
+                c="gray.1"
+                label="Kirim Masukan"
+                leftSection={<Icon icon="material-symbols:feedback-outline-rounded" className={`text-[24px]`} />}
+              />
+            </Stack>
         </div>
       <div
         className={`fixed inset-0 bg-black bg-opacity-30 transition-opacity duration-700 ease-in-out ${showSideBar ? 'opacity-100' : 'opacity-0'}`}

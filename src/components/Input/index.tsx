@@ -18,6 +18,7 @@ interface InputProps {
   inputProps?: any;
   error?: boolean;
   className?: string;
+  autofocus?: boolean;
 }
 
 const InputField = ({
@@ -34,6 +35,7 @@ const InputField = ({
   size,
   error,
   className,
+  autofocus,
 }: InputProps) => {
   const handleKeyPress = (event: any) => {
     const key = event.key;
@@ -58,6 +60,7 @@ const InputField = ({
       )}
       {type === 'number' && (
         <input
+          autoFocus={autofocus}
           type='text'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
@@ -73,6 +76,7 @@ const InputField = ({
       )}
       {type === 'num' && (
         <input
+          autoFocus={autofocus}
           type='number'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} border-spacing-1 ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
@@ -87,6 +91,7 @@ const InputField = ({
       )}
       {type === 'text' && (
         <input
+          autoFocus={autofocus}
           type='text'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
@@ -101,6 +106,7 @@ const InputField = ({
       )}
       {type === 'date' && (
         <DatePicker
+          autoFocus={autofocus}
           className='w-full'
           aria-label='date'
           value={value && parseDate(value)}
@@ -119,6 +125,7 @@ const InputField = ({
       )}
       {type === 'textarea' && (
         <textarea
+          autoFocus={autofocus}
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} px-3 py-2 border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
@@ -129,6 +136,7 @@ const InputField = ({
       )}
       {type === 'time' && (
         <TimeInput
+          autoFocus={autofocus}
           startContent={<FontAwesomeIcon icon={faClock} className='text-dark' />}
           classNames={{
             inputWrapper: `border shadow-sm ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,

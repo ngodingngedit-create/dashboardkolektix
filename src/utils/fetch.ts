@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import Cookies from 'js-cookie';
 import Config from '../Config';
 
@@ -17,11 +17,12 @@ interface FetchOptions<T, D> extends AxiosRequestConfig<T> {
     success?: (response: FetchResponse<D>, rawresponse?: AxiosResponse<T>) => void;
     error?: (error: any) => void;
     complete?: () => void;
+    invalid?: (data: { [key: string]: string[] }) => void;
     nofilter?: boolean;
 }
 
 async function fetch<ReqType = { [key: string]: string | Blob }, ResType = any>(options: FetchOptions<ReqType, ResType>) {
-    const { before, success, error, complete, data, nofilter, ...axiosOptions } = options;
+    const { before, success, error, complete, invalid, data, nofilter, ...axiosOptions } = options;
 
     if (before) before();
 
@@ -54,6 +55,7 @@ async function fetch<ReqType = { [key: string]: string | Blob }, ResType = any>(
         return response.data;
     } catch (err) {
         if (error) error(err);
+        if (invalid && isAxiosError(err)) invalid(err?.response?.data.invalid)
     } finally {
         if (complete) complete();
     }
