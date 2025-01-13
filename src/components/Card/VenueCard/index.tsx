@@ -1,34 +1,45 @@
-import Images from '@/components/Images';
+import { Carousel } from '@mantine/carousel';
+import { Card, NumberFormatter, Stack, Image, AspectRatio, Box } from '@mantine/core';
 import Link from 'next/link';
 
 interface VenueCardProps {
   title: string;
-  image: string;
+  image: string[];
   location: string;
   price: number;
   slug: string;
 }
 const VenueCard = ({ slug, title, image, location, price }: VenueCardProps) => {
   return (
-    <div className='w-48 flex flex-col text-dark text-sm gap-1'>
-      {/* <Image src={foto} alt='fotos'  /> */}
-      {image && (
-        <Link href={`/venue/${slug}`}>
-          <Images
-            src={image}
-            type='venue'
-            alt={title}
-            className='w-48 h-48 object-cover rounded-md'
-          />
-        </Link>
-      )}
-      <p className='font-semibold'>{title}</p>
-      <p className='text-sm text-grey'>{location}</p>
-      <p className='text-primary-dark text-xs'>Mulai dari</p>
-      <p className='font-semibold'>
-        Rp {price.toLocaleString('id-ID')} <span className='text-grey'>/Hari</span>
-      </p>
-    </div>
+    <Card withBorder radius={10} p={0} className={`hover:!bg-grey/10 transition-colors [&_.mantine-Carousel-control]:hover:!opacity-100 [&_.mantine-Carousel-control]:!opacity-0`}>
+      <Stack gap={0}>
+        {image && (
+          <Carousel controlSize={12}>
+            {image.map((e, i) => (
+              <Carousel.Slide key={i}>
+                <AspectRatio w="100%">
+                  <Image
+                    src={e}
+                    alt={title}
+                  />
+                </AspectRatio>
+              </Carousel.Slide>
+            ))}
+          </Carousel>
+        )}
+
+        <Box component={Link} href={`/venue/${slug}`}>
+          <Stack gap={0} p={15} >
+            <p className='font-semibold'>{title}</p>
+            <p className='text-sm text-grey'>{location}</p>
+            <p className='mt-[10px] text-primary-dark text-xs'>Mulai dari</p>
+            <p className='font-semibold'>
+                <NumberFormatter value={price} /> <span className='text-grey'>/Hari</span>
+            </p>
+          </Stack>
+        </Box>
+      </Stack>
+    </Card>
   );
 };
 
