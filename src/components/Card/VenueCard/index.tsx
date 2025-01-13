@@ -30,8 +30,8 @@ const VenueCard = ({ slug, title, image, location, price }: VenueCardProps) => {
 
         <Box component={Link} href={`/venue/${slug}`}>
           <Stack gap={0} p={15} >
+            <p className='text-xs text-grey'>{location}</p>
             <p className='font-semibold'>{title}</p>
-            <p className='text-sm text-grey'>{location}</p>
             <p className='mt-[10px] text-primary-dark text-xs'>Mulai dari</p>
             <p className='font-semibold'>
                 <NumberFormatter value={price} /> <span className='text-grey'>/Hari</span>

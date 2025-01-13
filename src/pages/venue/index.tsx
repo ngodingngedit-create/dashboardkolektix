@@ -4,7 +4,7 @@ import { Get } from '@/utils/REST';
 import { VenueProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
-import { SimpleGrid, Text } from '@mantine/core';
+import { Button, Container, Flex, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 
 const Venue = () => {
   const [data, setData] = useState<VenueProps[]>([]);
@@ -23,10 +23,11 @@ const Venue = () => {
   }, []);
 
   return (
-    <div className='min-h-screen'>
-      <div className='pt-5 md:pt-12 lg:mt-0 md:mt-5 sm:mt-20 max-w-4xl mx-auto text-dark'>
-        <Text mb={10} fw={600}>Semua Venue</Text>
-        {/* <Flex align="center" gap={10} mb={15}>
+    <Container mih="90vh" mt={30} size="lg">
+      <Stack gap={15}>
+        <Title size="h2" fw={600}>Semua Venue</Title>
+
+        <Flex align="center" gap={10}>
           <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
             Photographer
           </Button>
@@ -36,7 +37,7 @@ const Venue = () => {
           <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
             Sound Engineer
           </Button>
-        </Flex> */}
+        </Flex>.
 
         {data.length > 0 ? (
           <SimpleGrid cols={4}>
@@ -57,8 +58,8 @@ const Venue = () => {
             <h3 className='text-grey'>Belum ada venue</h3>
           </div>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Container>
   );
 };
 
