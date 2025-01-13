@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import VenueCard from '@/components/Card/VenueCard';
 import { Get } from '@/utils/REST';
 import { VenueProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import { Button, Container, Flex, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import _ from 'lodash';
 
 const Venue = () => {
-  const [data, setData] = useState<VenueProps[]>([]);
+  const [_data, setData] = useState<VenueProps[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>();
 
   const getVenue = () => {
     Get('venue', {})
@@ -22,21 +24,36 @@ const Venue = () => {
     getVenue();
   }, []);
 
+  const venueCategory = useMemo(() => {
+    return _.uniq(_data.map((item) => item.has_venue_category.name));
+  }, [_data]);
+
+  const data = useMemo(() => {
+    if (selectedCategory) {
+      return _data.filter((item) => item.has_venue_category.name === selectedCategory);
+    } else {
+      return _data;
+    }
+  }, [_data, selectedCategory]);
+
   return (
     <Container mih="90vh" mt={40} size="lg">
       <Stack gap={15}>
         <Title size="h2" fw={600}>Semua Venue</Title>
 
         <Flex align="center" gap={10}>
-          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
-            Photographer
-          </Button>
-          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
-            Videographer
-          </Button>
-          <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
-            Sound Engineer
-          </Button>
+          {venueCategory.map((item, index) => (
+            <Button onClick={() => setSelectedCategory(item == selectedCategory ? undefined : item)}
+              key={index}
+              variant={item == selectedCategory ? 'light' : 'outline'}
+              radius="xl"
+              size="xs"
+              color="gray"
+              c="gray.8"
+              className={`capitalize`}>
+              {item}
+            </Button>
+          ))}
         </Flex>
 
         {data.length > 0 ? (
