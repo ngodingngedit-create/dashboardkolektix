@@ -154,7 +154,7 @@ export default function VenuePage() {
                         </PillGroup>
                         <Flex gap={10} mt={25} align="center">
                             <Button w="fit-content" component={Link} href={`/dashboard/venue/edit/${slug}`} size="xs" variant="outline">Edit Venue</Button>
-                            <ActionIcon variant="transparent" title="Buka Halaman Venue" onClick={() => window.open(`/venue/${slug}`, '_blank')}>
+                            <ActionIcon variant="transparent" title="Buka Halaman Venue" onClick={() => window.open(`/venue/${venue?.slug}`, '_blank')}>
                                 <Icon icon="proicons:open" className={`text-[24px]`}/>
                             </ActionIcon>
                         </Flex>

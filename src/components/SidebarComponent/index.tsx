@@ -236,9 +236,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         if (users) {
             setUserData(users);
             if (route === '/dashboard/user') {
+                if (!!users.has_creator) setHasCreator(true);
                 setRole('Pembeli');
             } else {
-                if (users.has_creator || users?.role == 'Staff') {
+                if (!!users.has_creator || users?.role == 'Staff') {
                     setHasCreator(true);
                 }
                 setRole(users?.role ?? 'Pembeli');
@@ -510,7 +511,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                     <Text size="sm" c="gray.8" fw={600}>Hi, {users?.name}</Text>
                                                     <Text size="xs" c="gray" mt={-3}>{users?.email}</Text>
                                                 </Stack>
-                                                {hasCreator && !!!userData?.force_creator && (
+                                                {hasCreator && (
                                                     <button
                                                         className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
                                                         role="menuitem"
