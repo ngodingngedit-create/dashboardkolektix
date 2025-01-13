@@ -23,7 +23,7 @@ const Venue = () => {
   }, []);
 
   return (
-    <Container mih="90vh" mt={30} size="lg">
+    <Container mih="90vh" mt={40} size="lg">
       <Stack gap={15}>
         <Title size="h2" fw={600}>Semua Venue</Title>
 
@@ -37,10 +37,10 @@ const Venue = () => {
           <Button variant="outline" radius="xl" size="xs" color="gray" c="gray.8">
             Sound Engineer
           </Button>
-        </Flex>.
+        </Flex>
 
         {data.length > 0 ? (
-          <SimpleGrid cols={4}>
+          <SimpleGrid className={`!grid-cols-2 sm:!grid-cols-3 md:!grid-cols-4`}>
             {data.map((item) => (
                 <VenueCard
                   key={item.id}
