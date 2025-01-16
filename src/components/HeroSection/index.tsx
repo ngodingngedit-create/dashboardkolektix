@@ -8,6 +8,9 @@ import Upcoming from '@/components/Home/Upcoming';
 import { Get } from '@/utils/REST';
 import { EventProps, SliderProps } from '@/utils/globalInterface';
 import { useRouter } from 'next/router';
+import { AspectRatio, Box, Image as ImageM } from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import { useInterval } from '@mantine/hooks';
 
 interface HeroProps {
   data: EventProps[];
@@ -52,10 +55,9 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
     className: 'center',
     pauseOnHover: true,
     centerMode: true,
-    centerPadding: '100px',
     slidesToShow: 3,
     autoplay: true,
-    autoplaySpeed: 3000,
+    // autoplaySpeed: 3000,
     speed: 1000,
     // infinite: false,
   };
@@ -64,13 +66,15 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
     className: 'center',
     pauseOnHover: true,
     centerMode: true,
-    centerPadding: '100px',
+    // centerPadding: '100px',
     slidesToShow: 1,
     autoplay: true,
-    autoplaySpeed: 4000,
+    // autoplaySpeed: 4000,
     speed: 1000,
     infinite: false,
   };
+
+  const [slide, setSlide] = useState(0);
 
   if (!onLoad) {
     return (
@@ -85,20 +89,19 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   return (
     <div className='bg-hero'>
       {width && width > 768 ? (
-        <div className='pt-20 ' id='hero'>
-          <Slider {...settings}>
-            {sliderData.map((el) => (
-              <div key={el.id} className={`mx-40 ${el.link ? 'cursor-pointer' : ''}`} onClick={() => el.link ? router.push(el.link) : {}}>
-                <Image 
-                  src={el.image_url} 
-                  alt={el.name} 
-                  className='drop-shadow-xl rounded-xl -translate-x-[20px]'
-                  width={700}
-                  height={500} 
-                />
-              </div>
+        <div className='py-20 max-w-screen-xl mx-auto' id='hero'>
+          <Carousel maw={1280} mx="auto" slideSize="70%" slideGap={20} loop slidesToScroll={1}
+            onSlideChange={(e) => setSlide(e)}>
+            {sliderData.map((e, i) => (
+              <Carousel.Slide key={i} className={`${slide == i ? 'z-20' : ''}`}>
+                <AspectRatio
+                  onClick={() => e.link ? router.push(e.link) : {}}
+                  ratio={750/246} className={`${e.link ? 'cursor-pointer' : ''} ${slide != i ? 'scale-80' : ''} ${slider.length - 1 == i && slide != slider.length - 1 ? 'translate-x-1/4' : ''} ${slide == i-1 ? '-translate-x-1/4' : ''} ${slide == i+1 ? 'translate-x-1/4' : ''} transition-transform duration-500 ease-in-out`}>
+                  <ImageM src={e.image_url} className={`!rounded-xl !drop-shadow-xls`} />
+                </AspectRatio>
+              </Carousel.Slide>
             ))}
-          </Slider>
+          </Carousel>
         </div>
       ) : (
         <div className='pt-20' id='slidermob'>
