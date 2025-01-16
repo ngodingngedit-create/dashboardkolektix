@@ -66,7 +66,8 @@ interface StepPaymentProps {
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
-    const [voucher, setVoucher] = useState('');
+    const [voucherField, setVoucherField] = useState('');
+    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
     const { width } = useWindowSize();
     const userData = useLoggedUser();
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
@@ -155,6 +156,8 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
     }, [userData]);
 
     const handleGetVoucher = async () => {
+        if (!voucher) return;
+
         await fetch<{
             event_id: number;
             date: string;
@@ -176,9 +179,9 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
             data: {
                 event_id: detail.id,
                 date: moment(new Date()).format('YYYY-MM-DD'),
-                code: voucher,
+                code: voucherField,
             },
-            before: () => setLoading.append(''),
+            before: () => setLoading.append('getvoucher'),
             success: ({ voucher }) => {
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
@@ -193,11 +196,17 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                         message: 'Voucher Tidak Ditemukan',
                         color: 'red'
                     });
-                    setVoucher('');
+                    setVoucherField('');
                 }
             },
-            complete: () => setLoading.filter(e => e != ''),
-            error: () => {},
+            complete: () => setLoading.filter(e => e != 'getvoucher'),
+            error: () => {
+                notifications.show({
+                    message: 'Voucher Tidak Ditemukan',
+                    color: 'red'
+                });
+                setVoucherField('');
+            },
         });
     }
 
@@ -221,11 +230,11 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
 
                         <Group>
                             <TextInput
-                                value={voucher}
-                                onChange={e => setVoucher(e.currentTarget.value)}
+                                value={voucherField}
+                                onChange={e => setVoucherField(e.currentTarget.value)}
                                 placeholder="Masukan Kode Voucher"
                             />
-                            <Button size="xs" onClick={handleGetVoucher}>
+                            <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                 Submit
                             </Button>
                         </Group>
@@ -258,6 +267,14 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             )}
                         </p>
                     </div>
+                    {voucher && (
+                        <div className="py-3 px-4 flex justify-between items-center">
+                            <p>Voucher {voucher.name}</p>
+                            <p className="font-semibold">
+                                <NumberFormatter value={voucher.amount} />
+                            </p>
+                        </div>
+                    )}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Biaya Admin</p>
                         <p className="font-semibold">
@@ -284,7 +301,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                         <p>Total Pembayaran</p>
                         <p className="font-semibold">
                             {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))) > 0 ? (
-                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))} />
+                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - (voucher?.amount ?? 0)} />
                             ) : (
                                 <Text>Free</Text>
                             )}
@@ -505,11 +522,11 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
 
                                 <Group>
                                     <TextInput
-                                        value={voucher}
-                                        onChange={e => setVoucher(e.currentTarget.value)}
+                                        value={voucherField}
+                                        onChange={e => setVoucherField(e.currentTarget.value)}
                                         placeholder="Masukan Kode Voucher"
                                     />
-                                    <Button size="xs" onClick={handleGetVoucher}>
+                                    <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                         Submit
                                     </Button>
                                 </Group>

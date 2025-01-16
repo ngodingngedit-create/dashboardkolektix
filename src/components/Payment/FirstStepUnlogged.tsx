@@ -337,6 +337,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     };
 
     const handleGetVoucher = async () => {
+        if (!voucherField) return;
+
         await fetch<{
             event_id: number;
             date: string;
@@ -360,7 +362,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 date: moment(new Date()).format('YYYY-MM-DD'),
                 code: voucherField,
             },
-            before: () => setLoadings.append(''),
+            before: () => setLoadings.append('getvoucher'),
             success: ({ voucher }) => {
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
@@ -378,8 +380,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     setVoucherField('');
                 }
             },
-            complete: () => setLoadings.filter(e => e != ''),
-            error: () => {},
+            complete: () => setLoadings.filter(e => e != 'getvoucher'),
+            error: () => {
+                notifications.show({
+                    message: 'Voucher Tidak Ditemukan',
+                    color: 'red'
+                });
+                setVoucherField('');
+            },
         });
     }
 
@@ -408,7 +416,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                         onChange={e => setVoucherField(e.currentTarget.value)}
                                         placeholder="Masukan Kode Voucher"
                                     />
-                                    <Button size="xs" onClick={handleGetVoucher}>
+                                    <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                         Submit
                                     </Button>
                                 </Group>
@@ -755,7 +763,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                                 onChange={e => setVoucherField(e.currentTarget.value)}
                                                 placeholder="Masukan Kode Voucher"
                                             />
-                                            <Button size="xs" onClick={handleGetVoucher}>
+                                            <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                                 Submit
                                             </Button>
                                         </Group>
