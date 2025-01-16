@@ -23,6 +23,9 @@ import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/co
 import { notifications } from '@mantine/notifications';
 import { Numans } from 'next/font/google';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import fetch from '@/utils/fetch';
+import moment from 'moment';
+import { useListState } from '@mantine/hooks';
 
 interface FormTicket {
     event_id: number;
@@ -66,10 +69,12 @@ interface StepPaymentProps {
     setFormValid: (valid: boolean) => void;
     step: number;
     setStep: (step: number) => void;
+    onSubmitVoucher?: (data: {name: string, value: number}) => void;
 }
 
-const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
+const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
     const { width } = useWindowSize();
+    const [voucher, setVoucher] = useState('');
     const [form, setForm] = useState<Form[]>(forms);
     const [error, setError] = useState<ErrorForm>({
         nik: false,
@@ -79,6 +84,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         phone: false
     });
     const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
+    const [loadings, setLoadings] = useListState<string>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
     const [payment, setPayment] = useState<string>('');
@@ -328,6 +334,50 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             setIsCopied(false);
         }
     };
+
+    const handleGetVoucher = async () => {
+        await fetch<{
+            event_id: number;
+            date: string;
+            code: string;
+        }, {
+            voucher: {
+                discount: number;
+                type: 'persentase' | 'nominal';
+                date_start: string;
+                date_end: string;
+                max_use: number;
+                min_transaction: number;
+                stock: number;
+                status: 1 | 0;
+            }
+        }>({
+            url: 'vouchers/validate',
+            method: 'POST',
+            data: {
+                event_id: detail.id,
+                date: moment(new Date()).format('YYYY-MM-DD'),
+                code: voucher,
+            },
+            before: () => setLoadings.append(''),
+            success: ({ voucher }) => {
+                const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
+                const isStockValid = voucher.stock > 0;
+                const isStatusValid = voucher.status == 1;
+                const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
+                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
+                    onSubmitVoucher && onSubmitVoucher({name: voucher, value: discount});
+                } else {
+                    alert('Voucher tidak valid');
+                    setVoucher('');
+                }
+            },
+            complete: () => setLoadings.filter(e => e != ''),
+            error: () => {},
+        });
+    }
 
     return step === 0 ? (
         <>

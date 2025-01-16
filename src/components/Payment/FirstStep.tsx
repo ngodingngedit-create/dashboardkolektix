@@ -65,9 +65,9 @@ interface StepPaymentProps {
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
+    const [voucher, setVoucher] = useState('');
     const { width } = useWindowSize();
     const userData = useLoggedUser();
-    const [voucher, setVoucher] = useState('');
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
 
     const formValidation = (data: Form) => {
