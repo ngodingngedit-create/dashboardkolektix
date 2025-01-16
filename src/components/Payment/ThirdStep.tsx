@@ -21,6 +21,7 @@ interface StepPaymentProps {
   xenditInvoice?: any;
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
+  voucher?: { name: string; amount: number };
 }
 
 const ThirdStep = ({
@@ -30,6 +31,7 @@ const ThirdStep = ({
   scrollToTop,
   xenditInvoice,
   loading,
+  voucher,
 }: StepPaymentProps) => {
   const router = useRouter();
   const { width } = useWindowSize();
@@ -141,6 +143,12 @@ const ThirdStep = ({
                 Rp{transactionData.total_price.toLocaleString('id-ID')}
               </p>
             </div>
+            {voucher && (
+              <div className='py-3 px-4 flex justify-between items-center'>
+                <p>Voucher {voucher.name}</p>
+                <p className='font-semibold'>Rp {(voucher.amount).toLocaleString('id-ID')}</p>
+              </div>
+            )}
             <div className='flex justify-between items-center'>
               <p className='text-xs text-grey mb-1'>Pajak</p>
               <p className='text-xs mb-1'>
@@ -157,7 +165,7 @@ const ThirdStep = ({
             <div className='border-t-2 border-primary-light'>
               <div className='flex items-center justify-between font-semibold'>
                 <p>Total Pembayaran</p>
-                <p>{`Rp${transactionData.grandtotal.toLocaleString('id-ID')}`}</p>
+                <p>{`Rp${(transactionData.grandtotal - (voucher?.amount ?? 0)).toLocaleString('id-ID')}`}</p>
               </div>
               {/* <button
                 className='w-full bg-primary-dark text-white py-2 rounded-lg my-3 disabled:bg-primary-disabled disabled:cursor-not-allowed'

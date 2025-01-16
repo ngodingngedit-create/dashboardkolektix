@@ -17,6 +17,7 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import fetch from '@/utils/fetch';
 import { useListState } from '@mantine/hooks';
 import moment from 'moment';
+import { notifications } from '@mantine/notifications';
 
 interface FormTicket {
     event_id: number;
@@ -59,7 +60,7 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
-    onSubmitVoucher?: (data: {name: string, value: number}) => void;
+    onSubmitVoucher?: (data: {name: string, amount: number}) => void;
 }
 
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
@@ -186,9 +187,12 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
-                    onSubmitVoucher && onSubmitVoucher({name: voucher, value: discount});
+                    onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
                 } else {
-                    alert('Voucher tidak valid');
+                    notifications.show({
+                        message: 'Voucher Tidak Ditemukan',
+                        color: 'red'
+                    });
                     setVoucher('');
                 }
             },
@@ -499,9 +503,16 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
 
-                                <TextInput
-                                    placeholder="Masukan Kode Voucher"
-                                />
+                                <Group>
+                                    <TextInput
+                                        value={voucher}
+                                        onChange={e => setVoucher(e.currentTarget.value)}
+                                        placeholder="Masukan Kode Voucher"
+                                    />
+                                    <Button size="xs" onClick={handleGetVoucher}>
+                                        Submit
+                                    </Button>
+                                </Group>
                             </Stack>
                         </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
