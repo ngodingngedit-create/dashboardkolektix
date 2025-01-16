@@ -11,9 +11,12 @@ import { Switch } from '@nextui-org/react';
 import useLoggedUser from '@/utils/useLoggedUser';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import React from 'react';
-import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import fetch from '@/utils/fetch';
+import { useListState } from '@mantine/hooks';
+import moment from 'moment';
 
 interface FormTicket {
     event_id: number;
@@ -56,12 +59,15 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
+    onSubmitVoucher?: (data: {name: string, value: number}) => void;
 }
 
-const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
+const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
+    const [loading, setLoading] = useListState<string>([]);
     const { width } = useWindowSize();
     const userData = useLoggedUser();
+    const [voucher, setVoucher] = useState('');
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
 
     const formValidation = (data: Form) => {
@@ -147,6 +153,50 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
         }
     }, [userData]);
 
+    const handleGetVoucher = async () => {
+        await fetch<{
+            event_id: number;
+            date: string;
+            code: string;
+        }, {
+            voucher: {
+                discount: number;
+                type: 'persentase' | 'nominal';
+                date_start: string;
+                date_end: string;
+                max_use: number;
+                min_transaction: number;
+                stock: number;
+                status: 1 | 0;
+            }
+        }>({
+            url: 'vouchers/validate',
+            method: 'POST',
+            data: {
+                event_id: detail.id,
+                date: moment(new Date()).format('YYYY-MM-DD'),
+                code: voucher,
+            },
+            before: () => setLoading.append(''),
+            success: ({ voucher }) => {
+                const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
+                const isStockValid = voucher.stock > 0;
+                const isStatusValid = voucher.status == 1;
+                const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
+                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
+                    onSubmitVoucher && onSubmitVoucher({name: voucher, value: discount});
+                } else {
+                    alert('Voucher tidak valid');
+                    setVoucher('');
+                }
+            },
+            complete: () => setLoading.filter(e => e != ''),
+            error: () => {},
+        });
+    }
+
     return (
         width &&
         (width < 768 ? (
@@ -165,9 +215,16 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             <Text fw={600}>Voucher</Text>
                         </Flex>
 
-                        <TextInput
-                            placeholder="Masukan Kode Voucher"
-                        />
+                        <Group>
+                            <TextInput
+                                value={voucher}
+                                onChange={e => setVoucher(e.currentTarget.value)}
+                                placeholder="Masukan Kode Voucher"
+                            />
+                            <Button size="xs" onClick={handleGetVoucher}>
+                                Submit
+                            </Button>
+                        </Group>
                     </Stack>
                 </Card>
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
