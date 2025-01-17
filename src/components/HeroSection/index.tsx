@@ -47,6 +47,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
         setLoading(false);
 
         if (window && !window.intervalSet) {
+          if (!(document.querySelectorAll('button.mantine-Carousel-control')[1])) return;
           window.intervalSet = true;
           let userClicked = false;
 
@@ -124,12 +125,12 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
             {sliderData.map((e, i) => (
               <Carousel.Slide key={i} className={`${slide == i ? 'z-20' : ''}`}>
                 <AspectRatio
-                  onClick={() => e.link ? router.push(e.link) : {}}
+                  // onClick={() => e.link ? router.push(e.link) : {}}
                   ratio={750/246} className={`
                     ${e.link ? 'cursor-pointer' : ''}
                     ${slide != i ? 'scale-80' : ''}
-                    ${slide < i ? '!-translate-x-1/4' : ''}
-                    ${slide > i ? 'translate-x-1/4' : ''}
+                    ${(slide < i && i != sliderData.length - 1) || (slide == i - 1) || (slide == sliderData.length - 1 && i == 0)? '!-translate-x-1/4' : ''}
+                    ${slide > i || (i == sliderData.length - 1 && i != slide) ? 'translate-x-1/4' : ''}
                     transition-transform duration-500 ease-in-out`}>
                   <ImageM src={e.image_url} className={`!rounded-xl !drop-shadow-xls`} />
                 </AspectRatio>
