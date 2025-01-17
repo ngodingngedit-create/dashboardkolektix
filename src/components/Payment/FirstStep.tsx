@@ -156,7 +156,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
     }, [userData]);
 
     const handleGetVoucher = async () => {
-        if (!voucher) return;
+        if (!voucherField) return;
 
         await fetch<{
             event_id: number;
