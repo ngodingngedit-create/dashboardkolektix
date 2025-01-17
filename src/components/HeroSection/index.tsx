@@ -12,6 +12,12 @@ import { AspectRatio, Box, Image as ImageM } from '@mantine/core';
 import { Carousel } from '@mantine/carousel';
 import { useInterval } from '@mantine/hooks';
 
+declare global {
+  interface Window {
+    intervalSet?: boolean;
+  }
+}
+
 interface HeroProps {
   data: EventProps[];
   slider: SliderProps[];
@@ -39,10 +45,28 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
         const allData = res.data;
         setSliderData(allData);
         setLoading(false);
-        if (window) {
-          setInterval(() => {
-            (document.querySelectorAll('button.mantine-Carousel-control')[1] as HTMLButtonElement).click()
-          }, 5000)
+
+        if (window && !window.intervalSet) {
+          window.intervalSet = true;
+          let userClicked = false;
+
+          const interval = setInterval(() => {
+            if (!userClicked) {
+              (document.querySelectorAll('button.mantine-Carousel-control')[1] as HTMLButtonElement).click();
+            }
+          }, 5000);
+
+          document.querySelectorAll('button.mantine-Carousel-control').forEach(button => {
+            button.addEventListener('click', () => {
+              userClicked = true;
+              clearInterval(interval);
+              setTimeout(() => {
+          userClicked = false;
+          window.intervalSet = false;
+          getData();
+              }, 5000);
+            });
+          });
         }
       })
       .catch((err) => {
