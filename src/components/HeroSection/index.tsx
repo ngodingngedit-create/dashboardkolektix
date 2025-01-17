@@ -39,6 +39,11 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
         const allData = res.data;
         setSliderData(allData);
         setLoading(false);
+        if (window) {
+          setInterval(() => {
+            (document.querySelectorAll('button.mantine-Carousel-control')[1] as HTMLButtonElement).click()
+          }, 5000)
+        }
       })
       .catch((err) => {
         console.log('Error fetching data:', err);
@@ -90,13 +95,18 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
     <div className='bg-hero'>
       {width && width > 768 ? (
         <div className='py-20 max-w-screen-xl mx-auto' id='hero'>
-          <Carousel maw={1280} mx="auto" slideSize="70%" slideGap={20} loop slidesToScroll={1}
+          <Carousel controlsOffset="17vw" maw={1280} mx="auto" slideSize="70%" slideGap={20} loop slidesToScroll={1}
             onSlideChange={(e) => setSlide(e)}>
             {sliderData.map((e, i) => (
               <Carousel.Slide key={i} className={`${slide == i ? 'z-20' : ''}`}>
                 <AspectRatio
                   onClick={() => e.link ? router.push(e.link) : {}}
-                  ratio={750/246} className={`${e.link ? 'cursor-pointer' : ''} ${slide != i ? 'scale-80' : ''} ${slider.length - 1 == i && slide != slider.length - 1 ? 'translate-x-1/4' : ''} ${slide == i-1 ? '-translate-x-1/4' : ''} ${slide == i+1 ? 'translate-x-1/4' : ''} transition-transform duration-500 ease-in-out`}>
+                  ratio={750/246} className={`
+                    ${e.link ? 'cursor-pointer' : ''}
+                    ${slide != i ? 'scale-80' : ''}
+                    ${slide < i ? '!-translate-x-1/4' : ''}
+                    ${slide > i ? 'translate-x-1/4' : ''}
+                    transition-transform duration-500 ease-in-out`}>
                   <ImageM src={e.image_url} className={`!rounded-xl !drop-shadow-xls`} />
                 </AspectRatio>
               </Carousel.Slide>
