@@ -199,6 +199,7 @@ function App({ Component, pageProps }: AppProps) {
               </SidebarComponent>
             ) : router.pathname.startsWith('/auth') ||
               router.pathname.startsWith('/creator') ||
+              router.pathname.startsWith('/login') ||
               router.pathname.startsWith('/sample')
             ? (
               <Component {...pageProps} />

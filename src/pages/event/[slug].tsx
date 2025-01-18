@@ -145,6 +145,7 @@ const EventDetails = () => {
     const [bookmark, setBookmark] = useState(false);
     const [loadings, setLoadings] = useListState<string>();
     const [seatmapOpen, setSeatmapOpen] = useState<number>();
+    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
     const user = useLoggedUser();
 
     const clickOutsideChat = useClickOutside(() => {
@@ -432,7 +433,7 @@ const EventDetails = () => {
             payment_status: 'pending',
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
             bank_code: bank ?? 'xendit',
             expiration_date: isoString,
             payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
@@ -1071,8 +1072,8 @@ const EventDetails = () => {
                         </>
                     ))}
 
-                {stepParams === '33' && <FirstStep detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} form={form} setForm={setForm} error={error} onSubmit={submitForm} setFormValid={setIsFormValid} />}
-                {stepParams === '66' && <SecondStep detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
+                {stepParams === '33' && <FirstStep onSubmitVoucher={e => setVoucher(e)} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} form={form} setForm={setForm} error={error} onSubmit={submitForm} setFormValid={setIsFormValid} />}
+                {stepParams === '66' && <SecondStep voucher={voucher} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
                 {stepParams === '100' && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
                 {step === 2 && transactionData && (
                     <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
@@ -1114,23 +1115,28 @@ const EventDetails = () => {
                             <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                                 <div className="flex justify-between">
                                     <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
-                                    <p className="text-xs mb-1">Rp{transactionData.total_price.toLocaleString('id-ID')}</p>
+                                    <p className="text-xs mb-1">Rp {transactionData.total_price.toLocaleString('id-ID')}</p>
                                 </div>
+                                {voucher && (
+                                    <div className="flex justify-between">
+                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
+                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center">
                                     <p className="text-xs text-grey mb-1">Pajak</p>
-                                    <p className="text-xs mb-1">Rp{transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}</p>
+                                    <p className="text-xs mb-1">Rp {transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}</p>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <p className="text-xs text-grey mb-1">Biaya Admin</p>
                                     <p className="text-xs mb-1">
-                                        Rp
-                                        {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString('id-ID') : 0}
+                                        Rp {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString('id-ID') : 0}
                                     </p>
                                 </div>
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp${transactionData.grandtotal.toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     {transactionData.xendit_url ? (
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => router.push(transactionData.xendit_url)}>
@@ -1192,23 +1198,28 @@ const EventDetails = () => {
                             <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                                 <div className="flex justify-between">
                                     <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
-                                    <p className="text-xs mb-1">Rp{transactionData.total_price.toLocaleString('id-ID')}</p>
+                                    <p className="text-xs mb-1">Rp {transactionData.total_price.toLocaleString('id-ID')}</p>
                                 </div>
+                                {voucher && (
+                                    <div className="flex justify-between">
+                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
+                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center">
                                     <p className="text-xs text-grey mb-1">Pajak</p>
-                                    <p className="text-xs mb-1">Rp{transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}</p>
+                                    <p className="text-xs mb-1">Rp {transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}</p>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <p className="text-xs text-grey mb-1">Biaya Admin</p>
                                     <p className="text-xs mb-1">
-                                        Rp
-                                        {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString('id-ID') : 0}
+                                        Rp {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString('id-ID') : 0}
                                     </p>
                                 </div>
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp${transactionData.grandtotal.toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     <Link href={`/success/${transactionData.invoice_no}`} target="_blank">
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">{loading ? <Spinner color="default" size="sm" /> : 'Cek Status Pembayaran'}</button>

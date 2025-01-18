@@ -11,9 +11,13 @@ import { Switch } from '@nextui-org/react';
 import useLoggedUser from '@/utils/useLoggedUser';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import React from 'react';
-import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import fetch from '@/utils/fetch';
+import { useListState } from '@mantine/hooks';
+import moment from 'moment';
+import { notifications } from '@mantine/notifications';
 
 interface FormTicket {
     event_id: number;
@@ -56,10 +60,14 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
+    onSubmitVoucher?: (data: {name: string, amount: number}) => void;
 }
 
-const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
+const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
+    const [loading, setLoading] = useListState<string>([]);
+    const [voucherField, setVoucherField] = useState('');
+    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
     const { width } = useWindowSize();
     const userData = useLoggedUser();
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
@@ -147,6 +155,61 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
         }
     }, [userData]);
 
+    const handleGetVoucher = async () => {
+        if (!voucherField) return;
+
+        await fetch<{
+            event_id: number;
+            date: string;
+            code: string;
+        }, {
+            voucher: {
+                discount: number;
+                type: 'persentase' | 'nominal';
+                date_start: string;
+                date_end: string;
+                max_use: number;
+                min_transaction: number;
+                stock: number;
+                status: 1 | 0;
+            }
+        }>({
+            url: 'vouchers/validate',
+            method: 'POST',
+            data: {
+                event_id: detail.id,
+                date: moment(new Date()).format('YYYY-MM-DD'),
+                code: voucherField,
+            },
+            before: () => setLoading.append('getvoucher'),
+            success: ({ voucher }) => {
+                const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
+                const isStockValid = voucher.stock > 0;
+                const isStatusValid = voucher.status == 1;
+                const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
+                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
+                    onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
+                } else {
+                    notifications.show({
+                        message: 'Voucher Tidak Ditemukan',
+                        color: 'red'
+                    });
+                    setVoucherField('');
+                }
+            },
+            complete: () => setLoading.filter(e => e != 'getvoucher'),
+            error: () => {
+                notifications.show({
+                    message: 'Voucher Tidak Ditemukan',
+                    color: 'red'
+                });
+                setVoucherField('');
+            },
+        });
+    }
+
     return (
         width &&
         (width < 768 ? (
@@ -165,9 +228,16 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             <Text fw={600}>Voucher</Text>
                         </Flex>
 
-                        <TextInput
-                            placeholder="Masukan Kode Voucher"
-                        />
+                        <Group>
+                            <TextInput
+                                value={voucherField}
+                                onChange={e => setVoucherField(e.currentTarget.value)}
+                                placeholder="Masukan Kode Voucher"
+                            />
+                            <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                Submit
+                            </Button>
+                        </Group>
                     </Stack>
                 </Card>
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -197,6 +267,14 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                             )}
                         </p>
                     </div>
+                    {voucher && (
+                        <div className="py-3 px-4 flex justify-between items-center">
+                            <p>Voucher {voucher.name}</p>
+                            <p className="font-semibold">
+                                <NumberFormatter value={voucher.amount} />
+                            </p>
+                        </div>
+                    )}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Biaya Admin</p>
                         <p className="font-semibold">
@@ -223,7 +301,7 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                         <p>Total Pembayaran</p>
                         <p className="font-semibold">
                             {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))) > 0 ? (
-                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))} />
+                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - (voucher?.amount ?? 0)} />
                             ) : (
                                 <Text>Free</Text>
                             )}
@@ -442,9 +520,16 @@ const FirstStep = ({ detail, ticket, totalCount, onSubmit, form, setForm, error,
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
 
-                                <TextInput
-                                    placeholder="Masukan Kode Voucher"
-                                />
+                                <Group>
+                                    <TextInput
+                                        value={voucherField}
+                                        onChange={e => setVoucherField(e.currentTarget.value)}
+                                        placeholder="Masukan Kode Voucher"
+                                    />
+                                    <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                        Submit
+                                    </Button>
+                                </Group>
                             </Stack>
                         </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">

@@ -161,6 +161,8 @@ export interface TransactionProps {
   payment_status: string;
   updated_at: string;
   ppn: number;
+  voucher_code: string;
+  voucher_amount: number;
   invoice_no: string;
   admin_fee: number;
   created_at: string;

@@ -19,10 +19,13 @@ import Images from '../Images';
 import { toast } from 'react-toastify';
 import { faCopy } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
-import { Card, Flex, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Numans } from 'next/font/google';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import fetch from '@/utils/fetch';
+import moment from 'moment';
+import { useListState } from '@mantine/hooks';
 
 interface FormTicket {
     event_id: number;
@@ -66,10 +69,12 @@ interface StepPaymentProps {
     setFormValid: (valid: boolean) => void;
     step: number;
     setStep: (step: number) => void;
+    onSubmitVoucher?: (data: {name: string, amount: number}) => void;
 }
 
-const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
+const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
     const { width } = useWindowSize();
+    const [voucherField, setVoucherField] = useState('');
     const [form, setForm] = useState<Form[]>(forms);
     const [error, setError] = useState<ErrorForm>({
         nik: false,
@@ -79,6 +84,8 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         phone: false
     });
     const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
+    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
+    const [loadings, setLoadings] = useListState<string>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
     const [payment, setPayment] = useState<string>('');
@@ -247,7 +254,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
             event_id: detail?.id,
             admin_fee: detail?.admin_fee,
             payment_method: payment ? payment : '4',
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             bank_code: bank,
@@ -329,6 +336,61 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
         }
     };
 
+    const handleGetVoucher = async () => {
+        if (!voucherField) return;
+
+        await fetch<{
+            event_id: number;
+            date: string;
+            code: string;
+        }, {
+            voucher: {
+                discount: number;
+                type: 'persentase' | 'nominal';
+                date_start: string;
+                date_end: string;
+                max_use: number;
+                min_transaction: number;
+                stock: number;
+                status: 1 | 0;
+            }
+        }>({
+            url: 'vouchers/validate',
+            method: 'POST',
+            data: {
+                event_id: detail.id,
+                date: moment(new Date()).format('YYYY-MM-DD'),
+                code: voucherField,
+            },
+            before: () => setLoadings.append('getvoucher'),
+            success: ({ voucher }) => {
+                const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
+                const isStockValid = voucher.stock > 0;
+                const isStatusValid = voucher.status == 1;
+                const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
+                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
+                    setVoucher({name: voucher, amount: discount});
+                } else {
+                    notifications.show({
+                        message: 'Voucher Tidak Ditemukan',
+                        color: 'red'
+                    });
+                    setVoucherField('');
+                }
+            },
+            complete: () => setLoadings.filter(e => e != 'getvoucher'),
+            error: () => {
+                notifications.show({
+                    message: 'Voucher Tidak Ditemukan',
+                    color: 'red'
+                });
+                setVoucherField('');
+            },
+        });
+    }
+
     return step === 0 ? (
         <>
             {width &&
@@ -347,10 +409,17 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                     <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
-        
-                                <TextInput
-                                    placeholder="Masukan Kode Voucher"
-                                />
+                                
+                                <Group>
+                                    <TextInput
+                                        value={voucherField}
+                                        onChange={e => setVoucherField(e.currentTarget.value)}
+                                        placeholder="Masukan Kode Voucher"
+                                    />
+                                    <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                        Submit
+                                    </Button>
+                                </Group>
                             </Stack>
                         </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -687,10 +756,17 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                             <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
                                             <Text fw={600}>Voucher</Text>
                                         </Flex>
-                
-                                        <TextInput
-                                            placeholder="Masukan Kode Voucher"
-                                        />
+                                        
+                                        <Group>
+                                            <TextInput
+                                                value={voucherField}
+                                                onChange={e => setVoucherField(e.currentTarget.value)}
+                                                placeholder="Masukan Kode Voucher"
+                                            />
+                                            <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                                Submit
+                                            </Button>
+                                        </Group>
                                     </Stack>
                                 </Card>
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -853,7 +929,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                             </div>
                             <div>
                                 <p className="text-xs text-grey mb-1">Total Pembayaran</p>
-                                <p className="text-sm mb-1">{xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString('id-ID')}` : `Rp${transactionData.grandtotal.toLocaleString('id-ID')}`}</p>
+                                <p className="text-sm mb-1">{xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString('id-ID')}` : `Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
                             </div>
                         </div>
                     </div>
@@ -870,6 +946,14 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                                 )}
                             </p>
                         </div>
+                        {voucher && (
+                            <div className="flex justify-between">
+                                <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
+                                <p className="text-xs mb-1">
+                                    <NumberFormatter value={voucher.amount} />
+                                </p>
+                            </div>
+                        )}
                         <div className="flex justify-between items-center">
                             <p className="text-xs text-grey mb-1">Pajak</p>
                             <p className="text-xs mb-1">
@@ -893,7 +977,7 @@ const FirstStepUnlogged = ({ detail, ticket, totalCount, totalSubtotalPrice, for
                         <div className="border-t-2 border-primary-light">
                             <div className="flex items-center justify-between font-semibold">
                                 <p>Total Pembayaran</p>
-                                <p>{`Rp${transactionData.grandtotal.toLocaleString('id-ID')}`}</p>
+                                <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
                             </div>
                             {xenditInvoice ? (
                                 <Link href={`/success/${transactionData.invoice_no}`} target="_blank">

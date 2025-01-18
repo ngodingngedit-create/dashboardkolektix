@@ -49,6 +49,7 @@ interface StepPaymentProps {
   setPayment: (payment: string) => void;
   setBank: (bank: string) => void;
   loading: boolean;
+  voucher?: { name: string; amount: number };
 }
 
 const SecondStep = ({
@@ -62,6 +63,7 @@ const SecondStep = ({
   payment,
   setPayment,
   loading,
+  voucher,
 }: StepPaymentProps) => {
 
 
@@ -454,25 +456,32 @@ const SecondStep = ({
               <div className='flex flex-col gap-2 py-3 border-b border-b-primary-light-200'>
                 <div className='py-3 px-4 flex justify-between items-center'>
                 <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                <p className='font-semibold'>Rp{totalSubtotalPrice.toLocaleString('id-ID')}</p>
+                <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>
               </div>
+              {voucher && (
+                <div className='py-3 px-4 flex justify-between items-center'>
+                  <p>Voucher {voucher.name}</p>
+                  <p className='font-semibold'>Rp {(voucher.amount).toLocaleString('id-ID')}</p>
+                </div>
+              )}
               <div className='py-3 px-4 flex justify-between items-center'>
                 <p>Biaya Admin</p>
-                <p className='font-semibold'>Rp{(detail.admin_fee * totalCount).toLocaleString('id-ID')}</p>
+                <p className='font-semibold'>Rp {(detail.admin_fee * totalCount).toLocaleString('id-ID')}</p>
               </div>
               {detail.ppn ? (
                 <div className='py-3 px-4 flex justify-between items-center'>
                   <p>Tax</p>
-                  <p className='font-semibold'>Rp{detail.ppn.toLocaleString('id-ID')}</p>
+                  <p className='font-semibold'>Rp {detail.ppn.toLocaleString('id-ID')}</p>
                 </div>
               ) : null}
               <div className='py-3 px-4 flex justify-between items-center'>
                 <p>Total Pembayaran</p>
                 <p className='font-semibold'>
-                  Rp{(
+                  Rp {(
                     totalSubtotalPrice +
                     (detail.admin_fee * totalCount) +
-                    (detail.ppn || 0)
+                    (detail.ppn || 0) -
+                    (voucher ? voucher.amount : 0)
                   ).toLocaleString('id-ID')}
                 </p>
               </div>
