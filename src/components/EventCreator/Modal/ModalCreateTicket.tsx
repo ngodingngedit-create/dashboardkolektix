@@ -144,7 +144,7 @@ export default function ModalCreateTicket({
   }, [ticket, form, addSeatMap]);
 
   const handleSaveTicket = () => {
-    if (validate().hasErrors) return;
+    // if (validate().hasErrors) return;
 
     if (typeof openForm === 'number') {
       setTicket(ticket.map((e, i) => i == openForm ? form : e));

@@ -85,6 +85,33 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
             return;
         }
 
+        if (!areaVal.prefix || !areaVal.starting_seat) {
+            setErrors({
+                prefix: 'Required',
+                starting_seat: 'Required',
+            });
+            return;
+        }
+
+        const validSeatNumber = !data.filter((e, i) => i != modalArea).some(e => {
+            const invalidPrefix = e.prefix == areaVal.prefix;
+            const currentMax = ((e?.col ?? 0) * (e?.row ?? 0));
+            const currentMin = (e?.starting_seat ?? 1);
+            const newMax = ((areaVal?.col ?? 0) * (areaVal?.row ?? 0));
+            const newMin = (areaVal?.starting_seat ?? 1);
+            const invalidSeatNumber = newMin <= currentMax && newMax >= currentMin;
+
+            return invalidPrefix && invalidSeatNumber;
+        });
+
+        if (!validSeatNumber) {
+            setErrors({
+                prefix: 'Sudah Tersedia, coba prefix lain',
+                starting_seat: 'Sudah Tersedia, coba starting seat lain',
+            });
+            return;
+        };
+
         if (typeof modalArea == 'number') {
             setData?.setItem(modalArea, {
                 ...areaVal,
@@ -516,7 +543,7 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
                         {data.map((e, i) => (
                             // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                                 <Box
-                                    className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
+                                    className={`absolute z-30 -translate-x-2/4 -translate-y-2/4`}
                                     style={{
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,
