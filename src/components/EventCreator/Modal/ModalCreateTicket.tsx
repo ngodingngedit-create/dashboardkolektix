@@ -76,6 +76,7 @@ export default function ModalCreateTicket({
     }
   });
   const [step, setStep] = useState(0);
+  const [isFullscreenSeatmap, setIsFullscreenSeatmap] = useState(false);
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
   const [addSeatMap, setAddSeatMap] = useState(false);
@@ -220,7 +221,7 @@ export default function ModalCreateTicket({
         {/* {JSON.stringify(errors)} */}
         <Stack gap={10} h={addSeatMap ? "calc(100vh - 100px)" : "calc(100vh - 160px)"} pb={10}>
           <Flex gap={20} h="100%">
-            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : 'none'} className={`w-full h-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
+            <Card p={10} display={openForm === undefined && ticket.length > 0 && !isFullscreenSeatmap ? undefined : 'none'} className={`w-full h-full ${openSeatMap ? 'max-w-[370px]' : ''}`}>
               <Stack gap={15} h="100%">
                 <TextInput
                   leftSection={<Icon icon="uiw:search" />}
@@ -272,7 +273,7 @@ export default function ModalCreateTicket({
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} overflow-auto flex-col gap-2 pb-4`}>
+            <div className={`${(openForm !== undefined || ticket.length == 0) ? isFullscreenSeatmap ? 'hiddem' : 'flex' : 'hidden'} h-full w-full ${openSeatMap ? 'max-w-[370px]' : ''} overflow-auto flex-col gap-2 pb-4`}>
               <Flex display={ticket.length > 0 ? undefined : 'none'}>
                 <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
                   Kembali
@@ -475,6 +476,7 @@ export default function ModalCreateTicket({
               className={`flex-grow`}
               display={openSeatMap ? undefined : 'none'}>
               <Seatmap
+                fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
                 unavailSeat={unavailSeat}
                 selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
                 onSelect={handleSelectSeat}
@@ -485,19 +487,28 @@ export default function ModalCreateTicket({
             </Box>
           </Flex>
 
-          <Button
-            className={`shrink-0 h-fit`}
-            ml="auto"
-            w="fit-content"
-            size="md"
-            onClick={() => {
-              setIdx(undefined);
-              setIsOpen(false);
-            }}
-            // rightSection={<Icon icon="uiw:check" />}
-            display={ticket.length > 0 && addSeatMap ? undefined : 'none'}>
-            Simpan Tiket
-          </Button>
+          <Flex gap={15} display={ticket.length > 0 && addSeatMap ? undefined : 'none'} ml="auto">
+            <Button
+              className={`shrink-0 h-fit`}
+              w="fit-content"
+              size="md"
+              variant="outline"
+              rightSection={<Icon icon="uiw:download" />}>
+              Download Seatmap
+            </Button>
+            <Button
+              className={`shrink-0 h-fit`}
+              w="fit-content"
+              size="md"
+              onClick={() => {
+                setIdx(undefined);
+                setIsOpen(false);
+              }}
+              // rightSection={<Icon icon="uiw:check" />}
+              display={ticket.length > 0 && addSeatMap ? undefined : 'none'}>
+              Simpan Tiket
+            </Button>
+          </Flex>
         </Stack>
       </ModalM>
     </div>
