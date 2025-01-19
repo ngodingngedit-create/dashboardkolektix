@@ -85,13 +85,13 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
             return;
         }
 
-        if (!areaVal.prefix || !areaVal.starting_seat) {
-            setErrors({
-                prefix: 'Required',
-                starting_seat: 'Required',
-            });
-            return;
-        }
+        // if (!areaVal.prefix || !areaVal.starting_seat) {
+        //     setErrors({
+        //         prefix: 'Required',
+        //         starting_seat: 'Required',
+        //     });
+        //     return;
+        // }
 
         const validSeatNumber = !data.filter((e, i) => i != modalArea).some(e => {
             const invalidPrefix = e.prefix == areaVal.prefix;
