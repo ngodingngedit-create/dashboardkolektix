@@ -160,18 +160,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center flex-1'>
-              <div className='mr-2 w-8 md:hidden'>
-                <button
-                  type='button'
-                  className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
-                  aria-controls='mobile-menu'
-                  aria-expanded='false'
-                  onClick={handleSideMenu}
-                >
-                  <FontAwesomeIcon icon={showSideMenu ? faXmark : faBars} />
-                </button>
-              </div>
-              <div className='mr-2 w-8 hidden md:inline lg:inline'>
+              <div className='mr-2 w-8'>
                 <button
                   type='button'
                   className='relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-white hover:bg-gray-700 hover:text-white'
@@ -350,14 +339,17 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
                           <UnstyledButton>
-                            <Card p={isLogin ? 0 : 8} c={isLogin ? "#02255A" : "white"} bg={isLogin ? "white" : "#02255A"} radius="xl">
+                            <Card p={0} c={"#02255A"} bg={"white"} radius="xl">
                               {isLogin ? (
                                 <Flex gap={15} align="center" py={4} pl={16} pr={4}>
                                   <Icon icon="uiw:menu" className={`text-[18px]`} />
                                   <Avatar size={30} src={users?.has_creator?.image_url} />
                                 </Flex>
                               ) : (
-                                <Icon icon="solar:login-2-broken" className={`text-[24px] mr-[4px]`} />
+                                <Flex gap={15} align="center" py={4} pl={16} pr={4}>
+                                  <Icon icon="uiw:menu" className={`text-[18px]`} />
+                                  <Icon icon="qlementine-icons:user-16" className={`text-[30px] !text-dark-grey`}/>
+                                </Flex>
                               )}
                             </Card>
                           </UnstyledButton>
@@ -625,7 +617,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
       {showSideBar &&(
         <div className='fixed inset-0 flex'>
           <div
-            className={`fixed top-0 left-0 w-1/5 bg-black opacity-80 p-4 transition-transform duration-700 ease-in-out transform ${showSideBar ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`fixed top-0 left-0 w-[280px] bg-black opacity-80 p-4 transition-transform duration-700 ease-in-out transform ${showSideBar ? 'translate-x-0' : '-translate-x-full'}`}
             style={{ height: '100vh', zIndex: 30 }}
           >
             <div className="flex items-center">
