@@ -40,7 +40,6 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     // };
 
     const { t, i18n } = useTranslation();
-    const { locale, locales } = useRouter();
     const count = useMemo(() => {
         if (!_count) return 0;
         return typeof _count == 'number' ? _count : _count.length;
@@ -159,7 +158,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     </Box>
                     {ticketData.ticket_category == 'Seated' ? (
                         <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)} className={`shrink-0`}>
-                            {t('selectSeat')}
+                            {t('selectSeat')} {(count ?? 0) > 0 && `(x${count})`}
                         </Button>
                     ): (
                         <Flex align="center" gap={15}>
