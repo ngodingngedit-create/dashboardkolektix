@@ -1,6 +1,7 @@
 import { Carousel } from '@mantine/carousel';
 import { Card, NumberFormatter, Stack, Image, AspectRatio, Box } from '@mantine/core';
 import Link from 'next/link';
+import notFoundImage from '../../../assets/images/icon-notfound.png';
 
 interface VenueCardProps {
   title: string;
@@ -13,20 +14,32 @@ const VenueCard = ({ slug, title, image, location, price }: VenueCardProps) => {
   return (
     <Card withBorder radius={10} p={0} className={`hover:!bg-grey/10 transition-colors [&_.mantine-Carousel-control]:hover:!opacity-100 [&_.mantine-Carousel-control]:!opacity-0`}>
       <Stack gap={0}>
-        {image && (
-          <Carousel controlSize={12}>
-            {image.map((e, i) => (
-              <Carousel.Slide key={i}>
-                <AspectRatio w="100%">
-                  <Image
-                    src={e}
-                    alt={title}
-                  />
-                </AspectRatio>
-              </Carousel.Slide>
-            ))}
-          </Carousel>
-        )}
+        <AspectRatio w="100%">
+          {image && (
+            <Carousel controlSize={12}>
+              {image.map((e, i) => (
+                <Carousel.Slide key={i}>
+                  <AspectRatio w="100%">
+                    <Image
+                      src={e}
+                      alt={title}
+                    />
+                  </AspectRatio>
+                </Carousel.Slide>
+              ))}
+              {image.length == 0 && (
+                <Carousel.Slide>
+                  <AspectRatio w="100%">
+                    <Image
+                      src={notFoundImage.src}
+                      alt={title}
+                    />
+                  </AspectRatio>
+                </Carousel.Slide>
+              )}
+            </Carousel>
+          )}
+        </AspectRatio>
 
         <Box component={Link} href={`/venue/${slug}`}>
           <Stack gap={0} p={15} >

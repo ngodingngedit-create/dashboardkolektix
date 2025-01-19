@@ -409,8 +409,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
-                                
-                                <Group>
+
+                                <Group align="center">
                                     <TextInput
                                         value={voucherField}
                                         onChange={e => setVoucherField(e.currentTarget.value)}
@@ -419,6 +419,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                         Submit
                                     </Button>
+                                    {voucher && (
+                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px]" />
+                                    )}
                                 </Group>
                             </Stack>
                         </Card>
@@ -756,8 +759,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`}/>
                                             <Text fw={600}>Voucher</Text>
                                         </Flex>
-                                        
-                                        <Group>
+
+                                        <Group align="center">
                                             <TextInput
                                                 value={voucherField}
                                                 onChange={e => setVoucherField(e.currentTarget.value)}
@@ -766,6 +769,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                                 Submit
                                             </Button>
+                                            {voucher && (
+                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px]" />
+                                            )}
                                         </Group>
                                     </Stack>
                                 </Card>
