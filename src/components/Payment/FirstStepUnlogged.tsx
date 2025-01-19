@@ -363,7 +363,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 code: voucherField,
             },
             before: () => setLoadings.append('getvoucher'),
-            success: ({ voucher }) => {
+            success: (data) => {
+                const voucher = data?.voucher ?? data?.data?.voucher;
+                if (!voucher) return;
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
                 const isStatusValid = voucher.status == 1;
