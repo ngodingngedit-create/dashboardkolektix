@@ -1,17 +1,12 @@
-import { useState, useEffect, createContext, SetStateAction, Dispatch } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { UserProps } from '@/utils/globalInterface';
 import imagePlus from '../../assets/icon/image-plus.png';
 import { faCalendar, faClock } from '@fortawesome/free-regular-svg-icons';
-import { Alert, TagsInput } from '@mantine/core';
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from '@nextui-org/react';
-import {
-  faLocationDot,
-  faExclamation,
-  faExclamationCircle,
-} from '@fortawesome/free-solid-svg-icons';
+import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import InputField from '@/components/Input';
 import InputEditor from '@/components/Input/InputEditor';
@@ -20,56 +15,19 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons/faPlus';
 import ModalDate from '@/components/EventCreator/Modal/ModalDate';
 import ModalTime from '@/components/EventCreator/Modal/ModalTime';
 import ModalTicket from '@/components/EventCreator/Modal/ModalTicket';
-import { FormEvent, EventTicket, SeatmapData } from '@/utils/formInterface';
+import { FormEvent, EventTicket } from '@/utils/formInterface';
 import ModalLocation from '@/components/EventCreator/Modal/ModalLocation';
 import ModalCreateTicket from '@/components/EventCreator/Modal/ModalCreateTicket';
-import { Get, Post, Put } from '@/utils/REST';
-import { formatDate, formatYear } from '@/utils/useFormattedDate';
+import { Put, Get } from '@/utils/REST';
 import { toast } from 'react-toastify';
+import Images from '@/components/Images';
 import Button from '@/components/Button';
 import React from 'react';
-import { useListState, UseListStateHandlers } from '@mantine/hooks';
-import { defaultSeatmapData } from '@/components/Seatmap';
-import { Icon } from '@iconify/react/dist/iconify.js';
 
 const option = [
-  { key: 1, label: '1 Tiket' },
-  { key: 2, label: '2 Tiket' },
-  { key: 3, label: '3 Tiket' },
-  { key: 4, label: '4 Tiket' },
-  { key: 5, label: '5 Tiket' },
-  { key: 6, label: '6 Tiket' },
-  { key: 7, label: '7 Tiket' },
-  { key: 8, label: '8 Tiket' },
-  { key: 9, label: '9 Tiket' },
-  { key: 10, label: '10 Tiket' },
+  { key: 'true', label: 'Tidak Terbatas' },
+  { key: 'false', label: '1 Tiket' },
 ];
-
-interface ErrorResponse {
-  name?: string[];
-  tag?: string[];
-  start_date?: string[];
-  end_date?: string[];
-  start_time?: string[];
-  end_time?: string[];
-  zone_time?: string[];
-  organization_method?: string[];
-  location_name?: string[];
-  location_city?: string[];
-  location_address?: string[];
-  location_map?: string[];
-  description?: string[];
-  term_condition?: string[];
-}
-
-export const Context = createContext<{
-  seatmapData: SeatmapData[],
-  setSeatmapData?: UseListStateHandlers<SeatmapData>;
-  ticket: EventTicket[];
-}>({
-  seatmapData: [],
-  ticket: [],
-})
 
 const CreateEvent = () => {
   const router = useRouter();
@@ -94,11 +52,11 @@ const CreateEvent = () => {
     location_map: '',
     longitude: '',
     latitude: '',
-    is_name: true,
-    is_phone_number: true,
+    is_name: false,
+    is_phone_number: false,
     is_birthdate: false,
-    is_email: true,
-    is_noidentity: true,
+    is_email: false,
+    is_noidentity: false,
     is_gender: false,
     max_buy_ticket: 1,
     one_email_ticket: false,
@@ -119,34 +77,21 @@ const CreateEvent = () => {
     price: 0,
     description: '',
   };
-  const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);
   const [editTicket, setEditTicket] = useState<EventTicket>(defaultForm);
+  const [eventId, setEventId] = useState<number | null>(null);
   const [idxTicket, setIdxTicket] = useState<number>();
   const [showDate, setShowDate] = useState<boolean>(false);
   const [showTime, setShowTime] = useState<boolean>(false);
   const [showTicket, setShowTicket] = useState<boolean>(false);
   const [showLocation, setShowLocation] = useState<boolean>(false);
   const [addTicket, showAddTicket] = useState<boolean>(false);
-  const [tagSuggestion, setTagSuggestion] = useState<string[]>();
-  const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<string>('info');
-  const [seatmapData, setSeatmapData] = useListState<SeatmapData>(defaultSeatmapData);
-  // const [userData, setUserData] = useState<UserProps | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const loggedUser = useLoggedUser();
   const { slug } = router.query;
-  const [eventId, setEventId] = useState<number | null>(null);
 
-  useEffect(() => {
-    getTagSuggestion();
-  }, []);
-
-  useEffect(() => {
-    if (slug) getEventData();
-  }, [slug]);
-
-  const getEventData = () => {
-    // setIsLoading(true);
+  const getData = () => {
+    setIsLoading(true);
     Get(`event/${slug}`, {})
       .then((res: any) => {
         const { image_thumbnail, image, ...rest } = res.data;
@@ -154,19 +99,27 @@ const CreateEvent = () => {
         setTicket(res.data.has_event_ticket);
         setEventId(res.data.id);
         setImage(res.data.image_base64 as string);
-        setSeatmapData.setState(res.data.seatmap);
-        // setIsLoading(false);
+        setIsLoading(false);
         console.log(res);
       })
       .catch((err) => {
         console.log(err);
-        // setIsLoading(false);
+        setIsLoading(false);
       });
   };
 
   useEffect(() => {
+    if (slug) {
+      getData();
+    }
+    //eslint-disable-next-line
+  }, [slug]);
+
+  useEffect(() => {
     if (loggedUser) {
       setForm({ ...form, creator_id: loggedUser.has_creator?.id ?? 0 });
+      console.log(form);
+      console.log(loggedUser);
     }
     //eslint-disable-next-line
   }, [loggedUser]);
@@ -176,83 +129,45 @@ const CreateEvent = () => {
     //eslint-disable-next-line
   }, [ticket]);
 
-  const getTagSuggestion = async () => {
-    if (!tagSuggestion) {
-      try {
-        Get('category', {})
-        .then((res: any) => {
-          setTagSuggestion(res.data.map((e: any) => e.name));
-        })
-        .catch((err) => {
-          toast.error('FAILED GET TAG SUGGESTION');
-        })
-      } catch (error) {
-        console.log('FAILED GET TAG SUGGESTION');
+  const findCheapestPrice = (tickets: EventTicket[]) => {
+    if (tickets.length === 0) return null;
+
+    let cheapestPrice = tickets[0].price;
+
+    for (const ticket of tickets) {
+      if (ticket.price < cheapestPrice) {
+        cheapestPrice = ticket.price;
       }
     }
+
+    return cheapestPrice;
   };
 
   const submitEvent = () => {
-    setLoading(true); // Set loading ke true
-    Post('event/' + eventId, {
-      ...form,
-      tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color ?? "#194e9e" })),
-      seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
-    })
-      .then((res) => {
-        console.log(res);
-        toast.success('Event Berhasil Dibuat');
-        router.push('/create-event/success');
-      })
-      .catch((err) => {
-        const error = err.response.data.errors
-        toast.error(err.response.data.message);
-        setError(error);
-
-        const keys = Object.keys(error);
-        const hasDescription = keys.includes('description');
-        const hasTermCondition = keys.includes('term_condition');
-
-        if ((hasDescription || hasTermCondition) && keys.length <= 2) {
-            setTab('detail');
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    setIsLoading(true);
+    if (eventId) {
+      Put(`event/${eventId}`, { ...form, starting_price: findCheapestPrice(form.tickets) })
+        .then((res: any) => {
+          console.log(res);
+          router.push('/dashboard/my-event').then(() => {
+            setIsLoading(false);
+          });
+          toast.success('Event Berhasil Diupdate');
+        })
+        .catch((err: any) => {
+          console.log(err);
+          toast.error(err.response.data.message);
+          setIsLoading(false);
+        });
+    } else {
+      toast.error('Event Tidak Ditemukan');
+      setIsLoading(false);
+    }
   };
 
-  const saveDraft = () => {
-    Post('event', { ...form, save_as_draft: true })
-      .then((res: any) => {
-        console.log(res);
-        toast.success('Event disimpan sebagai draft');
-        router.push('/dashboard/my-event');
-      })
-      .catch((err: any) => {
-        console.log(err);
-        toast.error(err.response.data.message);
-      });
-  };
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: any) => {
     const file = e.target.files?.[0];
-    
     if (file) {
-      // Validasi tipe file
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-      if (!validTypes.includes(file.type)) {
-        alert('Silakan unggah file gambar dengan format JPG, PNG, atau GIF.');
-        return;
-      }
-  
-      // Validasi ukuran file
-      // const maxSizeInMB = 2;
-      // if (file.size / 1024 / 1024 > maxSizeInMB) {
-      //   alert('Ukuran file harus lebih kecil dari 2MB.');
-      //   return;
-      // }
-  
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -261,7 +176,6 @@ const CreateEvent = () => {
       reader.readAsDataURL(file);
     }
   };
-  
 
   const onEditTicket = (data: EventTicket, idx: number) => {
     setIdxTicket(idx);
@@ -287,62 +201,56 @@ const CreateEvent = () => {
   useEffect(() => {
     console.log(form);
   }, [form]);
-  return (
+  return !isLoading ? (
     <>
-      <div className='text-dark min-h-screen max-w-7xl mx-auto py-20 border-primary-light-200 px-4 sm:px-8 md:px-12 lg:px-[20px]'>
+      <div className='text-dark min-h-screen max-w-7xl mx-auto py-20 md:px-10 border-primary-light-200'>
         <div className='grid grid-cols-1 md:grid-cols-2'>
           <div className='md:col-span-2 self-center mb-8 text-center md:text-start'>
-            <h1 className=''>Buat Event</h1>
-            <p className='text-grey'>Lengkapi form dibawah ini untuk membuat event</p>
+            <h1 className=''>Edit Event</h1>
+            <p className='text-grey'>Lengkapi form dibawah ini untuk mengupdate event</p>
           </div>
           <div className='md:pr-10'>
-            <label className='w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer'>
-            <input type='file' className='hidden' onChange={handleFile}  accept='image/jpeg, image/png, image/gif' />
-{image ? (
-  <Image
-    src={image}
-    alt='image'
-    className='object-cover'
-    width={0}
-    height={0}
-    style={{ width: '100%', height: '100%' }}
-  />
-) : (
-  <>
-    <Image src={imagePlus} alt='image-plus' />
-    <h3 className='font-semibold text-medium text-center'>
-      Unggah gambar/poster/banner
-    </h3>
-    <p className='text-grey text-center text-sm px-8'>
-      Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb
-    </p>
-  </>
-)}
+            <label className='w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-primary-light flex flex-col items-center justify-center h-72 gap-4 cursor-pointer'>
+              <input type='file' className='hidden' onChange={handleFile} />
+              {image ? (
+                <Image
+                  src={image}
+                  alt='image'
+                  className='object-cover w-full h-full'
+                  width={0}
+                  height={0}
+                />
+              ) : (
+                <>
+                  <Image src={imagePlus} alt='image-plus' />
+                  <h3 className='font-semibold text-medium text-center'>
+                    Unggah gambar/poster/banner
+                  </h3>
+                  <p className='text-grey text-center text-sm px-8'>
+                    Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb
+                  </p>
+                </>
+              )}
             </label>
             <div className='mt-8 text-sm'>
               <InputField
                 type='text'
                 placeholder='Nama Event'
+                value={form.name}
                 fullWidth
                 onChange={(e: any) => setForm({ ...form, name: e.target.value })}
               />
-              {error && error?.name && (
-                <p className='text-danger text-xs mt-1'>{error && error?.name[0]}</p>
-              )}
             </div>
             <div className='mb-8 mt-2 text-sm'>
-              <TagsInput
-                multiple
-                className={`[&_*]:!border-[#E2EDFF]`}
-                radius={8}
+              <InputField
+                type='text'
                 placeholder='Tag; Contoh: hiburan, musik, budaya, kuliner, pendidikan'
-                data={tagSuggestion}
-                value={!form.tag ? [] : form.tag.split(',')}
-                onChange={(e) => setForm({ ...form, tag: e.join(',') })}
-                error={(error && error?.tag) && error?.tag[0]}
+                value={form.tag}
+                fullWidth
+                onChange={(e: any) => setForm({ ...form, tag: e.target.value })}
               />
             </div>
-            <div className='w-full rounded-lg'>
+            <div className='w-full border-2 border-primary-light-200 rounded-lg'>
               <div
                 className='w-full border-primary-light-200 text-grey text-sm py-2 px-2 flex items-center cursor-pointer'
                 onClick={() => setShowDate(!showDate)}
@@ -350,19 +258,11 @@ const CreateEvent = () => {
                 <FontAwesomeIcon icon={faCalendar} size='lg' className='w-5 mr-2' />
                 {form.start_date && form.end_date ? (
                   <p className='text-dark'>
-                    {formatDate(form.start_date)} - {formatDate(form.end_date)}
+                    {form.start_date} - {form.end_date}
                   </p>
                 ) : (
                   <p>Atur Tanggal Event</p>
                 )}
-                <div>
-                  {error && error?.start_date && !form.start_date && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.start_date[0]}</p>
-                  )}
-                  {error && error?.end_date && !form.end_date && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.end_date[0]}</p>
-                  )}
-                </div>
               </div>
               <div
                 className='w-full border-y-2 border-primary-light-200 text-grey text-sm py-2 px-2 flex items-center cursor-pointer'
@@ -376,20 +276,9 @@ const CreateEvent = () => {
                 ) : (
                   <p>Atur Waktu Event</p>
                 )}
-                <div>
-                  {error && error?.start_time && !form.start_time && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.start_time[0]}</p>
-                  )}
-                  {error && error?.end_time && !form.end_time && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.end_time[0]}</p>
-                  )}
-                  {error && error?.zone_time && !form.zone_time && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.zone_time[0]}</p>
-                  )}
-                </div>
               </div>
               <div
-                className='w-full border-primary-light-200 text-grey text-sm py-2 px-2 mb-3 flex items-center cursor-pointer'
+                className='w-full border-primary-light-200 text-grey text-sm py-2 px-2 flex items-center cursor-pointer'
                 onClick={() => setShowLocation(!showLocation)}
               >
                 <FontAwesomeIcon icon={faLocationDot} size='lg' className='w-5 mr-2' />
@@ -402,34 +291,11 @@ const CreateEvent = () => {
                 ) : (
                   <p>Atur Alamat Event</p>
                 )}
-                <div>
-                  {error && error?.location_address && !form.location_address && (
-                    <p className='text-danger text-xs ml-2'>
-                      *{error && error?.location_address[0]}
-                    </p>
-                  )}
-                  {error && error?.location_city && !form.location_city && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.location_city[0]}</p>
-                  )}
-                  {error && error?.location_map && !form.location_map && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.location_map[0]}</p>
-                  )}
-                  {error && error?.location_name && !form.location_name && (
-                    <p className='text-danger text-xs ml-2'>*{error && error?.location_name[0]}</p>
-                  )}
-                  {error && error?.organization_method && !form.organization_method && (
-                    <p className='text-danger text-xs ml-2'>
-                      *Metode penyelenggaraan event harus diisi
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
           </div>
           <div className='md:px-10'>
             <Tabs
-              selectedKey={tab}
-              onSelectionChange={e => setTab(e as string)}
               variant='solid'
               aria-label='Tabs variants'
               className='border border-b-2 border-primary-light-200 border-x-0 border-t-0'
@@ -437,10 +303,10 @@ const CreateEvent = () => {
               classNames={{
                 tabList: 'pb-0 self-center font-semibold rounded-b-none bg-white',
                 tab: 'p-5',
-                cursor: 'rounded-b-none border-b-2 border-b-primary-base',
+                cursor: 'rounded-b-none border-b-2 border-b-primary-base bg-grey-200',
               }}
             >
-              <Tab key='info' title='Info Tiket'>
+              <Tab key='active' title='Info Tiket'>
                 <div className='border-2 border-primary-light-200 rounded-2xl my-5 mx-auto'>
                   <div className='border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center'>
                     <h3 className='text-medium font-semibold'>Tiket</h3>
@@ -454,12 +320,7 @@ const CreateEvent = () => {
                       <p>Tambah Tiket</p>
                     </div>
                   </div>
-                  <div className='p-5 flex flex-col gap-[10px]'>
-                    {ticket.length == 0 && (
-                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
-                        Belum ada tiket yang dibuat
-                      </Alert>
-                    )}
+                  <div className='p-5'>
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
                         <div key={index}>
@@ -467,12 +328,12 @@ const CreateEvent = () => {
                             type={el.ticket_type}
                             category={el.ticket_category}
                             price={el.price}
-                            ticketDate={el.ticket_date}
-                            ticketEnd={el.ticket_end}
                             description={el.description}
                             name={el.name}
                             onEdit={() => onEditTicket(el, index)}
                             onDelete={() => deleteTicket(index)}
+                            ticketDate={el.ticket_date}
+                            ticketEnd={el.ticket_end}
                           />
                         </div>
                       ))}
@@ -483,7 +344,7 @@ const CreateEvent = () => {
                     <h3 className='text-medium font-semibold'>Formulir Data Pemesan</h3>
                   </div>
                   <div className='p-5'>
-                    <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
+                    <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
                       <Checkbox
                         color='default'
                         isSelected={form.is_name}
@@ -552,20 +413,15 @@ const CreateEvent = () => {
                         </div>
                         <Select
                           variant='underlined'
-                          className='w-32 md:w-40 lg:w-24' // Responsive width for the select input
+                          className='w-24'
                           aria-label='Options'
                           size='sm'
-                          defaultSelectedKeys={
-                            form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []
-                          }
+                          defaultSelectedKeys={[form.max_buy_ticket.toString()]}
                           onChange={(e: any) =>
                             setForm({ ...form, max_buy_ticket: e.target.value })
                           }
                           selectedKeys={form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []}
-                          classNames={{
-                            listbox: 'text-dark max-h-40 overflow-auto', // Restricts height and adds scroll for long lists
-                            popoverContent: 'w-full sm:w-48 md:w-56 lg:w-64', // Responsive width for the dropdown
-                          }}
+                          classNames={{ listbox: 'text-dark', popoverContent: 'w-40' }}
                         >
                           {option.map((item) => (
                             <SelectItem key={item.key}>{item.label}</SelectItem>
@@ -608,23 +464,10 @@ const CreateEvent = () => {
                   </div>
                 </div>
               </Tab>
-              <Tab
-                 key='detail'
-                 title={
-                   error && (error?.description || error?.term_condition) ? (
-                     <div className='flex items-center space-x-2'>
-                       <FontAwesomeIcon icon={faExclamationCircle} className='text-danger' />
-                       <span>Detail Event</span>
-                     </div>
-                   ) : (
-                     'Detail Event'
-                   )
-                 }
-              >
+              <Tab key='history' title='Detail Event'>
                 <div className='border-2 border-primary-light-200 rounded-2xl my-5'>
-                  <div className='border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center'>
+                  <div className='border-b-2 border-primary-light-200 px-4 py-3 '>
                     <h3 className='text-medium font-semibold'>Deskripsi</h3>
-                    {error?.description && <p className='text-danger mt-1'>{error?.description}</p>}
                   </div>
                   <div className='p-5'>
                     <InputEditor
@@ -649,11 +492,8 @@ const CreateEvent = () => {
                 </div>
 
                 <div className='border-2 border-primary-light-200 rounded-2xl my-5'>
-                  <div className='border-b-2 border-primary-light-200 px-4 py-3 flex items-center justify-between'>
+                  <div className='border-b-2 border-primary-light-200 px-4 py-3 '>
                     <h3 className='text-medium font-semibold'>Syarat & Ketentuan</h3>
-                    {error?.term_condition && (
-                      <p className='text-danger mt-1'>{error?.term_condition}</p>
-                    )}
                   </div>
                   <div className='p-5'>
                     <InputEditor
@@ -681,17 +521,15 @@ const CreateEvent = () => {
           </div>
         </div>
       </div>
-      <div className='border border-t-primary-light-200 fixed bottom-0 w-full bg-white shadow-md'>
-        <div className='flex justify-between max-w-6xl px-8 py-4 text-dark items-center z-50'>
-          <p>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
-          <div className='flex gap-2'>
-            <Button onClick={saveDraft} color='secondary' label='Draf' />
-            <Button 
-              className={`whitespace-nowrap`}
-              onClick={submitEvent} 
-              color='primary' 
-              disabled={loading} // Nonaktifkan tombol saat loading
-              label={loading ? 'Loading...' : 'Simpan'} // Ubah label berdasarkan status loading
+      <div className='border border-t-primary-light-200'>
+        <div className='flex justify-between max-w-7xl px-8 py-2'>
+          <div></div>
+          <div className='flex'>
+            <Button
+              color='primary'
+              label='Update Event'
+              onClick={submitEvent}
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -705,19 +543,19 @@ const CreateEvent = () => {
         form={form}
         setForm={setForm}
       />
-      <Context.Provider value={{ seatmapData, setSeatmapData, ticket }}>
-        <ModalCreateTicket
-          isOpen={addTicket}
-          endDate={form.end_date}
-          setIsOpen={showAddTicket}
-          ticket={ticket}
-          setTicket={setTicket}
-          data={editTicket}
-          setIdx={setIdxTicket}
-          idx={idxTicket}
-        />
-      </Context.Provider>
+      <ModalCreateTicket
+        isOpen={addTicket}
+        setIsOpen={showAddTicket}
+        ticket={ticket}
+        setTicket={setTicket}
+        data={editTicket}
+        setIdx={setIdxTicket}
+        idx={idxTicket}
+        endDate={form.end_date}
+      />
     </>
+  ) : (
+    <Spinner color='primary' size='lg' className='min-h-screen flex items-center justify-center' />
   );
 };
 
