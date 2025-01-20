@@ -207,7 +207,7 @@ const TicketViewBlock = ({
               }}
               disabled={totalCount === 0}
             >
-              {isGratis ? 'Registrasi' : 'Beli'} Tiket
+              {isGratis ? 'Registrasi' : 'Beli'} Tiket {totalCount > 0 && `x${totalCount}`}
             </button>
           ) : (
             <button
@@ -215,7 +215,7 @@ const TicketViewBlock = ({
               onClick={storeLocalStorage}
               disabled={totalCount === 0}
             >
-              {isGratis ? 'Registrasi' : 'Beli'} Tiket
+              {isGratis ? 'Registrasi' : 'Beli'} Tiket {totalCount > 0 && `x${totalCount}`}
             </button>
           )}
         </div>

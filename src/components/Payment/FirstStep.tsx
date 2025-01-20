@@ -182,7 +182,9 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 code: voucherField,
             },
             before: () => setLoading.append('getvoucher'),
-            success: ({ voucher }) => {
+            success: (data) => {
+                const voucher = data?.voucher ?? data?.data?.voucher;
+                if (!voucher) return;
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
                 const isStatusValid = voucher.status == 1;
@@ -208,7 +210,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 setVoucherField('');
             },
         });
-    }
+    }   
 
     return (
         width &&
@@ -228,7 +230,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             <Text fw={600}>Voucher</Text>
                         </Flex>
 
-                        <Group>
+                        <Group align="center">
                             <TextInput
                                 value={voucherField}
                                 onChange={e => setVoucherField(e.currentTarget.value)}
@@ -237,6 +239,9 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
                                 Submit
                             </Button>
+                            {voucher && (
+                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px]" />
+                            )}
                         </Group>
                     </Stack>
                 </Card>

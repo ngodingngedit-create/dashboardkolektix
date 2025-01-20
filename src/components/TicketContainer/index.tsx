@@ -51,15 +51,15 @@ const TicketContainer = ({
             </Button>
           )}
           {onSelectSeatColor && !onSelectSeatButton && (
-            <Flex gap={8} align="center">
-              <Text c="gray" size="xs" fw={600}>Seat Color</Text>
+            <Stack gap={5} align="end">
+              <Text c="gray" size="xs">Warna Seat Terbeli</Text>
               <ColorInput
                 size="xs"
-                w={50}
+                w={100}
                 value={seatColor}
                 onChange={e => onSelectSeatColor(e)}
               />
-            </Flex>
+            </Stack>
           )}
         </Flex>
       </div>

@@ -40,7 +40,6 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     // };
 
     const { t, i18n } = useTranslation();
-    const { locale, locales } = useRouter();
     const count = useMemo(() => {
         if (!_count) return 0;
         return typeof _count == 'number' ? _count : _count.length;
@@ -159,7 +158,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                     </Box>
                     {ticketData.ticket_category == 'Seated' ? (
                         <Button onClick={() => setSeatmapOpen && setSeatmapOpen(index)} className={`shrink-0`}>
-                            {t('selectSeat')}
+                            {t('selectSeat')} {(count ?? 0) > 0 && `(x${count})`}
                         </Button>
                     ): (
                         <Flex align="center" gap={15}>
@@ -507,11 +506,11 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
             seat: chunk(
                 (Array((e.row ?? 1) * (e.col ?? 1))
                     .fill(e.prefix)
-                    .map((e, i) => (`${e}${i + 1}`)) ?? [])
+                    .map((pre, i) => (`${pre}${i + (e.starting_seat ?? 1)}`)) ?? [])
                     .map(s => ({ 
                         code: s,
                         active: availableSeat?.includes(s),
-                        color: ticketData?.seat_color ?? e.seatcolor ?? '#194e9e',
+                        color: e.seatcolor ?? '#194e9e',
                         selected: selectedSeat?.includes(s)
                     }))
                 , (e.col ?? 1)
@@ -558,6 +557,19 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                                 <Center h="100%">
                                     <Text fw={500} className={`uppercase`} c={getContrastColor(e.background ?? '#fff')}>{e.text}</Text>
                                 </Center>
+                            )}
+
+
+                            {e.type != 'box' && (
+                                <Flex className={`absolute top-2/4 -translate-y-2/4 z-20 ${!!e.background ? '-left-[30px]' : '-left-[15px]'}`} gap={5}>
+                                    <Text fw={600} size="sm" c="gray.8">{e.prefix}</Text>
+                                </Flex>
+                            )}
+
+                            {e.type != 'box' && (
+                                <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? '-right-[30px]' : '-right-[15px]'}`} gap={5}>
+                                    <Text fw={600} size="sm" c="gray.8">{e.prefix}</Text>
+                                </Flex>
                             )}
 
                             {e.type != 'box' && (

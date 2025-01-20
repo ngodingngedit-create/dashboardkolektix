@@ -1,6 +1,6 @@
 import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme, SegmentedControl } from "@mantine/core";
+import { DEFAULT_THEME, ActionIcon, Box, Button, Card, Center, ColorInput, ColorPicker, Flex, InputWrapper, Modal, NumberInput, ScrollArea, Stack, Text, TextInput, Tooltip, colorsTuple, useMantineTheme, SegmentedControl, Checkbox, Switch } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import { useRef, useState, useCallback, useContext, useEffect, useMemo } from "react";
 import SeatmapComponent from "./SeatmapComponent";
@@ -23,16 +23,17 @@ type ComponentProps = {
     onSelectAll?: (data?: string[]) => void;
     onEdit?: boolean;
     onFinishSelectSeat?: () =>  void;
+    fullscreenState: [boolean, (state: boolean) => void];
 };
 
 export const defaultSeatmapData: SeatmapData[] = [
-    {"position":[0,-165],"size":[300,66],"type":"box","text":"Main Stage"},
+    {"position":[0,-165],"size":[300,66],"type":"box","text":"Main Stage", background: "#fff", radius: [5, 5, 5, 5]},
     // {"type":"box","text":"REGULER","position":[-228,-17],"size":[134,200]},
     // {"col":12,"row":8,"prefix":"A","type":"seat","position":[0,-17],"size":[300,200]},
     // {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
 ];
 
-export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
+export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscreen], onFinishSelectSeat, onEdit = true, editable = true, selected: selectedSeat, onSelect: setSelectedSeat, unavailSeat, onSelectAll }: Readonly<ComponentProps>) {
     const [isDragSelect, setIsDragSelect] = useState<string[]>();
     const [isCanvasMove, setIsCanvasMove] = useState(false);
     const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
@@ -83,14 +84,48 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
             setErrors({ text: 'Required' });
             return;
         }
-        console.log(areaVal)
+
+        // if (!areaVal.prefix || !areaVal.starting_seat) {
+        //     setErrors({
+        //         prefix: 'Required',
+        //         starting_seat: 'Required',
+        //     });
+        //     return;
+        // }
+
+        const validSeatNumber = !data.filter((e, i) => i != modalArea).some(e => {
+            const invalidPrefix = e.prefix == areaVal.prefix;
+            const currentMax = ((e?.col ?? 0) * (e?.row ?? 0));
+            const currentMin = (e?.starting_seat ?? 1);
+            const newMax = ((areaVal?.col ?? 0) * (areaVal?.row ?? 0));
+            const newMin = (areaVal?.starting_seat ?? 1);
+            const invalidSeatNumber = newMin <= currentMax && newMax >= currentMin;
+
+            return invalidPrefix && invalidSeatNumber;
+        });
+
+        if (!validSeatNumber) {
+            setErrors({
+                prefix: 'Sudah Tersedia, coba prefix lain',
+                starting_seat: 'Sudah Tersedia, coba starting seat lain',
+            });
+            return;
+        };
+
         if (typeof modalArea == 'number') {
-            setData?.setItem(modalArea, areaVal);
+            setData?.setItem(modalArea, {
+                ...areaVal,
+                size: areaVal?.type != 'box' && areaVal?.background === undefined ?
+                    [(areaVal?.col ?? 1) * 30, ((areaVal?.row ?? 1) * 35) + 8] :
+                    areaVal.size,
+            });
         } else {
             setData?.append({
                 ...areaVal, 
                 position: [0, 0],
-                size: [300, 200],
+                size: areaVal?.type != 'box' && areaVal?.background === undefined ?
+                    [(areaVal?.col ?? 1) * 30, ((areaVal?.row ?? 1) * 35) + 8] :
+                    [300, 300],
             });
         }
 
@@ -269,35 +304,55 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
         if (val) {
             const seatnumber = Array((val?.col ?? 0) * (val?.row ?? 0))
                 .fill(val?.prefix)
-                .map((e, i) => (`${e}${i + 1}`))
+                .map((e, i) => (`${e}${i + (val.starting_seat ?? 1)}`))
                 .filter(e => !unavailSeat?.includes(e));
 
-            if (!(selectedSeat?.length == seatnumber.length)) {
-                onSelectAll && onSelectAll(seatnumber);
-            } else {
-                onSelectAll && onSelectAll([]);
+            if (selectedSeat?.some(e => seatnumber.includes(e))) {
+                setSelectedSeat && setSelectedSeat(selectedSeat?.filter(e => !seatnumber.includes(e)));
+            } else  {
+                setSelectedSeat && setSelectedSeat(_.uniq([...(selectedSeat ?? []), ...seatnumber]));
             }
         }
     }
 
     const data = useMemo<SeatmapData[]>(() => {
         return ((__data?.length ?? 0) > 0 ? __data ?? [] : _data ?? []).map(e => {
-            const seat = chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (e.col ?? 1))
+            const seat = chunk((Array((e.row ?? 1) * (e.col ?? 1)).fill(e.prefix).map((pre, i) => (`${pre}${i + (e?.starting_seat ?? 1)}`)) ?? []), (e.col ?? 1))
             return { ...e, seat, type: e?.type ?? 'seat' }
         });
     }, [_data, __data])
 
     return (
         <div onWheel={handleWheel} onMouseUp={handleMouse.up} onMouseMove={handleMouse.move} className={`h-full relative z-20 [&_*]:!select-none`}>
-            <Card withBorder radius={10} bg="gray.3" pos="relative" h="100%" className={`overflow-auto`} component={Center}>
+            <Card withBorder radius={10} pos="relative" h="100%" className={`overflow-auto`} component={Center}
+                bg="gray.3"
+                // style={{
+                //     backgroundSize: '40px 40px',
+                //     backgroundImage: `
+                //         linear-gradient(to right, grey 1px, transparent 1px),
+                //         linear-gradient(to bottom, grey 1px, transparent 1px);
+                //     `,
+                // }}
+                >
                 <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">Seatmap Editor</Text>
+                
                 {/* <Text className={`absolute top-8 left-0 w-full z-50`} size="xs" c="gray">{JSON.stringify(data)}</Text> */}
+
+                <Flex className={`!absolute top-4 left-4 z-50`} gap={10}>
+                    <Button color="gray" bg="white" display={isFullscreen ? undefined : 'none'} onClick={() => setIsFullscreen(!isFullscreen)} size="xs" variant="light" leftSection={<Icon icon="uiw:right" />}>
+                        Tutup Fullscreen
+                    </Button>
+                </Flex>
+
                 <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
                     <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
                         <Button onClick={() => setModalArea('new')} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                             Tambah Area
                         </Button>
                     </Guide>
+                    <ActionIcon color="gray.1" radius="xl" onClick={() => setIsFullscreen(!isFullscreen)}>
+                        <Icon icon="ic:outline-fullscreen" className={`text-primary-base`} />
+                    </ActionIcon>
                     <ActionIcon color="gray.1" radius="xl" onClick={() => handleWheel(undefined, 'up')}>
                         <Icon icon="uiw:minus" className={`text-primary-base`} />
                     </ActionIcon>
@@ -362,10 +417,57 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                 placeholder="Isi Code Seat"
                                 {...areaProps('prefix')}
                             />
+                            <NumberInput
+                                hideControls
+                                withAsterisk
+                                mt={5}
+                                description="Starting Seat"
+                                placeholder="Isi Code Seat"
+                                defaultValue={1}
+                                {...areaProps('starting_seat')}
+                            />
                         </Flex>
+
+                        <InputWrapper label="Atur Radius" display={modalArea == 0 || areaVal?.type == 'box' ? undefined : 'none'}>
+                            <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == 'box' ? undefined : 'none'}>
+                                <NumberInput
+                                    hideControls
+                                    leftSection={<Icon icon="bx:border-radius" className={`-rotate-90`} />}
+                                    withAsterisk
+                                    mt={5}
+                                    value={areaVal.radius?.[0]}
+                                    onChange={e => setAreaVal({ radius: [parseInt(e as string), areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
+                                />
+                                <NumberInput
+                                    hideControls
+                                    leftSection={<Icon icon="bx:border-radius" />}
+                                    withAsterisk
+                                    mt={5}
+                                    value={areaVal.radius?.[1]}
+                                    onChange={e => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, parseInt(e as string), areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
+                                />
+                                <NumberInput
+                                    hideControls
+                                    leftSection={<Icon icon="bx:border-radius" className={`rotate-90`} />}
+                                    withAsterisk
+                                    mt={5}
+                                    value={areaVal.radius?.[2]}
+                                    onChange={e => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, parseInt(e as string), areaVal.radius?.[3] ?? 5] })}
+                                />
+                                <NumberInput
+                                    hideControls
+                                    leftSection={<Icon icon="bx:border-radius" className={`rotate-180`} />}
+                                    withAsterisk
+                                    mt={5}
+                                    value={areaVal.radius?.[3]}
+                                    onChange={e => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, parseInt(e as string)] })}
+                                />
+                            </Flex>
+                        </InputWrapper>
 
                         <Flex className={`[&>*]:flex-grow`} gap={15}>
                             <ColorInput
+                                display={areaVal.background == undefined ? 'none' : undefined}
                                 disallowInput
                                 // withPicker={false}
                                 label="Warna Background Area"
@@ -382,6 +484,13 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                 rightSection={areaVal.background && <ActionIcon onClick={() => setAreaVal({ background: undefined })} variant="transparent">
                                     <Icon icon="uiw:close"/>
                                 </ActionIcon>}
+                            />
+                            <Switch
+                                mt={25}
+                                display={areaVal.background !== undefined ? 'none' : undefined}
+                                label="Tambah Background Area"
+                                checked={areaVal.background != undefined}
+                                onChange={() => setAreaVal({ background: '#ffffff' })}
                             />
                             <ColorInput
                                 display={modalArea == 0 ? 'none' : undefined}
@@ -434,13 +543,13 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                         {data.map((e, i) => (
                             // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                                 <Box
-                                    className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
+                                    className={`absolute z-30 -translate-x-2/4 -translate-y-2/4`}
                                     style={{
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,
                                         left: `${e.position[0]}px`,
                                         width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
-                                        height: e.size && e.size[1] ? `${e.size[1]}px` : undefined
+                                        height: e.size && e.size[1] ? `${e.size[1]}px` : undefined,
                                     }}
                                     ref={el => changeRef(i, el)}
                                     key={i}>
@@ -458,19 +567,29 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                             </Tooltip>
                                         )}
                                     </Flex>
+                                    {/* <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text> */}
 
                                     {e.type == 'seat' && (
-                                        <Flex className={`absolute bottom-[-30px] left-0`} gap={5}>
-                                            <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text>
+                                        <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? '-left-[30px]' : '-left-[15px]'}`} gap={5}>
+                                            <Text fw={600} size="sm" c="gray.8">{e.prefix}</Text>
+                                        </Flex>
+                                    )}
+
+                                    {e.type == 'seat' && (
+                                        <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? '-right-[30px]' : '-right-[15px]'}`} gap={5}>
+                                            <Text fw={600} size="sm" c="gray.8">{e.prefix}</Text>
                                         </Flex>
                                     )}
 
                                     <Guide guidekey="guide-create-seatmap" opened={i == 2} text="Posisikan area sesuai yang diinginkan" order={2}>
                                     <Box
                                         onMouseDown={() => handleMouse.boxDown(i)}
-                                        bg={e.background ?? "gray.1"}
+                                        bg={e.background ?? "none"}
+                                        style={{
+                                            borderRadius: `${e.radius?.[0] ?? 5}px ${e.radius?.[1] ?? 5}px ${e.radius?.[2] ?? 5}px ${e.radius?.[3] ?? 5}px`
+                                        }}
                                         h="100%"
-                                        className={`rounded-md shadow-lg`}>
+                                        className={`${!!e.background ? 'shadow-lg' : ''}`}>
                                         <Box
                                             onClick={!onFinishSelectSeat ? () => handleSelect(i) : undefined}
                                             className={`absolute w-full h-full left-0 top-0 z-20`}
@@ -505,7 +624,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                                                         </Center> */}
                                                                         <SeatBox
                                                                             active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
-                                                                            color={ticket.find(e => e.available_seat?.includes(z))?.seat_color ?? e.seatcolor}
+                                                                            color={e.seatcolor}
                                                                         />
                                                                     </Box>
                                                                 </Tooltip>
@@ -532,7 +651,7 @@ export default function Seatmap({ onFinishSelectSeat, onEdit = true, editable = 
                                 <Moveable
                                     origin
                                     draggable
-                                    resizable
+                                    resizable={selected !== undefined ? !(data?.[selected]?.background === undefined && data?.[selected]?.type == 'seat') : false}
                                     rotatable
                                     roundable
                                     roundRelative={false}

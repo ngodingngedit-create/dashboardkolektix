@@ -118,9 +118,8 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
 
   return (
     <div className='bg-hero'>
-      {width && width > 768 ? (
         <div className='py-20 max-w-screen-xl mx-auto' id='hero'>
-          <Carousel controlsOffset="17vw" maw={1280} mx="auto" slideSize="70%" slideGap={20} loop slidesToScroll={1}
+          <Carousel controlsOffset={width && width > 768 ? "17vw" : "40px"} maw={1280} mx="auto" slideSize={width && width > 768 ? "70%" : "calc(100% - 40px)"} slideGap={20} loop slidesToScroll={1}
             onSlideChange={(e) => setSlide(e)}>
             {sliderData.map((e, i) => (
               <Carousel.Slide key={i} className={`${slide == i ? 'z-20' : ''}`}>
@@ -138,23 +137,6 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
             ))}
           </Carousel>
         </div>
-      ) : (
-        <div className='pt-20' id='slidermob'>
-          <Slider {...settingsMobile}>
-            {sliderData.map((el) => (
-              <div key={el.id} className='mx-auto'>
-                <Image 
-                  src={el.image_url} 
-                  alt={el.name} 
-                  className='drop-shadow-xl rounded-md object-cover' 
-                  width={500}
-                  height={500}
-                />
-              </div>
-            ))}
-          </Slider>
-        </div>
-      )}
       {data.length > 0 && <Upcoming className='mt-3' data={data} loading={loading} />}
     </div>
   );

@@ -162,6 +162,13 @@ const sidebarData: SidebarData = [
         },
         {
             id: 1,
+            name: 'Transaksi Venue',
+            iconify: 'icon-park-outline:transaction',
+            link: '/dashboard/venue-transaction',
+            role: 'Creator'
+        },
+        {
+            id: 1,
             name: 'Buat Booking Venue',
             iconify: 'fluent:form-48-regular',
             link: '/dashboard/venue-pos',

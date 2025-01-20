@@ -63,4 +63,6 @@ export type SeatmapData = {
   background?: string;
   seatcolor?: string;
   seat?: string[][];
+  radius?: [number, number, number, number];
+  starting_seat?: number;
 };
