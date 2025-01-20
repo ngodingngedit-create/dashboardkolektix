@@ -79,29 +79,6 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   }, []);
 
   const { width } = useWindowSize();
-  const settings = {
-    className: 'center',
-    pauseOnHover: true,
-    centerMode: true,
-    slidesToShow: 3,
-    autoplay: true,
-    // autoplaySpeed: 3000,
-    speed: 1000,
-    // infinite: false,
-  };
-
-  const settingsMobile = {
-    className: 'center',
-    pauseOnHover: true,
-    centerMode: true,
-    // centerPadding: '100px',
-    slidesToShow: 1,
-    autoplay: true,
-    // autoplaySpeed: 4000,
-    speed: 1000,
-    infinite: false,
-  };
-
   const [slide, setSlide] = useState(0);
 
   if (!onLoad) {
