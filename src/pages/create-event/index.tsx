@@ -5,7 +5,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { UserProps } from '@/utils/globalInterface';
 import imagePlus from '../../assets/icon/image-plus.png';
 import { faCalendar, faClock } from '@fortawesome/free-regular-svg-icons';
-import { Alert, TagsInput } from '@mantine/core';
+import { Alert, LoadingOverlay, TagsInput } from '@mantine/core';
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from '@nextui-org/react';
 import {
   faLocationDot,
@@ -130,6 +130,7 @@ const CreateEvent = () => {
   const [addTicket, showAddTicket] = useState<boolean>(false);
   const [tagSuggestion, setTagSuggestion] = useState<string[]>();
   const [loading, setLoading] = useState(false);
+  const [loadingEvent, setLoadingEvent] = useState(false);
   const [tab, setTab] = useState<string>('info');
   const [seatmapData, setSeatmapData] = useListState<SeatmapData>(defaultSeatmapData);
   // const [userData, setUserData] = useState<UserProps | null>(null);
@@ -146,21 +147,24 @@ const CreateEvent = () => {
   }, [slug]);
 
   const getEventData = () => {
-    // setIsLoading(true);
+    setLoadingEvent(true);
     Get(`event/${slug}`, {})
       .then((res: any) => {
         const { image_thumbnail, image, ...rest } = res.data;
         setForm({ ...rest });
-        setTicket(res.data.has_event_ticket);
+        setTicket((res.data.has_event_ticket as EventTicket[]).map((e: any) => ({...e, available_seat: e.available_seat_number.split(',')})));
         setEventId(res.data.id);
         setImage(res.data.image_base64 as string);
-        setSeatmapData.setState(res.data.seatmap);
-        // setIsLoading(false);
+
+        const seatmap = JSON.parse(res.data.seatmap);
+        setSeatmapData.setState(seatmap);
+
+        setLoadingEvent(false);
         console.log(res);
       })
       .catch((err) => {
         console.log(err);
-        // setIsLoading(false);
+        setLoadingEvent(false);
       });
   };
 
@@ -193,8 +197,9 @@ const CreateEvent = () => {
   };
 
   const submitEvent = () => {
+    const fetchMethod = eventId === null ? Post : Put
     setLoading(true); // Set loading ke true
-    Post('event/' + eventId, {
+    fetchMethod(eventId === null ? 'event' : 'event/' + eventId, {
       ...form,
       tickets: form.tickets.map(e => ({...e, available_seat_number: e.available_seat?.join(','), seat_color: e.seat_color ?? "#194e9e" })),
       seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
@@ -284,46 +289,59 @@ const CreateEvent = () => {
     arr.splice(idx, 1);
     setTicket(arr);
   };
+
   useEffect(() => {
     console.log(form);
   }, [form]);
+
   return (
     <>
+      <LoadingOverlay visible={loadingEvent} />
       <div className='text-dark min-h-screen max-w-7xl mx-auto py-20 border-primary-light-200 px-4 sm:px-8 md:px-12 lg:px-[20px]'>
         <div className='grid grid-cols-1 md:grid-cols-2'>
           <div className='md:col-span-2 self-center mb-8 text-center md:text-start'>
-            <h1 className=''>Buat Event</h1>
-            <p className='text-grey'>Lengkapi form dibawah ini untuk membuat event</p>
+            {!!slug ? (
+              <>
+                <h1 className=''>Edit Event</h1>
+                <p className='text-grey'>Lengkapi form dibawah ini untuk merubah event</p>
+              </>
+            ) : (
+              <>
+                <h1 className=''>Buat Event</h1>
+                <p className='text-grey'>Lengkapi form dibawah ini untuk membuat event</p>
+              </>
+            )}
           </div>
           <div className='md:pr-10'>
             <label className='w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer'>
             <input type='file' className='hidden' onChange={handleFile}  accept='image/jpeg, image/png, image/gif' />
-{image ? (
-  <Image
-    src={image}
-    alt='image'
-    className='object-cover'
-    width={0}
-    height={0}
-    style={{ width: '100%', height: '100%' }}
-  />
-) : (
-  <>
-    <Image src={imagePlus} alt='image-plus' />
-    <h3 className='font-semibold text-medium text-center'>
-      Unggah gambar/poster/banner
-    </h3>
-    <p className='text-grey text-center text-sm px-8'>
-      Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb
-    </p>
-  </>
-)}
+            {image ? (
+              <Image
+                src={image}
+                alt='image'
+                className='object-cover'
+                width={0}
+                height={0}
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <>
+                <Image src={imagePlus} alt='image-plus' />
+                <h3 className='font-semibold text-medium text-center'>
+                  Unggah gambar/poster/banner
+                </h3>
+                <p className='text-grey text-center text-sm px-8'>
+                  Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb
+                </p>
+              </>
+            )}
             </label>
             <div className='mt-8 text-sm'>
               <InputField
                 type='text'
                 placeholder='Nama Event'
                 fullWidth
+                value={form.name}
                 onChange={(e: any) => setForm({ ...form, name: e.target.value })}
               />
               {error && error?.name && (
@@ -685,7 +703,9 @@ const CreateEvent = () => {
         <div className='flex justify-between max-w-6xl px-8 py-4 text-dark items-center z-50'>
           <p>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
           <div className='flex gap-2'>
-            <Button onClick={saveDraft} color='secondary' label='Draf' />
+            {!slug && (
+              <Button onClick={saveDraft} color='secondary' label='Draf' />
+            )}
             <Button 
               className={`whitespace-nowrap`}
               onClick={submitEvent} 
