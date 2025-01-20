@@ -53,7 +53,7 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
 
           const interval = setInterval(() => {
             if (!userClicked) {
-              (document.querySelector('#HeroSectionNextBtn') as HTMLButtonElement).click();
+              (document.querySelector('#HeroSectionNextBtn') as HTMLButtonElement)?.click();
             }
           }, 5000);
 
