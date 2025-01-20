@@ -26,6 +26,7 @@ import { modals } from '@mantine/modals';
 import { Guide } from '@/components/Guide';
 import { notifications } from '@mantine/notifications';
 import { Context } from "@/pages/create-event";
+import { useRouter } from 'next/router';
 
 interface ModalProps {
   isOpen: boolean;
@@ -84,6 +85,8 @@ export default function ModalCreateTicket({
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
   const { seatmapData } = useContext(Context);
+  const router = useRouter();
+  const { slug } = router.query;
 
   useEffect(() => {
     setAddSeatMap(!!eventId);
@@ -98,8 +101,8 @@ export default function ModalCreateTicket({
   }, [openForm]);
 
   useEffect(() => {
-    if (!!seatmapData) setAddSeatMap(true);
-  }, [seatmapData]);
+    if (!!slug) setAddSeatMap(true);
+  }, [slug]);
 
   const submitTicket = async () => {
     if (eventId == undefined) {

@@ -543,7 +543,7 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
                         {data.map((e, i) => (
                             // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
                                 <Box
-                                    className={`absolute z-30 -translate-x-2/4 -translate-y-2/4`}
+                                    className={`absolute z-30 [&>.tooltipx]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
                                     style={{
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,
@@ -553,15 +553,15 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
                                     }}
                                     ref={el => changeRef(i, el)}
                                     key={i}>
-                                    <Flex display={i == selected ? undefined : 'none'} className={`absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
+                                    <Flex display={i == selected ? undefined : 'none'} className={`tooltipx absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
                                         {onFinishSelectSeat && (
-                                            <Button onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
+                                            <Button className={`btnSelectAll`} onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == 'seat' ? undefined : 'none'}>
                                                 Pilih Semua
                                             </Button>
                                         )}
                                         {!onFinishSelectSeat && (
                                             <Tooltip label="Edit Area" position="bottom">
-                                                <ActionIcon onClick={() => {setModalArea(i); setSelected(i)}} bg="gray.1" c="gray.6" radius="xl">
+                                                <ActionIcon display={i == selected ? undefined : 'none'} onClick={() => {setModalArea(i); setSelected(i)}} bg="gray.1" c="gray.6" radius="xl">
                                                     <Icon icon="uiw:edit" />
                                                 </ActionIcon>
                                             </Tooltip>
