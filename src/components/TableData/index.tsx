@@ -16,7 +16,7 @@ type ActionType<T> = {
 
 type HeaderLabelArray = [string, string][];
 type DataTypeObject = { [key: string]: any };
-type DataType = Record<string, ReactNode | Blob | DataTypeObject | undefined>;
+type DataType = Record<string, ReactNode | Blob | DataTypeObject | string | undefined>;
 type ComponentProps<T, V> = {
     tablekey?: string;
     mapData: (data: T, index: number) => V;
@@ -342,7 +342,7 @@ export default function TableData<T extends DataType, V extends DataType>({
                                 />
                                 {(((action?.length ?? 0) > 0) || ((actionIcon?.length ?? 0) > 0)) && (
                                     <Table.Th className={`sticky -right-px top-0`}>
-                                        <Box className={`absolute top-0 left-0 z-30 border-x w-full h-full pointer-events-none !bg-[#F3F4F6]`} />
+                                        <Box className={`absolute top-0 left-0 z-30 border-x border-[#d0d0d0] w-full h-full pointer-events-none !bg-[#F3F4F6]`} />
                                     </Table.Th>
                                 )}
                             </Table.Thead>
@@ -355,7 +355,7 @@ export default function TableData<T extends DataType, V extends DataType>({
                                                     checked={selected.includes(index + (perPage * pageNum))}
                                                     onChange={e => setSelected(e.target.checked ? [...selected, index + (perPage * pageNum)] : selected.filter(z => z != index + (perPage * pageNum)))}
                                                 />
-                                                <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full pointer-events-none`} />
+                                                <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full pointer-events-none`} />
                                             </Table.Td>
                                         )}
                                         {settings.showIndex && <Table.Td>{dataIndex(index)}</Table.Td>}
@@ -375,7 +375,7 @@ export default function TableData<T extends DataType, V extends DataType>({
                                                     </Text>
                                                 )}
                                                 {idx == freeze && (
-                                                    <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full`} />
+                                                    <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full`} />
                                                 )}
                                             </Table.Td>
                                         ))}
@@ -412,7 +412,7 @@ export default function TableData<T extends DataType, V extends DataType>({
                                                             ))}
                                                         </Menu.Dropdown>
                                                     </Menu>
-                                                    <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full pointer-events-none`} />
+                                                    <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full pointer-events-none`} />
                                                 </Flex>
                                             </Table.Td>
                                         )}
