@@ -149,7 +149,8 @@ const Merch = () => {
                             loading={loading.includes('getdata')}
                             tablekey="pemesan"
                             withRowIndex
-                            data={listPemesan}
+                            data={listPemesan ?? []}
+                            mapData={e => ({...e})}
                         />
                     </Box>
                 </Tabs.Panel>
@@ -172,7 +173,8 @@ const Merch = () => {
                             }
                             tablekey="transaksi"
                             withRowIndex
-                            data={listTransaksi}
+                            data={listTransaksi ?? []}
+                            mapData={e => ({...e})}
                         />
                     </Box>
                 </Tabs.Panel>
@@ -182,7 +184,8 @@ const Merch = () => {
                             loading={loading.includes('getdata')}
                             tablekey="transaksi"
                             withRowIndex
-                            data={listCheckin}
+                            data={listCheckin ?? []}
+                            mapData={e => ({...e})}
                         />
                     </Box>
                 </Tabs.Panel>
@@ -193,6 +196,7 @@ const Merch = () => {
                             tablekey="transaksi"
                             withRowIndex
                             data={[]}
+                            mapData={(e: any) => ({...e})}
                         />
                     </Box>
                 </Tabs.Panel>

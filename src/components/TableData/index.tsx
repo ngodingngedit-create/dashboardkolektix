@@ -308,7 +308,7 @@ export default function TableData<T extends DataType, V extends DataType>({
                 </Card>
             ) : (
                 <>
-                    <Card p={0} withBorder className={`[&_td]:!whitespace-nowrap [&_tbody]:!border-b`} mih={300} h="100%" component={ScrollArea}>
+                    <Card p={0} withBorder className={`[&_td]:!whitespace-nowrap [&_tbody]:!border-b [&_tbody]:!border-[#d0d0d0]`} mih={300} h="100%" component={ScrollArea}>
                         <LoadingOverlay visible={loading} />
                         <Table {...{
                             stickyHeader: true,
