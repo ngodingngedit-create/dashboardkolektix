@@ -547,6 +547,9 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                         <Box
                             bg={e.background ?? (e.type != 'box' ? 'transparent' : "gray.1")}
                             h="100%"
+                            style={{
+                                borderRadius: `${e.radius?.[0] ?? 5}px ${e.radius?.[1] ?? 5}px ${e.radius?.[2] ?? 5}px ${e.radius?.[3] ?? 5}px`
+                            }}
                             className={`rounded-md ${!e.background ? '' : 'shadow-lg'}`}>
                             <Box
                                 // onClick={() => handleSelect(i)}
