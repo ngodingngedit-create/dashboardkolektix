@@ -61,6 +61,8 @@ export default function ModalCreateTicket({
     qty: 0,
     price: 0,
     description: '',
+    starting_time: '00:00',
+    ending_time: '00:00',
   };
   const { values: form, setValues: setForm, validate, errors } = useForm<EventTicket>({
     initialValues: defaultForm,

@@ -545,6 +545,7 @@ export default function Seatmap({ fullscreenState: [isFullscreen, setIsFullscree
                                 <Box
                                     className={`absolute z-30 [&>.tooltipx]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
                                     style={{
+                                        transform: `rotate(${e.rotation ?? 0}deg)`,
                                         zIndex: i == selected ? 200 : undefined,
                                         top: `${e.position[1]}px`,
                                         left: `${e.position[0]}px`,

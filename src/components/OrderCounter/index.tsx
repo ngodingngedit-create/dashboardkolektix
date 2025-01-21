@@ -531,6 +531,7 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                     <Box
                         className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
                         style={{
+                            transform: `rotate(${e.rotation ?? 0}deg)`,
                             top: `${e.position[1]}px`,
                             left: `${e.position[0]}px`,
                             width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,

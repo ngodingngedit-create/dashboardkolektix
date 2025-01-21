@@ -176,15 +176,15 @@ const Auth = () => {
         // setStep(2);
 
         Cookies.set('token', res.access_token);
-        const role: UserProps['role'] = res?.user_access?.some((e: any) => e?.has_role.id == 3 ? "Creator" : e?.has_role?.name == 'Admin') ? 'Admin' : 'Staff';
+        const role: UserProps['role'] = res?.user_access?.some((e: any) => e?.has_role.id == 3) ? "Creator" :
+          res?.user_access?.some((e: any) => e?.has_role?.name == 'Admin') ?
+            'Admin' :
+            'Staff';
 
         Cookies.set('user_data', JSON.stringify({
           ...(res?.data ?? {}),
           force_creator: true,
           role,
-          ...(res?.user_access ? {
-            has_creator: res?.user_access[0]?.has_parent?.has_creator
-          } : {})
         }));
         setLoading(false);
         router.push(role == 'Admin' ? '/dashboard/admin' : '/dashboard');

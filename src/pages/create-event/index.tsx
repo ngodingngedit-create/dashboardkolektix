@@ -206,8 +206,8 @@ const CreateEvent = () => {
     })
       .then((res) => {
         console.log(res);
-        toast.success('Event Berhasil Dibuat');
-        router.push('/create-event/success');
+        toast.success(eventId === null ? 'Event Berhasil Dibuat' : 'Event Berhasil Diupdate');
+        router.push(eventId === null ? '/create-event/success' : '/dashboard/my-event/' + slug);
       })
       .catch((err) => {
         const error = err.response.data.errors
