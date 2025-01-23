@@ -33,7 +33,7 @@ export default function VenueTransaction() {
     return (
         <>
             <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
-                <LoadingOverlay visible={loading.includes('getdata')} />
+                {/* <LoadingOverlay visible={loading.includes('getdata')} /> */}
                 <Flex gap={10} justify="space-between" align="center">
                     <Stack gap={5}>
                         <Text size="1.8rem" fw={600}>
@@ -50,7 +50,24 @@ export default function VenueTransaction() {
                     value={data}
                     onChange={getData}
                     data={data?.data ?? []}
-                    mapData={e => e}
+                    mapData={(e: any) => ({
+                        start_date: e.start_date,
+                        venue: e?.venue?.name,
+                        event_name: e.event_name,
+                        hour: '00:00 - 00:00',
+                        client: e?.user?.name,
+                        pax: '-',
+                        room: '-'
+                    })}
+                    headerLabel={{
+                        'start_date': 'Tanggal',
+                        'venue': 'Venue',
+                        'event_name': 'Nama Event',
+                        'hour': 'Jam',
+                        'client': 'Client',
+                        'pax': 'Pax',
+                        'room': 'Ruangan',
+                    }}
                 />
             </Stack>
         </>
