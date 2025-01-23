@@ -414,15 +414,16 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                                 <Group align="center">
                                     <TextInput
+                                        w="100%"
                                         value={voucherField}
                                         onChange={e => setVoucherField(e.currentTarget.value)}
                                         placeholder="Masukan Kode Voucher"
                                     />
-                                    <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                    <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
                                         Submit
                                     </Button>
                                     {voucher && (
-                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px]" />
+                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
                                     )}
                                 </Group>
                             </Stack>
@@ -764,15 +765,16 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                                         <Group align="center">
                                             <TextInput
+                                                w="100%"
                                                 value={voucherField}
                                                 onChange={e => setVoucherField(e.currentTarget.value)}
                                                 placeholder="Masukan Kode Voucher"
                                             />
-                                            <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher}>
+                                            <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
                                                 Submit
                                             </Button>
                                             {voucher && (
-                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px]" />
+                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
                                             )}
                                         </Group>
                                     </Stack>
