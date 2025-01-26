@@ -24,6 +24,7 @@ import paperplane from '../../assets/icon/paperplane.png';
 import Image from 'next/image';
 import fetch from '@/utils/fetch';
 import moment from 'moment';
+import echo from '@/utils/socket';
 
 interface ChatProps {
     inbox_id: number;
@@ -146,9 +147,25 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const [modalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
+        const channelName = 'chat'//`chat.${255}`;
+        const channel = echo?.channel(channelName);
+
+        console.log("Listening to channel:", channelName);
+
+        channel.listen('.CustomerChat', (data: any) => {
+            console.log("Received event .CustomerChat:", data);
+        })
+
+        return () => {
+            console.log("Stopped listening to", channelName);
+            channel.stopListening(".CustomerChat");
+        };    
+    }, [users])
+
+    useEffect(() => {
         if (creatorIdOpen) {
             const creatorExist = chat.find(e => e.to?.has_creator?.id == creatorIdOpen);
-            console.log('list', creatorExist, creatorIdOpen)
+
             if (creatorExist) {
                 setSelected(creatorExist?.to.id);
                 setName(creatorExist?.to.has_creator?.name ?? '-');
