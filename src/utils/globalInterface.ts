@@ -401,6 +401,7 @@ interface VenueCategory {
   name: string;
   description: string;
   status: string;
+  icon_menu?: string;
   created_by: string | null;
   updated_by: string | null;
   created_at: string | null;

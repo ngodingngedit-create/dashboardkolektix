@@ -4,8 +4,9 @@ import { Get } from '@/utils/REST';
 import { VenueProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLocationDot } from '@fortawesome/free-solid-svg-icons';
-import { Button, Container, Flex, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Button, Card, Container, Divider, Flex, SimpleGrid, Stack, Text, Title, UnstyledButton } from '@mantine/core';
 import _ from 'lodash';
+import { Icon } from '@iconify/react/dist/iconify.js';
 
 const Venue = () => {
   const [_data, setData] = useState<VenueProps[]>([]);
@@ -25,7 +26,7 @@ const Venue = () => {
   }, []);
 
   const venueCategory = useMemo(() => {
-    return _.uniq(_data.map((item) => item.has_venue_category.name));
+    return _.uniq(_data.map((item) => item.has_venue_category));
   }, [_data]);
 
   const data = useMemo(() => {
@@ -41,18 +42,18 @@ const Venue = () => {
       <Stack gap={15}>
         <Title size="h2" fw={600}>Semua Venue</Title>
 
-        <Flex align="center" gap={10}>
+        <Divider />
+
+        <Flex align="center" gap={10} className={`overflow-x-auto [&>*]:shrink-0`}>
           {venueCategory.map((item, index) => (
-            <Button onClick={() => setSelectedCategory(item == selectedCategory ? undefined : item)}
-              key={index}
-              variant={item == selectedCategory ? 'light' : 'outline'}
-              radius="xl"
-              size="xs"
-              color="gray"
-              c="gray.8"
-              className={`capitalize`}>
-              {item}
-            </Button>
+            <UnstyledButton key={index} onClick={() => setSelectedCategory(item.name == selectedCategory ? undefined : item.name)}>
+              <Card py={8} radius={0} className={`${item.name == selectedCategory ? ' !text-primary-base !border-b !border-b-primary-base' : '!text-grey hover:!bg-grey/10'}`}>
+                <Flex gap={10} align="center">
+                  <Icon icon={item.icon_menu ?? ''} className={`text-[30px]`} />
+                  <Text size="sm" fw={400}>{item.name}</Text>
+                </Flex>
+              </Card>
+            </UnstyledButton>
           ))}
         </Flex>
 
