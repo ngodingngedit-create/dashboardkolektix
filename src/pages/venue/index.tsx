@@ -60,6 +60,7 @@ const Venue = () => {
           <SimpleGrid className={`!grid-cols-2 sm:!grid-cols-3 md:!grid-cols-4`}>
             {data.map((item) => (
                 <VenueCard
+                  id={item.id}
                   key={item.id}
                   slug={item.slug}
                   title={item.name}

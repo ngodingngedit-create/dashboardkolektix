@@ -242,6 +242,7 @@ export type UserProps = Partial<{
     product_id?: number;
     lowongan_id?: number;
     talenta_id?: number;
+    venue_id?: number;
   }[]
 }>
 
