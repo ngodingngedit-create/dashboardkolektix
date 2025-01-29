@@ -13,6 +13,7 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
 import { Box, Card, Text, TextInput, Image as ImageM } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
+import echo from '@/utils/socket';
 
 interface ChatProps {
   inbox_id: number;
@@ -118,6 +119,41 @@ const Chat = () => {
     }
   }, [users]);
 
+    useEffect(() => {
+        if (!echo) {
+            console.error("Echo instance not available!");
+            return;
+        }
+
+        const newChannelName = `new-creator-chat.${users?.id}`;
+        const newChannel = echo.channel(newChannelName);
+        const channelName = `creator-chat.${users?.id}`;
+        const channel = echo.channel(channelName);
+
+        if (users?.id) {
+            newChannel.listen('.NewCreatorChat', (data: any) => {
+                setChat([...data, chat]);
+                const audio = new Audio('/audio/live-chat.wav');
+                audio.play();
+            });
+            channel.listen('.CreatorChat', (data: any) => {
+                setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
+                    ...e,
+                    chats: [
+                        ...e.chats,
+                        data.data
+                    ]
+                }) : e));
+                const audio = new Audio('/audio/live-chat.wav');
+                audio.play();
+            });
+        }
+
+        return () => {
+            channel.stopListening(".CreatorChat");
+        };
+    }, [users]);    
+
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
@@ -135,7 +171,7 @@ const Chat = () => {
 
   const sendMessage = (form?: React.FormEvent) => {
     form?.preventDefault();
-    Post('inbox-chat', messages)
+    Post('inbox-chat', {...messages, isCreator: true})
       .then((res: any) => {
         console.log(res);
         getData();
@@ -185,35 +221,39 @@ const Chat = () => {
             />
           </Box>
 
-          {(searchQuery && searchedChats.length == 0) && (
-            <Card>
-              <Text size="sm" c="gray">Chat tidak ditemukan</Text>
-            </Card>
-          )}
+          <Card p={0} h="100%" className={`!overflow-y-auto`}>
+            {(searchQuery && searchedChats.length == 0) && (
+              <Card>
+                <Text size="sm" c="gray">Chat tidak ditemukan</Text>
+              </Card>
+            )}
 
-          {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.to.id == user?.id).length == 0 && (
-              <Text p={10} size="sm" c="gray">Tidak Ada Chat Yang Tersedia</Text>
-          )}
-
-          {(searchQuery ? searchedChats : chat)
-            .filter((item: InboxListProps) => item.to.id == user?.id)
-            .map((item: InboxListProps) => (
-              <ChatList
-                name={item.from.name ?? ''}
-                lastMsg={item.chats[0].message}
-                time={formatDate(item.chats[0].created_at)}
-                countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
-                key={item.from.id}
-                setSelected={setSelected}
-                selected={selected}
-                id={item.from.id ?? 0}
-                setName={setName}
-                setMessages={setMessages}
-                messages={messages}
-                inbox={item.id}
-              />
-            ))}
+            {(searchQuery ? searchedChats : chat)
+              .filter((item: InboxListProps) => item.to.id == user?.id)
+              .sort((a, b) => {
+                const aUnread = a.chats.some(chat => chat.status === "unread");
+                const bUnread = b.chats.some(chat => chat.status === "unread");
+                if (aUnread && !bUnread) return -1;
+                if (!aUnread && bUnread) return 1;
+                return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
+              })
+              .map((item: InboxListProps) => (
+                <ChatList
+                  name={item.from.name ?? ''}
+                  lastMsg={item.chats[0].message}
+                  time={formatDate(item.chats[0].created_at)}
+                  countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
+                  key={item.from.id}
+                  setSelected={setSelected}
+                  selected={selected}
+                  id={item.from.id ?? 0}
+                  setName={setName}
+                  setMessages={setMessages}
+                  messages={messages}
+                  inbox={item.id}
+                />
+              ))}
+          </Card>
         </div>
         <div className='w-full flex flex-col divide-y divide-primary-light-200 border-l border-l-primary-light-200'>
           {messagerName !== '' && (

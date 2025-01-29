@@ -132,8 +132,6 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const [user, setUser] = useState<UserProps>();
     const users = useLoggedUser();
     const [supportContacts, setSupportContacts] = useState<SupportContact[]>([]);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [supportChats, setSupportChats] = useState([]);
     const [searchedChats, setSearchedChats] = useState<InboxListProps[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -147,20 +145,32 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const [modalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
-        const channelName = 'chat'//`chat.${255}`;
-        const channel = echo?.channel(channelName);
+        if (!echo) {
+            console.error("Echo instance not available!");
+            return;
+        }
 
-        console.log("Listening to channel:", channelName);
+        const channelName = `chat.${users?.id}`;
+        const channel = echo.channel(channelName);
 
-        channel.listen('.CustomerChat', (data: any) => {
-            console.log("Received event .CustomerChat:", data);
-        })
+        if (users?.id) {
+            channel.listen('.CustomerChat', (data: any) => {
+                setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
+                    ...e,
+                    chats: [
+                        ...e.chats,
+                        data.data
+                    ]
+                }) : e));
+                const audio = new Audio('/audio/live-chat.wav');
+                audio.play();
+            });
+        }
 
         return () => {
-            console.log("Stopped listening to", channelName);
             channel.stopListening(".CustomerChat");
-        };    
-    }, [users])
+        };
+    }, [users]);    
 
     useEffect(() => {
         if (creatorIdOpen) {
@@ -488,7 +498,13 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                     {chat.length > 0 ? (
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id == user?.id)
-                                            .sort((a, b) => (!a.chats[0] || !b.chats[0]) ? -1 : new Date(b.chats[b.chats.length - 1].created_at).getTime() - new Date(a.chats[a.chats.length - 1].created_at).getTime())
+                                            .sort((a, b) => {
+                                                const aUnread = a.chats.some(chat => chat.status === "unread");
+                                                const bUnread = b.chats.some(chat => chat.status === "unread");
+                                                if (aUnread && !bUnread) return -1;
+                                                if (!aUnread && bUnread) return 1;
+                                                return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
+                                            })
                                             .map((item: InboxListProps) => <ChatList
                                                 countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
                                                 name={item.to.has_creator?.name ?? '-'}
@@ -564,7 +580,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                                                 {!isAdminReply && (
                                                                                   <Icon
                                                                                     icon={true ? "solar:check-read-linear" : "ci:check"}
-                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px]`}
+                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px] shrink-0`}
                                                                                   />
                                                                                 )}
                                                                             </div>
@@ -619,7 +635,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                                         {chat.user_id == user.id && (
                                                                           <Icon
                                                                             icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
-                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px]`}
+                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px] shrink-0`}
                                                                           />
                                                                         )}
                                                                     </div>
