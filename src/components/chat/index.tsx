@@ -451,7 +451,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     return (
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className="z-[100] [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100">
+            <div className={`${users?.id ? 'z-[100]' : 'z-[48]'} [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100`}>
                 <Accordion selectedKeys={openTab ? "1" : undefined} onSelectionChange={() => toggleOpenTab && toggleOpenTab()}>
                     <AccordionItem
                         key="1"
