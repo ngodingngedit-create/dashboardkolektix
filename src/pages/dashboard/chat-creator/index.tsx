@@ -125,13 +125,13 @@ const Chat = () => {
             return;
         }
 
-        const newChannelName = `new-creator-chat.${users?.id}`;
-        const newChannel = echo.channel(newChannelName);
+        // const newChannelName = `new-creator-chat.${users?.id}`;
+        // const newChannel = echo.channel(newChannelName);
         const channelName = `creator-chat.${users?.id}`;
         const channel = echo.channel(channelName);
 
         if (users?.id) {
-            newChannel.listen('.NewCreatorChat', (data: any) => {
+            channel.listen('.NewCreatorChat', (data: any) => {
                 setChat([...data.data, chat]);
                 const audio = new Audio('/audio/live-chat.wav');
                 audio.play();
