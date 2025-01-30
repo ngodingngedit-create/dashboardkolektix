@@ -369,6 +369,9 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                     if (messageBoxRef.current) {
                         messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
                     }
+                    if (messages.inbox_id == 0) {
+                        setMessages(e => ({ ...e, inbox_id: res?.data?.id ?? res?.data?.data?.id}))
+                    }
                 })
                 .catch((err: any) => {
                     toast.error(err.response.data.message);
