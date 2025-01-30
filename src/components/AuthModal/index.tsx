@@ -110,7 +110,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   }, [otp]);
 
   return (
-    <Modal isOpen={visible} onClose={onClose}>
+    <Modal className={`!z-[150]`} isOpen={visible} onClose={onClose}>
       <ModalHeader>
         <Image src={LogoWhite} alt='Logo' width={100} />
       </ModalHeader>
