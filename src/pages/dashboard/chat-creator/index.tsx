@@ -132,7 +132,7 @@ const Chat = () => {
 
         if (users?.id) {
             newChannel.listen('.NewCreatorChat', (data: any) => {
-                setChat([...data, chat]);
+                setChat([...data.data, chat]);
                 const audio = new Audio('/audio/live-chat.wav');
                 audio.play();
             });
