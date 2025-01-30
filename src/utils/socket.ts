@@ -23,7 +23,7 @@ if (typeof window !== "undefined") {
         wssPort: Number(process.env.NEXT_PUBLIC_WSS_PORT) || 6001,
         forceTLS: process.env.NEXT_PUBLIC_FORCE_TLS === "true",
         disableStats: true,
-        enabledTransports: ["ws", "wss"],
+        enabledTransports: ["ws"],
         authEndpoint: `${process.env.NEXT_PUBLIC_BACKEND_HOST}/broadcasting/auth`,
         auth: {
             headers: {
