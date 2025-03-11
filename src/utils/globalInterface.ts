@@ -242,6 +242,7 @@ export type UserProps = Partial<{
     product_id?: number;
     lowongan_id?: number;
     talenta_id?: number;
+    venue_id?: number;
   }[]
 }>
 
@@ -400,6 +401,7 @@ interface VenueCategory {
   name: string;
   description: string;
   status: string;
+  icon_menu?: string;
   created_by: string | null;
   updated_by: string | null;
   created_at: string | null;

@@ -129,9 +129,9 @@ export default function MerchDetail() {
 
                     <Tabs.Panel value="transaction">
                         <Box mt={10}>
-                            <TableData
+                            {/* <TableData
                                 tablekey="transaction"
-                            />
+                            /> */}
                         </Box>
                     </Tabs.Panel>
                 </Tabs>

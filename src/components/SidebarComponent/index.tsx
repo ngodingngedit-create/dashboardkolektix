@@ -85,6 +85,11 @@ const sidebarData: SidebarData = [
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/user', role: 'Pembeli', iconify: undefined },
     { id: 1, name: 'Dashboard', icon: faHome, link: '/dashboard/admin', role: 'Admin', iconify: undefined },
     { id: 1, name: 'Event', iconify: 'mdi:event-star', link: '/dashboard/admin/event', role: 'Admin' },
+    { id: 6, name: 'Merchandise', icon: faGift, role: 'Admin', link: '/dashboard/admin/merchandise' },
+    { id: 6, name: 'Venue', icon: faLocationDot, role: 'Admin', link: '/dashboard/admin/venue' },
+    { id: 6, name: 'Lowongan', icon: faBriefcase, role: 'Admin', link: '/dashboard/admin/vacancy' },
+    { id: 6, name: 'Talenta', icon: faStar, role: 'Admin', link: '/dashboard/admin/talenta' },
+
     { id: 1, name: 'Bookmark', link: '/dashboard/bookmark', role: 'Pembeli', iconify: 'material-symbols:bookmark' },
     { id: 2, name: 'Tiket Saya', icon: faTicket, link: '/dashboard/my-ticket', role: 'Pembeli' },
     { id: 3, name: 'Event', iconify: 'mdi:event-star', role: 'Staff', submenu: [

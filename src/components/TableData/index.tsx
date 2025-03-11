@@ -1,9 +1,11 @@
-import { ActionIcon, Box, Card, Center, Checkbox, Divider, Flex, LoadingOverlay, Menu, MenuDropdown, NumberFormatter, Pagination, Popover, ScrollArea, Select, Stack, Table, TableProps, Text, TextInput, Tooltip } from "@mantine/core";
+import { ActionIcon, Box, Card, Center, Checkbox, Divider, Flex, LoadingOverlay, Menu, NumberFormatter, Pagination, Popover, ScrollArea, Select, Stack, Table, TableProps, Text, TextInput, Tooltip } from "@mantine/core";
 import { TableHeaders } from "./TableHeaders";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import chunks from "../../utils/chunk";
 import _ from 'lodash';
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { readLocalStorageValue, useSetState } from "@mantine/hooks";
+import { readLocalStorageValue, useDebouncedCallback, useSetState } from "@mantine/hooks";
+import { PaginationData } from "../../types/model";
 
 type ActionType<T> = {
     icon?: string;
@@ -12,9 +14,14 @@ type ActionType<T> = {
     onClick?: (data?: T) => void;
 }
 
-type ComponentProps<T> = {
-    tablekey: string;
-    data?: T[];
+type HeaderLabelArray = [string, string][];
+type DataTypeObject = { [key: string]: any };
+type DataType = Record<string, ReactNode | Blob | DataTypeObject | string | undefined>;
+type ComponentProps<T, V> = {
+    tablekey?: string;
+    mapData: (data: T, index: number) => V;
+    data: T[];
+    headerLabel?: HeaderLabelArray | { [key: string]: string };
     loading?: boolean;
     opened?: boolean;
     onRowClick?: (data?: T) => void;
@@ -22,30 +29,31 @@ type ComponentProps<T> = {
     withRowIndex?: boolean;
     options?: TableProps;
     currencyFormat?: string[];
-    onSelected?: (list: T[], indexlist: number[]) => void;
+    onSelected?: (list: T[], indexlist: number[], status: 'all' | 'some' | 'null') => void;
     headers?: ReactNode;
     fetchUrl?: string;
     action?: ActionType<T>[];
-    withSettings?: boolean;
+    actionIcon?: ActionType<T>[];
+    onChangeRaw?: (data: { [key: string]: any }) => void;
+    onChange?: (data: string) => void;
+    value?: PaginationData;
+    canSort?: string[];
+    searchField?: boolean;
+    width?: string | number;
+    height?: string | number;
 };
 
-type TableSettings = {
+interface TableSettings extends Partial<TableProps> {
     showIndex: boolean;
     verticalSpacing?: TableProps['verticalSpacing'];
     hiddenColumnList: string[];
 };
 
-function chunks<T>(arr: T[], n: number): T[][] {
-    const result: T[][] = [];
-    for (let i = 0; i < arr.length; i += n) {
-        result.push(arr.slice(i, i + n));
-    }
-    return result;
-}
-
-export default function TableData<T extends Record<string, ReactNode>>({
+export default function TableData<T extends DataType, V extends DataType>({
     tablekey,
-    data: _data = [],
+    mapData,
+    data: _data,
+    headerLabel: _headerLabel = {},
     loading = false,
     opened = true,
     maxHeight,
@@ -56,24 +64,38 @@ export default function TableData<T extends Record<string, ReactNode>>({
     onSelected,
     headers,
     action,
-    withSettings = false,
-}: Readonly<ComponentProps<T>>) {
+    actionIcon,
+    onChange,
+    value,
+    canSort,
+    searchField = true,
+    onChangeRaw,
+    width,
+    height,
+}: Readonly<ComponentProps<T, V>>) {
     const [freeze, setFreeze] = useState<number>();
-    const [page, setPage] = useState<T[][]>([[]]);
+    const [page, setPage] = useState<V[][]>([[]]);
     const [pageNum, setPageNum] = useState(0);
     const [sort, setSort] = useState<[string, 'ASC' | 'DESC']>();
-    const [perPage, setPerPage] = useState<number>(20);
+    const [perPage, setPerPage] = useState<number>(10);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selected, setSelected] = useState<number[]>([]);
+    const [isFirstFetch, setIsFirstFetch] = useState(true);
     const [settings, setSettings] = useSetState<TableSettings>({
         showIndex: withRowIndex ?? false,
         hiddenColumnList: []
     });
 
-    const storageKey = `TABLE_SETTINGS_${tablekey.toUpperCase()}`;
-    const data = useMemo(() => _data, [_data]);
+    const headerLabel = useMemo(() => {
+        return Array.isArray(_headerLabel) ? Object.fromEntries(_headerLabel) : _headerLabel
+    }, [_headerLabel]);
+
+    const storageKey = `TABLE_SETTINGS`;
+    const data = useMemo(() => _data.map(mapData), [_data]);
     const header: [string, string][] = useMemo(() => data.length > 0 ?
-        Object.keys(data[0]).filter(e => !settings.hiddenColumnList.includes(e)).map((e) => [e, e]) :
+        _.uniq(data.map(e => Object.keys(e)).flat())
+            .filter(e => !settings.hiddenColumnList.includes(e))
+            .map((e) => [headerLabel[e] ?? e, e]) :
         [], [data, settings.hiddenColumnList]);
 
     useEffect(() => {
@@ -87,9 +109,61 @@ export default function TableData<T extends Record<string, ReactNode>>({
 
     useEffect(() => {
         localStorage.setItem(storageKey, JSON.stringify(settings));
+        setFreeze(undefined);
     }, [settings]);
 
     useEffect(() => {
+        const selectStatus = selected.length == data.length ? 'all' : selected.length > 0 ? 'some' : 'null';
+        onSelected && onSelected(selected.map(e => _data[e]), selected, selectStatus);
+    }, [selected]);
+
+    useEffect(() => {
+        Boolean(value) ? debounceUpdateServerSide() : updateNonServerside();
+    }, [searchQuery]);
+
+    useEffect(() => {
+        Boolean(value) ? updateServerSide() : updateNonServerside();
+    }, [Boolean(value) ? 0 : data, pageNum, sort]);
+
+    useEffect(() => {
+        Boolean(value) ? updateServerSide(true) : updateNonServerside();
+    }, [perPage]);
+
+    const debounceUpdateServerSide = useDebouncedCallback(() => {
+        updateServerSide();
+    }, 700);
+
+    const updateServerSide = (resetPage = false) => {
+        const params: string[] = [];
+        params.push(`page=${resetPage ? 1 : pageNum + 1}`);
+        params.push(`perpage=${perPage}`);
+
+        if (sort) {
+            params.push(`sortby=${sort[0]}`);
+            params.push(`sortorder=${sort[1]}`);
+        }
+
+        if (Boolean(searchQuery)) {
+            params.push(`search=${searchQuery}`);
+        }
+
+        const rawParamsData = params.reduce((acc, param) => {
+            const [key, value] = param.split('=');
+            acc[key] = value;
+            return acc;
+        }, {} as { [key: string]: string });
+
+        perPage != value?.per_page && setPageNum(0);
+
+        if (!isFirstFetch) {
+            onChange && onChange(params.join('&'));
+            onChangeRaw && onChangeRaw(rawParamsData);
+        } else {
+            setIsFirstFetch(false);
+        }
+    }
+
+    const updateNonServerside = () => {
         var filteredData = data.filter(e => Object.values(e)
             .some(e => String(e)
                 .toLowerCase()
@@ -101,36 +175,65 @@ export default function TableData<T extends Record<string, ReactNode>>({
         sortedData = sort ? sort[1] == 'ASC' ? sortedData : sortedData.reverse() : filteredData;
 
         if (data.length > 0) {
-            setPage(chunks(sortedData, perPage));
-            setPageNum(0);
+            const _data = chunks(sortedData, perPage)
+            setPage(_data);
             setSelected([]);
+
+            if (pageNum > _data.length) {
+                setPageNum(0);
+            }
         }
-    }, [data, perPage, sort, searchQuery]);
+    };
+
+    const dataIndex = useCallback((index: number) => {
+        if (Boolean(value)) return (perPage * ((value?.current_page ?? 1) - 1)) + (index + 1);
+        return (index + (perPage * pageNum) + 1);
+    }, [data, pageNum]);
+
+    const tdValue = useCallback((data: any): React.ReactNode => {
+        if (data === null || data === undefined) return '-';
+        if (typeof data === 'object' && data !== null && !data['$$typeof']) return JSON.stringify(data);
+
+        return data;
+    }, []);
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+    };
 
     return (
-        <Stack gap={12} display={!opened ? 'none' : undefined} style={{ maxHeight: maxHeight ?? `calc(100vh - 200px)` }}>
+        <Stack w={width} h={height} gap={12} display={!opened ? 'none' : undefined} style={{ maxHeight: maxHeight ?? `calc(100vh - 200px)` }} key={tablekey}>
             <Flex justify="space-between" align="center">
-                <Box>
-                    {headers}
-                </Box>
+                <Box>{headers}</Box>
 
                 <Flex align="center" gap={10}>
-                    <TextInput
-                        size="xs"
-                        leftSection={<Icon icon="uiw:search" />}
-                        placeholder="Cari Data"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                    />
+                    {searchField && (
+                        <TextInput
+                            size="xs"
+                            leftSection={<Icon icon="uiw:search" />}
+                            placeholder="Cari Data"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            rightSection={Boolean(searchQuery) && (
+                                <ActionIcon
+                                    variant="transparent"
+                                    color="gray"
+                                    onClick={handleClearSearch}
+                                >
+                                    <Icon icon="ic:round-clear" />
+                                </ActionIcon>
+                            )}
+                        />
+                    )}
 
                     <Popover position="bottom-end">
                         <Popover.Target>
-                            <ActionIcon display={withSettings ? undefined : 'none'} variant="transparent" color="gray" radius="xl">
+                            <ActionIcon variant="transparent" color="gray" radius="xl">
                                 <Icon icon="uiw:setting-o" className={`!text-[20px]`} />
                             </ActionIcon>
                         </Popover.Target>
-                        <Popover.Dropdown className={`!shadow-lg`}>
-                            <Flex gap={20} mah="50vh">
+                        <Popover.Dropdown className={`!shadow-lg`} maw="100vw">
+                            <Flex gap={20} mah="50vh" wrap="wrap" className={`overflow-auto`}>
                                 <Stack className={`overflow-y-auto`}>
                                     <Box className={`sticky top-0 bg-white z-10 pt-[5px] pb-[10px] border-b`}>
                                         <Flex align="center" gap={7}>
@@ -157,8 +260,21 @@ export default function TableData<T extends Record<string, ReactNode>>({
                                         className={`!cursor-pointer`}
                                         onChange={(z) => setSettings({ showIndex: z.target.checked })}
                                     />
+                                    <Checkbox
+                                        label="Garis Kolom"
+                                        checked={settings.withColumnBorders}
+                                        className={`!cursor-pointer`}
+                                        onChange={(z) => setSettings({ withColumnBorders: z.target.checked })}
+                                    />
+                                    <Checkbox
+                                        label="Garis Baris"
+                                        defaultChecked
+                                        checked={settings.withRowBorders}
+                                        className={`!cursor-pointer`}
+                                        onChange={(z) => setSettings({ withRowBorders: z.target.checked })}
+                                    />
                                 </Stack>
-                                <Divider orientation="vertical"  display={Object.keys(data[0] ?? []).length > 0 ? undefined : 'none'} />
+                                <Divider className={`md:block hidden`} orientation="vertical" display={Object.keys(data[0] ?? []).length > 0 ? undefined : 'none'} />
                                 <Stack className={`overflow-y-auto`} display={Object.keys(data[0] ?? []).length > 0 ? undefined : 'none'}>
                                     <Box className={`sticky top-0 bg-white z-10 pt-[5px] pb-[10px] border-b`}>
                                         <Text size="xs" c="gray">Atur Kolom</Text>
@@ -166,7 +282,7 @@ export default function TableData<T extends Record<string, ReactNode>>({
                                     {Object.keys(data[0] ?? []).map((e, i) => (
                                         <Checkbox
                                             key={i}
-                                            label={e}
+                                            label={headerLabel[e] ?? e}
                                             checked={!settings.hiddenColumnList.includes(e)}
                                             className={`!cursor-pointer`}
                                             onChange={(z) => setSettings({ hiddenColumnList: z.target.checked ? settings.hiddenColumnList.filter(z => z != e) : [...settings.hiddenColumnList, e] })}
@@ -179,7 +295,7 @@ export default function TableData<T extends Record<string, ReactNode>>({
                 </Flex>
             </Flex>
 
-            {(data.length == 0 && opened) ? (
+            {(data.length == 0 && opened && !loading) ? (
                 <Card withBorder py={40}>
                     <Center>
                         <Stack align="center">
@@ -192,19 +308,28 @@ export default function TableData<T extends Record<string, ReactNode>>({
                 </Card>
             ) : (
                 <>
-                    <Card radius={15} p={0} withBorder className={`[&_td]:!whitespace-nowrap`} component={ScrollArea}>
+                    <Card p={0} withBorder className={`[&_td]:!whitespace-nowrap [&_tbody]:!border-b [&_tbody]:!border-[#d0d0d0]`} mih={300} h="100%" component={ScrollArea}>
                         <LoadingOverlay visible={loading} />
-                        <Table {...{ stickyHeader: true, ...options, verticalSpacing: settings.verticalSpacing ?? options?.verticalSpacing ?? 'xs' }}>
+                        <Table {...{
+                            stickyHeader: true,
+                            ...options,
+                            verticalSpacing: settings.verticalSpacing ?? options?.verticalSpacing ?? 'xs',
+                            withColumnBorders: settings.withColumnBorders ?? options?.withColumnBorders ?? false,
+                            withRowBorders: settings.withRowBorders ?? options?.withRowBorders ?? true
+                        }}>
                             <Table.Thead>
                                 {Boolean(onSelected) && (
                                     <Table.Th className={`sticky -left-px top-0`}>
                                         <Checkbox
-
+                                            checked={selected.length == data.length}
+                                            indeterminate={selected.length > 0 && !(selected.length == data.length) ? true : undefined}
+                                            color={selected.length > 0 && !(selected.length == data.length) ? 'gray.5' : undefined}
+                                            onChange={e => e.target.checked ? setSelected(Array(data.length).fill(1).map((_, i) => i)) : setSelected([])}
                                         />
-                                        <Box className={`absolute top-0 left-0 z-20 border-x w-full h-full pointer-events-none`} />
+                                        <Box className={`absolute top-0 left-0 z-20 w-full h-full pointer-events-none`} />
                                     </Table.Th>
                                 )}
-                                {settings.showIndex && <Table.Th fw={400}>No</Table.Th>}
+                                {settings.showIndex && <Table.Th>No</Table.Th>}
                                 <TableHeaders
                                     data={sort}
                                     onChange={setSort}
@@ -212,68 +337,83 @@ export default function TableData<T extends Record<string, ReactNode>>({
                                     freezeCol={freeze}
                                     setFreeze={setFreeze}
                                     hasCheckbox={Boolean(onSelected)}
-                                    hasAction={Boolean(action)}
+                                    hasAction={((action?.length ?? 0) > 0)}
+                                    canSort={canSort}
                                 />
-                                {Boolean(action) && (
+                                {(((action?.length ?? 0) > 0) || ((actionIcon?.length ?? 0) > 0)) && (
                                     <Table.Th className={`sticky -right-px top-0`}>
-                                        <ActionIcon variant="transparent" color="gray" opacity={0}>
-                                            <Icon icon="mingcute:more-2-fill" className={`!text-[18px]`} />
-                                        </ActionIcon>
-                                        <Box className={`absolute top-0 left-0 z-30 border-x w-full h-full pointer-events-none !bg-[#F3F4F6]`} />
+                                        <Box className={`absolute top-0 left-0 z-30 border-x border-[#d0d0d0] w-full h-full pointer-events-none !bg-[#F3F4F6]`} />
                                     </Table.Th>
                                 )}
                             </Table.Thead>
                             <Table.Tbody>
-                                {(page.length > 0 ? page[pageNum] : []).map((item, index) => (
+                                {(Boolean(value) ? data : page.length > 0 ? page[pageNum] : []).map((item, index) => (
                                     <Table.Tr key={index} className={`${onRowClick ? 'cursor-pointer' : ''}`}>
                                         {Boolean(onSelected) && (
-                                            <Table.Td className={`sticky -left-px`}>
+                                            <Table.Td className={`sticky -left-px`} width={56}>
                                                 <Checkbox
                                                     checked={selected.includes(index + (perPage * pageNum))}
                                                     onChange={e => setSelected(e.target.checked ? [...selected, index + (perPage * pageNum)] : selected.filter(z => z != index + (perPage * pageNum)))}
                                                 />
-                                                <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full pointer-events-none`} />
+                                                <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full pointer-events-none`} />
                                             </Table.Td>
                                         )}
-                                        {settings.showIndex && <Table.Td>{(index + (perPage * pageNum) + 1)}</Table.Td>}
+                                        {settings.showIndex && <Table.Td>{dataIndex(index)}</Table.Td>}
                                         {header.map((value, idx) => (
                                             <Table.Td
-                                                onClick={() => onRowClick && onRowClick(item)}
+                                                onClick={() => onRowClick && onRowClick(_data[index])}
                                                 key={idx}
                                                 className={`
-                                                    ${idx === freeze ? `sticky ${Boolean(onSelected) ? 'left-[56px]' : '-left-px'} ${Boolean(action) ? 'right-[65px]' : '-right-px'}` : ''}
+                                                    ${idx === freeze ? `sticky ${Boolean(onSelected) ? 'left-[56px]' : '-left-px'} ${((action?.length ?? 0) > 0) ? 'right-[65px]' : '-right-px'}` : ''}
                                                 `}
                                             >
-                                                {currencyFormat?.includes(value[0]) ? (
-                                                    <NumberFormatter value={parseInt(item[value[0]] as string) ?? 0} />
+                                                {currencyFormat?.includes(value[1]) ? (
+                                                    <NumberFormatter value={parseInt(item[value[1]] as string) ?? 0} />
                                                 ) : (
-                                                    <Text size="sm">{Boolean(item[value[0]]) ? item[value[0]] : '-'}</Text>
+                                                    <Text size="sm">
+                                                        {Boolean(item[value[1]]) ? tdValue(item[value[1]] ?? '-') : '-'}
+                                                    </Text>
                                                 )}
                                                 {idx == freeze && (
-                                                    <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full`} />
+                                                    <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full`} />
                                                 )}
                                             </Table.Td>
                                         ))}
-                                        {Boolean(action) && (
-                                            <Table.Td className={`sticky -right-px`}>
-                                                <Menu position="bottom-end">
-                                                    <Menu.Target>
-                                                        <ActionIcon variant="transparent" color="gray">
-                                                            <Icon icon="mingcute:more-2-fill" className={`!text-[18px]`} />
-                                                        </ActionIcon>
-                                                    </Menu.Target>
-                                                    <Menu.Dropdown>
-                                                        {action?.map((e, i) => (
-                                                            <Menu.Item
+                                        {(((action?.length ?? 0) > 0) || ((actionIcon?.length ?? 0) > 0)) && (
+                                            <Table.Td className={`sticky -right-px !py-0 !px-2`}>
+                                                <Flex align="center">
+                                                    {actionIcon?.map((e, i) => (
+                                                        <Tooltip key={i} label={e.text}>
+                                                            <ActionIcon
+                                                                p={0}
+                                                                className={`hoverBtn`}
                                                                 key={i}
-                                                                leftSection={e.icon ? <Icon icon={e.icon} /> : undefined}
-                                                                color={e.color}
-                                                                onClick={() => e.onClick && e.onClick(item)}
-                                                            >{e.text}</Menu.Item>
-                                                        ))}
-                                                    </Menu.Dropdown>
-                                                </Menu>
-                                                <Box className={`absolute top-0 left-0 z-10 border-x w-full h-full pointer-events-none`} />
+                                                                variant="transparent"
+                                                                color={e.color ?? "gray"}
+                                                                onClick={() => e.onClick && e.onClick(_data[index])}>
+                                                                <Icon icon={e.icon ?? '-'} className={`!text-[22px]`} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    ))}
+                                                    <Menu position="left-start">
+                                                        <Menu.Target>
+                                                            <ActionIcon display={((action?.length ?? 0) > 0) ? undefined : 'none'} variant="transparent" color="gray">
+                                                                <Icon icon="mingcute:more-2-fill" className={`!text-[18px]`} />
+                                                            </ActionIcon>
+                                                        </Menu.Target>
+                                                        <Menu.Dropdown>
+                                                            {action?.map((e, i) => (
+                                                                <Menu.Item
+                                                                    key={i}
+                                                                    leftSection={e.icon ? <Icon icon={e.icon} /> : undefined}
+                                                                    color={e.color}
+                                                                    onClick={() => e.onClick && e.onClick(_data[index])}
+                                                                >{e.text}</Menu.Item>
+                                                            ))}
+                                                        </Menu.Dropdown>
+                                                    </Menu>
+                                                    <Box className={`absolute top-0 left-0 z-10 border-x border-[#d0d0d0] w-full h-full pointer-events-none`} />
+                                                </Flex>
                                             </Table.Td>
                                         )}
                                     </Table.Tr>
@@ -284,22 +424,24 @@ export default function TableData<T extends Record<string, ReactNode>>({
 
                     <Flex gap={20} wrap="wrap" align="center">
                         <Pagination
-                            total={page?.length ?? 1}
+                            disabled={loading}
+                            total={value?.last_page ?? page?.length ?? 1}
                             radius="md"
                             size='sm'
-                            display={page?.length <= 1 ? 'none' : undefined}
-                            value={pageNum + 1}
+                            display={(value?.last_page ?? page?.length) <= 1 ? 'none' : undefined}
+                            value={value?.current_page ?? (pageNum + 1)}
                             onChange={e => setPageNum(e - 1)}
                         />
-                        <Divider orientation="vertical" className={`shrink-0`} display={page?.length <= 1 ? 'none' : undefined} />
+                        <Divider orientation="vertical" className={`shrink-0`} display={(value?.last_page ?? page?.length) <= 1 ? 'none' : undefined} />
                         <Flex gap={10} align="center">
                             <Text size="sm" c='gray'>Jumlah per Halaman</Text>
                             <Select
+                                disabled={loading}
                                 size='xs'
                                 radius="md"
                                 w={70}
-                                data={[10, 20, 30, 40, 50].map(String)}
-                                value={String(perPage)}
+                                data={[5, 10, 20, 40, 50, 100].map(String)}
+                                value={String(value?.per_page ?? perPage)}
                                 onChange={e => e && setPerPage(parseInt(e))}
                             />
                         </Flex>

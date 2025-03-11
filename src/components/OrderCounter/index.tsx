@@ -531,6 +531,7 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                     <Box
                         className={`absolute z-30 [&_.hvr]:hover:!flex -translate-x-2/4 -translate-y-2/4`}
                         style={{
+                            transform: `rotate(${e.rotation ?? 0}deg)`,
                             top: `${e.position[1]}px`,
                             left: `${e.position[0]}px`,
                             width: e.size && e.size[0] ? `${e.size[0]}px` : undefined,
@@ -547,6 +548,9 @@ const SeatmapItem = ({ ticketData, data, selectedSeat, setSelectSeat, available 
                         <Box
                             bg={e.background ?? (e.type != 'box' ? 'transparent' : "gray.1")}
                             h="100%"
+                            style={{
+                                borderRadius: `${e.radius?.[0] ?? 5}px ${e.radius?.[1] ?? 5}px ${e.radius?.[2] ?? 5}px ${e.radius?.[3] ?? 5}px`
+                            }}
                             className={`rounded-md ${!e.background ? '' : 'shadow-lg'}`}>
                             <Box
                                 // onClick={() => handleSelect(i)}

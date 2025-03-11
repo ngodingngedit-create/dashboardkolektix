@@ -24,6 +24,7 @@ import paperplane from '../../assets/icon/paperplane.png';
 import Image from 'next/image';
 import fetch from '@/utils/fetch';
 import moment from 'moment';
+import echo from '@/utils/socket';
 
 interface ChatProps {
     inbox_id: number;
@@ -131,8 +132,6 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const [user, setUser] = useState<UserProps>();
     const users = useLoggedUser();
     const [supportContacts, setSupportContacts] = useState<SupportContact[]>([]);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [supportChats, setSupportChats] = useState([]);
     const [searchedChats, setSearchedChats] = useState<InboxListProps[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -146,9 +145,37 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     const [modalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
+        if (!echo) {
+            console.error("Echo instance not available!");
+            return;
+        }
+
+        const channelName = `chat.${users?.id}`;
+        const channel = echo.channel(channelName);
+
+        if (users?.id) {
+            channel.listen('.CustomerChat', (data: any) => {
+                setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
+                    ...e,
+                    chats: [
+                        ...e.chats,
+                        data.data
+                    ]
+                }) : e));
+                const audio = new Audio('/audio/live-chat.wav');
+                audio.play();
+            });
+        }
+
+        return () => {
+            channel.stopListening(".CustomerChat");
+        };
+    }, [users]);    
+
+    useEffect(() => {
         if (creatorIdOpen) {
             const creatorExist = chat.find(e => e.to?.has_creator?.id == creatorIdOpen);
-            console.log('list', creatorExist, creatorIdOpen)
+
             if (creatorExist) {
                 setSelected(creatorExist?.to.id);
                 setName(creatorExist?.to.has_creator?.name ?? '-');
@@ -342,6 +369,9 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                     if (messageBoxRef.current) {
                         messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
                     }
+                    if (messages.inbox_id == 0) {
+                        setMessages(e => ({ ...e, inbox_id: res?.data?.id ?? res?.data?.data?.id}))
+                    }
                 })
                 .catch((err: any) => {
                     toast.error(err.response.data.message);
@@ -421,7 +451,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
     return (
         <>
             <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className="z-[100] [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100">
+            <div className={`${users?.id ? 'z-[100]' : 'z-[48]'} [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100`}>
                 <Accordion selectedKeys={openTab ? "1" : undefined} onSelectionChange={() => toggleOpenTab && toggleOpenTab()}>
                     <AccordionItem
                         key="1"
@@ -471,7 +501,13 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                     {chat.length > 0 ? (
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id == user?.id)
-                                            .sort((a, b) => (!a.chats[0] || !b.chats[0]) ? -1 : new Date(b.chats[b.chats.length - 1].created_at).getTime() - new Date(a.chats[a.chats.length - 1].created_at).getTime())
+                                            .sort((a, b) => {
+                                                const aUnread = a.chats.some(chat => chat.status === "unread");
+                                                const bUnread = b.chats.some(chat => chat.status === "unread");
+                                                if (aUnread && !bUnread) return -1;
+                                                if (!aUnread && bUnread) return 1;
+                                                return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
+                                            })
                                             .map((item: InboxListProps) => <ChatList
                                                 countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
                                                 name={item.to.has_creator?.name ?? '-'}
@@ -547,7 +583,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                                                 {!isAdminReply && (
                                                                                   <Icon
                                                                                     icon={true ? "solar:check-read-linear" : "ci:check"}
-                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px]`}
+                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px] shrink-0`}
                                                                                   />
                                                                                 )}
                                                                             </div>
@@ -602,7 +638,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                                                         {chat.user_id == user.id && (
                                                                           <Icon
                                                                             icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
-                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px]`}
+                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px] shrink-0`}
                                                                           />
                                                                         )}
                                                                     </div>

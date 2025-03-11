@@ -47,26 +47,24 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
         setLoading(false);
 
         if (window && !window.intervalSet) {
-          if (!(document.querySelectorAll('button.mantine-Carousel-control')[1])) return;
+          if (!(document.querySelector('#HeroSectionNextBtn'))) return;
           window.intervalSet = true;
           let userClicked = false;
 
           const interval = setInterval(() => {
             if (!userClicked) {
-              (document.querySelectorAll('button.mantine-Carousel-control')[1] as HTMLButtonElement).click();
+              (document.querySelector('#HeroSectionNextBtn') as HTMLButtonElement)?.click();
             }
           }, 5000);
 
-          document.querySelectorAll('button.mantine-Carousel-control').forEach(button => {
-            button.addEventListener('click', () => {
-              userClicked = true;
-              clearInterval(interval);
-              setTimeout(() => {
-          userClicked = false;
-          window.intervalSet = false;
-          getData();
-              }, 5000);
-            });
+          document.querySelector('#HeroSectionNextBtn')?.addEventListener('click', () => {
+            userClicked = true;
+            clearInterval(interval);
+            setTimeout(() => {
+              userClicked = false;
+              window.intervalSet = false;
+              getData();
+            }, 5000);
           });
         }
       })
@@ -81,29 +79,6 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   }, []);
 
   const { width } = useWindowSize();
-  const settings = {
-    className: 'center',
-    pauseOnHover: true,
-    centerMode: true,
-    slidesToShow: 3,
-    autoplay: true,
-    // autoplaySpeed: 3000,
-    speed: 1000,
-    // infinite: false,
-  };
-
-  const settingsMobile = {
-    className: 'center',
-    pauseOnHover: true,
-    centerMode: true,
-    // centerPadding: '100px',
-    slidesToShow: 1,
-    autoplay: true,
-    // autoplaySpeed: 4000,
-    speed: 1000,
-    infinite: false,
-  };
-
   const [slide, setSlide] = useState(0);
 
   if (!onLoad) {
@@ -119,7 +94,16 @@ const HeroSection = ({ data, slider, loading }: HeroProps) => {
   return (
     <div className='bg-hero'>
         <div className='py-20 max-w-screen-xl mx-auto' id='hero'>
-          <Carousel controlsOffset={width && width > 768 ? "17vw" : "40px"} maw={1280} mx="auto" slideSize={width && width > 768 ? "70%" : "calc(100% - 40px)"} slideGap={20} loop slidesToScroll={1}
+          <Carousel 
+            controlsOffset={width && width > 768 ? "17vw" : "40px"}
+            maw={1280}
+            mx="auto"
+            slideSize={width && width > 768 ? "70%" : "calc(100% - 40px)"}
+            slideGap={20}
+            loop slidesToScroll={1}
+            nextControlProps={{
+              id: 'HeroSectionNextBtn'
+            }}
             onSlideChange={(e) => setSlide(e)}>
             {sliderData.map((e, i) => (
               <Carousel.Slide key={i} className={`${slide == i ? 'z-20' : ''}`}>

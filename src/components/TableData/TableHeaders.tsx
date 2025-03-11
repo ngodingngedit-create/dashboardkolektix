@@ -3,24 +3,28 @@ import { ActionIcon, Box, Flex, Table, Text, Tooltip, UnstyledButton, useMantine
 
 type ComponentProps = {
     label: string;
+    value: string;
     status?: boolean;
     sort?: 'ASC' | 'DESC';
     onClick?: () => void;
     freezed?: boolean;
     canfreeze?: boolean;
+    canSort?: string[];
     onFreezeClick?: () => void;
 };
 
-export default function TableHeader({ label, sort, onClick, status = true, freezed, onFreezeClick, canfreeze = true }: Readonly<ComponentProps>) {
+export default function TableHeader({ label, value, sort, onClick, status = true, freezed, onFreezeClick, canfreeze = true, canSort }: Readonly<ComponentProps>) {
+    const cansort = canSort ? canSort.includes(value) : true;
+
     return (
         <Flex align="center" justify="space-between" gap={5} mt={-3}>
-            <UnstyledButton w="100%" p={0} onClick={onClick} className={`[&_.txt]:hover:text-[--mantine-color-gray-7]`}>
+            <UnstyledButton w="100%" p={0} onClick={cansort ? onClick : undefined} className={`[&_.txt]:hover:text-[--mantine-color-gray-7] ${!cansort ? '!cursor-default' : ''}`}>
                 <Flex align="center" gap={5}>
                     {(sort != undefined) && <Icon icon={sort == "ASC" ? "line-md:arrow-up" : "line-md:arrow-down"} className={`text-[--mantine-primary-color-filled]`} />}
                     <Text size="sm" fw={600} c={(status || sort) ? "gray.7" : "gray.5"} mb={-3} className={`txt whitespace-nowrap`}>{label}</Text>
                 </Flex>
             </UnstyledButton>
-            {/* {canfreeze && (
+            {canfreeze && (
                 <Tooltip label={freezed ? "Unfreeze Column" : "Freeze Column"}>
                     <Box className={`translate-y-[3px] translate-x-[12px]`}>
                         <ActionIcon onClick={onFreezeClick} variant="transparent" size="md" color={freezed ? "orange" : "gray.4"} className={`${freezed ? '' : 'hvrPin opacity-0'}`}>
@@ -28,7 +32,7 @@ export default function TableHeader({ label, sort, onClick, status = true, freez
                         </ActionIcon>
                     </Box>
                 </Tooltip>
-            )} */}
+            )}
         </Flex>
     );
 };
@@ -42,9 +46,10 @@ type HeadersComponentProps = {
     setFreeze?: (idx: number | undefined) => void;
     hasCheckbox?: boolean;
     hasAction?: boolean;
+    canSort?: string[];
 };
 
-export function TableHeaders({ label, data, onChange, freezeCol, setFreeze, canFreeze = true, hasCheckbox = false, hasAction = false }: Readonly<HeadersComponentProps>) {
+export function TableHeaders({ label, data, onChange, freezeCol, setFreeze, canSort, canFreeze = true, hasCheckbox = false, hasAction = false }: Readonly<HeadersComponentProps>) {
     const theme = useMantineTheme();
 
     return <>
@@ -56,12 +61,14 @@ export function TableHeaders({ label, data, onChange, freezeCol, setFreeze, canF
                             <Box key={i} className={`w-px bg-black/10 h-[30px] -my-[10px]`} />
                         ) : (
                             <TableHeader
+                                canSort={canSort}
                                 freezed={freezeCol == i}
                                 canfreeze={(freezeCol == i && canFreeze) || (canFreeze && freezeCol == undefined)}
                                 label={e[0]}
+                                value={e[1]}
                                 sort={(data && e[1] == data[0]) ? data[1] : undefined}
                                 status={data == undefined}
-                                onClick={() => (Boolean(e[0]) && onChange) && onChange(
+                                onClick={() => !canSort ? {} : (Boolean(e[0]) && onChange) && onChange(
                                     (data && data[0]) == e[1] ?
                                     (data && data[1] == 'DESC') ? undefined : [e[1], (data && data[1] == 'ASC') ? 'DESC' : 'ASC'] :
                                     [e[1], 'ASC']

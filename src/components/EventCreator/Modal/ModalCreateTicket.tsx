@@ -11,7 +11,7 @@ import {
 } from '@nextui-org/react';
 import { EventTicket } from '@/utils/formInterface';
 import InputField from '@/components/Input';
-import { useState, useEffect, useMemo, PropsWithChildren } from 'react';
+import { useState, useEffect, useMemo, PropsWithChildren, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
@@ -25,6 +25,8 @@ import TicketContainer from '@/components/TicketContainer';
 import { modals } from '@mantine/modals';
 import { Guide } from '@/components/Guide';
 import { notifications } from '@mantine/notifications';
+import { Context } from "@/pages/create-event";
+import { useRouter } from 'next/router';
 
 interface ModalProps {
   isOpen: boolean;
@@ -59,6 +61,8 @@ export default function ModalCreateTicket({
     qty: 0,
     price: 0,
     description: '',
+    starting_time: '00:00',
+    ending_time: '00:00',
   };
   const { values: form, setValues: setForm, validate, errors } = useForm<EventTicket>({
     initialValues: defaultForm,
@@ -82,6 +86,9 @@ export default function ModalCreateTicket({
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
+  const { seatmapData } = useContext(Context);
+  const router = useRouter();
+  const { slug } = router.query;
 
   useEffect(() => {
     setAddSeatMap(!!eventId);
@@ -94,6 +101,10 @@ export default function ModalCreateTicket({
       setForm(defaultForm);
     }
   }, [openForm]);
+
+  useEffect(() => {
+    if (!!slug) setAddSeatMap(true);
+  }, [slug]);
 
   const submitTicket = async () => {
     if (eventId == undefined) {

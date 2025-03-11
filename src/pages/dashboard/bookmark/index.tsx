@@ -1,4 +1,5 @@
 import EventCard from "@/components/Card/EventCard";
+import VenueCard from "@/components/Card/VenueCard";
 import { BookmarkListResponse } from "@/types/bookmark";
 import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -36,13 +37,17 @@ export default function BookmarkPage({  }: Readonly<ComponentProps>) {
         return data?.filter(e => e.type == "Event").map(e => ({...e.has_event, bookmark_id: e.id }));
     }, [data]);
 
+    const venueList = useMemo(() => {
+        return data?.filter(e => e.type == "Venue").map(e => ({...e.has_venue, bookmark_id: e.id }));
+    }, [data]);
+
     return (
         <Stack p={20} pos="relative">
             <LoadingOverlay visible={loading.includes('getdata')} />
 
             <Stack gap={0}>
                 <Text component="h1" fw={600} size="xl">Semua Bookmark</Text>
-                <Text size="sm" c="gray">Daftar semua bookmark event, merchandise, dllolor</Text>
+                <Text size="sm" c="gray">Daftar semua bookmark event, merchandise, dll</Text>
             </Stack>
 
             <Tabs defaultValue="event">
@@ -89,9 +94,25 @@ export default function BookmarkPage({  }: Readonly<ComponentProps>) {
                 </Tabs.Panel>
 
                 <Tabs.Panel value="venue" py={20}>
-                    <Alert icon={<Icon icon="uiw:information-o" />} radius={8} color="gray">
-                        Belum ada bookmark venue
-                    </Alert>
+                    {venueList?.length == 0 && (
+                        <Alert icon={<Icon icon="uiw:information-o" />} radius={8} color="gray">
+                            Belum ada bookmark venue
+                        </Alert>
+                    )}
+
+                    {venueList?.map((e, i) => (
+                        <Box key={i} className={`!max-w-[280px]`}>
+                            <VenueCard
+                                bookmark_id={e.bookmark_id}
+                                id={e.id}
+                                slug={e.slug}
+                                title={e.name}
+                                location={e?.location_name ?? ''}
+                                price={Math.round(e.starting_price)}
+                                image={e?.venue_gallery?.map(e => e.image_url) ?? []}
+                            />
+                        </Box>
+                    ))}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="talenta" py={20}>
