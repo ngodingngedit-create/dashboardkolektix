@@ -193,6 +193,10 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
                     onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
+                    setVoucher({
+                        name: voucherField,
+                        amount: discount,
+                    });
                 } else {
                     notifications.show({
                         message: 'Voucher Tidak Ditemukan',
@@ -579,6 +583,18 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                     )}
                                 </p>
                             </div>
+                            {voucher && voucher.amount > 0 ? (
+                                <div className="py-3 px-4 flex justify-between items-center">
+                                    <p>Voucher</p>
+                                    <p className="font-semibold">
+                                        {voucher ? (
+                                            <NumberFormatter value={`-${voucher.amount}`} />
+                                        ) : (
+                                            <Text>Free</Text>
+                                        )}
+                                    </p>
+                                </div>
+                            ) : null}
                             {detail.ppn ? (
                                 <div className="py-3 px-4 flex justify-between items-center">
                                     <p>Tax</p>
@@ -594,8 +610,8 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>{t('totalPayment')}</p>
                                 <p className="font-semibold">
-                                    {((totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
-                                        <NumberFormatter value={(totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0))} />
+                                    {((totalSubtotalPrice  - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
+                                        <NumberFormatter value={(totalSubtotalPrice  - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0))} />
                                     ) : (
                                         <Text>Free</Text>
                                     )}
