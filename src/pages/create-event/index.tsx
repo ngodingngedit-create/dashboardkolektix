@@ -140,6 +140,7 @@ const CreateEvent = () => {
 
   useEffect(() => {
     getTagSuggestion();
+    getEventData();
   }, []);
 
   useEffect(() => {
@@ -152,15 +153,20 @@ const CreateEvent = () => {
       .then((res: any) => {
         const { image_thumbnail, image, ...rest } = res.data;
         setForm({ ...rest });
-        setTicket((res.data.has_event_ticket as EventTicket[]).map((e: any) => ({...e, available_seat: e.available_seat_number.split(',')})));
+        setTicket(
+          (res.data.has_event_ticket as EventTicket[]).map((e: any) => ({
+            ...e,
+            available_seat: e.available_seat_number ? e.available_seat_number.split(',') : [],
+          }))
+        );
         setEventId(res.data.id);
         setImage(res.data.image_base64 as string);
 
-        const seatmap = JSON.parse(res.data.seatmap);
+        const seatmap = res.data.seatmap ? JSON.parse(res.data.seatmap) : [];
         setSeatmapData.setState(seatmap);
 
         setLoadingEvent(false);
-        console.log(res);
+        console.log("res:",res);
       })
       .catch((err) => {
         console.log(err);
@@ -205,7 +211,7 @@ const CreateEvent = () => {
       seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
-        console.log(res);
+        console.log("submit event",res);
         toast.success(eventId === null ? 'Event Berhasil Dibuat' : 'Event Berhasil Diupdate');
         router.push(eventId === null ? '/create-event/success' : '/dashboard/my-event/' + slug);
       })
@@ -291,8 +297,9 @@ const CreateEvent = () => {
   };
 
   useEffect(() => {
-    console.log(form);
+    console.log("form",form);
   }, [form]);
+
 
   return (
     <>
