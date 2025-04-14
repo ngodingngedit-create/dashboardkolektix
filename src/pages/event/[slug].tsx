@@ -571,7 +571,8 @@ const EventDetails = () => {
     const submitForm = () => {
         if (detail) {
             if (isOnePayment) {
-                setPayment((paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString())
+                console.log('isOnePayment');
+                setPayment((paymentList?.find(e => e?.id === 4) ?? { id: 0 }).id.toString())
                 submitData();
             } else {
                 setStep(66);

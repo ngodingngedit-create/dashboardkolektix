@@ -50,9 +50,13 @@ export default function ModalTicket({ isOpen, setIsOpen, form, setForm }: ModalP
                     labelPlacement='outside'
                     isRequired
                     startContent={<FontAwesomeIcon icon={faCalendar} className='text-dark' />}
-                    onChange={(e) => {
-                      setStartDate(e && e.toString());
+                    onChange={(value) => {
+                      const calendarDate = value as CalendarDate | null;
+                      setStartDate(calendarDate ? calendarDate.toString() : '');
                     }}
+                    //onChange={(e: CalendarDate | null) => {
+                    //  setStartDate(e ? e.toString() : '');
+                    //}}
                   />
                   <DateInput
                     label={'Tanggal Selesai'}
@@ -63,9 +67,13 @@ export default function ModalTicket({ isOpen, setIsOpen, form, setForm }: ModalP
                     labelPlacement='outside'
                     isRequired
                     startContent={<FontAwesomeIcon icon={faCalendar} className='text-dark' />}
-                    onChange={(e) => {
-                      setEndDate(e && e.toString());
+                    onChange={(value) => {
+                      const calendarDate = value as CalendarDate | null;
+                      setStartDate(calendarDate ? calendarDate.toString() : '');
                     }}
+                    //onChange={(e: CalendarDate | null) => {
+                    //  setEndDate(e ? e.toString() : '');
+                    //}}
                   />
                 </div>
               </ModalBody>

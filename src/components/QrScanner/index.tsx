@@ -55,7 +55,7 @@ const QrScanner = ({ isOpen, step, setStep, setData }: ScannerProps) => {
   return (
     isOpen && (
       <>
-        <video ref={ref} />
+        <video ref={ref as React.RefObject<HTMLVideoElement>} />
       </>
     )
   );
