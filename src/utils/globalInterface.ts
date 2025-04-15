@@ -531,6 +531,7 @@ export interface TransactionTicketProps {
   updated_at: Date;
   deleted_at: Date | null;
   code: string;
+  etiket_number?: string; // Add this property if it exists in the data
 }
 
 interface IdentityProps {
