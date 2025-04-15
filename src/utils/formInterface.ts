@@ -8,6 +8,7 @@ export interface EventTicket {
   name: string;
   ticket_date: string | null;
   ticket_end: string | null;
+  event_schedule_date: string | null;
   qty: number;
   price: number;
   description: string;

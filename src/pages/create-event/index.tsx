@@ -115,6 +115,7 @@ const CreateEvent = () => {
     name: '',
     ticket_date: null,
     ticket_end: null,
+    event_schedule_date: null,
     qty: 0,
     price: 0,
     description: '',
@@ -146,6 +147,7 @@ const CreateEvent = () => {
   useEffect(() => {
     if (slug) getEventData();
   }, [slug]);
+
 
   const getEventData = () => {
     setLoadingEvent(true);
@@ -203,6 +205,10 @@ const CreateEvent = () => {
   };
 
   const submitEvent = () => {
+    console.log("********************************************");
+    console.log("submit event",form);
+    console.log("eventId",eventId);
+    console.log("********************************************");
     const fetchMethod = eventId === null ? Post : Put
     setLoading(true); // Set loading ke true
     fetchMethod(eventId === null ? 'event' : 'event/' + eventId, {
