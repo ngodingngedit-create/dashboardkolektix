@@ -502,26 +502,29 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id == user?.id)
                                             .sort((a, b) => {
-                                                const aUnread = a.chats.some(chat => chat.status === "unread");
-                                                const bUnread = b.chats.some(chat => chat.status === "unread");
-                                                if (aUnread && !bUnread) return -1;
-                                                if (!aUnread && bUnread) return 1;
-                                                return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
+                                                const aChat = a.chats[0];
+                                                const bChat = b.chats[0];
+                                                if (!aChat && !bChat) return 0; 
+                                                if (!aChat) return 1; 
+                                                if (!bChat) return -1; 
+                                                return new Date(bChat.created_at).getTime() - new Date(aChat.created_at).getTime();
                                             })
-                                            .map((item: InboxListProps) => <ChatList
-                                                countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
-                                                name={item.to.has_creator?.name ?? '-'}
-                                                lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
-                                                time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
-                                                key={item.to.id} setSelected={setSelected}
-                                                selected={selected}
-                                                id={item?.to?.id ?? 0}
-                                                setName={setName}
-                                                setMessages={setMessages}
-                                                messages={messages}
-                                                inbox={item.id}
-                                                image={item.to.has_creator?.image_url}
-                                            />)
+                                            .map((item: InboxListProps) => (
+                                                <ChatList
+                                                    countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
+                                                    name={item.to.has_creator?.name ?? '-'}
+                                                    lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
+                                                    time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
+                                                    key={item.to.id} setSelected={setSelected}
+                                                    selected={selected}
+                                                    id={item?.to?.id ?? 0}
+                                                    setName={setName}
+                                                    setMessages={setMessages}
+                                                    messages={messages}
+                                                    inbox={item.id}
+                                                    image={item.to.has_creator?.image_url}
+                                                />
+                                            ))
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
                                     )}
