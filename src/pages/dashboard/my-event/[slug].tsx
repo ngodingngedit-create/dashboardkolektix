@@ -90,6 +90,7 @@ const MyEventDetail = () => {
     name: '',
     ticket_date: null,
     ticket_end: null,
+    event_schedule_date: null,
     qty: 0,
     price: 0,
     description: '',
