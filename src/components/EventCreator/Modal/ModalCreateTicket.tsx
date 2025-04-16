@@ -387,6 +387,25 @@ export default function ModalCreateTicket({
                     value={form.name}
                     onChange={(e: any) => setForm({ ...form, name: e.target.value })}
                   />
+
+                  <div className='grid grid-cols-1 my-2'>
+                    <InputField
+                      error={Boolean(errors['event_schedule_date'])}
+                      type='date'
+                      label='Tgl Event'
+                      required
+                      value={form.event_schedule_date && form.event_schedule_date}
+                      minDateVal={form.ticket_date ? form.ticket_date : undefined}
+                      maxDateVal={endDate ? endDate : undefined}
+                      onChange={(e: any) => {
+                        
+                        e && setForm({ ...form, event_schedule_date: e.toString() })
+                        console.log('event_schedule_date',form);
+                      }
+                    }
+                    />
+                  </div>
+
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
                       error={Boolean(errors['ticket_date'])}
@@ -411,24 +430,7 @@ export default function ModalCreateTicket({
                     />
                   </div>
 
-                  {/*tanggal event*/}
-                  <div className='grid grid-cols-1 my-2'>
-                    <InputField
-                      error={Boolean(errors['event_schedule_date'])}
-                      type='date'
-                      label='Tgl Event'
-                      required
-                      value={form.event_schedule_date && form.event_schedule_date}
-                      minDateVal={form.ticket_date ? form.ticket_date : undefined}
-                      maxDateVal={endDate ? endDate : undefined}
-                      onChange={(e: any) => {
-                        
-                        e && setForm({ ...form, event_schedule_date: e.toString() })
-                        console.log('event_schedule_date',form);
-                      }
-                    }
-                    />
-                  </div>
+                  
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
                       error={Boolean(errors['starting_time'])}
