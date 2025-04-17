@@ -287,6 +287,9 @@ const ThirdStep = ({
                 </div>
               );
             })}
+
+            
+            {/* 
             <div className='border border-primary-light-200 rounded-lg bg-white'>
               <div className='border-b border-b-primary-light-200 py-4 px-6'>
                 <p className='font-semibold'>Metode Pembayaran</p>
@@ -312,6 +315,8 @@ const ThirdStep = ({
                 )}
               </div>
             </div>
+            */}
+
           </div>
           <div className='col-span-2 flex flex-col gap-5'>
             <div className='border border-primary-light-200 rounded-lg bg-white'>
