@@ -69,7 +69,7 @@ export default function ModalTicket({ isOpen, setIsOpen, form, setForm }: ModalP
                     startContent={<FontAwesomeIcon icon={faCalendar} className='text-dark' />}
                     onChange={(value) => {
                       const calendarDate = value as CalendarDate | null;
-                      setStartDate(calendarDate ? calendarDate.toString() : '');
+                      setEndDate(calendarDate ? calendarDate.toString() : '');
                     }}
                     //onChange={(e: CalendarDate | null) => {
                     //  setEndDate(e ? e.toString() : '');
