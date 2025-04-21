@@ -2,7 +2,7 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { Alert, AspectRatio, Box, Button, Card, Container, Divider, Flex, Image, NumberFormatter, ScrollArea, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
 import _ from 'lodash';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useState } from 'react';
 import fetch from '@/utils/fetch';
 import { useListState } from '@mantine/hooks';
 import { useRouter } from 'next/router';
@@ -105,6 +105,12 @@ export default function Invoice() {
     const transStatus = useMemo(() => {
         return transactionStatus ? transactionStatus.find(e => e.id == data?.transaction_status_id) : null;
     }, [data, transactionStatus]);
+
+    useEffect(() => {
+        if(data) {
+            console.log('Data:', data);
+        }
+    }, [data]);
 
     return (
         <div className={`bg-primary-light mt-[-10px] pt-[20px] pb-[30px] mb-[-20px]`}>
@@ -263,6 +269,45 @@ export default function Invoice() {
                                 </Stack>
                             )}
                         </Flex>
+
+                        <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
+                            <Stack gap={10}>
+                                <Text fw={600} c="gray.8">
+                                    Informasi Voucher
+                                </Text>
+                                <Card withBorder>
+                                    <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[15px]`}>
+                                       {
+                                            data?.has_transaction_voucher.map((voucher, index) => (
+                                                <React.Fragment key={index}>
+                                                    <Stack key={index} gap={0}>
+                                                        <Flex align="center" gap={10}>
+                                                            <Text size="md" fw={600}>
+                                                                Kode Voucher:
+                                                            </Text>
+                                                            <Text size="sm" fw={300}>
+                                                                {voucher.voucher_code}
+                                                            </Text>
+                                                        </Flex>
+                                                        <Flex align="center" gap={10}>
+                                                            <Text size="md" fw={600}>
+                                                                Diskon:
+                                                            </Text>
+                                                            <Text size="sm" fw={300}>
+                                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(voucher.voucher_amount) || 0)}
+                                                            </Text>
+                                                        </Flex>
+                                                    </Stack>
+                                                    {index < data?.has_transaction_voucher.length - 1 && <Divider />}
+                                                </React.Fragment>
+                                            ))
+                                       }
+                                    </SimpleGrid>
+                                </Card>
+                            </Stack>
+                           
+                        </Flex>
+
 
                         <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
                             <Stack gap={10} className={`lg:max-w-[630px] shrink-0`}>

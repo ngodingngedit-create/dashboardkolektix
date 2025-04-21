@@ -145,7 +145,7 @@ const EventDetails = () => {
     const [bookmark, setBookmark] = useState(false);
     const [loadings, setLoadings] = useListState<string>();
     const [seatmapOpen, setSeatmapOpen] = useState<number>();
-    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
+    const [voucher, setVoucher] = useState<{id:number, name: string; amount: number }>();
     const user = useLoggedUser();
 
     const clickOutsideChat = useClickOutside(() => {
@@ -413,6 +413,8 @@ const EventDetails = () => {
         userData !== undefined ? setIsLogin(true) : setIsLogin(false);
     }, []);
 
+
+    // SUBMIT DATA
     const submitData = () => {
         setLoading(true);
         if (payment !== '') {
@@ -424,13 +426,17 @@ const EventDetails = () => {
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
-        //console.log(userId);
 
         var payload: { [key: string]: any } = {
             user_id: userId,
             event_id: detail?.id,
             admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
+            vouchers: voucher ? [{
+                voucher_id: voucher?.id,
+                voucher_code: voucher?.name,
+                voucher_amount: voucher?.amount
+            }] : [],
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
@@ -569,6 +575,9 @@ const EventDetails = () => {
     const isOnePayment = (detail?.has_event_payment_method.length ?? 2) <= 1;
 
     const submitForm = () => {
+
+        console.log('submitForm');
+
         if (detail) {
             if (isOnePayment) {
                 console.log('isOnePayment');
@@ -704,6 +713,11 @@ const EventDetails = () => {
 
         return targetDate;
     }, []);
+
+    const cobaWK = (data:{id:number, name: string; amount: number }) => {
+        console.log("data Coba WK", data);
+        setVoucher(data);
+    }
 
     return !firstLoad && detail ? (
         detail && (
@@ -1073,7 +1087,19 @@ const EventDetails = () => {
                         </>
                     ))}
 
-                {stepParams === '33' && <FirstStep onSubmitVoucher={e => setVoucher(e)} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} form={form} setForm={setForm} error={error} onSubmit={submitForm} setFormValid={setIsFormValid} />}
+                {stepParams === '33' && <FirstStep 
+                                            //onSubmitVoucher={e => setVoucher(e)} 
+                                            onSubmitVoucher={cobaWK}
+                                            detail={detail} 
+                                            ticket={ticket} 
+                                            totalSubtotalPrice={totalSubtotalPrice} 
+                                            totalCount={totalCount} 
+                                            form={form} 
+                                            setForm={setForm} 
+                                            error={error} 
+                                            onSubmit={submitForm} 
+                                            setFormValid={setIsFormValid} 
+                                        />}
                 {stepParams === '66' && <SecondStep voucher={voucher} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
                 {stepParams === '100' && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
                 {step === 2 && transactionData && (

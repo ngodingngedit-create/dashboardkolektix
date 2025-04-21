@@ -114,6 +114,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         setShowModalTransaction(!showModalTransaction);
     };
 
+    useEffect(() => {
+        console.log('FirstStepUnlogged');
+    }, []);
+
     const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
         return (
             <div className="flex flex-col items-center justify-center  font-semibold">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import useWindowSize from '@/utils/useWindowSize';
 import { EventProps } from '@/utils/globalInterface';
 import Image from 'next/image';
@@ -60,7 +60,8 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
-    onSubmitVoucher?: (data: {name: string, amount: number}) => void;
+
+    onSubmitVoucher?: (data: {id:number, name: string; amount: number }) => void;
 }
 
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
@@ -190,9 +191,11 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 const isStatusValid = voucher.status == 1;
                 const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
                 const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+                const voucherID = voucher.id;
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
-                    onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
+                    //onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
+                    onSubmitVoucher && onSubmitVoucher({id:voucherID, name: voucherField, amount: discount});
                     setVoucher({
                         name: voucherField,
                         amount: discount,
@@ -214,7 +217,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 setVoucherField('');
             },
         });
-    }   
+    }  
 
     return (
         width &&
@@ -546,6 +549,7 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                 </Group>
                             </Stack>
                         </Card>
+                        
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                             <div className="border-b border-b-primary-light-200 p-3">
                                 <p className="font-semibold">{t('orderSummary')}</p>
