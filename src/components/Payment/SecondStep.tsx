@@ -49,7 +49,7 @@ interface StepPaymentProps {
   setPayment: (payment: string) => void;
   setBank: (bank: string) => void;
   loading: boolean;
-  voucher?: { name: string; amount: number };
+  voucher?: any;
 }
 
 const SecondStep = ({
@@ -66,7 +66,7 @@ const SecondStep = ({
   voucher,
 }: StepPaymentProps) => {
 
-
+  console.log('voucher', voucher);
   
   const { width } = useWindowSize();
   const classAcc = {
@@ -458,12 +458,14 @@ const SecondStep = ({
                 <p>{`Jumlah (${totalCount} Tiket)`}</p>
                 <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>
               </div>
-              {voucher && (
-                <div className='py-3 px-4 flex justify-between items-center'>
-                  <p>Voucher {voucher.name}</p>
-                  <p className='font-semibold'>Rp {(voucher.amount).toLocaleString('id-ID')}</p>
-                </div>
-              )}
+                {voucher && Array.isArray(voucher) && voucher.length > 0 ? (
+                  <div className='py-3 px-4 flex justify-between items-center'>
+                  <p>Voucher</p>
+                  <p className='font-semibold'>
+                    - Rp {voucher.reduce((total, v) => total + (v.amount || 0), 0).toLocaleString('id-ID')}
+                  </p>
+                  </div>
+                ) : null}
               <div className='py-3 px-4 flex justify-between items-center'>
                 <p>Biaya Admin</p>
                 <p className='font-semibold'>Rp {(detail.admin_fee * totalCount).toLocaleString('id-ID')}</p>
@@ -481,7 +483,7 @@ const SecondStep = ({
                     totalSubtotalPrice +
                     (detail.admin_fee * totalCount) +
                     (detail.ppn || 0) -
-                    (voucher ? voucher.amount : 0)
+                    (voucher ? voucher.reduce((total: any, v: { amount: any; }) => total + (v.amount || 0), 0) : 0)
                   ).toLocaleString('id-ID')}
                 </p>
               </div>

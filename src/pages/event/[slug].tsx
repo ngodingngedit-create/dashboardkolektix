@@ -145,7 +145,7 @@ const EventDetails = () => {
     const [bookmark, setBookmark] = useState(false);
     const [loadings, setLoadings] = useListState<string>();
     const [seatmapOpen, setSeatmapOpen] = useState<number>();
-    const [voucher, setVoucher] = useState<{id:number, name: string; amount: number }>();
+    const [voucher, setVoucher] = useState<{id:number, name: string; amount: number }[]>([]);
     const user = useLoggedUser();
 
     const clickOutsideChat = useClickOutside(() => {
@@ -416,6 +416,8 @@ const EventDetails = () => {
 
     // SUBMIT DATA
     const submitData = () => {
+        console.log('submitData');
+        console.log('voucher', voucher);
         setLoading(true);
         if (payment !== '') {
             getPaymentMethodById(payment);
@@ -432,14 +434,14 @@ const EventDetails = () => {
             event_id: detail?.id,
             admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
-            vouchers: voucher ? [{
-                voucher_id: voucher?.id,
-                voucher_code: voucher?.name,
-                voucher_amount: voucher?.amount
-            }] : [],
+            vouchers: voucher.length > 0 ? voucher.map(v => ({
+                voucher_id: v.id,
+                voucher_code: v.name,
+                voucher_amount: v.amount
+            })) : [],
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
             bank_code: bank ?? 'xendit',
             expiration_date: isoString,
             payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
@@ -714,10 +716,15 @@ const EventDetails = () => {
         return targetDate;
     }, []);
 
-    const cobaWK = (data:{id:number, name: string; amount: number }) => {
-        console.log("data Coba WK", data);
-        setVoucher(data);
+    const addVoucher = (data:{id:number, name: string; amount: number }) => {
+        console.log("add Voucher", data);
+        //setVoucher(...voucher, data);
+        setVoucher((prevVouchers) => [...prevVouchers, data]); 
     }
+
+    useEffect(() => {
+        console.log('voucher', voucher);
+    }, [voucher]);
 
     return !firstLoad && detail ? (
         detail && (
@@ -1089,7 +1096,7 @@ const EventDetails = () => {
 
                 {stepParams === '33' && <FirstStep 
                                             //onSubmitVoucher={e => setVoucher(e)} 
-                                            onSubmitVoucher={cobaWK}
+                                            onSubmitVoucher={addVoucher}
                                             detail={detail} 
                                             ticket={ticket} 
                                             totalSubtotalPrice={totalSubtotalPrice} 
@@ -1101,7 +1108,7 @@ const EventDetails = () => {
                                             setFormValid={setIsFormValid} 
                                         />}
                 {stepParams === '66' && <SecondStep voucher={voucher} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
-                {stepParams === '100' && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
+                {stepParams === '100' && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
                 {step === 2 && transactionData && (
                     <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
                         {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium" />}
@@ -1146,8 +1153,10 @@ const EventDetails = () => {
                                 </div>
                                 {voucher && (
                                     <div className="flex justify-between">
-                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
-                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                        {voucher.map((v) => (
+                                            <p key={v.id} className="text-xs text-grey mb-1">Voucher {v.name}</p>
+                                        ))}
+                                        <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}</p>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -1163,7 +1172,7 @@ const EventDetails = () => {
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     {transactionData.xendit_url ? (
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => router.push(transactionData.xendit_url)}>
@@ -1229,8 +1238,10 @@ const EventDetails = () => {
                                 </div>
                                 {voucher && (
                                     <div className="flex justify-between">
-                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
-                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                        {voucher.map((v) => (
+                                            <p key={v.id} className="text-xs text-grey mb-1">Voucher {v.name}</p>
+                                        ))}
+                                        <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}</p>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -1246,7 +1257,7 @@ const EventDetails = () => {
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     <Link href={`/success/${transactionData.invoice_no}`} target="_blank">
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">{loading ? <Spinner color="default" size="sm" /> : 'Cek Status Pembayaran'}</button>
