@@ -145,7 +145,7 @@ export default function Invoice() {
                                                         color: transStatus?.bgcolor
                                                     }}
                                                 />
-                                                <Text size="md" fw={400}>
+                                                <Text size="md" fw={400} c={transStatus?.bgcolor} className={`capitalize`}>
                                                     {transStatus?.name}
                                                 </Text>
                                             </Flex>
