@@ -681,31 +681,14 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 </div>
                             </div>
                         ) : (
-                            // Tampilkan Data Dummy
-                            <div className="flex h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
-                                <div className="w-full md:w-1/3 bg-gray-100 border-r border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0">
-                                    <ChatList name="Kolektix Support" lastMsg={defaultSupportContact.lastMsg} time={formatDate(defaultSupportContact.created_at)} key={defaultSupportContact.id} setSelected={setSelected} selected={selected} id={defaultSupportContact.id} setName={setName} setMessages={setMessages} messages={messages} inbox={defaultSupportContact.id} />
-                                </div>
-                                <div className="flex-1 flex flex-col">
-                                    <div className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto bg-chat w-full z-10">
-                                        {/* Tempat untuk menampilkan pesan kosong atau konten lainnya */}
-                                        <div className="flex justify-center items-center h-full">
-                                            <p className="text-gray-500 text-dark">Silakan pilih chat untuk melihat pesan.</p>
-                                        </div>
-                                    </div>
-                                    {/* Tambahkan input untuk mengirim pesan */}
-                                    <form onSubmit={handleButtonClick}>
-                                        <div className="flex items-center p-3 bg-white w-full shadow-md">
-                                            <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                            <button
-                                                className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
-                                                onClick={sendMessage}
-                                            >
-                                                <Image src={paperplane} alt='paperplane' />
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                            <div className="flex flex-col items-center justify-center h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 shadow-2xl overflow-x-hidden box-border">
+                                <p className="text-gray-500 text-dark mb-4">Silakan login untuk mengakses fitur chat.</p>
+                                <button
+                                    className="bg-primary-base text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+                                    onClick={() => setModalVisible(true)}
+                                >
+                                    Login
+                                </button>
                             </div>
                         )}
                     </AccordionItem>
