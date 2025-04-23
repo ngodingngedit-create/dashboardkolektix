@@ -502,12 +502,14 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id == user?.id)
                                             .sort((a, b) => {
+
                                                 const aChat = a.chats[0];
                                                 const bChat = b.chats[0];
                                                 if (!aChat && !bChat) return 0; 
-                                                if (!aChat) return 1; 
-                                                if (!bChat) return -1; 
-                                                return new Date(bChat.created_at).getTime() - new Date(aChat.created_at).getTime();
+                                                if (!aChat) return -1; 
+                                                if (!bChat) return 1; 
+                                                return new Date(aChat.created_at).getTime() - new Date(bChat.created_at).getTime();
+
                                             })
                                             .map((item: InboxListProps) => (
                                                 <ChatList
