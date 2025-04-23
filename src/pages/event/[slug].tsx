@@ -118,6 +118,7 @@ const EventDetails = () => {
     const [selected, setSelected] = useState(people[1]);
     const [payment, setPayment] = useState<string>('');
     const [paymentMethod, setPaymentMethod] = useState<any>(null);
+    const [venueLayout, setVenueLayout] = useState<any>(null);
     const [paymentList, setPaymentList] = useState<PaymentMethod[]>([]);
     const [form, setForm] = useState<Form[]>([]);
     const [error, setError] = useState<ErrorForm>({
@@ -389,6 +390,7 @@ const EventDetails = () => {
             .then((res: any) => {
                 //console.log('Response Data:', res.data); // Log data respons
 
+                setVenueLayout(res.data.has_venue_layout);
                 setDetail({...res.data, seatmap: res?.data?.seatmap ? JSON.parse(res?.data?.seatmap) : undefined});
                 setData(res.data.has_event_ticket.map((e: any) => ({...e, avaliable_seat_number: e?.avaliable_seat_number?.split(',')})));
                 ticketCount && prevPath === router.asPath ? setCounts(JSON.parse(ticketCount)) : initializeCounts(res.data.has_event_ticket);
@@ -988,7 +990,7 @@ const EventDetails = () => {
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
                                 {menu === 2 && (
                                     <div id="ticket-view">
-                                        <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
+                                        <TicketViewBlock venue={venueLayout} maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
                                     </div>
                                 )}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
@@ -1088,11 +1090,12 @@ const EventDetails = () => {
                             </div>
                             <div className="px-5 w-full text-dark">
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                                {menu === 2 && <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
+                                {menu === 2 && <TicketViewBlock venue={venueLayout} maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                             </div>
                         </>
                     ))}
+
 
                 {stepParams === '33' && <FirstStep 
                                             //onSubmitVoucher={e => setVoucher(e)} 

@@ -3,10 +3,14 @@ import DateTab from '@/components/DateTab';
 import { TicketProps } from '@/utils/globalInterface';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
-import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton, Image } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Context } from '@/pages/event/[slug]';
 import { useTranslation } from 'react-i18next';
+import config from '@/Config';
+import { Slide } from 'react-slideshow-image';
+import 'react-slideshow-image/dist/styles.css'
+import { Modal, ModalContent } from '@nextui-org/react';
 
 interface Props {
   counts: { [key: number]: number | string[] };
@@ -22,6 +26,7 @@ interface Props {
   selected: number;
   setSelected: (index: number) => void;
   storeLocalStorage: () => void;
+  venue: any;
 }
 
 const TicketViewBlock = ({
@@ -38,9 +43,12 @@ const TicketViewBlock = ({
   selected,
   setSelected,
   storeLocalStorage,
+  venue,
 }: Props) => {
   const { t } = useTranslation();
   const [edit, setEdit] = useState(false);
+  const [showVenue, setShowVenue] = useState(false);
+  const [venueID, setVenueID] = useState<number | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const { ticket, setTicket } = useContext(Context);
 
@@ -174,9 +182,43 @@ const TicketViewBlock = ({
           />
           <button></button>
         </div>
-        <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
-          <SummaryBody />
-        </Card>
+
+        <Stack >
+          
+          <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
+            <SummaryBody />
+          </Card>
+
+          <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
+            <Stack gap={15}>
+              <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
+                <Text size="sm" fw={600}>Venue Layout</Text>
+              </Flex>
+              <Divider />
+              <Stack gap={15}>
+                <Slide 
+                  autoplay={false}
+                >
+                  {venue?.map((e: { title: string, image:string }, i: number) => (
+                    <>
+                      <UnstyledButton 
+                        key={i}
+                        onClick={() => {
+                            setVenueID(i);
+                            setShowVenue(!showVenue);
+                          }
+                        }
+                      >
+                        <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
+                      </UnstyledButton>
+                    </>
+                  ))}
+                </Slide>
+              </Stack>
+            </Stack>
+          </Card>
+
+        </Stack>
       </Flex>
 
       <div className='flex justify-between items-center bg-[#eff5ff] px-5 py-3 rounded-b-xl shadow-md w-full fixed bottom-0 left-0 z-50'>
@@ -220,6 +262,33 @@ const TicketViewBlock = ({
           )}
         </div>
       </div>
+      <Modal
+        isOpen={showVenue}
+        onOpenChange={setShowVenue}
+        placement='auto'
+        size='4xl'
+        closeButton
+        aria-labelledby='modal-title'
+        aria-describedby='modal-description'
+      >
+        <ModalContent className='text-dark font-inter h-full'>
+        {(onClose) => {
+          return (
+            <div className="flex flex-col w-full h-full overflow-auto">
+              {venueID !== null && venue?.[venueID] && (
+                <div className="w-full max-w-4xl p-4">
+                  <Image
+                    src={`${config.assetUrl}event/${venue[venueID].image}`}
+                    alt="Venue Image"
+                    radius={8}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        }}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
