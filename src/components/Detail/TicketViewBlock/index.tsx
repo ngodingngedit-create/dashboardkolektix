@@ -204,7 +204,6 @@ const TicketViewBlock = ({
                       <UnstyledButton 
                         key={i}
                         onClick={() => {
-                            setVenueID(i);
                             setShowVenue(!showVenue);
                           }
                         }
@@ -275,15 +274,15 @@ const TicketViewBlock = ({
         {(onClose) => {
           return (
             <div className="flex flex-col w-full h-full overflow-auto">
-              {venueID !== null && venue?.[venueID] && (
-                <div className="w-full max-w-4xl p-4">
-                  <Image
-                    src={`${config.assetUrl}event/${venue[venueID].image}`}
-                    alt="Venue Image"
-                    radius={8}
-                  />
-                </div>
-              )}
+               <Slide 
+                  autoplay={false}
+                >
+                  {venue?.map((e: { title: string, image:string }, i: number) => (
+                    <>
+                      <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
+                    </>
+                  ))}
+                </Slide>
             </div>
           );
         }}
