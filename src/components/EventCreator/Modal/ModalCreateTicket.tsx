@@ -404,7 +404,7 @@ export default function ModalCreateTicket({
                     <InputField
                       error={Boolean(errors['event_schedule_date'])}
                       type='date'
-                      label='Tgl Event (form yg sama)'
+                      label='Tgl Event'
                       required
                       value={form.event_schedule_date && form.event_schedule_date}
                       minDateVal={form.ticket_date ? form.ticket_date : undefined}
