@@ -456,8 +456,9 @@ const eventItems = useMemo(() => {
     // setEditTicket({
     //   ...defaultForm,
     // });
-    setIdxTicket(undefined);
-    showAddTicket(true);
+    router.replace(`/edit-event/${data?.slug}?addTiket=true`);
+    //setIdxTicket(undefined);
+    //showAddTicket(true);
   };
 
   const deleteTicket = (idx: number) => {
@@ -795,6 +796,15 @@ const eventItems = useMemo(() => {
                   </Tabs>
                 </Tab>
                 <Tab title="Tiket">
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <h6 className="text-lg font-semibold">Tiket</h6>
+                    <Button
+                      label="Tambah Tiket"
+                      color="primary"
+                      onClick={onAddTicket}
+                      className="w-full md:w-auto"
+                    />
+                  </div>
                   <div className="px-3">
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (

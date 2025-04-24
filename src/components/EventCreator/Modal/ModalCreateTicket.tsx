@@ -38,6 +38,7 @@ interface ModalProps {
   idx?: number | null;
   setIdx: (idx?: number) => void;
   eventId?: number;
+  addTicketModal?: boolean;
 }
 
 export default function ModalCreateTicket({
@@ -50,6 +51,7 @@ export default function ModalCreateTicket({
   idx,
   setIdx,
   eventId,
+  addTicketModal,
 }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: '',
@@ -95,6 +97,13 @@ export default function ModalCreateTicket({
   useEffect(() => {
     setAddSeatMap(!!eventId);
   }, [eventId])
+
+  useEffect(() => {
+    if (addTicketModal) {
+      setOpenForm(null);
+      //setAddSeatMap(false);
+    }
+  }, [addTicketModal]);
 
   useEffect(() => {
     if (typeof openForm == 'number') {
@@ -282,7 +291,10 @@ export default function ModalCreateTicket({
                   ))}
                 </Stack>
 
-                <Button display={!eventId ? undefined : 'none'} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button 
+                  display={!eventId ? undefined : 'none'} 
+                  variant="light" size="md" 
+                  onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
 
@@ -392,15 +404,13 @@ export default function ModalCreateTicket({
                     <InputField
                       error={Boolean(errors['event_schedule_date'])}
                       type='date'
-                      label='Tgl Event'
+                      label='Tgl Event (form yg sama)'
                       required
                       value={form.event_schedule_date && form.event_schedule_date}
                       minDateVal={form.ticket_date ? form.ticket_date : undefined}
                       maxDateVal={endDate ? endDate : undefined}
                       onChange={(e: any) => {
-                        
                         e && setForm({ ...form, event_schedule_date: e.toString() })
-                        console.log('event_schedule_date',form);
                       }
                     }
                     />

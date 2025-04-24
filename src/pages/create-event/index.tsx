@@ -138,6 +138,7 @@ const CreateEvent = () => {
   const loggedUser = useLoggedUser();
   const { slug } = router.query;
   const [eventId, setEventId] = useState<number | null>(null);
+  const [addTicketModal, setAddTicketModal] = useState(false);
 
   useEffect(() => {
     getTagSuggestion();
@@ -148,6 +149,12 @@ const CreateEvent = () => {
     if (slug) getEventData();
   }, [slug]);
 
+  useEffect(() => {
+    if (router.query.addTiket === 'true') {
+      setAddTicketModal(true);
+      onAddTicket(); // Open the "Tambah Tiket" modal
+    }
+  }, [router.query.addTiket]);
 
   const getEventData = () => {
     setLoadingEvent(true);
@@ -209,6 +216,8 @@ const CreateEvent = () => {
     console.log("submit event",form);
     console.log("eventId",eventId);
     console.log("********************************************");
+    //return;
+
     const fetchMethod = eventId === null ? Post : Put
     setLoading(true); // Set loading ke true
     fetchMethod(eventId === null ? 'event' : 'event/' + eventId, {
@@ -713,19 +722,21 @@ const CreateEvent = () => {
         </div>
       </div>
       <div className='border border-t-primary-light-200 fixed bottom-0 w-full bg-white shadow-md'>
-        <div className='flex justify-between max-w-6xl px-8 py-4 text-dark items-center z-50'>
-          <p>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
-          <div className='flex gap-2'>
-            {!slug && (
-              <Button onClick={saveDraft} color='secondary' label='Draf' />
-            )}
-            <Button 
-              className={`whitespace-nowrap`}
-              onClick={submitEvent} 
-              color='primary' 
-              disabled={loading} // Nonaktifkan tombol saat loading
-              label={loading ? 'Loading...' : 'Simpan'} // Ubah label berdasarkan status loading
-            />
+        <div className='flex justify-center items-center px-8 py-4 text-dark z-50'>
+          <div className='flex flex-col md:flex-row justify-between items-center w-full'>
+            <p className='mb-4 md:mb-0'>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
+            <div className='flex gap-4'>
+              {!slug && (
+                <Button onClick={saveDraft} color='secondary' label='Draf' />
+              )}
+              <Button 
+                className={`whitespace-nowrap`}
+                onClick={submitEvent} 
+                color='primary' 
+                disabled={loading} // Nonaktifkan tombol saat loading
+                label={loading ? 'Loading...' : 'Simpan'} // Ubah label berdasarkan status loading
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -748,6 +759,7 @@ const CreateEvent = () => {
           data={editTicket}
           setIdx={setIdxTicket}
           idx={idxTicket}
+          addTicketModal={addTicketModal}
         />
       </Context.Provider>
     </>
