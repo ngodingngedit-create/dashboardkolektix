@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import useWindowSize from '@/utils/useWindowSize';
 import { EventProps } from '@/utils/globalInterface';
 import Image from 'next/image';
@@ -60,14 +60,15 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
-    onSubmitVoucher?: (data: {name: string, amount: number}) => void;
+
+    onSubmitVoucher?: (data: {id:number, name: string; amount: number }) => void;
 }
 
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
-    const [voucherField, setVoucherField] = useState('');
-    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
+    const [voucherFields, setVoucherFields] = useState(['', '']);
+    const [vouchers, setVouchers] = useState<{ name: string; amount: number }[]>([]);
     const { width } = useWindowSize();
     const userData = useLoggedUser();
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
@@ -155,8 +156,9 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
         }
     }, [userData]);
 
-    const handleGetVoucher = async () => {
-        if (!voucherField) return;
+    const handleGetVoucher = async (index: number) => {
+        console.log('handleGetVoucher');
+        if (!voucherFields[index]) return;
 
         await fetch<{
             event_id: number;
@@ -179,9 +181,9 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
             data: {
                 event_id: detail.id,
                 date: moment(new Date()).format('YYYY-MM-DD'),
-                code: voucherField,
+                code: voucherFields[index],
             },
-            before: () => setLoading.append('getvoucher'),
+            before: () => setLoading.append(`getvoucher-${index}`),
             success: (data) => {
                 const voucher = data?.voucher ?? data?.data?.voucher;
                 if (!voucher) return;
@@ -192,29 +194,36 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                 const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
-                    onSubmitVoucher && onSubmitVoucher({name: voucher, amount: discount});
-                    setVoucher({
-                        name: voucherField,
-                        amount: discount,
-                    });
+                    if (onSubmitVoucher) {
+                        onSubmitVoucher({ id: voucher.id, name: voucherFields[index], amount: discount });
+                    }
+                   
+                    const newVouchers = [...vouchers];
+                    newVouchers[index] = { name: voucherFields[index], amount: discount };
+                    setVouchers(newVouchers);
+
                 } else {
                     notifications.show({
                         message: 'Voucher Tidak Ditemukan',
                         color: 'red'
                     });
-                    setVoucherField('');
+                    const newVoucherFields = [...voucherFields];
+                    newVoucherFields[index] = '';
+                    setVoucherFields(newVoucherFields);
                 }
             },
-            complete: () => setLoading.filter(e => e != 'getvoucher'),
+            complete: () => setLoading.filter(e => e !== `getvoucher-${index}`),
             error: () => {
                 notifications.show({
                     message: 'Voucher Tidak Ditemukan',
                     color: 'red'
                 });
-                setVoucherField('');
+                const newVoucherFields = [...voucherFields];
+                newVoucherFields[index] = '';
+                setVoucherFields(newVoucherFields);
             },
         });
-    }   
+    }  
 
     return (
         width &&
@@ -234,20 +243,32 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             <Text fw={600}>Voucher</Text>
                         </Flex>
 
-                        <Group align="center">
-                            <TextInput
-                                w="100%"
-                                value={voucherField}
-                                onChange={e => setVoucherField(e.currentTarget.value)}
-                                placeholder="Masukan Kode Voucher"
-                            />
-                            <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
-                                Submit
-                            </Button>
-                            {voucher && (
-                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
-                            )}
-                        </Group>
+                        {voucherFields.map((field, index) => (
+                            <Group key={index}>
+                                <TextInput
+                                    w="100%"
+                                    value={field}
+                                    onChange={e => {
+                                        const newVoucherFields = [...voucherFields];
+                                        newVoucherFields[index] = e.currentTarget.value;
+                                        setVoucherFields(newVoucherFields);
+                                    }}
+                                    placeholder={`Masukan Kode Voucher ${index + 1}`}
+                                />
+                                <Button
+                                    loading={loading.includes(`getvoucher-${index}`)}
+                                    disabled={field.length < 3}
+                                    size="xs"
+                                    onClick={() => handleGetVoucher(index)}
+                                    className={`shrink-0`}
+                                >
+                                    Submit
+                                </Button>
+                                {vouchers[index] && (
+                                    <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                )}
+                            </Group>
+                        ))}
                     </Stack>
                 </Card>
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -277,14 +298,14 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             )}
                         </p>
                     </div>
-                    {voucher && (
-                        <div className="py-3 px-4 flex justify-between items-center">
+                    {vouchers.map((voucher, index) => (
+                        <div className="py-3 px-4 flex justify-between items-center" key={index}>
                             <p>Voucher {voucher.name}</p>
                             <p className="font-semibold">
                                 <NumberFormatter value={voucher.amount} />
                             </p>
                         </div>
-                    )}
+                    ))}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Biaya Admin</p>
                         <p className="font-semibold">
@@ -310,8 +331,8 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Total Pembayaran</p>
                         <p className="font-semibold">
-                            {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))) > 0 ? (
-                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - (voucher?.amount ?? 0)} />
+                            {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)) > 0 ? (
+                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)} />
                             ) : (
                                 <Text>Free</Text>
                             )}
@@ -530,22 +551,35 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
 
-                                <Group>
-                                    <TextInput
-                                        w="100%"
-                                        value={voucherField}
-                                        onChange={e => setVoucherField(e.currentTarget.value)}
-                                        placeholder="Masukan Kode Voucher"
-                                    />
-                                    <Button loading={loading.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
-                                        Submit
-                                    </Button>
-                                    {voucher && (
-                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
-                                    )}
-                                </Group>
+                                {voucherFields.map((field, index) => (
+                                    <Group key={index}>
+                                        <TextInput
+                                            w="100%"
+                                            value={field}
+                                            onChange={e => {
+                                                const newVoucherFields = [...voucherFields];
+                                                newVoucherFields[index] = e.currentTarget.value;
+                                                setVoucherFields(newVoucherFields);
+                                            }}
+                                            placeholder={`Masukan Kode Voucher ${index + 1}`}
+                                        />
+                                        <Button
+                                            loading={loading.includes(`getvoucher-${index}`)}
+                                            disabled={field.length < 3}
+                                            size="xs"
+                                            onClick={() => handleGetVoucher(index)}
+                                            className={`shrink-0`}
+                                        >
+                                            Submit
+                                        </Button>
+                                        {vouchers[index] && (
+                                            <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                        )}
+                                    </Group>
+                                ))}
                             </Stack>
                         </Card>
+                        
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                             <div className="border-b border-b-primary-light-200 p-3">
                                 <p className="font-semibold">{t('orderSummary')}</p>
@@ -583,18 +617,14 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                     )}
                                 </p>
                             </div>
-                            {voucher && voucher.amount > 0 ? (
+                            {vouchers.length > 0 && (
                                 <div className="py-3 px-4 flex justify-between items-center">
                                     <p>Voucher</p>
                                     <p className="font-semibold">
-                                        {voucher ? (
-                                            <NumberFormatter value={`-${voucher.amount}`} />
-                                        ) : (
-                                            <Text>Free</Text>
-                                        )}
+                                        -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
                                     </p>
                                 </div>
-                            ) : null}
+                            )}
                             {detail.ppn ? (
                                 <div className="py-3 px-4 flex justify-between items-center">
                                     <p>Tax</p>
@@ -610,8 +640,8 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>{t('totalPayment')}</p>
                                 <p className="font-semibold">
-                                    {((totalSubtotalPrice  - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
-                                        <NumberFormatter value={(totalSubtotalPrice  - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0))} />
+                                    {((totalSubtotalPrice  - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
+                                        <NumberFormatter value={(totalSubtotalPrice  - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) + detail.admin_fee * totalCount + (detail.ppn || 0))} />
                                     ) : (
                                         <Text>Free</Text>
                                     )}

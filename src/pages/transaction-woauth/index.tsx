@@ -105,6 +105,7 @@ const TransactionWithoutAuth = () => {
   };
 
   useEffect(() => {
+    console.log('TransactionWithoutAuth mounted');
     getDataFromIndexedDB().then((fetchedData) => {
       setData(fetchedData);
     }).catch((error) => {

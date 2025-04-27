@@ -74,7 +74,7 @@ interface StepPaymentProps {
 
 const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
     const { width } = useWindowSize();
-    const [voucherField, setVoucherField] = useState('');
+    const [voucherFields, setVoucherFields] = useState<string[]>(['', '']);
     const [form, setForm] = useState<Form[]>(forms);
     const [error, setError] = useState<ErrorForm>({
         nik: false,
@@ -84,7 +84,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         phone: false
     });
     const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
-    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
+    const [vouchers, setVouchers] = useState<{id:number, name: string; amount: number }[]>([]);
     const [loadings, setLoadings] = useListState<string>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
@@ -113,6 +113,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     const handleShowModal = () => {
         setShowModalTransaction(!showModalTransaction);
     };
+
+    useEffect(() => {
+        console.log('FirstStepUnlogged');
+    }, []);
 
     const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
         return (
@@ -254,12 +258,19 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             event_id: detail?.id,
             admin_fee: detail?.admin_fee,
             payment_method: payment ? payment : '4',
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) : 0,
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             bank_code: bank,
-            expiration_date: isoString
+            expiration_date: isoString,
+            vouchers: vouchers.length > 0 ? vouchers.map(v => ({
+                voucher_id: v.id,
+                voucher_code: v.name,
+                voucher_amount: v.amount
+            })) : [],
         };
+
+        //console.log('Payload:', payload);
 
         const ticketPriceTotal = ticket.reduce((e, n) => e + n.price * n.qty_ticket, 0);
         // if (ticketPriceTotal == 0) {
@@ -336,8 +347,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         }
     };
 
-    const handleGetVoucher = async () => {
-        if (!voucherField) return;
+    const handleGetVoucher = async (index: number) => {
+        if (!voucherFields[index]) return;
 
         await fetch<{
             event_id: number;
@@ -360,9 +371,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             data: {
                 event_id: detail.id,
                 date: moment(new Date()).format('YYYY-MM-DD'),
-                code: voucherField,
+                code: voucherFields[index],
             },
-            before: () => setLoadings.append('getvoucher'),
+            before: () => setLoadings.append(`getvoucher-${index}`),
             success: (data) => {
                 const voucher = data?.voucher ?? data?.data?.voucher;
                 if (!voucher) return;
@@ -373,22 +384,31 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
-                    setVoucher({name: voucher, amount: discount});
+
+                    setVouchers((prevVouchers) => [...prevVouchers, {data: voucher, id: voucher.id, name: voucherFields[index], amount: discount}]); 
                 } else {
                     notifications.show({
                         message: 'Voucher Tidak Ditemukan',
                         color: 'red'
                     });
-                    setVoucherField('');
+                    setVoucherFields((prev) => {
+                        const newFields = [...prev];
+                        newFields[index] = '';
+                        return newFields;
+                    });
                 }
             },
-            complete: () => setLoadings.filter(e => e != 'getvoucher'),
+            complete: () => setLoadings.filter(e => e !== `getvoucher-${index}`),
             error: () => {
                 notifications.show({
                     message: 'Voucher Tidak Ditemukan',
                     color: 'red'
                 });
-                setVoucherField('');
+                setVoucherFields((prev) => {
+                    const newFields = [...prev];
+                    newFields[index] = '';
+                    return newFields;
+                });
             },
         });
     }
@@ -412,20 +432,32 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     <Text fw={600}>Voucher</Text>
                                 </Flex>
 
-                                <Group align="center">
-                                    <TextInput
-                                        w="100%"
-                                        value={voucherField}
-                                        onChange={e => setVoucherField(e.currentTarget.value)}
-                                        placeholder="Masukan Kode Voucher"
-                                    />
-                                    <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
-                                        Submit
-                                    </Button>
-                                    {voucher && (
-                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
-                                    )}
-                                </Group>
+                                {voucherFields.map((field, index) => (
+                                    <Group align="center" key={index}>
+                                        <TextInput
+                                            w="100%"
+                                            value={field}
+                                            onChange={(e) => {
+                                                const newFields = [...voucherFields];
+                                                newFields[index] = e.currentTarget.value;
+                                                setVoucherFields(newFields);
+                                            }}
+                                            placeholder={`Masukan Kode Voucher ${index + 1}`}
+                                        />
+                                        <Button
+                                            loading={loadings.includes(`getvoucher-${index}`)}
+                                            disabled={field.length < 3}
+                                            size="xs"
+                                            onClick={() => handleGetVoucher(index)}
+                                            className={`shrink-0`}
+                                        >
+                                            Submit
+                                        </Button>
+                                        {vouchers[index] && (
+                                            <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                        )}
+                                    </Group>
+                                ))}
                             </Stack>
                         </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -763,20 +795,32 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             <Text fw={600}>Voucher</Text>
                                         </Flex>
 
-                                        <Group align="center">
-                                            <TextInput
-                                                w="100%"
-                                                value={voucherField}
-                                                onChange={e => setVoucherField(e.currentTarget.value)}
-                                                placeholder="Masukan Kode Voucher"
-                                            />
-                                            <Button loading={loadings.includes('getvoucher')} disabled={voucherField.length < 3} size="xs" onClick={handleGetVoucher} className={`shrink-0`}>
-                                                Submit
-                                            </Button>
-                                            {voucher && (
-                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
-                                            )}
-                                        </Group>
+                                        {voucherFields.map((field, index) => (
+                                            <Group align="center" key={index}>
+                                                <TextInput
+                                                    w="100%"
+                                                    value={field}
+                                                    onChange={(e) => {
+                                                        const newFields = [...voucherFields];
+                                                        newFields[index] = e.currentTarget.value;
+                                                        setVoucherFields(newFields);
+                                                    }}
+                                                    placeholder={`Masukan Kode Voucher ${index + 1}`}
+                                                />
+                                                <Button
+                                                    loading={loadings.includes(`getvoucher-${index}`)}
+                                                    disabled={field.length < 3}
+                                                    size="xs"
+                                                    onClick={() => handleGetVoucher(index)}
+                                                    className={`shrink-0`}
+                                                >
+                                                    Submit
+                                                </Button>
+                                                {vouchers[index] && (
+                                                    <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                                )}
+                                            </Group>
+                                        ))}
                                     </Stack>
                                 </Card>
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -816,18 +860,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             )}
                                         </p>
                                     </div>
-                                    {voucher && voucher.amount > 0 ? (
+                                    {vouchers.length > 0 && (
                                         <div className="py-3 px-4 flex justify-between items-center">
                                             <p>Voucher</p>
                                             <p className="font-semibold">
-                                                {voucher ? (
-                                                    <NumberFormatter value={`-${voucher.amount}`} />
-                                                ) : (
-                                                    <Text>Free</Text>
-                                                )}
+                                                -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
                                             </p>
                                         </div>
-                                    ) : null}
+                                    )}
                                     {detail.ppn ? (
                                         <div className="py-3 px-4 flex justify-between items-center">
                                             <p>Tax</p>
@@ -837,8 +877,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>Total Pembayaran</p>
                                         <p className="font-semibold">
-                                            {((totalSubtotalPrice - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0))) > 0 ? (
-                                                <NumberFormatter value={((totalSubtotalPrice - (voucher?.amount ?? 0) + detail.admin_fee * totalCount + (detail.ppn || 0)))} />
+                                            {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)) > 0 ? (
+                                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)} />
                                             ) : (
                                                 <Text>Free</Text>
                                             )}
@@ -951,7 +991,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             </div>
                             <div>
                                 <p className="text-xs text-grey mb-1">Total Pembayaran</p>
-                                <p className="text-sm mb-1">{xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString('id-ID')}` : `Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                <p className="text-sm mb-1">{xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString('id-ID')}` : `Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString('id-ID')}`}</p>
                             </div>
                         </div>
                     </div>
@@ -968,11 +1008,11 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 )}
                             </p>
                         </div>
-                        {voucher && (
-                            <div className="flex justify-between">
-                                <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
-                                <p className="text-xs mb-1">
-                                    <NumberFormatter value={voucher.amount} />
+                        {vouchers.length > 0 && (
+                            <div className="py-3 px-4 flex justify-between items-center">
+                                <p>Voucher</p>
+                                <p className="font-semibold">
+                                    -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
                                 </p>
                             </div>
                         )}
@@ -999,7 +1039,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         <div className="border-t-2 border-primary-light">
                             <div className="flex items-center justify-between font-semibold">
                                 <p>Total Pembayaran</p>
-                                <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                <p>{`Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString('id-ID')}`}</p>
                             </div>
                             {xenditInvoice ? (
                                 <Link href={`/success/${transactionData.invoice_no}`} target="_blank">

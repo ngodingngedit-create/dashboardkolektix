@@ -139,6 +139,19 @@ export interface CreatorProps {
   location: string | null;
 }
 
+export interface TransactionVoucherProps {
+  id: number;
+  transaction_id: number;
+  voucher_id: number;
+  voucher_code: string;
+  voucher_amount: string;
+  created_by: number | null;
+  updated_by: number | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface TransactionProps {
   date: string | number | Date;
   transaction_status_id: number;
@@ -153,6 +166,7 @@ export interface TransactionProps {
     updated_at: string;
     deleted_at: null | string;
   };
+  has_transaction_voucher: TransactionVoucherProps[];
   user_id: number;
   event_id: string;
   total_qty: number;
@@ -531,6 +545,7 @@ export interface TransactionTicketProps {
   updated_at: Date;
   deleted_at: Date | null;
   code: string;
+  etiket_number?: string; // Add this property if it exists in the data
 }
 
 interface IdentityProps {

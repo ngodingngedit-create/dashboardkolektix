@@ -115,6 +115,7 @@ const CreateEvent = () => {
     name: '',
     ticket_date: null,
     ticket_end: null,
+    event_schedule_date: null,
     qty: 0,
     price: 0,
     description: '',
@@ -137,14 +138,23 @@ const CreateEvent = () => {
   const loggedUser = useLoggedUser();
   const { slug } = router.query;
   const [eventId, setEventId] = useState<number | null>(null);
+  const [addTicketModal, setAddTicketModal] = useState(false);
 
   useEffect(() => {
     getTagSuggestion();
+    getEventData();
   }, []);
 
   useEffect(() => {
     if (slug) getEventData();
   }, [slug]);
+
+  useEffect(() => {
+    if (router.query.addTiket === 'true') {
+      setAddTicketModal(true);
+      onAddTicket(); // Open the "Tambah Tiket" modal
+    }
+  }, [router.query.addTiket]);
 
   const getEventData = () => {
     setLoadingEvent(true);
@@ -152,15 +162,20 @@ const CreateEvent = () => {
       .then((res: any) => {
         const { image_thumbnail, image, ...rest } = res.data;
         setForm({ ...rest });
-        setTicket((res.data.has_event_ticket as EventTicket[]).map((e: any) => ({...e, available_seat: e.available_seat_number.split(',')})));
+        setTicket(
+          (res.data.has_event_ticket as EventTicket[]).map((e: any) => ({
+            ...e,
+            available_seat: e.available_seat_number ? e.available_seat_number.split(',') : [],
+          }))
+        );
         setEventId(res.data.id);
         setImage(res.data.image_base64 as string);
 
-        const seatmap = JSON.parse(res.data.seatmap);
+        const seatmap = res.data.seatmap ? JSON.parse(res.data.seatmap) : [];
         setSeatmapData.setState(seatmap);
 
         setLoadingEvent(false);
-        console.log(res);
+        console.log("res:",res);
       })
       .catch((err) => {
         console.log(err);
@@ -197,6 +212,12 @@ const CreateEvent = () => {
   };
 
   const submitEvent = () => {
+    console.log("********************************************");
+    console.log("submit event",form);
+    console.log("eventId",eventId);
+    console.log("********************************************");
+    //return;
+
     const fetchMethod = eventId === null ? Post : Put
     setLoading(true); // Set loading ke true
     fetchMethod(eventId === null ? 'event' : 'event/' + eventId, {
@@ -205,7 +226,7 @@ const CreateEvent = () => {
       seatmap: form.tickets.some(e => e.ticket_category == 'Seated') && seatmapData ? JSON.stringify(seatmapData) : null
     })
       .then((res) => {
-        console.log(res);
+        console.log("submit event",res);
         toast.success(eventId === null ? 'Event Berhasil Dibuat' : 'Event Berhasil Diupdate');
         router.push(eventId === null ? '/create-event/success' : '/dashboard/my-event/' + slug);
       })
@@ -291,8 +312,9 @@ const CreateEvent = () => {
   };
 
   useEffect(() => {
-    console.log(form);
+    console.log("form",form);
   }, [form]);
+
 
   return (
     <>
@@ -700,19 +722,21 @@ const CreateEvent = () => {
         </div>
       </div>
       <div className='border border-t-primary-light-200 fixed bottom-0 w-full bg-white shadow-md'>
-        <div className='flex justify-between max-w-6xl px-8 py-4 text-dark items-center z-50'>
-          <p>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
-          <div className='flex gap-2'>
-            {!slug && (
-              <Button onClick={saveDraft} color='secondary' label='Draf' />
-            )}
-            <Button 
-              className={`whitespace-nowrap`}
-              onClick={submitEvent} 
-              color='primary' 
-              disabled={loading} // Nonaktifkan tombol saat loading
-              label={loading ? 'Loading...' : 'Simpan'} // Ubah label berdasarkan status loading
-            />
+        <div className='flex justify-center items-center px-8 py-4 text-dark z-50'>
+          <div className='flex flex-col md:flex-row justify-between items-center w-full'>
+            <p className='mb-4 md:mb-0'>Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
+            <div className='flex gap-4'>
+              {!slug && (
+                <Button onClick={saveDraft} color='secondary' label='Draf' />
+              )}
+              <Button 
+                className={`whitespace-nowrap`}
+                onClick={submitEvent} 
+                color='primary' 
+                disabled={loading} // Nonaktifkan tombol saat loading
+                label={loading ? 'Loading...' : 'Simpan'} // Ubah label berdasarkan status loading
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -735,6 +759,7 @@ const CreateEvent = () => {
           data={editTicket}
           setIdx={setIdxTicket}
           idx={idxTicket}
+          addTicketModal={addTicketModal}
         />
       </Context.Provider>
     </>

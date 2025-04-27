@@ -21,7 +21,7 @@ interface StepPaymentProps {
   xenditInvoice?: any;
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
-  voucher?: { name: string; amount: number };
+  voucher?: any;
 }
 
 const ThirdStep = ({
@@ -287,6 +287,9 @@ const ThirdStep = ({
                 </div>
               );
             })}
+
+            
+            {/* 
             <div className='border border-primary-light-200 rounded-lg bg-white'>
               <div className='border-b border-b-primary-light-200 py-4 px-6'>
                 <p className='font-semibold'>Metode Pembayaran</p>
@@ -312,6 +315,8 @@ const ThirdStep = ({
                 )}
               </div>
             </div>
+            */}
+
           </div>
           <div className='col-span-2 flex flex-col gap-5'>
             <div className='border border-primary-light-200 rounded-lg bg-white'>
@@ -385,6 +390,14 @@ const ThirdStep = ({
                     : 0}
                 </p>
               </div>
+              {voucher && Array.isArray(voucher) && voucher.length > 0 ? (
+                  <div className='flex items-center justify-between px-4'>
+                  <p className='text-sm mb-1'>Voucher</p>
+                  <p className='text-sm text-grey'>
+                    - Rp {voucher.reduce((total, v) => total + (v.amount || 0), 0).toLocaleString('id-ID')}
+                  </p>
+                  </div>
+                ) : null}
                 <div className='flex items-center justify-between px-4'>
                   <p className='text-sm mb-1'>Pajak</p>
                   <p className='text-sm text-grey'>

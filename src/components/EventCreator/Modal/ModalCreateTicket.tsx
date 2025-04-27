@@ -38,6 +38,7 @@ interface ModalProps {
   idx?: number | null;
   setIdx: (idx?: number) => void;
   eventId?: number;
+  addTicketModal?: boolean;
 }
 
 export default function ModalCreateTicket({
@@ -50,6 +51,7 @@ export default function ModalCreateTicket({
   idx,
   setIdx,
   eventId,
+  addTicketModal,
 }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: '',
@@ -58,6 +60,7 @@ export default function ModalCreateTicket({
     name: '',
     ticket_date: null,
     ticket_end: null,
+    event_schedule_date: null,
     qty: 0,
     price: 0,
     description: '',
@@ -73,6 +76,7 @@ export default function ModalCreateTicket({
       name: isNotEmpty(),
       ticket_date: isNotEmpty(),
       ticket_end: isNotEmpty(),
+      event_schedule_date: isNotEmpty(),
       qty: isNotEmpty(),
       price: isNotEmpty(),
       starting_time: isNotEmpty(),
@@ -95,6 +99,13 @@ export default function ModalCreateTicket({
   }, [eventId])
 
   useEffect(() => {
+    if (addTicketModal) {
+      setOpenForm(null);
+      //setAddSeatMap(false);
+    }
+  }, [addTicketModal]);
+
+  useEffect(() => {
     if (typeof openForm == 'number') {
       setForm(ticket[openForm]);
     } else {
@@ -107,6 +118,7 @@ export default function ModalCreateTicket({
   }, [slug]);
 
   const submitTicket = async () => {
+    console.log('submit ticket', form);
     if (eventId == undefined) {
       let arr = [...ticket];
       if (typeof idx === 'number') {
@@ -118,6 +130,8 @@ export default function ModalCreateTicket({
       setIsOpen(false);
       setIdx(undefined);
     } else {
+      console.log('*******************************************************');
+      console.log('submit ticket', form);
       await fetch<TicketPropsInputRequest, any>({
         url: `event-ticket/${idx}`,
         method: 'PUT',
@@ -156,6 +170,7 @@ export default function ModalCreateTicket({
 
   const handleSaveTicket = () => {
     // if (validate().hasErrors) return;
+    console.log('handleSaveTicket', form);
 
     if (typeof openForm === 'number') {
       setTicket(ticket.map((e, i) => i == openForm ? form : e));
@@ -201,6 +216,10 @@ export default function ModalCreateTicket({
 
     return result;
   }, [ticket, onSelectSeat, hoveredTicket]);
+
+  useEffect(() => {
+    console.log('FORM', form);
+  }, [form]);
 
   return (
     <div className='flex flex-col gap-2'>
@@ -272,7 +291,10 @@ export default function ModalCreateTicket({
                   ))}
                 </Stack>
 
-                <Button display={!eventId ? undefined : 'none'} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button 
+                  display={!eventId ? undefined : 'none'} 
+                  variant="light" size="md" 
+                  onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
 
@@ -377,11 +399,28 @@ export default function ModalCreateTicket({
                     value={form.name}
                     onChange={(e: any) => setForm({ ...form, name: e.target.value })}
                   />
+
+                  <div className='grid grid-cols-1 my-2'>
+                    <InputField
+                      error={Boolean(errors['event_schedule_date'])}
+                      type='date'
+                      label='Tgl Event'
+                      required
+                      value={form.event_schedule_date && form.event_schedule_date}
+                      minDateVal={form.ticket_date ? form.ticket_date : undefined}
+                      maxDateVal={endDate ? endDate : undefined}
+                      onChange={(e: any) => {
+                        e && setForm({ ...form, event_schedule_date: e.toString() })
+                      }
+                    }
+                    />
+                  </div>
+
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
                       error={Boolean(errors['ticket_date'])}
                       type='date'
-                      label='Tanggal Mulai Penjualan'
+                      label='Tgl Mulai Penjualan'
                       required
                       maxDateVal={endDate ? endDate : undefined}
                       value={form.ticket_date && form.ticket_date}
@@ -392,7 +431,7 @@ export default function ModalCreateTicket({
                     <InputField
                       error={Boolean(errors['ticket_end'])}
                       type='date'
-                      label='Tanggal Berakhir Penjualan'
+                      label='Tgl Berakhir Penjualan'
                       required
                       value={form.ticket_end && form.ticket_end}
                       minDateVal={form.ticket_date ? form.ticket_date : undefined}
@@ -400,6 +439,8 @@ export default function ModalCreateTicket({
                       onChange={(e: any) => e && setForm({ ...form, ticket_end: e.toString() })}
                     />
                   </div>
+
+                  
                   <div className='grid grid-cols-2 gap-2 my-2'>
                     <InputField
                       error={Boolean(errors['starting_time'])}

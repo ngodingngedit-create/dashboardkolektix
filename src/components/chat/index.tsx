@@ -502,26 +502,31 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                         (searchQuery ? searchedChats : chat)
                                             .filter((item: InboxListProps) => item.from.id == user?.id)
                                             .sort((a, b) => {
-                                                const aUnread = a.chats.some(chat => chat.status === "unread");
-                                                const bUnread = b.chats.some(chat => chat.status === "unread");
-                                                if (aUnread && !bUnread) return -1;
-                                                if (!aUnread && bUnread) return 1;
-                                                return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
+
+                                                const aChat = a.chats[0];
+                                                const bChat = b.chats[0];
+                                                if (!aChat && !bChat) return 0; 
+                                                if (!aChat) return -1; 
+                                                if (!bChat) return 1; 
+                                                return new Date(aChat.created_at).getTime() - new Date(bChat.created_at).getTime();
+
                                             })
-                                            .map((item: InboxListProps) => <ChatList
-                                                countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
-                                                name={item.to.has_creator?.name ?? '-'}
-                                                lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
-                                                time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
-                                                key={item.to.id} setSelected={setSelected}
-                                                selected={selected}
-                                                id={item?.to?.id ?? 0}
-                                                setName={setName}
-                                                setMessages={setMessages}
-                                                messages={messages}
-                                                inbox={item.id}
-                                                image={item.to.has_creator?.image_url}
-                                            />)
+                                            .map((item: InboxListProps) => (
+                                                <ChatList
+                                                    countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
+                                                    name={item.to.has_creator?.name ?? '-'}
+                                                    lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
+                                                    time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
+                                                    key={item.to.id} setSelected={setSelected}
+                                                    selected={selected}
+                                                    id={item?.to?.id ?? 0}
+                                                    setName={setName}
+                                                    setMessages={setMessages}
+                                                    messages={messages}
+                                                    inbox={item.id}
+                                                    image={item.to.has_creator?.image_url}
+                                                />
+                                            ))
                                     ) : (
                                         <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
                                     )}
@@ -678,31 +683,14 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, to
                                 </div>
                             </div>
                         ) : (
-                            // Tampilkan Data Dummy
-                            <div className="flex h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
-                                <div className="w-full md:w-1/3 bg-gray-100 border-r border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0">
-                                    <ChatList name="Kolektix Support" lastMsg={defaultSupportContact.lastMsg} time={formatDate(defaultSupportContact.created_at)} key={defaultSupportContact.id} setSelected={setSelected} selected={selected} id={defaultSupportContact.id} setName={setName} setMessages={setMessages} messages={messages} inbox={defaultSupportContact.id} />
-                                </div>
-                                <div className="flex-1 flex flex-col">
-                                    <div className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto bg-chat w-full z-10">
-                                        {/* Tempat untuk menampilkan pesan kosong atau konten lainnya */}
-                                        <div className="flex justify-center items-center h-full">
-                                            <p className="text-gray-500 text-dark">Silakan pilih chat untuk melihat pesan.</p>
-                                        </div>
-                                    </div>
-                                    {/* Tambahkan input untuk mengirim pesan */}
-                                    <form onSubmit={handleButtonClick}>
-                                        <div className="flex items-center p-3 bg-white w-full shadow-md">
-                                            <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                            <button
-                                                className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
-                                                onClick={sendMessage}
-                                            >
-                                                <Image src={paperplane} alt='paperplane' />
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                            <div className="flex flex-col items-center justify-center h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 shadow-2xl overflow-x-hidden box-border">
+                                <p className="text-gray-500 text-dark mb-4">Silakan login untuk mengakses fitur chat.</p>
+                                <button
+                                    className="bg-primary-base text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+                                    onClick={() => setModalVisible(true)}
+                                >
+                                    Login
+                                </button>
                             </div>
                         )}
                     </AccordionItem>

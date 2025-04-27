@@ -118,6 +118,7 @@ const EventDetails = () => {
     const [selected, setSelected] = useState(people[1]);
     const [payment, setPayment] = useState<string>('');
     const [paymentMethod, setPaymentMethod] = useState<any>(null);
+    const [venueLayout, setVenueLayout] = useState<any>(null);
     const [paymentList, setPaymentList] = useState<PaymentMethod[]>([]);
     const [form, setForm] = useState<Form[]>([]);
     const [error, setError] = useState<ErrorForm>({
@@ -145,7 +146,7 @@ const EventDetails = () => {
     const [bookmark, setBookmark] = useState(false);
     const [loadings, setLoadings] = useListState<string>();
     const [seatmapOpen, setSeatmapOpen] = useState<number>();
-    const [voucher, setVoucher] = useState<{ name: string; amount: number }>();
+    const [voucher, setVoucher] = useState<{id:number, name: string; amount: number }[]>([]);
     const user = useLoggedUser();
 
     const clickOutsideChat = useClickOutside(() => {
@@ -389,6 +390,7 @@ const EventDetails = () => {
             .then((res: any) => {
                 //console.log('Response Data:', res.data); // Log data respons
 
+                setVenueLayout(res.data.has_venue_layout);
                 setDetail({...res.data, seatmap: res?.data?.seatmap ? JSON.parse(res?.data?.seatmap) : undefined});
                 setData(res.data.has_event_ticket.map((e: any) => ({...e, avaliable_seat_number: e?.avaliable_seat_number?.split(',')})));
                 ticketCount && prevPath === router.asPath ? setCounts(JSON.parse(ticketCount)) : initializeCounts(res.data.has_event_ticket);
@@ -413,7 +415,11 @@ const EventDetails = () => {
         userData !== undefined ? setIsLogin(true) : setIsLogin(false);
     }, []);
 
+
+    // SUBMIT DATA
     const submitData = () => {
+        console.log('submitData');
+        console.log('voucher', voucher);
         setLoading(true);
         if (payment !== '') {
             getPaymentMethodById(payment);
@@ -424,16 +430,20 @@ const EventDetails = () => {
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
-        //console.log(userId);
 
         var payload: { [key: string]: any } = {
             user_id: userId,
             event_id: detail?.id,
             admin_fee: detail?.admin_fee ?? 0,
             payment_status: 'pending',
+            vouchers: voucher.length > 0 ? voucher.map(v => ({
+                voucher_id: v.id,
+                voucher_code: v.name,
+                voucher_amount: v.amount
+            })) : [],
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - (voucher ? voucher.amount : 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
             bank_code: bank ?? 'xendit',
             expiration_date: isoString,
             payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
@@ -569,6 +579,9 @@ const EventDetails = () => {
     const isOnePayment = (detail?.has_event_payment_method.length ?? 2) <= 1;
 
     const submitForm = () => {
+
+        console.log('submitForm');
+
         if (detail) {
             if (isOnePayment) {
                 console.log('isOnePayment');
@@ -704,6 +717,16 @@ const EventDetails = () => {
 
         return targetDate;
     }, []);
+
+    const addVoucher = (data:{id:number, name: string; amount: number }) => {
+        console.log("add Voucher", data);
+        //setVoucher(...voucher, data);
+        setVoucher((prevVouchers) => [...prevVouchers, data]); 
+    }
+
+    useEffect(() => {
+        console.log('voucher', voucher);
+    }, [voucher]);
 
     return !firstLoad && detail ? (
         detail && (
@@ -967,7 +990,7 @@ const EventDetails = () => {
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
                                 {menu === 2 && (
                                     <div id="ticket-view">
-                                        <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
+                                        <TicketViewBlock venue={venueLayout} maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />
                                     </div>
                                 )}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
@@ -1067,15 +1090,28 @@ const EventDetails = () => {
                             </div>
                             <div className="px-5 w-full text-dark">
                                 {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                                {menu === 2 && <TicketViewBlock maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
+                                {menu === 2 && <TicketViewBlock venue={venueLayout} maxOrder={detail.max_buy_ticket} isGratis={isGratis} selected={selectedDate} setSelected={setSelectedDate} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} totalCount={totalCount} storeLocalStorage={setLocalStorageValue} totalSubtotalPrice={totalSubtotalPrice} setStep={setStep} scrollToTop={scrollToTop} />}
                                 {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                             </div>
                         </>
                     ))}
 
-                {stepParams === '33' && <FirstStep onSubmitVoucher={e => setVoucher(e)} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} form={form} setForm={setForm} error={error} onSubmit={submitForm} setFormValid={setIsFormValid} />}
+
+                {stepParams === '33' && <FirstStep 
+                                            //onSubmitVoucher={e => setVoucher(e)} 
+                                            onSubmitVoucher={addVoucher}
+                                            detail={detail} 
+                                            ticket={ticket} 
+                                            totalSubtotalPrice={totalSubtotalPrice} 
+                                            totalCount={totalCount} 
+                                            form={form} 
+                                            setForm={setForm} 
+                                            error={error} 
+                                            onSubmit={submitForm} 
+                                            setFormValid={setIsFormValid} 
+                                        />}
                 {stepParams === '66' && <SecondStep voucher={voucher} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
-                {stepParams === '100' && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
+                {stepParams === '100' && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
                 {step === 2 && transactionData && (
                     <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
                         {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium" />}
@@ -1120,8 +1156,10 @@ const EventDetails = () => {
                                 </div>
                                 {voucher && (
                                     <div className="flex justify-between">
-                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
-                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                        {voucher.map((v) => (
+                                            <p key={v.id} className="text-xs text-grey mb-1">Voucher {v.name}</p>
+                                        ))}
+                                        <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}</p>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -1137,7 +1175,7 @@ const EventDetails = () => {
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     {transactionData.xendit_url ? (
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => router.push(transactionData.xendit_url)}>
@@ -1203,8 +1241,10 @@ const EventDetails = () => {
                                 </div>
                                 {voucher && (
                                     <div className="flex justify-between">
-                                        <p className="text-xs text-grey mb-1">Voucher {voucher.name}</p>
-                                        <p className="text-xs mb-1">Rp {voucher.amount.toLocaleString('id-ID')}</p>
+                                        {voucher.map((v) => (
+                                            <p key={v.id} className="text-xs text-grey mb-1">Voucher {v.name}</p>
+                                        ))}
+                                        <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}</p>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -1220,7 +1260,7 @@ const EventDetails = () => {
                                 <div className="border-t-2 border-primary-light">
                                     <div className="flex items-center justify-between font-semibold">
                                         <p>Total Pembayaran</p>
-                                        <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.amount : 0)).toLocaleString('id-ID')}`}</p>
+                                        <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString('id-ID')}`}</p>
                                     </div>
                                     <Link href={`/success/${transactionData.invoice_no}`} target="_blank">
                                         <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">{loading ? <Spinner color="default" size="sm" /> : 'Cek Status Pembayaran'}</button>
