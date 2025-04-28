@@ -67,7 +67,7 @@ interface StepPaymentProps {
 const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
-    const [voucherFields, setVoucherFields] = useState(['', '']);
+    const [voucherFields, setVoucherFields] = useState(['']);
     const [vouchers, setVouchers] = useState<{ name: string; amount: number }[]>([]);
     const { width } = useWindowSize();
     const userData = useLoggedUser();
