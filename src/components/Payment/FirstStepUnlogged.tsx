@@ -74,7 +74,7 @@ interface StepPaymentProps {
 
 const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
     const { width } = useWindowSize();
-    const [voucherFields, setVoucherFields] = useState<string[]>(['', '']);
+    const [voucherFields, setVoucherFields] = useState<string[]>(['']);
     const [form, setForm] = useState<Form[]>(forms);
     const [error, setError] = useState<ErrorForm>({
         nik: false,
@@ -350,6 +350,15 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     const handleGetVoucher = async (index: number) => {
         if (!voucherFields[index]) return;
 
+        const isDuplicate = vouchers.some((v) => v.name === voucherFields[index]);
+        if (isDuplicate) {
+            notifications.show({
+                message: 'Voucher sudah digunakan.',
+                color: 'red'
+            });
+            return;
+        }
+
         await fetch<{
             event_id: number;
             date: string;
@@ -413,6 +422,29 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         });
     }
 
+    const handleAddVoucherField = () => {
+        //console.log('handleAddVoucherField');
+        //console.log(detail.max_use_voucher)
+        //setVoucherFields([...voucherFields, '']);
+        if (voucherFields.length < (detail.max_use_voucher ?? 0)) {
+            setVoucherFields([...voucherFields, '']);
+        } else {
+            notifications.show({
+                message: 'Maksimal voucher sudah digunakan',
+                color: 'red'
+            });
+        }
+    };
+
+    const handleCancelVoucher = (index: number) => {
+        const newVoucherFields = [...voucherFields];
+        const newVouchers = [...vouchers];
+        newVoucherFields[index] = '';
+        newVouchers.splice(index, 1);
+        setVoucherFields(newVoucherFields);
+        setVouchers(newVouchers.filter(Boolean));
+    };
+
     return step === 0 ? (
         <>
             {width &&
@@ -433,7 +465,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 </Flex>
 
                                 {voucherFields.map((field, index) => (
-                                    <Group align="center" key={index}>
+                                    <Group key={index}>
                                         <TextInput
                                             w="100%"
                                             value={field}
@@ -454,10 +486,29 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             Submit
                                         </Button>
                                         {vouchers[index] && (
-                                            <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    size="xs"
+                                                    color="red"
+                                                    onClick={() => handleCancelVoucher(index)}
+                                                    className="shrink-0"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                            </>
                                         )}
                                     </Group>
                                 ))}
+                                <Button
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={handleAddVoucherField}
+                                    className="mt-2"
+                                >
+                                    + Tambah Voucher
+                                </Button>
                             </Stack>
                         </Card>
                         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -796,7 +847,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                         </Flex>
 
                                         {voucherFields.map((field, index) => (
-                                            <Group align="center" key={index}>
+                                            <Group key={index}>
                                                 <TextInput
                                                     w="100%"
                                                     value={field}
@@ -817,10 +868,29 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                                     Submit
                                                 </Button>
                                                 {vouchers[index] && (
-                                                    <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                                    <>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="xs"
+                                                            color="red"
+                                                            onClick={() => handleCancelVoucher(index)}
+                                                            className="shrink-0"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                                    </>
                                                 )}
                                             </Group>
                                         ))}
+                                        <Button
+                                            variant="outline"
+                                            size="xs"
+                                            onClick={handleAddVoucherField}
+                                            className="mt-2"
+                                        >
+                                            + Tambah Voucher
+                                        </Button>
                                     </Stack>
                                 </Card>
                                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -860,7 +930,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             )}
                                         </p>
                                     </div>
-                                    {vouchers.length > 0 && (
+                                     {vouchers.length > 0 && (
                                         <div className="py-3 px-4 flex justify-between items-center">
                                             <p>Voucher</p>
                                             <p className="font-semibold">
@@ -868,6 +938,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             </p>
                                         </div>
                                     )}
+                                    {/*{vouchers.map((voucher, index) => (
+                                        <div className="py-3 px-4 flex justify-between items-center" key={index}>
+                                            <p>Voucher {voucher.name}</p>
+                                            <p className="font-semibold">
+                                                -<NumberFormatter value={voucher.amount} />
+                                            </p>
+                                        </div>
+                                    ))}*/}
                                     {detail.ppn ? (
                                         <div className="py-3 px-4 flex justify-between items-center">
                                             <p>Tax</p>

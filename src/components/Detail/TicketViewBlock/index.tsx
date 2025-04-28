@@ -137,6 +137,10 @@ const TicketViewBlock = ({
     </Stack>
   )
 
+  useEffect(() => {
+    console.log('venue', venue);
+  }, [venue]);
+
   return (
     <div className='text-dark my-5 '>
       <Drawer
@@ -189,33 +193,35 @@ const TicketViewBlock = ({
             <SummaryBody />
           </Card>
 
-          <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
-            <Stack gap={15}>
-              <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
-                <Text size="sm" fw={600}>Venue Layout</Text>
-              </Flex>
-              <Divider />
+          {venue?.length > 0 && (
+            <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
               <Stack gap={15}>
-                <Slide 
-                  autoplay={false}
-                >
-                  {venue?.map((e: { title: string, image:string }, i: number) => (
-                    <>
-                      <UnstyledButton 
-                        key={i}
-                        onClick={() => {
-                            setShowVenue(!showVenue);
+                <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
+                  <Text size="sm" fw={600}>Venue Layout</Text>
+                </Flex>
+                <Divider />
+                <Stack gap={15}>
+                  <Slide 
+                    autoplay={false}
+                  >
+                    {venue?.map((e: { title: string, image: string }, i: number) => (
+                      <>
+                        <UnstyledButton 
+                          key={i}
+                          onClick={() => {
+                              setShowVenue(!showVenue);
+                            }
                           }
-                        }
-                      >
-                        <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
-                      </UnstyledButton>
-                    </>
-                  ))}
-                </Slide>
+                        >
+                          <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
+                        </UnstyledButton>
+                      </>
+                    ))}
+                  </Slide>
+                </Stack>
               </Stack>
-            </Stack>
-          </Card>
+            </Card>
+          )}
 
         </Stack>
       </Flex>

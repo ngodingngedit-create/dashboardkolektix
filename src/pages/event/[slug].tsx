@@ -718,15 +718,26 @@ const EventDetails = () => {
         return targetDate;
     }, []);
 
-    const addVoucher = (data:{id:number, name: string; amount: number }) => {
-        console.log("add Voucher", data);
-        //setVoucher(...voucher, data);
-        setVoucher((prevVouchers) => [...prevVouchers, data]); 
-    }
+    const addVoucher = (data: { id: number; name: string; amount: number }) => {
+        const isDuplicate = voucher.some((v) => v.id === data.id);
+        if (isDuplicate) {
+            notifications.show({
+                color: 'red',
+                position: 'top-right',
+                message: 'Voucher sudah digunakan.'
+            });
+            return;
+        }
+        setVoucher((prevVouchers) => [...prevVouchers, data]);
+    };
 
-    useEffect(() => {
-        console.log('voucher', voucher);
-    }, [voucher]);
+    const handleCancelVoucher = (index: number) => {
+        setVoucher((prevVouchers) => prevVouchers.filter((_, i) => i !== index));
+    };
+
+    //useEffect(() => {
+    //    console.log('voucher', voucher);
+    //}, [voucher]);
 
     return !firstLoad && detail ? (
         detail && (
@@ -1098,8 +1109,8 @@ const EventDetails = () => {
 
 
                 {stepParams === '33' && <FirstStep 
-                                            //onSubmitVoucher={e => setVoucher(e)} 
                                             onSubmitVoucher={addVoucher}
+                                            onCancelVoucher={handleCancelVoucher}
                                             detail={detail} 
                                             ticket={ticket} 
                                             totalSubtotalPrice={totalSubtotalPrice} 

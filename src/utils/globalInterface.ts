@@ -364,6 +364,7 @@ export interface EventProps {
       total_saldo_event: string;
   }
   seatmap?: SeatmapData[];
+  max_use_voucher?: number;
 }
 
 interface EventSocmed {
