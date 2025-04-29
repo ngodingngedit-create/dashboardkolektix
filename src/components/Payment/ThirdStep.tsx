@@ -108,7 +108,7 @@ const ThirdStep = ({
             )}
           </div>
         </div>
-        <div className='bg-white mt-1'>
+        {/* <div className='bg-white mt-1'>
           <div className='border-b-2 p-3 border-primary-light'>
             <p className='font-semibold'>Metode Pembayaran</p>
           </div>
@@ -132,7 +132,7 @@ const ThirdStep = ({
               </>
             )}
           </div>
-        </div>
+        </div> */}
         <div className='bg-white mt-1'>
           <div className='border-b-2 p-3 border-primary-light flex flex-col gap-2'>
             <div className='flex justify-between'>
@@ -143,12 +143,23 @@ const ThirdStep = ({
                 Rp{transactionData.total_price.toLocaleString('id-ID')}
               </p>
             </div>
-            {voucher && (
-              <div className='py-3 px-4 flex justify-between items-center'>
-                <p>Voucher {voucher.name}</p>
-                <p className='font-semibold'>Rp {(voucher.amount).toLocaleString('id-ID')}</p>
-              </div>
-            )}
+            {voucher && voucher.length > 0 && (
+  <>
+          {voucher.map((v) => (
+            <div key={v.id} className='flex justify-between items-center'>
+              <p className='text-xs text-grey mb-1'>Voucher {v.name}</p>
+              <p className='text-xs mb-1'>- Rp {v.amount.toLocaleString('id-ID')}</p>
+            </div>
+          ))}
+          {/* Total voucher deductions if needed */}
+            <div className='flex justify-between items-center'>
+              <p className='text-xs text-grey mb-1'>Total Voucher Discount</p>
+              <p className='text-xs mb-1'>
+                - Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}
+              </p>
+            </div>
+          </>
+        )}
             <div className='flex justify-between items-center'>
               <p className='text-xs text-grey mb-1'>Pajak</p>
               <p className='text-xs mb-1'>
