@@ -62,12 +62,13 @@ interface StepPaymentProps {
     setFormValid: (valid: boolean) => void;
 
     onSubmitVoucher?: (data: {id:number, name: string; amount: number }) => void;
+    onCancelVoucher?: (index:number) => void;
 }
 
-const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
+const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
-    const [voucherFields, setVoucherFields] = useState(['', '']);
+    const [voucherFields, setVoucherFields] = useState(['']);
     const [vouchers, setVouchers] = useState<{ name: string; amount: number }[]>([]);
     const { width } = useWindowSize();
     const userData = useLoggedUser();
@@ -160,6 +161,15 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
         console.log('handleGetVoucher');
         if (!voucherFields[index]) return;
 
+        const isDuplicate = vouchers.some((v) => v.name === voucherFields[index]);
+        if (isDuplicate) {
+            notifications.show({
+                message: 'Voucher sudah digunakan.',
+                color: 'red'
+            });
+            return;
+        }
+
         await fetch<{
             event_id: number;
             date: string;
@@ -225,6 +235,31 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
         });
     }  
 
+    const handleAddVoucherField = () => {
+        //console.log('handleAddVoucherField');
+        //console.log(detail.max_use_voucher)
+        //setVoucherFields([...voucherFields, '']);
+        if (voucherFields.length < (detail.max_use_voucher ?? 0)) {
+            setVoucherFields([...voucherFields, '']);
+        } else {
+            notifications.show({
+                message: 'Maksimal voucher sudah digunakan',
+                color: 'red'
+            });
+        }
+      
+    };
+
+    const handleCancelVoucher = (index: number) => {
+        onCancelVoucher && onCancelVoucher(index);
+        const newVoucherFields = [...voucherFields];
+        const newVouchers = [...vouchers];
+        newVoucherFields[index] = '';
+        newVouchers.splice(index, 1);
+        setVoucherFields(newVoucherFields);
+        setVouchers(newVouchers.filter(Boolean));
+    };
+
     return (
         width &&
         (width < 768 ? (
@@ -265,10 +300,30 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                     Submit
                                 </Button>
                                 {vouchers[index] && (
-                                    <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="xs"
+                                            color="red"
+                                            onClick={() => handleCancelVoucher(index)}
+                                            className="shrink-0"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                    </>
                                 )}
+                                
                             </Group>
                         ))}
+                        <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={handleAddVoucherField}
+                            className="mt-2"
+                        >
+                            + Tambah Voucher
+                        </Button>
                     </Stack>
                 </Card>
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
@@ -573,10 +628,29 @@ const FirstStep = ({ onSubmitVoucher, detail, ticket, totalCount, onSubmit, form
                                             Submit
                                         </Button>
                                         {vouchers[index] && (
-                                            <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    size="xs"
+                                                    color="red"
+                                                    onClick={() => handleCancelVoucher(index)}
+                                                    className="shrink-0"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
+                                            </>
                                         )}
                                     </Group>
                                 ))}
+                                <Button
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={handleAddVoucherField}
+                                    className="mt-2"
+                                >
+                                    + Tambah Voucher
+                                </Button>
                             </Stack>
                         </Card>
                         
