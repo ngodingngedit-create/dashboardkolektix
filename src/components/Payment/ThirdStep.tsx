@@ -14,6 +14,12 @@ import { formatDate } from '@/utils/useFormattedDate';
 import { useRouter } from 'next/router';
 import Images from '../Images';
 
+interface Voucher {
+  id: number;
+  name: string;
+  amount: number;
+}
+
 interface StepPaymentProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -21,7 +27,7 @@ interface StepPaymentProps {
   xenditInvoice?: any;
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
-  voucher?: any;
+  voucher?: Voucher[]; 
 }
 
 const ThirdStep = ({
@@ -145,21 +151,20 @@ const ThirdStep = ({
             </div>
             {voucher && voucher.length > 0 && (
   <>
-          {voucher.map((v) => (
-            <div key={v.id} className='flex justify-between items-center'>
-              <p className='text-xs text-grey mb-1'>Voucher {v.name}</p>
-              <p className='text-xs mb-1'>- Rp {v.amount.toLocaleString('id-ID')}</p>
-            </div>
-          ))}
-          {/* Total voucher deductions if needed */}
-            <div className='flex justify-between items-center'>
-              <p className='text-xs text-grey mb-1'>Total Voucher Discount</p>
-              <p className='text-xs mb-1'>
-                - Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString('id-ID')}
-              </p>
-            </div>
-          </>
-        )}
+    {voucher.map((v: Voucher) => (
+      <div key={v.id} className='flex justify-between items-center'>
+        <p className='text-xs text-grey mb-1'>Voucher {v.name}</p>
+        <p className='text-xs mb-1'>- Rp {v.amount.toLocaleString('id-ID')}</p>
+      </div>
+    ))}
+    <div className='flex justify-between items-center'>
+      <p className='text-xs text-grey mb-1'>Total Voucher Discount</p>
+      <p className='text-xs mb-1'>
+        - Rp {voucher.reduce((sum: number, v: Voucher) => sum + v.amount, 0).toLocaleString('id-ID')}
+      </p>
+    </div>
+  </>
+)}
             <div className='flex justify-between items-center'>
               <p className='text-xs text-grey mb-1'>Pajak</p>
               <p className='text-xs mb-1'>
@@ -174,10 +179,15 @@ const ThirdStep = ({
               </p>
             </div>
             <div className='border-t-2 border-primary-light'>
-              <div className='flex items-center justify-between font-semibold'>
-                <p>Total Pembayaran</p>
-                <p>{`Rp${(transactionData.grandtotal - (voucher?.amount ?? 0)).toLocaleString('id-ID')}`}</p>
-              </div>
+            <div className='flex items-center justify-between font-semibold'>
+              <p>Total Pembayaran</p>
+              <p>
+                {`Rp${(
+                  transactionData.grandtotal - 
+                  (voucher?.reduce((sum, v) => sum + v.amount, 0) ?? 0)
+                ).toLocaleString('id-ID')}`}
+              </p>
+            </div>
               {/* <button
                 className='w-full bg-primary-dark text-white py-2 rounded-lg my-3 disabled:bg-primary-disabled disabled:cursor-not-allowed'
                 disabled={loading}
