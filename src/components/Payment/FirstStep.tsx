@@ -196,12 +196,24 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
             before: () => setLoading.append(`getvoucher-${index}`),
             success: (data) => {
                 const voucher = data?.voucher ?? data?.data?.voucher;
+                console.log('voucher wk', voucher.is_multiply);
                 if (!voucher) return;
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
                 const isStatusValid = voucher.status == 1;
                 const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
-                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                let discount = 0;
+
+                if (voucher.is_multiply) {
+                    discount = voucher.type == 'persentase' 
+                        ? totalSubtotalPrice * voucher.discount / 100 * totalCount 
+                        : voucher.discount * totalCount;
+                } else {
+                    discount = voucher.type == 'persentase' 
+                        ? totalSubtotalPrice * voucher.discount / 100 
+                        : voucher.discount;
+                }
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
                     if (onSubmitVoucher) {
