@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, createContext } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
+import React, { useState, useMemo, useCallback, useEffect, createContext, useRef } from 'react';import EventCardCreator from '@/components/Card/EventCard/creator';
 import { useAsyncList } from '@react-stately/data';
 import config from '@/Config';
 import { useRouter } from 'next/router';
@@ -48,6 +48,8 @@ import fetch from '@/utils/fetch';
 import { notifications } from '@mantine/notifications';
 import _ from 'lodash';
 import { useListState, UseListStateHandlers } from '@mantine/hooks';
+import QrCode from '@/components/QrCode';
+
 
 
 
@@ -125,11 +127,10 @@ const MyEventDetail = () => {
   const [invitationFilter, setInvitationFilter] = useState('');
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
-
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
 
   const getInvitationCategory = async () => {
-    await fetch<any, CategoryResponse[]>({
+    await fetch<any, CategoryResponse>({
       url: 'invitation-category',
       method: 'GET',
       data: {},
@@ -585,6 +586,32 @@ const eventItems = useMemo(() => {
               withoutButton
               shareLink={window.location.origin + '/event/' + data.slug}
             />
+
+            <div className='flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4'>
+              <h5 className='text-lg font-semibold mb-2'>Scan QR Code</h5>
+              <QrCode 
+                slug={`${window.location.origin}/event/${data.slug}`} 
+                errorCorrectionLevel="H" 
+                margin={8} 
+                logoSizeRatio={0.15} 
+              />
+              <Button
+                label="Download QR Code"
+                color="primary"
+                className="mt-4"
+                onClick={() => {
+                  const qrCodeElement = document.querySelector('.qrcode img') as HTMLImageElement;
+                  if (qrCodeElement) {
+                    const link = document.createElement('a');
+                    link.href = qrCodeElement.src;
+                    link.download = `${data.slug}-qrcode.png`;
+                    link.click();
+                  }
+                }}
+              />
+            </div>
+
+
           <div className='text-center w-full my-4'>
               <Button
                 label='Check-in'

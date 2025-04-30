@@ -1120,6 +1120,7 @@ const EventDetails = () => {
                                             error={error} 
                                             onSubmit={submitForm} 
                                             setFormValid={setIsFormValid} 
+                                            haveVoucher={voucher}
                                         />}
                 {stepParams === '66' && <SecondStep voucher={voucher} detail={detail} ticket={ticket} totalSubtotalPrice={totalSubtotalPrice} totalCount={totalCount} onSubmit={submitData} payment={payment} setPayment={setPayment} setBank={setBank} loading={loading} paymentList={detail.has_event_payment_method.map(e => e.has_payment_method)} />}
                 {stepParams === '100' && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
