@@ -28,6 +28,8 @@ export default function ModalTime({ isOpen, setIsOpen, form, setForm }: ModalPro
     setIsOpen(false);
   };
 
+
+
   return (
     <div className='flex flex-col gap-2'>
       <Modal isOpen={isOpen} placement='auto' onOpenChange={setIsOpen} className='text-dark'>
@@ -41,7 +43,7 @@ export default function ModalTime({ isOpen, setIsOpen, form, setForm }: ModalPro
                     <label className='block mb-1 text-sm'>Jam Mulai</label>
                     <input
                       type='time'
-                      value={startTime}
+                      value={form.start_time}
                       onChange={(e) => setStartTime(e.target.value)}
                       className='w-full p-2 border border-primary-light-200 rounded-md'
                       required
@@ -51,7 +53,7 @@ export default function ModalTime({ isOpen, setIsOpen, form, setForm }: ModalPro
                     <label className='block mb-1 text-sm'>Jam Berakhir</label>
                     <input
                       type='time'
-                      value={endTime}
+                      value={form.end_time}
                       onChange={(e) => setEndTime(e.target.value)}
                       className='w-full p-2 border border-primary-light-200 rounded-md'
                       required
@@ -64,7 +66,7 @@ export default function ModalTime({ isOpen, setIsOpen, form, setForm }: ModalPro
                       Zona Waktu <span className='text-danger'>*</span>
                     </p>
                   }
-                  defaultValue={zoneTime} // Ensure WIB is selected by default
+                  defaultValue={form.zone_time} // Ensure WIB is selected by default
                   size='md'
                   onChange={(e) => setZoneTime(e.target.value)}
                 >

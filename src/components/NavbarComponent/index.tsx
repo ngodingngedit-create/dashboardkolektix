@@ -155,7 +155,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
               ? 'bg-primary-dark'
               : 'bg-transparent'
             : 'bg-primary-dark'
-        } transition-colors duration-300 sticky top-0 w-full z-50`}
+        } transition-colors duration-300 sticky top-0 w-full z-40`}
       >
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
