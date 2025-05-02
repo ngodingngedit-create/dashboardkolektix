@@ -60,12 +60,12 @@ interface StepPaymentProps {
     error: ErrorForm;
     totalSubtotalPrice: number;
     setFormValid: (valid: boolean) => void;
-
+    haveVoucher?: any;
     onSubmitVoucher?: (data: {id:number, name: string; amount: number }) => void;
     onCancelVoucher?: (index:number) => void;
 }
 
-const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
+const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
     const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>([]);
     const [voucherFields, setVoucherFields] = useState(['']);
@@ -73,6 +73,8 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
     const { width } = useWindowSize();
     const userData = useLoggedUser();
     const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
+
+    //console.log('vouchers first step', vouchers);
 
     const formValidation = (data: Form) => {
         return (detail.is_noidentity == 1 ? Boolean(data.nik) : true) &&
@@ -158,7 +160,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
     }, [userData]);
 
     const handleGetVoucher = async (index: number) => {
-        console.log('handleGetVoucher');
+        //console.log('handleGetVoucher');
         if (!voucherFields[index]) return;
 
         const isDuplicate = vouchers.some((v) => v.name === voucherFields[index]);
@@ -196,12 +198,24 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
             before: () => setLoading.append(`getvoucher-${index}`),
             success: (data) => {
                 const voucher = data?.voucher ?? data?.data?.voucher;
+                //console.log('voucher wk', voucher.is_multiply);
                 if (!voucher) return;
                 const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
                 const isStockValid = voucher.stock > 0;
                 const isStatusValid = voucher.status == 1;
                 const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
-                const discount = voucher.type == 'persentase' ? totalSubtotalPrice * voucher.discount / 100 : voucher.discount;
+
+                let discount = 0;
+
+                if (voucher.is_multiply) {
+                    discount = voucher.type == 'persentase' 
+                        ? totalSubtotalPrice * voucher.discount / 100 * totalCount 
+                        : voucher.discount * totalCount;
+                } else {
+                    discount = voucher.type == 'persentase' 
+                        ? totalSubtotalPrice * voucher.discount / 100 
+                        : voucher.discount;
+                }
 
                 if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
                     if (onSubmitVoucher) {
@@ -233,12 +247,26 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
                 setVoucherFields(newVoucherFields);
             },
         });
-    }  
+    }
+    
+    useEffect(() => {
+        if (Array.isArray(haveVoucher) && haveVoucher.length > 0) {
+            setVoucherFields(haveVoucher.map((voucher: { name: string }) => voucher.name || ''));
+            setVouchers((prev) => {
+                const newVouchers = [...prev];
+                haveVoucher.forEach((voucher: { name: string; amount: number }) => {
+                    if (!newVouchers.some((v) => v.name === voucher.name)) {
+                        newVouchers.push(voucher);
+                    }
+                });
+                return newVouchers;
+            });
+        } else {
+            setVoucherFields(['']);
+        }
+    }, [haveVoucher]);
 
     const handleAddVoucherField = () => {
-        //console.log('handleAddVoucherField');
-        //console.log(detail.max_use_voucher)
-        //setVoucherFields([...voucherFields, '']);
         if (voucherFields.length < (detail.max_use_voucher ?? 0)) {
             setVoucherFields([...voucherFields, '']);
         } else {
@@ -247,7 +275,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
                 color: 'red'
             });
         }
-      
     };
 
     const handleCancelVoucher = (index: number) => {
@@ -278,11 +305,12 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
                             <Text fw={600}>Voucher</Text>
                         </Flex>
 
+
                         {voucherFields.map((field, index) => (
                             <Group key={index}>
                                 <TextInput
                                     w="100%"
-                                    value={field}
+                                    value={vouchers[index]?.name || field}
                                     onChange={e => {
                                         const newVoucherFields = [...voucherFields];
                                         newVoucherFields[index] = e.currentTarget.value;
@@ -353,14 +381,14 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
                             )}
                         </p>
                     </div>
-                    {vouchers.map((voucher, index) => (
-                        <div className="py-3 px-4 flex justify-between items-center" key={index}>
-                            <p>Voucher {voucher.name}</p>
-                            <p className="font-semibold">
-                                <NumberFormatter value={voucher.amount} />
-                            </p>
-                        </div>
-                    ))}
+                    {vouchers.length > 0 && (
+                                <div className="py-3 px-4 flex justify-between items-center">
+                                    <p>Voucher</p>
+                                    <p className="font-semibold">
+                                        -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
+                                    </p>
+                                </div>
+                    )}
                     <div className="py-3 px-4 flex justify-between items-center">
                         <p>Biaya Admin</p>
                         <p className="font-semibold">
@@ -610,7 +638,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, ticket, totalCoun
                                     <Group key={index}>
                                         <TextInput
                                             w="100%"
-                                            value={field}
+                                            value={vouchers[index]?.name || field}
                                             onChange={e => {
                                                 const newVoucherFields = [...voucherFields];
                                                 newVoucherFields[index] = e.currentTarget.value;

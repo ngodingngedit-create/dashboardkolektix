@@ -151,12 +151,6 @@ const ThirdStep = ({
             </div>
             {voucher && voucher.length > 0 && (
   <>
-    {voucher.map((v: Voucher) => (
-      <div key={v.id} className='flex justify-between items-center'>
-        <p className='text-xs text-grey mb-1'>Voucher {v.name}</p>
-        <p className='text-xs mb-1'>- Rp {v.amount.toLocaleString('id-ID')}</p>
-      </div>
-    ))}
     <div className='flex justify-between items-center'>
       <p className='text-xs text-grey mb-1'>Total Voucher Discount</p>
       <p className='text-xs mb-1'>
