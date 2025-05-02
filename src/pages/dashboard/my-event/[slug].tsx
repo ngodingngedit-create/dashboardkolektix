@@ -130,7 +130,7 @@ const MyEventDetail = () => {
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
 
   const getInvitationCategory = async () => {
-    await fetch<any, CategoryResponse>({
+    await fetch<any, CategoryResponse[]>({
       url: 'invitation-category',
       method: 'GET',
       data: {},
