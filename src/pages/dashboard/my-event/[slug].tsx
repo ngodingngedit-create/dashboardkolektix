@@ -588,14 +588,14 @@ const eventItems = useMemo(() => {
             />
 
             <div className='flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4'>
-              <h5 className='text-lg font-semibold mb-2'>Scan QR Code</h5>
+              <h5 className='text-lg font-semibold mb-2'>Share your event link</h5>
               <QrCode 
                 slug={`${window.location.origin}/event/${data.slug}`} 
                 errorCorrectionLevel="H" 
                 margin={8} 
                 logoSizeRatio={0.15} 
               />
-              <Button
+              {/*<Button
                 label="Download QR Code"
                 color="primary"
                 className="mt-4"
@@ -608,7 +608,7 @@ const eventItems = useMemo(() => {
                     link.click();
                   }
                 }}
-              />
+              />*/}
             </div>
 
 
