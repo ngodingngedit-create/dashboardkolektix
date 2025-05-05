@@ -1,6 +1,6 @@
 // pages/cart.tsx
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader } from '@mantine/core';
+import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, UnstyledButton, TextInput, Box, Modal, Select, Textarea, Loader } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import { MerchListResponse } from '../dashboard/merch/type';
 import { Delete, Get } from '@/utils/REST';
@@ -121,7 +121,10 @@ export const formStateSchema = z.object({
         detail: z.string().nonempty("Detail alamat tidak boleh kosong."),
     }),
     payment_method: z.string().nonempty("Metode Pembayaran tidak boleh kosong."),
-    courier: z.string().nonempty("Kurir tidak boleh kosong."),
+    courier: z.object({
+        name: z.string().nonempty("Kurir tidak boleh kosong."),
+        type: z.any().optional()
+    }),
 });
 
 export default function Cart() {
@@ -224,7 +227,7 @@ export default function Cart() {
             const product = _.find(productList, ['id', e.product_id]);
             const variant = e.variant_id ? _.find(product?.product_varian, ['id', e.variant_id]) : null;
             const subprice = parseInt((!variant ? product?.price : variant?.price) ?? '0');
-            const weight = parseInt((!variant ? product?.price : variant?.weight) ?? '0');
+            const weight = parseInt((!variant ? product?.weight : variant?.weight) ?? '0');
             const price = subprice * e.qty;
             const image = product?.product_image[0] ? product?.product_image[0].image_url : '#';
             const creator_id = product?.creator_id;
@@ -240,7 +243,7 @@ export default function Cart() {
             result.push([`x${order.qty} ${order.product?.product_name ?? '-'}`, order.price]);
         }
 
-        if (form.values.courier?.type) {
+        if (form.values.courier?.type && form.values.courier?.type.cost && form.values.courier?.type.cost.length > 0) {
             result.push(['Biaya Pengiriman', form.values.courier?.type.cost[0].value]);
         }
 

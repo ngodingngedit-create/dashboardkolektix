@@ -260,7 +260,15 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Harga <span className="text-red-400">*</span></h4>
                                     </div>
                                     <div className="flex-grow">
-                                        <NumberInput error={form.errors.price} value={form.values.price} onChange={e => form.setValues({ price: e as number })} hideControls placeholder="Isi Harga" />
+                                        <NumberInput
+                                            error={form.errors.price}
+                                            value={form.values.price}
+                                            onChange={e => form.setValues({ price: e as number })}
+                                            hideControls
+                                            placeholder="Isi Harga"
+                                            decimalSeparator=","
+                                            thousandSeparator="."
+                                        />
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-[20px]">
@@ -277,7 +285,15 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Berat <span className="text-red-400">*</span></h4>
                                     </div>
                                     <div className="flex-grow">
-                                        <NumberInput error={form.errors.weight} hideControls type="text" placeholder="Isi Berat" suffix=" gr" />
+                                        <NumberInput
+                                            error={form.errors.weight}
+                                            hideControls
+                                            type="text"
+                                            placeholder="Isi Berat"
+                                            suffix=" gr"
+                                            decimalSeparator=","
+                                            thousandSeparator="."
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -374,7 +390,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                                             hideControls
                                                             placeholder="Isi Harga Varian"
                                                             prefix="Rp "
-                                                            thousandSeparator
+                                                            thousandSeparator="."
+                                                            decimalSeparator=","
                                                             value={form.values.variant[i].price}
                                                             onChange={e => form.setFieldValue(`variant.${i}.price`, e)}
                                                             error={form.errors[`variant.${i}.price`]}
@@ -386,7 +403,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                                             hideControls
                                                             placeholder="Isi Berat Varian"
                                                             suffix=' gr'
-                                                            thousandSeparator
+                                                            thousandSeparator="."
+                                                            decimalSeparator=","
                                                             value={form.values.variant[i].weight}
                                                             onChange={e => form.setFieldValue(`variant.${i}.weight`, e)}
                                                             error={form.errors[`variant.${i}.weight`]}
@@ -400,6 +418,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                                             value={form.values.variant[i].stock}
                                                             onChange={e => form.setFieldValue(`variant.${i}.stock`, e)}
                                                             error={form.errors[`variant.${i}.stock`]}
+                                                            decimalSeparator=","
+                                                            thousandSeparator="."
                                                         />
                                                     </Table.Td>
                                                     <Table.Td>
