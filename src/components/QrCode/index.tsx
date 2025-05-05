@@ -35,7 +35,7 @@ const QrCode = ({slug, errorCorrectionLevel = 'M', margin = 4, logoSizeRatio = 0
     }, [slug, errorCorrectionLevel, margin, logoSizeRatio]);
 
     return (
-        <div ref={qrCodeRef} />
+        <div className='qrcode' ref={qrCodeRef} />
     )
 }
 

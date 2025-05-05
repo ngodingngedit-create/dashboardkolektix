@@ -17,6 +17,7 @@ import Cookies from 'js-cookie';
 import { AppMainContext } from '../_app';
 import AuthModal from '@/components/AuthModal';
 import ChatBox from '@/components/chat';
+import { notifications } from '@mantine/notifications';
 
 export type CartStorage = {
     variant_id: number,
@@ -107,7 +108,9 @@ const MerchandiseDetail = () => {
                 ? mainData?.product_varian.find(e => e.id == selectedVariant)?.stock_qty 
                 : mainData?.qty;
 
-            const added = has ? _.min([has?.qty + count, selectedQty]) ?? 0 : 0;
+            const added = has 
+                ? _.min([has?.qty + count, selectedQty]) ?? 0 
+                : _.min([count, selectedQty]) ?? 0;
 
             // Update the cartData and set the appropriate quantities
             if (has) {
@@ -132,7 +135,11 @@ const MerchandiseDetail = () => {
             setCartCount && setCartCount(newCartCount);
             Cookies.set('_cart', JSON.stringify(cartData));
 
-            toast.success('Berhasil menambah produk ke keranjang');
+            notifications.show({
+                color: 'Green',
+                position: 'top-right',
+                message: `Berhasil menambah produk ke keranjang`
+            });
             setLoading.filter(e => e != 'addcart');
 
         // }

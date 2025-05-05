@@ -595,20 +595,20 @@ const eventItems = useMemo(() => {
                 margin={8} 
                 logoSizeRatio={0.15} 
               />
-              {/*<Button
+              {<Button
                 label="Download QR Code"
                 color="primary"
                 className="mt-4"
                 onClick={() => {
-                  const qrCodeElement = document.querySelector('.qrcode img') as HTMLImageElement;
-                  if (qrCodeElement) {
+                  const qrCodeCanvas = document.querySelector('.qrcode canvas') as HTMLCanvasElement;
+                  if (qrCodeCanvas) {
                     const link = document.createElement('a');
-                    link.href = qrCodeElement.src;
+                    link.href = qrCodeCanvas.toDataURL('image/png');
                     link.download = `${data.slug}-qrcode.png`;
                     link.click();
                   }
                 }}
-              />*/}
+              />}
             </div>
 
 
