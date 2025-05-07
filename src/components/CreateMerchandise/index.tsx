@@ -11,11 +11,12 @@ import Cookies from 'js-cookie';
 import z from 'zod';
 import { useRouter } from 'next/router';
 import { useListState } from '@mantine/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import useLoggedUser from '@/utils/useLoggedUser';
 
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     name: z.string().min(1, { message: '"Wajib Diisi' }),
+    weight: z.number().min(0, { message: '"Wajib Diisi' }),
     sku: z.string().min(1, { message: '"Wajib Diisi' }),
     stock: z.number().min(0, { message: '"Wajib Diisi' }),
     is_variant: z.any().nullable(),
@@ -55,11 +56,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     setImageList(data.product_image);
 
                     if (data.is_product_varian) form.setValues({ is_variant: Boolean(data.is_product_varian) });
-
                     form.setValues({
                         name: data.product_name,
                         sku: data.sku,
-                        price: 0,
+                        price: parseInt(data.price ?? "0"), 
+                        stock: data.qty ?? 0,
+                        weight: parseInt(data.weight ?? "0"), 
                         description: data.description ?? '',
                         image: data.product_image.map(e => e.image_url),
                         variant_name: data.product_varian.length > 0 ? data.product_varian[0].varian_category_id : 0,
@@ -69,7 +71,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             sku: e.sku,
                             stock: e.stock_qty,
                             price: parseInt(e.price ?? "0"),
-                            weight: parseInt(e.weight ?? "0"),
+                            weight: e.weight !== undefined && e.weight !== null && e.weight !== '' ? Number(e.weight) : undefined,
                             status: true
                         }))
                     });
@@ -102,6 +104,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             is_variant: false,
             name: '',
             sku: '',
+            weight: 0,
             stock: 0,
             price: 0,
             description: '',
@@ -133,6 +136,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 // order: 10,
                 // can_purchasable: 1,
                 qty: stock ?? 0,
+                weight: form.values.weight ?? 1,
                 show_stock_out: 1,
                 max_purchase_quantity: 100,
                 low_quantity_warning: 4,
@@ -164,6 +168,25 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             setLoading.filter(e => e != 'save');
         }
     }
+
+    const handleImageChange = useCallback(
+        (files: File[] | null) => {
+          if (files) {
+            form.setValues({ image: [...form.values.image, ...files] });
+          }
+        },
+        [form.values.image, form]
+    );
+      
+    const handleImageDelete = useCallback(
+        (idx: number) => {
+            form.setValues(prev => ({
+                ...prev,
+                image: prev.image.filter((_, z) => z !== idx)
+            }));
+        },
+        [form]
+    );
 
     return (
         <div className="fixed w-[100vw] h-[100vh] top-0 left-0 z-[200] bg-white">
@@ -199,20 +222,19 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <div className="flex-grow overflow-x-auto">
                                         <InputWrapper error={form.errors.image}>
                                             <Box pb={10}>
-                                                <SimpleGrid w="fit-content" className={`!flex sm:!grid sm:!grid-cols-3 md:!grid-cols-5`}>
-                                                    {Array(10).fill(1).map((e, i) => (
-                                                        <ImageInput
-                                                            key={i}
-                                                            value={form.values.image[i]}
-                                                            onChange={e => e && (form.values.image[i] ?
-                                                                form.setValues({ image: form.values.image.map((x, z) => z == i ? e : x) }) :
-                                                                form.setValues({ image: [...form.values.image, e] })
-                                                            )}
-                                                            onDelete={() => form.setValues({ image: form.values.image.filter((_, z) => z != i) })}
-                                                            floattext={i == 0 ? 'Utama' : undefined}
-                                                        />
-                                                    ))}
-                                                </SimpleGrid>
+                                                {(()=>{
+                                                return (<ImageInput
+                                                    value={form.values.image}
+                                                    onChange={handleImageChange}
+                                                    onDelete={handleImageDelete}
+                                                    //onChange={files => {
+                                                    //    if (files) {
+                                                    //        form.setValues({ image: [...form.values.image, ...files] });
+                                                    //    }
+                                                    //}}
+                                                    //onDelete={idx => form.setValues({ image: form.values.image.filter((_, z) => z !== idx) })}
+                                                    floattext={'Utama'}
+                                                />)})()}
                                             </Box>
                                         </InputWrapper>
                                     </div>
@@ -268,6 +290,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                             placeholder="Isi Harga"
                                             decimalSeparator=","
                                             thousandSeparator="."
+                                            prefix="Rp "
                                         />
                                     </div>
                                 </div>
@@ -276,7 +299,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <h4 className="text-[16px] font-[500]">Stok <span className="text-red-400">*</span></h4>
                                     </div>
                                     <Stack className="flex-grow">
-                                        <NumberInput error={form.errors.stock}  hideControls type="text" placeholder="Isi Stok" />
+                                        <NumberInput 
+                                            error={form.errors.stock} 
+                                            value={form.values.stock}
+                                            onChange={e => form.setValues({ stock: e as number })}  
+                                            hideControls type="text" placeholder="Isi Stok" />
                                         <Checkbox label="Tampilkan label jika stok habis"/>
                                     </Stack>
                                 </div>
@@ -287,6 +314,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                     <div className="flex-grow">
                                         <NumberInput
                                             error={form.errors.weight}
+                                            value={form.values.weight}
+                                            onChange={e => form.setValues({ weight: e as number })}
                                             hideControls
                                             type="text"
                                             placeholder="Isi Berat"
