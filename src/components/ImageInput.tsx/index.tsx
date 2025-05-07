@@ -25,16 +25,26 @@ export default function ImageInput({
     required,
     onDelete,
 }: Readonly<ComponentProps>) {
-    console.log("ImageInput rendered");
-    const handleDelete = (e: React.MouseEvent, idx: number) => {
-        
-        e.stopPropagation();
-        console.log("Delete image at index:", idx);
-        if (typeof onDelete === "function") {
-            onDelete(idx);
-        }
 
-    };
+    const handleDelete = ((ref) => {
+        return (e: React.MouseEvent, idx: number, l: number) => {
+          (() => {
+            e.stopPropagation();
+            e.preventDefault();
+      
+            const c1 = l >= 1 && idx === 0;
+            const c2 = idx > 0 && l > 1;
+            const cs = [c1, c2];
+      
+            for (let i = 0; i < cs.length; i++) {
+              if (cs[i] && typeof ref === "function") {
+                ref(idx);
+                break;
+              }
+            }
+          })();
+        };
+    })(onDelete);
 
     return (
         <InputWrapper {...{ label, description, error }} withAsterisk={required}>
@@ -82,7 +92,7 @@ export default function ImageInput({
                                                     const renderDelete = new Proxy(
                                                         () => (
                                                             <ActionIcon
-                                                                onClick={e => handleDelete(e, idx)}
+                                                                onClick={e => handleDelete(e, idx, value.length)}
                                                                 className={`clsBtn !hidden !absolute top-[1px] right-[1px] z-10`}
                                                                 c="red"
                                                                 size="sm"

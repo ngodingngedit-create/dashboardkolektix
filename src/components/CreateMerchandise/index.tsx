@@ -171,18 +171,24 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
     const handleImageChange = useCallback(
         (files: File[] | null) => {
-          if (files) {
-            form.setValues({ image: [...form.values.image, ...files] });
-          }
+            if (files) {
+                form.setValues(prev => ({
+                    ...prev,
+                    image: [...(prev.image ?? []), ...files]
+                }));
+            }
         },
-        [form.values.image, form]
+        [form]
     );
       
     const handleImageDelete = useCallback(
         (idx: number) => {
-            form.setValues({ image: form.values.image.filter((_, z) => z !== idx) });
+            form.setValues(prev => ({
+                ...prev,
+                image: (prev.image ?? []).filter((_, z) => z !== idx)
+            }));
         },
-        [form.values.image, form]
+        [form]
     );
 
     return (
