@@ -3,6 +3,7 @@ type MerchandiseState = {
     sku: string;
     price: number;
     stock: number;
+    weight: number;
     description: string;
     image: (Blob | string)[];
     status: boolean;
@@ -32,6 +33,8 @@ type MerchandiseShowResponse = {
     description?: string,
     sku: string,
     product_category_id?: number,
+    price: string,
+    qty: number,
     product_brand_id?: number,
     is_product_varian: 1 | 0,
     weight: string,
@@ -92,6 +95,7 @@ type MerchandiseStoreRequest = {
     qty: number;
     sku: string;
     price: number;
+    weight: number;
     show_stock_out: 1 | 0;
     max_purchase_quantity: number;
     low_quantity_warning: number;
