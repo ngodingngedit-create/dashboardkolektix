@@ -180,12 +180,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       
     const handleImageDelete = useCallback(
         (idx: number) => {
-            form.setValues(prev => ({
-                ...prev,
-                image: prev.image.filter((_, z) => z !== idx)
-            }));
+            form.setValues({ image: form.values.image.filter((_, z) => z !== idx) });
         },
-        [form]
+        [form.values.image, form]
     );
 
     return (
