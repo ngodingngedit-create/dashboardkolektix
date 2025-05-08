@@ -62,6 +62,7 @@ const MerchandiseDetail = () => {
         Get(`product/${slug}`, {})
             .then((res: any) => {
                 setMainData(res.data);
+                //console.log(res.data);
                 if ((res.data?.product_varian?.length) ?? 0 > 0) {
                     setSelectedVariant(res.data?.product_varian[0].id);
                     setCount(res.data?.product_varian[0].stock_qty > 1 ? 1 : 0);
@@ -191,11 +192,11 @@ const MerchandiseDetail = () => {
             <div className="flex flex-col gap-2 divide-y divide-primary-light-200">
                 <h3 className="text-lg md:text-xl">{mainData.product_name}</h3>
                 <div className="flex gap-2 items-center !border-y-0">
-                    <p className="text-grey text-xs md:text-sm">Terjual 30+</p>
+                    <p className="text-grey text-xs md:text-sm">Terjual {mainData.total_sold}</p>
                     <p>&bull;</p>
                     <p className="text-xs md:text-sm">
                         <FontAwesomeIcon icon={faStar} className="text-warning-400" />
-                        <span className="ml-1">4.8</span>
+                        <span className="ml-1">{mainData.average_star}</span>
                     </p>
                 </div>
                 <div className="!border-t-0">
@@ -204,9 +205,11 @@ const MerchandiseDetail = () => {
                     </h3>
                     {/* <p className='text-grey text-xs line-through'>Rp1.650.000</p> */}
                 </div>
-                <div className="flex flex-row justify-between items-center pt-3 pb-2">
+                <div className="flex flex-row justify-start items-center pt-3 pb-2">
                     <CreatorTitle image={mainData.creator.image_url} creator={mainData.creator.name} location="Jakarta" />
-                    {/* <Button color='secondary' label='Lihat Toko' /> */}
+                    <div className="flex gap-1 px-9">
+                        <p>Review: {mainData.total_review}</p>
+                    </div>
                 </div>
 
                 {mainData?.product_varian?.length > 0 && (
