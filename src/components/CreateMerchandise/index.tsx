@@ -1,7 +1,8 @@
 import Logo from '@/assets/images/kolektix logo tansparant-blue.png';
 import { Input } from '@nextui-org/react';
 import Image from 'next/image';
-import ImageInput from '../ImageInput.tsx';
+//import ImageInput from '../ImageInput.tsx';
+import ImageInputMultiple from '../ImageInputMultiple.tsx';
 import { useForm, zodResolver } from '@mantine/form';
 import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -226,7 +227,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <InputWrapper error={form.errors.image}>
                                             <Box pb={10}>
                                                 {(()=>{
-                                                return (<ImageInput
+                                                return (<ImageInputMultiple
                                                     value={form.values.image}
                                                     onChange={handleImageChange}
                                                     onDelete={handleImageDelete}
