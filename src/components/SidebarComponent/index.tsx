@@ -151,6 +151,13 @@ const sidebarData: SidebarData = [
         },
         {
             id: 1,
+            name: 'Transaksi Merchandise',
+            iconify: 'icon-park-outline:transaction',
+            link: '/dashboard/merch-transaction',
+            role: 'Creator'
+        },
+        {
+            id: 1,
             name: 'POS Merchandise',
             iconify: 'hugeicons:cashier',
             link: '/dashboard/merch-pos',

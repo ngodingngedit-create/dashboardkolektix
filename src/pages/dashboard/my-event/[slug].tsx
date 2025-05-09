@@ -947,7 +947,13 @@ const eventItems = useMemo(() => {
                                     <FontAwesomeIcon 
                                       icon={faPaperPlane} 
                                       className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => sendETicket(item.invoice_no, item.has_user.email)}
+                                      onClick={() => {
+                                        if (item?.has_user && item.has_user.email) {
+                                          sendETicket(item.invoice_no, item.has_user.email)
+                                        } else {
+                                          toast.error('Email tidak tersedia untuk pengguna ini.');
+                                        }
+                                      }}
                                     />
                                   </Tooltip>
                                   <Tooltip label="Lihat Detail">
@@ -1035,7 +1041,13 @@ const eventItems = useMemo(() => {
                                       <FontAwesomeIcon 
                                         icon={faPaperPlane} 
                                         className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                        onClick={() => sendEventETicket(item.invoice_no, item.has_user.email)}
+                                        onClick={() => {
+                                          if (item?.has_user && item.has_user.email) {
+                                            sendEventETicket(item.invoice_no, item.has_user.email)
+                                          } else {
+                                            toast.error('Email tidak tersedia untuk pengguna ini.');
+                                          }
+                                        }}
                                       />
                                     </Tooltip>
                                     <Tooltip label="Lihat Detail">
