@@ -106,7 +106,7 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                   <p className="font-semibold">{formatIDR(item?.total_price)}</p> {/* Format IDR */}
                 </div>
                 <div className="mb-4 flex justify-between">
-                  <p className="text-grey">Admin Fee</p>
+                  <p className="text-grey">Admin Fee No</p>
                   <p className="font-semibold">{formatIDR(item?.admin_fee)}</p> {/* Format IDR */}
                 </div>
                 <div className="mb-4 flex justify-between">
