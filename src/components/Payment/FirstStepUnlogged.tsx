@@ -257,8 +257,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         const payload = {
             event_id: detail?.id,
             admin_fee: detail?.admin_fee,
+            // plus adminfee
+            //admin_fee: (detail?.admin_fee || 0) * totalCount,
             payment_method: payment ? payment : '4',
-            grandtotal: detail ? totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) : 0,
+            grandtotal: detail ? totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0)) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) : 0,
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             bank_code: bank,
@@ -557,8 +559,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Total Pembayaran</p>
                                 <p className="font-semibold">
-                                    {(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) > 0 ? (
-                                        <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0)))} />
+                                    {(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) > 0 ? (
+                                        <NumberFormatter value={(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0)))} />
                                     ) : (
                                         <Text>Free</Text>
                                     )}
@@ -924,7 +926,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                         <p>Admin Fee</p>
                                         <p className="font-semibold">
                                             {(detail.admin_fee) > 0 ? (
-                                                <NumberFormatter value={(detail.admin_fee)} />
+                                                <NumberFormatter value={(detail.admin_fee * totalCount)} />
                                             ) : (
                                                 <Text>Free</Text>
                                             )}
@@ -955,8 +957,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>Total Pembayaran</p>
                                         <p className="font-semibold">
-                                            {((totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)) > 0 ? (
-                                                <NumberFormatter value={(totalSubtotalPrice + (detail.admin_fee + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)} />
+                                            {((totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)) > 0 ? (
+                                                <NumberFormatter value={(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)} />
                                             ) : (
                                                 <Text>Free</Text>
                                             )}
