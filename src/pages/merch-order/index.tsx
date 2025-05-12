@@ -259,11 +259,18 @@ export default function Cart() {
     }, [orderedProduct, form.values.courier?.type, form.values.receiver]);
 
     const getCourier = async () => {
+        const originCityId =
+            orderedProduct && orderedProduct.length > 0 &&
+            orderedProduct[0].product?.has_store_location &&
+            typeof orderedProduct[0].product.has_store_location.city_id === 'number'
+                ? orderedProduct[0].product.has_store_location.city_id
+                : 1;
+
         await fetch<GetCourierReq, GetCourierRes[]>({
             url: 'product-cost',
             method: 'POST',
             data: {
-                origin: 1,
+                origin: originCityId,
                 origin_type: 'city',
                 destination: form.values.receiver?.city_id ?? 0,
                 destination_type: 'city',
@@ -273,7 +280,7 @@ export default function Cart() {
             before: () => setLoading.append('getsubcourier'),
             success: (res) => setSubCourier.setState(res.data ?? []),
             complete: () => setLoading.filter(e => e != 'getsubcourier'),
-            error: () => {},
+            error: (err) => { console.error('Failed to fetch courier:', err); },
         });
     };
 
@@ -470,7 +477,7 @@ export default function Cart() {
                                     {(orderedProduct ?? []).map((e, i) => (
                                         <Flex key={i} gap={15} wrap="wrap">
                                             <AspectRatio className={`shrink-0`}>
-                                                <Image src={e.image} h={50} w={50} bg="gray.1" radius="sm"/>
+                                                <Image alt="image" src={e.image} h={50} w={50} bg="gray.1" radius="sm"/>
                                             </AspectRatio>
                                             <Stack className={`flex-grow`} gap={0}>
                                                 <Text className={`whitespace-nowrap text-ellipsis overflow-hidden max-w-[150px] md:max-w-[250px]`} size="sm">{e.product?.product_name}</Text>

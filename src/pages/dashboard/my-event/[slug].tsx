@@ -1016,8 +1016,8 @@ const eventItems = useMemo(() => {
                               <TableColumn className='font-bold text-md'>Type</TableColumn>
                               <TableColumn className='font-bold text-md'>Qty</TableColumn>
                               {/* <TableColumn className='font-bold text-md'>Deskripsi</TableColumn> */}
-                              {/* <TableColumn className='font-bold text-md'>Status Undangan</TableColumn>
-                              <TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn> */}
+                              <TableColumn className='font-bold text-md'>Status</TableColumn>
+                              {/*<TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn> */}
                               <TableColumn className='font-bold text-md'>Aksi</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
@@ -1027,7 +1027,6 @@ const eventItems = useMemo(() => {
                                   <TableCell className='border-b-1'>{item?.invitation_title}</TableCell>
                                   <TableCell className='border-b-1'>{invitationCategory?.find(e => e.id == item?.invitation_cat_id)?.name ?? '-'}</TableCell>
                                   <TableCell className='border-b-1'>{item?.total_qty}</TableCell>
-                                  {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
                                   <TableCell className='border-b-1'>
                                     <span 
                                       className={`px-2 py-1 rounded-md text-white ${getEventStatusClass(item.invitation_status)}`}
@@ -1035,6 +1034,7 @@ const eventItems = useMemo(() => {
                                       {getEventStatusText(item.invitation_status)}
                                     </span>
                                   </TableCell>
+                                  {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
                                   <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell> */}
                                   <TableCell className='border-b-1'>
                                     <Tooltip label="Kirim Ulang">

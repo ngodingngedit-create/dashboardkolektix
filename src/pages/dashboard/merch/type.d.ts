@@ -17,6 +17,9 @@ export type MerchListResponse = {
         id: number;
         image_url: string;
     }[];
+    has_store_location: {
+        city_id: number;
+    }
     product_varian: {
         id: number;
         product_id: number;

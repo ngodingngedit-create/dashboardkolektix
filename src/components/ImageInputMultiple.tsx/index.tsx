@@ -1,5 +1,5 @@
 import { ActionIcon, AspectRatio, Box, Card, Center, FileInput, Image, InputWrapper, Text, Group, ScrollArea } from "@mantine/core";
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 import { Icon } from "@iconify/react";
 
 type ComponentProps = {
@@ -45,6 +45,8 @@ export default function ImageInput({
           })();
         };
     })(onDelete);
+
+    const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
 
     return (
         <InputWrapper {...{ label, description, error }} withAsterisk={required}>
@@ -92,7 +94,11 @@ export default function ImageInput({
                                                     const renderDelete = new Proxy(
                                                         () => (
                                                             <ActionIcon
-                                                                onClick={e => handleDelete(e, idx, value.length)}
+                                                                onClick={() => {
+                                                                    if (nativeFileInputRef.current) {
+                                                                        nativeFileInputRef.current.click();
+                                                                    }
+                                                                }}
                                                                 className={`clsBtn !hidden !absolute top-[1px] right-[1px] z-10`}
                                                                 c="red"
                                                                 size="sm"
@@ -100,7 +106,7 @@ export default function ImageInput({
                                                                 radius="xl"
                                                                 style={{ position: "absolute" }}
                                                             >
-                                                                <Icon icon="uiw:close" className={`text-[12px]`} />
+                                                                <Icon icon="uiw:close" className={`text-[12px]`} onClick={e => handleDelete(e, idx, value.length)} />
                                                             </ActionIcon>
                                                         ),
                                                         handler
@@ -127,6 +133,19 @@ export default function ImageInput({
                                 </svg>
                             )}
                         </Center>
+                        <input
+                            type="file"
+                            accept=".png,.jpg,.jpeg"
+                            multiple
+                            style={{ display: "none" }}
+                            ref={nativeFileInputRef}
+                            onChange={e => {
+                                if (onChange) {
+                                    const files = e.target.files ? Array.from(e.target.files) : null;
+                                    onChange(files);
+                                }
+                            }}
+                        />
                         <FileInput
                             className={`hidden`}
                             accept=".png,.jpg,.jpeg"
