@@ -353,6 +353,8 @@ export interface EventProps {
   is_email: 1 | 0;
   is_gender: 1 | 0;
   is_name: 1 | 0;
+  is_profession: 1 | 0;
+  is_company: 1 | 0;
   is_noidentity: 1 | 0;
   is_phone_number: 1 | 0;
   grand_total: number;

@@ -85,6 +85,7 @@ const EventCardCreator = ({
           <FontAwesomeIcon icon={faLocationDot} className='mr-2 text-grey' />
           <span className='text-grey'>{location}</span>
         </p>
+        <p className='text-grey text-sm mb-1'>Halaman Event</p>
         {Boolean(shareLink) && (
           <Card p={0} mt={15}>
             <Flex align="center" gap={5}>
@@ -104,6 +105,18 @@ const EventCardCreator = ({
                   </Tooltip>
                 )}
               </CopyButton>
+                  <Tooltip label={'Buka Link event'} withArrow position="right">
+                    <ActionIcon
+                      color={'#194e9e'}
+                      variant="subtle"
+                      component="a"
+                      href={shareLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Icon icon="tabler:send" />
+                    </ActionIcon>
+                  </Tooltip>
             </Flex>
           </Card>
         )}

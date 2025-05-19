@@ -27,6 +27,8 @@ interface Form {
   is_pemesan: number;
   identity_type_id: number;
   event_ticket_id: number;
+  is_profession: string;
+  is_company: string;
 }
 
 interface DataProps {
