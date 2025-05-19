@@ -26,6 +26,8 @@
     "soldOut": "Habis Terjual",
     "ktpNumber": "No Induk KTP",
     "fullName": "Nama Lengkap",
+    "profession": "Profesi Atau Bidang Pekerjaan",
+    "company": "Perusahaan Atau Organisasi",
     "phoneNumber": "No Telepon",
     "birthDate": "Tanggal Lahir",
     "example": "Contoh",

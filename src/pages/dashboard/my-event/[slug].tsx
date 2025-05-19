@@ -593,7 +593,7 @@ const eventItems = useMemo(() => {
                 slug={`${window.location.origin}/event/${data.slug}`} 
                 errorCorrectionLevel="H" 
                 margin={8} 
-                logoSizeRatio={0.15} 
+                logoSizeRatio={0.22} 
               />
               {<Button
                 label="Download QR Code"

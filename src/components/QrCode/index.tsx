@@ -8,7 +8,7 @@ interface QrCodeProps {
   logoSizeRatio?: number;
 }
 
-const QrCode = ({slug, errorCorrectionLevel = 'M', margin = 4, logoSizeRatio = 0.2}: QrCodeProps) => {
+const QrCode = ({slug, errorCorrectionLevel = 'M', margin = 4, logoSizeRatio = 0.3}: QrCodeProps) => {
     const qrCodeRef = useRef<HTMLDivElement>(null);
 
     console.log('QrCode slug', slug);
@@ -22,7 +22,7 @@ const QrCode = ({slug, errorCorrectionLevel = 'M', margin = 4, logoSizeRatio = 0
                 text: slug,
                 width: qrSize,
                 height: qrSize,
-                logo: window.location.origin + '/images/logo.png',
+                logo: window.location.origin + '/images/logoblack.png', 
                 logoWidth: logoSize,
                 logoHeight: logoSize,
                 colorDark: '#000000',

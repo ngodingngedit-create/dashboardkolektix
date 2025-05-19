@@ -26,6 +26,8 @@
     "soldOut": "Sold Out",
     "ktpNumber": "ID Number (KTP)",
     "fullName": "Full Name",
+    "profession": "Job / Profession",
+    "company": "Company / Organisation",
     "phoneNumber": "Phone Number",
     "birthDate": "Date of Birth",
     "example": "Example",

@@ -45,6 +45,8 @@ interface Form {
     countryCode: string;
     no_telp: string;
     is_pemesan: number;
+    is_profession: string;
+    is_company: string;
     identity_type_id: number;
     event_ticket_id: number;
     seat_number?: string;
@@ -130,6 +132,8 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 countryCode: '',
                 no_telp: '',
                 is_pemesan: 0,
+                is_profession: '',  
+                is_company: '',    
                 identity_type_id: 1,
                 event_ticket_id: 1
             };
@@ -488,6 +492,18 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                                                 <Input className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} />
                                             </Field>
                                         ) : null}
+                                        {detail.is_profession ? (
+                                            <Field className="mb-2">
+                                                <Label className="text-sm font-base text-grey">Profesi / Pekerjaan</Label>
+                                                <Input className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200" placeholder="Profesi atau pekerjaan" value={item.is_profession} onChange={(e) => handleInput(index, 'is_profession', e.target.value)} />
+                                            </Field>
+                                        ) : null}
+                                        {detail.is_company ? (
+                                            <Field className="mb-2">
+                                                <Label className="text-sm font-base text-grey">Perusahaan / Organisasi</Label>
+                                                <Input className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200" placeholder="Perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, 'is_company', e.target.value)} />
+                                            </Field>
+                                        ) : null}
                                         {detail.is_email ? (
                                             <Field className="mb-2">
                                                 <Label className="text-sm font-base text-grey">Email</Label>
@@ -537,7 +553,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
         ) : (
             <div className="bg-primary-light min-h-screen pb-28">
                 <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20 ">
-                    <h2 className="col-span-5 mb-4">Personal Informasi</h2>
+                    <h2 className="col-span-5 mb-4">Personal Informasi </h2>
                     <div className="col-span-3 flex flex-col gap-3">
                         {form.map((item, index) => {
                             // Tentukan tiket untuk pemilik berdasarkan index
@@ -591,6 +607,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                                                 {detail.is_name ? (
                                                     <>
                                                         <InputField fullWidth type="text" label={t('fullName')} placeholder={t('fullName')} value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} />
+                                                    </>
+                                                ) : null}
+                                                {detail.is_profession ? (
+                                                    <>
+                                                        <InputField fullWidth type="text" label={t('profession')} placeholder={t('profession')} value={item.is_profession} onChange={(e) => handleInput(index, 'is_profession', e.target.value)} />
+                                                    </>
+                                                ) : null}
+                                                {detail.is_company ? (
+                                                    <>
+                                                        <InputField fullWidth type="text" label={t('company')} placeholder={t('company')} value={item.is_company} onChange={(e) => handleInput(index, 'is_company', e.target.value)} />
                                                     </>
                                                 ) : null}
                                                 {detail.is_email ? (

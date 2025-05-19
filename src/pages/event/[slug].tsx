@@ -51,6 +51,8 @@ import { useTranslation } from 'react-i18next';
 interface Form {
     nik: string;
     full_name: string;
+    is_profession: string;
+    is_company: string;
     email: string;
     countryCode: string;
     no_telp: string;
@@ -62,6 +64,8 @@ interface Form {
 interface ErrorForm {
     nik: boolean;
     nama: boolean;
+    is_profession: boolean;
+    is_company: boolean;
     email: boolean;
     countryCode: boolean;
     phone: boolean;
@@ -125,6 +129,8 @@ const EventDetails = () => {
         nik: false,
         nama: false,
         email: false,
+        is_profession: false,
+        is_company: false,
         countryCode: true,
         phone: false
     });
@@ -347,6 +353,8 @@ const EventDetails = () => {
                     nik: '',
                     full_name: '',
                     email: '',
+                    is_profession: '',
+                    is_company: '',
                     countryCode: '',
                     no_telp: '',
                     is_pemesan: index ? 0 : 1,
@@ -360,6 +368,8 @@ const EventDetails = () => {
                 {
                     nik: '',
                     full_name: '',
+                    is_profession: '',
+                    is_company: '',
                     email: '',
                     countryCode: '',
                     no_telp: '',
