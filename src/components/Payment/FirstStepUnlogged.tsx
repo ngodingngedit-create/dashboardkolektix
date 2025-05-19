@@ -44,6 +44,8 @@ interface ErrorForm {
     email: boolean;
     countryCode: boolean;
     phone: boolean;
+    is_profession: boolean;
+    is_company: boolean;
 }
 
 interface Form {
@@ -56,6 +58,8 @@ interface Form {
     identity_type_id: number;
     event_ticket_id: number;
     seat_number?: string;
+    is_profession: string;
+    is_company: string;
 }
 
 interface StepPaymentProps {
@@ -80,6 +84,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         nik: false,
         nama: false,
         email: false,
+        is_profession: false, 
+        is_company: false,
         countryCode: true,
         phone: false
     });
@@ -241,6 +247,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 countryCode: '',
                 no_telp: '',
                 is_pemesan: 0,
+                is_profession: '',
+                is_company: '',
                 identity_type_id: 1,
                 event_ticket_id: 1
             };
@@ -642,6 +650,28 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                                         />
                                                     </Field>
                                                 ) : <></>}
+                                                {detail.is_profession == 1 ? (
+                                                    <Field className="mb-2">
+                                                        <Label className="text-sm font-base text-grey">Profesi / Bidang Pekerjaan</Label>
+                                                        <Input
+                                                        className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                                                        placeholder="profesi atau bidang pekerjaan"
+                                                        value={item.is_profession || ''}
+                                                        onChange={(e) => handleInput(index, 'is_profession', e.target.value)}
+                                                        />
+                                                    </Field>
+                                                ) : <></>}
+                                                {detail.is_company == 1 ? (
+                                                    <Field className="mb-2">
+                                                        <Label className="text-sm font-base text-grey">Perusahaan / Organisasi</Label>
+                                                        <Input
+                                                        className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                                                        placeholder="Nama Perusahaan Atau Organisasi"
+                                                        value={item.is_company || ''}
+                                                        onChange={(e) => handleInput(index, 'is_company', e.target.value)}
+                                                        />
+                                                    </Field>
+                                                ) : <></>}
                                                 {detail.is_email == 1 ? (
                                                     <Field className="mb-2">
                                                         <Label className="text-sm font-base text-grey">Email</Label>
@@ -813,6 +843,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                                                         {/* Field lainnya */}
                                                         {detail?.is_name == 1 ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, 'full_name', e.target.value)} /> : <></>}
+
+                                                        {detail?.is_profession == 1 ? <InputField fullWidth type="text" label="Profesi atau Pekerjaan anda" placeholder="contoh: Promotor,Musisi, IT, Programmer etc " value={item.is_profession} onChange={(e) => handleInput(index, 'is_profession', e.target.value)} /> : <></>}
+
+                                                        {detail?.is_company == 1 ? <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, 'is_company', e.target.value)} /> : <></>}
 
                                                         {detail?.is_email == 1 ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, 'email', e.target.value)} /> : <></>}
 
