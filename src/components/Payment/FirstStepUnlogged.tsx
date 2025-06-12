@@ -262,13 +262,21 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
+
+            const subtotal = totalSubtotalPrice; // Use the prop that was passed to the component
+            const adminFee = (detail?.admin_fee || 0) * totalCount;
+            const tax = detail?.ppn ? Math.round((subtotal + adminFee) * (detail.ppn / 100)) : 0;
+            const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+            const grandtotal = subtotal + adminFee + tax - voucherDiscount;
+
         const payload = {
             event_id: detail?.id,
             admin_fee: detail?.admin_fee,
             // plus adminfee
             //admin_fee: (detail?.admin_fee || 0) * totalCount,
             payment_method: payment ? payment : '4',
-            grandtotal: detail ? totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0)) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) : 0,
+           // grandtotal: detail ? totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0)) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0) : 0,
+            grandtotal: grandtotal,
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
             bank_code: bank,
@@ -560,19 +568,33 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             </div>
                             {detail.ppn ? (
                                 <div className="py-3 px-4 flex justify-between items-center">
-                                    <p>Tax</p>
-                                    <p className="font-semibold">Rp{detail.ppn.toLocaleString('id-ID')}</p>
+                                    <p>Tax ({detail.ppn}%)</p>
+                                      <p className="font-semibold">
+                                        {(detail.ppn) > 0 ? (
+                                        <NumberFormatter value={Math.round((totalSubtotalPrice + (detail.admin_fee * totalCount)) * (detail.ppn / 100))} />
+                                        ) : (
+                                      <Text>Free</Text>
+                                        )}
+                                    </p>
                                 </div>
                             ) : null}
                             <div className="py-3 px-4 flex justify-between items-center">
                                 <p>Total Pembayaran</p>
                                 <p className="font-semibold">
-                                    {(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) > 0 ? (
-                                        <NumberFormatter value={(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0)))} />
-                                    ) : (
-                                        <Text>Free</Text>
-                                    )}
-                                </p>
+                                            {(() => {
+                                            const subtotal = totalSubtotalPrice;
+                                            const adminFee = detail.admin_fee * totalCount;
+                                            const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                                            const tax = detail.ppn ? Math.round((subtotal + adminFee) * (detail.ppn / 100)) : 0;
+                                            const grandTotal = (subtotal + adminFee + tax) - voucherDiscount;
+                                            
+                                            return grandTotal > 0 ? (
+                                                <NumberFormatter value={grandTotal} />
+                                            ) : (
+                                                <Text>Free</Text>
+                                            );
+                                            })()}
+                                        </p>
                             </div>
                         </div>
                         {form.map((item, index) => {
@@ -984,18 +1006,32 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     ))}*/}
                                     {detail.ppn ? (
                                         <div className="py-3 px-4 flex justify-between items-center">
-                                            <p>Tax</p>
-                                            <p className="font-semibold">Rp {detail.ppn.toLocaleString('id-ID')}</p>
-                                        </div>
+                                            <p>Tax ({detail.ppn}%)</p>
+                                             <p className="font-semibold">
+                                                {(detail.ppn) > 0 ? (
+                                                <NumberFormatter value={Math.round((totalSubtotalPrice + (detail.admin_fee * totalCount)) * (detail.ppn / 100))} />
+                                                ) : (
+                                            <Text>Free</Text>
+                                                )}
+                                            </p>
+                                        </div> 
                                     ) : null}
                                     <div className="py-3 px-4 flex justify-between items-center">
                                         <p>Total Pembayaran</p>
                                         <p className="font-semibold">
-                                            {((totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)) > 0 ? (
-                                                <NumberFormatter value={(totalSubtotalPrice + ((detail.admin_fee * totalCount) + (detail.ppn || 0))) - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)} />
+                                            {(() => {
+                                            const subtotal = totalSubtotalPrice;
+                                            const adminFee = detail.admin_fee * totalCount;
+                                            const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                                            const tax = detail.ppn ? Math.round((subtotal + adminFee) * (detail.ppn / 100)) : 0;
+                                            const grandTotal = (subtotal + adminFee + tax) - voucherDiscount;
+                                            
+                                            return grandTotal > 0 ? (
+                                                <NumberFormatter value={grandTotal} />
                                             ) : (
                                                 <Text>Free</Text>
-                                            )}
+                                            );
+                                            })()}
                                         </p>
                                     </div>
                                 </div>

@@ -41,6 +41,20 @@ const ThirdStep = ({
 }: StepPaymentProps) => {
   const router = useRouter();
   const { width } = useWindowSize();
+  // Only proceed if transactionData exists
+  if (!width || !transactionData) return null;
+
+  // Calculate amounts properly
+  const baseAmount = transactionData.tickets.reduce(
+  (sum, ticket) => sum + (ticket.price * ticket.qty_ticket), 
+  0
+);
+const adminFee = transactionData.has_event.admin_fee * transactionData.total_qty;
+const voucherDiscount = voucher?.reduce((sum, v) => sum + (v.amount || 0), 0) || 0;
+const subtotal = baseAmount + adminFee - voucherDiscount;
+const taxAmount = Math.round(subtotal * (transactionData.has_event.ppn / 100));
+const grandtotal = subtotal + taxAmount;
+
   const classAcc = {
     base: '!p-0',
     heading: 'bg-primary-light px-4',
@@ -160,9 +174,9 @@ const ThirdStep = ({
   </>
 )}
             <div className='flex justify-between items-center'>
-              <p className='text-xs text-grey mb-1'>Pajak</p>
+              <p className='text-xs text-grey mb-1'>PPN ({transactionData.ppn}%)</p>
               <p className='text-xs mb-1'>
-                Rp{transactionData.ppn ? transactionData.ppn.toLocaleString('id-ID') : 0}
+                Rp{Math.round(taxAmount).toLocaleString('id-ID')}
               </p>
             </div>
             <div className='flex justify-between items-center'>
@@ -176,10 +190,7 @@ const ThirdStep = ({
             <div className='flex items-center justify-between font-semibold'>
               <p>Total Pembayaran</p>
               <p>
-                {`Rp${(
-                  transactionData.grandtotal - 
-                  (voucher?.reduce((sum, v) => sum + v.amount, 0) ?? 0)
-                ).toLocaleString('id-ID')}`}
+                 Rp{Math.round(grandtotal).toLocaleString('id-ID')}
               </p>
             </div>
               {/* <button
@@ -414,20 +425,16 @@ const ThirdStep = ({
                   </div>
                 ) : null}
                 <div className='flex items-center justify-between px-4'>
-                  <p className='text-sm mb-1'>Pajak</p>
+                  <p className='text-sm mb-1'>PPN ({transactionData.has_event.ppn}%)</p>
                   <p className='text-sm text-grey'>
-                    Rp
-                    {transactionData.has_event.ppn
-                      ? transactionData.has_event.ppn.toLocaleString('id-ID')
-                      : 0}
+                   Rp{Math.round(taxAmount).toLocaleString('id-ID')}
                   </p>
                 </div>
               </div>
               <div className='py-3 px-4 flex justify-between items-center'>
                 <p className='font-semibold'>{`Total Pembayaran`}</p>
                 <p className='font-semibold'>
-                  Rp
-                  {transactionData.grandtotal.toLocaleString('id-ID')}
+                   Rp{Math.round(grandtotal).toLocaleString('id-ID')}
                 </p>
               </div>
             </div>
