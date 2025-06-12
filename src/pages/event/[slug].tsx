@@ -440,6 +440,11 @@ const EventDetails = () => {
         const now = new Date();
         now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
         const isoString = now.toISOString();
+        // Calculate subtotal before tax
+        const subtotalBeforeTax = detail ? totalSubtotalPrice + detail.admin_fee * totalCount : 0;
+        
+        // Calculate tax as percentage of subtotal
+        const taxAmount = detail?.ppn ? (subtotalBeforeTax * detail.ppn / 100) : 0;
 
         var payload: { [key: string]: any } = {
             user_id: userId,
@@ -453,10 +458,13 @@ const EventDetails = () => {
             })) : [],
             identities: form,
             tickets: ticket.map(e => ({...e, seatnumber_ticket: JSON.stringify(e.seat_number)})),
-            grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
+            //grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
+            // Calculate grandtotal with tax as percentage
+            grandtotal: subtotalBeforeTax + taxAmount - voucher.reduce((sum, v) => sum + v.amount, 0),
             bank_code: bank ?? 'xendit',
             expiration_date: isoString,
-            payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString()
+            payment_method: (paymentList?.find(e => e?.payment_name?.toLowerCase() == 'xendit') ?? { id: 0 }).id.toString(),
+            ppn: taxAmount 
         };
 
         if (payment) payload.payment_method = payment;
