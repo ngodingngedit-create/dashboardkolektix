@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Logo from "@images/kolektix logo tansparant-blue.png";
-import LogoWhite from "@images/logo.png";
+import LogoWhite from "@images/kolektix.gif";
 import OTPInput from "react-otp-input";
 import { faMessage } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
@@ -213,20 +213,20 @@ const Auth = () => {
     setImageOpacity(1);
   }, []);
 
-  useEffect(() => {
-    const text = "Masa Depan Tongkrongan";
-    let index = 0;
+  // useEffect(() => {
+  //   const text = "Masa Depan Tongkrongan";
+  //   let index = 0;
 
-    const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + text[index - 1]);
-      index += 1;
-      if (index === text.length) {
-        clearInterval(interval);
-      }
-    }, 150);
+  //   const interval = setInterval(() => {
+  //     setDisplayedText((prev) => prev + text[index - 1]);
+  //     index += 1;
+  //     if (index === text.length) {
+  //       clearInterval(interval);
+  //     }
+  //   }, 150);
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useEffect(() => {
     setData({ ...data, otp_code: otp });

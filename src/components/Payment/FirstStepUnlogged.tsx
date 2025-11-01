@@ -60,6 +60,7 @@ interface FormTicket {
   qty_ticket: number;
   payment_status: string;
   seat_number?: string[];
+  ticket_fee?: number;
 }
 
 interface ErrorForm {
@@ -142,6 +143,12 @@ const FirstStepUnlogged = ({
   const [bank, setBank] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<any>(null);
 
+  const totalTicketFee = ticket.reduce(
+    (sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket,
+    0
+  );
+  // const adminFee = (detail?.admin_fee || 0) * totalCount + totalTicketFee;
+  const adminFee = totalTicketFee;
   const getPaymentMethodById = (id: string) => {
     setLoading(true);
     Get(`payment-method/${id}`, {})
@@ -164,6 +171,7 @@ const FirstStepUnlogged = ({
 
   useEffect(() => {
     console.log("FirstStepUnlogged");
+    console.log("Ticket data:", ticket);
   }, []);
 
   const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
@@ -333,7 +341,8 @@ const FirstStepUnlogged = ({
     const isoString = now.toISOString();
 
     const subtotal = totalSubtotalPrice; // Use the prop that was passed to the component
-    const adminFee = (detail?.admin_fee || 0) * totalCount;
+    //const adminFee = (detail?.admin_fee || 0) * totalCount + totalTicketFee;
+    const adminFee = totalTicketFee;
     const tax = detail?.ppn
       ? Math.round((subtotal + adminFee) * (detail.ppn / 100))
       : 0;
@@ -702,10 +711,10 @@ const FirstStepUnlogged = ({
                 </p>
               </div>
               <div className="py-3 px-4 flex justify-between items-center">
-                <p>Biaya Admin</p>
+                <p>Biaya Admin </p>
                 <p className="font-semibold">
-                  {detail?.admin_fee * totalCount > 0 ? (
-                    <NumberFormatter value={detail?.admin_fee * totalCount} />
+                  {adminFee > 0 ? (
+                    <NumberFormatter value={adminFee} />
                   ) : (
                     <Text>Free</Text>
                   )}
@@ -718,8 +727,7 @@ const FirstStepUnlogged = ({
                     {detail.ppn > 0 ? (
                       <NumberFormatter
                         value={Math.round(
-                          (totalSubtotalPrice + detail.admin_fee * totalCount) *
-                            (detail.ppn / 100)
+                          (totalSubtotalPrice + adminFee) * (detail.ppn / 100)
                         )}
                       />
                     ) : (
@@ -728,28 +736,29 @@ const FirstStepUnlogged = ({
                   </p>
                 </div>
               ) : null}
-              <div className="py-3 px-4 flex justify-between items-center">
-                <p>Total Pembayaran</p>
-                <p className="font-semibold">
-                  {(() => {
-                    const subtotal = totalSubtotalPrice;
-                    const adminFee = detail.admin_fee * totalCount;
-                    const voucherDiscount = vouchers.reduce(
-                      (sum, v) => sum + (v?.amount || 0),
-                      0
-                    );
-                    const tax = detail.ppn
-                      ? Math.round((subtotal + adminFee) * (detail.ppn / 100))
-                      : 0;
-                    const grandTotal =
-                      subtotal + adminFee + tax - voucherDiscount;
 
-                    return grandTotal > 0 ? (
-                      <NumberFormatter value={grandTotal} />
-                    ) : (
-                      <Text>Free</Text>
-                    );
-                  })()}
+              {vouchers.length > 0 && (
+                <div className="py-3 px-4 flex justify-between items-center">
+                  <p>Total Voucher</p>
+                  <p className="font-semibold">
+                    -
+                    <NumberFormatter
+                      value={vouchers.reduce(
+                        (sum, voucher) => sum + (voucher.amount || 0),
+                        0
+                      )}
+                    />
+                  </p>
+                </div>
+              )}
+              <div className="py-3 px-4 flex justify-between items-center">
+                <p>Total Pembayaran mobile</p>
+                <p className="font-semibold">
+                  {totalTicketFee > 0 ? (
+                    <NumberFormatter value={totalTicketFee} />
+                  ) : (
+                    <Text>Free</Text>
+                  )}
                 </p>
               </div>
             </div>
@@ -1499,21 +1508,9 @@ const FirstStepUnlogged = ({
                       )}
                     </p>
                   </div>
-                  <div className="py-3 px-4 flex justify-between items-center">
-                    <p>Admin Fee</p>
-                    <p className="font-semibold">
-                      {detail.admin_fee > 0 ? (
-                        <NumberFormatter
-                          value={detail.admin_fee * totalCount}
-                        />
-                      ) : (
-                        <Text>Free</Text>
-                      )}
-                    </p>
-                  </div>
                   {vouchers.length > 0 && (
                     <div className="py-3 px-4 flex justify-between items-center">
-                      <p>Voucher</p>
+                      <p>Total Voucher</p>
                       <p className="font-semibold">
                         -
                         <NumberFormatter
@@ -1525,6 +1522,16 @@ const FirstStepUnlogged = ({
                       </p>
                     </div>
                   )}
+                  <div className="py-3 px-4 flex justify-between items-center">
+                    <p>Admin Fee</p>
+                    <p className="font-semibold">
+                      {adminFee > 0 ? (
+                        <NumberFormatter value={adminFee} />
+                      ) : (
+                        <Text>Free</Text>
+                      )}
+                    </p>
+                  </div>
                   {/*{vouchers.map((voucher, index) => (
                                         <div className="py-3 px-4 flex justify-between items-center" key={index}>
                                             <p>Voucher {voucher.name}</p>
@@ -1540,8 +1547,7 @@ const FirstStepUnlogged = ({
                         {detail.ppn > 0 ? (
                           <NumberFormatter
                             value={Math.round(
-                              (totalSubtotalPrice +
-                                detail.admin_fee * totalCount) *
+                              (totalSubtotalPrice + totalTicketFee) *
                                 (detail.ppn / 100)
                             )}
                           />
@@ -1551,12 +1557,14 @@ const FirstStepUnlogged = ({
                       </p>
                     </div>
                   ) : null}
+
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>Total Pembayaran</p>
                     <p className="font-semibold">
                       {(() => {
                         const subtotal = totalSubtotalPrice;
-                        const adminFee = detail.admin_fee * totalCount;
+                        //const adminFee = detail.admin_fee * totalCount + totalTicketFee;
+                        const adminFee = totalTicketFee;
                         const voucherDiscount = vouchers.reduce(
                           (sum, v) => sum + (v?.amount || 0),
                           0

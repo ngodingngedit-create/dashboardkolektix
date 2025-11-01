@@ -1,5 +1,5 @@
-import { EXPORT_DETAIL } from 'next/dist/shared/lib/constants';
-import { SeatmapData } from './formInterface';
+import { EXPORT_DETAIL } from "next/dist/shared/lib/constants";
+import { SeatmapData } from "./formInterface";
 
 export interface TicketProps {
   id: number;
@@ -11,6 +11,7 @@ export interface TicketProps {
   ticket_date: string;
   starting_time?: string;
   ending_time?: string;
+  ticket_fee?: number;
   ticket_end: string;
   is_fullbook: number;
   is_soldout: number;
@@ -26,13 +27,22 @@ export interface TicketProps {
   event_schedule_date: string | null;
   available_seat_number?: string;
   seat_color?: string;
-  ticket_category?: 'Seated' | 'Festival';
+  ticket_category?: "Seated" | "Festival";
   has_ordered_seatnumber?: {
     seatnumber_ticket?: string;
   }[];
 }
 
-export type TicketPropsInputRequest = Pick<TicketProps, 'event_id' | 'name' | 'qty' | 'price' | 'description' | 'ticket_date' | 'ticket_end'>
+export type TicketPropsInputRequest = Pick<
+  TicketProps,
+  | "event_id"
+  | "name"
+  | "qty"
+  | "price"
+  | "description"
+  | "ticket_date"
+  | "ticket_end"
+>;
 
 export interface VacancyProps {
   id: number;
@@ -125,7 +135,7 @@ export interface CreatorProps {
   longitude: string;
   latitude: string;
   website: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   event_coordinator_name: string | null;
   event_cordinator_phone: string | null;
   created_by: string;
@@ -246,7 +256,7 @@ export type UserProps = Partial<{
   event_status_id: number;
   verified_status_id?: number;
   force_creator?: boolean;
-  role?: "Staff" | "Creator" | "Pembeli" | 'Admin';
+  role?: "Staff" | "Creator" | "Pembeli" | "Admin";
   bookmarked?: {
     id: number;
     user_id: number;
@@ -257,14 +267,14 @@ export type UserProps = Partial<{
     lowongan_id?: number;
     talenta_id?: number;
     venue_id?: number;
-  }[]
-}>
+  }[];
+}>;
 
 export interface SliderProps {
   id: number;
   name: string;
   description: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   created_by: string;
   updated_by: Date | null;
   created_at: Date | null;
@@ -285,13 +295,11 @@ export interface InboxListProps {
   deleted_at: null;
   chats: ChatProps[];
   has_replies?: any[];
-  
-  
 }
 
 export type GetCreatorResponse = CreatorProps & {
   has_user: UserProps;
-}
+};
 
 interface ChatProps {
   id: number;
@@ -333,7 +341,7 @@ export interface EventProps {
   description: string;
   term_condition: string;
   save_as_draft: string;
-  event_status_id : number;
+  event_status_id: number;
   has_creator: CreatorProps;
   has_event_status: EventStatus;
   has_event_payment_method: EventPaymentMethod[];
@@ -343,7 +351,7 @@ export interface EventProps {
   };
   has_category_event?: {
     name: string;
-  }
+  };
   created_by: string;
   updated_by: string;
   created_at: Date;
@@ -359,12 +367,12 @@ export interface EventProps {
   is_phone_number: 1 | 0;
   grand_total: number;
   transaction_saldo_by_event: {
-      event_id: number;
-      event_slug: string;
-      creator_id: number;
-      creator_name: string;
-      total_saldo_event: string;
-  }
+    event_id: number;
+    event_slug: string;
+    creator_id: number;
+    creator_name: string;
+    total_saldo_event: string;
+  };
   seatmap?: SeatmapData[];
   max_use_voucher?: number;
 }
@@ -484,7 +492,7 @@ export interface VenueProps {
   has_venue_capacity: VenueCapacity;
   has_venue_schedule: VenueSchedule;
   venue_gallery: {
-      image_url: string;
+    image_url: string;
   }[];
 }
 
