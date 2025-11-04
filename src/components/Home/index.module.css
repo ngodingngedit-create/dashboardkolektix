@@ -4,7 +4,7 @@
 }
 
 .heading::before {
-  content: '';
+  content: "";
   width: 120%;
   background: #e2eefe;
   position: absolute;
@@ -14,16 +14,51 @@
   bottom: 50%;
 }
 
-.eventContainer {
+.eventContainer2 {
   display: flex;
   justify-content: flex-start;
   overflow-x: scroll;
   scroll-snap-type: x mandatory;
 }
 
+.eventContainer {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+/* 🔁 Track bergerak (looping) */
+.scrollTrack {
+  display: flex;
+  gap: 1rem;
+  width: max-content;
+  animation: scrollLoop 40s linear infinite;
+}
+
+/* 🌀 Loop mulus */
+@keyframes scrollLoop {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ⏸️ Pause saat hover */
+.eventContainer:hover .scrollTrack {
+  animation-play-state: paused;
+}
+
+/* Hilangkan scrollbar */
+.eventContainer::-webkit-scrollbar {
+  display: none;
+}
+
 .eventCard {
   flex: 0 0 auto;
-  scroll-snap-align: start;
+  /* scroll-snap-align: start; */
 }
 
 .eventCard:last-child {
