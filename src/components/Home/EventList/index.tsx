@@ -7,6 +7,7 @@ import EventCard from "@/components/Card/EventCard";
 import styles from "../index.module.css";
 import useWindowSize from "@/utils/useWindowSize";
 import React from "react";
+import Upcoming from "../Upcoming";
 
 interface ListProps {
   data: EventProps[];
@@ -31,18 +32,30 @@ const EventList = ({ data, loading }: ListProps) => {
             {data.map((event: any) => (
               <div className={styles.eventCard} key={event.id}>
                 <EventCard
+                  // id={event.id}
+                  // maxWidth={300}
+                  // title={event.name}
+                  // img={event.image_url}
+                  // date={event.start_date}
+                  // end={event.end_date}
+                  // slug={event.slug}
+                  // location={event.location_city}
+                  // price={event.starting_price}
+                  // creatorImg={event.has_creator?.image}
+                  // creator={event.has_creator?.name}
+                  // creatorSlug={event.has_creator?.slug}
                   id={event.id}
                   maxWidth={300}
                   title={event.name}
-                  img={event.image_url}
-                  date={event.start_date}
-                  end={event.end_date}
+                  img={event.image_url ?? ""}
+                  date={new Date(event.start_date)}
+                  end={new Date(event.end_date)}
                   slug={event.slug}
                   location={event.location_city}
                   price={event.starting_price}
                   creatorImg={event.has_creator?.image}
                   creator={event.has_creator?.name}
-                  creatorSlug={event.has_creator?.slug}
+                  creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
                 />
               </div>
             ))}

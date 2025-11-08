@@ -14,6 +14,7 @@ interface UpcomingProps {
 }
 
 const Upcoming = ({ className, data, loading }: UpcomingProps) => {
+  // console.log(data);
   const currentDate = new Date();
 
   const upcomingEvents = data.filter((event) => new Date(event.end_date) > currentDate);
@@ -29,39 +30,6 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
               <FontAwesomeIcon icon={faCircleArrowRight} />
             </Link>
           </div>
-          {/* <div
-          className={`${styles.eventContainer} min-h-80 gap-6 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}
-        >
-          {!loading ? (
-            upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event: EventProps) => (
-                <div className={styles.eventCard} key={event.id}>
-                  <EventCard
-                    id={event.id}
-                    maxWidth={300}
-                    title={event.name}
-                    img={event.image_url ?? ''}
-                    date={new Date(event.start_date)}
-                    end={new Date(event.end_date)}
-                    slug={event.slug}
-                    location={event.location_city}
-                    price={event.starting_price}
-                    creatorImg={event.has_creator?.image}
-                    creator={event.has_creator?.name}
-                  />
-                </div>
-              ))
-            ) : (
-              <p>No upcoming events found.</p>
-            )
-          ) : (
-            <>
-              <EventCardLoading />
-              <EventCardLoading />
-              <EventCardLoading />
-            </>
-          )}
-        </div> */}
           <div className={`${styles.eventContainer} min-h-80 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}>
             <div className={styles.scrollTrack}>
               {/* 🔁 Set pertama */}
@@ -82,6 +50,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
                         />
                       </div>
                     ))}
@@ -100,6 +69,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
                         />
                       </div>
                     ))}

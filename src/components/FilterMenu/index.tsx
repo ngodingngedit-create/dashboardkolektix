@@ -102,7 +102,7 @@ const FilterMenu = () => {
           {/* input search bar */}
           <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-4 py-2 flex-1">
             <FontAwesomeIcon icon={faSearch} className="text-white opacity-80" />
-            <input type="text" placeholder="Cari sesuatu..." className="bg-transparent outline-none text-white placeholder-white/60 w-full rounded-full" />
+            <input type="text" placeholder="Cari sesuatu..." className="bg-primary-800 outline-none text-white placeholder-white/60 w-full rounded-full" />
           </div>
 
           <div className="">

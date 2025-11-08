@@ -2,7 +2,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDown, faPlus } from "@fortawesome/free-solid-svg-icons";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import TopUpModal from "@/components/Dashboard/Modal/TopUp";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import CreatorTable from "@/components/Dashboard/CreatorTable";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
 
 // Definisikan tipe untuk transaksi
@@ -12,6 +13,23 @@ interface Transaction {
   amount: string;
   destination: string;
   color: string;
+}
+
+interface EventData {
+  creator_id: string;
+  event_name: string;
+  slug: string;
+  total_admin_fee: number;
+  total_buy: number;
+  total_offline: number;
+  total_online: number;
+  total_paid: number;
+  total_price_sell: number;
+  total_price_sell_offline: number;
+  total_price_sell_online: number;
+  total_ticket: number;
+  total_unpaid: number;
+  total_views: number;
 }
 
 interface Record {
@@ -24,6 +42,25 @@ const WithDraw = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen2, setIsDetailModalOpen2] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null); // State untuk detail transaksi
+  const [eventData, setEventData] = useState<EventData[] | null>(null);
+
+  const calculateTotal = (key: keyof EventData) => {
+    console.log(eventData);
+    if (!eventData || eventData.length === 0) return 0;
+
+    return eventData.reduce((total, event) => {
+      if (key === "total_price_sell") {
+        const online = Number(event.total_price_sell_online || 0);
+        const offline = Number(event.total_price_sell_offline || 0);
+        return total + online + offline;
+      }
+      return total + Number(event[key] || 0);
+    }, 0);
+  };
+
+  const calculateTotalEvents = () => {
+    return eventData ? eventData.length : 0;
+  };
 
   const handleTransactionClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -57,7 +94,7 @@ const WithDraw = () => {
             <i className="fas fa-wallet mr-2"></i>
             <span>Saldo</span>
           </div>
-          <div className="text-2xl">Rp0</div>
+          <div className="text-2xl">Rp{calculateTotal("total_price_sell").toLocaleString("id-ID")}</div>
         </div>
         <div className="flex space-x-4">
           <div className="flex flex-col items-center">

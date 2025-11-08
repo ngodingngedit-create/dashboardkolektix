@@ -1,16 +1,16 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
-import CreatorTable from '@/components/Dashboard/CreatorTable';
-import { formatDateNoCheck, formatDay, formatYear } from '@/utils/useFormattedDate';
-import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
-import { useRouter } from 'next/router';
-import useLoggedUser from '@/utils/useLoggedUser';
-import { Get } from '@/utils/REST';
-import { Accordion, AccordionItem } from '@nextui-org/react';
-import { Alert, Box, Card } from '@mantine/core';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import Link from 'next/link';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import CreatorTable from "@/components/Dashboard/CreatorTable";
+import { formatDateNoCheck, formatDay, formatYear } from "@/utils/useFormattedDate";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { useRouter } from "next/router";
+import useLoggedUser from "@/utils/useLoggedUser";
+import { Get } from "@/utils/REST";
+import { Accordion, AccordionItem } from "@nextui-org/react";
+import { Alert, Box, Card } from "@mantine/core";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import Link from "next/link";
 
 interface EventData {
   creator_id: string;
@@ -35,9 +35,9 @@ export default function Dashboard() {
   const [eventData, setEventData] = useState<EventData[] | null>(null);
 
   useEffect(() => {
-    const userData = Cookies.get('token');
+    const userData = Cookies.get("token");
     if (userData === undefined) {
-      router.push('/auth');
+      router.push("/auth");
     }
 
     if (user && user.has_creator) {
@@ -46,7 +46,7 @@ export default function Dashboard() {
       Get(`event-view-list-by-creator/${creatorId}`, {})
         .then((response) => {
           const eventData = response as EventData[];
-          setEventData(eventData); 
+          setEventData(eventData);
           console.log("Fetched event data:", eventData);
         })
         .catch((error) => {
@@ -57,10 +57,24 @@ export default function Dashboard() {
 
   const now = new Date();
 
+  // const calculateTotal = (key: keyof EventData) => {
+  //   if (!eventData || eventData.length === 0) return 0;
+
+  //   return eventData.reduce((total, event) => total + Number(event[key] || 0), 0);
+  // };
+
+  // Coba perubahan di bagian calculate
   const calculateTotal = (key: keyof EventData) => {
     if (!eventData || eventData.length === 0) return 0;
 
-    return eventData.reduce((total, event) => total + Number(event[key] || 0), 0);
+    return eventData.reduce((total, event) => {
+      if (key === "total_price_sell") {
+        const online = Number(event.total_price_sell_online || 0);
+        const offline = Number(event.total_price_sell_offline || 0);
+        return total + online + offline;
+      }
+      return total + Number(event[key] || 0);
+    }, 0);
   };
 
   const calculateTotalEvents = () => {
@@ -69,37 +83,38 @@ export default function Dashboard() {
 
   return (
     <div className="w-full text-dark">
-    
       <div className="flex flex-col gap-2 px-4 py-4 md:px-7 md:py-4 w-full bg-gradient-to-b from-white to-[#f5f5f5]">
-        <h1 className='mb-4 text-dark'>Dashboard</h1>
+        <h1 className="mb-4 text-dark">Dashboard</h1>
         <Box px={0}>
-          {(!user?.is_verified && !user?.verified_status_id) && (
+          {!user?.is_verified && !user?.verified_status_id && (
             <Alert color="red" icon={<Icon icon="uiw:information-o" />} radius={8} className={`mt-[-10px] mb-[10px]`}>
-              Akun Anda belum terverifikasi. <Link className={`text-primary-base hover:underline`} href="/dashboard/legal">Verifikasi Sekarang</Link>
+              Akun Anda belum terverifikasi.{" "}
+              <Link className={`text-primary-base hover:underline`} href="/dashboard/legal">
+                Verifikasi Sekarang
+              </Link>
             </Alert>
           )}
         </Box>
         <p className="text-dark-grey mb-1">
-          {formatDay(now.toString())} &bull; {formatDateNoCheck(now.toString())},{' '}
-          {formatYear(now.toString())}
+          {formatDay(now.toString())} &bull; {formatDateNoCheck(now.toString())}, {formatYear(now.toString())}
         </p>
         <h3 className="font-semibold text-xl md:text-2xl capitalize">Halo, {user?.has_creator?.name}</h3>
         <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p>
       </div>
 
       <Card>
-
-        <Accordion defaultExpandedKeys={['event']}>
+        <Accordion defaultExpandedKeys={["event"]}>
           {/* Event Section */}
           <AccordionItem key="event" title="Event Saya">
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable icon="mdi:event-star" title="Event Berjalan" value={calculateTotalEvents()} />
-                <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal('total_unpaid')} yBorderNone />
-                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={calculateTotal('total_views')} yBorderNone />
-                <CreatorTable icon="hugeicons:invoice" title="Total Transaksi" value={calculateTotal('total_paid')} yBorderNone />
-                <CreatorTable icon="heroicons-outline:ticket" title="Total Tiket Terjual" value={calculateTotal('total_ticket')} xBorderNone />
-                <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal('total_price_sell')} />
+                <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal("total_unpaid")} yBorderNone />
+                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={calculateTotal("total_views")} yBorderNone />
+                <CreatorTable icon="hugeicons:invoice" title="Total Transaksi" value={calculateTotal("total_paid")} yBorderNone />
+                <CreatorTable icon="heroicons-outline:ticket" title="Total Tiket Terjual" value={calculateTotal("total_ticket")} xBorderNone />
+                {/* <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} /> */}
+                <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} />
               </div>
             </div>
           </AccordionItem>
