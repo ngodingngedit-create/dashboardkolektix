@@ -270,6 +270,7 @@ const Merch = () => {
     if (isRender) getData();
   }, [isRender, page]);
 
+  // get data api
   const getData = () => {
     setLoading2(true);
     Get(`product`, { creator_id: user?.has_creator?.id })
