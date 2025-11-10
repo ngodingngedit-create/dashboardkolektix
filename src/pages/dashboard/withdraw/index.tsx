@@ -5,6 +5,7 @@ import TopUpModal from "@/components/Dashboard/Modal/TopUp";
 import { useState, useEffect } from "react";
 import CreatorTable from "@/components/Dashboard/CreatorTable";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 
 // Definisikan tipe untuk transaksi
 interface Transaction {
@@ -114,7 +115,7 @@ const WithDraw = () => {
       <div className="">
         <h2 className="text-lg text-dark font-semibold mb-4 bg-white p-4">Riwayat Transaksi</h2>
         <div className="space-y-4">
-          {transactionsData.map((record, index) => (
+          {/* {transactionsData.map((record, index) => (
             <div key={index}>
               <div className="text-dark text-lg mb-2 bg-white p-4">{record.date}</div>
               <div className="space-y-2">
@@ -136,7 +137,8 @@ const WithDraw = () => {
                 ))}
               </div>
             </div>
-          ))}
+          ))} */}
+          <WithdrawHistoryList user_id={6} />
         </div>
       </div>
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />

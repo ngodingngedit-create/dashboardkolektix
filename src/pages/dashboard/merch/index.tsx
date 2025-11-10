@@ -272,7 +272,7 @@ const Merch = () => {
 
   const getData = () => {
     setLoading2(true);
-    Get(`product`, { creator_id: user?.has_creator?.id  })
+    Get(`product`, { creator_id: user?.has_creator?.id })
       .then((res: any) => {
         console.log(res);
         const list = res.data as MerchListResponse[];
@@ -284,6 +284,39 @@ const Merch = () => {
       .catch((err) => console.error(err))
       .finally(() => setLoading2(false));
   };
+
+  // const getData = () => {
+  //   setLoading2(true);
+
+  //   const token = "{{development}}"; // ganti dengan token dinamis kalau perlu
+  //   const url = `/api/product-bymerchant`;
+
+  //   fetch(url, {
+  //     method: "GET",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //   })
+  //     .then(async (res) => {
+  //       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  //       const data = await res.json();
+
+  //       console.log(data);
+  //       const list = data.data as MerchListResponse[];
+  //       setMerchList(list);
+
+  //       if (data.meta) {
+  //         setLastPage(data.meta.last_page || 1);
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       console.error("Error fetching data:", err);
+  //     })
+  //     .finally(() => {
+  //       setLoading2(false);
+  //     });
+  // };
 
   const handleToggleStatus = async (id: number, status: boolean) => {
     setLoading((prev) => [...prev, "toggle-status"]);

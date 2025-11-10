@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import TalentCard from '@/components/Card/TalentCard';
-import JobsCard from '@/components/Card/JobsCard';
-import { formatDateDiff } from '@/utils/useFormattedDate';
-import empty from '../../assets/icon/vacancy.png';
-import { VacancyProps } from '@/utils/globalInterface';
-import { Get } from '@/utils/REST';
-import JobList from '@/components/Card/JobsCard/JobList';
-import { Breadcrumbs, BreadcrumbItem, Skeleton } from '@nextui-org/react';
-import FilterLowongan from '@/components/FilterLowongan';
-import { SimpleGrid, Stack, Card, Image, Text, Flex, AspectRatio, NumberFormatter, Divider, Button } from '@mantine/core';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import moment from 'moment';
-import Link from 'next/link';
-import { Card as CardN } from '@nextui-org/react';
+import React, { useState, useEffect } from "react";
+import TalentCard from "@/components/Card/TalentCard";
+import JobsCard from "@/components/Card/JobsCard";
+import { formatDateDiff } from "@/utils/useFormattedDate";
+import empty from "../../assets/icon/vacancy.png";
+import { VacancyProps } from "@/utils/globalInterface";
+import { Get } from "@/utils/REST";
+import JobList from "@/components/Card/JobsCard/JobList";
+import { Breadcrumbs, BreadcrumbItem, Skeleton } from "@nextui-org/react";
+import FilterLowongan from "@/components/FilterLowongan";
+import { SimpleGrid, Stack, Card, Image, Text, Flex, AspectRatio, NumberFormatter, Divider, Button } from "@mantine/core";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import moment from "moment";
+import Link from "next/link";
+import { Card as CardN } from "@nextui-org/react";
 
 const Lowongan = () => {
   const [data, setData] = useState<VacancyProps[]>([]);
   const [filteredData, setFilteredData] = useState<VacancyProps[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // Start with loading = true
-  const [nameFilter, setNameFilter] = useState<string>('');
+  const [nameFilter, setNameFilter] = useState<string>("");
 
   const getData = () => {
     setLoading(true);
-    Get('vacancy', {})
+    Get("vacancy", {})
       .then((res: any) => {
         setData(res.data);
         setFilteredData(res.data);
@@ -41,11 +41,7 @@ const Lowongan = () => {
   };
 
   useEffect(() => {
-    const updatedData = nameFilter
-      ? data.filter((item) =>
-          item.name.toLowerCase().includes(nameFilter.toLowerCase())
-        )
-      : data;
+    const updatedData = nameFilter ? data.filter((item) => item.name.toLowerCase().includes(nameFilter.toLowerCase())) : data;
 
     setFilteredData(updatedData);
   }, [nameFilter, data]);
@@ -55,10 +51,11 @@ const Lowongan = () => {
   }, []);
 
   return (
-    <div className='max-w-6xl mx-auto text-dark min-h-screen md:pt-[20px]'>
-      <Stack gap={0} mt={20} mih={600} px={20}>
-        {/* <FilterLowongan setNameFilter={handleNameFilterChange} /> */}
-
+    <div className="max-w-6xl mx-auto text-dark min-h-screen md:pt-[20px]">
+      <h1 className="text-center justify-items-center mt-64 ">COMING SOON</h1>
+      {/* <Stack gap={0} mt={20} mih={600} px={20}> */}
+      {/* <FilterLowongan setNameFilter={handleNameFilterChange} /> */} {/* yang ini jangan dibuka */}
+      {/* 
         {!loading && filteredData.length == 0 && (
           <div className='min-h-[80vh] flex flex-col gap-3 items-center justify-center'>
           <Image src={empty.src} w={24} alt='Vacancy' />
@@ -120,8 +117,7 @@ const Lowongan = () => {
             ))}
           </SimpleGrid>
         </Card>
-      </Stack>
-
+      </Stack> */}
       {/* {loading ? (
          <div className='flex divide-y divide-primary-light-200 content-center justify-items-center my-5 border border-primary-light-200 shadow-md rounded-md'>
          {[...Array(5)].map((_, index) => (
