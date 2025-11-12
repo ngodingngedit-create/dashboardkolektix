@@ -25,12 +25,35 @@ interface ErrorRegisterProps {
 }
 
 // buat form
-const Form = ({ placeholder, label, onChange, value, type }: { placeholder: string; label?: string; onChange?: (e: any) => void; value?: string; type?: string }) => {
+const Form = ({
+  placeholder,
+  label,
+  onChange,
+  value,
+  type,
+}: {
+  placeholder: string;
+  label?: string;
+  onChange?: (e: any) => void;
+  value?: string;
+  type?: string;
+}) => {
   return (
     <div>
-      <label htmlFor="email" className="block mb-2 ml-1 text-[12px] font-medium text-dark">
+      <label
+        htmlFor="email"
+        className="block mb-2 ml-1 text-[12px] font-medium text-dark"
+      >
         {label}
-        <input type={type ? type : "text"} name="" id="" placeholder={placeholder} value={value} className="bg-[#e2edfc] py-2 px-3 text-xs w-full text-dark rounded-full" onChange={onChange} />{" "}
+        <input
+          type={type ? type : "text"}
+          name=""
+          id=""
+          placeholder={placeholder}
+          value={value}
+          className="bg-[#e2edfc] py-2 px-3 text-xs w-full text-dark rounded-full"
+          onChange={onChange}
+        />{" "}
       </label>
     </div>
   );
@@ -65,7 +88,10 @@ const Auth = () => {
   }, [users]);
 
   const Completionist = () => (
-    <button className="text-dark w-full rounded-full p-2 text-xs font-semibold flex items-center gap-2 hover:text-primary-base" onClick={handleResendOtp}>
+    <button
+      className="text-dark w-full rounded-full p-2 text-xs font-semibold flex items-center gap-2 hover:text-primary-base"
+      onClick={handleResendOtp}
+    >
       Kirim Ulang
     </button>
   );
@@ -117,7 +143,9 @@ const Auth = () => {
       })
       .catch((err: any) => {
         if (err.response.status === 401) {
-          toast.error("Email belum terdaftar. Silahkan registrasi terlebih dahulu");
+          toast.error(
+            "Email belum terdaftar. Silahkan registrasi terlebih dahulu"
+          );
           setStep(1);
         }
         setErrors(err.response.data);
@@ -222,9 +250,15 @@ const Auth = () => {
       <div className="sm:w-full lg:w-1/2 flex flex-col justify-center items-center lg:px-10 max-w-2xl">
         <div className="bg-white rounded-2xl flex flex-col justify-center w-full sm:w-[20rem] h-[22rem]">
           {step === 0 && (
-            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 ${step === 0 ? "opacity-100" : "opacity-0"}`}>
+            <div
+              className={`flex flex-col justify-center items-center transition-opacity duration-100 ${
+                step === 0 ? "opacity-100" : "opacity-0"
+              }`}
+            >
               <Image src={Logo} alt="Logo" className="w-1/3" />
-              <h2 className="text-dark font-semibold text-xl mt-4">Masuk ke akunmu</h2>
+              <h2 className="text-dark font-semibold text-xl mt-4">
+                Masuk ke akunmu
+              </h2>
               <div className="flex">
                 <p className="text-grey text-sm text-center my-2">
                   Belum memiliki akun di Kolektix?
@@ -242,20 +276,44 @@ const Auth = () => {
               </div>
               <div className="flex flex-col w-4/5 my-2">
                 <form onSubmit={login}>
-                  <Form placeholder="Alamat Email" onChange={(e: any) => setData({ ...data, email: e.target.value })} />
-                  {errors && <p className="text-danger text-[10px] mt-1">{errors.message}</p>}
-                  <button className="bg-primary-base text-white w-full rounded-full p-2 text-xs my-4 flex items-center justify-center disabled:bg-primary-disabled" type="submit" onClick={login} disabled={loading}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Selanjutnya"}
+                  <Form
+                    placeholder="Alamat Email"
+                    onChange={(e: any) =>
+                      setData({ ...data, email: e.target.value })
+                    }
+                  />
+                  {errors && (
+                    <p className="text-danger text-[10px] mt-1">
+                      {errors.message}
+                    </p>
+                  )}
+                  <button
+                    className="bg-primary-base text-white w-full rounded-full p-2 text-xs my-4 flex items-center justify-center disabled:bg-primary-disabled"
+                    type="submit"
+                    onClick={login}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Spinner color="default" size="sm" />
+                    ) : (
+                      "Selanjutnya"
+                    )}
                   </button>
                 </form>
               </div>
             </div>
           )}
           {step === 1 && (
-            <div className={`transition-opacity duration-300 opacity-0 ${step === 1 && "opacity-100"}`}>
+            <div
+              className={`transition-opacity duration-300 opacity-0 ${
+                step === 1 && "opacity-100"
+              }`}
+            >
               <div className="flex justify-center flex-col items-center">
                 <Image src={Logo} alt="Logo" className="w-1/3" />
-                <h2 className="text-dark font-semibold text-xl my-2">Daftar di Kolektix.com</h2>
+                <h2 className="text-dark font-semibold text-xl my-2">
+                  Daftar di Kolektix.com
+                </h2>
                 <div className="flex">
                   <p className="text-grey text-sm text-center mb-3">
                     Sudah punya akun Kolektix?
@@ -274,7 +332,12 @@ const Auth = () => {
               </div>
               <div className="flex flex-col w-full px-5">
                 <div>
-                  <Form placeholder="Nama Lengkap" onChange={(e: any) => setData({ ...data, name: e.target.value })} />
+                  <Form
+                    placeholder="Nama Lengkap"
+                    onChange={(e: any) =>
+                      setData({ ...data, name: e.target.value })
+                    }
+                  />
                   {errors.name &&
                     errors.name.map((error: string, index: number) => (
                       <p key={index} className="text-red-500 text-[10px] ">
@@ -283,7 +346,13 @@ const Auth = () => {
                     ))}
                 </div>
                 <div>
-                  <Form placeholder="Email" value={data.email} onChange={(e: any) => setData({ ...data, email: e.target.value })} />
+                  <Form
+                    placeholder="Email"
+                    value={data.email}
+                    onChange={(e: any) =>
+                      setData({ ...data, email: e.target.value })
+                    }
+                  />
                   {errors.email &&
                     errors.email.map((error: string, index: number) => (
                       <p key={index} className="text-red-500 text-[10px] ">
@@ -322,17 +391,31 @@ const Auth = () => {
                     ))}
                 </div> */}
 
-                <button className="bg-primary-base text-white w-full rounded-full p-2 text-xs" onClick={submitRegister}>
-                  {loading ? <Spinner color="default" size="sm" /> : "Selanjutnya"}
+                <button
+                  className="bg-primary-base text-white w-full rounded-full p-2 text-xs"
+                  onClick={submitRegister}
+                >
+                  {loading ? (
+                    <Spinner color="default" size="sm" />
+                  ) : (
+                    "Selanjutnya"
+                  )}
                 </button>
               </div>
             </div>
           )}
           {step === 2 && (
-            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-4 ${step === 2 ? "opacity-100" : "opacity-0"}`}>
-              <p className="text-primary-base font-semibold text-center">Verifikasi melalui email</p>
+            <div
+              className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-4 ${
+                step === 2 ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <p className="text-primary-base font-semibold text-center">
+                Verifikasi melalui email
+              </p>
               <p className="text-dark text-xs font-semibold text-center px-5">
-                Mohon periksa Email kamu. Kami telah mengirimkan kode ke <span className="text-primary-base">{data.email}</span>
+                Mohon periksa Email kamu. Kami telah mengirimkan kode ke{" "}
+                <span className="text-primary-base">{data.email}</span>
               </p>
               <OTPInput
                 value={otp}
@@ -352,25 +435,54 @@ const Auth = () => {
                   fontWeight: "400",
                 }}
               />
-              {errors && <p className="text-danger text-[12px] mt-1">{errors.error}</p>}
+              {errors && (
+                <p className="text-danger text-[12px] mt-1">{errors.error}</p>
+              )}
               <div className="flex flex-col items-center w-full">
-                {countdownEndTime && countdownActive && <Countdown date={countdownEndTime} renderer={renderer} />}
+                {countdownEndTime && countdownActive && (
+                  <Countdown date={countdownEndTime} renderer={renderer} />
+                )}
                 {countdownActive ? (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={verifyLogin} disabled={loading || otp.length < 6}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Verifikasi"}
+                  <button
+                    className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled"
+                    onClick={verifyLogin}
+                    disabled={loading || otp.length < 6}
+                  >
+                    {loading ? (
+                      <Spinner color="default" size="sm" />
+                    ) : (
+                      "Verifikasi"
+                    )}
                   </button>
                 ) : (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={handleResendOtp} disabled={loading}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Kirim Ulang Kode"}
+                  <button
+                    className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Spinner color="default" size="sm" />
+                    ) : (
+                      "Kirim Ulang Kode"
+                    )}
                   </button>
                 )}
               </div>
             </div>
           )}
           {step === 3 && (
-            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-5 ${step === 3 ? "opacity-100" : "opacity-0"}`}>
-              <p className="text-primary-base font-semibold text-center">Verifikasi melalui email</p>
-              <p className="text-dark text-xs font-semibold text-center">Mohon periksa Email kamu. Kami telah mengirimkan kode ke {data.email}</p>
+            <div
+              className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-5 ${
+                step === 3 ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <p className="text-primary-base font-semibold text-center">
+                Verifikasi melalui email
+              </p>
+              <p className="text-dark text-xs font-semibold text-center">
+                Mohon periksa Email kamu. Kami telah mengirimkan kode ke{" "}
+                {data.email}
+              </p>
               <OTPInput
                 value={otp}
                 onChange={setOtp}
@@ -389,17 +501,37 @@ const Auth = () => {
                   fontWeight: "400",
                 }}
               />
-              {errors && <p className="text-danger text-[10px] mt-1">{errors.error}</p>}
+              {errors && (
+                <p className="text-danger text-[10px] mt-1">{errors.error}</p>
+              )}
 
               <div className="flex flex-col items-center w-full">
-                {countdownEndTime && countdownActive && <Countdown date={countdownEndTime} renderer={renderer} />}
+                {countdownEndTime && countdownActive && (
+                  <Countdown date={countdownEndTime} renderer={renderer} />
+                )}
                 {countdownActive ? (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={verifyRegister} disabled={loading || otp.length < 6}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Verifikasi"}
+                  <button
+                    className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled"
+                    onClick={verifyRegister}
+                    disabled={loading || otp.length < 6}
+                  >
+                    {loading ? (
+                      <Spinner color="default" size="sm" />
+                    ) : (
+                      "Verifikasi"
+                    )}
                   </button>
                 ) : (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={handleResendOtp} disabled={loading}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Kirim Ulang"}
+                  <button
+                    className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Spinner color="default" size="sm" />
+                    ) : (
+                      "Kirim Ulang"
+                    )}
                   </button>
                 )}
               </div>
