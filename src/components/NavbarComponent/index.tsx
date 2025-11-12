@@ -159,21 +159,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
               <div className="bg-primary-dark flex items-center drop-shadow-2xl rounded-full">
                 <div className="md:block hidden">
                   <div className="flex items-baseline space-x-4 p-1">
-                    {/* <Link href="/event" className={`rounded-md px-3 py-2 text-sm font-medium ${route === "/event" ? "text-white" : "text-primary-light-200"} hover:text-white`}>
-                      Event
-                    </Link>
-                    <Link href="/talent" className={`rounded-md px-3 py-2 text-sm font-medium ${route === "/talent" ? "text-white" : "text-primary-light-200"} hover:text-white`}>
-                      Talenta
-                    </Link>
-                    <Link href="/lowongan" className={`rounded-md px-3 py-2 text-sm font-medium ${route === "/lowongan" ? "text-white" : "text-primary-light-200"} hover:text-white`}>
-                      Lowongan
-                    </Link>
-                    <Link className={`rounded-md px-3 py-2 text-sm font-medium ${route === "/merchandise" ? "text-white" : "text-primary-light-200"} hover:text-white`} href="/merchandise">
-                      Merchandise
-                    </Link>
-                    <Link className={`rounded-md px-3 py-2 text-sm font-medium ${route === "/venue" ? "text-white" : "text-primary-light-200"} hover:text-white`} href="/venue">
-                      Venue
-                    </Link> */}
                     <Link
                       href="/event"
                       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
