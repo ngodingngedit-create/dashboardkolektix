@@ -1273,7 +1273,20 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                           </button>
                         )}
 
-                        {!["Staff", "Admin"].includes(role ?? "") && (
+                        {/* {!["Staff", "Admin"].includes(role ?? "") && (
+                          <>
+                            <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1}>
+                              <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                              Transaksi
+                            </Link>
+
+                            <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1}>
+                              <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                              Bookmark
+                            </Link>
+                          </>
+                        )} */}
+                        {role === "Creator" && (
                           <>
                             <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1}>
                               <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
