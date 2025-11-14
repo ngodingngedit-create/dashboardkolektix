@@ -482,7 +482,7 @@ const MerchandiseDetail = () => {
             {mainData.product_image[imageActive] && <Image src={mainData.product_image[imageActive].image_url ?? ""} width={500} height={500} alt="merch" className="w-full h-64 sm:h-72 md:h-80 object-cover rounded-md" />}
           </div>
 
-          {mainData.product_image.map((e, i) => (
+          {/* {mainData.product_image.map((e, i) => (
             <div key={i} className="flex items-center justify-center">
               <AspectRatio>
                 <Image
@@ -491,6 +491,28 @@ const MerchandiseDetail = () => {
                   height={500}
                   alt="merch"
                   className={`w-full h-10 sm:h-12 md:h-20 object-cover rounded-md cursor-pointer transition-all duration-200 ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
+                  onClick={() => setImage(i)}
+                />
+              </AspectRatio>
+            </div>
+          ))} */}
+          {mainData.product_image.map((e, i) => (
+            <div key={i} className="flex items-start">
+              <AspectRatio>
+                <Image
+                  src={e.image_url}
+                  width={500}
+                  height={500}
+                  alt="merch"
+                  className={`
+            w-full 
+            h-14 sm:h-16 md:h-24 
+            object-cover 
+            rounded-md 
+            cursor-pointer 
+            transition-all duration-200 
+            ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}
+          `}
                   onClick={() => setImage(i)}
                 />
               </AspectRatio>
@@ -508,6 +530,7 @@ const MerchandiseDetail = () => {
               <FontAwesomeIcon icon={faStar} className="text-warning-400" />
               <span className="ml-1">{mainData.average_star}</span>
             </p>
+            <p className="ml-auto text-xs md:text-sm">Review: {mainData.total_review}</p>
           </div>
 
           {/* Harga + icon */}
@@ -528,9 +551,7 @@ const MerchandiseDetail = () => {
           {/* Creator */}
           <div className="flex flex-row justify-start items-center pt-3 pb-2">
             <CreatorTitle image={mainData.creator.image_url} creator={mainData.creator.name} location="Jakarta" />
-            <div className="flex gap-1 px-9">
-              <p>Review: {mainData.total_review}</p>
-            </div>
+            <div className="flex gap-1 px-9">{/* <p>Review: {mainData.total_review}</p> */}</div>
           </div>
 
           {/* Varian */}
@@ -610,27 +631,54 @@ const MerchandiseDetail = () => {
             </h5>
           </div>
 
-          <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} mt={5} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />}>
+          {/* <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} mt={5} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />}>
             Tambah Keranjang
           </Button>
 
           <Button onClick={handleDirectOrder} disabled={count <= 0} mt={5} size="md" radius="xl" color="#0B387C" variant="outline">
             Beli Sekarang
-          </Button>
+          </Button> */}
+
+          {/* <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ flex: 1 }}>
+              Tambah Keranjang
+            </Button>
+
+            <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ flex: 1 }}>
+              Beli Sekarang
+            </Button>
+          </div> */}
+
+          <div
+            className="btn-mobile-wrapper"
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "20px",
+              flexDirection: "column", // default desktop = atas-bawah
+              width: "100%",
+            }}
+          >
+            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} className="btn-primary">
+              Tambah Keranjang
+            </Button>
+
+            <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" className="btn-secondary">
+              Beli Sekarang
+            </Button>
+          </div>
 
           {/* Share + Chat Desktop */}
           <Flex mt={7} align="center" justify="space-between" gap={10} w="100%" className="hidden md:flex">
             <Flex gap={5} align="center">
-              <ActionIcon variant="transparent" size="lg" color="#0B387C">
+              {/* <ActionIcon variant="transparent" size="lg" color="#0B387C">
                 <Icon icon="lineicons:share-1" className="!text-[24px]" />
               </ActionIcon>
               <ActionIcon variant="transparent" size="lg" color="#0B387C">
                 <Icon icon="ri:heart-add-line" className="!text-[24px]" />
-              </ActionIcon>
+              </ActionIcon> */}
             </Flex>
-            <Button leftSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)}>
-              Chat Creator
-            </Button>
+            <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)}></Button>
           </Flex>
         </div>
       </div>

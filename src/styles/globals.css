@@ -7,6 +7,17 @@
   --background-end-rgb: 0, 0, 0;
 }
 
+@media (max-width: 768px) {
+  .btn-mobile-wrapper {
+    flex-direction: row !important;
+  }
+
+  .btn-mobile-wrapper button {
+    flex: 1; /* bikin 50% - 50% */
+    width: auto; /* hindari width 100% bawaan desktop */
+  }
+}
+
 @layer base {
   ul,
   ol {
@@ -16,8 +27,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
-    rgb(var(--background-start-rgb));
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
 h3 {
@@ -65,14 +75,13 @@ p {
   width: 100%;
 }
 
-
 .ql-toolbar.ql-snow {
   background-color: #e2eefe;
   padding: 2px;
   border: 2px solid #e2eefe !important;
   border-top-right-radius: 0.75rem;
   border-top-left-radius: 0.75rem;
-  border-bottom-right-radius:0 !important;
+  border-bottom-right-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
 }
 
@@ -114,8 +123,6 @@ p {
 ::-webkit-scrollbar-button {
   display: none;
 } */
-
-
 
 @media (min-width: 768px) {
   #hero .slick-slider .slick-list {
@@ -193,14 +200,14 @@ p {
 }
 
 .bg-hero {
-  background-image: url('../assets/images/hero-bg.png');
+  background-image: url("../assets/images/hero-bg.png");
   background-repeat: no-repeat;
   margin-top: -65px;
   background-size: 100% 36rem;
 }
 
 .bg-chat {
-  background-image: url('../assets/images/bgChat.png');
+  background-image: url("../assets/images/bgChat.png");
   background-repeat: no-repeat;
   background-size: cover;
 }
