@@ -534,18 +534,61 @@ const Merch: React.FC = () => {
   }, [isRender, page]);
 
   // getData: calls Next.js API route /api/product-bymerchant which proxies token
+  // const getData = async (pageNum: number = 1) => {
+  //   setLoading2(true);
+  //   try {
+  //     const qs = new URLSearchParams({ per_page: String(PER_PAGE), page: String(pageNum) }).toString();
+  //     const url = `${process.env.NEXT_PUBLIC_WS_URL}/product-bymerchant?${qs}`;
+  //     console.log("Fetching:", url);
+
+  //     const res = await fetch(url, { method: "GET" });
+  //     if (!res.ok) {
+  //       // if backend returns non-json (HTML, etc.) this will throw when parsing, so we check status first
+  //       throw new Error(`HTTP error! status: ${res.status}`);
+  //     }
+  //     const json = await res.json();
+  //     console.log("API data:", json);
+
+  //     const pagination = json?.data;
+  //     const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
+
+  //     setMerchList(list);
+
+  //     const computedLastPage = pagination?.last_page ?? 1;
+  //     setLastPage(Number(computedLastPage) || 1);
+  //   } catch (err) {
+  //     console.error("Error fetching data:", err);
+  //     // optionally setMerchList([]) on error
+  //   } finally {
+  //     setLoading2(false);
+  //   }
+  // };
   const getData = async (pageNum: number = 1) => {
     setLoading2(true);
+
     try {
-      const qs = new URLSearchParams({ per_page: String(PER_PAGE), page: String(pageNum) }).toString();
-      const url = `/api/product-bymerchant?${qs}`;
+      const qs = new URLSearchParams({
+        per_page: String(PER_PAGE),
+        page: String(pageNum),
+      }).toString();
+
+      const url = `${process.env.NEXT_PUBLIC_WS_URL}/product-bymerchant?${qs}`;
       console.log("Fetching:", url);
 
-      const res = await fetch(url, { method: "GET" });
+      const token = process.env.NEXT_PUBLIC_API_TOKEN;
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
       if (!res.ok) {
-        // if backend returns non-json (HTML, etc.) this will throw when parsing, so we check status first
         throw new Error(`HTTP error! status: ${res.status}`);
       }
+
       const json = await res.json();
       console.log("API data:", json);
 
@@ -558,7 +601,6 @@ const Merch: React.FC = () => {
       setLastPage(Number(computedLastPage) || 1);
     } catch (err) {
       console.error("Error fetching data:", err);
-      // optionally setMerchList([]) on error
     } finally {
       setLoading2(false);
     }
