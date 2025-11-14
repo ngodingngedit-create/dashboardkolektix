@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const qs = req.url?.split("?")[1] ?? "";
 
     // Backend URL
-    const backendURL = `${process.env.API_BASE_URL}/product-bymerchant?${qs}`;
+    const backendURL = `${process.env.NEXT_PUBLIC_WS_URL}/product-bymerchant?${qs}`;
 
     // Request ke backend
     const apiRes = await fetch(backendURL, {
