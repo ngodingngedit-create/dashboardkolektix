@@ -501,6 +501,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
+import Cookies from "js-cookie";
 
 const PER_PAGE = 10;
 
@@ -563,27 +564,87 @@ const Merch: React.FC = () => {
   //     setLoading2(false);
   //   }
   // };
+  // const getData = async (pageNum: number = 1) => {
+  //   setLoading2(true);
+
+  //   try {
+  //     const qs = new URLSearchParams({
+  //       per_page: String(PER_PAGE),
+  //       page: String(pageNum),
+  //     }).toString();
+
+  //     const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
+  //     console.log("Fetching:", url);
+
+  //     const token = process.env.NEXT_PUBLIC_API_TOKEN;
+
+  //     const res = await fetch(url, {
+  //       method: "GET",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         Accept: "application/json",
+  //       },
+  //     });
+
+  //     if (!res.ok) {
+  //       throw new Error(`HTTP error! status: ${res.status}`);
+  //     }
+
+  //     const json = await res.json();
+  //     console.log("API data:", json);
+
+  //     const pagination = json?.data;
+  //     const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
+
+  //     setMerchList(list);
+
+  //     const computedLastPage = pagination?.last_page ?? 1;
+  //     setLastPage(Number(computedLastPage) || 1);
+  //   } catch (err) {
+  //     console.error("Error fetching data:", err);
+  //   } finally {
+  //     setLoading2(false);
+  //   }
+  // };
+
   const getData = async (pageNum: number = 1) => {
     setLoading2(true);
 
     try {
+      // guard: butuh creator id
+      const creatorId = user?.has_creator?.id;
+      if (!creatorId) {
+        console.warn("getData aborted: no creator id on user", user);
+        setMerchList([]); // opsional: clear list
+        setLastPage(1);
+        return;
+      }
+
       const qs = new URLSearchParams({
         per_page: String(PER_PAGE),
         page: String(pageNum),
+        creator_id: String(creatorId),
       }).toString();
 
       const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
       console.log("Fetching:", url);
 
-      const token = process.env.NEXT_PUBLIC_API_TOKEN;
+      // ambil token dari env dulu, fallback ke cookie/localStorage
+      const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
+      const cookieToken = Cookies.get("token") || (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
+      const token = envToken || cookieToken || "";
+
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const res = await fetch(url, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
+        headers,
+        // jika backend pakai cookie-based auth dan kamu butuh cookie:
+        // credentials: 'include'
+      } as RequestInit);
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
@@ -592,15 +653,20 @@ const Merch: React.FC = () => {
       const json = await res.json();
       console.log("API data:", json);
 
+      // json.data is expected to be pagination object: { current_page, data: [...], last_page, ... }
       const pagination = json?.data;
       const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
 
-      setMerchList(list);
+      // filter produk status == 2 (sama seperti sebelumnya)
+      const filtered = (list || []).filter((e) => e.product_status_id == 2);
+
+      setMerchList(filtered);
 
       const computedLastPage = pagination?.last_page ?? 1;
       setLastPage(Number(computedLastPage) || 1);
     } catch (err) {
       console.error("Error fetching data:", err);
+      // optional: notifications.show({ message: "Gagal memuat produk", color: "red" });
     } finally {
       setLoading2(false);
     }

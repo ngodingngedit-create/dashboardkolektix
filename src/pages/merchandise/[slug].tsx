@@ -328,6 +328,8 @@ import { AppMainContext } from "../_app";
 import AuthModal from "@/components/AuthModal";
 import ChatBox from "@/components/chat";
 import { notifications } from "@mantine/notifications";
+const router = useRouter();
+const { slug } = router.query;
 
 export type CartStorage = {
   variant_id: number;
@@ -377,6 +379,78 @@ const MerchandiseDetail = () => {
       })
       .catch(() => setLoading.filter((e) => e != "getdata"));
   };
+
+  // pastikan di top file ada: import Cookies from "js-cookie";
+
+  // const getData = async () => {
+  //   // tambahkan loading flag (sama pola di kode lain)
+  //   setLoading.append("getdata");
+
+  //   try {
+  //     if (!slug) {
+  //       console.warn("getData aborted: slug is empty");
+  //       return;
+  //     }
+
+  //     const url = `${process.env.NEXT_PUBLIC_URL?.replace(/\/$/, "")}/product/${encodeURIComponent(slug)}`;
+  //     console.log("Fetching product detail:", url);
+
+  //     // ambil token dari env dulu, fallback ke cookie/localStorage
+  //     const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
+  //     const cookieToken = Cookies.get("token") || (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
+  //     const token = envToken || cookieToken || "";
+
+  //     const headers: Record<string, string> = {
+  //       Accept: "application/json",
+  //     };
+  //     if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  //     const res = await fetch(url, {
+  //       method: "GET",
+  //       headers,
+  //       // jika backend pakai cookie-based auth, uncomment:
+  //       // credentials: "include",
+  //     } as RequestInit);
+
+  //     if (!res.ok) {
+  //       // baca pesan error kalau ada
+  //       let errText = `HTTP error! status: ${res.status}`;
+  //       try {
+  //         const errJson = await res.json();
+  //         errText += ` - ${errJson?.message ?? JSON.stringify(errJson)}`;
+  //       } catch {
+  //         // ignore JSON parse error
+  //       }
+  //       throw new Error(errText);
+  //     }
+
+  //     const json = await res.json();
+  //     console.log("Product API response:", json);
+
+  //     const payload = json?.data ?? json; // jika struktur berbeda, ambil fallback
+
+  //     // set main data
+  //     setMainData(payload);
+
+  //     // logic variant / qty sama seperti aslinya
+  //     const hasVariants = (payload?.product_varian?.length ?? 0) > 0;
+  //     if (hasVariants) {
+  //       const firstVar = payload.product_varian[0];
+  //       setSelectedVariant(firstVar?.id);
+  //       // set count: kalau stock > 1 -> 1, else 0
+  //       setCount((firstVar?.stock_qty ?? 0) > 1 ? 1 : 0);
+  //     } else {
+  //       setCount((payload?.qty ?? 0) > 1 ? 1 : 0);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error fetching product detail:", err);
+  //     // optional: pakai notifications jika tersedia di file ini
+  //     // notifications.show({ message: "Gagal memuat detail produk", color: "red" });
+  //   } finally {
+  //     // hilangkan loading flag
+  //     setLoading.filter((e) => e !== "getdata");
+  //   }
+  // };
 
   const handleAddCart = () => {
     setLoading.append("addcart");
@@ -437,10 +511,10 @@ const MerchandiseDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
-        {/* ==== Gambar ====
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4 auto-rows-min">
+          {/* --- GAMBAR UTAMA --- */}
           <div className="col-span-2 md:col-span-4">
-            {mainData.product_image.length == 0 && (
+            {mainData.product_image.length === 0 ? (
               <AspectRatio ratio={1}>
                 <Card bg="gray.1" radius={10}>
                   <Center h="100%" c="gray.3">
@@ -448,71 +522,41 @@ const MerchandiseDetail = () => {
                   </Center>
                 </Card>
               </AspectRatio>
+            ) : (
+              <Image src={mainData.product_image[imageActive].image_url} width={500} height={500} alt="merch" className="w-full h-64 sm:h-72 md:h-80 object-cover rounded-md" />
             )}
-            {mainData.product_image[imageActive] && <Image src={mainData.product_image[imageActive].image_url ?? ""} width={500} height={500} alt="merch" className="w-full h-72 object-cover rounded-md" />}
           </div>
+
+          {/* --- MOBILE THUMBNAIL (SCROLL) --- */}
+          <div className="col-span-2 md:hidden w-full overflow-x-auto mt-1">
+            <div className="flex gap-2 flex-nowrap">
+              {mainData.product_image.map((e, i) => (
+                <div key={i} className="flex-shrink-0">
+                  <AspectRatio>
+                    <Image
+                      src={e.image_url}
+                      width={500}
+                      height={500}
+                      alt="thumb"
+                      className={`w-20 h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
+                      onClick={() => setImage(i)}
+                    />
+                  </AspectRatio>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* --- DESKTOP THUMBNAIL GRID (TETAP 4 KOLOM) --- */}
           {mainData.product_image.map((e, i) => (
-            <div key={i} className="flex items-center justify-center">
+            <div key={i} className="hidden md:block">
               <AspectRatio>
                 <Image
                   src={e.image_url}
                   width={500}
                   height={500}
-                  alt="merch"
+                  alt="thumb"
                   className={`w-full h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
-                  onClick={() => setImage(i)}
-                />
-              </AspectRatio>
-            </div>
-          ))}
-        </div> */}
-        {/* ==== Gambar ==== */}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 auto-rows-min">
-          <div className="col-span-2 md:col-span-4">
-            {mainData.product_image.length == 0 && (
-              <AspectRatio ratio={1}>
-                <Card bg="gray.1" radius={10}>
-                  <Center h="100%" c="gray.3">
-                    <Icon icon="bi:image" style={{ fontSize: 50 }} />
-                  </Center>
-                </Card>
-              </AspectRatio>
-            )}
-
-            {mainData.product_image[imageActive] && <Image src={mainData.product_image[imageActive].image_url ?? ""} width={500} height={500} alt="merch" className="w-full h-64 sm:h-72 md:h-80 object-cover rounded-md" />}
-          </div>
-
-          {/* {mainData.product_image.map((e, i) => (
-            <div key={i} className="flex items-center justify-center">
-              <AspectRatio>
-                <Image
-                  src={e.image_url}
-                  width={500}
-                  height={500}
-                  alt="merch"
-                  className={`w-full h-10 sm:h-12 md:h-20 object-cover rounded-md cursor-pointer transition-all duration-200 ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
-                  onClick={() => setImage(i)}
-                />
-              </AspectRatio>
-            </div>
-          ))} */}
-          {mainData.product_image.map((e, i) => (
-            <div key={i} className="flex items-start">
-              <AspectRatio>
-                <Image
-                  src={e.image_url}
-                  width={500}
-                  height={500}
-                  alt="merch"
-                  className={`
-            w-full 
-            h-14 sm:h-16 md:h-24 
-            object-cover 
-            rounded-md 
-            cursor-pointer 
-            transition-all duration-200 
-            ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}
-          `}
                   onClick={() => setImage(i)}
                 />
               </AspectRatio>
@@ -649,37 +693,61 @@ const MerchandiseDetail = () => {
             </Button>
           </div> */}
 
-          <div
-            className="btn-mobile-wrapper"
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginTop: "20px",
-              flexDirection: "column", // default desktop = atas-bawah
-              width: "100%",
-            }}
-          >
-            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} className="btn-primary">
+          {/* TOMBOL TAMBAH KERANJANG (tetap seperti itu aja) */}
+          {/* <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ flex: 1 }}>
               Tambah Keranjang
             </Button>
+          </div> */}
 
-            <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" className="btn-secondary">
+          {/* ROW BARU */}
+          {/* <div className="action-row"> */}
+          {/* Chat (1/4 mobile) */}
+          {/* <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" /> */}
+
+          {/* Beli Sekarang (3/4 mobile) */}
+          {/* <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" className="btn-buy">
+              Beli Sekarang
+            </Button>
+          </div> */}
+          {/* --- Tambah Keranjang (desktop & mobile selalu 1 row sendiri) --- */}
+          <div className="mt-5">
+            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ width: "100%" }}>
+              Tambah Keranjang
+            </Button>
+          </div>
+
+          {/* --- DESKTOP: Beli Sekarang (1 row) --- */}
+          <div className="hidden md:block mt-3">
+            <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
               Beli Sekarang
             </Button>
           </div>
 
-          {/* Share + Chat Desktop */}
-          <Flex mt={7} align="center" justify="space-between" gap={10} w="100%" className="hidden md:flex">
-            <Flex gap={5} align="center">
-              {/* <ActionIcon variant="transparent" size="lg" color="#0B387C">
-                <Icon icon="lineicons:share-1" className="!text-[24px]" />
-              </ActionIcon>
-              <ActionIcon variant="transparent" size="lg" color="#0B387C">
-                <Icon icon="ri:heart-add-line" className="!text-[24px]" />
-              </ActionIcon> */}
-            </Flex>
-            <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)}></Button>
-          </Flex>
+          {/* --- DESKTOP: Chat 1/2 kanan, kiri kosong --- */}
+          <div className="hidden md:flex mt-3 gap-3">
+            <div className="w-3/5"></div> {/* kosong */}
+            <div className="w-2/5 flex justify-end">
+              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" style={{ width: "100%" }}>
+                Chat
+              </Button>
+            </div>
+          </div>
+
+          {/* --- MOBILE: Beli Sekarang + Chat satu row (chat 1/4, beli 3/4) --- */}
+          <div className="flex md:hidden mt-3 gap-3">
+            <div className="w-2/5">
+              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} size="md" color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" style={{ width: "100%" }}>
+                Chat
+              </Button>
+            </div>
+
+            <div className="w-3/5">
+              <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
+                Beli Sekarang
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </>

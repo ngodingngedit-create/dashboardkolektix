@@ -7,6 +7,30 @@
   --background-end-rgb: 0, 0, 0;
 }
 
+/* Row container */
+.action-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Default MOBILE layout */
+.btn-chat {
+  flex: 1; /* 1/4 */
+}
+
+.btn-buy {
+  flex: 3; /* 3/4 */
+}
+
+/* DESKTOP layout */
+@media (min-width: 768px) {
+  .btn-chat,
+  .btn-buy {
+    flex: 1; /* kembali default */
+  }
+}
+
 @media (max-width: 768px) {
   .btn-mobile-wrapper {
     flex-direction: row !important;
