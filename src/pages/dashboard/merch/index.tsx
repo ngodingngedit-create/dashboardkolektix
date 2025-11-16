@@ -572,7 +572,7 @@ const Merch: React.FC = () => {
         page: String(pageNum),
       }).toString();
 
-      const url = `${process.env.NEXT_PUBLIC_WS_URL}/product-bymerchant?${qs}`;
+      const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
       console.log("Fetching:", url);
 
       const token = process.env.NEXT_PUBLIC_API_TOKEN;
