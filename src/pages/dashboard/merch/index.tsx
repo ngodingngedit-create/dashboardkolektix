@@ -1183,7 +1183,7 @@ const Merch: React.FC = () => {
                 if (statusFilter === "inactive" && item.product_status_id === 2) return false;
               }
 
-              // search
+              // search bar
               if (search) {
                 const needle = search.toLowerCase().trim();
                 if (!itemSearchText(item).includes(needle)) return false;
