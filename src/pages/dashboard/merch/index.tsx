@@ -949,11 +949,10 @@ const Merch: React.FC = () => {
     setLoading2(true);
 
     try {
-      // guard: butuh creator id
       const creatorId = user?.has_creator?.id;
       if (!creatorId) {
         console.warn("getData aborted: no creator id on user", user);
-        setMerchList([]); // opsional: clear list
+        setMerchList([]);
         setLastPage(1);
         return;
       }
@@ -967,7 +966,6 @@ const Merch: React.FC = () => {
       const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
       console.log("Fetching:", url);
 
-      // ambil token dari env dulu, fallback ke cookie/localStorage
       const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
       const cookieToken = Cookies.get("token") || (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
       const token = envToken || cookieToken || "";
@@ -980,8 +978,6 @@ const Merch: React.FC = () => {
       const res = await fetch(url, {
         method: "GET",
         headers,
-        // jika backend pakai cookie-based auth dan kamu butuh cookie:
-        // credentials: 'include'
       } as RequestInit);
 
       if (!res.ok) {
@@ -991,18 +987,15 @@ const Merch: React.FC = () => {
       const json = await res.json();
       console.log("API data:", json);
 
-      // json.data is expected to be pagination object: { current_page, data: [...], last_page, ... }
       const pagination = json?.data;
       const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
 
-      // keep all items, we'll split by tab later — if you want initial filtering, adjust here
       setMerchList(list);
 
       const computedLastPage = pagination?.last_page ?? 1;
       setLastPage(Number(computedLastPage) || 1);
     } catch (err) {
       console.error("Error fetching data:", err);
-      // optional: notifications.show({ message: "Gagal memuat produk", color: "red" });
     } finally {
       setLoading2(false);
     }
@@ -1044,7 +1037,7 @@ const Merch: React.FC = () => {
     });
   };
 
-  // memoize splitted lists for each status
+  // memoize splitted lists for each status (keeps same function reference while merchList stable)
   const splittedByStatus = useMemo(() => {
     const map = new Map<number, MerchListResponse[]>();
     [2, 1, 3].forEach((st) =>
@@ -1056,39 +1049,92 @@ const Merch: React.FC = () => {
     return (status: number) => map.get(status) ?? [];
   }, [merchList]);
 
-  // helper to open create modal and refresh after close
   const openCreateModal = (slug?: string) => {
     setModalCreate(slug);
   };
 
   /**
    * --- FILTER & SEARCH STATE (ditambahkan untuk tabel) ---
-   * Ini tidak mengubah data server / pagination — hanya filter client-side pada list halaman yang sudah di-fetch
    */
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [category, setCategory] = useState<string>(""); // placeholder, sesuaikan bila ada field category
-  const [method, setMethod] = useState<string>(""); // placeholder untuk metode pembayaran jika ada
-  const [statusFilter, setStatusFilter] = useState<string>(""); // "active"/"inactive" optional
+  const [category, setCategory] = useState<string>("");
+  const [method, setMethod] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
 
-  // helper: buat teks pencarian gabungan untuk tiap item
   const itemSearchText = (item: MerchListResponse) => {
     const parts: string[] = [];
     if (item.product_name) parts.push(String(item.product_name));
     if (item.slug) parts.push(String(item.slug));
-    // sku dari varian pertama
     if (item.product_varian?.[0]?.sku) parts.push(String(item.product_varian[0].sku));
-    // semua varian sku jika ada
     if (item.product_varian?.length) parts.push(item.product_varian.map((v: any) => v.sku || "").join(" "));
     if (item.product_varian?.[0]?.price) parts.push(String(item.product_varian[0].price));
     if (item.price) parts.push(String(item.price));
     if (item.qty !== undefined) parts.push(String(item.qty));
     if (item.product_status_id !== undefined) parts.push(String(item.product_status_id));
-    // add image urls too (rarely searched)
     if (item.product_image?.length) parts.push(item.product_image.map((p) => p.image_url).join(" "));
     return parts.join(" ").toLowerCase();
   };
+
+  /**
+   * --- NEW: compute filtered list map outside of render loop (fix rules-of-hooks) ---
+   * We compute a Map<status, filteredArray> with one useMemo at top-level.
+   */
+  const filteredMap = useMemo(() => {
+    const map = new Map<number, MerchListResponse[]>();
+    for (const [status] of tabStatus) {
+      const baseList = splittedByStatus(status) || [];
+      const filtered = (baseList || []).filter((item) => {
+        // date filter
+        if (startDate || endDate) {
+          const dateStr = (item as any).date || (item as any).created_at || "";
+          if (dateStr) {
+            const d = new Date(dateStr);
+            if (startDate) {
+              const s = new Date(startDate);
+              if (d < s) return false;
+            }
+            if (endDate) {
+              const e = new Date(endDate);
+              e.setHours(23, 59, 59, 999);
+              if (d > e) return false;
+            }
+          }
+        }
+
+        // category filter
+        if (category) {
+          const catField = (item as any).category || (item as any).category_id || "";
+          if (!String(catField).toLowerCase().includes(category.toLowerCase())) return false;
+        }
+
+        // method filter
+        if (method) {
+          const m = (item as any).payment_method || (item as any).method || "";
+          if (!String(m).toLowerCase().includes(method.toLowerCase())) return false;
+        }
+
+        // statusFilter
+        if (statusFilter) {
+          if (statusFilter === "active" && item.product_status_id !== 2) return false;
+          if (statusFilter === "inactive" && item.product_status_id === 2) return false;
+        }
+
+        // search
+        if (search) {
+          const needle = search.toLowerCase().trim();
+          if (!itemSearchText(item).includes(needle)) return false;
+        }
+
+        return true;
+      });
+
+      map.set(status, filtered);
+    }
+    return map;
+    // include merchList indirectly via splittedByStatus, and include all filters
+  }, [splittedByStatus, startDate, endDate, category, method, statusFilter, search, tabStatus]);
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
@@ -1097,7 +1143,6 @@ const Merch: React.FC = () => {
           id={modalCreate}
           onClose={() => {
             setModalCreate(undefined);
-            // refresh current page after create/edit
             getData(page);
           }}
         />
@@ -1107,22 +1152,7 @@ const Merch: React.FC = () => {
         <Title order={1} size="h2">
           Merchandise Saya
         </Title>
-        <div className="flex gap-[10px] items-center">
-          {/* Reuse Input dari @nextui-org/react yang sudah diimport */}
-          {/* <Input isClearable value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Cari Merchandise" /> */}
-          {/* <button>
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="20" fill="#0B387C" />
-              <path
-                d="M27.5 27.5L23.875 23.875M25.8333 19.1667C25.8333 22.8486 22.8486 25.8333 19.1667 25.8333C15.4848 25.8333 12.5 22.8486 12.5 19.1667C12.5 15.4848 15.4848 12.5 19.1667 12.5C22.8486 12.5 25.8333 15.4848 25.8333 19.1667Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button> */}
-        </div>
+        <div className="flex gap-[10px] items-center"></div>
 
         <Flex gap={10} align="center">
           <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />} radius="xl" color="#0B387C">
@@ -1142,56 +1172,8 @@ const Merch: React.FC = () => {
         }}
       >
         {tabStatus.map(([status, label]) => {
-          // base list for this tab (from server-splitted)
-          const baseList = splittedByStatus(status);
-
-          // apply client-side filters & search on top of baseList
-          const filtered = useMemo(() => {
-            return (baseList || []).filter((item) => {
-              // date filter: check item.date or created_at if exists
-              if (startDate || endDate) {
-                const dateStr = (item as any).date || (item as any).created_at || "";
-                if (dateStr) {
-                  const d = new Date(dateStr);
-                  if (startDate) {
-                    const s = new Date(startDate);
-                    if (d < s) return false;
-                  }
-                  if (endDate) {
-                    const e = new Date(endDate);
-                    e.setHours(23, 59, 59, 999);
-                    if (d > e) return false;
-                  }
-                }
-              }
-
-              // category filter (if your item has category field)
-              if (category) {
-                const catField = (item as any).category || (item as any).category_id || "";
-                if (!String(catField).toLowerCase().includes(category.toLowerCase())) return false;
-              }
-
-              // method filter (if your item has payment/method field)
-              if (method) {
-                const m = (item as any).payment_method || (item as any).method || "";
-                if (!String(m).toLowerCase().includes(method.toLowerCase())) return false;
-              }
-
-              // statusFilter
-              if (statusFilter) {
-                if (statusFilter === "active" && item.product_status_id !== 2) return false;
-                if (statusFilter === "inactive" && item.product_status_id === 2) return false;
-              }
-
-              // search bar
-              if (search) {
-                const needle = search.toLowerCase().trim();
-                if (!itemSearchText(item).includes(needle)) return false;
-              }
-
-              return true;
-            });
-          }, [baseList, startDate, endDate, category, method, statusFilter, search]);
+          // gunakan filteredMap yang sudah diprecompute
+          const filtered = filteredMap.get(status) ?? [];
 
           return (
             <Tab key={status} title={label}>
@@ -1203,7 +1185,6 @@ const Merch: React.FC = () => {
                     <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border rounded-full px-3 py-2" placeholder="Tanggal Akhir" />
                     <select value={category} onChange={(e) => setCategory(e.target.value)} className="border rounded-full px-3 py-2">
                       <option value="">Semua Kategori</option>
-                      {/* jika ada categories, map di sini */}
                     </select>
 
                     <div className="flex-1" />
@@ -1213,7 +1194,6 @@ const Merch: React.FC = () => {
                       <ButtonM
                         size="sm"
                         onClick={() => {
-                          // reset semua filter lokal
                           setSearch("");
                           setStartDate("");
                           setEndDate("");
@@ -1255,32 +1235,22 @@ const Merch: React.FC = () => {
                           ) : (
                             filtered.map((item, i) => (
                               <TableRow key={String(item.id ?? i)}>
-                                {/* No */}
                                 <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
 
-                                {/* Info Produk */}
                                 <TableCell>
                                   <div className="flex items-center gap-[10px]">
-                                    {/* uncomment jika perlu image */}
-                                    {/* {item.product_image?.length > 0 && (
-                  <MImage src={item.product_image[0].image_url} className="!h-10 !w-10 bg-[#d0d0d0] rounded-[5px]" />
-                )} */}
                                     <p>{item.product_name}</p>
                                   </div>
                                 </TableCell>
 
-                                {/* SKU */}
                                 <TableCell className="whitespace-nowrap">{item.product_varian?.[0]?.sku || "-"}</TableCell>
 
-                                {/* Harga */}
                                 <TableCell className="whitespace-nowrap">
                                   <NumberFormatter value={parseInt(String(item.product_varian?.[0]?.price || item.price || "0")) || 0} prefix="Rp " />
                                 </TableCell>
 
-                                {/* Stock */}
                                 <TableCell>{item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty}</TableCell>
 
-                                {/* Aktif / Actions */}
                                 <TableCell>
                                   <div className="flex items-center gap-[10px]">
                                     <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
