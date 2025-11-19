@@ -898,10 +898,10 @@
 // export default Merch;
 
 import CreateMerchandise from "@/components/CreateMerchandise";
-import { Delete, Get, Post } from "@/utils/REST";
+import { Delete, Post } from "@/utils/REST";
 import { Card, Center, NumberFormatter, Button as ButtonM, Title, Image as MImage, Flex, ActionIcon, Switch } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
-import Image from "next/image";
+import NextImage from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
 import { modals } from "@mantine/modals";
@@ -938,7 +938,6 @@ const Merch: React.FC = () => {
     setIsRender(true);
   }, []);
 
-  // fetch data when component first renders and whenever page changes
   useEffect(() => {
     if (!isRender) return;
     getData(page);
@@ -990,12 +989,12 @@ const Merch: React.FC = () => {
       const pagination = json?.data;
       const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
 
-      setMerchList(list);
-
+      setMerchList(Array.isArray(list) ? list : []);
       const computedLastPage = pagination?.last_page ?? 1;
       setLastPage(Number(computedLastPage) || 1);
     } catch (err) {
       console.error("Error fetching data:", err);
+      setMerchList([]);
     } finally {
       setLoading2(false);
     }
@@ -1037,16 +1036,9 @@ const Merch: React.FC = () => {
     });
   };
 
-  // memoize splitted lists for each status (keeps same function reference while merchList stable)
+  // splitted function (stable reference via useMemo returning a function)
   const splittedByStatus = useMemo(() => {
-    const map = new Map<number, MerchListResponse[]>();
-    [2, 1, 3].forEach((st) =>
-      map.set(
-        st,
-        merchList.filter((e) => e.product_status_id === st)
-      )
-    );
-    return (status: number) => map.get(status) ?? [];
+    return (status: number) => merchList.filter((e) => e.product_status_id === status);
   }, [merchList]);
 
   const openCreateModal = (slug?: string) => {
@@ -1054,7 +1046,7 @@ const Merch: React.FC = () => {
   };
 
   /**
-   * --- FILTER & SEARCH STATE (ditambahkan untuk tabel) ---
+   * FILTER & SEARCH STATE
    */
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -1068,19 +1060,16 @@ const Merch: React.FC = () => {
     if (item.product_name) parts.push(String(item.product_name));
     if (item.slug) parts.push(String(item.slug));
     if (item.product_varian?.[0]?.sku) parts.push(String(item.product_varian[0].sku));
-    if (item.product_varian?.length) parts.push(item.product_varian.map((v: any) => v.sku || "").join(" "));
+    if (item.product_varian?.length) parts.push(item.product_varian.map((v: any) => String(v?.sku ?? "")).join(" "));
     if (item.product_varian?.[0]?.price) parts.push(String(item.product_varian[0].price));
     if (item.price) parts.push(String(item.price));
     if (item.qty !== undefined) parts.push(String(item.qty));
     if (item.product_status_id !== undefined) parts.push(String(item.product_status_id));
-    if (item.product_image?.length) parts.push(item.product_image.map((p) => p.image_url).join(" "));
+    if (item.product_image?.length) parts.push(item.product_image.map((p: any) => String(p?.image_url ?? "")).join(" "));
     return parts.join(" ").toLowerCase();
   };
 
-  /**
-   * --- NEW: compute filtered list map outside of render loop (fix rules-of-hooks) ---
-   * We compute a Map<status, filteredArray> with one useMemo at top-level.
-   */
+  // precompute filtered arrays per tab status (useMemo top-level)
   const filteredMap = useMemo(() => {
     const map = new Map<number, MerchListResponse[]>();
     for (const [status] of tabStatus) {
@@ -1103,19 +1092,19 @@ const Merch: React.FC = () => {
           }
         }
 
-        // category filter
+        // category
         if (category) {
           const catField = (item as any).category || (item as any).category_id || "";
           if (!String(catField).toLowerCase().includes(category.toLowerCase())) return false;
         }
 
-        // method filter
+        // method
         if (method) {
           const m = (item as any).payment_method || (item as any).method || "";
           if (!String(m).toLowerCase().includes(method.toLowerCase())) return false;
         }
 
-        // statusFilter
+        // status filter
         if (statusFilter) {
           if (statusFilter === "active" && item.product_status_id !== 2) return false;
           if (statusFilter === "inactive" && item.product_status_id === 2) return false;
@@ -1133,8 +1122,17 @@ const Merch: React.FC = () => {
       map.set(status, filtered);
     }
     return map;
-    // include merchList indirectly via splittedByStatus, and include all filters
+    // deps include everything used inside
   }, [splittedByStatus, startDate, endDate, category, method, statusFilter, search, tabStatus]);
+
+  // optional debug: uncomment to log if any symbol exists (remove after fix)
+  // useEffect(() => {
+  //   for (const item of merchList) {
+  //     for (const k of Object.keys(item as any)) {
+  //       if (typeof (item as any)[k] === "symbol") console.error("Symbol found in merch item", k, (item as any)[k]);
+  //     }
+  //   }
+  // }, [merchList]);
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
@@ -1172,13 +1170,12 @@ const Merch: React.FC = () => {
         }}
       >
         {tabStatus.map(([status, label]) => {
-          // gunakan filteredMap yang sudah diprecompute
           const filtered = filteredMap.get(status) ?? [];
 
           return (
             <Tab key={status} title={label}>
               <Card className="!overflow-auto" p={0} withBorder>
-                {/* --- FILTER BAR (khusus di atas tabel setiap tab) --- */}
+                {/* filter bar */}
                 <div className="bg-white px-4 py-3 border-b">
                   <div className="flex flex-wrap gap-3 items-center">
                     <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border rounded-full px-3 py-2" placeholder="Tanggal Mulai" />
@@ -1208,7 +1205,6 @@ const Merch: React.FC = () => {
                   </div>
                 </div>
 
-                {/* --- TABLE (dengan filtered list) --- */}
                 <div className="bg-white rounded-[8px] overflow-hidden">
                   <Table removeWrapper className="rounded-[8px] [&_td]:py-[15px] min-w-[700px]">
                     <TableHeader>
@@ -1221,55 +1217,60 @@ const Merch: React.FC = () => {
                     </TableHeader>
 
                     <TableBody>
-                      {
-                        <>
-                          {filtered.length === 0 ? (
-                            <TableRow key="empty">
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
+                      {filtered.length === 0 ? (
+                        <TableRow key="empty">
+                          <TableCell>{null}</TableCell>
+                          <TableCell>{null}</TableCell>
+                          <TableCell>{null}</TableCell>
+                          <TableCell>{null}</TableCell>
+                          <TableCell>{null}</TableCell>
+                          <TableCell>{null}</TableCell>
+                        </TableRow>
+                      ) : (
+                        filtered.map((item, i) => {
+                          const safeId = String(item.id ?? i);
+                          const safeSlug = String(item.slug ?? "");
+                          const safeSku = String(item.product_varian?.[0]?.sku ?? "-");
+                          const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
+                          const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
+                          const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
+
+                          return (
+                            <TableRow key={safeId}>
+                              <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
+
+                              <TableCell>
+                                <div className="flex items-center gap-[10px]">
+                                  <p>{String(item.product_name ?? "")}</p>
+                                </div>
+                              </TableCell>
+
+                              <TableCell className="whitespace-nowrap">{safeSku || "-"}</TableCell>
+
+                              <TableCell className="whitespace-nowrap">
+                                <NumberFormatter value={safePrice} prefix="Rp " />
+                              </TableCell>
+
+                              <TableCell>{stock ?? 0}</TableCell>
+
+                              <TableCell>
+                                <div className="flex items-center gap-[10px]">
+                                  <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
+                                  <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${safeSlug}`}>
+                                    <Icon icon="akar-icons:eye" className="text-[24px]" />
+                                  </ActionIcon>
+                                  <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
+                                    <Icon icon="akar-icons:edit" className="text-[24px]" />
+                                  </ActionIcon>
+                                  <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id)}>
+                                    <Icon icon="uiw:delete" className="text-[18px]" />
+                                  </ActionIcon>
+                                </div>
+                              </TableCell>
                             </TableRow>
-                          ) : (
-                            filtered.map((item, i) => (
-                              <TableRow key={String(item.id ?? i)}>
-                                <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
-
-                                <TableCell>
-                                  <div className="flex items-center gap-[10px]">
-                                    <p>{item.product_name}</p>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="whitespace-nowrap">{item.product_varian?.[0]?.sku || "-"}</TableCell>
-
-                                <TableCell className="whitespace-nowrap">
-                                  <NumberFormatter value={parseInt(String(item.product_varian?.[0]?.price || item.price || "0")) || 0} prefix="Rp " />
-                                </TableCell>
-
-                                <TableCell>{item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty}</TableCell>
-
-                                <TableCell>
-                                  <div className="flex items-center gap-[10px]">
-                                    <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
-                                    <ActionIcon variant="transparent" component={Link} href={`/dashboard/merch/${item.slug}`}>
-                                      <Icon icon="akar-icons:eye" className="text-[24px]" />
-                                    </ActionIcon>
-                                    <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(item.slug)}>
-                                      <Icon icon="akar-icons:edit" className="text-[24px]" />
-                                    </ActionIcon>
-                                    <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id)}>
-                                      <Icon icon="uiw:delete" className="text-[18px]" />
-                                    </ActionIcon>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </>
-                      }
+                          );
+                        })
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -1278,7 +1279,7 @@ const Merch: React.FC = () => {
                   <Center mih={200} w="100%">
                     <div className="py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full">
                       <div className="border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2">
-                        <Image src={merchIcon} alt="bank" className="w-7" />
+                        <NextImage src={merchIcon} alt="merch" className="w-7" />
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg">Belum ada merchandise yang dibuat</p>
@@ -1289,7 +1290,6 @@ const Merch: React.FC = () => {
                   </Center>
                 )}
 
-                {/* Pagination */}
                 <div className="flex justify-center items-center gap-4 py-6">
                   <ButtonM disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                     Sebelumnya

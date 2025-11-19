@@ -66,6 +66,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
     setShowFilter(!showFilter);
   };
 
+  useEffect(() => {
+    setShowFilter(false);
+  }, [asPath]);
+
   const handleLogout = () => {
     modals.openConfirmModal({
       title: "Keluar Akun",
@@ -168,7 +172,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       Event
                     </Link>
 
-                    <Link
+                    {/* <Link
                       href="/talent"
                       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                         route === "/talent" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
@@ -184,7 +188,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       }`}
                     >
                       Lowongan
-                    </Link>
+                    </Link> */}
 
                     <Link
                       href="/merchandise"
@@ -195,14 +199,14 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       Merchandise
                     </Link>
 
-                    <Link
+                    {/* <Link
                       href="/venue"
                       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                         route === "/venue" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
                       }`}
                     >
                       Venue
-                    </Link>
+                    </Link> */}
 
                     <div className="w-10">
                       <button className="bg-white rounded-full w-8 h-8" onClick={handleFilter}>
@@ -353,7 +357,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                               </Menu.Item>
                             </>
                           )}
-                          <Menu.Divider className={`md:!hidden`} />
+                          {/* <Menu.Divider className={`md:!hidden`} />
                           <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/event">
                             Event
@@ -369,7 +373,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </Menu.Item>
                           <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/venue">
                             Venue
-                          </Menu.Item>
+                          </Menu.Item> */}
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
@@ -520,8 +524,12 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </div>
               </div>
               <Stack mt={20} gap={10} className={`hover:[&>*]:!text-black`}>
-                <NavLink c="gray.1" label="Trending" leftSection={<Icon icon="fluent:data-trending-16-filled" className={`text-[24px]`} />} />
-                <NavLink c="gray.1" label="Blog" leftSection={<Icon icon="si:article-line" className={`text-[24px]`} />} />
+                {/* <NavLink c="gray.1" label="Trending" leftSection={<Icon icon="fluent:data-trending-16-filled" className={`text-[24px]`} />} />
+                <NavLink c="gray.1" label="Blog" leftSection={<Icon icon="si:article-line" className={`text-[24px]`} />} /> */}
+                <NavLink href="/event" c="gray.1" label="Event" leftSection={<Icon icon="tabler:calendar-event" className="text-[24px]" />} />
+
+                <NavLink href="/merchandise" c="gray.1" label="Merchandise" leftSection={<Icon icon="tabler:shopping-bag" className="text-[24px]" />} />
+
                 <Divider opacity={0.5} />
                 <NavLink c="gray.1" label="Syarat & Ketentuan" leftSection={<Icon icon="fluent:info-32-regular" className={`text-[24px]`} />} />
                 <NavLink c="gray.1" label="Kebijakan Privasi" leftSection={<Icon icon="fluent:info-32-regular" className={`text-[24px]`} />} />

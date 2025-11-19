@@ -368,50 +368,50 @@
 //     modals.closeAll();
 //   };
 
-//   const handleSave = async () => {
-//     const summary: MerchCheckoutOffline["summary"] = {};
-//     for (const s of handleSummary.detail) summary[s[0]] = s[1];
+// const handleSave = async () => {
+//   const summary: MerchCheckoutOffline["summary"] = {};
+//   for (const s of handleSummary.detail) summary[s[0]] = s[1];
 
-//     const data: MerchCheckoutOffline = {
-//       product: selectedList.map((e) => ({
-//         id: e.id,
-//         variant_id: e.variant_id,
-//         qty: e.count,
-//         price: e.price,
-//         subtotal: e.subtotal,
-//       })),
-//       customer_name: custValue.name,
-//       customer_email: custValue.email,
-//       customer_phone: custValue.phone,
-//       customer_address: custValue.address,
-//       grandtotal: handleSummary.total,
-//       creator_id: user?.has_creator?.id ?? 0,
-//       summary,
-//       discount,
-//       payment_method: paymentMethod,
-//     };
-//     const next = () => {
-//       Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
-//       router.push("/dashboard/merch-pos-invoice");
-//     };
-//     await fetch<MerchCheckoutOffline, any>({
-//       url: "merch-offline",
-//       method: "POST",
-//       data,
-//       before: () => setLoading.append("submit"),
-//       success: () => {
-//         next();
-//       },
-//       complete: () => setLoading.filter((e) => e != "submit"),
-//       error: (err) => {
-//         next();
-//         notifications.show({
-//           message: err?.response?.data?.message ?? "Terjadi Kesalahan",
-//           color: "red",
-//         });
-//       },
-//     });
+//   const data: MerchCheckoutOffline = {
+//     product: selectedList.map((e) => ({
+//       id: e.id,
+//       variant_id: e.variant_id,
+//       qty: e.count,
+//       price: e.price,
+//       subtotal: e.subtotal,
+//     })),
+//     customer_name: custValue.name,
+//     customer_email: custValue.email,
+//     customer_phone: custValue.phone,
+//     customer_address: custValue.address,
+//     grandtotal: handleSummary.total,
+//     creator_id: user?.has_creator?.id ?? 0,
+//     summary,
+//     discount,
+//     payment_method: paymentMethod,
 //   };
+//   const next = () => {
+//     Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
+//     router.push("/dashboard/merch-pos-invoice");
+//   };
+//   await fetch<MerchCheckoutOffline, any>({
+//     url: "merch-offline",
+//     method: "POST",
+//     data,
+//     before: () => setLoading.append("submit"),
+//     success: () => {
+//       next();
+//     },
+//     complete: () => setLoading.filter((e) => e != "submit"),
+//     error: (err) => {
+//       next();
+//       notifications.show({
+//         message: err?.response?.data?.message ?? "Terjadi Kesalahan",
+//         color: "red",
+//       });
+//     },
+//   });
+// };
 
 //   const PER_PAGE = 10;
 //   const [pageNum, setPageNum] = useState(1);
@@ -1349,43 +1349,9 @@ export default function Index({}: Readonly<ComponentProps>) {
                                         [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
                                     `}
                 >
-                  {/* <Accordion.Item value="summary">
-                    <Accordion.Control>Detail Pembayaran</Accordion.Control>
-                    <Accordion.Panel>
-                      <Stack px={10} gap={10}>
-                        {handleSummary.detail
-                          .filter((e) => Boolean(e[1]) || e[1] < 0)
-                          .map((e, i) => (
-                            <Flex gap={10} align="center" justify="space-between" key={i}>
-                              <Text size="sm" c="gray.8">
-                                {e[0]}
-                              </Text>
-                              <Text size="sm" fw={600} c={e[1] < 0 ? "red" : undefined}>
-                                <NumberFormatter prefix="Rp " value={e[1]} />
-                              </Text>
-                            </Flex>
-                          ))}
-
-                        <Flex gap={10} align="center" justify="space-between">
-                          <Text size="sm" c="gray.8">
-                            Total Pembayaran
-                          </Text>
-                          <Text size="sm" fw={600} className="text-primary-base">
-                            <NumberFormatter prefix="Rp " value={handleSummary.total} />
-                          </Text>
-                        </Flex>
-                      </Stack>
-                    </Accordion.Panel>
-                  </Accordion.Item> */}
                   <Accordion.Item value="customer">
                     {/* CONTROL: tombol harus selalu dirender (server + client) */}
-                    <Accordion.Control>
-                      <Flex justify="space-between" align="center" w="100%">
-                        <Text>Data Pembeli</Text>
-
-                        {/* tombol Gunakan Guest — selalu ada di markup */}
-                      </Flex>
-                    </Accordion.Control>
+                    <Accordion.Control>Data Pembeli</Accordion.Control>
 
                     <Accordion.Panel>
                       <Stack px={20} py={5} gap={12} className="!w-full">
@@ -1433,6 +1399,34 @@ export default function Index({}: Readonly<ComponentProps>) {
                             Belum ada data pembeli
                           </Alert>
                         )}
+                      </Stack>
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                  <Accordion.Item value="summary">
+                    <Accordion.Control>Detail Pembayaran</Accordion.Control>
+                    <Accordion.Panel>
+                      <Stack px={10} gap={10}>
+                        {handleSummary.detail
+                          .filter((e) => Boolean(e[1]) || e[1] < 0)
+                          .map((e, i) => (
+                            <Flex gap={10} align="center" justify="space-between" key={i}>
+                              <Text size="sm" c="gray.8">
+                                {e[0]}
+                              </Text>
+                              <Text size="sm" fw={600} c={e[1] < 0 ? "red" : undefined}>
+                                <NumberFormatter prefix="Rp " value={e[1]} />
+                              </Text>
+                            </Flex>
+                          ))}
+
+                        <Flex gap={10} align="center" justify="space-between">
+                          <Text size="sm" c="gray.8">
+                            Total Pembayaran
+                          </Text>
+                          <Text size="sm" fw={600} className="text-primary-base">
+                            <NumberFormatter prefix="Rp " value={handleSummary.total} />
+                          </Text>
+                        </Flex>
                       </Stack>
                     </Accordion.Panel>
                   </Accordion.Item>
@@ -1497,7 +1491,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                       <NumberFormatter className={`font-[600]`} value={handleSummary.total} />
                     </Text>
                   </Stack>
-                  <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
+                  <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleSave} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
                     Bayar
                   </Button>
                 </Flex>
