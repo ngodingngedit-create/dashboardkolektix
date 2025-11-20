@@ -1806,40 +1806,41 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       {width &&
         (width < 768 ? (
           // MOBILE
-          <div className="bg-primary-light mt-32 lg:mt-0">
+          <div className="bg-primary-light mt-32 lg:mt-0 pb-8">
+            {" "}
+            {/* pb-8 untuk spacing bawah yang wajar */}
             <div className="border-b p-3 border-primary-light flex items-center gap-3">
-              <div className="px-2 py-1 border rounded-md border-primary-light">{detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}</div>
+              <div className="px-2 py-1 border rounded-md border-primary-light">{detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}</div>
               <div>
                 <p className="text-sm mb-1">{detail?.name}</p>
                 <p className="text-xs text-grey">{totalCount} Tiket</p>
               </div>
             </div>
-
-            <Card withBorder radius={10} p={20}>
+            <Card withBorder radius={10} p={20} className="mt-3">
               <Stack gap={20}>
                 <Flex gap={10} align="center">
-                  <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`} />
+                  <Icon icon="mdi:voucher-outline" className="text-primary-base text-[20px]" />
                   <Text fw={600}>Voucher</Text>
                 </Flex>
 
-                {voucherFields.map((field, index) => (
-                  <Group key={index}>
+                {voucherFields.map((field, i) => (
+                  <Group key={i}>
                     <TextInput
                       w="100%"
                       value={field}
                       onChange={(e) => {
                         const newFields = [...voucherFields];
-                        newFields[index] = e.currentTarget.value;
+                        newFields[i] = e.currentTarget.value;
                         setVoucherFields(newFields);
                       }}
-                      placeholder={`Masukan Kode Voucher ${index + 1}`}
+                      placeholder={`Masukan Kode Voucher ${i + 1}`}
                     />
-                    <Button loading={loadings.includes(`getvoucher-${index}`)} disabled={field.length < 3} size="xs" onClick={() => handleGetVoucher(index)} className={`shrink-0`}>
+                    <Button loading={loadings.includes(`getvoucher-${i}`)} disabled={field.length < 3} size="xs" onClick={() => handleGetVoucher(i)} className="shrink-0">
                       Submit
                     </Button>
-                    {vouchers[index] && (
+                    {vouchers[i] && (
                       <>
-                        <Button variant="outline" size="xs" color="red" onClick={() => handleCancelVoucher(index)} className="shrink-0">
+                        <Button variant="outline" size="xs" color="red" onClick={() => handleCancelVoucher(i)} className="shrink-0">
                           Cancel
                         </Button>
                         <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
@@ -1853,39 +1854,35 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </Button>
               </Stack>
             </Card>
-
-            <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
-              <div className="border-b border-b-primary-light-200 p-3">
+            <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm mt-3 overflow-hidden">
+              <div className="border-b p-3">
                 <p className="font-semibold">Ringkasan Pesanan</p>
               </div>
 
-              {ticket.map((item: FormTicket) => (
-                <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+              {ticket.map((t) => (
+                <div className="border-b p-3 border-primary-light-200 flex gap-3" key={t.event_ticket_id}>
                   <div className="px-3 flex items-center border rounded-md border-primary-light">
                     <FontAwesomeIcon icon={faTicket} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm mb-1 font-semibold">{item.name}</p>
-                    <p className=" text-grey text-xs">
-                      {item.qty_ticket} Tiket x {item.price}
+                    <p className="text-sm mb-1 font-semibold">{t.name}</p>
+                    <p className="text-grey text-xs">
+                      {t.qty_ticket} Tiket x {t.price}
                     </p>
                   </div>
                 </div>
               ))}
 
-              {/* JUMALAH TIKET */}
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>{`Jumlah (${totalCount} Tiket)`}</p>
                 <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
               </div>
 
-              {/* ADMIN FEE */}
               <div className="py-3 px-4 flex justify-between items-center">
-                <p>Biaya Admin </p>
+                <p>Biaya Admin</p>
                 <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
               </div>
 
-              {/* SUBTOTAL AFTER VOUCHER */}
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                 const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
@@ -1899,7 +1896,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 );
               })()}
 
-              {/* TAX */}
               {detail.ppn
                 ? (() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -1915,20 +1911,17 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   })()
                 : null}
 
-              {/* TOTAL VOUCHER */}
               {vouchers.length > 0 && (
                 <div className="py-3 px-4 flex justify-between items-center">
                   <p>Total Voucher</p>
                   <p className="font-semibold">
-                    -
-                    <NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
+                    -<NumberFormatter value={vouchers.reduce((s, v) => s + (v.amount || 0), 0)} />
                   </p>
                 </div>
               )}
 
-              {/* TOTAL PEMBAYARAN MOBILE */}
               <div className="py-3 px-4 flex justify-between items-center">
-                <p>Total Pembayaran mobile</p>
+                <p>Total Pembayaran</p>
                 <p className="font-semibold">
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -1940,61 +1933,47 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </p>
               </div>
             </div>
-
-            {form.map((item, index) => {
-              let ticketForOwner = null;
-              let currentIndex = 0;
-
-              for (const ticketItem of ticket) {
-                for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
-                  if (currentIndex === index - 1) {
-                    ticketForOwner = {
-                      ...ticketItem,
-                      seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined,
-                    } as FormTicket;
-                    break;
+            {/* FORM PEMILIK TIKET (MOBILE) */}
+            <div className="mt-3">
+              {form.map((item, index) => {
+                let ticketForOwner = null;
+                let currentIndex = 0;
+                for (const ticketItem of ticket) {
+                  for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
+                    if (currentIndex === index - 1) {
+                      ticketForOwner = {
+                        ...ticketItem,
+                        seat_number: ticketItem?.seat_number ? ticketItem?.seat_number[i] : undefined,
+                      } as FormTicket;
+                      break;
+                    }
+                    currentIndex++;
                   }
-                  currentIndex++;
+                  if (ticketForOwner) break;
                 }
-                if (ticketForOwner) break;
-              }
+                if (!ticketForOwner?.seat_number && !!item.seat_number) {
+                  handleInput(index, "seat_number", item.seat_number ?? "");
+                }
 
-              if (!ticketForOwner?.seat_number && !!item.seat_number) {
-                handleInput(index, "seat_number", item.seat_number ?? "");
-              }
-
-              return (
-                <div className="bg-white mt-1" key={index}>
-                  <div className="border-b py-3 px-5 border-primary-light flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
-                    {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mr-[10px]" />}
-                    <Stack gap={0} className={`flex-grow`}>
-                      <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ""}` : "Data Pemesan"}</p>
-                      {index > 0 && (
-                        <p className="text-xs text-grey">
-                          1 Tiket x{" "}
-                          {new Intl.NumberFormat("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                          }).format(ticketForOwner?.price ?? 0)}
-                        </p>
-                      )}
-                    </Stack>
-                    <button className="text-grey">
-                      <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform`} />
-                    </button>
-                  </div>
-
-                  {index > 0 && (
-                    <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
-                      <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
-                      <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
+                return (
+                  <div className="bg-white rounded-lg shadow-sm mb-3" key={index}>
+                    <div className="border-b py-3 px-5 border-primary-light flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
+                      <div className="flex items-center gap-3">
+                        {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0" />}
+                        <div>
+                          <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name ?? ""} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner.seat_number})` : ""}` : "Data Pemesan"}</p>
+                          {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketForOwner?.price ?? 0)}</p>}
+                        </div>
+                      </div>
+                      <button className="text-grey">
+                        <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform duration-200`} />
+                      </button>
                     </div>
-                  )}
 
-                  <div className={`border-b p-3 border-primary-light ${collapse[index] ? "max-h-[26rem]" : "max-h-0"} transition-max-height delay-100 duration-150 ease-in-out`}>
-                    <div className={`${collapse[index] ? "opacity-100" : "opacity-0"} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
-                      <div className={`${collapse[index] ? "visible delay-300 duration-300" : "invisible"} transition-transform `}>
-                        {detail.is_noidentity == 1 ? (
+                    {/* collapse wrapper: gunakan overflow-hidden + max-h */}
+                    <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
+                      <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
+                        {detail.is_noidentity == 1 && (
                           <div className="grid grid-cols-4 gap-3">
                             <div>
                               <InputSelect
@@ -2015,21 +1994,11 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                               {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                             </div>
                           </div>
-                        ) : null}
+                        )}
 
-                        {detail.is_name == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Nama Lengkap</Label>
-                            <Input
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none"
-                              placeholder="Nama Lengkap"
-                              value={item.full_name}
-                              onChange={(e) => handleInput(index, "full_name", e.target.value)}
-                            />
-                          </Field>
-                        ) : null}
+                        {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
 
-                        {detail.is_gender == 1 ? (
+                        {detail.is_gender == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
                             <select
@@ -2043,10 +2012,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                               <option value="Tidak Memberitahu">Tidak Memberitahu</option>
                             </select>
                           </Field>
-                        ) : null}
+                        )}
 
-                        {/* NEW FIELDS */}
-                        {detail.is_birthdate == 1 ? (
+                        {detail.is_birthdate == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
                             <Input
@@ -2056,103 +2024,48 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                               onChange={(e) => handleInput(index, "birthdate", e.target.value)}
                             />
                           </Field>
-                        ) : null}
+                        )}
 
-                        {detail.is_kelas == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Kelas</Label>
-                            <Input
-                              type="text"
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                              placeholder="Contoh: Kelas I"
-                              value={item.kelas || ""}
-                              onChange={(e) => handleInput(index, "kelas", e.target.value)}
-                            />
-                          </Field>
-                        ) : null}
+                        {/* sisa field seperti sebelumnya... */}
+                        {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas || ""} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
 
-                        {detail.is_profession == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Profesi / Bidang Pekerjaan</Label>
-                            <Input
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none"
-                              placeholder="profesi atau bidang pekerjaan"
-                              value={item.is_profession || ""}
-                              onChange={(e) => handleInput(index, "is_profession", e.target.value)}
-                            />
-                          </Field>
-                        ) : null}
+                        {detail.is_profession == 1 && (
+                          <InputField
+                            fullWidth
+                            type="text"
+                            label="Profesi / Bidang Pekerjaan"
+                            placeholder="profesi atau bidang pekerjaan"
+                            value={item.is_profession || ""}
+                            onChange={(e) => handleInput(index, "is_profession", e.target.value)}
+                          />
+                        )}
 
-                        {detail.is_company == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Perusahaan / Organisasi</Label>
-                            <Input
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none"
-                              placeholder="Nama Perusahaan Atau Organisasi"
-                              value={item.is_company || ""}
-                              onChange={(e) => handleInput(index, "is_company", e.target.value)}
-                            />
-                          </Field>
-                        ) : null}
+                        {detail.is_company == 1 && (
+                          <InputField fullWidth type="text" label="Perusahaan / Organisasi" placeholder="Nama Perusahaan Atau Organisasi" value={item.is_company || ""} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
+                        )}
 
-                        {detail.is_email == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Email</Label>
-                            <Input
-                              type="email"
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none"
-                              placeholder="Contoh: example@example.com"
-                              value={item.email}
-                              onChange={(e) => handleInput(index, "email", e.target.value)}
-                            />
-                          </Field>
-                        ) : null}
+                        {detail.is_email == 1 && <InputField fullWidth type="email" label="Email" placeholder="Contoh: example@example.com" value={item.email || ""} onChange={(e) => handleInput(index, "email", e.target.value)} />}
 
-                        {detail.is_phone_number == 1 ? (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">No Telepon</Label>
-                            <div className="flex gap-2 items-center">
-                              <form className="max-w-sm block mt-2">
-                                <select
-                                  id="countries"
-                                  className="bg-gray-50 border border-primary-light-200 text-dark text-sm rounded-lg block w-full py-1.5"
-                                  defaultValue="+62"
-                                  value={item.countryCode}
-                                  onChange={(e) => handleInput(index, "countryCode", e.target.value)}
-                                >
-                                  <option value="+62">+62</option>
-                                  <option value="+1">+1</option>
-                                  <option value="+2">+2</option>
-                                  <option value="+3">+3</option>
-                                  <option value="+4">+4</option>
-                                </select>
-                              </form>
-                              <Input
-                                className="mt-2 w-4/5 block rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm/6 text-dark focus:outline-none"
-                                placeholder="Contoh: 81233334444"
-                                value={item.no_telp}
-                                onChange={(e) => handleInput(index, "no_telp", e.target.value)}
-                              />
-                            </div>
-                          </Field>
-                        ) : null}
+                        {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp || ""} />}
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ) : (
           // DESKTOP
-          <div className="bg-primary-light min-h-screen pb-28">
-            <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20 ">
+          <div className="bg-primary-light pb-8">
+            {" "}
+            {/* hapus min-h-screen untuk menghindari gap */}
+            <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20">
               <h2 className="col-span-5 mb-4">Personal Informasi</h2>
+
               <div className="col-span-3 flex flex-col gap-3">
                 {form.map((item, index) => {
                   let ticketForOwner = null;
                   let currentIndex = 0;
-
                   for (const ticketItem of ticket) {
                     for (let i = 0; i < (ticketItem?.seat_number?.length ?? ticketItem.qty_ticket); i++) {
                       if (currentIndex === index - 1) {
@@ -2166,29 +2079,20 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     }
                     if (ticketForOwner) break;
                   }
-
                   if (!ticketForOwner?.seat_number && !!item.seat_number) {
                     handleInput(index, "seat_number", item.seat_number ?? "");
                   }
 
                   return (
                     <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
-                      <div className="border-b border-b-primary-light-200 px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
+                      <div className="border-b px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                         {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mr-[10px]" />}
-                        <Stack gap={0} className={`flex-grow`}>
-                          <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ""}` : "Data Pemesan"}</p>
-                          {index > 0 && (
-                            <p className="text-xs text-grey">
-                              1 Tiket x{" "}
-                              {new Intl.NumberFormat("id-ID", {
-                                style: "currency",
-                                currency: "IDR",
-                              }).format(ticketForOwner?.price ?? 0)}
-                            </p>
-                          )}
+                        <Stack gap={0} className="flex-grow">
+                          <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name ?? ""} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner.seat_number})` : ""}` : "Data Pemesan"}</p>
+                          {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketForOwner?.price ?? 0)}</p>}
                         </Stack>
                         <button className="text-grey">
-                          <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform`} />
+                          <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform duration-200`} />
                         </button>
                       </div>
 
@@ -2199,94 +2103,78 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         </div>
                       )}
 
-                      <div className={`px-5 pt-3 pb-5 ${collapse[index] ? "" : "max-h-0"} transition-max-height delay-100 duration-150 ease-in-out`}>
-                        <div className={`${collapse[index] ? "opacity-100" : "opacity-0"} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
-                          <div className={`${collapse[index] ? "visible" : "invisible"} flex flex-col gap-3`}>
-                            {detail.is_noidentity == 1 ? (
-                              <div className="grid grid-cols-4 gap-3">
-                                <div>
-                                  <InputSelect
-                                    label="Identitas"
-                                    required
-                                    onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
-                                    options={[
-                                      { key: "1", label: "KTP" },
-                                      { key: "2", label: "SIM" },
-                                      { key: "3", label: "Kartu Pelajar" },
-                                      { key: "4", label: "Passport" },
-                                      { key: "5", label: "KTM" },
-                                    ]}
-                                  />
-                                </div>
-                                <div className="col-span-3">
-                                  <InputField
-                                    fullWidth
-                                    type="number"
-                                    label="Nomor Identitas"
-                                    placeholder="Contoh: 123456789012345"
-                                    value={item.nik}
-                                    onChange={(e) => handleInput(index, "nik", e.target.value)}
-                                    inputProps={{ maxLength: 16 }}
-                                  />
-                                  {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
-                                </div>
-                              </div>
-                            ) : null}
-
-                            {detail.is_name == 1 ? <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} /> : null}
-
-                            {detail.is_gender == 1 ? (
-                              <Field className="mb-2">
-                                <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
-                                <select
-                                  className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                                  value={item.gender || ""}
-                                  onChange={(e) => handleInput(index, "gender", e.target.value)}
-                                >
-                                  <option value="">Pilih jenis kelamin</option>
-                                  <option value="Pria">Pria</option>
-                                  <option value="Wanita">Wanita</option>
-                                  <option value="Tidak Memberitahu">Tidak Memberitahu</option>
-                                </select>
-                              </Field>
-                            ) : null}
-
-                            {/* NEW FIELDS (desktop) */}
-                            {detail.is_birthdate == 1 ? (
-                              <Field className="mb-2">
-                                <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
-                                <Input
-                                  type="date"
-                                  className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                                  value={item.birthdate || ""}
-                                  onChange={(e) => handleInput(index, "birthdate", e.target.value)}
+                      <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
+                        <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
+                          {detail.is_noidentity == 1 && (
+                            <div className="grid grid-cols-4 gap-3">
+                              <div>
+                                <InputSelect
+                                  label="Identitas"
+                                  required
+                                  onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                                  options={[
+                                    { key: "1", label: "KTP" },
+                                    { key: "2", label: "SIM" },
+                                    { key: "3", label: "Kartu Pelajar" },
+                                    { key: "4", label: "Passport" },
+                                    { key: "5", label: "KTM" },
+                                  ]}
                                 />
-                              </Field>
-                            ) : null}
+                              </div>
+                              <div className="col-span-3">
+                                <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
+                                {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                              </div>
+                            </div>
+                          )}
 
-                            {detail.is_kelas == 1 ? <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} /> : null}
+                          {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
 
-                            {detail.is_profession == 1 ? (
-                              <InputField
-                                fullWidth
-                                type="text"
-                                label="Profesi atau Pekerjaan anda"
-                                placeholder="contoh: Promotor,Musisi, IT, Programmer etc "
-                                value={item.is_profession}
-                                onChange={(e) => handleInput(index, "is_profession", e.target.value)}
+                          {detail.is_gender == 1 && (
+                            <Field className="mb-2">
+                              <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
+                              <select
+                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                value={item.gender || ""}
+                                onChange={(e) => handleInput(index, "gender", e.target.value)}
+                              >
+                                <option value="">Pilih jenis kelamin</option>
+                                <option value="Pria">Pria</option>
+                                <option value="Wanita">Wanita</option>
+                                <option value="Tidak Memberitahu">Tidak Memberitahu</option>
+                              </select>
+                            </Field>
+                          )}
+
+                          {detail.is_birthdate == 1 && (
+                            <Field className="mb-2">
+                              <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
+                              <Input
+                                type="date"
+                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                value={item.birthdate || ""}
+                                onChange={(e) => handleInput(index, "birthdate", e.target.value)}
                               />
-                            ) : null}
+                            </Field>
+                          )}
 
-                            {detail.is_company == 1 ? (
-                              <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
-                            ) : null}
-
-                            {detail.is_email == 1 ? <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} /> : null}
-
-                            {detail.is_phone_number == 1 ? (
-                              <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />
-                            ) : null}
-                          </div>
+                          {/* ...sisa field sama seperti di mobile */}
+                          {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
+                          {detail.is_profession == 1 && (
+                            <InputField
+                              fullWidth
+                              type="text"
+                              label="Profesi atau Pekerjaan anda"
+                              placeholder="contoh: Promotor, Musisi, IT, Programmer etc"
+                              value={item.is_profession}
+                              onChange={(e) => handleInput(index, "is_profession", e.target.value)}
+                            />
+                          )}
+                          {detail.is_company == 1 && (
+                            <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
+                          )}
+                          {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
+                          {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />}
                         </div>
                       </div>
                     </div>
@@ -2294,42 +2182,44 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 })}
               </div>
 
+              {/* RIGHT COLUMN: summary & voucher */}
               <div className="col-span-2 flex flex-col gap-3">
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                   <div className="flex items-center gap-3 p-3">
-                    {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}
+                    {detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}
                     <div>
                       <p className="text-sm mb-1">{detail?.name}</p>
-                      <p className="text-xs text-grey">{formatDate(detail.start_date) == formatDate(detail.end_date) ? `${formatDate(detail.start_date)}` : `${formatDate(detail.start_date)} - ${formatDate(detail.end_date)}`}</p>
+                      <p className="text-xs text-grey">{formatDate(detail.start_date) === formatDate(detail.end_date) ? `${formatDate(detail.start_date)}` : `${formatDate(detail.start_date)} - ${formatDate(detail.end_date)}`}</p>
                     </div>
                   </div>
                 </div>
 
                 <Card withBorder radius={10} p={20}>
+                  {/* voucher UI (sama seperti mobile) */}
                   <Stack gap={20}>
                     <Flex gap={10} align="center">
-                      <Icon icon="mdi:voucher-outline" className={`text-primary-base text-[20px]`} />
+                      <Icon icon="mdi:voucher-outline" className="text-primary-base text-[20px]" />
                       <Text fw={600}>Voucher</Text>
                     </Flex>
 
-                    {voucherFields.map((field, index) => (
-                      <Group key={index}>
+                    {voucherFields.map((field, i) => (
+                      <Group key={i}>
                         <TextInput
                           w="100%"
                           value={field}
                           onChange={(e) => {
                             const newFields = [...voucherFields];
-                            newFields[index] = e.currentTarget.value;
+                            newFields[i] = e.currentTarget.value;
                             setVoucherFields(newFields);
                           }}
-                          placeholder={`Masukan Kode Voucher ${index + 1}`}
+                          placeholder={`Masukan Kode Voucher ${i + 1}`}
                         />
-                        <Button loading={loadings.includes(`getvoucher-${index}`)} disabled={field.length < 3} size="xs" onClick={() => handleGetVoucher(index)} className={`shrink-0`}>
+                        <Button loading={loadings.includes(`getvoucher-${i}`)} disabled={field.length < 3} size="xs" onClick={() => handleGetVoucher(i)} className="shrink-0">
                           Submit
                         </Button>
-                        {vouchers[index] && (
+                        {vouchers[i] && (
                           <>
-                            <Button variant="outline" size="xs" color="red" onClick={() => handleCancelVoucher(index)} className="shrink-0">
+                            <Button variant="outline" size="xs" color="red" onClick={() => handleCancelVoucher(i)} className="shrink-0">
                               Cancel
                             </Button>
                             <Icon icon="uiw:circle-check" className="text-green-500 text-[20px] shrink-0" />
@@ -2344,26 +2234,26 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   </Stack>
                 </Card>
 
-                <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
-                  <div className="border-b border-b-primary-light-200 p-3">
+                {/* Summary box (sama seperti mobile) */}
+                <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm overflow-hidden">
+                  <div className="border-b p-3">
                     <p className="font-semibold">Ringkasan Pesanan</p>
                   </div>
 
-                  {ticket.map((item: FormTicket) => (
-                    <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+                  {ticket.map((t) => (
+                    <div className="border-b p-3 border-primary-light-200 flex gap-3" key={t.event_ticket_id}>
                       <div className="px-3 flex items-center border rounded-md border-primary-light">
                         <FontAwesomeIcon icon={faTicket} className="text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm mb-1 font-semibold">{item.name}</p>
+                        <p className="text-sm mb-1 font-semibold">{t.name}</p>
                         <p className=" text-grey text-xs">
-                          {item.qty_ticket} Tiket x {item.price}
+                          {t.qty_ticket} Tiket x {t.price}
                         </p>
                       </div>
                     </div>
                   ))}
 
-                  {/* Jumlah Tiket */}
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>{`Jumlah (${totalCount} Tiket)`}</p>
                     <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
@@ -2441,16 +2331,17 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </div>
 
                 {detail && detail.has_event_payment_method.length > 1 ? (
-                  <div className="border border-primary-light-200 rounded-lg bg-white">
+                  <div className="border border-primary-light-200 rounded-lg bg-white overflow-hidden">
                     <div className="border-b border-b-primary-light-200 py-4 px-6">
                       <p className="font-semibold">Metode Pembayaran</p>
                     </div>
-                    <div className="border-b px-3 py-5 border-primary-light text-xs">
+
+                    <div className="px-3 py-4 border-b border-primary-light text-xs">
                       <Accordion variant="splitted" itemClasses={classAcc}>
                         {detail.has_event_payment_method
                           .filter((e) => e.payment_method_id != 5)
                           .map((el: any) => (
-                            <AccordionItem key={el.has_payment_method_id} aria-label="Anchor" className="" indicator={<FontAwesomeIcon icon={faChevronCircleLeft} className="px-2 text-lg" />} title={el.has_payment_method.payment_name}>
+                            <AccordionItem key={el.has_payment_method_id} aria-label="Anchor" indicator={<FontAwesomeIcon icon={faChevronCircleLeft} className="px-2 text-lg" />} title={el.has_payment_method.payment_name}>
                               {el.has_payment_method.id === 3 && el.has_payment_method.has_payment_link && el.has_payment_method.has_payment_link.length > 0 ? (
                                 <RadioGroup
                                   color="primary"
@@ -2477,7 +2368,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                       <Images type="logo" path={el.has_payment_method.logo} alt={el.has_payment_method.payment_name} className="w-8 h-8 object-contain" />
                                       <p className="text-sm">{el.has_payment_method.payment_name}</p>
                                     </div>
-                                    <Radio value={el.has_payment_method.id.toString()}></Radio>
+                                    <Radio value={el.has_payment_method.id.toString()} />
                                   </div>
                                 </RadioGroup>
                               )}
@@ -2495,38 +2386,30 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     </>
   ) : (
     step === 3 && transactionData && (
-      <div className="bg-primary-light max-w-xl pt-16 mx-auto">
-        {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full mt-10" />}
-
-        <div className="bg-white">
+      <div className="bg-primary-light max-w-xl mx-auto py-8 px-4">
+        {" "}
+        {/* centered, padding wajar */}
+        {detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-full h-auto rounded-md object-cover mb-6" />}
+        <div className="bg-white rounded-md overflow-hidden shadow-sm">
           <div className="border-b-2 p-3 border-primary-light">
             <Countdown date={targetDate} intervalDelay={0} precision={3} renderer={renderer} autoStart={true} />
           </div>
-          <div className="border-b-2 p-3 border-primary-light flex gap-3"></div>
-        </div>
 
-        <div className="bg-white mt-1">
-          <div className="border-b-2 p-3 border-primary-light flex gap-3">
-            {xenditInvoice ? (
+          <div className="p-4">
+            <div className="border-b-2 pb-3 mb-3">
               <div className="flex items-center gap-3">
-                <p className="font-semibold">{xenditInvoice.bank_code}</p>
+                <p className="font-semibold">{xenditInvoice ? xenditInvoice.bank_code : "BCA"}</p>
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <p className="font-semibold">BCA</p>
-              </div>
-            )}
-          </div>
-          <div className="bg-white mt-1">
-            <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
-              <div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border p-3 rounded-sm">
                 <p className="text-xs text-grey mb-1">Kode Invoice</p>
                 <p className="text-sm mb-1">{transactionData.invoice_no}</p>
-              </div>
-              <div>
+
                 {xenditInvoice ? (
                   <>
-                    <p className="text-xs text-grey mb-1">No. Virtual Account</p>
+                    <p className="text-xs text-grey mb-1 mt-3">No. Virtual Account</p>
                     <div className="flex items-center gap-2">
                       <p className="text-sm">{xenditInvoice.bank_account_number}</p>
                       <button onClick={handleCopy} className="hover:bg-primary-light-200 p-1 rounded-md">
@@ -2536,63 +2419,67 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-grey mb-1">No. Rekening</p>
+                    <p className="text-xs text-grey mb-1 mt-3">No. Rekening</p>
                     <p className="text-sm mb-1">{paymentMethod?.account_no}</p>
                     <p className="text-xs mb-1">Atas Nama {paymentMethod?.account_name}</p>
                   </>
                 )}
+
+                <div className="mt-3">
+                  <p className="text-xs text-grey mb-1">Total Pembayaran</p>
+                  <p className="text-sm mb-1">
+                    {xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString("id-ID")}` : `Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-grey mb-1">Total Pembayaran</p>
-                <p className="text-sm mb-1">
-                  {xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString("id-ID")}` : `Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}
-                </p>
+
+              <div className="border p-3 rounded-sm">
+                <div className="flex justify-between">
+                  <p className="text-xs text-grey">Regular Ticket {`x(${transactionData.total_qty})`}</p>
+                  <p className="text-xs">{transactionData.total_price ? <NumberFormatter value={transactionData.total_price} /> : <Text>Free</Text>}</p>
+                </div>
+
+                {vouchers.length > 0 && (
+                  <div className="py-3 px-0 flex justify-between items-center">
+                    <p>Voucher</p>
+                    <p className="font-semibold">
+                      -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-grey">Pajak</p>
+                  <p className="text-xs">{transactionData.ppn ? <NumberFormatter value={transactionData.ppn} /> : <Text>Free</Text>}</p>
+                </div>
+
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-grey">Biaya Admin</p>
+                  <p className="text-xs">{transactionData.admin_fee ? <NumberFormatter value={transactionData.admin_fee} /> : <Text>Free</Text>}</p>
+                </div>
+
+                <div className="border-t-2 border-primary-light mt-4 pt-3">
+                  <div className="flex items-center justify-between font-semibold">
+                    <p>Total Pembayaran</p>
+                    <p>{`Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}</p>
+                  </div>
+
+                  <div className="mt-4">
+                    {xenditInvoice ? (
+                      <Link href={`/success/${transactionData.invoice_no}`} target="_blank" className="block">
+                        <button className="w-full bg-primary-dark text-white py-2 rounded-lg">{loading ? <Spinner color="default" size="sm" /> : "Cek Status Pembayaran"}</button>
+                      </Link>
+                    ) : (
+                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg" onClick={() => handleShowModal()}>
+                        {loading ? <Spinner color="default" size="sm" /> : "Upload Bukti Pembayaran"}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="bg-white mt-1">
-          <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
-            <div className="flex justify-between">
-              <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
-              <p className="text-xs mb-1">{transactionData.total_price ? <NumberFormatter value={transactionData.total_price} /> : <Text>Free</Text>}</p>
-            </div>
-            {vouchers.length > 0 && (
-              <div className="py-3 px-4 flex justify-between items-center">
-                <p>Voucher</p>
-                <p className="font-semibold">
-                  -
-                  <NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
-                </p>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-grey mb-1">Pajak</p>
-              <p className="text-xs mb-1">{transactionData.ppn ? <NumberFormatter value={transactionData.ppn} /> : <Text>Free</Text>}</p>
-            </div>
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-grey mb-1">Biaya Admin</p>
-              <p className="text-xs mb-1">{transactionData.admin_fee ? <NumberFormatter value={transactionData.admin_fee} /> : <Text>Free</Text>}</p>
-            </div>
-            <div className="border-t-2 border-primary-light">
-              <div className="flex items-center justify-between font-semibold">
-                <p>Total Pembayaran</p>
-                <p>{`Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}</p>
-              </div>
-              {xenditInvoice ? (
-                <Link href={`/success/${transactionData.invoice_no}`} target="_blank">
-                  <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">{loading ? <Spinner color="default" size="sm" /> : "Cek Status Pembayaran"}</button>
-                </Link>
-              ) : (
-                <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => handleShowModal()}>
-                  {loading ? <Spinner color="default" size="sm" /> : "Upload Bukti Pembayaran"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
         <ModalTransaction id={transactionData.id} invoice={transactionData.invoice_no} isOpen={showModalTransaction} setIsOpen={setShowModalTransaction} />
       </div>
     )
