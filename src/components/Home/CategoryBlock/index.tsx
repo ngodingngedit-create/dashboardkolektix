@@ -90,7 +90,7 @@ const CategoryBlock = () => {
             return (
               <Link
                 key={item.id}
-                href={`/event?category=${q}`}
+                href={`/event?tag=${q}`}
                 className={`text-center ${styles.categoryCard}`}
                 // accessible: make the whole card focusable
                 tabIndex={0}

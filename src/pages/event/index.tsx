@@ -1,11 +1,162 @@
-import React from 'react';
-import EventCard from '@/components/Card/EventCard';
-import { EventProps } from '@/utils/globalInterface';
-import { Get } from '@/utils/REST';
-import { useEffect, useState } from 'react';
-import { Breadcrumbs, BreadcrumbItem, ScrollShadow } from '@nextui-org/react';
-import EventCardLoading from '@/components/Card/EventCard/loading';
-import Chat from '@/components/chat';
+// import React from "react";
+// import EventCard from "@/components/Card/EventCard";
+// import { EventProps } from "@/utils/globalInterface";
+// import { Get } from "@/utils/REST";
+// import { useEffect, useState } from "react";
+// import { Breadcrumbs, BreadcrumbItem, ScrollShadow } from "@nextui-org/react";
+// import EventCardLoading from "@/components/Card/EventCard/loading";
+// import Chat from "@/components/chat";
+// import { useRouter } from "next/router";
+
+// interface TopicProps {
+//   id: number;
+//   name: string;
+//   description: string;
+//   status: string;
+//   created_by: string | null;
+//   updated_by: string | null;
+//   created_at: string;
+//   updated_at: string | null;
+//   deleted_at: string | null;
+// }
+
+// const Event = () => {
+//   const [loading, setLoading] = useState<boolean>(false);
+//   const [data, setData] = useState<EventProps[]>([]);
+//   const [topic, setTopic] = useState<TopicProps[]>([]);
+//   const [activeCategory, setActiveCategory] = useState<string>("");
+
+//   // const getData = () => {
+//   //   setLoading(true);
+//   //   Get('event', {})
+//   //     .then((res: any) => {
+//   //       setData(res.data.sort((b: any, a: any) => {
+//   //         return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+//   //     }));
+//   //       console.log("masuk", res);
+//   //       setLoading(false);
+//   //     })
+//   //     .catch((err) => {
+//   //       console.log(err);
+//   //       setLoading(false);
+//   //     });
+//   // };
+
+//   const router = useRouter();
+//   const { tag } = router.query;
+
+//   const getData = () => {
+//     setLoading(true);
+
+//     Get(`event?tag=${tag}`, {})
+//       .then((res: any) => {
+//         setData(
+//           res.data.sort((b: any, a: any) => {
+//             return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+//           })
+//         );
+//         setLoading(false);
+//       })
+//       .catch((err) => {
+//         console.log(err);
+//         setLoading(false);
+//       });
+//   };
+
+//   const getEventTopic = () => {
+//     setLoading(true);
+//     Get("event-topic", {})
+//       .then((res: any) => {
+//         setTopic(res);
+//         console.log(res);
+//         setLoading(false);
+//       })
+//       .catch((err) => {
+//         console.log(err);
+//         setLoading(false);
+//       });
+//   };
+
+//   useEffect(() => {
+//     getEventTopic();
+//     getData();
+//   }, [tag]);
+
+//   const filteredData = activeCategory ? data.filter((event) => event.has_event_topic?.name === activeCategory) : data;
+
+//   return (
+//     <>
+//       <Chat />
+//       <div className="text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24">
+//         {/* <div className='pl-4'>
+//           <Breadcrumbs>
+//             <BreadcrumbItem>Beranda</BreadcrumbItem>
+//             <BreadcrumbItem>List Event</BreadcrumbItem>
+//           </Breadcrumbs>
+//         </div> */}
+//         {!loading ? (
+//           <>
+//             <ScrollShadow orientation="horizontal" className="max-w-full flex gap-2 px-4 pb-3 mt-0">
+//               {topic.map((item) => (
+//                 <div
+//                   key={item.id}
+//                   onClick={() => setActiveCategory(item.name)}
+//                   className={`cursor-pointer flex rounded-2xl items-center justify-center py-1 px-3 border ${activeCategory !== item.name ? "text-dark-grey border-primary-light-200" : "text-primary-dark border-primary-dark"}`}
+//                 >
+//                   <p className="whitespace-nowrap">{item.name}</p>
+//                 </div>
+//               ))}
+//             </ScrollShadow>
+//             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 gap-x-5 my-5">
+//               {filteredData.length > 0 ? (
+//                 filteredData.map((event: any) => (
+//                   <EventCard
+//                     id={event.id}
+//                     key={event.id}
+//                     title={event.name}
+//                     img={event.image_url}
+//                     end={event.end_date}
+//                     date={event.start_date}
+//                     slug={event.slug}
+//                     location={event.location_city}
+//                     price={event.starting_price}
+//                     creatorImg={event.has_creator?.image}
+//                     creator={event.has_creator?.name}
+//                     creatorSlug={event.has_creator?.slug}
+//                     start_date={event.start_date}
+//                     start_time={event.start_time}
+//                     end_date={event.end_date}
+//                     end_time={event.end_time}
+//                   />
+//                 ))
+//               ) : (
+//                 <p className="text-center col-span-full">No events available for the selected category.</p>
+//               )}
+//             </div>
+//           </>
+//         ) : (
+//           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5">
+//             <EventCardLoading />
+//             <EventCardLoading />
+//             <EventCardLoading />
+//             <EventCardLoading />
+//           </div>
+//         )}
+//       </div>
+//     </>
+//   );
+// };
+
+// export default Event;
+
+import React, { useEffect, useMemo, useState } from "react";
+import EventCard from "@/components/Card/EventCard";
+import { EventProps } from "@/utils/globalInterface";
+import { Get } from "@/utils/REST";
+import { Breadcrumbs, BreadcrumbItem, ScrollShadow } from "@nextui-org/react";
+import EventCardLoading from "@/components/Card/EventCard/loading";
+import Chat from "@/components/chat";
+import { useRouter } from "next/router";
 
 interface TopicProps {
   id: number;
@@ -23,16 +174,25 @@ const Event = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<EventProps[]>([]);
   const [topic, setTopic] = useState<TopicProps[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('');
+  const [activeCategory, setActiveCategory] = useState<string>("");
 
-  const getData = () => {
+  const router = useRouter();
+  const { tag } = router.query;
+
+  const normalize = (v?: any) => (v ? String(v).trim() : "");
+
+  const getData = (tagParam?: string) => {
     setLoading(true);
-    Get('event', {})
+
+    const endpoint = tagParam ? `event?tag=${encodeURIComponent(tagParam)}` : "event";
+
+    Get(endpoint, {})
       .then((res: any) => {
-        setData(res.data.sort((b: any, a: any) => {
-          return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-      }));
-        console.log("masuk", res);
+        setData(
+          (res.data || []).sort((b: any, a: any) => {
+            return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          })
+        );
         setLoading(false);
       })
       .catch((err) => {
@@ -42,57 +202,82 @@ const Event = () => {
   };
 
   const getEventTopic = () => {
-    setLoading(true);
-    Get('event-topic', {})
+    Get("event-topic", {})
       .then((res: any) => {
-        setTopic(res);
-        console.log(res);
-        setLoading(false);
+        setTopic(res || []);
       })
       .catch((err) => {
         console.log(err);
-        setLoading(false);
       });
   };
 
+  // set activeCategory from query and fetch data when router ready / tag changes
   useEffect(() => {
-    getEventTopic();
-    getData();
-  }, []);
+    if (!router.isReady) return;
 
- 
-  const filteredData = activeCategory
-    ? data.filter(event => event.has_event_topic?.name === activeCategory)
-    : data;
+    const rawTag = Array.isArray(tag) ? tag[0] : tag;
+    const decodedTag = rawTag ? decodeURIComponent(String(rawTag)) : "";
+
+    if (decodedTag) {
+      setActiveCategory(decodedTag);
+    } else {
+      setActiveCategory("");
+    }
+
+    getEventTopic();
+    getData(decodedTag);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, tag]);
+
+  // orderedTopics: place activeCategory first (if exists) but keep original order otherwise
+  const orderedTopics = useMemo(() => {
+    if (!topic || topic.length === 0) return [];
+    if (!activeCategory) return topic;
+
+    const activeIdx = topic.findIndex((t) => normalize(t.name).toLowerCase() === normalize(activeCategory).toLowerCase());
+
+    if (activeIdx <= 0) return topic; // already first or not found
+
+    const copy = [...topic];
+    const [activeItem] = copy.splice(activeIdx, 1); // remove the matched item
+    return [activeItem, ...copy];
+  }, [topic, activeCategory]);
+
+  const filteredData = activeCategory ? data.filter((event) => event.has_event_topic && normalize(event.has_event_topic.name).toLowerCase() === normalize(activeCategory).toLowerCase()) : data;
 
   return (
     <>
       <Chat />
-      <div className='text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24'>
-        {/* <div className='pl-4'>
-          <Breadcrumbs>
-            <BreadcrumbItem>Beranda</BreadcrumbItem>
-            <BreadcrumbItem>List Event</BreadcrumbItem>
-          </Breadcrumbs>
-        </div> */}
+      <div className="text-dark max-w-6xl mx-auto min-h-screen py-10 md:pt-24">
         {!loading ? (
           <>
-            <ScrollShadow orientation='horizontal' className='max-w-full flex gap-2 px-4 pb-3 mt-0'>
-              {topic.map((item) => (
+            <ScrollShadow orientation="horizontal" className="max-w-full flex gap-2 px-4 pb-3 mt-0">
+              {orderedTopics.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => setActiveCategory(item.name)}
+                  onClick={() => {
+                    setActiveCategory(item.name);
+                    const encoded = encodeURIComponent(item.name);
+                    router.replace(
+                      {
+                        pathname: "/event",
+                        query: { tag: encoded },
+                      },
+                      undefined,
+                      { shallow: true }
+                    );
+                    getData(item.name);
+                  }}
                   className={`cursor-pointer flex rounded-2xl items-center justify-center py-1 px-3 border ${
-                    activeCategory !== item.name
-                      ? 'text-dark-grey border-primary-light-200'
-                      : 'text-primary-dark border-primary-dark'
+                    normalize(activeCategory).toLowerCase() !== normalize(item.name).toLowerCase() ? "text-dark-grey border-primary-light-200" : "text-primary-dark border-primary-dark"
                   }`}
                 >
-                  <p className='whitespace-nowrap'>{item.name}</p>
+                  <p className="whitespace-nowrap">{item.name}</p>
                 </div>
               ))}
             </ScrollShadow>
-            <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 gap-x-5 my-5'>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 gap-x-5 my-5">
               {filteredData.length > 0 ? (
                 filteredData.map((event: any) => (
                   <EventCard
@@ -115,12 +300,12 @@ const Event = () => {
                   />
                 ))
               ) : (
-                <p className='text-center col-span-full'>No events available for the selected category.</p>
+                <p className="text-center col-span-full">No events available for the selected category.</p>
               )}
             </div>
           </>
         ) : (
-          <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5'>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5">
             <EventCardLoading />
             <EventCardLoading />
             <EventCardLoading />
