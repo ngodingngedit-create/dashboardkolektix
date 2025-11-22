@@ -122,6 +122,67 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     validate: zodResolver(storeSchema),
   });
 
+  // const handleSave = async (isDraft: boolean = false) => {
+  //   const valid = form.validate();
+  //   var product_id: number | null = null;
+  //   if (valid.hasErrors) return;
+
+  //   setLoading.append("save");
+  //   const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
+
+  //   try {
+  //     const resProduct: any = await Post(
+  //       Boolean(id) ? `product/${merchId}` : "product",
+  //       {
+  //         product_name: name,
+  //         description: description ?? "-",
+  //         sku,
+  //         price: price ?? 99999,
+  //         image: image.map((e) => (e instanceof Blob ? e : imageList?.find((z) => e == z.image_url)?.image ?? "")),
+  //         product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
+  //         creator_id: user?.has_creator?.id ?? 0,
+  //         // order: 10,
+  //         // can_purchasable: 1,
+  //         qty: stock ?? 0,
+  //         weight: form.values.weight ?? 1,
+  //         show_stock_out: 1,
+  //         max_purchase_quantity: 100,
+  //         low_quantity_warning: 4,
+  //         // refundable: 0,
+  //         discount: 0,
+  //         // is_product_quantity_multiply: 1,
+  //         add_to_flash_sale: 0,
+  //         is_product_varian: is_variant ? 1 : 0,
+  //         product_variant: is_variant
+  //           ? JSON.stringify(
+  //               variant.map((e) => ({
+  //                 id: e.id,
+  //                 varian_name: e.name,
+  //                 sku: e.sku ?? "",
+  //                 price: e.price ?? 999999,
+  //                 weight: e.weight ?? 1,
+  //                 stock_qty: e.stock ?? 0,
+  //                 varian_category_id: variant_name,
+  //                 status_product: e.status ? "active" : "inactive",
+  //               })) satisfies VariantStoreRequest[]
+  //             )
+  //           : "[]",
+  //       } satisfies MerchandiseStoreRequest,
+  //       "multipart/form-data"
+  //     );
+  //     product_id = resProduct.data.id as number;
+
+  //     if (resProduct.status) router.reload();
+  //   } catch (err: any) {
+  //     const error = err?.response?.data?.errors;
+  //     if (error) {
+  //       form.setErrors({ ...error, name: error.slug ?? error.product_name });
+  //     }
+  //   } finally {
+  //     setLoading.filter((e) => e != "save");
+  //   }
+  // };
+
   const handleSave = async (isDraft: boolean = false) => {
     const valid = form.validate();
     var product_id: number | null = null;

@@ -30,6 +30,7 @@ interface Form {
   event_ticket_id: number;
   is_profession: string;
   is_company: string;
+  is_assistant: string;
 }
 
 interface DataProps {
@@ -106,10 +107,7 @@ const getDataFromIndexedDB = async (): Promise<DataProps | null> => {
             console.log("Individual ticket:", ticket); // Periksa setiap tiket
             return {
               ...ticket,
-              ticket_fee:
-                ticket.ticket_fee !== undefined && ticket.ticket_fee !== null
-                  ? ticket.ticket_fee
-                  : ticket.price * 0.1,
+              ticket_fee: ticket.ticket_fee !== undefined && ticket.ticket_fee !== null ? ticket.ticket_fee : ticket.price * 0.1,
             };
           });
 
@@ -146,8 +144,7 @@ const TransactionWithoutAuth = () => {
     } else {
       return (
         <p className="font-semibold">
-          {String(minutes).padStart(2, "0")} :{" "}
-          {String(seconds).padStart(2, "0")}
+          {String(minutes).padStart(2, "0")} : {String(seconds).padStart(2, "0")}
         </p>
       );
     }
@@ -187,32 +184,16 @@ const TransactionWithoutAuth = () => {
         <div className="w-full fixed gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5 px-4 md:px-2 lg:px-0">
           <div className="max-w-5xl mx-auto flex md:flex-row flex-col justify-between md:gap-0 gap-3 items-center">
             <div className="hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
-              {data?.countdowns && (
-                <Countdown
-                  date={new Date(data.countdowns)}
-                  renderer={renderer}
-                />
-              )}
+              {data?.countdowns && <Countdown date={new Date(data.countdowns)} renderer={renderer} />}
               <div className="w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200"></div>
               <p className="text-xs">Segera selesaikan pesananmu</p>
             </div>
             <div className="flex lg:hidden md:hidden items-center fixed top-16 right-0 left-0 gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2">
-              {data?.countdowns && (
-                <Countdown
-                  date={new Date(data.countdowns)}
-                  renderer={renderer}
-                />
-              )}
+              {data?.countdowns && <Countdown date={new Date(data.countdowns)} renderer={renderer} />}
               <div className="w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200"></div>
               <p className="text-xs">Segera selesaikan pesananmu</p>
             </div>
-            <Button
-              label="Selanjutnya"
-              color="primary"
-              disabled={!formValid}
-              className="px-12 py-2 md:w-auto w-full"
-              onClick={() => setIsOpen(true)}
-            />
+            <Button label="Selanjutnya" color="primary" disabled={!formValid} className="px-12 py-2 md:w-auto w-full" onClick={() => setIsOpen(true)} />
           </div>
         </div>
       )}

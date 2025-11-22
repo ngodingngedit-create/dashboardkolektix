@@ -944,29 +944,94 @@ const Merch: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRender, page]);
 
+  // const getData = async (pageNum: number = 1) => {
+  //   setLoading2(true);
+
+  //   try {
+  //     const creatorId = user?.has_creator?.id;
+  //     if (!creatorId) {
+  //       console.warn("getData aborted: no creator id on user", user);
+  //       setMerchList([]);
+  //       setLastPage(1);
+  //       return;
+  //     }
+
+  //     const qs = new URLSearchParams({
+  //       per_page: String(PER_PAGE),
+  //       page: String(pageNum),
+  //       creator_id: String(creatorId),
+  //     }).toString();
+
+  //     const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
+  //     console.log("Fetching:", url);
+
+  //     const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
+  //     const cookieToken = Cookies.get("authToken") || (typeof window !== "undefined" ? localStorage.getItem("authToken") || "" : "");
+  //     const token = envToken || cookieToken || "";
+
+  //     const headers: Record<string, string> = {
+  //       Accept: "application/json",
+  //     };
+  //     if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  //     const res = await fetch(url, {
+  //       method: "GET",
+  //       headers,
+  //     } as RequestInit);
+
+  //     if (!res.ok) {
+  //       throw new Error(`HTTP error! status: ${res.status}`);
+  //     }
+
+  //     const json = await res.json();
+  //     console.log("API data:", json);
+
+  //     const pagination = json?.data;
+  //     const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
+
+  //     setMerchList(Array.isArray(list) ? list : []);
+  //     const computedLastPage = pagination?.last_page ?? 1;
+  //     setLastPage(Number(computedLastPage) || 1);
+  //   } catch (err) {
+  //     console.error("Error fetching data:", err);
+  //     setMerchList([]);
+  //   } finally {
+  //     setLoading2(false);
+  //   }
+  // };
+
+  // const handleToggleStatus = async (id: number, status: boolean) => {
+  //   setLoading((prev) => [...prev, "toggle-status"]);
+  //   try {
+  //     const res: any = await Post(`product_toggle_status/${id}`, {
+  //       status: status ? 2 : 3,
+  //     });
+  //     if (res?.status) {
+  //       setMerchList((prev) => prev.map((e) => (e.id === id ? { ...e, product_status_id: status ? 2 : 3 } : e)));
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //   } finally {
+  //     setLoading((prev) => prev.filter((s) => s !== "toggle-status"));
+  //   }
+  // };
+
   const getData = async (pageNum: number = 1) => {
     setLoading2(true);
 
     try {
+      // ✅ GUARD: Pastikan punya creator_id
       const creatorId = user?.has_creator?.id;
+
       if (!creatorId) {
-        console.warn("getData aborted: no creator id on user", user);
+        console.warn("getData aborted: missing creator_id");
         setMerchList([]);
         setLastPage(1);
         return;
       }
 
-      const qs = new URLSearchParams({
-        per_page: String(PER_PAGE),
-        page: String(pageNum),
-        creator_id: String(creatorId),
-      }).toString();
-
-      const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
-      console.log("Fetching:", url);
-
       const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
-      const cookieToken = Cookies.get("token") || (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
+      const cookieToken = Cookies.get("authToken") || (typeof window !== "undefined" ? localStorage.getItem("authToken") || "" : "");
       const token = envToken || cookieToken || "";
 
       const headers: Record<string, string> = {
@@ -974,24 +1039,62 @@ const Merch: React.FC = () => {
       };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(url, {
-        method: "GET",
-        headers,
-      } as RequestInit);
+      // ✅ STEP 1: Fetch ALL products dari semua halaman
+      let allProducts: MerchListResponse[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+      let totalLastPage = 1;
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+      while (hasMore) {
+        const qs = new URLSearchParams({
+          per_page: String(PER_PAGE),
+          page: String(currentPage),
+        }).toString();
+
+        const url = `${process.env.NEXT_PUBLIC_URL}/product?${qs}`;
+        console.log(`Fetching page ${currentPage}...`);
+
+        const res = await fetch(url, {
+          method: "GET",
+          headers,
+        } as RequestInit);
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const json = await res.json();
+        totalLastPage = json?.last_page ?? 1;
+
+        // Handle response: data adalah array langsung
+        if (Array.isArray(json?.data)) {
+          allProducts.push(...json.data);
+          console.log(`Page ${currentPage}: ${json.data.length} products (total so far: ${allProducts.length})`);
+        }
+
+        // Check if there are more pages
+        currentPage++;
+        hasMore = currentPage <= totalLastPage;
       }
 
-      const json = await res.json();
-      console.log("API data:", json);
+      console.log("Total products from ALL pages:", allProducts.length);
 
-      const pagination = json?.data;
-      const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
+      // ✅ STEP 2: Filter hanya produk dengan creator_id yang sesuai
+      const filteredList = allProducts.filter((item) => {
+        return item?.creator_id === creatorId;
+      });
 
-      setMerchList(Array.isArray(list) ? list : []);
-      const computedLastPage = pagination?.last_page ?? 1;
-      setLastPage(Number(computedLastPage) || 1);
+      console.log(`Filtered by creatorId ${creatorId}: ${filteredList.length} products`);
+      setMerchList(Array.isArray(filteredList) ? filteredList : []);
+
+      // ✅ STEP 3: Re-paginate hasil filter (tampilkan PER_PAGE items per halaman)
+      const paginatedList = filteredList.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
+
+      const computedLastPage = Math.ceil(filteredList.length / PER_PAGE) || 1;
+      setLastPage(computedLastPage);
+
+      console.log(`Showing page ${pageNum} of ${computedLastPage} (${paginatedList.length} items)`);
+      setMerchList(paginatedList);
     } catch (err) {
       console.error("Error fetching data:", err);
       setMerchList([]);
@@ -1001,13 +1104,32 @@ const Merch: React.FC = () => {
   };
 
   const handleToggleStatus = async (id: number, status: boolean) => {
+    // client-side guard: pastikan item ada di merchList dan milik creator user
+    const creatorId = user?.has_creator?.id;
+    const item = merchList.find((p) => p.id === id);
+
+    if (!item) {
+      console.warn(`Toggle aborted: product id ${id} not found in current merchList`);
+      return;
+    }
+
+    // Jika API mengembalikan creator_id di item gunakan itu; field ini mungkin bernama merchant_id / creator_id tergantung API
+    // Contoh asumsi: item.creator_id
+    if (creatorId && item.creator_id && String(item.creator_id) !== String(creatorId)) {
+      console.warn(`Toggle aborted: product ${id} does not belong to creator ${creatorId}`);
+      return;
+    }
+
     setLoading((prev) => [...prev, "toggle-status"]);
     try {
       const res: any = await Post(`product_toggle_status/${id}`, {
         status: status ? 2 : 3,
       });
+
       if (res?.status) {
         setMerchList((prev) => prev.map((e) => (e.id === id ? { ...e, product_status_id: status ? 2 : 3 } : e)));
+      } else {
+        console.warn("Toggle API returned falsy status:", res);
       }
     } catch (err) {
       console.error(err);

@@ -440,13 +440,13 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
 
   // PPN 10% berdasarkan subtotal (seperti yang kamu minta)
   const taxPercent = 0.1;
-  const taxAmount = subtotal + totalTicketFee > 0 ? (subtotal + totalTicketFee) * taxPercent : 0;
+  const taxAmount = subtotal > 0 ? subtotal * taxPercent : 0;
 
   // Total pembayaran sesuai formula: subtotal + ticket fee + ppn
-  const totalPayment = subtotal + totalTicketFee + taxAmount;
+  const grandtotal = subtotal + totalTicketFee + taxAmount;
 
   // Use grandtotal from transactionData to match Xendit exactly (we still display backend grandtotal where required)
-  const grandtotal = transactionData.grandtotal || 0;
+  // const grandtotal = transactionData.grandtotal || 0;
 
   const classAcc = {
     base: "!p-0",
@@ -562,7 +562,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
 
             {/* PPN 10% */}
             <div className="flex justify-between items-center">
-              <p className="text-xs text-grey mb-1">PPN 10%</p>
+              <p className="text-xs text-grey mb-1">PPN</p>
               <p className="text-xs mb-1">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
             </div>
 
@@ -575,7 +575,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
             <div className="border-t-2 border-primary-light">
               <div className="flex items-center justify-between font-semibold">
                 <p>Total Pembayaran</p>
-                <p>Rp{Math.round(totalPayment).toLocaleString("id-ID")}</p>
+                <p>Rp{Math.round(grandtotal).toLocaleString("id-ID")}</p>
               </div>
               {/* <button
                 className='w-full bg-primary-dark text-white py-2 rounded-lg my-3 disabled:bg-primary-disabled disabled:cursor-not-allowed'
@@ -739,19 +739,6 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                   </div>
                 ))}
 
-                {/* SUBTOTAL */}
-                <div className="flex items-center justify-between px-4">
-                  <p className="text-sm mb-1">Subtotal</p>
-                  <p className="text-sm text-grey">Rp{subtotal.toLocaleString("id-ID")}</p>
-                </div>
-
-                {/* Ticket Fee (pengganti admin fee) */}
-                <div className="flex items-center justify-between px-4">
-                  <p className="text-sm mb-1">Ticket Fee</p>
-                  <p className="text-sm text-grey">Rp{totalTicketFee.toLocaleString("id-ID")}</p>
-                </div>
-
-                {/* Voucher if any */}
                 {voucher && Array.isArray(voucher) && voucher.length > 0 ? (
                   <div className="flex items-center justify-between px-4">
                     <p className="text-sm mb-1">Total Voucher</p>
@@ -759,15 +746,27 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                   </div>
                 ) : null}
 
+                {/* SUBTOTAL */}
+                <div className="flex items-center justify-between px-4">
+                  <p className="text-sm mb-1">Subtotal</p>
+                  <p className="text-sm text-grey">Rp{subtotal.toLocaleString("id-ID")}</p>
+                </div>
+
                 {/* PPN */}
                 <div className="flex items-center justify-between px-4">
-                  <p className="text-sm mb-1">PPN (10%)</p>
+                  <p className="text-sm mb-1">PPN</p>
                   <p className="text-sm text-grey">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
+                </div>
+
+                {/* Ticket Fee (pengganti admin fee) */}
+                <div className="flex items-center justify-between px-4">
+                  <p className="text-sm mb-1">Ticket Fee</p>
+                  <p className="text-sm text-grey">Rp{totalTicketFee.toLocaleString("id-ID")}</p>
                 </div>
               </div>
               <div className="py-3 px-4 flex justify-between items-center">
                 <p className="font-semibold">{`Total Pembayaran`}</p>
-                <p className="font-semibold">Rp{Math.round(totalPayment).toLocaleString("id-ID")}</p>
+                <p className="font-semibold">Rp{Math.round(grandtotal).toLocaleString("id-ID")}</p>
               </div>
             </div>
           </div>

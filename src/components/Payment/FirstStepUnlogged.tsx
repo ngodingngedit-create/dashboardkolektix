@@ -1373,6 +1373,7 @@ interface Form {
   seat_number?: string;
   is_profession: string;
   is_company: string;
+  is_assistant: string;
   // NEW fields
   birthdate?: string;
   kelas?: string;
@@ -1419,6 +1420,24 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
   const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   const adminFee = totalTicketFee;
+
+  const computeTax = (detail: any, subtotalAfterVoucher: number, adminFee: number) => {
+    const ppnType = detail?.ppn_type || "percentage";
+    const raw = Number(detail?.ppn) || 0;
+
+    if (ppnType === "percentage") {
+      const taxBase = subtotalAfterVoucher;
+      const tax = Math.round(taxBase * (raw / 100));
+      return { tax, label: `${raw}%` };
+    }
+
+    if (ppnType === "nominal") {
+      const tax = Math.round(raw);
+      return { tax, label: `Rp ${tax.toLocaleString("id-ID")}` };
+    }
+
+    return { tax: 0, label: "Free" };
+  };
 
   const getPaymentMethodById = (id: string) => {
     setLoading(true);
@@ -1578,6 +1597,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         birthdate: "",
         kelas: "",
         gender: "",
+        is_assistant: "",
       };
       setForm(newForm);
     }
@@ -1585,25 +1605,153 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
   const router = useRouter();
 
+  // const submitForm = () => {
+  //   const now = new Date();
+  //   now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
+  //   const isoString = now.toISOString();
+
+  //   const subtotal = totalSubtotalPrice; // Use the prop that was passed to the component
+  //   const adminFee = totalTicketFee;
+  //   const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+  //   // ✅ Tax dihitung dari subtotal SETELAH dikurangi voucher
+  //   const subtotalAfterVoucher = subtotal - voucherDiscount;
+  //   const tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
+  //   const grandtotal = subtotalAfterVoucher + adminFee + tax;
+
+  //   const allSeatNumbers = ticket.map((t) => (Array.isArray(t.seat_number) ? t.seat_number : JSON.parse(t.seat_number || "[]"))).flat();
+
+  //   let seatIndex = 0;
+  //   const payload = {
+  //     event_id: detail?.id,
+  //     admin_fee: detail?.admin_fee,
+  //     payment_method: payment ? payment : "4",
+  //     grandtotal: grandtotal,
+  //     identities: form.map((identity) => {
+  //       if (identity.is_pemesan === 1) return identity;
+
+  //       const seat_number = allSeatNumbers[seatIndex] || "";
+  //       seatIndex++;
+
+  //       return {
+  //         ...identity,
+  //         seat_number: identity.seat_number || seat_number,
+  //       };
+  //     }),
+  //     tickets: ticket.map((e) => ({
+  //       ...e,
+  //       seatnumber_ticket: JSON.stringify(e.seat_number),
+  //     })),
+  //     bank_code: bank,
+  //     expiration_date: isoString,
+  //     vouchers:
+  //       vouchers.length > 0
+  //         ? vouchers.map((v) => ({
+  //             voucher_id: v.id,
+  //             voucher_code: v.name,
+  //             voucher_amount: v.amount,
+  //           }))
+  //         : [],
+  //   };
+
+  //   setLoading(true);
+  //   Post("transaction-without-auth", payload)
+  //     .then((res: any) => {
+  //       setTransactionData(res.data);
+
+  //       if (res?.isFree) {
+  //         router.push("/success/" + res.invoice_no);
+  //         return;
+  //       }
+
+  //       if (res.xendit_invoice && res.xendit_invoice.invoice_url) {
+  //         router.push(res.xendit_invoice.invoice_url);
+  //       } else if (res.xendit_invoice && res.xendit_invoice.va_number?.length > 0) {
+  //         setXenditInvoice(res.xendit_invoice.va_number[0]);
+  //         setLoading(false);
+  //         setIsOpen(false);
+  //         setStep(3);
+  //       }
+
+  //       if (res.data.payment_method === "2" && !res.xendit_invoice_url) {
+  //         getPaymentMethodById("2");
+  //       }
+  //     })
+  //     .catch((err: any) => {
+  //       setLoading(false);
+
+  //       if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+  //         notifications.show({
+  //           color: "red",
+  //           position: "top-right",
+  //           message: "Tiket sudah habis terjual",
+  //         });
+  //       } else {
+  //         notifications.show({
+  //           color: "red",
+  //           position: "top-right",
+  //           message: err.response?.data?.message ?? err.message,
+  //         });
+  //       }
+  //     });
+  // };
+
   const submitForm = () => {
     const now = new Date();
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
 
-    const subtotal = totalSubtotalPrice; // Use the prop that was passed to the component
+    const subtotal = totalSubtotalPrice; // prop
     const adminFee = totalTicketFee;
-    const tax = detail?.ppn ? Math.round((subtotal + adminFee) * (detail.ppn / 100)) : 0;
+
     const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-    const grandtotal = subtotal + adminFee + tax - voucherDiscount;
+
+    // subtotal setelah voucher (pastikan tidak negatif)
+    const subtotalAfterVoucher = Math.max(subtotal - voucherDiscount, 0);
+
+    // ----- Hitung tax sesuai ppn_type -----
+    let tax = 0;
+    let taxLabel = "";
+    try {
+      if (typeof computeTax === "function") {
+        const res = computeTax(detail, subtotalAfterVoucher, adminFee);
+        tax = Number(res.tax) || 0;
+        taxLabel = res.label || "";
+      } else {
+        const ppnType = detail?.ppn_type || "percentage";
+        const rawPpn = Number(detail?.ppn) || 0;
+        if (ppnType === "percentage") {
+          const taxBase = subtotalAfterVoucher + adminFee;
+          tax = Math.round(taxBase * (rawPpn / 100));
+          taxLabel = `${rawPpn}%`;
+        } else if (ppnType === "nominal") {
+          tax = Math.round(rawPpn);
+          taxLabel = `Rp ${tax.toLocaleString("id-ID")}`;
+        } else {
+          tax = 0;
+          taxLabel = "Free";
+        }
+      }
+    } catch (e) {
+      const rawPpn = Number(detail?.ppn) || 0;
+      tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (rawPpn / 100)) : 0;
+      taxLabel = `${detail?.ppn ?? 0}%`;
+    }
+
+    const grandtotal = subtotalAfterVoucher + adminFee + tax;
 
     const allSeatNumbers = ticket.map((t) => (Array.isArray(t.seat_number) ? t.seat_number : JSON.parse(t.seat_number || "[]"))).flat();
 
     let seatIndex = 0;
+
     const payload = {
       event_id: detail?.id,
       admin_fee: detail?.admin_fee,
       payment_method: payment ? payment : "4",
       grandtotal: grandtotal,
+      // tambahan info PPN supaya backend / Xendit punya referensi
+      ppn_type: detail?.ppn_type ?? "percentage",
+      ppn: detail?.ppn ?? 0,
+      ppn_amount: tax,
       identities: form.map((identity) => {
         if (identity.is_pemesan === 1) return identity;
 
@@ -1631,32 +1779,58 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           : [],
     };
 
+    // --- DEBUG LOGGING: inspect what we're sending to backend ---
+    console.log("DEBUG -> Payment payload (frontend)", {
+      subtotal,
+      subtotalAfterVoucher,
+      adminFee,
+      voucherDiscount,
+      ppn_type: payload.ppn_type,
+      ppn_raw: payload.ppn,
+      ppn_amount: payload.ppn_amount,
+      grandtotal: payload.grandtotal,
+      tickets: payload.tickets,
+      vouchers: payload.vouchers,
+      payloadPreview: payload,
+    });
+
     setLoading(true);
     Post("transaction-without-auth", payload)
       .then((res: any) => {
         setTransactionData(res.data);
 
+        // --- DEBUG LOGGING: compare Xendit amount vs FE grandtotal ---
+        const xendit = res.xendit_invoice ?? res.data?.xendit_invoice ?? null;
+        const xenditAmount = xendit?.amount ?? xendit?.transfer_amount ?? null;
+
+        console.log("DEBUG -> Backend response (res):", res);
+        console.log("DEBUG -> FE grandtotal:", grandtotal);
+        console.log("DEBUG -> Xendit amount (from response):", xenditAmount);
+        console.log("DEBUG -> Diff (Xendit - FE):", (xenditAmount ?? 0) - grandtotal);
+
+        // If Xendit invoice url present, redirect
         if (res?.isFree) {
           router.push("/success/" + res.invoice_no);
           return;
         }
 
         if (res.xendit_invoice && res.xendit_invoice.invoice_url) {
+          // If amount mismatch, still open invoice; logs help backend debug.
           router.push(res.xendit_invoice.invoice_url);
         } else if (res.xendit_invoice && res.xendit_invoice.va_number?.length > 0) {
           setXenditInvoice(res.xendit_invoice.va_number[0]);
           setLoading(false);
           setIsOpen(false);
           setStep(3);
-        }
-
-        if (res.data.payment_method === "2" && !res.xendit_invoice_url) {
+        } else if (res.data?.payment_method === "2" && !res.xendit_invoice_url) {
           getPaymentMethodById("2");
+        } else {
+          setLoading(false);
         }
       })
       .catch((err: any) => {
         setLoading(false);
-
+        console.error("DEBUG -> Payment error:", err);
         if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
           notifications.show({
             color: "red",
@@ -1878,10 +2052,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
               </div>
 
-              <div className="py-3 px-4 flex justify-between items-center">
-                <p>Biaya Admin</p>
-                <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
-              </div>
+              {vouchers.length > 0 && (
+                <div className="py-3 px-4 flex justify-between items-center">
+                  <p>Total Voucher</p>
+                  <p className="font-semibold">
+                    -<NumberFormatter value={vouchers.reduce((s, v) => s + (v.amount || 0), 0)} />
+                  </p>
+                </div>
+              )}
 
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -1896,29 +2074,28 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 );
               })()}
 
-              {detail.ppn
+              {detail?.ppn !== undefined
                 ? (() => {
+                    const subtotalTiket = totalSubtotalPrice;
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
-                    const taxBase = subtotalAfterVoucher + adminFee;
-                    const tax = Math.round(taxBase * (detail.ppn / 100));
+                    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+
+                    // gunakan helper untuk menghitung tax & label (percentage / nominal)
+                    const { tax, label } = computeTax(detail, subtotalAfterVoucher, adminFee);
+
                     return (
                       <div className="py-3 px-4 flex justify-between items-center">
-                        <p>Tax ({detail.ppn}%)</p>
-                        <p className="font-semibold">{detail.ppn > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                        <p>Tax ({label})</p>
+                        <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
                       </div>
                     );
                   })()
                 : null}
-
-              {vouchers.length > 0 && (
-                <div className="py-3 px-4 flex justify-between items-center">
-                  <p>Total Voucher</p>
-                  <p className="font-semibold">
-                    -<NumberFormatter value={vouchers.reduce((s, v) => s + (v.amount || 0), 0)} />
-                  </p>
-                </div>
-              )}
+                
+              <div className="py-3 px-4 flex justify-between items-center">
+                <p>Biaya Admin</p>
+                <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
+              </div>
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>Total Pembayaran</p>
@@ -1926,7 +2103,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                     const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
-                    const tax = detail.ppn ? Math.round((subtotalAfterVoucher + adminFee) * (detail.ppn / 100)) : 0;
+                    const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                     const grandTotal = subtotalAfterVoucher + adminFee + tax;
                     return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
                   })()}
@@ -1997,6 +2174,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         )}
 
                         {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
+
+                        {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
 
                         {detail.is_gender == 1 && (
                           <Field className="mb-2">
@@ -2129,7 +2308,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           )}
 
                           {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
-
+                          {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
                           {detail.is_gender == 1 && (
                             <Field className="mb-2">
                               <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
@@ -2286,13 +2465,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     );
                   })()}
 
-                  {/* Admin Fee */}
-                  <div className="py-3 px-4 flex justify-between items-center">
-                    <p>Admin Fee</p>
-                    <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
-                  </div>
-
-                  {/* TAX */}
+                  {/* TAX
                   {detail.ppn
                     ? (() => {
                         const subtotalTiket = totalSubtotalPrice;
@@ -2309,7 +2482,31 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           </div>
                         );
                       })()
+                    : null} */}
+                  {/* TAX */}
+                  {detail?.ppn !== undefined
+                    ? (() => {
+                        const subtotalTiket = totalSubtotalPrice;
+                        const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                        const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+
+                        // gunakan helper untuk menghitung tax & label (percentage / nominal)
+                        const { tax, label } = computeTax(detail, subtotalAfterVoucher, adminFee);
+
+                        return (
+                          <div className="py-3 px-4 flex justify-between items-center">
+                            <p>Tax ({label})</p>
+                            <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                          </div>
+                        );
+                      })()
                     : null}
+
+                  {/* Admin Fee */}
+                  <div className="py-3 px-4 flex justify-between items-center">
+                    <p>Admin Fee</p>
+                    <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
+                  </div>
 
                   {/* Total */}
                   <div className="py-3 px-4 flex justify-between items-center">
@@ -2320,7 +2517,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                         const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
-                        const tax = detail.ppn ? Math.round((subtotalAfterVoucher + adminFee) * (detail.ppn / 100)) : 0;
+                        const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
 
                         const grandTotal = subtotalAfterVoucher + adminFee + tax;
 

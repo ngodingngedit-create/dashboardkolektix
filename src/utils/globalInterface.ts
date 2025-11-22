@@ -326,6 +326,7 @@ export interface EventProps {
   starting_price: number;
   admin_fee: number;
   ppn: number;
+  ppn_type: string;
   max_buy_ticket: number;
   one_email_ticket: string;
   one_id_one_ticket: string;
@@ -357,6 +358,7 @@ export interface EventProps {
   is_noidentity: 1 | 0;
   is_phone_number: 1 | 0;
   is_kelas: 1 | 0;
+  is_assistant: 1 | 0;
   grand_total: number;
   transaction_saldo_by_event: {
     event_id: number;

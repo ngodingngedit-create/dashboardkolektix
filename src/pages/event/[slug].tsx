@@ -4,38 +4,16 @@ import config from "@/Config";
 import Image from "next/image";
 import { useLocalStorage } from "usehooks-ts";
 import { useRouter } from "next/router";
-import {
-  useState,
-  useEffect,
-  useMemo,
-  createContext,
-  Dispatch,
-  SetStateAction,
-} from "react";
+import { useState, useEffect, useMemo, createContext, Dispatch, SetStateAction } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  TicketProps,
-  TransactionProps,
-  EventProps,
-} from "@/utils/globalInterface";
+import { TicketProps, TransactionProps, EventProps } from "@/utils/globalInterface";
 import Countdown, { CountdownRendererFn } from "react-countdown";
 import { Get, Post } from "@/utils/REST";
 import Link from "next/link";
 import ModalTransaction from "@/components/ModalTransaction";
-import {
-  faBookmark as faBookmarkOutlined,
-  faCopy,
-} from "@fortawesome/free-regular-svg-icons";
+import { faBookmark as faBookmarkOutlined, faCopy } from "@fortawesome/free-regular-svg-icons";
 import { formatDate, formatYear } from "@/utils/useFormattedDate";
-import {
-  faArrowLeft,
-  faCalendar,
-  faCheck,
-  faClock,
-  faLocationDot,
-  faShareNodes,
-  faTicket,
-} from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCalendar, faCheck, faClock, faLocationDot, faShareNodes, faTicket } from "@fortawesome/free-solid-svg-icons";
 import { faFacebook, faInstagram } from "@fortawesome/free-brands-svg-icons";
 import { Progress, Spinner } from "@nextui-org/react";
 import xendit from "../../assets/images/xendit.png";
@@ -56,24 +34,9 @@ import AuthModal from "@/components/AuthModal";
 import React from "react";
 import ChatBox from "@/components/chat";
 import { validateHeaderName } from "node:http";
-import {
-  Flex,
-  Stack,
-  Text,
-  Image as ImageM,
-  ActionIcon,
-  Box,
-  Card,
-  AspectRatio,
-} from "@mantine/core";
+import { Flex, Stack, Text, Image as ImageM, ActionIcon, Box, Card, AspectRatio } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import {
-  randomId,
-  useClickOutside,
-  useInterval,
-  useListState,
-  useTimeout,
-} from "@mantine/hooks";
+import { randomId, useClickOutside, useInterval, useListState, useTimeout } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import moment from "moment";
 import fetch from "@/utils/fetch";
@@ -154,8 +117,7 @@ const EventDetails = () => {
   const [ticket, setTicket] = useState<FormTicket[]>([]);
   const [firstLoad, setFirstLoad] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [transactionData, setTransactionData] =
-    useState<TransactionProps | null>(null);
+  const [transactionData, setTransactionData] = useState<TransactionProps | null>(null);
   const [xenditInvoice, setXenditInvoice] = useState<any>(null);
   const isBrowser = () => typeof window !== "undefined";
   const [selected, setSelected] = useState(people[1]);
@@ -176,19 +138,11 @@ const EventDetails = () => {
   const [bank, setBank] = useState<string>("");
   const [data, setData] = useState<TicketProps[]>([]);
   const [detail, setDetail] = useState<EventProps>();
-  const [counts, setCounts] = useState<{ [key: string]: number | string[] }>(
-    {}
-  );
+  const [counts, setCounts] = useState<{ [key: string]: number | string[] }>({});
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [triggered, setTriggered] = useState<boolean>(false);
-  const [showModalTransaction, setShowModalTransaction] =
-    useState<boolean>(false);
-  const totalCount = Object.values(counts).reduce(
-    (sum, count) =>
-      (sum as number) +
-      ((typeof count == "number" ? count : count.length) as number),
-    0
-  ) as number;
+  const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
+  const totalCount = Object.values(counts).reduce((sum, count) => (sum as number) + ((typeof count == "number" ? count : count.length) as number), 0) as number;
   const router = useRouter();
   const { slug } = router.query;
   const selectedTab = Number(Cookies.get("selected"));
@@ -199,9 +153,7 @@ const EventDetails = () => {
   const [bookmark, setBookmark] = useState(false);
   const [loadings, setLoadings] = useListState<string>();
   const [seatmapOpen, setSeatmapOpen] = useState<number>();
-  const [voucher, setVoucher] = useState<
-    { id: number; name: string; amount: number }[]
-  >([]);
+  const [voucher, setVoucher] = useState<{ id: number; name: string; amount: number }[]>([]);
   const user = useLoggedUser();
 
   const clickOutsideChat = useClickOutside(() => {
@@ -213,9 +165,7 @@ const EventDetails = () => {
   });
 
   useEffect(() => {
-    const bookmarked = user?.bookmarked?.find(
-      (e) => Boolean(e.event_id) && e.event_id == detail?.id
-    );
+    const bookmarked = user?.bookmarked?.find((e) => Boolean(e.event_id) && e.event_id == detail?.id);
     setBookmark(Boolean(bookmarked));
   }, [user]);
 
@@ -239,9 +189,7 @@ const EventDetails = () => {
 
   const toggleBookmarkFetch = async (status: boolean = true) => {
     if (!status) {
-      const bookid = user?.bookmarked?.find(
-        (e) => e.event_id == detail?.id
-      )?.id;
+      const bookid = user?.bookmarked?.find((e) => e.event_id == detail?.id)?.id;
       if (!bookid) {
         toast.error("Gagal Menghapus");
         return;
@@ -252,13 +200,8 @@ const EventDetails = () => {
         method: "DELETE",
         before: () => setLoadings.append("bookmark"),
         success: () => {
-          const data = JSON.parse(
-            Cookies.get("bookmarked") ?? "[]"
-          ) as BookmarkListResponse[];
-          Cookies.set(
-            "bookmarked",
-            JSON.stringify(data.filter((e) => e.event_id != detail?.id))
-          );
+          const data = JSON.parse(Cookies.get("bookmarked") ?? "[]") as BookmarkListResponse[];
+          Cookies.set("bookmarked", JSON.stringify(data.filter((e) => e.event_id != detail?.id)));
           toast.info("Berhasil menghapus ke bookmark");
         },
         complete: () => setLoadings.filter((e) => e != "bookmark"),
@@ -277,9 +220,7 @@ const EventDetails = () => {
       },
       before: () => setLoadings.append("bookmark"),
       success: ({ data: newData }) => {
-        const data = JSON.parse(
-          Cookies.get("bookmarked") ?? "[]"
-        ) as BookmarkListResponse[];
+        const data = JSON.parse(Cookies.get("bookmarked") ?? "[]") as BookmarkListResponse[];
         Cookies.set("bookmarked", JSON.stringify([...data, newData]));
         toast.info("Berhasil menambahkan ke bookmark");
       },
@@ -300,18 +241,13 @@ const EventDetails = () => {
       });
   };
 
-  const countdownRenderer: CountdownRendererFn = ({
-    minutes,
-    seconds,
-    completed,
-  }) => {
+  const countdownRenderer: CountdownRendererFn = ({ minutes, seconds, completed }) => {
     if (completed) {
       return <p>Time Out</p>;
     } else {
       return (
         <p className="font-semibold">
-          {String(minutes).padStart(2, "0")} :{" "}
-          {String(seconds).padStart(2, "0")}
+          {String(minutes).padStart(2, "0")} : {String(seconds).padStart(2, "0")}
         </p>
       );
     }
@@ -391,10 +327,7 @@ const EventDetails = () => {
       totalCount,
       form,
       countdowns: Date.now() + 15 * 60 * 1000,
-      ticket_fee: ticket.reduce(
-        (sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket,
-        0
-      ),
+      ticket_fee: ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0),
     };
 
     saveDataToIndexedDB(dataToStore);
@@ -418,21 +351,18 @@ const EventDetails = () => {
   useEffect(() => {
     if (detail?.one_id_one_ticket) {
       if (totalCount > 0) {
-        const initialForm = Array.from(
-          { length: totalCount + 1 },
-          (_, index) => ({
-            nik: "",
-            full_name: "",
-            email: "",
-            is_profession: "",
-            is_company: "",
-            countryCode: "",
-            no_telp: "",
-            is_pemesan: index ? 0 : 1,
-            identity_type_id: 1,
-            event_ticket_id: 1,
-          })
-        );
+        const initialForm = Array.from({ length: totalCount + 1 }, (_, index) => ({
+          nik: "",
+          full_name: "",
+          email: "",
+          is_profession: "",
+          is_company: "",
+          countryCode: "",
+          no_telp: "",
+          is_pemesan: index ? 0 : 1,
+          identity_type_id: 1,
+          event_ticket_id: 1,
+        }));
         setForm(initialForm);
       }
     } else {
@@ -454,9 +384,7 @@ const EventDetails = () => {
   }, [totalCount, detail?.one_id_one_ticket]);
 
   useEffect(() => {
-    const availableIndex = data.findIndex(
-      (ticket) => ticket.is_soldout === 0 && ticket.is_finish === 0
-    );
+    const availableIndex = data.findIndex((ticket) => ticket.is_soldout === 0 && ticket.is_finish === 0);
     if (selectedTab) {
       setSelectedDate(selectedTab);
       //console.log(selectedTab);
@@ -477,9 +405,7 @@ const EventDetails = () => {
         setVenueLayout(res.data.has_venue_layout);
         setDetail({
           ...res.data,
-          seatmap: res?.data?.seatmap
-            ? JSON.parse(res?.data?.seatmap)
-            : undefined,
+          seatmap: res?.data?.seatmap ? JSON.parse(res?.data?.seatmap) : undefined,
         });
         setData(
           res.data.has_event_ticket.map((e: any) => ({
@@ -487,9 +413,7 @@ const EventDetails = () => {
             avaliable_seat_number: e?.avaliable_seat_number?.split(","),
           }))
         );
-        ticketCount && prevPath === router.asPath
-          ? setCounts(JSON.parse(ticketCount))
-          : initializeCounts(res.data.has_event_ticket);
+        ticketCount && prevPath === router.asPath ? setCounts(JSON.parse(ticketCount)) : initializeCounts(res.data.has_event_ticket);
         ticketCount && setMenu(2);
         if (!triggered) {
           triggerCounter(res.data.id);
@@ -525,18 +449,36 @@ const EventDetails = () => {
     const now = new Date();
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
-    // Calculate subtotal before tax
-    const subtotalBeforeTax = detail
-      ? totalSubtotalPrice + detail.admin_fee * totalCount
-      : 0;
 
-    // Calculate tax as percentage of subtotal
-    const taxAmount = detail?.ppn ? (subtotalBeforeTax * detail.ppn) / 100 : 0;
+    // ✅ CORRECT CALCULATION - Tax from subtotal AFTER voucher (not ticket fee)
+    const subtotalBeforeVoucher = totalSubtotalPrice;
+    const voucherDiscount = voucher.reduce((sum, v) => sum + v.amount, 0);
+    const subtotalAfterVoucher = subtotalBeforeVoucher - voucherDiscount;
+    const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
+
+    // Tax calculated from subtotal AFTER voucher (NOT including ticket fee)
+    const taxAmount = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
+
+    const grandtotal = subtotalAfterVoucher + totalTicketFee + taxAmount;
+
+    // ✅ DEBUG: Verify all calculations
+    console.log("=== PAYMENT CALCULATION VERIFICATION ===");
+    console.log("1. Subtotal (before voucher):", subtotalBeforeVoucher);
+    console.log("2. Vouchers detail:", voucher);
+    console.log("3. Total voucher discount:", voucherDiscount);
+    console.log("4. Subtotal after voucher:", subtotalAfterVoucher);
+    console.log("5. Ticket items:", ticket);
+    console.log("6. Total ticket fee (sum of item.ticket_fee * qty):", totalTicketFee);
+    console.log("7. Tax base (subtotal AFTER voucher only):", subtotalAfterVoucher);
+    console.log("8. PPN rate:", detail?.ppn, "%");
+    console.log("9. Tax amount (10% of subtotal after voucher):", taxAmount);
+    console.log("10. GRAND TOTAL:", grandtotal);
+    console.log("    Breakdown: ", subtotalAfterVoucher, "+", totalTicketFee, "+", taxAmount, "=", grandtotal);
 
     var payload: { [key: string]: any } = {
       user_id: userId,
       event_id: detail?.id,
-      admin_fee: detail?.admin_fee ?? 0,
+      admin_fee: 0,
       payment_status: "pending",
       vouchers:
         voucher.length > 0
@@ -553,26 +495,25 @@ const EventDetails = () => {
         ticket_fee: e.ticket_fee,
       })),
       //grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
-      // Calculate grandtotal with tax as percentage
-      grandtotal:
-        subtotalBeforeTax +
-        taxAmount -
-        voucher.reduce((sum, v) => sum + v.amount, 0),
+      // ✅ Correct grandtotal - tax calculated AFTER voucher
+      grandtotal: grandtotal,
       bank_code: bank ?? "xendit",
       expiration_date: isoString,
-      payment_method: (
-        paymentList?.find(
-          (e) => e?.payment_name?.toLowerCase() == "xendit"
-        ) ?? { id: 0 }
-      ).id.toString(),
+      payment_method: (paymentList?.find((e) => e?.payment_name?.toLowerCase() == "xendit") ?? { id: 0 }).id.toString(),
       ppn: taxAmount,
-      total_ticket_fee: ticket.reduce(
-        (sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket,
-        0
-      ),
+      total_ticket_fee: ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0),
     };
 
     if (payment) payload.payment_method = payment;
+
+    // ✅ DEBUG: Log final payload
+    console.log("=== PAYLOAD TO BACKEND ===");
+    console.log("Grandtotal in payload:", payload.grandtotal);
+    console.log("Admin fee in payload:", payload.admin_fee);
+    console.log("PPN in payload:", payload.ppn);
+    console.log("Total ticket fee in payload:", payload.total_ticket_fee);
+    console.log("Vouchers in payload:", payload.vouchers);
+    console.log("Full payload:", JSON.stringify(payload, null, 2));
 
     setLoading(true);
     Post("transaction", payload)
@@ -611,10 +552,7 @@ const EventDetails = () => {
             message: err.response?.data?.message,
           });
         }
-        if (
-          (err?.response?.data?.message ?? err?.message) ===
-          "The account is not registered yet"
-        ) {
+        if ((err?.response?.data?.message ?? err?.message) === "The account is not registered yet") {
           router.push("/auth");
         }
       })
@@ -633,12 +571,7 @@ const EventDetails = () => {
 
   const updateDataBasedOnCounts = () => {
     const newData: FormTicket[] = Object.keys(counts)
-      .filter(
-        (id) =>
-          ((typeof counts[parseInt(id)] == "number"
-            ? counts[parseInt(id)]
-            : (counts[parseInt(id)] as string[]).length) as number) > 0
-      )
+      .filter((id) => ((typeof counts[parseInt(id)] == "number" ? counts[parseInt(id)] : (counts[parseInt(id)] as string[]).length) as number) > 0)
       .map((id, idx) => {
         const ticketItem = data.find((el) => el.id === parseInt(id));
         return {
@@ -648,16 +581,10 @@ const EventDetails = () => {
           price: ticketItem?.price || 0,
           ticket_fee: ticketItem?.ticket_fee || 0, // Get ticket_fee from the found ticket item
           name: ticketItem?.name || "",
-          subtotal_price:
-            (ticketItem?.price || 0) *
-            (typeof counts[id] == "number" ? counts[id] : counts[id].length),
-          qty_ticket: (typeof counts[parseInt(id)] == "number"
-            ? counts[parseInt(id)]
-            : (counts[parseInt(id)] as string[]).length) as number,
+          subtotal_price: (ticketItem?.price || 0) * (typeof counts[id] == "number" ? counts[id] : counts[id].length),
+          qty_ticket: (typeof counts[parseInt(id)] == "number" ? counts[parseInt(id)] : (counts[parseInt(id)] as string[]).length) as number,
           payment_status: "pending",
-          seat_number: (typeof counts[parseInt(id)] == "object"
-            ? counts[parseInt(id)]
-            : undefined) as string[] | undefined,
+          seat_number: (typeof counts[parseInt(id)] == "object" ? counts[parseInt(id)] : undefined) as string[] | undefined,
         };
       });
 
@@ -723,9 +650,7 @@ const EventDetails = () => {
     if (detail) {
       if (isOnePayment) {
         console.log("isOnePayment");
-        setPayment(
-          (paymentList?.find((e) => e?.id === 4) ?? { id: 0 }).id.toString()
-        );
+        setPayment((paymentList?.find((e) => e?.id === 4) ?? { id: 0 }).id.toString());
         submitData();
       } else {
         setStep(66);
@@ -767,8 +692,7 @@ const EventDetails = () => {
     } else {
       return (
         <p className="font-semibold">
-          {String(minutes).padStart(2, "0")} :{" "}
-          {String(seconds).padStart(2, "0")}
+          {String(minutes).padStart(2, "0")} : {String(seconds).padStart(2, "0")}
         </p>
       );
     }
@@ -807,20 +731,7 @@ const EventDetails = () => {
   const now = new Date();
   const targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mei",
-    "Jun",
-    "Jul",
-    "Agu",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Des",
-  ];
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
   useEffect(() => {
     if (step !== 100) {
@@ -909,25 +820,13 @@ const EventDetails = () => {
       >
         <div className="text-dark w-full">
           <div ref={clickOutsideChat} className={`${openChat ? "" : "hidden"}`}>
-            <ChatBox
-              toggleOpenTab={() => setOpenChat(!openChat)}
-              openTab={openChat}
-              creatorIdOpen={parseInt(detail.creator_id)}
-            />
-            <AuthModal
-              visible={openChat && !isLogin}
-              onClose={() => setOpenChat(false)}
-            />
+            <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={parseInt(detail.creator_id)} />
+            <AuthModal visible={openChat && !isLogin} onClose={() => setOpenChat(false)} />
           </div>
           <Head>
             <meta name="author" content="PT.Kolektix Maju Bersama" />
             <meta name="copyright" content="&copy;2024 kolektix Maju Bersama" />
-            <meta
-              name="description"
-              content={
-                detail ? detail?.description.replace(/(<([^>]+)>)/gi, "") : ""
-              }
-            />
+            <meta name="description" content={detail ? detail?.description.replace(/(<([^>]+)>)/gi, "") : ""} />
             {/* <meta
                       name='keywords'
                       content='kolektix, amis, konser amis, amis darurat judi, malas tour, amis malas tour 2024, konser amis kolektix, beli konser amis, tiket konser band, amis, darurat judi, bagaimana &amp; jika kristen masuk sorga , majelis agama, konser amis, Kolektix &amp; Amis Kolaborasi'
@@ -948,9 +847,7 @@ const EventDetails = () => {
                         setMenu(2);
                       }}
                     >
-                      {isGratis
-                        ? t("registrationTicketTab")
-                        : t("openTicketTab")}
+                      {isGratis ? t("registrationTicketTab") : t("openTicketTab")}
                     </button>
                   </Link>
                 </div>
@@ -966,33 +863,12 @@ const EventDetails = () => {
                 <div className="w-full sticky top-0 bg-primary-base z-50">
                   <div className="flex items-center justify-between px-5 py-3">
                     <div className="flex items-center">
-                      <button
-                        onClick={() =>
-                          step === 100
-                            ? setStep(66)
-                            : step === 33
-                            ? ticketCount
-                              ? window.location.reload()
-                              : setStep(0)
-                            : setStep(33)
-                        }
-                      >
-                        <FontAwesomeIcon
-                          icon={faArrowLeft}
-                          className="mr-3 text-white"
-                        />
+                      <button onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))}>
+                        <FontAwesomeIcon icon={faArrowLeft} className="mr-3 text-white" />
                       </button>
                       <div>
-                        <p className="text-white text-xs mb-1">
-                          {step === 33 ? "1 " : step === 66 ? "2 " : "3 "}dari 3
-                        </p>
-                        <p className="text-white text-sm font-semibold">
-                          {step === 33
-                            ? "Informasi Pribadi"
-                            : step === 66
-                            ? "Konfirmasi"
-                            : "Pembayaran"}
-                        </p>
+                        <p className="text-white text-xs mb-1">{step === 33 ? "1 " : step === 66 ? "2 " : "3 "}dari 3</p>
+                        <p className="text-white text-sm font-semibold">{step === 33 ? "Informasi Pribadi" : step === 66 ? "Konfirmasi" : "Pembayaran"}</p>
                       </div>
                     </div>
                     <div className="">
@@ -1003,18 +879,11 @@ const EventDetails = () => {
                       >
                         {t("next")}
                       </button>
-                      <p className="text-white text-sm">
-                        {step === 33 ? "Konfirmasi" : "Pembayaran"}
-                      </p>
+                      <p className="text-white text-sm">{step === 33 ? "Konfirmasi" : "Pembayaran"}</p>
                     </div>
                   </div>
 
-                  <Progress
-                    size="sm"
-                    color="success"
-                    aria-label="Loading..."
-                    value={step}
-                  />
+                  <Progress size="sm" color="success" aria-label="Loading..." value={step} />
                 </div>
                 <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
                   <div className="hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
@@ -1023,27 +892,9 @@ const EventDetails = () => {
                     <p className="text-xs">{t("completeYourOrder")}</p>
                   </div>
                   <Flex align="center" gap={10}>
-                    <Button
-                      color="secondary"
-                      label={t("previous")}
-                      onClick={() =>
-                        step === 100
-                          ? setStep(66)
-                          : step === 33
-                          ? ticketCount
-                            ? window.location.reload()
-                            : setStep(0)
-                          : setStep(33)
-                      }
-                    />
+                    <Button color="secondary" label={t("previous")} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                     {step === 66 ? (
-                      <Button
-                        color="primary"
-                        label={t("next")}
-                        loading={loading}
-                        disabled={loading || payment === ""}
-                        onClick={submitData}
-                      />
+                      <Button color="primary" label={t("next")} loading={loading} disabled={loading || payment === ""} onClick={submitData} />
                     ) : step === 100 && transactionData ? (
                       <Button
                         color="primary"
@@ -1072,19 +923,7 @@ const EventDetails = () => {
                         label={t("next")}
                         loading={loading}
                         disabled={!isFormValid || loading}
-                        onClick={() =>
-                          step === 33
-                            ? isOnePayment
-                              ? submitForm()
-                              : (detail
-                                  ? totalSubtotalPrice +
-                                    detail.admin_fee * totalCount +
-                                    (detail.ppn || 0)
-                                  : 0) == 0
-                              ? submitData()
-                              : setStep(66)
-                            : setStep(100)
-                        }
+                        onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}
                       /> // onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
                     )}
                   </Flex>
@@ -1098,27 +937,9 @@ const EventDetails = () => {
                   <p className="text-xs">{t("completeYourOrder")}</p>
                 </div>
                 <Flex align="center" gap={10}>
-                  <Button
-                    color="secondary"
-                    label={t("previous")}
-                    onClick={() =>
-                      step === 100
-                        ? setStep(66)
-                        : step === 33
-                        ? ticketCount
-                          ? window.location.reload()
-                          : setStep(0)
-                        : setStep(33)
-                    }
-                  />
+                  <Button color="secondary" label={t("previous")} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
                   {step === 66 ? (
-                    <Button
-                      color="primary"
-                      label={t("next")}
-                      loading={loading}
-                      disabled={loading || payment === ""}
-                      onClick={submitData}
-                    />
+                    <Button color="primary" label={t("next")} loading={loading} disabled={loading || payment === ""} onClick={submitData} />
                   ) : step === 100 && transactionData ? (
                     <Button
                       color="primary"
@@ -1147,19 +968,7 @@ const EventDetails = () => {
                       color="primary"
                       loading={loading}
                       label={t("next")}
-                      onClick={() =>
-                        step === 33
-                          ? isOnePayment
-                            ? submitForm()
-                            : (detail
-                                ? totalSubtotalPrice +
-                                  detail.admin_fee * totalCount +
-                                  (detail.ppn || 0)
-                                : 0) == 0
-                            ? submitData()
-                            : setStep(66)
-                          : setStep(100)
-                      }
+                      onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}
                     />
                   )}
                 </Flex>
@@ -1172,66 +981,31 @@ const EventDetails = () => {
               <>
                 <div className="bg-primary-dark">
                   <div className="max-w-7xl mx-auto">
-                    <Flex
-                      justify="space-between"
-                      align="end"
-                      className="px-8 pt-20 pb-3"
-                    >
+                    <Flex justify="space-between" align="end" className="px-8 pt-20 pb-3">
                       <div>
-                        <p className={`text-white/70 mb-[-10px]`}>
-                          {detail?.has_category_event?.name}
-                        </p>
-                        <h3 className="text-white font-bold my-4 text-2xl">
-                          {detail?.name}
-                        </h3>
+                        <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
+                        <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
                       </div>
 
-                      {!isDatePassed(
-                        `${detail?.start_date} ${detail?.start_time}:00`
-                      ) && (
+                      {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
                         <Stack gap={12} align="end">
                           <Text size="xs" c="white">
                             {t("eventStartsIn")}
                           </Text>
-                          <EventCountdown
-                            startdate={detail?.start_date}
-                            starttime={detail?.start_time}
-                          />
+                          <EventCountdown startdate={detail?.start_date} starttime={detail?.start_time} />
                         </Stack>
                       )}
                     </Flex>
                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
                       <Stack w="100%">
                         <Box pos="relative">
-                          {detail && detail.image && (
-                            <ImagesWithModal
-                              type="event"
-                              path={detail?.image}
-                              width={1000}
-                              height={1000}
-                              alt="banner"
-                              className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full"
-                            />
-                          )}
+                          {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
 
-                          {isCurrentTimeBetween(
-                            `${detail?.start_date} ${detail?.start_time}:00`,
-                            `${detail?.end_date} ${detail?.end_time}:00`
-                          ) && (
-                            <Card
-                              className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`}
-                              p="4px 16px 4px 30px"
-                              bg="#00000030"
-                            >
+                          {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
+                            <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                               <Flex gap={10} align="center">
-                                <Icon
-                                  icon="ph:dot-duotone"
-                                  className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`}
-                                />
-                                <Icon
-                                  icon="mynaui:video"
-                                  className={`!text-[24px] !text-red-500`}
-                                />
+                                <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
+                                <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
                                 <Text fw={600} c="white" size="xs">
                                   Live Event
                                 </Text>
@@ -1243,19 +1017,9 @@ const EventDetails = () => {
                         <div className="flex justify-between items-center text-white px-5 py-4">
                           <div className="flex items-center gap-4">
                             {detail.has_event_social_meida?.instagram && (
-                              <Link
-                                href={detail.has_event_social_meida?.instagram}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center"
-                              >
-                                <FontAwesomeIcon
-                                  icon={faInstagram}
-                                  className="mr-2 text-lg "
-                                />
-                                <p className=" font-normal text-sm mr-3">
-                                  {detail.has_event_social_meida.ig_name}
-                                </p>
+                              <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
+                                <FontAwesomeIcon icon={faInstagram} className="mr-2 text-lg " />
+                                <p className=" font-normal text-sm mr-3">{detail.has_event_social_meida.ig_name}</p>
                               </Link>
                             )}
                             {/* {detail.has_event_social_meida?.facebook && (
@@ -1272,152 +1036,65 @@ const EventDetails = () => {
                           </div>
                           <div className="flex items-center">
                             <div className="relative">
-                              <button
-                                onClick={handleShare}
-                                className="flex items-center"
-                              >
-                                <FontAwesomeIcon
-                                  icon={faShareNodes}
-                                  className="mr-3 text-xl"
-                                />
+                              <button onClick={handleShare} className="flex items-center">
+                                <FontAwesomeIcon icon={faShareNodes} className="mr-3 text-xl" />
                               </button>
-                              {alert && (
-                                <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">
-                                  Copy
-                                </div>
-                              )}
+                              {alert && <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">Copy</div>}
                             </div>
                             {isLogin && (
                               <Box onClick={toggleBookmark}>
-                                <FontAwesomeIcon
-                                  icon={
-                                    bookmark
-                                      ? bookmarkSolid
-                                      : faBookmarkOutlined
-                                  }
-                                  className="text-xl "
-                                />
+                                <FontAwesomeIcon icon={bookmark ? bookmarkSolid : faBookmarkOutlined} className="text-xl " />
                               </Box>
                             )}
                           </div>
                         </div>
                         <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
-                          <button
-                            onClick={() => setMenu(1)}
-                            className={`cursor-pointer ${
-                              menu === 1
-                                ? "font-semibold text-[#82b3ff]"
-                                : "text-white"
-                            }`}
-                          >
+                          <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
                             {t("description")}
                           </button>
-                          <button
-                            onClick={() => setMenu(2)}
-                            className={`cursor-pointer ${
-                              menu === 2
-                                ? "font-semibold text-[#82b3ff]"
-                                : "text-white"
-                            }`}
-                          >
+                          <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
                             {t("ticket")}
                           </button>
-                          <button
-                            onClick={() => setMenu(3)}
-                            className={`cursor-pointer ${
-                              menu === 3
-                                ? "font-semibold text-[#82b3ff]"
-                                : "text-white"
-                            }`}
-                          >
+                          <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
                             {t("termAndCondition")}
                           </button>
                         </div>
                       </Stack>
 
-                      <Stack
-                        className={`w-full md:max-w-[300px] pb-[20px]`}
-                        gap={10}
-                      >
+                      <Stack className={`w-full md:max-w-[300px] pb-[20px]`} gap={10}>
                         <div className="px-[25px] pt-[15px] pb-[10px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
                           <Stack gap={12}>
                             <Flex align="center" gap={10}>
-                              <Icon
-                                icon="solar:calendar-bold"
-                                className={`text-primary-base text-[20px]`}
-                              />
-                              <Text>
-                                {detail &&
-                                  `${formatDate(detail.start_date)} ${
-                                    detail.start_date !== detail.end_date
-                                      ? "- " + formatDate(detail.end_date)
-                                      : ""
-                                  } ${formatYear(detail.end_date)}`}
-                              </Text>
+                              <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
+                              <Text>{detail && `${formatDate(detail.start_date)} ${detail.start_date !== detail.end_date ? "- " + formatDate(detail.end_date) : ""} ${formatYear(detail.end_date)}`}</Text>
                             </Flex>
                             <Flex align="center" gap={10}>
-                              <Icon
-                                icon="tabler:clock-filled"
-                                className={`text-primary-base text-[20px]`}
-                              />
+                              <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
                               <Text>
-                                {detail?.start_time.toString()} -{" "}
-                                {detail?.end_time.toString()}
+                                {detail?.start_time.toString()} - {detail?.end_time.toString()}
                               </Text>
                             </Flex>
-                            <Link
-                              href={detail?.location_map ?? "#"}
-                              target="_blank"
-                            >
+                            <Link href={detail?.location_map ?? "#"} target="_blank">
                               <Flex align="center" gap={10}>
-                                <Icon
-                                  icon="tdesign:location-filled"
-                                  className={`text-primary-base text-[20px]`}
-                                />
+                                <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
                                 <Text>{detail?.location_name}</Text>
                               </Flex>
                             </Link>
                             <Text size="sm" c="gray">
                               {t("organizedBy")}
                             </Text>
-                            <ImageM
-                              src={`${config.assetUrl}creator/${detail?.has_creator?.image}`}
-                              alt="image"
-                              radius={8}
-                              mt={-5}
-                              w="30%"
-                              miw={100}
-                              mah={300}
-                            />
+                            <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
                           </Stack>
                         </div>
 
-                        <Button
-                          label="Chat"
-                          color="secondary"
-                          className={`!text-[18px] !font-[600]`}
-                          onClick={() => setOpenChat(!openChat)}
-                        />
-                        <Button
-                          onClick={() => setMenu(2)}
-                          label={
-                            isGratis
-                              ? t("registrationTicketTab")
-                              : t("buyTicket")
-                          }
-                          color="secondary"
-                          className={`${
-                            menu === 2 && "hidden"
-                          } !text-[18px] !font-[600]`}
-                        />
+                        <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)} />
+                        <Button onClick={() => setMenu(2)} label={isGratis ? t("registrationTicketTab") : t("buyTicket")} color="secondary" className={`${menu === 2 && "hidden"} !text-[18px] !font-[600]`} />
                       </Stack>
                     </div>
                   </div>
                 </div>
                 <div className="px-8 max-w-7xl mx-auto text-dark">
-                  {menu === 1 && (
-                    <DescriptionBlock data={detail?.description} />
-                  )}
+                  {menu === 1 && <DescriptionBlock data={detail?.description} />}
                   {menu === 2 && (
                     <div id="ticket-view">
                       <TicketViewBlock
@@ -1438,43 +1115,19 @@ const EventDetails = () => {
                       />
                     </div>
                   )}
-                  {menu === 3 && (
-                    <TermsConditionBlock data={detail?.term_condition} />
-                  )}
+                  {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                 </div>
               </>
             ) : (
               <>
                 <Box className={`!relative`}>
-                  {detail && detail.image && (
-                    <Images
-                      type="event"
-                      path={detail?.image}
-                      width={1000}
-                      height={1000}
-                      alt="banner"
-                      className="w-full rounded-3xl p-4 mt-16 lg:mt-0"
-                    />
-                  )}
+                  {detail && detail.image && <Images type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full rounded-3xl p-4 mt-16 lg:mt-0" />}
 
-                  {isCurrentTimeBetween(
-                    `${detail?.start_date} ${detail?.start_time}:00`,
-                    `${detail?.end_date} ${detail?.end_time}:00`
-                  ) && (
-                    <Card
-                      className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`}
-                      p="4px 16px 4px 30px"
-                      bg="#00000030"
-                    >
+                  {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
+                    <Card className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                       <Flex gap={10} align="center">
-                        <Icon
-                          icon="ph:dot-duotone"
-                          className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`}
-                        />
-                        <Icon
-                          icon="mynaui:video"
-                          className={`!text-[24px] !text-red-500`}
-                        />
+                        <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
+                        <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
                         <Text fw={600} c="white" size="xs">
                           Live Event
                         </Text>
@@ -1505,25 +1158,11 @@ const EventDetails = () => {
                 <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                   <Flex gap={10} justify="space-between" mb={5} align="center">
                     {/* <Stack gap={5}> */}
-                    <p className={`opacity-70`}>
-                      {detail?.has_category_event?.name}
-                    </p>
+                    <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
                     {detail.has_event_social_meida?.ig_name && (
-                      <Link
-                        href={
-                          detail.has_event_social_meida?.instagram +
-                          "/" +
-                          detail.has_event_social_meida?.ig_name
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center"
-                      >
+                      <Link href={detail.has_event_social_meida?.instagram + "/" + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
                         <Flex gap={8} align="center">
-                          <FontAwesomeIcon
-                            icon={faInstagram}
-                            className="!text-[24px] text-primary-base"
-                          />
+                          <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
                           <Text size="sm" className={`!text-primary-base`}>
                             {detail.has_event_social_meida?.ig_name}
                           </Text>
@@ -1534,93 +1173,47 @@ const EventDetails = () => {
                   </Flex>
                   <h3 className="mb-3">{detail?.name}</h3>
                   <p className="mb-3 font-normal text-sm">
-                    <FontAwesomeIcon
-                      icon={faCalendar}
-                      className="mr-3 text-grey"
-                    />
-                    <span className="text-dark">
-                      {detail &&
-                        `${formatDate(detail?.start_date)}  ${
-                          detail.end_date !== detail.start_date
-                            ? "-" + formatDate(detail?.end_date)
-                            : ""
-                        }`}
-                    </span>
+                    <FontAwesomeIcon icon={faCalendar} className="mr-3 text-grey" />
+                    <span className="text-dark">{detail && `${formatDate(detail?.start_date)}  ${detail.end_date !== detail.start_date ? "-" + formatDate(detail?.end_date) : ""}`}</span>
                   </p>
                   <p className="mb-3 font-normal text-sm">
-                    <FontAwesomeIcon
-                      icon={faClock}
-                      className="mr-3 text-grey"
-                    />
+                    <FontAwesomeIcon icon={faClock} className="mr-3 text-grey" />
                     <span className="text-dark">
                       {detail?.start_time} - {detail?.end_time}
                     </span>
                   </p>
                   <Link href={detail?.location_map ?? "#"} target="_blank">
                     <p className="mb-3 font-normal text-sm">
-                      <FontAwesomeIcon
-                        icon={faLocationDot}
-                        className="mr-3 text-grey"
-                      />
+                      <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
                       <span className="text-dark">{detail?.location_name}</span>
                     </p>
                   </Link>
                 </div>
                 <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
-                  <Image
-                    src={`${config.assetUrl}creator/${detail?.has_creator?.image}`}
-                    alt="image"
-                    className="w-10 h-10 border border-grey rounded-full object-contain"
-                    width={200}
-                    height={200}
-                  />
+                  <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
                   <div className={`w-full`}>
                     <p>{t("organizedBy")}</p>
                     <p className="font-semibold">{detail?.has_creator?.name}</p>
                   </div>
                   <ActionIcon color="#0B387C" variant="transparent" size="lg">
-                    <Icon
-                      icon="fluent:chat-12-regular"
-                      className={`!text-[30px]`}
-                      onClick={() => setOpenChat(!openChat)}
-                    />
+                    <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)} />
                   </ActionIcon>
                 </div>
                 <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-20">
                   <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">
-                    <button
-                      onClick={() => setMenu(1)}
-                      className={` py-2 cursor-pointer ${
-                        menu === 1 &&
-                        "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"
-                      }`}
-                    >
+                    <button onClick={() => setMenu(1)} className={` py-2 cursor-pointer ${menu === 1 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
                       {t("description")}
                     </button>
-                    <button
-                      onClick={() => setMenu(2)}
-                      className={`py-2 cursor-pointer ${
-                        menu === 2 &&
-                        "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"
-                      }`}
-                    >
+                    <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
                       {isGratis ? t("ticketRegistration") : t("ticket")}
                     </button>
-                    <button
-                      onClick={() => setMenu(3)}
-                      className={`py-2 cursor-pointer ${
-                        menu === 3 &&
-                        "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"
-                      }`}
-                    >
+                    <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
                       {t("termAndCondition")}
                     </button>
                   </div>
                 </div>
                 <div className="px-5 w-full text-dark">
-                  {menu === 1 && (
-                    <DescriptionBlock data={detail?.description} />
-                  )}
+                  {menu === 1 && <DescriptionBlock data={detail?.description} />}
                   {menu === 2 && (
                     <TicketViewBlock
                       venue={venueLayout}
@@ -1639,9 +1232,7 @@ const EventDetails = () => {
                       scrollToTop={scrollToTop}
                     />
                   )}
-                  {menu === 3 && (
-                    <TermsConditionBlock data={detail?.term_condition} />
-                  )}
+                  {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                 </div>
               </>
             ))}
@@ -1674,43 +1265,17 @@ const EventDetails = () => {
               setPayment={setPayment}
               setBank={setBank}
               loading={loading}
-              paymentList={detail.has_event_payment_method.map(
-                (e) => e.has_payment_method
-              )}
+              paymentList={detail.has_event_payment_method.map((e) => e.has_payment_method)}
             />
           )}
-          {stepParams === "100" && (
-            <ThirdStep
-              voucher={voucher}
-              scrollToTop={scrollToTop}
-              setLoading={setLoading}
-              setStep={setStep}
-              transactionData={transactionData}
-              xenditInvoice={xenditInvoice}
-              loading={loading}
-            />
-          )}
+          {stepParams === "100" && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
           {step === 2 && transactionData && (
             <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
-              {detail && detail.image_url && (
-                <Image
-                  src={detail?.image_url}
-                  width={1000}
-                  height={1000}
-                  alt="banner"
-                  className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium"
-                />
-              )}
+              {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium" />}
 
               <div className="bg-white mt-4">
                 <div className="border-b-2 p-3 border-primary-light">
-                  <Countdown
-                    date={targetDate}
-                    intervalDelay={0}
-                    precision={3}
-                    renderer={renderer}
-                    autoStart={true}
-                  />
+                  <Countdown date={targetDate} intervalDelay={0} precision={3} renderer={renderer} autoStart={true} />
                 </div>
                 <div className="border-b-2 p-3 border-primary-light flex gap-3"></div>
               </div>
@@ -1718,9 +1283,7 @@ const EventDetails = () => {
               <div className="bg-white mt-1">
                 <div className="border-b-2 p-3 border-primary-light flex gap-3">
                   <div className="flex items-center gap-3">
-                    <p className=" font-semibold">
-                      {paymentMethod.payment_name}
-                    </p>
+                    <p className=" font-semibold">{paymentMethod.payment_name}</p>
                     <Image src={bank} alt="BCA" />
                   </div>
                 </div>
@@ -1728,22 +1291,16 @@ const EventDetails = () => {
                   <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                     <div>
                       <p className="text-xs text-grey mb-1">Kode Invoice</p>
-                      <p className="text-sm mb-1">
-                        {transactionData.invoice_no}
-                      </p>
+                      <p className="text-sm mb-1">{transactionData.invoice_no}</p>
                     </div>
                     <div>
                       <p className="text-xs text-grey mb-1">No. Rekening</p>
                       <p className="text-sm mb-1">{paymentMethod.account_no}</p>
-                      <p className="text-xs mb-1">
-                        Atas Nama {paymentMethod.account_name}
-                      </p>
+                      <p className="text-xs mb-1">Atas Nama {paymentMethod.account_name}</p>
                     </div>
                     <div>
                       <p className="text-xs text-grey mb-1">Total Pembayaran</p>
-                      <p className="text-sm mb-1">{`Rp${transactionData.grandtotal.toLocaleString(
-                        "id-ID"
-                      )}`}</p>
+                      <p className="text-sm mb-1">{`Rp${transactionData.grandtotal.toLocaleString("id-ID")}`}</p>
                     </div>
                   </div>
                 </div>
@@ -1751,12 +1308,8 @@ const EventDetails = () => {
               <div className="bg-white mt-1">
                 <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                   <div className="flex justify-between">
-                    <p className="text-xs text-grey mb-1">
-                      Regular Ticket {`x(${transactionData.total_qty})`}
-                    </p>
-                    <p className="text-xs mb-1">
-                      Rp {transactionData.total_price.toLocaleString("id-ID")}
-                    </p>
+                    <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
+                    <p className="text-xs mb-1">Rp {transactionData.total_price.toLocaleString("id-ID")}</p>
                   </div>
                   {voucher && (
                     <div className="flex justify-between">
@@ -1765,71 +1318,32 @@ const EventDetails = () => {
                           Voucher {v.name}
                         </p>
                       ))}
-                      <p className="text-xs mb-1">
-                        Rp{" "}
-                        {voucher
-                          .reduce((sum, v) => sum + v.amount, 0)
-                          .toLocaleString("id-ID")}
-                      </p>
+                      <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString("id-ID")}</p>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-grey mb-1">Pajak</p>
-                    <p className="text-xs mb-1">
-                      Rp{" "}
-                      {transactionData.ppn
-                        ? transactionData.ppn.toLocaleString("id-ID")
-                        : 0}
-                    </p>
+                    <p className="text-xs mb-1">Rp {transactionData.ppn ? transactionData.ppn.toLocaleString("id-ID") : 0}</p>
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-grey mb-1">Biaya Admin</p>
-                    <p className="text-xs mb-1">
-                      Rp{" "}
-                      {transactionData.admin_fee
-                        ? transactionData.admin_fee.toLocaleString("id-ID")
-                        : 0}
-                    </p>
+                    <p className="text-xs mb-1">Rp {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString("id-ID") : 0}</p>
                   </div>
                   <div className="border-t-2 border-primary-light">
                     <div className="flex items-center justify-between font-semibold">
                       <p>Total Pembayaran</p>
-                      <p>{`Rp ${(
-                        transactionData.grandtotal -
-                        (voucher
-                          ? voucher.reduce((sum, v) => sum + v.amount, 0)
-                          : 0)
-                      ).toLocaleString("id-ID")}`}</p>
+                      <p>{`Rp ${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString("id-ID")}`}</p>
                     </div>
                     {transactionData.xendit_url ? (
-                      <button
-                        className="w-full bg-primary-dark text-white py-2 rounded-lg my-3"
-                        onClick={() => router.push(transactionData.xendit_url)}
-                      >
-                        {loading ? (
-                          <Spinner color="default" size="sm" />
-                        ) : (
-                          "Checkout"
-                        )}
+                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => router.push(transactionData.xendit_url)}>
+                        {loading ? <Spinner color="default" size="sm" /> : "Checkout"}
                       </button>
                     ) : (
-                      <button
-                        className="w-full bg-primary-dark text-white py-2 rounded-lg my-3"
-                        onClick={() => handleShowModal()}
-                      >
-                        {loading ? (
-                          <Spinner color="default" size="sm" />
-                        ) : (
-                          "Upload Bukti Pembayaran"
-                        )}
+                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => handleShowModal()}>
+                        {loading ? <Spinner color="default" size="sm" /> : "Upload Bukti Pembayaran"}
                       </button>
                     )}
-                    <ModalTransaction
-                      id={transactionData.id}
-                      invoice={transactionData.invoice_no}
-                      isOpen={showModalTransaction}
-                      setIsOpen={setShowModalTransaction}
-                    />
+                    <ModalTransaction id={transactionData.id} invoice={transactionData.invoice_no} isOpen={showModalTransaction} setIsOpen={setShowModalTransaction} />
                   </div>
                 </div>
               </div>
@@ -1837,25 +1351,11 @@ const EventDetails = () => {
           )}
           {step === 3 && transactionData && xenditInvoice && (
             <div className="bg-primary-light max-w-xl pt-16 mx-auto">
-              {detail && detail.image_url && (
-                <Image
-                  src={detail?.image_url}
-                  width={1000}
-                  height={1000}
-                  alt="banner"
-                  className="w-full"
-                />
-              )}
+              {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full" />}
 
               <div className="bg-white">
                 <div className="border-b-2 p-3 border-primary-light">
-                  <Countdown
-                    date={targetDate}
-                    intervalDelay={0}
-                    precision={3}
-                    renderer={renderer}
-                    autoStart={true}
-                  />
+                  <Countdown date={targetDate} intervalDelay={0} precision={3} renderer={renderer} autoStart={true} />
                 </div>
                 <div className="border-b-2 p-3 border-primary-light flex gap-3"></div>
               </div>
@@ -1871,22 +1371,13 @@ const EventDetails = () => {
                   <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                     <div>
                       <p className="text-xs text-grey mb-1">Kode Invoice</p>
-                      <p className="text-sm mb-1">
-                        {transactionData.invoice_no}
-                      </p>
+                      <p className="text-sm mb-1">{transactionData.invoice_no}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-grey mb-1">
-                        No. Virtual Account
-                      </p>
+                      <p className="text-xs text-grey mb-1">No. Virtual Account</p>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm mb-1">
-                          {xenditInvoice.bank_account_number}
-                        </p>
-                        <button
-                          onClick={handleCopy}
-                          className="hover:bg-primary-light-200 p-1 rounded-md"
-                        >
+                        <p className="text-sm mb-1">{xenditInvoice.bank_account_number}</p>
+                        <button onClick={handleCopy} className="hover:bg-primary-light-200 p-1 rounded-md">
                           <FontAwesomeIcon icon={isCopied ? faCheck : faCopy} />
                         </button>
                       </div>
@@ -1894,9 +1385,7 @@ const EventDetails = () => {
                     </div>
                     <div>
                       <p className="text-xs text-grey mb-1">Total Pembayaran</p>
-                      <p className="text-sm mb-1">{`Rp${xenditInvoice.transfer_amount.toLocaleString(
-                        "id-ID"
-                      )}`}</p>
+                      <p className="text-sm mb-1">{`Rp${xenditInvoice.transfer_amount.toLocaleString("id-ID")}`}</p>
                     </div>
                   </div>
                 </div>
@@ -1904,12 +1393,8 @@ const EventDetails = () => {
               <div className="bg-white mt-1">
                 <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                   <div className="flex justify-between">
-                    <p className="text-xs text-grey mb-1">
-                      Regular Ticket {`x(${transactionData.total_qty})`}
-                    </p>
-                    <p className="text-xs mb-1">
-                      Rp {transactionData.total_price.toLocaleString("id-ID")}
-                    </p>
+                    <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
+                    <p className="text-xs mb-1">Rp {transactionData.total_price.toLocaleString("id-ID")}</p>
                   </div>
                   {voucher && (
                     <div className="flex justify-between">
@@ -1918,53 +1403,24 @@ const EventDetails = () => {
                           Voucher {v.name}
                         </p>
                       ))}
-                      <p className="text-xs mb-1">
-                        Rp{" "}
-                        {voucher
-                          .reduce((sum, v) => sum + v.amount, 0)
-                          .toLocaleString("id-ID")}
-                      </p>
+                      <p className="text-xs mb-1">Rp {voucher.reduce((sum, v) => sum + v.amount, 0).toLocaleString("id-ID")}</p>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-grey mb-1">Pajak</p>
-                    <p className="text-xs mb-1">
-                      Rp{" "}
-                      {transactionData.ppn
-                        ? transactionData.ppn.toLocaleString("id-ID")
-                        : 0}
-                    </p>
+                    <p className="text-xs mb-1">Rp {transactionData.ppn ? transactionData.ppn.toLocaleString("id-ID") : 0}</p>
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-grey mb-1">Biaya Admin</p>
-                    <p className="text-xs mb-1">
-                      Rp{" "}
-                      {transactionData.admin_fee
-                        ? transactionData.admin_fee.toLocaleString("id-ID")
-                        : 0}
-                    </p>
+                    <p className="text-xs mb-1">Rp {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString("id-ID") : 0}</p>
                   </div>
                   <div className="border-t-2 border-primary-light">
                     <div className="flex items-center justify-between font-semibold">
                       <p>Total Pembayaran</p>
-                      <p>{`Rp${(
-                        transactionData.grandtotal -
-                        (voucher
-                          ? voucher.reduce((sum, v) => sum + v.amount, 0)
-                          : 0)
-                      ).toLocaleString("id-ID")}`}</p>
+                      <p>{`Rp${(transactionData.grandtotal - (voucher ? voucher.reduce((sum, v) => sum + v.amount, 0) : 0)).toLocaleString("id-ID")}`}</p>
                     </div>
-                    <Link
-                      href={`/success/${transactionData.invoice_no}`}
-                      target="_blank"
-                    >
-                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">
-                        {loading ? (
-                          <Spinner color="default" size="sm" />
-                        ) : (
-                          "Cek Status Pembayaran"
-                        )}
-                      </button>
+                    <Link href={`/success/${transactionData.invoice_no}`} target="_blank">
+                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3">{loading ? <Spinner color="default" size="sm" /> : "Cek Status Pembayaran"}</button>
                     </Link>
                   </div>
                 </div>
@@ -1975,21 +1431,11 @@ const EventDetails = () => {
       </Context.Provider>
     )
   ) : (
-    <Spinner
-      color="primary"
-      size="lg"
-      className="min-h-screen flex items-center justify-center"
-    />
+    <Spinner color="primary" size="lg" className="min-h-screen flex items-center justify-center" />
   );
 };
 
-const EventCountdown = ({
-  startdate,
-  starttime,
-}: {
-  startdate?: string;
-  starttime?: string;
-}) => {
+const EventCountdown = ({ startdate, starttime }: { startdate?: string; starttime?: string }) => {
   const { t } = useTranslation();
   const [timoutHash, setTimeoutHash] = useState("");
   const interval = useInterval(() => setTimeoutHash(randomId()), 1000);
@@ -2002,9 +1448,7 @@ const EventCountdown = ({
     const date = `${startdate} ${starttime}`;
     const targetDate = new Date(date);
     const now = new Date();
-    const diffInSeconds = Math.floor(
-      (targetDate.getTime() - now.getTime()) / 1000
-    );
+    const diffInSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
 
     if (diffInSeconds < 0) {
       return []; // Jika tanggal sudah lewat, kembalikan array kosong
@@ -2016,9 +1460,7 @@ const EventCountdown = ({
 
     const days = Math.floor(diffInSeconds / secondsInDay);
     const hours = Math.floor((diffInSeconds % secondsInDay) / secondsInHour);
-    const minutes = Math.floor(
-      (diffInSeconds % secondsInHour) / secondsInMinute
-    );
+    const minutes = Math.floor((diffInSeconds % secondsInHour) / secondsInMinute);
     const seconds = diffInSeconds % secondsInMinute;
 
     const result: [number, string][] = [];
@@ -2033,13 +1475,7 @@ const EventCountdown = ({
     <Flex align="center" gap={5} className={`! bottom-3 right-3`} mb={10}>
       {timeToEvent.map((e, i) => (
         <AspectRatio key={i}>
-          <Card
-            w={42}
-            radius={10}
-            p={0}
-            className={`border border-white/50 backdrop-blur-sm !bg-black/20`}
-            key={i}
-          >
+          <Card w={42} radius={10} p={0} className={`border border-white/50 backdrop-blur-sm !bg-black/20`} key={i}>
             <Stack align="center" justify="center" h="100%" gap={3} c="white">
               <Text fw={600} size="16px">
                 {e[0]}
