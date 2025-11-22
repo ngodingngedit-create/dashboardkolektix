@@ -137,6 +137,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   // const cartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
 
   return (
+    //
     <div>
       <nav className="bg-primary-dark transition-colors duration-300 sticky top-0 w-full z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
