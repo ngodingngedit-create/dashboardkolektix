@@ -1084,7 +1084,7 @@ export default function Index({}: Readonly<ComponentProps>) {
       city_id: 1,
       address_detail: payloadAddress,
       address_name: payloadName,
-      zipcode: "",
+      zipcode: Math.floor(10000 + Math.random() * 90000).toString(), // ✅ Generate random 5 digit zipcode,
       latitude: "",
       longitude: "",
       nama_penerima: payloadName,
@@ -1093,6 +1093,7 @@ export default function Index({}: Readonly<ComponentProps>) {
     };
 
     try {
+      // ✅ STEP 1: Hit Xendit API dulu
       await fetch<any, { invoice_url: string }>({
         url: "order-product",
         method: "POST",
@@ -1103,21 +1104,58 @@ export default function Index({}: Readonly<ComponentProps>) {
           creator_id: creatorId,
           grandtotal: handleSummary.total,
           product: productsPayload,
-          payment_method: "xendit",
+          payment_method: paymentMethod,
           courier: courierPayload,
           address: addressPayload,
         },
         before: () => setLoading.append("checkout"),
-        success: ({ data }) => {
+        success: async ({ data }) => {
+          console.log("Xendit response:", data);
+
+          // ✅ STEP 2: Kalau Xendit sukses, baru save offline
+          await handleSave();
+
+          // ✅ STEP 3: Redirect ke Xendit invoice
+          // if (data?.isFree) {
+          //   router.push("/success/" + data.invoice_no);
+          //   return;
+          // }
+
           if (data?.invoice_url) {
             router.push(data.invoice_url);
-          } else {
-            notifications.show({ message: "Checkout sukses, tapi invoice tidak tersedia.", color: "yellow" });
+            return;
           }
+
+          // if (data?.xendit_invoice?.invoice_url) {
+          //   router.push(data.xendit_invoice.invoice_url);
+          //   return;
+          // }
+
+          // if (data?.xendit_invoice?.va_number?.length > 0) {
+          //   notifications.show({
+          //     message: "Checkout berhasil! Silakan lakukan pembayaran.",
+          //     color: "green",
+          //   });
+          //   return;
+          // }
+
+          notifications.show({
+            message: "Checkout sukses, tapi invoice tidak tersedia.",
+            color: "yellow",
+          });
         },
         complete: () => setLoading.filter((e) => e != "checkout"),
         error: (err) => {
           console.error("handleCheckout error:", err);
+
+          if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+            notifications.show({
+              color: "red",
+              message: "Produk sudah habis stok",
+            });
+            return;
+          }
+
           const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
           notifications.show({ message: msg, color: "red" });
         },
@@ -1131,6 +1169,54 @@ export default function Index({}: Readonly<ComponentProps>) {
       setLoading.filter((e) => e != "checkout");
     }
   };
+
+  // // ✅ handleSave tetap sama, tidak diubah
+  // const handleCheckout = async () => {
+  //   const summary: MerchCheckoutOffline["summary"] = {};
+  //   for (const s of handleSummary.detail) summary[s[0]] = s[1];
+
+  //   const data: MerchCheckoutOffline = {
+  //     product: selectedList.map((e) => ({
+  //       id: e.id,
+  //       variant_id: e.variant_id,
+  //       qty: e.count,
+  //       price: e.price,
+  //       subtotal: e.subtotal,
+  //     })),
+  //     customer_name: custValue.name,
+  //     customer_email: custValue.email,
+  //     customer_phone: custValue.phone,
+  //     customer_address: custValue.address,
+  //     grandtotal: handleSummary.total,
+  //     creator_id: user?.has_creator?.id ?? 0,
+  //     summary,
+  //     discount,
+  //     payment_method: paymentMethod,
+  //   };
+
+  //   const next = () => {
+  //     Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
+  //     // ✅ JANGAN router.push di sini, biar handleCheckout yang handle redirect
+  //   };
+
+  //   await fetch<MerchCheckoutOffline, any>({
+  //     url: "merch-offline",
+  //     method: "POST",
+  //     data,
+  //     before: () => setLoading.append("submit"),
+  //     success: () => {
+  //       next();
+  //     },
+  //     complete: () => setLoading.filter((e) => e != "submit"),
+  //     error: (err) => {
+  //       next();
+  //       notifications.show({
+  //         message: err?.response?.data?.message ?? "Terjadi Kesalahan",
+  //         color: "red",
+  //       });
+  //     },
+  //   });
+  // };
 
   const PER_PAGE = 10;
   const [pageNum, setPageNum] = useState(1);
@@ -1491,7 +1577,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                       <NumberFormatter className={`font-[600]`} value={handleSummary.total} />
                     </Text>
                   </Stack>
-                  <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleSave} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
+                  <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
                     Bayar
                   </Button>
                 </Flex>

@@ -12,6 +12,7 @@ export interface TicketProps {
   starting_time?: string;
   ending_time?: string;
   ticket_fee?: number;
+  start_date: string;
   ticket_end: string;
   is_fullbook: number;
   is_soldout: number;
