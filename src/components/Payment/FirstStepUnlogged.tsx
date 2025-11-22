@@ -1779,34 +1779,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           : [],
     };
 
-    // --- DEBUG LOGGING: inspect what we're sending to backend ---
-    console.log("DEBUG -> Payment payload (frontend)", {
-      subtotal,
-      subtotalAfterVoucher,
-      adminFee,
-      voucherDiscount,
-      ppn_type: payload.ppn_type,
-      ppn_raw: payload.ppn,
-      ppn_amount: payload.ppn_amount,
-      grandtotal: payload.grandtotal,
-      tickets: payload.tickets,
-      vouchers: payload.vouchers,
-      payloadPreview: payload,
-    });
-
     setLoading(true);
     Post("transaction-without-auth", payload)
       .then((res: any) => {
         setTransactionData(res.data);
-
-        // --- DEBUG LOGGING: compare Xendit amount vs FE grandtotal ---
-        const xendit = res.xendit_invoice ?? res.data?.xendit_invoice ?? null;
-        const xenditAmount = xendit?.amount ?? xendit?.transfer_amount ?? null;
-
-        console.log("DEBUG -> Backend response (res):", res);
-        console.log("DEBUG -> FE grandtotal:", grandtotal);
-        console.log("DEBUG -> Xendit amount (from response):", xenditAmount);
-        console.log("DEBUG -> Diff (Xendit - FE):", (xenditAmount ?? 0) - grandtotal);
 
         // If Xendit invoice url present, redirect
         if (res?.isFree) {
@@ -2091,7 +2067,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     );
                   })()
                 : null}
-                
+
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>Biaya Admin</p>
                 <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
@@ -2151,81 +2127,75 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
                       <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
                         {detail.is_noidentity == 1 && (
-                          <div className="grid grid-cols-4 gap-3">
-                            <div>
-                              <InputSelect
-                                label="Identitas"
-                                required
-                                onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
-                                options={[
-                                  { key: "1", label: "KTP" },
-                                  { key: "2", label: "SIM" },
-                                  { key: "3", label: "Kartu Pelajar" },
-                                  { key: "4", label: "Passport" },
-                                  { key: "5", label: "KTM" },
-                                ]}
+                            <div className="grid grid-cols-4 gap-3">
+                              <div>
+                                <InputSelect
+                                  label="Identitas"
+                                  required
+                                  onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                                  options={[
+                                    { key: "1", label: "KTP" },
+                                    { key: "2", label: "SIM" },
+                                    { key: "3", label: "Kartu Pelajar" },
+                                    { key: "4", label: "Passport" },
+                                    { key: "5", label: "KTM" },
+                                  ]}
+                                />
+                              </div>
+                              <div className="col-span-3">
+                                <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
+                                {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                              </div>
+                            </div>
+                          )}
+
+                          {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
+                          {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
+                          {detail.is_gender == 1 && (
+                            <Field className="mb-2">
+                              <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
+                              <select
+                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                value={item.gender || ""}
+                                onChange={(e) => handleInput(index, "gender", e.target.value)}
+                              >
+                                <option value="">Pilih jenis kelamin</option>
+                                <option value="Pria">Pria</option>
+                                <option value="Wanita">Wanita</option>
+                                <option value="Tidak Memberitahu">Tidak Memberitahu</option>
+                              </select>
+                            </Field>
+                          )}
+
+                          {detail.is_birthdate == 1 && (
+                            <Field className="mb-2">
+                              <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
+                              <Input
+                                type="date"
+                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                value={item.birthdate || ""}
+                                onChange={(e) => handleInput(index, "birthdate", e.target.value)}
                               />
-                            </div>
-                            <div className="col-span-3">
-                              <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
-                              {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
-                            </div>
-                          </div>
-                        )}
+                            </Field>
+                          )}
 
-                        {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
-
-                        {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
-
-                        {detail.is_gender == 1 && (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
-                            <select
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                              value={item.gender || ""}
-                              onChange={(e) => handleInput(index, "gender", e.target.value)}
-                            >
-                              <option value="">Pilih jenis kelamin</option>
-                              <option value="Pria">Pria</option>
-                              <option value="Wanita">Wanita</option>
-                              <option value="Tidak Memberitahu">Tidak Memberitahu</option>
-                            </select>
-                          </Field>
-                        )}
-
-                        {detail.is_birthdate == 1 && (
-                          <Field className="mb-2">
-                            <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
-                            <Input
-                              type="date"
-                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                              value={item.birthdate || ""}
-                              onChange={(e) => handleInput(index, "birthdate", e.target.value)}
+                          {/* ...sisa field sama seperti di mobile */}
+                          {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
+                          {detail.is_profession == 1 && (
+                            <InputField
+                              fullWidth
+                              type="text"
+                              label="Profesi atau Pekerjaan anda"
+                              placeholder="contoh: Promotor, Musisi, IT, Programmer etc"
+                              value={item.is_profession}
+                              onChange={(e) => handleInput(index, "is_profession", e.target.value)}
                             />
-                          </Field>
-                        )}
-
-                        {/* sisa field seperti sebelumnya... */}
-                        {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas || ""} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
-
-                        {detail.is_profession == 1 && (
-                          <InputField
-                            fullWidth
-                            type="text"
-                            label="Profesi / Bidang Pekerjaan"
-                            placeholder="profesi atau bidang pekerjaan"
-                            value={item.is_profession || ""}
-                            onChange={(e) => handleInput(index, "is_profession", e.target.value)}
-                          />
-                        )}
-
-                        {detail.is_company == 1 && (
-                          <InputField fullWidth type="text" label="Perusahaan / Organisasi" placeholder="Nama Perusahaan Atau Organisasi" value={item.is_company || ""} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
-                        )}
-
-                        {detail.is_email == 1 && <InputField fullWidth type="email" label="Email" placeholder="Contoh: example@example.com" value={item.email || ""} onChange={(e) => handleInput(index, "email", e.target.value)} />}
-
-                        {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp || ""} />}
+                          )}
+                          {detail.is_company == 1 && (
+                            <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
+                          )}
+                          {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
+                          {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />}
                       </div>
                     </div>
                   </div>

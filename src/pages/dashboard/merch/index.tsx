@@ -913,6 +913,7 @@ import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import Cookies from "js-cookie";
+import { Get } from "@/utils/REST";
 
 const PER_PAGE = 10;
 
@@ -1016,91 +1017,53 @@ const Merch: React.FC = () => {
   //   }
   // };
 
-  const getData = async (pageNum: number = 1) => {
+  const getData = (pageNum: number = 1) => {
     setLoading2(true);
 
-    try {
-      // ✅ GUARD: Pastikan punya creator_id
-      const creatorId = user?.has_creator?.id;
+    // ✅ GUARD: Pastikan punya creator_id
+    const creatorId = user?.has_creator?.id;
 
-      if (!creatorId) {
-        console.warn("getData aborted: missing creator_id");
+    if (!creatorId) {
+      console.warn("getData aborted: missing creator_id");
+      setMerchList([]);
+      setLastPage(1);
+      setLoading2(false);
+      return;
+    }
+
+    const qs = new URLSearchParams({
+      per_page: String(PER_PAGE),
+      page: String(pageNum),
+      creator_id: String(creatorId), // ✅ Kirim creator_id ke API langsung
+    }).toString();
+
+    Get(`product?${qs}`, {})
+      .then((res: any) => {
+        if (res.data) {
+          console.log("Merchant data response:", res);
+
+          // Ambil data dari response (sudah di-filter oleh backend)
+          const products = Array.isArray(res.data) ? res.data : [];
+          const totalLastPage = res?.last_page ?? 1;
+
+          // Set data ke state
+          setMerchList(products);
+          setLastPage(totalLastPage);
+
+          console.log(`Showing page ${pageNum} of ${totalLastPage} (${products.length} items)`);
+        } else {
+          console.warn("Response data is empty or undefined.");
+          setMerchList([]);
+          setLastPage(1);
+        }
+        setLoading2(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching merchant data:", err);
         setMerchList([]);
         setLastPage(1);
-        return;
-      }
-
-      const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
-      const cookieToken = Cookies.get("authToken") || (typeof window !== "undefined" ? localStorage.getItem("authToken") || "" : "");
-      const token = envToken || cookieToken || "";
-
-      const headers: Record<string, string> = {
-        Accept: "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      // ✅ STEP 1: Fetch ALL products dari semua halaman
-      let allProducts: MerchListResponse[] = [];
-      let currentPage = 1;
-      let hasMore = true;
-      let totalLastPage = 1;
-
-      while (hasMore) {
-        const qs = new URLSearchParams({
-          per_page: String(PER_PAGE),
-          page: String(currentPage),
-        }).toString();
-
-        const url = `${process.env.NEXT_PUBLIC_URL}/product?${qs}`;
-        console.log(`Fetching page ${currentPage}...`);
-
-        const res = await fetch(url, {
-          method: "GET",
-          headers,
-        } as RequestInit);
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        const json = await res.json();
-        totalLastPage = json?.last_page ?? 1;
-
-        // Handle response: data adalah array langsung
-        if (Array.isArray(json?.data)) {
-          allProducts.push(...json.data);
-          console.log(`Page ${currentPage}: ${json.data.length} products (total so far: ${allProducts.length})`);
-        }
-
-        // Check if there are more pages
-        currentPage++;
-        hasMore = currentPage <= totalLastPage;
-      }
-
-      console.log("Total products from ALL pages:", allProducts.length);
-
-      // ✅ STEP 2: Filter hanya produk dengan creator_id yang sesuai
-      const filteredList = allProducts.filter((item) => {
-        return item?.creator_id === creatorId;
+        setLoading2(false);
       });
-
-      console.log(`Filtered by creatorId ${creatorId}: ${filteredList.length} products`);
-      setMerchList(Array.isArray(filteredList) ? filteredList : []);
-
-      // ✅ STEP 3: Re-paginate hasil filter (tampilkan PER_PAGE items per halaman)
-      const paginatedList = filteredList.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
-
-      const computedLastPage = Math.ceil(filteredList.length / PER_PAGE) || 1;
-      setLastPage(computedLastPage);
-
-      console.log(`Showing page ${pageNum} of ${computedLastPage} (${paginatedList.length} items)`);
-      setMerchList(paginatedList);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setMerchList([]);
-    } finally {
-      setLoading2(false);
-    }
   };
 
   const handleToggleStatus = async (id: number, status: boolean) => {
