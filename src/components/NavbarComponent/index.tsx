@@ -527,6 +527,16 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
               <Stack mt={20} gap={10} className={`hover:[&>*]:!text-black`}>
                 {/* <NavLink c="gray.1" label="Trending" leftSection={<Icon icon="fluent:data-trending-16-filled" className={`text-[24px]`} />} />
                 <NavLink c="gray.1" label="Blog" leftSection={<Icon icon="si:article-line" className={`text-[24px]`} />} /> */}
+                <NavLink
+                  c="gray.1"
+                  label="Search"
+                  onClick={() => {
+                    handleFilter();
+                    setShowSideBar(false);
+                  }}
+                  leftSection={<Icon icon="tabler:search" className="text-[24px]" />}
+                  style={{ cursor: "pointer" }}
+                />
                 <NavLink href="/event" c="gray.1" label="Event" leftSection={<Icon icon="tabler:calendar-event" className="text-[24px]" />} />
 
                 <NavLink href="/merchandise" c="gray.1" label="Merchandise" leftSection={<Icon icon="tabler:shopping-bag" className="text-[24px]" />} />
