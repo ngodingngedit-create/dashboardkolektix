@@ -183,12 +183,15 @@
 // export default WithDraw;
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import axios from "axios";
+import { useRouter } from "next/router";
+import React, { useState, useEffect } from "react";
 import { faArrowDown, faPlus } from "@fortawesome/free-solid-svg-icons";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import TopUpModal from "@/components/Dashboard/Modal/TopUp";
-import { useState } from "react";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import config from "@/Config";
 
 // Definisikan tipe untuk transaksi
 interface Transaction {
@@ -217,23 +220,41 @@ interface EventData {
 }
 
 const WithDraw = () => {
+  const router = useRouter();
+  const { slug } = router.query;
+
+  // state dan modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen2, setIsDetailModalOpen2] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [eventData, setEventData] = useState<EventData[] | null>(null);
 
-  const calculateTotal = (key: keyof EventData) => {
-    if (!eventData || eventData.length === 0) return 0;
+  // -> PERBAIKAN: eventData sebagai objek tunggal (sesuai pemakaian di JSX)
+  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-    return eventData.reduce((total, event) => {
-      if (key === "total_price_sell") {
-        const online = Number(event.total_price_sell_online || 0);
-        const offline = Number(event.total_price_sell_offline || 0);
-        return total + online + offline;
+  useEffect(() => {
+    if (typeof slug === "string") {
+      getEventData();
+    }
+    // hanya trig ketika slug berubah
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  const getEventData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      if (response && response.data) {
+        // asumsikan response.data adalah objek EventData
+        setEventData(response.data);
+        console.log(response.data, "tes uhuy");
       }
-      return total + Number(event[key] || 0);
-    }, 0);
+    } catch (error) {
+      console.error("Error fetching event data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -250,7 +271,7 @@ const WithDraw = () => {
             <i className="fas fa-wallet mr-2"></i>
             <span>Saldo</span>
           </div>
-          <div className="text-2xl">Rp{calculateTotal("total_price_sell").toLocaleString("id-ID")}</div>
+          <div className="text-2xl">Rp{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</div>
         </div>
 
         <div className="flex space-x-4">
@@ -271,27 +292,15 @@ const WithDraw = () => {
 
       <div>
         <h2 className="text-lg text-dark font-semibold mb-4 bg-white p-4">Riwayat Transaksi</h2>
-        <div className="space-y-4">
-          {/* <WithdrawHistoryList user_id={6} onTransactionClick={(t: Transaction) => handleTransactionClick(t)} /> */}
-          {/* Jika WithdrawHistoryList tidak mem-forward click, handler lama tetap dapat dipakai
-              karena komponen list asli sebelumnya dipanggil langsung di sini. */}
-        </div>
+        <div className="space-y-4">{/* <WithdrawHistoryList user_id={6} onTransactionClick={(t: Transaction) => handleTransactionClick(t)} /> */}</div>
       </div>
 
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
       <TopUpModal isOpen={isDetailModalOpen} setIsOpen={setIsDetailModalOpen} />
 
       {/* Modal untuk detail transaksi - diatur supaya full width */}
-      <Modal
-        isOpen={isDetailModalOpen2}
-        onClose={() => setIsDetailModalOpen2(false)}
-        // beberapa library UI menerima className; pakai inline style agar pasti full width
-        className="!p-0"
-        // style di sini memastikan dialog content mengambil lebar penuh viewport
-        style={{ padding: 0 }}
-      >
+      <Modal isOpen={isDetailModalOpen2} onClose={() => setIsDetailModalOpen2(false)} className="!p-0" style={{ padding: 0 }}>
         <ModalContent
-          // pastikan konten modal benar-benar melebar ke seluruh viewport
           className="p-4"
           style={{
             width: "100vw",
@@ -299,7 +308,6 @@ const WithDraw = () => {
             margin: 0,
             left: 0,
             right: 0,
-            // remove default border radius iff ingin benar-benar full edge-to-edge:
             borderRadius: 0,
             boxSizing: "border-box",
           }}

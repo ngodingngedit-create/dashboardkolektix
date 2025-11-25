@@ -1394,6 +1394,42 @@ interface StepPaymentProps {
   onSubmitVoucher?: (data: { name: string; amount: number }) => void;
 }
 
+type Detail = { ppn?: any; ppn_type?: any; [k: string]: any };
+
+const normalizeDetail = (detail: Detail) => {
+  const normalized: Detail = { ...detail };
+
+  // normalisasi ppn_type: treat null/undefined/""/"null" -> "percentage"
+  const rawType = detail?.ppn_type;
+  if (rawType === null || rawType === undefined || rawType === "" || rawType === "null") {
+    normalized.ppn_type = "percentage";
+  } else {
+    normalized.ppn_type = String(rawType);
+  }
+
+  // normalisasi ppn:
+  // - if null/undefined/""/"null" -> default 10
+  // - if numeric string -> Number(parsed)
+  // - if 0 -> keep 0
+  const rawPpn = detail?.ppn;
+  if (rawPpn === null || rawPpn === undefined || rawPpn === "" || rawPpn === "null") {
+    normalized.ppn = 0;
+  } else {
+    const n = Number(rawPpn);
+    normalized.ppn = Number.isNaN(n) ? 0 : n;
+  }
+
+  const rawAdminFee = detail?.admin_fee;
+  if (rawAdminFee === null || rawAdminFee === undefined || rawAdminFee === "" || rawAdminFee === "null") {
+    normalized.admin_fee = 7000; // default admin fee PER TICKET
+  } else {
+    const af = Number(rawAdminFee);
+    normalized.admin_fee = Number.isNaN(af) ? 7000 : af;
+  }
+
+  return normalized;
+};
+
 const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
   const { width } = useWindowSize();
   const [voucherFields, setVoucherFields] = useState<string[]>([""]);
@@ -1421,22 +1457,21 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   const adminFee = totalTicketFee;
 
-  const computeTax = (detail: any, subtotalAfterVoucher: number, adminFee: number) => {
-    const ppnType = detail?.ppn_type || "percentage";
-    const raw = Number(detail?.ppn) || 0;
+  const computeTax = (detail: any, subtotalAfterVoucher: number) => {
+    const d = normalizeDetail(detail);
+
+    const ppnType = d.ppn_type;
+    const ppnValue = Number(d.ppn);
 
     if (ppnType === "percentage") {
-      const taxBase = subtotalAfterVoucher;
-      const tax = Math.round(taxBase * (raw / 100));
-      return { tax, label: `${raw}%` };
+      const tax = Math.round(subtotalAfterVoucher * (ppnValue / 100));
+      return { tax, label: `${ppnValue}%`, ppnType };
+    } else if (ppnType === "nominal") {
+      const tax = Math.round(ppnValue);
+      return { tax, label: "", ppnType };
     }
 
-    if (ppnType === "nominal") {
-      const tax = Math.round(raw);
-      return { tax, label: `Rp ${tax.toLocaleString("id-ID")}` };
-    }
-
-    return { tax: 0, label: "Free" };
+    return { tax: 0, label: "0", ppnType };
   };
 
   const getPaymentMethodById = (id: string) => {
@@ -1713,7 +1748,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     let taxLabel = "";
     try {
       if (typeof computeTax === "function") {
-        const res = computeTax(detail, subtotalAfterVoucher, adminFee);
+        const res = computeTax(detail, subtotalAfterVoucher);
         tax = Number(res.tax) || 0;
         taxLabel = res.label || "";
       } else {
@@ -2057,21 +2092,29 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
                     // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                    const { tax, label } = computeTax(detail, subtotalAfterVoucher, adminFee);
+                    const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
+
+                    if (tax <= 0) return null;
 
                     return (
                       <div className="py-3 px-4 flex justify-between items-center">
-                        <p>Tax ({label})</p>
-                        <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                        <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                        <p className="font-semibold">
+                          <NumberFormatter value={tax} />
+                        </p>
                       </div>
                     );
                   })()
                 : null}
 
-              <div className="py-3 px-4 flex justify-between items-center">
-                <p>Biaya Admin</p>
-                <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
-              </div>
+              {adminFee > 0 && (
+                <div className="py-3 px-4 flex justify-between items-center">
+                  <p>Biaya Admin</p>
+                  <p className="font-semibold">
+                    <NumberFormatter value={adminFee} />
+                  </p>
+                </div>
+              )}
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>Total Pembayaran</p>
@@ -2123,79 +2166,86 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       </button>
                     </div>
 
+                    {index > 0 && (
+                      <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
+                        <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
+                        <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
+                      </div>
+                    )}
+
                     {/* collapse wrapper: gunakan overflow-hidden + max-h */}
                     <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
                       <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
                         {detail.is_noidentity == 1 && (
-                            <div className="grid grid-cols-4 gap-3">
-                              <div>
-                                <InputSelect
-                                  label="Identitas"
-                                  required
-                                  onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
-                                  options={[
-                                    { key: "1", label: "KTP" },
-                                    { key: "2", label: "SIM" },
-                                    { key: "3", label: "Kartu Pelajar" },
-                                    { key: "4", label: "Passport" },
-                                    { key: "5", label: "KTM" },
-                                  ]}
-                                />
-                              </div>
-                              <div className="col-span-3">
-                                <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
-                                {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
-                              </div>
-                            </div>
-                          )}
-
-                          {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
-                          {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
-                          {detail.is_gender == 1 && (
-                            <Field className="mb-2">
-                              <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
-                              <select
-                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                                value={item.gender || ""}
-                                onChange={(e) => handleInput(index, "gender", e.target.value)}
-                              >
-                                <option value="">Pilih jenis kelamin</option>
-                                <option value="Pria">Pria</option>
-                                <option value="Wanita">Wanita</option>
-                                <option value="Tidak Memberitahu">Tidak Memberitahu</option>
-                              </select>
-                            </Field>
-                          )}
-
-                          {detail.is_birthdate == 1 && (
-                            <Field className="mb-2">
-                              <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
-                              <Input
-                                type="date"
-                                className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
-                                value={item.birthdate || ""}
-                                onChange={(e) => handleInput(index, "birthdate", e.target.value)}
+                          <div className="grid grid-cols-2 gap-3 ">
+                            <div>
+                              <InputSelect
+                                label="Identitas"
+                                required
+                                onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                                options={[
+                                  { key: "1", label: "KTP" },
+                                  { key: "2", label: "SIM" },
+                                  { key: "3", label: "Kartu Pelajar" },
+                                  { key: "4", label: "Passport" },
+                                  { key: "5", label: "KTM" },
+                                ]}
                               />
-                            </Field>
-                          )}
+                            </div>
+                            <div className="col-span-3">
+                              <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
+                              {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                            </div>
+                          </div>
+                        )}
 
-                          {/* ...sisa field sama seperti di mobile */}
-                          {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
-                          {detail.is_profession == 1 && (
-                            <InputField
-                              fullWidth
-                              type="text"
-                              label="Profesi atau Pekerjaan anda"
-                              placeholder="contoh: Promotor, Musisi, IT, Programmer etc"
-                              value={item.is_profession}
-                              onChange={(e) => handleInput(index, "is_profession", e.target.value)}
+                        {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
+                        {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
+                        {detail.is_gender == 1 && (
+                          <Field className="mb-2">
+                            <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
+                            <select
+                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                              value={item.gender || ""}
+                              onChange={(e) => handleInput(index, "gender", e.target.value)}
+                            >
+                              <option value="">Pilih jenis kelamin</option>
+                              <option value="Pria">Pria</option>
+                              <option value="Wanita">Wanita</option>
+                              <option value="Tidak Memberitahu">Tidak Memberitahu</option>
+                            </select>
+                          </Field>
+                        )}
+
+                        {detail.is_birthdate == 1 && (
+                          <Field className="mb-2">
+                            <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
+                            <Input
+                              type="date"
+                              className="mt-2 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                              value={item.birthdate || ""}
+                              onChange={(e) => handleInput(index, "birthdate", e.target.value)}
                             />
-                          )}
-                          {detail.is_company == 1 && (
-                            <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
-                          )}
-                          {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
-                          {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />}
+                          </Field>
+                        )}
+
+                        {/* ...sisa field sama seperti di mobile */}
+                        {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
+                        {detail.is_profession == 1 && (
+                          <InputField
+                            fullWidth
+                            type="text"
+                            label="Profesi atau Pekerjaan anda"
+                            placeholder="contoh: Promotor, Musisi, IT, Programmer etc"
+                            value={item.is_profession}
+                            onChange={(e) => handleInput(index, "is_profession", e.target.value)}
+                          />
+                        )}
+                        {detail.is_company == 1 && (
+                          <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
+                        )}
+                        {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
+                        {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />}
                       </div>
                     </div>
                   </div>
@@ -2461,22 +2511,25 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
                         // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                        const { tax, label } = computeTax(detail, subtotalAfterVoucher, adminFee);
+                        const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
                         return (
                           <div className="py-3 px-4 flex justify-between items-center">
-                            <p>Tax ({label})</p>
-                            <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                            <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                            <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>0</Text>}</p>
                           </div>
                         );
                       })()
                     : null}
 
-                  {/* Admin Fee */}
-                  <div className="py-3 px-4 flex justify-between items-center">
-                    <p>Admin Fee</p>
-                    <p className="font-semibold">{adminFee > 0 ? <NumberFormatter value={adminFee} /> : <Text>Free</Text>}</p>
-                  </div>
+                  {adminFee > 0 && (
+                    <div className="py-3 px-4 flex justify-between items-center">
+                      <p>Biaya Admin</p>
+                      <p className="font-semibold">
+                        <NumberFormatter value={adminFee} />
+                      </p>
+                    </div>
+                  )}
 
                   {/* Total */}
                   <div className="py-3 px-4 flex justify-between items-center">

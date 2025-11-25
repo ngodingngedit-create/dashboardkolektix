@@ -1,5 +1,5 @@
-import React from 'react';
-import { Select, SelectItem } from '@nextui-org/react';
+import React from "react";
+import { Select, SelectItem } from "@nextui-org/react";
 
 interface OptionProps {
   label: string;
@@ -11,7 +11,7 @@ interface InputSelectProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
-  size?: 'sm' | 'lg';
+  size?: "sm" | "lg";
   options: OptionProps[];
   onChange?: (e: any) => void;
   multiple?: boolean;
@@ -33,15 +33,16 @@ export default function InputSelect({
           {required && <span className="text-danger"> *</span>}
         </p>
       )}
+
       <Select
         size="sm"
         onChange={onChange}
-        selectionMode={multiple ? 'multiple' : 'single'} // Added selection mode
+        selectionMode={multiple ? "multiple" : "single"} // Added selection mode
         defaultSelectedKeys={options[0].key}
         placeholder={placeholder}
         classNames={{
-          mainWrapper: 'border shadow-sm border-primary-light-200 bg-white rounded-lg',
-          trigger: 'bg-white rounded-lg hover:bg-primary-light h-9',
+          mainWrapper: "border shadow-sm border-primary-light-200 bg-white rounded-lg",
+          trigger: "bg-white rounded-lg hover:bg-primary-light h-9",
         }}
       >
         {options.map((item) => (

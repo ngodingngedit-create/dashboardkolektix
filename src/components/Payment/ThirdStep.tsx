@@ -439,8 +439,8 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   const subtotal = baseAmount - voucherDiscount;
 
   // PPN 10% berdasarkan subtotal (seperti yang kamu minta)
-  const taxPercent = 0.1;
-  const taxAmount = subtotal > 0 ? subtotal * taxPercent : 0;
+  const ppnValue = Number(transactionData.has_event.ppn);
+  const taxAmount = subtotal > 0 ? subtotal * (ppnValue / 100) : 0;
 
   // Total pembayaran sesuai formula: subtotal + ticket fee + ppn
   const grandtotal = subtotal + totalTicketFee + taxAmount;

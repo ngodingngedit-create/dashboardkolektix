@@ -8,7 +8,6 @@ import React from "react";
 import { TicketProps, TicketPropsInputRequest } from "@/utils/globalInterface";
 import fetch from "@/utils/fetch";
 import { Box, Checkbox, Flex, Switch, Modal as ModalM, Stack, Button, Card, TextInput, UnstyledButton, Text, Popover, Overlay, Portal, HoverCard } from "@mantine/core";
-import Seatmap from "@/components/Seatmap";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { isNotEmpty, useForm } from "@mantine/form";
 import TicketContainer from "@/components/TicketContainer";
@@ -29,24 +28,12 @@ interface ModalProps {
   setIdx: (idx?: number) => void;
   eventId?: number;
   addTicketModal?: boolean;
-  eventStartTime?: string; // ✅ Tambah ini
-  eventEndTime?: string; // ✅ Tambah ini
+  eventStartTime?: string;
+  eventEndTime?: string;
+  onSuccess?(): void;
 }
 
-export default function ModalCreateTicket({
-  isOpen,
-  setIsOpen,
-  ticket,
-  setTicket,
-  endDate,
-  data,
-  idx,
-  setIdx,
-  eventId,
-  addTicketModal,
-  eventStartTime, // ✅ Destructure props
-  eventEndTime, // ✅ Destructure props
-}: ModalProps) {
+export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, endDate, data, idx, setIdx, eventId, addTicketModal, eventStartTime, eventEndTime, onSuccess }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: "",
     ticket_category_id: 1,
@@ -83,42 +70,45 @@ export default function ModalCreateTicket({
     },
   });
   const [step, setStep] = useState(0);
-  const [isFullscreenSeatmap, setIsFullscreenSeatmap] = useState(false);
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
-  const [addSeatMap, setAddSeatMap] = useState(false);
-  const [onSelectSeat, setOnSelectSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
-  const { seatmapData } = useContext(Context);
   const router = useRouter();
   const { slug } = router.query;
 
   useEffect(() => {
-    setAddSeatMap(!!eventId);
-  }, [eventId]);
-
-  useEffect(() => {
-    if (addTicketModal) {
-      setOpenForm(null);
-      //setAddSeatMap(false);
+    if (isOpen && typeof idx === "number") {
+      // Jika modal dibuka dengan idx (mode edit), langsung buka form
+      setOpenForm(idx);
     }
-  }, [addTicketModal]);
+  }, [isOpen, idx]);
 
   useEffect(() => {
     if (typeof openForm == "number") {
+      console.log("Setting form with ticket data:", ticket[openForm]);
       setForm(ticket[openForm]);
     } else {
       setForm(defaultForm);
     }
   }, [openForm]);
 
+  // ATAU bisa langsung set dari data prop:
   useEffect(() => {
-    if (!!slug) setAddSeatMap(true);
-  }, [slug]);
+    if (isOpen && data && data.id) {
+      console.log("Setting form from data prop:", data);
+      setForm({ ...data });
+    }
+  }, [isOpen, data]);
 
   const submitTicket = async () => {
-    console.log("submit ticket", form);
+    console.log("=== SUBMIT TICKET ===");
+    console.log("idx:", idx);
+    console.log("form.id:", form.id);
+    console.log("eventId:", eventId);
+    console.log("form data:", form);
+
     if (eventId == undefined) {
+      // Mode create event (belum ada eventId di database)
       let arr = [...ticket];
       if (typeof idx === "number") {
         arr[idx] = form;
@@ -129,33 +119,70 @@ export default function ModalCreateTicket({
       setIsOpen(false);
       setIdx(undefined);
     } else {
-      console.log("*******************************************************");
-      console.log("submit ticket", form);
-      await fetch<TicketPropsInputRequest, any>({
-        url: `event-ticket/${idx}`,
-        method: "PUT",
-        data: {
-          ...form,
-          event_id: String(eventId),
-        } as TicketPropsInputRequest,
-        success: () => {
-          let arr = [...ticket];
-          if (typeof idx === "number") {
-            arr[idx] = form;
-          } else {
-            arr.push(form);
-          }
-          setTicket(arr);
-          setIsOpen(false);
-          setIdx(undefined);
+      // Mode edit event (sudah ada eventId di database)
 
-          notifications.show({
-            message: "Berhasil Update Tiket",
-            color: "green",
-          });
-        },
-        error: () => {},
-      });
+      // PENTING: Cek apakah ini UPDATE (ada id) atau CREATE (tidak ada id)
+      if (form.id) {
+        // UPDATE MODE - Edit ticket yang sudah ada
+        console.log(">>> MODE: UPDATE - Mengupdate ticket id:", form.id);
+
+        await fetch<TicketPropsInputRequest, any>({
+          url: `event-ticket/${form.id}`,
+          method: "PUT",
+          data: {
+            ...form,
+            event_id: String(eventId),
+          } as TicketPropsInputRequest,
+          success: () => {
+            console.log("✓ Update berhasil");
+            setIsOpen(false);
+            setIdx(undefined);
+            setOpenForm(undefined);
+
+            notifications.show({
+              message: "Berhasil Update Tiket",
+              color: "green",
+            });
+          },
+          error: (err) => {
+            console.error("✗ Error update ticket:", err);
+            notifications.show({
+              message: "Gagal Update Tiket",
+              color: "red",
+            });
+          },
+        });
+      } else {
+        // CREATE MODE - Tambah ticket baru
+        console.log(">>> MODE: CREATE - Membuat ticket baru");
+
+        await fetch<TicketPropsInputRequest, any>({
+          url: `event-ticket`,
+          method: "POST",
+          data: {
+            ...form,
+            event_id: String(eventId),
+          } as TicketPropsInputRequest,
+          success: (response) => {
+            console.log("✓ Create berhasil, id:", response.data?.id);
+            setIsOpen(false);
+            setIdx(undefined);
+            setOpenForm(undefined);
+
+            notifications.show({
+              message: "Berhasil Tambah Tiket",
+              color: "green",
+            });
+          },
+          error: (err) => {
+            console.error("✗ Error create ticket:", err);
+            notifications.show({
+              message: "Gagal Tambah Tiket",
+              color: "red",
+            });
+          },
+        });
+      }
     }
   };
 
@@ -163,14 +190,18 @@ export default function ModalCreateTicket({
     setForm({ ...data });
   }, [data]);
 
-  const openSeatMap = useMemo(() => {
-    return addSeatMap; // && (ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated'));
-  }, [ticket, form, addSeatMap]);
-
   const handleSaveTicket = () => {
-    // if (validate().hasErrors) return;
-    console.log("handleSaveTicket", form);
+    console.log("=== HANDLE SAVE TICKET ===");
+    console.log("openForm:", openForm);
+    console.log("eventId:", eventId);
 
+    // Jika ada eventId, langsung submit ke database
+    if (eventId) {
+      submitTicket();
+      return;
+    }
+
+    // Jika belum ada eventId, simpan ke state saja
     if (typeof openForm === "number") {
       setTicket(ticket.map((e, i) => (i == openForm ? form : e)));
     } else {
@@ -178,43 +209,6 @@ export default function ModalCreateTicket({
     }
     setOpenForm(undefined);
   };
-
-  const handleSelectSeat = (data?: string[]) => {
-    setTicket(ticket.map((e, i) => (i == onSelectSeat ? { ...e, available_seat: data } : e)));
-  };
-
-  const handleDeleteTicket = (index: number) => {
-    modals.openConfirmModal({
-      title: "Hapus Tiket",
-      children: "Apakah kamu yakin ingin menghapus tiket ini?",
-      labels: { confirm: "Hapus", cancel: "Batal" },
-      centered: true,
-      confirmProps: { color: "red" },
-      onConfirm: () => {
-        setTicket(ticket.filter((e, i) => i != index));
-        setOpenForm(undefined);
-      },
-    });
-  };
-
-  const unavailSeat = useMemo(() => {
-    return onSelectSeat === undefined
-      ? []
-      : ticket
-          .map((e) => e.available_seat)
-          .reduce<string[]>((c, n) => [...c, ...(n ?? [])], [])
-          .filter((e) => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
-  }, [onSelectSeat]);
-
-  const allSeat = useMemo(() => {
-    const result = ticket.map((e) => e.available_seat).reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
-
-    if (hoveredTicket !== undefined) {
-      return result.filter((e) => ticket[hoveredTicket].available_seat?.includes(e));
-    }
-
-    return result;
-  }, [ticket, onSelectSeat, hoveredTicket]);
 
   useEffect(() => {
     console.log("FORM", form);
@@ -228,13 +222,6 @@ export default function ModalCreateTicket({
             <HoverCard.Target>
               <Text component="span">Kelola Tiket</Text>
             </HoverCard.Target>
-            {/* <HoverCard.Dropdown maw={400}>
-              {ticket.map((e, i) => (
-                <Text size="xs" key={i}>
-                  {JSON.stringify(e).replaceAll(',', ', ')}
-                </Text>
-              ))}
-            </HoverCard.Dropdown> */}
           </HoverCard>
         }
         opened={isOpen}
@@ -243,20 +230,17 @@ export default function ModalCreateTicket({
           setIdx(undefined);
           setIsOpen(false);
         }}
-        size={openSeatMap ? "xl" : undefined}
-        fullScreen={openSeatMap}
+        size="lg"
         className="text-dark"
       >
-        {/* {JSON.stringify(errors)} */}
-        <Stack gap={10} h={addSeatMap ? "calc(100vh - 100px)" : "calc(100vh - 160px)"} pb={10}>
+        <Stack gap={10} h="calc(100vh - 160px)" pb={10}>
           <Flex gap={20} h="100%">
-            <Card p={10} display={openForm === undefined && ticket.length > 0 && !isFullscreenSeatmap ? undefined : "none"} className={`w-full h-full ${openSeatMap ? "max-w-[370px]" : ""}`}>
+            <Card p={10} display="none" className="w-full h-full">
               <Stack gap={15} h="100%">
                 <TextInput leftSection={<Icon icon="uiw:search" />} placeholder="Cari Tiket" />
 
-                <Stack gap={10} className={`overflow-y-auto h-full `}>
+                <Stack gap={10} className="overflow-y-auto h-full">
                   {ticket.map((e, i) => (
-                    // onClick={() => setSelected(selected == i ? undefined : i)}
                     <UnstyledButton key={i}>
                       <Box onMouseEnter={() => setHoveredTicket(i)} onMouseLeave={() => setHoveredTicket(undefined)} className={`${selected == i ? "!border !border-primary-base rounded-lg" : ""}`}>
                         <TicketContainer
@@ -272,35 +256,20 @@ export default function ModalCreateTicket({
                             setIdx(e?.id);
                             setOpenForm(i);
                           }}
-                          onDelete={() => handleDeleteTicket(i)}
-                          onSelectSeatButton={e.ticket_category == "Seated" && !eventId && onSelectSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
-                          seatColor={e.seat_color}
-                          onSelectSeatColor={onSelectSeat == i ? (e) => setTicket(ticket?.map((z, _i) => (i == _i ? { ...z, seat_color: e } : z))) : undefined}
+                          //   onDelete={() => handleDeleteTicket(i)}
                         />
                       </Box>
                     </UnstyledButton>
                   ))}
                 </Stack>
 
-                <Button display={!eventId ? undefined : "none"} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button display={!eventId ? undefined : "none"} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className="shrink-0">
                   Tambah Tiket
                 </Button>
-
-                <Guide text="Buat Seatmap untuk mengatur posisi seat" guidekey="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
-                  <Button w="100%" display={addSeatMap ? "none" : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
-                    Buat Seatmap
-                  </Button>
-                </Guide>
               </Stack>
             </Card>
 
-            <div className={`${openForm !== undefined || ticket.length == 0 ? (isFullscreenSeatmap ? "hiddem" : "flex") : "hidden"} h-full w-full ${openSeatMap ? "max-w-[370px]" : ""} overflow-auto flex-col gap-2 pb-4`}>
-              <Flex display={ticket.length > 0 ? undefined : "none"}>
-                <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
-                  Kembali
-                </Button>
-              </Flex>
-
+            <div className="flex h-full w-full overflow-auto flex-col gap-2 pb-4">
               {step === 0 && (
                 <>
                   <RadioGroup
@@ -368,14 +337,6 @@ export default function ModalCreateTicket({
                       </Radio>
                     </div>
                   </RadioGroup>
-
-                  {/* <Switch 
-                    label="Seated"
-                    mt={10}
-                    mb={15}
-                    checked={openSeatMap}
-                    onChange={e => setForm({ ...form, ticket_category: e.target.checked ? "Seated" : "Festival"  })}
-                  /> */}
 
                   <InputField error={Boolean(errors["name"])} type="text" label="Nama Tiket" placeholder="Nama Tiket" required fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
 
@@ -470,63 +431,21 @@ export default function ModalCreateTicket({
                   />
                 </>
               )}
-              {/* {step === 1 && (
-                <div className='flex flex-col gap-3'>
-                  <div className='grid grid-cols-2 gap-5'>
-                    <InputField type='date' label='Tanggal Mulai' required />
-                    <InputField type='time' label='Jam Mulai' required />
-                  </div>
-                  <div className='grid grid-cols-2 gap-5'>
-                    <InputField type='date' label='Tanggal Berakhir' required />
-                    <InputField type='time' label='Jam Berakhir' required />
-                  </div>
-                </div>
-              )} */}
 
-              <Flex justify="end" py={10} className={`sticky bottom-[-15px] bg-white`}>
+              <Flex justify="end" py={10} className="sticky bottom-[-15px] bg-white">
                 <button
                   className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2"
                   onClick={() => {
                     handleSaveTicket();
-                    !!eventId && submitTicket();
-                    // step === 0 ? submitTicket() : setStep(1);
+                    if (eventId) {
+                      setTimeout(() => window.location.reload(), 1500);
+                    }
                   }}
                 >
                   {openForm === null ? "Tambah Tiket" : "Simpan Tiket"}
                 </button>
               </Flex>
             </div>
-
-            <Box className={`flex-grow`} display={openSeatMap ? undefined : "none"}>
-              <Seatmap
-                fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
-                unavailSeat={unavailSeat}
-                selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
-                onSelect={handleSelectSeat}
-                onSelectAll={handleSelectSeat}
-                onEdit={onSelectSeat !== undefined}
-                onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
-              />
-            </Box>
-          </Flex>
-
-          <Flex gap={15} display={ticket.length > 0 && addSeatMap ? undefined : "none"} ml="auto">
-            <Button className={`shrink-0 h-fit`} w="fit-content" size="md" variant="outline" rightSection={<Icon icon="uiw:download" />}>
-              Download Seatmap
-            </Button>
-            <Button
-              className={`shrink-0 h-fit`}
-              w="fit-content"
-              size="md"
-              onClick={() => {
-                setIdx(undefined);
-                setIsOpen(false);
-              }}
-              // rightSection={<Icon icon="uiw:check" />}
-              display={ticket.length > 0 && addSeatMap ? undefined : "none"}
-            >
-              Simpan Tiket
-            </Button>
           </Flex>
         </Stack>
       </ModalM>

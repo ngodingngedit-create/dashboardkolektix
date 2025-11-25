@@ -38,7 +38,7 @@ export default function TopUpModal({ isOpen, setIsOpen }: TopUpProps) {
   // Fungsi untuk mengambil data bank
   const getData = () => {
     if (user?.id) {
-      Get(`/bank-by-user/${user?.id}`, {})
+      Get(`bank-by-user/${user?.id}`, {})
         .then((res: any) => {
           setBanks(res.data);
           // Set default bank ke yang pertama

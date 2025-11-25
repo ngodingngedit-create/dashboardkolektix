@@ -895,6 +895,7 @@ import fetch from "@/utils/fetch";
 import { useListState } from "@mantine/hooks";
 import moment from "moment";
 import { notifications } from "@mantine/notifications";
+import InputSelect from "../Input/Select";
 
 interface FormTicket {
   event_id: number;
@@ -950,6 +951,42 @@ interface StepPaymentProps {
   onCancelVoucher?: (index: number) => void;
 }
 
+type Detail = { ppn?: any; ppn_type?: any; [k: string]: any };
+
+const normalizeDetail = (detail: Detail) => {
+  const normalized: Detail = { ...detail };
+
+  // normalisasi ppn_type: treat null/undefined/""/"null" -> "percentage"
+  const rawType = detail?.ppn_type;
+  if (rawType === null || rawType === undefined || rawType === "" || rawType === "null") {
+    normalized.ppn_type = "percentage";
+  } else {
+    normalized.ppn_type = String(rawType);
+  }
+
+  // normalisasi ppn:
+  // - if null/undefined/""/"null" -> default 10
+  // - if numeric string -> Number(parsed)
+  // - if 0 -> keep 0
+  const rawPpn = detail?.ppn;
+  if (rawPpn === null || rawPpn === undefined || rawPpn === "" || rawPpn === "null") {
+    normalized.ppn = 0;
+  } else {
+    const n = Number(rawPpn);
+    normalized.ppn = Number.isNaN(n) ? 0 : n;
+  }
+
+  const rawAdminFee = detail?.admin_fee;
+  if (rawAdminFee === null || rawAdminFee === undefined || rawAdminFee === "" || rawAdminFee === "null") {
+    normalized.admin_fee = 7000; // default admin fee PER TICKET
+  } else {
+    const af = Number(rawAdminFee);
+    normalized.admin_fee = Number.isNaN(af) ? 7000 : af;
+  }
+
+  return normalized;
+};
+
 const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>([]);
@@ -960,22 +997,44 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
   const userData = useLoggedUser();
   const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
 
+  const adminFee = totalTicketFee;
+
+  // const computeTax = (detail: any, subtotalAfterVoucher: number) => {
+  //   // const ppnType = detail?.ppn_type || "percentage";
+  //   // const raw = detail?.ppn != null ? Number(detail?.ppn) || 10 : 10; //perubahan default ppn 10%
+
+  //   const ppnType = detail?.ppn_type ?? "percentage";
+  //   const raw = detail?.ppn ?? 10; // default 10%
+
+  //   if (ppnType === "percentage") {
+  //     const taxBase = subtotalAfterVoucher;
+  //     const tax = Math.round(taxBase * (raw / 100));
+  //     return { tax, label: `${raw}%` };
+  //   }
+
+  //   if (ppnType === "nominal") {
+  //     const tax = Math.round(raw);
+  //     return { tax, label: `Rp ${tax.toLocaleString("id-ID")}` };
+  //   }
+
+  //   return { tax: 0, label: "Free" };
+  // };
+
   const computeTax = (detail: any, subtotalAfterVoucher: number) => {
-    const ppnType = detail?.ppn_type || "percentage";
-    const raw = Number(detail?.ppn) || 0;
+    const d = normalizeDetail(detail);
+
+    const ppnType = d.ppn_type;
+    const ppnValue = Number(d.ppn);
 
     if (ppnType === "percentage") {
-      const taxBase = subtotalAfterVoucher;
-      const tax = Math.round(taxBase * (raw / 100));
-      return { tax, label: `${raw}%` };
+      const tax = Math.round(subtotalAfterVoucher * (ppnValue / 100));
+      return { tax, label: `${ppnValue}%`, ppnType };
+    } else if (ppnType === "nominal") {
+      const tax = Math.round(ppnValue);
+      return { tax, label: "", ppnType };
     }
 
-    if (ppnType === "nominal") {
-      const tax = Math.round(raw);
-      return { tax, label: `Rp ${tax.toLocaleString("id-ID")}` };
-    }
-
-    return { tax: 0, label: "Free" };
+    return { tax: 0, label: "0", ppnType };
   };
 
   useEffect(() => {
@@ -1202,7 +1261,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             <p className="text-xs text-grey">{totalCount} Tiket</p>
           </div>
         </div>
-
         <Card withBorder radius={8} p="xs" className="mb-2 sm:mb-3">
           <Stack gap="xs">
             <Flex gap={4} align="center">
@@ -1243,7 +1301,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </Button>
           </Stack>
         </Card>
-
         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm mb-2 sm:mb-3">
           <div className="border-b border-b-primary-light-200 p-1.5 sm:p-2">
             <p className="font-semibold text-xs sm:text-sm">Ringkasan</p>
@@ -1298,37 +1355,44 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
                 // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                const { tax, label } = computeTax(detail, subtotalAfterVoucher);
+                const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
+
+                if (tax <= 0) return null;
 
                 return (
                   <div className="py-3 px-4 flex justify-between items-center">
-                    <p>Tax ({label})</p>
-                    <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                    <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                    <p className="font-semibold">
+                      <NumberFormatter value={tax} />
+                    </p>
                   </div>
                 );
               })()
             : null}
 
-          <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm">
-            <p>Admin</p>
-            <p className="font-semibold">{totalTicketFee > 0 ? <NumberFormatter value={totalTicketFee} /> : "Gratis"}</p>
-          </div>
+          {adminFee > 0 && (
+            <div className="py-3 px-4 flex justify-between items-center">
+              <p>{t("adminFee")}</p>
+              <p className="font-semibold">
+                <NumberFormatter value={adminFee} />
+              </p>
+            </div>
+          )}
 
           <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm border-t border-primary-light-200">
-            <p>Total Pembayaran</p>
+            <p>{t("totalPayment")}</p>
             <p className="font-semibold">
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                 const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
-                const tax = detail.ppn ? Math.round((subtotalAfterVoucher + totalTicketFee) * (detail.ppn / 100)) : 0;
+                const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                 const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
                 return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
               })()}
             </p>
           </div>
         </div>
-
-        {form.map((item, index) => {
+        {/* {form.map((item, index) => {
           let ticketForOwner = null;
           let currentIndex = 0;
 
@@ -1344,6 +1408,42 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               currentIndex++;
             }
             if (ticketForOwner) break;
+          } */}
+        {form.map((item, index) => {
+          let ticketForOwner: FormTicket | null = null;
+          let currentIndex = 0;
+
+          // Cari tiket yang sesuai dengan form[index]
+          // form[0] = pemesan → skip
+          // form[1] = tiket pertama, form[2] = tiket kedua, dst.
+          if (index === 0) {
+            // pemesan tidak punya tiket sendiri
+          } else {
+            for (const ticketItem of ticket) {
+              const seats = Array.isArray(ticketItem.seat_number)
+                ? ticketItem.seat_number
+                : typeof ticketItem.seat_number === "string" && ticketItem.seat_number.trim() !== ""
+                ? JSON.parse(ticketItem.seat_number)
+                : Array.from({ length: ticketItem.qty_ticket }, (_, i) => undefined);
+
+              for (let i = 0; i < seats.length; i++) {
+                if (currentIndex === index - 1) {
+                  // index - 1 karena form[0] = pemesan
+                  ticketForOwner = {
+                    ...ticketItem,
+                    seat_number: seats[i] || undefined,
+                  };
+
+                  // INI YANG PALING PENTING: simpan seat_number ke form!
+                  if (seats[i] && item.seat_number !== seats[i]) {
+                    handleInput(index, "seat_number", seats[i] as string);
+                  }
+                  break;
+                }
+                currentIndex++;
+              }
+              if (ticketForOwner) break;
+            }
           }
 
           if (!ticketForOwner?.seat_number && !!item.seat_number) {
@@ -1376,6 +1476,20 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                   <div className={`${collapse[index] ? "visible delay-300 duration-300" : "invisible"} transition-transform space-y-1.5 sm:space-y-2`}>
                     {detail.is_noidentity ? (
                       <Field className="mb-1.5 sm:mb-2">
+                        <div>
+                          <InputSelect
+                            label="Identitas"
+                            required
+                            onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                            options={[
+                              { key: "1", label: "KTP" },
+                              { key: "2", label: "SIM" },
+                              { key: "3", label: "Kartu Pelajar" },
+                              { key: "4", label: "Passport" },
+                              { key: "5", label: "KTM" },
+                            ]}
+                          />
+                        </div>
                         <Label className="text-xs sm:text-sm font-base text-grey">Nomor Induk KTP</Label>
                         <Input
                           type="text"
@@ -1531,7 +1645,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </div>
           );
         })}
-
         {/* BIG spacer supaya konten mobile tidak tertutup fixed bottom bar.
             Kalau fixed footer tingginya berbeda, ubah nilai height di bawah. */}
         <div className="h-40 md:hidden" />
@@ -1589,9 +1702,22 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                       <div className={`${collapse[index] ? "visible" : "invisible"} flex flex-col gap-3`}>
                         {detail.is_noidentity ? (
                           <div className="grid grid-cols-4 gap-3">
-                            <div>{/* identity selector removed in original first step; keep placeholder if needed */}</div>
+                            <div>
+                              <InputSelect
+                                label="Identitas"
+                                required
+                                onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                                options={[
+                                  { key: "1", label: "KTP" },
+                                  { key: "2", label: "SIM" },
+                                  { key: "3", label: "Kartu Pelajar" },
+                                  { key: "4", label: "Passport" },
+                                  { key: "5", label: "KTM" },
+                                ]}
+                              />
+                            </div>
                             <div className="col-span-3">
-                              <InputField fullWidth type="number" label={t("ktpNumber")} placeholder={`${t("example")}: 123456789012345`} value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} />
+                              <InputField fullWidth type="number" label="Nomor Identitas" placeholder={`${t("example")}: 123456789012345`} value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} />
                               {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                             </div>
                           </div>
@@ -1750,6 +1876,21 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 </div>
               )}
 
+              {(() => {
+                const subtotalTiket = totalSubtotalPrice;
+                const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+
+                return (
+                  <div className="py-3 px-4 flex justify-between items-center">
+                    <p>Subtotal</p>
+                    <p className="font-semibold">
+                      <NumberFormatter value={subtotalAfterVoucher} />
+                    </p>
+                  </div>
+                );
+              })()}
+
               {/* TAX */}
               {detail?.ppn !== undefined
                 ? (() => {
@@ -1758,21 +1899,29 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                     const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
                     // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                    const { tax, label } = computeTax(detail, subtotalAfterVoucher);
+                    const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
+
+                    if (tax <= 0) return null;
 
                     return (
                       <div className="py-3 px-4 flex justify-between items-center">
-                        <p>Tax ({label})</p>
-                        <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
+                        <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                        <p className="font-semibold">
+                          <NumberFormatter value={tax} />
+                        </p>
                       </div>
                     );
                   })()
                 : null}
 
-              <div className="py-3 px-4 flex justify-between items-center">
-                <p>{t("adminFee")}</p>
-                <p className="font-semibold">{totalTicketFee > 0 ? <NumberFormatter value={totalTicketFee} /> : <Text>Free</Text>}</p>
-              </div>
+              {adminFee > 0 && (
+                <div className="py-3 px-4 flex justify-between items-center">
+                  <p>{t("adminFee")}</p>
+                  <p className="font-semibold">
+                    <NumberFormatter value={adminFee} />
+                  </p>
+                </div>
+              )}
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>{t("totalPayment")}</p>

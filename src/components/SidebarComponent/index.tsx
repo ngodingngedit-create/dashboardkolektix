@@ -44,6 +44,23 @@ import { useClickOutside } from "@mantine/hooks";
 import { Flex, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
+interface EventData {
+  creator_id: string;
+  event_name: string;
+  slug: string;
+  total_admin_fee: number;
+  total_buy: number;
+  total_offline: number;
+  total_online: number;
+  total_paid: number;
+  total_price_sell: number;
+  total_price_sell_offline: number;
+  total_price_sell_online: number;
+  total_ticket: number;
+  total_unpaid: number;
+  total_views: number;
+}
+
 type SidebarData = {
   id: number;
   name: string;
@@ -232,10 +249,10 @@ const sidebarData: SidebarData = [
   //     },
   //   ],
   // },
-  // { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat", role: "Pembeli" },
-  // { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator" },
-  // { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
-  // { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
+  { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat", role: "Pembeli" },
+  { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator" },
+  { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
+  { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
 ];
 
 const SidebarComponent = ({ children }: { children: ReactNode }) => {
@@ -258,6 +275,29 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const [withdrawData, setWithdrawData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
+  const [eventData, setEventData] = useState<EventData | null>(null);
+
+  useEffect(() => {
+    if (typeof slug === "string") {
+      getEventData();
+    }
+  }, [slug]);
+
+  const getEventData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      if (response && response.data) {
+        setEventData(response.data);
+        console.log(response.data, "tes uhuy");
+      }
+    } catch (error) {
+      console.error("Error fetching event data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const outsideClick = useClickOutside(() => {
     if (window?.innerWidth < 768) {
       setCollapse(false);
@@ -288,23 +328,12 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log("=== DEBUG START ===");
-    console.log("1. users dari useLoggedUser:", users);
-    console.log("2. role:", role);
-    console.log("3. Cookie check:");
-
     const userCookie = Cookies.get("user");
     const userDataCookie = Cookies.get("user_data");
-
-    console.log("   - Cookie 'user':", userCookie ? "EXISTS" : "NOT FOUND");
-    console.log("   - Cookie 'user_data':", userDataCookie ? "EXISTS" : "NOT FOUND");
 
     if (userCookie) {
       try {
         const parsed = JSON.parse(userCookie);
-        console.log("4. Parsed from 'user' cookie:", parsed);
-        console.log("5. has_creator:", parsed?.has_creator);
-        console.log("6. permissions:", parsed?.permissions);
         setUser(parsed);
       } catch (err) {
         console.error("❌ Parse error:", err);
@@ -312,16 +341,11 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     } else if (userDataCookie) {
       try {
         const parsed = JSON.parse(userDataCookie);
-        console.log("4. Parsed from 'user_data' cookie:", parsed);
-        console.log("5. has_creator:", parsed?.has_creator);
-        console.log("6. permissions:", parsed?.permissions);
         setUser(parsed);
       } catch (err) {
         console.error("❌ Parse error:", err);
       }
     }
-
-    console.log("=== DEBUG END ===");
   }, [users, role]);
 
   const filteredSidebarData = useMemo(() => {
@@ -342,7 +366,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const getWithdrawData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${config.wsUrl}api/withdraw`);
+      const response = await axios.get(`${config.wsUrl}withdraw`);
       const result = response.data;
 
       if (Array.isArray(result.data)) {
@@ -479,14 +503,15 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <Icon icon="hugeicons:money-03" />
                     <p className="text-sm">Saldo</p>
                   </Flex>
-                  <p className="text-sm ">Rp.0</p>
+                  {/* <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p> */}
+                  <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p>
                 </div>
                 <div className="flex justify-between">
                   <Flex align="center" gap={7}>
-                    <Icon icon="ph:money-wavy" />
-                    <p className="text-sm">Kredit</p>
+                    {/* <Icon icon="ph:money-wavy" />
+                    <p className="text-sm">Kredit</p> */}
                   </Flex>
-                  <p className="text-sm ">Rp.0</p>
+                  {/* <p className="text-sm ">Rp.0</p> */}
                 </div>
                 <div className="items-center">
                   <Link href={"/dashboard/withdraw"}>

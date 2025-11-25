@@ -620,7 +620,19 @@ const CreateEvent = () => {
       <ModalTicket isOpen={showTicket} setIsOpen={setShowTicket} form={form} setForm={setForm} />
       <ModalLocation isOpen={showLocation} setIsOpen={setShowLocation} form={form} setForm={setForm} />
       <Context.Provider value={{ seatmapData, setSeatmapData, ticket }}>
-        <ModalCreateTicket isOpen={addTicket} endDate={form.end_date} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} data={editTicket} setIdx={setIdxTicket} idx={idxTicket} addTicketModal={addTicketModal} />
+        <ModalCreateTicket
+          isOpen={addTicket}
+          endDate={form.end_date}
+          setIsOpen={showAddTicket}
+          ticket={ticket}
+          setTicket={setTicket}
+          data={editTicket}
+          setIdx={setIdxTicket}
+          idx={idxTicket}
+          addTicketModal={addTicketModal}
+          eventStartTime={form.start_time}
+          eventEndTime={form.end_time}
+        />
       </Context.Provider>
     </>
   );

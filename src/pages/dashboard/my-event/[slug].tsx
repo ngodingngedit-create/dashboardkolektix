@@ -16,6 +16,7 @@ import { Get } from "@/utils/REST";
 import Button from "@/components/Button";
 import TicketContainer from "@/components/TicketContainer";
 import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket";
+import ModalEditTicket from "@/components/EventCreator/Modal/ModalEditTicket";
 import DescriptionBlock from "@/components/Detail/DescriptionBlock";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faEye, faPaperPlane, faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -85,7 +86,8 @@ const MyEventDetail = () => {
   const { slug } = router.query;
   const [data, setData] = useState<EventProps>();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
-  const [editTicket, setEditTicket] = useState<EventTicket>(defaultForm);
+  const [editTicketData, setEditTicketData] = useState<EventTicket>(defaultForm);
+  const [isEditTicketModalOpen, setIsEditTicketModalOpen] = useState<boolean>(false);
   const [addTicket, showAddTicket] = useState<boolean>(false);
   const [idxTicket, setIdxTicket] = useState<number>();
   const [loading, setLoading] = useState(false);
@@ -99,6 +101,7 @@ const MyEventDetail = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [transactionFilter, setTransactionFilter] = useState<"all" | "online" | "offline">("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -407,8 +410,8 @@ const MyEventDetail = () => {
   const onEditTicket = (data: EventTicket, idx: number) => {
     console.log("Editing ticket:", data, idx);
     setIdxTicket(idx);
-    setEditTicket(data);
-    showAddTicket(true);
+    setEditTicketData(data); // Ubah dari setEditTicket
+    setIsEditTicketModalOpen(true); // Ubah dari setShowEditTicket
   };
 
   const onAddTicket = () => {
@@ -730,7 +733,7 @@ const MyEventDetail = () => {
                 <Tab title="Tiket">
                   <div className="flex justify-between items-center px-3 py-2">
                     <h6 className="text-lg font-semibold">Tiket</h6>
-                    <Button label="Tambah Tiket" color="primary" onClick={onAddTicket} className="w-full md:w-auto" />
+                    {/* <Button label="Tambah Tiket" color="primary" onClick={onAddTicket} className="w-full md:w-auto" /> */}
                   </div>
                   <div className="px-3">
                     {ticket.length > 0 &&
@@ -955,13 +958,34 @@ const MyEventDetail = () => {
           </div>
         </div>
       </div>
-      <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
+      <DetailModal item={selectedItem} ticket={selectedTicket} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
       <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
-        <ModalCreateTicket isOpen={addTicket} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} data={editTicket} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
+        <ModalCreateTicket
+          isOpen={addTicket}
+          setIsOpen={showAddTicket}
+          ticket={ticket}
+          setTicket={setTicket}
+          data={editTicketData} // Ubah dari editTicket
+          setIdx={setIdxTicket}
+          idx={idxTicket}
+          eventId={data.id}
+          endDate={data.end_date}
+        />
+        <ModalEditTicket
+          isOpen={isEditTicketModalOpen} // Ubah dari editTicket (yang sebelumnya salah)
+          setIsOpen={setIsEditTicketModalOpen} // Ubah dari setShowEditTicket
+          ticket={ticket}
+          setTicket={setTicket}
+          data={editTicketData} // Ubah dari editTicket
+          setIdx={setIdxTicket}
+          idx={idxTicket}
+          eventId={data.id}
+          endDate={data.end_date}
+        />
       </Context.Provider>
     </>
   ) : (
