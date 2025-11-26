@@ -184,6 +184,7 @@ interface Detail {
   } | null;
   // identities?: Identity[] | null;
   // tickets?: Ticket[] | null;
+  tickets?: Ticket | null;
   // // allow other possible fields
   [k: string]: any;
 }
