@@ -44,21 +44,14 @@ import { useClickOutside } from "@mantine/hooks";
 import { Flex, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
-interface EventData {
-  creator_id: string;
-  event_name: string;
-  slug: string;
-  total_admin_fee: number;
-  total_buy: number;
-  total_offline: number;
-  total_online: number;
-  total_paid: number;
-  total_price_sell: number;
-  total_price_sell_offline: number;
-  total_price_sell_online: number;
-  total_ticket: number;
-  total_unpaid: number;
-  total_views: number;
+interface SaldoData {
+  status: boolean;
+  creator_id?: number;
+  total_event_transaction?: number;
+  total_event_withdraw?: number;
+  event_saldo?: number;
+  total_order_product?: number;
+  total_saldo?: number;
 }
 
 type SidebarData = {
@@ -275,26 +268,49 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const [withdrawData, setWithdrawData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
-  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [saldoData, setSaldoData] = useState<SaldoData | null>(null);
+  const loggedUser = useLoggedUser();
 
   useEffect(() => {
-    if (typeof slug === "string") {
-      getEventData();
-    }
-  }, [slug]);
+    const creatorId = loggedUser?.has_creator?.id;
+    console.log("Creator ID:", creatorId);
 
-  const getEventData = async () => {
+    if (creatorId) {
+      getSaldoData(creatorId);
+    }
+  }, [loggedUser]);
+
+  const getSaldoData = async (creatorId: number) => {
+    console.log("getSaldoData dipanggil"); // Debug: cek apakah function dijalankan
     setLoading(true);
     try {
-      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      const token = Cookies.get("token") || process.env.NEXT_PUBLIC_AUTH_TOKEN;
+      console.log("Token:", token ? "Ada" : "Tidak ada"); // Debug: cek token
+      console.log("URL:", `${config.wsUrl}creator/${creatorId}/saldo`); // Debug: cek URL
+
+      const response = await axios.get(`${config.wsUrl}creator/${creatorId}/saldo`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Response full:", response); // Debug: cek response lengkap
+      console.log("Response status:", response.status); // Debug: cek status code
+
       if (response && response.data) {
-        setEventData(response.data);
-        console.log(response.data, "tes uhuy");
+        setSaldoData(response.data);
+        console.log(response.data, "saldo data");
       }
     } catch (error) {
-      console.error("Error fetching event data:", error);
+      console.error("Error fetching saldo data:", error);
+      // Tambahan debug error
+      if (axios.isAxiosError(error)) {
+        console.error("Response error:", error.response?.data);
+        console.error("Status code:", error.response?.status);
+      }
     } finally {
       setLoading(false);
+      console.log("Loading selesai"); // Debug: cek apakah finally dijalankan
     }
   };
 
@@ -504,7 +520,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <p className="text-sm">Saldo</p>
                   </Flex>
                   {/* <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p> */}
-                  <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p>
+                  <p className="text-sm ">Rp.{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</p>
                 </div>
                 <div className="flex justify-between">
                   <Flex align="center" gap={7}>

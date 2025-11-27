@@ -176,11 +176,14 @@ interface Detail {
     name?: string | null;
     email?: string | null;
   } | null;
+  has_identity?: Identity[] | null;
   has_pemensan?: {
     full_name?: string | null;
     email?: string | null;
     nik?: string | null;
     no_telp?: string | null;
+    seat_number?: string | null;
+    transaction_id?: string | null;
   } | null;
   // identities?: Identity[] | null;
   // tickets?: Ticket[] | null;
@@ -191,6 +194,7 @@ interface Detail {
 
 const DetailModal = ({ item, ticket, isOpen, onClose }: { item: Detail | null; ticket: Ticket | null; isOpen: boolean; onClose: () => void }) => {
   if (!item) return null;
+  if (!ticket) return null;
 
   // Format IDR helper function (handles null/undefined/invalid gracefully)
   const formatIDR = (value?: string | number | null) => {
@@ -228,6 +232,24 @@ const DetailModal = ({ item, ticket, isOpen, onClose }: { item: Detail | null; t
                     </div>
                   </AccordionItem>
 
+                  <AccordionItem key="pemilik-tiket" title="Data Pemilik Tiket">
+                    <div className="mb-4">
+                      <p className="text-grey">Nama Pemilik Tiket</p>
+                      <p className="font-semibold">{item?.has_pemensan?.full_name ?? "-"}</p>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-grey">Jenis Tiket</p>
+                      <p className="font-semibold">{item?.has_pemensan?.transaction_id ?? "-"}</p>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-grey">Seat Number</p>
+                      <p className="font-semibold">{item?.has_identity?.[0]?.seat_number ?? "-"}</p>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-grey">No. Telepon Pemesan</p>
+                      <p className="font-semibold">{item?.has_pemensan?.no_telp ?? "-"}</p>
+                    </div>
+                  </AccordionItem>
                   <AccordionItem key="pemilik-tiket" title="Data Pemilik Tiket">
                     <div className="mb-4">
                       <p className="text-grey">Nama Pemilik Tiket</p>

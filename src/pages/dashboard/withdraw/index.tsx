@@ -192,6 +192,18 @@ import TopUpModal from "@/components/Dashboard/Modal/TopUp";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
 import config from "@/Config";
+import Cookies from "js-cookie";
+import useLoggedUser from "@/utils/useLoggedUser";
+
+interface SaldoData {
+  status: boolean;
+  creator_id?: number;
+  total_event_transaction?: number;
+  total_event_withdraw?: number;
+  event_saldo?: number;
+  total_order_product?: number;
+  total_saldo?: number;
+}
 
 // Definisikan tipe untuk transaksi
 interface Transaction {
@@ -222,6 +234,7 @@ interface EventData {
 const WithDraw = () => {
   const router = useRouter();
   const { slug } = router.query;
+  const { creator_id } = router.query;
 
   // state dan modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -230,30 +243,52 @@ const WithDraw = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // -> PERBAIKAN: eventData sebagai objek tunggal (sesuai pemakaian di JSX)
-  const [eventData, setEventData] = useState<EventData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (typeof slug === "string") {
-      getEventData();
-    }
-    // hanya trig ketika slug berubah
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  const [saldoData, setSaldoData] = useState<SaldoData | null>(null);
 
-  const getEventData = async () => {
+  const loggedUser = useLoggedUser();
+
+  useEffect(() => {
+    const creatorId = loggedUser?.has_creator?.id;
+    console.log("Creator ID:", creatorId);
+
+    if (creatorId) {
+      getSaldoData(creatorId);
+    }
+  }, [loggedUser]);
+
+  const getSaldoData = async (creatorId: number) => {
+    console.log("getSaldoData dipanggil"); // Debug: cek apakah function dijalankan
     setLoading(true);
     try {
-      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      const token = Cookies.get("token") || process.env.NEXT_PUBLIC_AUTH_TOKEN;
+      console.log("Token:", token ? "Ada" : "Tidak ada"); // Debug: cek token
+      console.log("URL:", `${config.wsUrl}creator/${creatorId}/saldo`); // Debug: cek URL
+
+      const response = await axios.get(`${config.wsUrl}creator/${creatorId}/saldo`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Response full:", response); // Debug: cek response lengkap
+      console.log("Response status:", response.status); // Debug: cek status code
+
       if (response && response.data) {
-        // asumsikan response.data adalah objek EventData
-        setEventData(response.data);
-        console.log(response.data, "tes uhuy");
+        setSaldoData(response.data);
+        console.log(response.data, "saldo data");
       }
     } catch (error) {
-      console.error("Error fetching event data:", error);
+      console.error("Error fetching saldo data:", error);
+      // Tambahan debug error
+      if (axios.isAxiosError(error)) {
+        console.error("Response error:", error.response?.data);
+        console.error("Status code:", error.response?.status);
+      }
     } finally {
       setLoading(false);
+      console.log("Loading selesai"); // Debug: cek apakah finally dijalankan
     }
   };
 
@@ -271,7 +306,7 @@ const WithDraw = () => {
             <i className="fas fa-wallet mr-2"></i>
             <span>Saldo</span>
           </div>
-          <div className="text-2xl">Rp{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</div>
+          <div className="text-2xl">Rp{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</div>
         </div>
 
         <div className="flex space-x-4">

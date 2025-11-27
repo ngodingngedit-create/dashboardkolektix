@@ -74,7 +74,25 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
   const [selected, setSelected] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const { slug } = router.query;
+
+  const refetchTickets = async () => {
+    try {
+      const response = await fetch({
+        url: `event-ticket?event_id=${eventId}`,
+        method: "GET",
+      });
+
+      if (response?.data) {
+        // Update ticket list di parent atau state
+        // Sesuaikan dengan struktur data yang digunakan
+        setTicket(response.data); // Atau callback ke parent
+      }
+    } catch (error) {
+      console.error("Error refetching tickets:", error);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && typeof idx === "number") {
@@ -120,68 +138,71 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
       setIdx(undefined);
     } else {
       // Mode edit event (sudah ada eventId di database)
+      setLoading(true); // Tambahkan loading state
 
-      // PENTING: Cek apakah ini UPDATE (ada id) atau CREATE (tidak ada id)
-      if (form.id) {
-        // UPDATE MODE - Edit ticket yang sudah ada
-        console.log(">>> MODE: UPDATE - Mengupdate ticket id:", form.id);
+      try {
+        if (form.id) {
+          // UPDATE MODE - Edit ticket yang sudah ada
+          console.log(">>> MODE: UPDATE - Mengupdate ticket id:", form.id);
 
-        await fetch<TicketPropsInputRequest, any>({
-          url: `event-ticket/${form.id}`,
-          method: "PUT",
-          data: {
-            ...form,
-            event_id: String(eventId),
-          } as TicketPropsInputRequest,
-          success: () => {
-            console.log("✓ Update berhasil");
-            setIsOpen(false);
-            setIdx(undefined);
-            setOpenForm(undefined);
+          const response = await fetch({
+            url: `event-ticket/${form.id}`,
+            method: "PUT",
+            data: {
+              ...form,
+              event_id: String(eventId),
+              available_seat_number: form.available_seat?.join(","),
+              seat_color: form.seat_color ?? "#194e9e",
+            } as TicketPropsInputRequest,
+          });
 
-            notifications.show({
-              message: "Berhasil Update Tiket",
-              color: "green",
-            });
-          },
-          error: (err) => {
-            console.error("✗ Error update ticket:", err);
-            notifications.show({
-              message: "Gagal Update Tiket",
-              color: "red",
-            });
-          },
+          console.log("✓ Update berhasil", response);
+
+          // PENTING: Refetch data ticket setelah update
+          await refetchTickets(); // Pastikan function ini ada
+
+          notifications.show({
+            message: "Berhasil Update Tiket",
+            color: "green",
+          });
+        } else {
+          // CREATE MODE - Tambah ticket baru
+          console.log(">>> MODE: CREATE - Membuat ticket baru");
+
+          const response = await fetch({
+            url: `event-ticket`,
+            method: "POST",
+            data: {
+              ...form,
+              event_id: String(eventId),
+              available_seat_number: form.available_seat?.join(","),
+              seat_color: form.seat_color ?? "#194e9e",
+            } as TicketPropsInputRequest,
+          });
+
+          console.log("✓ Create berhasil, id:", response.data?.id);
+
+          // PENTING: Refetch data ticket setelah create
+          await refetchTickets(); // Pastikan function ini ada
+
+          notifications.show({
+            message: "Berhasil Tambah Tiket",
+            color: "green",
+          });
+        }
+
+        // Reset state setelah berhasil
+        setIsOpen(false);
+        setIdx(undefined);
+        setOpenForm(undefined);
+      } catch (err) {
+        console.error("✗ Error:", err);
+        notifications.show({
+          message: form.id ? "Gagal Update Tiket" : "Gagal Tambah Tiket",
+          color: "red",
         });
-      } else {
-        // CREATE MODE - Tambah ticket baru
-        console.log(">>> MODE: CREATE - Membuat ticket baru");
-
-        await fetch<TicketPropsInputRequest, any>({
-          url: `event-ticket`,
-          method: "POST",
-          data: {
-            ...form,
-            event_id: String(eventId),
-          } as TicketPropsInputRequest,
-          success: (response) => {
-            console.log("✓ Create berhasil, id:", response.data?.id);
-            setIsOpen(false);
-            setIdx(undefined);
-            setOpenForm(undefined);
-
-            notifications.show({
-              message: "Berhasil Tambah Tiket",
-              color: "green",
-            });
-          },
-          error: (err) => {
-            console.error("✗ Error create ticket:", err);
-            notifications.show({
-              message: "Gagal Tambah Tiket",
-              color: "red",
-            });
-          },
-        });
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -191,17 +212,9 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
   }, [data]);
 
   const handleSaveTicket = () => {
-    console.log("=== HANDLE SAVE TICKET ===");
-    console.log("openForm:", openForm);
-    console.log("eventId:", eventId);
+    // if (validate().hasErrors) return;
+    console.log("handleSaveTicket", form);
 
-    // Jika ada eventId, langsung submit ke database
-    if (eventId) {
-      submitTicket();
-      return;
-    }
-
-    // Jika belum ada eventId, simpan ke state saja
     if (typeof openForm === "number") {
       setTicket(ticket.map((e, i) => (i == openForm ? form : e)));
     } else {
@@ -235,7 +248,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
       >
         <Stack gap={10} h="calc(100vh - 160px)" pb={10}>
           <Flex gap={20} h="100%">
-            <Card p={10} display="none" className="w-full h-full">
+            <Card p={10} display={openForm === undefined && ticket.length > 0 ? undefined : "none"} className="w-full h-full">
               <Stack gap={15} h="100%">
                 <TextInput leftSection={<Icon icon="uiw:search" />} placeholder="Cari Tiket" />
 
@@ -269,7 +282,13 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
               </Stack>
             </Card>
 
-            <div className="flex h-full w-full overflow-auto flex-col gap-2 pb-4">
+            <div className={`${openForm !== undefined || ticket.length == 0 ? "flex" : "hidden"} h-full w-full overflow-auto flex-col gap-2 pb-4`}>
+              <Flex display={ticket.length > 0 ? undefined : "none"}>
+                <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
+                  Kembali
+                </Button>
+              </Flex>
+
               {step === 0 && (
                 <>
                   <RadioGroup
@@ -437,9 +456,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                   className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2"
                   onClick={() => {
                     handleSaveTicket();
-                    if (eventId) {
-                      setTimeout(() => window.location.reload(), 1500);
-                    }
+                    !!eventId && submitTicket();
                   }}
                 >
                   {openForm === null ? "Tambah Tiket" : "Simpan Tiket"}

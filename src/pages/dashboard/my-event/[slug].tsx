@@ -143,8 +143,9 @@ const MyEventDetail = () => {
     setSelectedEvent(null);
   };
 
-  const openDetailModal = (item: any) => {
-    setSelectedItem(item); // Set the selected item details
+  const openDetailModal = (item: any, ticket: any) => {
+    setSelectedItem(item);
+    setSelectedTicket(ticket); // Set the selected item details
     setIsDetailModalOpen(true); // Open the modal
   };
 
@@ -471,7 +472,7 @@ const MyEventDetail = () => {
         .get(`${config.wsUrl}list-transaction-by-event?event_id=${data.id}`)
         .then((res) => {
           setGrandTotal(res.data.grand_total || 0);
-
+          console.log("Transaction data fetched:", res.data);
           setIsLoading(false);
         })
         .catch((err) => {
@@ -828,7 +829,15 @@ const MyEventDetail = () => {
                                     />
                                   </Tooltip>
                                   <Tooltip label="Lihat Detail">
-                                    <FontAwesomeIcon icon={faEye} className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" onClick={() => openDetailModal(item)} />
+                                    <FontAwesomeIcon
+                                      icon={faEye}
+                                      className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"
+                                      onClick={() => {
+                                        console.log("row item:", item);
+                                        console.log("local ticket var:", ticket);
+                                        openDetailModal(item, ticket);
+                                      }}
+                                    />
                                   </Tooltip>
                                 </TableCell>
                               </TableRow>
