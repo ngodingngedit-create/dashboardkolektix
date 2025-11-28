@@ -188,9 +188,6 @@ interface Detail {
         [k: string]: any;
       }[]
     | null;
-  // identities?: Identity[] | null;
-  // tickets?: Ticket[] | null;
-  // // allow other possible fields
   [k: string]: any;
 }
 
@@ -208,39 +205,8 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
   const pemesanIdentity = identities.find((id) => id?.is_pemesan === 1) ?? null;
   const ownersList = identities.filter((id) => id?.is_pemesan !== 1);
   const etickets = item?.has_eticket ?? [];
-
-  // /* --- letakkan ini di atas return (di dalam komponen), mis. setelah formatIDR --- */
-  // const identities: Identity[] = item?.identities ?? item?.has_identity ?? [];
-  // // cari pemesan di identities (is_pemesan === 1 atau true-ish)
-  // const pemesanIdentity = identities.find((id) => id?.is_pemesan === 1) ?? null;
-
-  // // fallback ke has_pemensan object jika pemesan tidak ada di identities
-  // const pemesanFallback = pemesanIdentity
-  //   ? pemesanIdentity
-  //   : item?.has_pemensan
-  //   ? {
-  //       id: undefined,
-  //       is_pemesan: 1,
-  //       transaction_id: item.has_pemensan.transaction_id ?? undefined,
-  //       seat_number: item.has_pemensan.seat_number ?? undefined,
-  //       full_name: item.has_pemensan.full_name ?? undefined,
-  //       // tambahkan field lain yg perlu ditampilkan
-  //     }
-  //   : null;
-
-  // // semua identities yg bukan pemesan
-  // const ownerIdentities = identities.filter((id) => id?.is_pemesan !== 1);
-
-  // // susun array final untuk render: selalu mulai dari pemesan (kalau ada), lalu ownerIdentities
-  // const ownersList = [
-  //   // hanya push pemesan kalau ada
-  //   ...(pemesanFallback ? [pemesanFallback] : []),
-  //   ...ownerIdentities,
-  // ];
-
-  // // helper: ambil eticket sesuai index (has_eticket adalah array)
-  // const etickets = item?.has_eticket ?? [];
-  // const getEticketByIndex = (index: number) => etickets?.[index] ?? null;
+  const ownerKeys = ownersList.map((_, i) => `pemilik-${i}`);
+  const defaultExpanded = ["pemesan", ...ownerKeys]; // optional: buka semua pemilik juga
 
   return (
     <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="5xl">
@@ -251,47 +217,7 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
             <div className="grid grid-cols-2 gap-8">
               {/* Bagian Kiri - Accordion */}
               <div>
-                {/* <Accordion defaultExpandedKeys={["pemilik-tiket", "pemesan"]}>
-                  <AccordionItem key="pemesan" title="Data Pemesan">
-                    <div className="mb-4">
-                      <p className="text-grey">Nama Pemesan</p>
-                      <p className="font-semibold">{item?.has_pemensan?.full_name ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">Email Pemesan</p>
-                      <p className="font-semibold">{item?.has_pemensan?.email ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">NIK Pemesan</p>
-                      <p className="font-semibold">{item?.has_pemensan?.nik ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">No. Telepon Pemesan</p>
-                      <p className="font-semibold">{item?.has_pemensan?.no_telp ?? "-"}</p>
-                    </div>
-                  </AccordionItem>
-
-                  <AccordionItem key="pemilik-tiket" title="Data Pemilik Tiket">
-                    <div className="mb-4">
-                      <p className="text-grey">Nama Pemilik Tiket</p>
-                      <p className="font-semibold">{item?.has_pemensan?.full_name ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">Jenis Tiket</p>
-                      <p className="font-semibold">{item?.has_eticket?.[0]?.has_event_ticket?.ticket_category ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">Seat Number</p>
-                      <p className="font-semibold">{item?.has_eticket?.[0]?.seat_number ?? "-"}</p>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-grey">No. Telepon Pemesan</p>
-                      <p className="font-semibold">{item?.has_pemensan?.no_telp ?? "-"}</p>
-                    </div>
-                  </AccordionItem>
-                </Accordion> */}
-                <Accordion defaultExpandedKeys={["pemesan", "pemilik-tiket"]}>
-                  {/* Data Pemesan */}
+                {/* <Accordion defaultExpandedKeys={["pemesan", "pemilik-tiket"]}>
                   <AccordionItem key="pemesan" title="Data Pemesan">
                     <div className="mb-4">
                       <p className="text-grey">Nama Pemesan</p>
@@ -311,7 +237,6 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                     </div>
                   </AccordionItem>
 
-                  {/* Data Pemilik Tiket — HANYA identities selain pemesan */}
                   <AccordionItem key="pemilik-tiket" title="Data Pemilik Tiket">
                     {ownersList.length === 0 ? (
                       <p className="font-semibold">-</p>
@@ -349,6 +274,65 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                       </div>
                     )}
                   </AccordionItem>
+                </Accordion> */}
+                <Accordion defaultExpandedKeys={["pemesan"]}>
+                  {[
+                    <AccordionItem key="pemesan" title="Data Pemesan">
+                      <div className="mb-4">
+                        <p className="text-grey">Nama Pemesan</p>
+                        <p className="font-semibold">{pemesanIdentity?.full_name ?? item?.has_pemensan?.full_name ?? "-"}</p>
+                      </div>
+                      <div className="mb-4">
+                        <p className="text-grey">Email Pemesan</p>
+                        <p className="font-semibold">{item?.has_pemensan?.email ?? "-"}</p>
+                      </div>
+                      <div className="mb-4">
+                        <p className="text-grey">NIK Pemesan</p>
+                        <p className="font-semibold">{item?.has_pemensan?.nik ?? "-"}</p>
+                      </div>
+                      <div className="mb-4">
+                        <p className="text-grey">No. Telepon Pemesan</p>
+                        <p className="font-semibold">{item?.has_pemensan?.no_telp ?? "-"}</p>
+                      </div>
+                    </AccordionItem>,
+
+                    ...(ownersList.length === 0
+                      ? [
+                          <AccordionItem key="pemilik-tiket-empty" title="Data Pemilik Tiket">
+                            <p className="font-semibold">-</p>
+                          </AccordionItem>,
+                        ]
+                      : ownersList.map((owner, idx) => {
+                          const et = etickets[idx] ?? null;
+                          const seat = owner?.seat_number ?? et?.seat_number ?? "-";
+                          const ticketCategory = et?.has_event_ticket?.ticket_category ?? "-";
+                          const ownerName = owner?.full_name ?? owner?.name ?? "-";
+                          const ownerPhone = owner?.no_telp ?? "-";
+
+                          return (
+                            <AccordionItem key={owner?.id ?? `pemilik-tiket-${idx}`} title={`Pemilik Tiket #${idx + 1} - ${ownerName}`}>
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-grey">Nama</p>
+                                  <p className="font-semibold">{ownerName}</p>
+                                </div>
+                                <div>
+                                  <p className="text-grey">Jenis Tiket</p>
+                                  <p className="font-semibold">{ticketCategory}</p>
+                                </div>
+                                <div>
+                                  <p className="text-grey">Seat Number</p>
+                                  <p className="font-semibold">{seat}</p>
+                                </div>
+                                <div>
+                                  <p className="text-grey">No. Telepon</p>
+                                  <p className="font-semibold">{ownerPhone}</p>
+                                </div>
+                              </div>
+                            </AccordionItem>
+                          );
+                        })),
+                  ]}
                 </Accordion>
               </div>
 
