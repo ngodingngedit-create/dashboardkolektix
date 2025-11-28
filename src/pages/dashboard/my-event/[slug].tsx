@@ -967,7 +967,7 @@ const MyEventDetail = () => {
           </div>
         </div>
       </div>
-      <DetailModal item={selectedItem} ticket={selectedTicket} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
+      <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
       <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
