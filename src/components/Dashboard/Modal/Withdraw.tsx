@@ -205,7 +205,7 @@ import { useListState } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import Cookies from "js-cookie";
 import { useParams } from "next/navigation";
-import router from "next/router";
+import { useRouter } from "next/router";
 
 interface Bank {
   id: number;
@@ -278,28 +278,55 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
     }).format(num);
   }
 
+  const router = useRouter();
   const { slug } = router.query;
 
   const getDataEvent = () => {
-    Get(`event/${slug}`, {})
+    // ✅ Ambil slug dari props atau router
+    const currentSlug = eventSlug || router.query.slug;
+
+    if (!currentSlug) {
+      console.log("No slug available");
+      return;
+    }
+
+    Get(`event/${currentSlug}`, {})
       .then((res: any) => {
         console.log("Fetched event data:", res.data?.id);
         setEventDatas(res.data);
-        console.log("Event data fetched:", res);
       })
       .catch((err) => {
         console.log(err);
       });
   };
 
-  console.log("Event ID (yang benar):", eventDatas?.id); // 102
-  console.log("Creator ID (bukan ini):", eventDatas?.creator_id); // 40
-
   useEffect(() => {
-    if (slug) {
+    if (isOpen && router.isReady) {
+      // ✅ Cek router ready
       getDataEvent();
     }
-  }, [slug]);
+  }, [isOpen, router.isReady, router.query.slug, eventSlug]);
+
+  // const getDataEvent = () => {
+  //   Get(`event/${slug}`, {})
+  //     .then((res: any) => {
+  //       console.log("Fetched event data:", res.data?.id);
+  //       setEventDatas(res.data);
+  //       console.log("Event data fetched:", res);
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     });
+  // };
+
+  // console.log("Event ID (yang benar):", eventDatas?.id); // 102
+  // console.log("Creator ID (bukan ini):", eventDatas?.creator_id); // 40
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getDataEvent();
+  //   }
+  // }, [slug]);
 
   // Fetch event data
   const fetchEventData = () => {
@@ -564,7 +591,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
                       }}
                     >
                       {banks.map((bank) => (
-                        <SelectItem key={bank.id.toString()} value={bank.id.toString()} textValue={bank.name}>
+                        <SelectItem key={bank.id.toString()} textValue={bank.type_bank} value={bank.id.toString()}>
                           <div className="flex items-center gap-2">
                             <FontAwesomeIcon icon={faUniversity} className="text-blue-500" />
                             <div>

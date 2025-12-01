@@ -182,211 +182,6 @@
 
 // export default WithDraw;
 
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import axios from "axios";
-// import { useRouter } from "next/router";
-// import React, { useState, useEffect } from "react";
-// import { faArrowDown, faPlus } from "@fortawesome/free-solid-svg-icons";
-// import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
-// import TopUpModal from "@/components/Dashboard/Modal/TopUp";
-// import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
-// import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
-// import config from "@/Config";
-// import Cookies from "js-cookie";
-// import useLoggedUser from "@/utils/useLoggedUser";
-
-// interface SaldoData {
-//   status: boolean;
-//   creator_id?: number;
-//   total_event_transaction?: number;
-//   total_event_withdraw?: number;
-//   event_saldo?: number;
-//   total_order_product?: number;
-//   total_saldo?: number;
-// }
-
-// // Definisikan tipe untuk transaksi
-// interface Transaction {
-//   type: string;
-//   time: string;
-//   amount: string;
-//   destination: string;
-//   color: string;
-// }
-
-// interface EventData {
-//   creator_id: string;
-//   event_name: string;
-//   slug: string;
-//   total_admin_fee: number;
-//   total_buy: number;
-//   total_offline: number;
-//   total_online: number;
-//   total_paid: number;
-//   total_price_sell: number;
-//   total_price_sell_offline: number;
-//   total_price_sell_online: number;
-//   total_ticket: number;
-//   total_unpaid: number;
-//   total_views: number;
-// }
-
-// const WithDraw = () => {
-//   const router = useRouter();
-//   const { slug } = router.query;
-//   const { creator_id } = router.query;
-
-//   // state dan modal
-//   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-//   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
-//   const [isDetailModalOpen2, setIsDetailModalOpen2] = useState<boolean>(false);
-//   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
-//   // -> PERBAIKAN: eventData sebagai objek tunggal (sesuai pemakaian di JSX)
-//   const [loading, setLoading] = useState<boolean>(false);
-
-//   const [saldoData, setSaldoData] = useState<SaldoData | null>(null);
-
-//   const loggedUser = useLoggedUser();
-
-//   useEffect(() => {
-//     const creatorId = loggedUser?.has_creator?.id;
-//     console.log("Creator ID:", creatorId);
-
-//     if (creatorId) {
-//       getSaldoData(creatorId);
-//     }
-//   }, [loggedUser]);
-
-//   const getSaldoData = async (creatorId: number) => {
-//     console.log("getSaldoData dipanggil"); // Debug: cek apakah function dijalankan
-//     setLoading(true);
-//     try {
-//       const token = Cookies.get("token") || process.env.NEXT_PUBLIC_AUTH_TOKEN;
-//       console.log("Token:", token ? "Ada" : "Tidak ada"); // Debug: cek token
-//       console.log("URL:", `${config.wsUrl}creator/${creatorId}/saldo`); // Debug: cek URL
-
-//       const response = await axios.get(`${config.wsUrl}creator/${creatorId}/saldo`, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-
-//       console.log("Response full:", response); // Debug: cek response lengkap
-//       console.log("Response status:", response.status); // Debug: cek status code
-
-//       if (response && response.data) {
-//         setSaldoData(response.data);
-//         console.log(response.data, "saldo data");
-//       }
-//     } catch (error) {
-//       console.error("Error fetching saldo data:", error);
-//       // Tambahan debug error
-//       if (axios.isAxiosError(error)) {
-//         console.error("Response error:", error.response?.data);
-//         console.error("Status code:", error.response?.status);
-//       }
-//     } finally {
-//       setLoading(false);
-//       console.log("Loading selesai"); // Debug: cek apakah finally dijalankan
-//     }
-//   };
-
-//   const handleTransactionClick = (transaction: Transaction) => {
-//     setSelectedTransaction(transaction);
-//     setIsDetailModalOpen2(true);
-//   };
-
-//   return (
-//     // NOTE: removed `max-w-2xl` so saldo area can stretch full width.
-//     <div className="w-[90%] bg-blue-50 mx-auto mt-4 mb-48 rounded-lg shadow-lg overflow-hidden">
-//       <div className="bg-primary text-white p-4 flex justify-between items-center">
-//         <div className="flex-1">
-//           <div className="flex items-center">
-//             <i className="fas fa-wallet mr-2"></i>
-//             <span>Saldo</span>
-//           </div>
-//           <div className="text-2xl">Rp{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</div>
-//         </div>
-
-//         <div className="flex space-x-4">
-//           <div className="flex flex-col items-center">
-//             <FontAwesomeIcon onClick={() => setIsDetailModalOpen(true)} icon={faPlus} className="mb-1 border border-white p-1 cursor-pointer" />
-//             <button className="flex items-center space-x-1">
-//               <span>Top Up</span>
-//             </button>
-//           </div>
-//           <div className="flex flex-col items-center">
-//             <FontAwesomeIcon onClick={() => setIsModalOpen(true)} icon={faArrowDown} className="mb-1 border border-white p-1 cursor-pointer" />
-//             <button className="flex items-center space-x-1">
-//               <span>Tarik Dana</span>
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div>
-//         <h2 className="text-lg text-dark font-semibold mb-4 bg-white p-4">Riwayat Transaksi</h2>
-//         <div className="space-y-4">
-//           <WithdrawHistoryList user_id={loggedUser?.id ?? 0} />
-//         </div>
-//       </div>
-
-//       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
-//       <TopUpModal isOpen={isDetailModalOpen} setIsOpen={setIsDetailModalOpen} />
-
-//       {/* Modal untuk detail transaksi - diatur supaya full width */}
-//       <Modal isOpen={isDetailModalOpen2} onClose={() => setIsDetailModalOpen2(false)} className="!p-0" style={{ padding: 0 }}>
-//         <ModalContent
-//           className="p-4"
-//           style={{
-//             width: "100vw",
-//             maxWidth: "100vw",
-//             margin: 0,
-//             left: 0,
-//             right: 0,
-//             borderRadius: 0,
-//             boxSizing: "border-box",
-//           }}
-//         >
-//           <ModalHeader className="text-dark">Detail Transaksi</ModalHeader>
-//           <ModalBody>
-//             {selectedTransaction ? (
-//               <div className="w-full">
-//                 <p className="text-lg font-bold text-dark mb-2">{selectedTransaction.type}</p>
-//                 <p className="text-dark text-lg mb-4">{selectedTransaction.amount}</p>
-
-//                 <p className="text-lg font-bold text-dark mb-2">Rincian Transaksi</p>
-//                 <div className="flex justify-between">
-//                   <p className="text-dark mb-2">Jenis</p>
-//                   <p className="text-dark mb-2">{selectedTransaction.type}</p>
-//                 </div>
-//                 <div className="flex justify-between">
-//                   <p className="text-dark mb-2">Waktu</p>
-//                   <p className="text-dark mb-2">{selectedTransaction.time}</p>
-//                 </div>
-//                 <div className="flex justify-between">
-//                   <p className="text-dark mb-2">Tujuan</p>
-//                   <p className="text-dark mb-2">{selectedTransaction.destination}</p>
-//                 </div>
-//               </div>
-//             ) : (
-//               <div>Tidak ada detail transaksi</div>
-//             )}
-//           </ModalBody>
-//           <ModalFooter>
-//             <Button className="bg-primary text-white" onClick={() => setIsDetailModalOpen2(false)}>
-//               Tutup
-//             </Button>
-//           </ModalFooter>
-//         </ModalContent>
-//       </Modal>
-//     </div>
-//   );
-// };
-
-// export default WithDraw;
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import { useRouter } from "next/router";
@@ -410,6 +205,7 @@ interface SaldoData {
   total_saldo?: number;
 }
 
+// Definisikan tipe untuk transaksi
 interface Transaction {
   type: string;
   time: string;
@@ -436,51 +232,39 @@ interface EventData {
 }
 
 const WithDraw = () => {
-  const router = useRouter();
-  const { slug } = router.query;
-  const { creator_id } = router.query;
+  // const router = useRouter();
+  // const { slug } = router.query;
+  // const { creator_id } = router.query;
 
-  // State dan modal
+  // state dan modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen2, setIsDetailModalOpen2] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  // -> PERBAIKAN: eventData sebagai objek tunggal (sesuai pemakaian di JSX)
   const [loading, setLoading] = useState<boolean>(false);
+
   const [saldoData, setSaldoData] = useState<SaldoData | null>(null);
 
   const loggedUser = useLoggedUser();
 
   useEffect(() => {
-    // Hanya jalankan di client-side
-    if (typeof window === "undefined") return;
-
     const creatorId = loggedUser?.has_creator?.id;
     console.log("Creator ID:", creatorId);
 
-    if (creatorId && creatorId > 0) {
+    if (creatorId) {
       getSaldoData(creatorId);
     }
   }, [loggedUser]);
 
   const getSaldoData = async (creatorId: number) => {
-    if (!creatorId || creatorId === 0) {
-      console.log("Creator ID tidak valid");
-      return;
-    }
-
-    console.log("getSaldoData dipanggil dengan creator ID:", creatorId);
+    console.log("getSaldoData dipanggil"); // Debug: cek apakah function dijalankan
     setLoading(true);
-
     try {
-      const token = Cookies.get("token");
-
-      if (!token) {
-        console.error("Token tidak ditemukan");
-        setLoading(false);
-        return;
-      }
-
-      console.log("URL:", `${config.wsUrl}creator/${creatorId}/saldo`);
+      const token = Cookies.get("token") || process.env.NEXT_PUBLIC_AUTH_TOKEN;
+      console.log("Token:", token ? "Ada" : "Tidak ada"); // Debug: cek token
+      console.log("URL:", `${config.wsUrl}creator/${creatorId}/saldo`); // Debug: cek URL
 
       const response = await axios.get(`${config.wsUrl}creator/${creatorId}/saldo`, {
         headers: {
@@ -488,22 +272,23 @@ const WithDraw = () => {
         },
       });
 
-      console.log("Response full:", response);
-      console.log("Response status:", response.status);
+      console.log("Response full:", response); // Debug: cek response lengkap
+      console.log("Response status:", response.status); // Debug: cek status code
 
-      if (response?.data?.status) {
+      if (response && response.data) {
         setSaldoData(response.data);
-        console.log("Saldo data berhasil dimuat:", response.data);
+        console.log(response.data, "saldo data");
       }
     } catch (error) {
       console.error("Error fetching saldo data:", error);
+      // Tambahan debug error
       if (axios.isAxiosError(error)) {
         console.error("Response error:", error.response?.data);
         console.error("Status code:", error.response?.status);
       }
     } finally {
       setLoading(false);
-      console.log("Loading selesai");
+      console.log("Loading selesai"); // Debug: cek apakah finally dijalankan
     }
   };
 
@@ -513,6 +298,7 @@ const WithDraw = () => {
   };
 
   return (
+    // NOTE: removed `max-w-2xl` so saldo area can stretch full width.
     <div className="w-[90%] bg-blue-50 mx-auto mt-4 mb-48 rounded-lg shadow-lg overflow-hidden">
       <div className="bg-primary text-white p-4 flex justify-between items-center">
         <div className="flex-1">
@@ -542,58 +328,54 @@ const WithDraw = () => {
       <div>
         <h2 className="text-lg text-dark font-semibold mb-4 bg-white p-4">Riwayat Transaksi</h2>
         <div className="space-y-4">
-          {loading ? (
-            <div className="flex justify-center items-center p-8">
-              <div className="text-dark">Memuat data...</div>
-            </div>
-          ) : (
-            loggedUser?.id && <WithdrawHistoryList user_id={loggedUser.id} />
-          )}
+          <WithdrawHistoryList user_id={loggedUser?.id ?? 0} />
         </div>
       </div>
 
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
       <TopUpModal isOpen={isDetailModalOpen} setIsOpen={setIsDetailModalOpen} />
 
-      {/* Modal untuk detail transaksi - DIPERBAIKI */}
-      <Modal isOpen={isDetailModalOpen2} onClose={() => setIsDetailModalOpen2(false)} size="full" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">Detail Transaksi</ModalHeader>
+      {/* Modal untuk detail transaksi - diatur supaya full width */}
+      <Modal isOpen={isDetailModalOpen2} onClose={() => setIsDetailModalOpen2(false)} className="!p-0" style={{ padding: 0 }}>
+        <ModalContent
+          className="p-4"
+          style={{
+            width: "100vw",
+            maxWidth: "100vw",
+            margin: 0,
+            left: 0,
+            right: 0,
+            borderRadius: 0,
+            boxSizing: "border-box",
+          }}
+        >
+          <ModalHeader className="text-dark">Detail Transaksi</ModalHeader>
           <ModalBody>
             {selectedTransaction ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-lg font-bold mb-2">{selectedTransaction.type}</p>
-                  <p className="text-lg mb-4">{selectedTransaction.amount}</p>
+              <div className="w-full">
+                <p className="text-lg font-bold text-dark mb-2">{selectedTransaction.type}</p>
+                <p className="text-dark text-lg mb-4">{selectedTransaction.amount}</p>
+
+                <p className="text-lg font-bold text-dark mb-2">Rincian Transaksi</p>
+                <div className="flex justify-between">
+                  <p className="text-dark mb-2">Jenis</p>
+                  <p className="text-dark mb-2">{selectedTransaction.type}</p>
                 </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-lg font-bold mb-3">Rincian Transaksi</p>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-600">Jenis</span>
-                      <span className="font-medium">{selectedTransaction.type}</span>
-                    </div>
-
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-600">Waktu</span>
-                      <span className="font-medium">{selectedTransaction.time}</span>
-                    </div>
-
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-600">Tujuan</span>
-                      <span className="font-medium">{selectedTransaction.destination}</span>
-                    </div>
-                  </div>
+                <div className="flex justify-between">
+                  <p className="text-dark mb-2">Waktu</p>
+                  <p className="text-dark mb-2">{selectedTransaction.time}</p>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-dark mb-2">Tujuan</p>
+                  <p className="text-dark mb-2">{selectedTransaction.destination}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-center text-gray-500">Tidak ada detail transaksi</p>
+              <div>Tidak ada detail transaksi</div>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button color="primary" onPress={() => setIsDetailModalOpen2(false)}>
+            <Button className="bg-primary text-white" onClick={() => setIsDetailModalOpen2(false)}>
               Tutup
             </Button>
           </ModalFooter>
