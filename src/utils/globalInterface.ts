@@ -1,6 +1,12 @@
 import { EXPORT_DETAIL } from "next/dist/shared/lib/constants";
 import { SeatmapData } from "./formInterface";
 
+export interface EventTicketPromo {
+  is_promo: number;
+  promo_title: string;
+  promo_price: number;
+}
+
 export interface TicketProps {
   id: number;
   event_id: string;
@@ -18,6 +24,10 @@ export interface TicketProps {
   is_soldout: number;
   is_finish: number;
   is_ready: number;
+  is_promo: number;
+  promo_title: string;
+  promo_price: number;
+  has_event_ticket?: EventTicketPromo[];
   created_by: string | null;
   updated_by: string | null;
   created_at: string | null;

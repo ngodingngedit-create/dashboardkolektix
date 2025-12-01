@@ -36,6 +36,7 @@ import { notifications } from "@mantine/notifications";
 import _ from "lodash";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import QrCode from "@/components/QrCode";
+import { useParams } from "next/navigation";
 
 interface EventData {
   creator_id: string;
@@ -52,6 +53,40 @@ interface EventData {
   total_ticket: number;
   total_unpaid: number;
   total_views: number;
+  total_withdraw: number;
+}
+
+// Tambahkan interface ini di bagian atas file, setelah interface EventData
+interface WithdrawHistory {
+  id: number;
+  event_id: number | null;
+  product_id: number | null;
+  user_id: number;
+  user_bank_id: string;
+  user_approval: string | null;
+  invoice_no: string;
+  amount: number;
+  name: string;
+  bank_account: number;
+  status: "Pending" | "Success" | "Failed" | "Rejected";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  transaction_status_id: number | null;
+  has_user?: {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at: string | null;
+    otp_code: string | null;
+    otp_expiry_time: string | null;
+    created_at: string;
+    updated_at: string;
+    verified_status_id: number | null;
+    is_creator: number;
+  };
 }
 
 interface InvitationDataItem {
@@ -114,7 +149,12 @@ const MyEventDetail = () => {
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
+  const [transactionList, setTransactionList] = useState<any[]>([]);
+  const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
+  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  const params = useParams();
 
+  const remainingBalance = (eventData?.total_price_sell || 0) - withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
       url: "invitation-category",
@@ -124,6 +164,34 @@ const MyEventDetail = () => {
       error: () => {},
     });
   };
+
+  const getWithdrawHistory = async () => {
+    try {
+      const response = await axios.get(`${config.wsUrl}withdraw`);
+      const withdrawData = Array.isArray(response.data) ? response.data : response.data.data || [];
+
+      // Filter berdasarkan event_id
+      const filteredData = withdrawData.filter((item: WithdrawHistory) => item.event_id === data?.id);
+
+      setWithdrawHistoryList(filteredData);
+      console.log("Filtered Withdraw Data for event:", filteredData);
+    } catch (error) {
+      console.error("Error fetching withdraw data:", error);
+    }
+  };
+
+  useEffect(() => {
+    (window as any).getWithdrawHistory = getWithdrawHistory;
+    (window as any).withdrawList = withdrawHistoryList;
+  }, [withdrawHistoryList]);
+
+  const totalAmount = console.log("=== DEBUG WITHDRAW CALCULATION ===");
+  console.log("Total Price Sell:", eventData?.total_price_sell);
+  console.log("Total Admin Fee:", eventData?.total_admin_fee);
+  console.log("Total Withdrawn:", totalWithdrawn);
+  console.log("Remaining Balance:", remainingBalance);
+  console.log("Withdraw History List:", withdrawHistoryList);
+  console.log("===================================");
 
   const openAddModal = () => {
     setIsAddModalOpen(true);
@@ -176,6 +244,7 @@ const MyEventDetail = () => {
           setTicket(res.data.has_event_ticket);
           getReportData(eventId);
           getInvitationEventData(eventId);
+          getTransactions();
         } else {
           console.warn("Response data is empty or undefined.");
         }
@@ -202,6 +271,25 @@ const MyEventDetail = () => {
     }
   };
 
+  // Tambahkan ini di dekat fungsi getReportData / getInvitationEventData
+  // ---- Tambahkan/replace ini di dalam komponen MyEventDetail ----
+  const getTransactions = async () => {
+    try {
+      const response = await axios.get(`${config.wsUrl}transaction`);
+      const payload = Array.isArray(response.data) ? response.data : response.data.data ?? [];
+
+      setTransactionList(payload); // <-- simpan di sini
+    } catch (err) {
+      console.error("Error fetching transactions", err);
+      setTransactionList([]);
+    }
+  };
+
+  const findTransactionStatus = (invoice: string) => {
+    const trx = transactionList.find((t) => t.invoice_no === invoice);
+    return trx?.transaction_status_id ?? null;
+  };
+
   const sendETicket = async (invoiceNo: any, email: any) => {
     try {
       const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
@@ -222,12 +310,29 @@ const MyEventDetail = () => {
     window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
   };
 
+  // useEffect(() => {
+  //   if (slug) {
+  //     getData();
+  //     getInvitationCategory();
+  //     getWithdrawHistory();
+  //   }
+  // }, [slug, user?.id]);
+
   useEffect(() => {
     if (slug) {
+      console.log("Slug is available:", slug);
       getData();
-      getInvitationCategory();
+      getInvitationCategory;
+    } else {
+      console.warn("Slug is undefined or missing.");
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (data?.id && user?.id) {
+      getWithdrawHistory();
+    }
+  }, [data?.id, user?.id, updateWithdrawHistory]);
 
   const filteredItems = useMemo(() => {
     if (!Array.isArray(invitationData)) {
@@ -288,6 +393,28 @@ const MyEventDetail = () => {
         return "Expired";
       default:
         return "Unknown";
+    }
+  };
+
+  const getStatusTextInvitation = (statusId: any) => {
+    switch (statusId) {
+      case 0:
+        return "Cancel";
+      case 1:
+        return "Success";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const getInvitationStatusClass = (statusId: any) => {
+    switch (statusId) {
+      case 0:
+        return "bg-danger";
+      case 1:
+        return "bg-success";
+      default:
+        return "bg-secondary";
     }
   };
 
@@ -586,7 +713,10 @@ const MyEventDetail = () => {
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
                       <p className="text-grey">Total Pendapatan Event</p>
-                      <h6>Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</h6>
+                      <h6>
+                        Rp.
+                        {((eventData?.total_price_sell || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")}
+                      </h6>
                     </div>
                     <Button color="primary" label="Tarik Dana" className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
                   </div>
@@ -811,8 +941,13 @@ const MyEventDetail = () => {
                                 <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
                                 <TableCell className="border-b-1 text-sm">{item?.created_at && new Date(item.created_at).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}</TableCell>
                                 <TableCell className="border-b-1">
-                                  <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item.transaction_status_id)}`}>{getStatusText(item.transaction_status_id)}</span>
+                                  {(() => {
+                                    const statusId = findTransactionStatus(item.invoice_no);
+
+                                    return <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(statusId)}`}>{getStatusText(statusId)}</span>;
+                                  })()}
                                 </TableCell>
+
                                 <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
                                 <TableCell className="border-b-1">
                                   <Tooltip label="Kirim Ulang">
@@ -891,7 +1026,10 @@ const MyEventDetail = () => {
                                   <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
                                   <TableCell className="border-b-1">{item?.total_qty}</TableCell>
                                   <TableCell className="border-b-1">
-                                    <span className={`px-2 py-1 rounded-md text-white ${getEventStatusClass(item.invitation_status)}`}>{getEventStatusText(item.invitation_status)}</span>
+                                    {(() => {
+                                      const statusId = item?.event_invitation_status?.id ?? null;
+                                      return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
+                                    })()}
                                   </TableCell>
                                   {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
                                   <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell> */}
@@ -970,7 +1108,16 @@ const MyEventDetail = () => {
       <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
       <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
-      <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} onSubmit={() => setUpdateWithdrawHistory(updateWithdrawHistory + 1)} />
+      <TarikDanaModal
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        onSubmit={() => {
+          setUpdateWithdrawHistory(updateWithdrawHistory + 1);
+          getWithdrawHistory(); // Tambahkan ini untuk refresh data withdraw
+          console.log("withdraw submitted");
+        }}
+        eventSlug={params.slug}
+      />
       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
         <ModalCreateTicket

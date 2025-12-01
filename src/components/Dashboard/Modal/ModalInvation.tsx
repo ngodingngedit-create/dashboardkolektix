@@ -184,12 +184,27 @@ interface Detail {
         has_event_ticket?: {
           ticket_category?: string | null;
         } | null;
+        transaction_status_id?: number | null;
         // allow other possible fields
         [k: string]: any;
       }[]
     | null;
   [k: string]: any;
 }
+const getStatusText = (statusId: any) => {
+  switch (statusId) {
+    case 1:
+      return "Pending";
+    case 2:
+      return "Verified";
+    case 3:
+      return "Failed";
+    case 4:
+      return "Expired";
+    default:
+      return "Unknown";
+  }
+};
 
 const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: boolean; onClose: () => void }) => {
   if (!item) return null;
@@ -346,7 +361,7 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                 </div>
                 <div className="mb-4 flex justify-between">
                   <p className="text-grey">Status Pembayaran</p>
-                  <p className="font-semibold">{item?.payment_status ?? "-"}</p>
+                  <p className="font-semibold">{getStatusText(item.transaction_status_id) ?? "-"}</p>
                 </div>
                 <div className="mb-4 flex justify-between">
                   <p className="text-grey">Tipe Transaksi</p>

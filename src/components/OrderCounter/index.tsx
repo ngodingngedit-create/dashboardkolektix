@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import { ActionIcon, Badge, Box, Button, Card, Center, Divider, Drawer, Flex, LoadingOverlay, Modal, NumberFormatter, Stack, Text, Tooltip } from "@mantine/core";
-import { TicketProps } from "@/utils/globalInterface";
+import { EventTicketPromo, TicketProps } from "@/utils/globalInterface";
 import moment from "moment";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -80,10 +80,24 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     return date.isBefore(moment());
   }
 
-  const ticketData = useMemo(() => {
-    // console.log('update');
-    return _ticketData;
-  }, [timeoutHash]);
+  // const ticketData = useMemo(() => {
+  //   // console.log('update');
+  //   return _ticketData;
+  // }, [timeoutHash]);
+
+  const ticketData = useMemo(() => _ticketData, [_ticketData, timeoutHash]);
+
+  console.log("DEBUG ticketData:", ticketData);
+
+  const tickets = ticketData ?? [];
+
+  console.log("DEBUG tickets:", tickets);
+
+  const hasPromo = Number(ticketData?.is_promo ?? 0) > 0;
+  const hasPromoTitle = String(ticketData?.promo_title ?? "").length > 0;
+  const hasPromoPrice = Number(ticketData?.promo_price ?? 0) > 0;
+
+  console.log("DEBUG hasPromo:", hasPromo);
 
   useEffect(() => {
     console.log("[DEBUG ticketData]", {
@@ -192,100 +206,317 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
   };
   //194e9e
   return (
+    // <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? "!pb-[150px]" : ""}`} bg={isSoldOut || isReady || isFinish ? "#fafafa" : undefined}>
+    //   {/* {JSON.stringify(ticket)} */}
+    //   {seatmapOpen == index && window?.innerWidth > 767 && !isFullscreen && (
+    //     <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
+    //       <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+    //         {t("back")}
+    //       </Button>
+
+    //       <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
+    //         {t("selectSeat")}
+    //       </Text>
+
+    //       <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+    //     </Card>
+    //   )}
+
+    //   {(window?.innerWidth < 767 || isFullscreen) && (
+    //     <Drawer
+    //       title={
+    //         <Stack gap={4}>
+    //           <Text>{`${t("selectSeat")} ${ticketData.name}`}</Text>
+    //           {(selectedSeat?.length ?? 0) > 0 && (
+    //             <Text size="sm" c="gray">
+    //               Seat No:{" "}
+    //               {selectedSeat?.map((e, i) => (
+    //                 <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
+    //                   {e}
+    //                 </Badge>
+    //               ))}
+    //             </Text>
+    //           )}
+    //         </Stack>
+    //       }
+    //       opened={seatmapOpen == index}
+    //       onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
+    //       position="bottom"
+    //       radius={25}
+    //       size={isFullscreen ? "92vh" : "100vh"}
+    //       overlayProps={{ opacity: 0.3 }}
+    //     >
+    //       <Stack gap={20} align="end" pos="relative">
+    //         <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 170px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
+    //           <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+    //         </Card>
+
+    //         <Text className={`!absolute top-5 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
+    //           {t("selectSeat")}
+    //         </Text>
+
+    //         <Button mt={8} size="md" fullWidth={!isFullscreen} onClick={() => (window?.innerWidth < 767 ? setSeatmapOpen && setSeatmapOpen(undefined) : setIsFullscreen(false))}>
+    //           {isFullscreen ? "Tutup Fullscreen" : "Selesai"}
+    //         </Button>
+    //       </Stack>
+    //     </Drawer>
+    //   )}
+
+    //   <Stack gap={10}>
+    //     <Flex
+    //       align="center"
+    //       justify="center"
+    //       gap={6}
+    //       px={10}
+    //       py={4}
+    //       className="shadow-md"
+    //       style={{
+    //         background: "#b70303",
+    //         color: "white",
+    //         borderRadius: "0 0 12px 12px", // tetap style kamu
+    //         lineHeight: "1",
+    //         opacity: 0.65,
+    //         width: "50%",
+    //         marginLeft: "auto",
+    //         right: -20,
+    //       }}
+    //     >
+    //       <Text
+    //         size="xs"
+    //         component="span"
+    //         style={{
+    //           opacity: 0.95,
+    //           width: 40, // sebelumnya 80 → sekarang kecil banget
+    //           textAlign: "right",
+    //           whiteSpace: "nowrap",
+    //           fontSize: "9px", // kecil
+    //           lineHeight: "1",
+    //         }}
+    //       >
+    //         Special
+    //       </Text>
+
+    //       <Flex px={6} py={1} className="rounded-full" style={{ background: "#7a0101", lineHeight: "1" }}>
+    //         <Text size="xs" fw={700} component="span" style={{ fontSize: "10px", lineHeight: "1" }}>
+    //           12.12
+    //         </Text>
+    //       </Flex>
+
+    //       <Text
+    //         size="xs"
+    //         component="span"
+    //         style={{
+    //           opacity: 0.95,
+    //           width: 40,
+    //           textAlign: "left",
+    //           whiteSpace: "nowrap",
+    //           fontSize: "9px",
+    //           lineHeight: "1",
+    //         }}
+    //       >
+    //         Discount
+    //       </Text>
+    //     </Flex>
+
+    //     <Flex gap={20} justify="space-between">
+    //       {/* ml={ticketData.ticket_category == 'Seated' ? 40 : undefined} */}
+    //       <Stack gap={0}>
+    //         <Flex align="center" gap={15}>
+    //           <Text size="lg" className={`uppercase`}>
+    //             {ticketData.name}
+    //           </Text>
+    //           {ticketData.ticket_category == "Seated" && <Badge className={`bg-primary-base`}>Seated</Badge>}
+    //         </Flex>
+    //         {ticketData.description && (
+    //           <Text size="sm" c="gray">
+    //             {ticketData.description?.split("\n").map((e, i) => (
+    //               <Text key={i}>{e}</Text>
+    //             ))}
+    //           </Text>
+    //         )}
+    //       </Stack>
+    //       {/* <Text size="lg" fw={600}>
+    //         {ticketData.price <= 0 ? (
+    //           <Text c="green" component="span" fw={600}>
+    //             FREE
+    //           </Text>
+    //         ) : (
+    //           <NumberFormatter value={ticketData.price} />
+    //         )}
+    //       </Text> */}
+    //       <Text component="div" className="flex flex-col items-end">
+    //         {/* Harga setelah diskon */}
+    //         <Text component="div" size="xl" fw={700}>
+    //           <NumberFormatter value={ticketData.price} />
+    //         </Text>
+
+    //         {/* Harga asli manual dicoret */}
+    //         <Text component="div" size="sm" c="gray" style={{ textDecoration: "line-through", textDecorationColor: "red" }}>
+    //           <NumberFormatter value={originalPrice} />
+    //         </Text>
+    //       </Text>
+    //       {/* <Box className={`w-[300px] h-[100px] bg-primary-base absolute rotate-[-30deg] top-[-20px] left-[-200px]`}/> */}
+    //     </Flex>
+    //     <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>
+    //       <Box className={`bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
+    //       <Divider className={`!border-dashed w-full`} />
+    //       <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
+    //     </Flex>
+    //     <Flex justify="space-between" gap={20} align="center" className={`shrink-0`}>
+    //       <StatusComponent />
+    //     </Flex>
+    //   </Stack>
+    // </Card>
     <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? "!pb-[150px]" : ""}`} bg={isSoldOut || isReady || isFinish ? "#fafafa" : undefined}>
-      {/* {JSON.stringify(ticket)} */}
-      {seatmapOpen == index && window?.innerWidth > 767 && !isFullscreen && (
-        <Card bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
-          <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
-            {t("back")}
-          </Button>
+      {/* RIBBON (absolute sehingga tidak mempengaruhi layout) */}
+      {/* RIBBON */}
+      {/* <Flex
+        style={{
+          position: "absolute",
+          top: -1, // nempel ke atas Card
+          left: "50%", // midpoint Card
+          transform: "translateX(-50%)", // supaya benar-benar center
+          width: "35%", // setengah Card
+          background: "#b70303",
+          color: "white",
+          padding: "4px 10px",
+          borderRadius: "0 0 999px 999px", // kiri & kanan bawah melengkung
+          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+          lineHeight: 1,
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "center", // biar text benar-benar center
+          display: "flex", // pastikan flex
+          zIndex: 20,
+        }}
+      >
+        <Text size="xs" component="span" style={{ width: 40, textAlign: "right", fontSize: 10 }}>
+          Special
+        </Text>
 
-          <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
-            {t("selectSeat")}
+        <Flex px={6} py={1} className="rounded-full" style={{ background: "#FFFFFF" }}>
+          <Text size="xs" fw={700} style={{ fontSize: 16, color: "#b70303", fontStyle: "italic" }} component="span">
+            PAY DAY
           </Text>
+        </Flex>
 
-          <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
-        </Card>
+        <Text size="xs" component="span" style={{ width: 40, textAlign: "left", fontSize: 10 }}>
+          Discount
+        </Text>
+      </Flex> */}
+      {hasPromo && (
+        <Flex className="special-banner">
+          <Text className="side-text">Special</Text>
+
+          <Flex className="payday-pill">
+            <Text className="payday-text">{ticketData?.promo_title}</Text>
+          </Flex>
+
+          <Text className="side-text">Discount</Text>
+        </Flex>
       )}
 
-      {(window?.innerWidth < 767 || isFullscreen) && (
-        <Drawer
-          title={
-            <Stack gap={4}>
-              <Text>{`${t("selectSeat")} ${ticketData.name}`}</Text>
-              {(selectedSeat?.length ?? 0) > 0 && (
-                <Text size="sm" c="gray">
-                  Seat No:{" "}
-                  {selectedSeat?.map((e, i) => (
-                    <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
-                      {e}
-                    </Badge>
-                  ))}
-                </Text>
-              )}
-            </Stack>
-          }
-          opened={seatmapOpen == index}
-          onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
-          position="bottom"
-          radius={25}
-          size={isFullscreen ? "92vh" : "100vh"}
-          overlayProps={{ opacity: 0.3 }}
-        >
-          <Stack gap={20} align="end" pos="relative">
-            <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 170px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
-              <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
-            </Card>
+      {/* WRAPPER ISI CARD: hanya satu padding p={20} */}
+      <Box style={{ position: "relative" }}>
+        {/* seatmap overlay / drawer logic tetap sama */}
+        {seatmapOpen == index && typeof window !== "undefined" && window.innerWidth > 767 && !isFullscreen && (
+          <Card p={10} bg="gray.3" radius={10} className={`!hidden md:!block !absolute w-full h-full top-0 left-0 z-[40] !border-primary-disabled/35 !border`}>
+            <Button className={`!absolute z-[40] left-2 top-2 !text-primary-base`} size="xs" bg="white" leftSection={<Icon icon="uiw:left" />} onClick={() => setSeatmapOpen && setSeatmapOpen(undefined)}>
+              {t("back")}
+            </Button>
 
-            <Text className={`!absolute top-5 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
+            <Text className={`!absolute top-2 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
               {t("selectSeat")}
             </Text>
 
-            <Button mt={8} size="md" fullWidth={!isFullscreen} onClick={() => (window?.innerWidth < 767 ? setSeatmapOpen && setSeatmapOpen(undefined) : setIsFullscreen(false))}>
-              {isFullscreen ? "Tutup Fullscreen" : "Selesai"}
-            </Button>
-          </Stack>
-        </Drawer>
-      )}
+            <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+          </Card>
+        )}
 
-      <Stack gap={10}>
-        <Flex gap={20} justify="space-between">
-          {/* ml={ticketData.ticket_category == 'Seated' ? 40 : undefined} */}
-          <Stack gap={0}>
-            <Flex align="center" gap={15}>
-              <Text size="lg" className={`uppercase`}>
-                {ticketData.name}
+        {(typeof window !== "undefined" && window.innerWidth < 767) || isFullscreen ? (
+          <Drawer
+            p={10}
+            title={
+              <Stack gap={4}>
+                <Text>{`${t("selectSeat")} ${ticketData.name}`}</Text>
+                {(selectedSeat?.length ?? 0) > 0 && (
+                  <Text size="sm" c="gray">
+                    Seat No:{" "}
+                    {selectedSeat?.map((e, i) => (
+                      <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
+                        {e}
+                      </Badge>
+                    ))}
+                  </Text>
+                )}
+              </Stack>
+            }
+            opened={seatmapOpen == index}
+            onClose={() => setSeatmapOpen && setSeatmapOpen(undefined)}
+            position="bottom"
+            radius={25}
+            size={isFullscreen ? "92vh" : "100vh"}
+            overlayProps={{ opacity: 0.3 }}
+          >
+            <Stack gap={20} align="end" pos="relative">
+              <Card bg="gray.3" w="100%" h={isFullscreen ? "70vh" : "calc(100vh - 170px)"} radius={10} className={`!border-primary-disabled/35 !border`}>
+                <SeatmapViewer setIsFullscreen={setIsFullscreen} isFullscreen={isFullscreen} ticketData={ticketData} data={seatmapData} selectedSeat={selectedSeat} setSelectSeat={setCount} available={ticketData.available_seat_number} />
+              </Card>
+
+              <Text className={`!absolute top-5 left-2/4 -translate-x-2/4 z-[40] !text-primary-base`} fw={600} size="sm">
+                {t("selectSeat")}
               </Text>
-              {ticketData.ticket_category == "Seated" && <Badge className={`bg-primary-base`}>Seated</Badge>}
-            </Flex>
-            {ticketData.description && (
-              <Text size="sm" c="gray">
-                {ticketData.description?.split("\n").map((e, i) => (
-                  <Text key={i}>{e}</Text>
-                ))}
+
+              <Button mt={8} size="md" fullWidth={!isFullscreen} onClick={() => (window?.innerWidth < 767 ? setSeatmapOpen && setSeatmapOpen(undefined) : setIsFullscreen(false))}>
+                {isFullscreen ? "Tutup Fullscreen" : "Selesai"}
+              </Button>
+            </Stack>
+          </Drawer>
+        ) : null}
+
+        {/* ====== ISI UTAMA (gunakan satu Stack tanpa extra p pada children) ====== */}
+        <Stack gap={10}>
+          <Flex gap={20} justify="space-between" align="center">
+            <Stack gap={0}>
+              <Flex align="center" gap={15}>
+                <Text size="lg" className="uppercase">
+                  {ticketData.name}
+                </Text>
+                {ticketData.ticket_category == "Seated" && <Badge className="bg-primary-base">Seated</Badge>}
+              </Flex>
+
+              {ticketData.description && (
+                <Text size="sm" c="gray" component="div" style={{ whiteSpace: "pre-line" }}>
+                  {ticketData.description}
+                </Text>
+              )}
+            </Stack>
+
+            <Box style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 120 }}>
+              <Text component="div" size="xl" fw={700}>
+                <NumberFormatter value={ticketData.price} />
               </Text>
-            )}
-          </Stack>
-          <Text size="lg" fw={600}>
-            {ticketData.price <= 0 ? (
-              <Text c="green" component="span" fw={600}>
-                FREE
-              </Text>
-            ) : (
-              <NumberFormatter value={ticketData.price} />
-            )}
-          </Text>
-          {/* <Box className={`w-[300px] h-[100px] bg-primary-base absolute rotate-[-30deg] top-[-20px] left-[-200px]`}/> */}
-        </Flex>
-        <Flex className={`shrink-0 mx-[-30px] relative z-10`} align="center" gap={10}>
-          <Box className={`bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
-          <Divider className={`!border-dashed w-full`} />
-          <Box className={`bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0`} />
-        </Flex>
-        <Flex justify="space-between" gap={20} align="center" className={`shrink-0`}>
-          <StatusComponent />
-        </Flex>
-      </Stack>
+
+              {typeof ticketData?.promo_price !== "undefined" && (ticketData.price ?? 0) > ticketData.promo_price && (
+                <Text component="div" size="sm" c="red" style={{ textDecoration: "line-through", textDecorationColor: "red", marginTop: 6 }}>
+                  <NumberFormatter value={ticketData.price} />
+                </Text>
+              )}
+            </Box>
+          </Flex>
+
+          <Flex className="shrink-0 mx-[-30px] relative z-10" align="center" gap={10}>
+            <Box className="bg-white border-r border-r-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0" />
+            <Divider className="!border-dashed w-full" />
+            <Box className="bg-white border-l border-l-primary-disabled/35 w-[20px] h-[20px] rounded-full shrink-0" />
+          </Flex>
+
+          <Flex justify="space-between" gap={20} align="center" className="shrink-0">
+            <StatusComponent />
+          </Flex>
+        </Stack>
+        {/* ====== END ISI UTAMA ====== */}
+      </Box>
     </Card>
   );
 };

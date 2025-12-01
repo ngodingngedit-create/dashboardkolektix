@@ -1,10 +1,10 @@
-import { useRouter } from 'next/router';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
-import { ActionIcon, Badge, Box, Flex, Stack, Text } from '@mantine/core';
-import moment from 'moment';
-import { TicketProps } from '@/utils/globalInterface';
-import { Icon } from '@iconify/react/dist/iconify.js';
+import { useRouter } from "next/router";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import { ActionIcon, Badge, Box, Flex, Stack, Text } from "@mantine/core";
+import moment from "moment";
+import { TicketProps } from "@/utils/globalInterface";
+import { Icon } from "@iconify/react/dist/iconify.js";
 
 interface TicketCounterProps {
   count: number;
@@ -20,143 +20,138 @@ interface TicketCounterProps {
   ticketData: TicketProps;
 }
 
-const TicketCounter = ({
-  ticketData,
-  count,
-  setCount,
-  isSoldOut,
-  title,
-  price,
-  isLogin,
-  isFinish,
-  isReady,
-  isFullbook,
-  max,
-}: TicketCounterProps) => {
+const TicketCounter = ({ ticketData, count, setCount, isSoldOut, title, price, isLogin, isFinish, isReady, isFullbook, max }: TicketCounterProps) => {
   const router = useRouter();
 
   function isCurrentTimeBetween(startDate: string, endDate: string): boolean {
-    const start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
-    const end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+    const start = moment(startDate, "YYYY-MM-DD HH:mm:ss");
+    const end = moment(endDate, "YYYY-MM-DD HH:mm:ss");
     const now = moment();
 
-    return now.isBetween(start, end, undefined, '[]');
+    return now.isBetween(start, end, undefined, "[]");
   }
 
   function isDatePassed(dateString: string) {
-      const date = moment(dateString, 'YYYY-MM-DD HH:mm:ss');
-      return date.isBefore(moment());
+    const date = moment(dateString, "YYYY-MM-DD HH:mm:ss");
+    return date.isBefore(moment());
   }
 
   const StatusComponent = () => {
-      if (isFullbook)
-          return (
-              <>
-                  <Box></Box>
-                  <Badge color="gray" className={`shrink-0`}>
-                      Full Booked
-                  </Badge>
-              </>
-          );
-
-      if (isSoldOut)
-          return (
-              <>
-                  <Box></Box>
-                  <Badge color="red" className={`shrink-0`}>
-                      Habis Terjual
-                  </Badge>
-              </>
-          );
-
-      if (isFinish)
-          return (
-              <>
-                  <Box></Box>
-                  <Badge color="gray" className={`shrink-0`}>
-                      Event Selesai
-                  </Badge>
-              </>
-          );
-
-      if (!isDatePassed(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`))
-          return (
-              <>
-                  <Box>
-                      <Text size="sm" className={`!text-primary-base`}>
-                          {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket dimulai
-                      </Text>
-                      <Text size="xs" className={`!text-primary-base`}>
-                          {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`).format('HH:mm')} WIB
-                      </Text>
-                  </Box>
-                  <Badge color="gray" className={`shrink-0`}>
-                      Belum dimulai
-                  </Badge>
-              </>
-          );
-
-      if (isDatePassed(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`))
-          return (
-              <>
-                  <Box></Box>
-                  <Badge color="gray" className={`shrink-0`}>
-                      {price <= 0 ? 'Registrasi' : 'Penjualan'} Selesai
-                  </Badge>
-              </>
-          );
-
-      if (isCurrentTimeBetween(`${ticketData.ticket_date} ${ticketData?.starting_time ?? '00:00:00'}`, `${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`))
-          return (
-              <>
-                  <Box>
-                      <Text size="sm" className={`!text-primary-base`}>
-                          {price <= 0 ? 'Registrasi' : 'Penjualan'} tiket berakhir
-                      </Text>
-                      <Text size="xs" className={`!text-primary-base`}>
-                          {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('DD MMM YYYY')} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? '00:00:00'}`).format('HH:mm')} WIB
-                      </Text>
-                  </Box>
-                  <Flex align="center" gap={15}>
-                      <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
-                          <Icon icon="uiw:minus" />
-                      </ActionIcon>
-                      <Text>{count}</Text>
-                      <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(max ?? 9999) == count}>
-                          <Icon icon="uiw:plus" />
-                      </ActionIcon>
-                  </Flex>
-              </>
-          );
-
+    if (isFullbook)
       return (
-          <>
-              <Box></Box>
-              <Badge color="gray" className={`shrink-0`}>
-                  Event Selesai
-              </Badge>
-          </>
+        <>
+          <Box></Box>
+          <Badge color="gray" className={`shrink-0`}>
+            Full Booked
+          </Badge>
+        </>
       );
+
+    if (isSoldOut)
+      return (
+        <>
+          <Box></Box>
+          <Badge color="red" className={`shrink-0`}>
+            Habis Terjual
+          </Badge>
+        </>
+      );
+
+    if (isFinish)
+      return (
+        <>
+          <Box></Box>
+          <Badge color="gray" className={`shrink-0`}>
+            Event Selesai
+          </Badge>
+        </>
+      );
+
+    if (!isDatePassed(`${ticketData.ticket_date} ${ticketData?.starting_time ?? "00:00:00"}`))
+      return (
+        <>
+          <Box>
+            <Text size="sm" className={`!text-primary-base`}>
+              {price <= 0 ? "Registrasi" : "Penjualan"} tiket dimulai
+            </Text>
+            <Text size="xs" className={`!text-primary-base`}>
+              {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? "00:00:00"}`).format("DD MMM YYYY")} - Jam {moment(`${ticketData.ticket_date} ${ticketData?.starting_time ?? "00:00:00"}`).format("HH:mm")} WIB
+            </Text>
+          </Box>
+          <Badge color="gray" className={`shrink-0`}>
+            Belum dimulai
+          </Badge>
+        </>
+      );
+
+    if (isDatePassed(`${ticketData.ticket_end} ${ticketData?.ending_time ?? "00:00:00"}`))
+      return (
+        <>
+          <Box></Box>
+          <Badge color="gray" className={`shrink-0`}>
+            {price <= 0 ? "Registrasi" : "Penjualan"} Selesai
+          </Badge>
+        </>
+      );
+
+    if (isCurrentTimeBetween(`${ticketData.ticket_date} ${ticketData?.starting_time ?? "00:00:00"}`, `${ticketData.ticket_end} ${ticketData?.ending_time ?? "00:00:00"}`))
+      return (
+        <>
+          <Box>
+            <Text size="sm" className={`!text-primary-base`}>
+              {price <= 0 ? "Registrasi" : "Penjualan"} tiket berakhir
+            </Text>
+            <Text size="xs" className={`!text-primary-base`}>
+              {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? "00:00:00"}`).format("DD MMM YYYY")} - Jam {moment(`${ticketData.ticket_end} ${ticketData?.ending_time ?? "00:00:00"}`).format("HH:mm")} WIB
+            </Text>
+          </Box>
+          <Flex align="center" gap={15}>
+            <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+              <Icon icon="uiw:minus" />
+            </ActionIcon>
+            <Text>{count}</Text>
+            <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(max ?? 9999) == count}>
+              <Icon icon="uiw:plus" />
+            </ActionIcon>
+          </Flex>
+        </>
+      );
+
+    return (
+      <>
+        <Box></Box>
+        <Badge color="gray" className={`shrink-0`}>
+          Event Selesai
+        </Badge>
+      </>
+    );
   };
 
   return (
-    <div
-      className={`border border-primary-disabled/50 rounded-lg flex flex-col shadow-sm mb-5 divide-y-2 divide-primary-light-200 divide-dashed bg-primary-light`}
-    >
-      <div className='p-3 flex justify-between'>
+    <div className={`border border-primary-disabled/50 rounded-lg flex flex-col shadow-sm mb-5 divide-y-2 divide-primary-light-200 divide-dashed bg-primary-light`}>
+      <div className="p-3 flex justify-between">
         <Stack gap={5}>
-          <p className=''>{title}</p>
+          <p className="">{title}</p>
           {ticketData.description && (
-              <Text size="sm" c="gray">
-                  {ticketData.description?.split('\n').map((e, i) => (
-                      <Text key={i}>{e}</Text>
-                  ))}
-              </Text>
+            // <Text size="sm" c="gray">
+            //   {ticketData.description?.split("\n").map((e, i) => (
+            //     <Text key={i}>{e}</Text>
+            //   ))}
+            // </Text>
+            <Text size="sm" c="gray">
+              {ticketData.description?.split("\n").map((e, i) => (
+                <Text key={i} component="div">
+                  {" "}
+                  {/* atau "span" */}
+                  {e}
+                </Text>
+              ))}
+            </Text>
           )}
         </Stack>
-        <p className='font-semibold'>Rp {price.toLocaleString('id-ID')}</p>
+        <p className="font-semibold">Rp {price.toLocaleString("id-ID")}</p>
       </div>
-      <div className='flex items-center justify-between p-3'>
+      <div className="flex items-center justify-between p-3">
         <StatusComponent />
       </div>
     </div>

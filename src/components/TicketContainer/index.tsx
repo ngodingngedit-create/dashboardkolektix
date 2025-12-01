@@ -1,8 +1,8 @@
-import React from 'react';
-import { faPenToSquare, faTrashCan } from '@fortawesome/free-regular-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { formatDate } from '@/utils/useFormattedDate';
-import { Button, ColorInput, Flex, Stack, Text } from '@mantine/core';
+import React from "react";
+import { faPenToSquare, faTrashCan } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatDate } from "@/utils/useFormattedDate";
+import { Button, ColorInput, Flex, Stack, Text } from "@mantine/core";
 
 interface TicketContainerProps {
   type: string;
@@ -14,32 +14,19 @@ interface TicketContainerProps {
   ticketEnd: string | null;
   onDelete?: () => void;
   onEdit?: () => void;
-  onSelectSeatButton?: () =>  void;
-  onSelectSeatColor?: (color: string) =>  void;
+  onSelectSeatButton?: () => void;
+  onSelectSeatColor?: (color: string) => void;
   seatColor?: string;
 }
 
-const TicketContainer = ({
-  type,
-  category,
-  price,
-  name,
-  description,
-  ticketDate,
-  ticketEnd,
-  onDelete,
-  onEdit,
-  onSelectSeatButton,
-  onSelectSeatColor,
-  seatColor,
-}: TicketContainerProps) => {
+const TicketContainer = ({ type, category, price, name, description, ticketDate, ticketEnd, onDelete, onEdit, onSelectSeatButton, onSelectSeatColor, seatColor }: TicketContainerProps) => {
   return (
-    <div className='w-full bg-primary-light border-2 border-primary-light-200 rounded-xl'>
-      <div className='p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0'>
+    <div className="w-full bg-primary-light border-2 border-primary-light-200 rounded-xl">
+      <div className="p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0">
         <Flex justify="space-between" wrap="wrap" gap={10} align="center">
           <Stack gap={0}>
-            <p className='font-semibold capitalize'>{name}</p>
-            <p className='text-grey text-sm'>{category}</p>
+            <p className="font-semibold capitalize">{name}</p>
+            <p className="text-grey text-sm">{category}</p>
           </Stack>
           {/* <Stack gap={0} align="end">
             <Text size="xs" c="gray">Total 0 Tiket</Text>
@@ -52,45 +39,29 @@ const TicketContainer = ({
           )}
           {onSelectSeatColor && !onSelectSeatButton && (
             <Stack gap={5} align="end">
-              <Text c="gray" size="xs">Warna Seat Terbeli</Text>
-              <ColorInput
-                size="xs"
-                w={100}
-                value={seatColor}
-                onChange={e => onSelectSeatColor(e)}
-              />
+              <Text c="gray" size="xs">
+                Warna Seat Terbeli
+              </Text>
+              <ColorInput size="xs" w={100} value={seatColor} onChange={(e) => onSelectSeatColor(e)} />
             </Stack>
           )}
         </Flex>
       </div>
-      <div className='p-4 flex justify-between'>
+      <div className="p-4 flex justify-between">
         <div>
-          {' '}
-          <p className='font-semibold'>
-            {type === 'Berbayar' ? `Rp${price?.toLocaleString('id-ID')}` : 'Gratis'}
-          </p>
-          <p className='text-grey text-xs mt-1'>
-            {' '}
-            {`Dijual tanggal ${ticketDate && formatDate(ticketDate)} ${
-              ticketEnd && '-' + formatDate(ticketEnd)
-            }`}
-          </p>
+          {" "}
+          <p className="font-semibold">{type === "Berbayar" ? `Rp${price?.toLocaleString("id-ID")}` : "Gratis"}</p>
+          <p className="text-grey text-xs mt-1"> {`Dijual tanggal ${ticketDate && formatDate(ticketDate)} ${ticketEnd && "-" + formatDate(ticketEnd)}`}</p>
         </div>
-        <div className='flex gap-2'>
+        <div className="flex gap-2">
           {onEdit && (
-            <button
-              onClick={onEdit}
-              className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
-            >
-              <FontAwesomeIcon icon={faPenToSquare} size='lg' />
+            <button onClick={onEdit} className="p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all">
+              <FontAwesomeIcon icon={faPenToSquare} size="lg" />
             </button>
           )}
           {onDelete && (
-            <button
-              onClick={onDelete}
-              className='p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all'
-            >
-              <FontAwesomeIcon icon={faTrashCan} size='lg' />
+            <button onClick={onDelete} className="p-2 w-10 h-10 text-primary-dark  bg-white border border-primary-light-200 rounded-lg hover:bg-primary-base hover:text-white transition-all">
+              <FontAwesomeIcon icon={faTrashCan} size="lg" />
             </button>
           )}
         </div>
