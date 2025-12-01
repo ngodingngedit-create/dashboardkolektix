@@ -1,704 +1,693 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Accordion, AccordionItem, Input } from '@nextui-org/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperclip, faPaperPlane, faCommentDots } from '@fortawesome/free-solid-svg-icons';
-import { GetCreatorResponse, UserProps } from '@/utils/globalInterface';
-import InputField from '@/components/Input';
-import { formatDate, formatDateDiff } from '@/utils/useFormattedDate';
-import { Get, Post } from '@/utils/REST';
-import useLoggedUser from '@/utils/useLoggedUser';
-import { toast, ToastContainer } from 'react-toastify';
-import { Chip } from '@nextui-org/react';
-import { InboxListProps } from '@/utils/globalInterface';
-import logoImg from '../../assets/images/layanan-pelanggan.png';
-import axios from 'axios';
-import Cookies from 'js-cookie';
-import config from '@/Config';
-import AuthModal from '../AuthModal';
-import React from 'react';
-import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip, Image as ImageM } from '@mantine/core';
-import _ from 'lodash';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import Link from 'next/link';
-import paperplane from '../../assets/icon/paperplane.png';
-import Image from 'next/image';
-import fetch from '@/utils/fetch';
-import moment from 'moment';
-import echo from '@/utils/socket';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Accordion, AccordionItem, Input } from "@nextui-org/react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPaperclip, faPaperPlane, faCommentDots } from "@fortawesome/free-solid-svg-icons";
+import { GetCreatorResponse, UserProps } from "@/utils/globalInterface";
+import InputField from "@/components/Input";
+import { formatDate, formatDateDiff } from "@/utils/useFormattedDate";
+import { Get, Post } from "@/utils/REST";
+import useLoggedUser from "@/utils/useLoggedUser";
+import { toast, ToastContainer } from "react-toastify";
+import { Chip } from "@nextui-org/react";
+import { InboxListProps } from "@/utils/globalInterface";
+import logoImg from "../../assets/images/layanan-pelanggan.png";
+import axios from "axios";
+import Cookies from "js-cookie";
+import config from "@/Config";
+import AuthModal from "../AuthModal";
+import React from "react";
+import { ActionIcon, Badge, Box, Card, Flex, Indicator, Text, TextInput, Tooltip, Image as ImageM } from "@mantine/core";
+import _ from "lodash";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import Link from "next/link";
+import paperplane from "../../assets/icon/paperplane.png";
+import Image from "next/image";
+import fetch from "@/utils/fetch";
+import moment from "moment";
+import echo from "@/utils/socket";
 
 interface ChatProps {
-    inbox_id: number;
-    from: number;
-    to: number;
-    message: string;
+  inbox_id: number;
+  from: number;
+  to: number;
+  message: string;
 }
 
 interface ChatListProps {
-    name: string | null;
-    lastMsg: string;
-    time: string;
-    countMsg?: number;
-    selected?: number;
-    setSelected: (selected: number) => void;
-    setName: (name: string) => void;
-    id: number;
-    setMessages: (messages: ChatProps) => void;
-    inbox: number;
-    messages: ChatProps;
-    image?: string;
+  name: string | null;
+  lastMsg: string;
+  time: string;
+  countMsg?: number;
+  selected?: number;
+  setSelected: (selected: number) => void;
+  setName: (name: string) => void;
+  id: number;
+  setMessages: (messages: ChatProps) => void;
+  inbox: number;
+  messages: ChatProps;
+  image?: string;
 }
 
 interface Dummy {
+  id: number;
+  from: {
     id: number;
-    from: {
-        id: number;
-        name: string;
-    };
-    to: {
-        id: number;
-        name: string;
-    };
-    chats: {
-        message: string;
-        created_at: string;
-    }[];
-    lastMsg: string;
+    name: string;
+  };
+  to: {
+    id: number;
+    name: string;
+  };
+  chats: {
+    message: string;
     created_at: string;
-    updated_at: string;
-    deleted_at?: string;
+  }[];
+  lastMsg: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
 }
 
 interface Reply {
-    id: string;
-    user_id: string;
-    message: string;
-    created_at: string;
+  id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
 }
 
 interface SupportContact {
-    id: number;
-    name: string;
-    lastMessage: string;
-    lastMessageTime: string;
-    lastMessageDate: string;
-    has_replies: Reply[];
+  id: number;
+  name: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  lastMessageDate: string;
+  has_replies: Reply[];
 }
 
 const ChatList = ({ image, id, name, lastMsg, time, countMsg, selected, setSelected, setName, setMessages, inbox, messages }: ChatListProps) => {
-    const readMsg = (id: number) => {
-        Post(`${id}/inbox-read`, {})
-            .then((res: any) => {
-                console.log(res);
-            })
-            .catch((err: any) => {
-                console.log(err);
-            });
-    };
+  const readMsg = (id: number) => {
+    Post(`${id}/inbox-read`, {})
+      .then((res: any) => {
+        console.log(res);
+      })
+      .catch((err: any) => {
+        console.log(err);
+      });
+  };
 
-    const unreadCount = useMemo(() => {
+  const unreadCount = useMemo(() => {}, []);
 
-    }, [])
-
-    return (
-        <div
-            onClick={() => {
-                setSelected(id);
-                name && setName(name);
-                readMsg(inbox);
-                setMessages({ ...messages, to: id, inbox_id: inbox });
-            }}
-            className={`flex gap-3 justify-between py-3 px-4 h-16 cursor-pointer ${selected === id && 'bg-primary-light-200'}`}
-        >
-            <div className="flex gap-3 items-center">
-                <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
-                <div>
-                    <p className="font-semibold text-dark truncate max-w-[100px]">{name}</p>
-                    <p className="text-xs text-dark">{lastMsg}</p>
-                </div>
-            </div>
-            <div className="flex flex-col items-center">
-                <p className="text-xs text-primary-base whitespace-nowrap">{time}</p>
-                {(countMsg ?? 0) > 0 && <div className="bg-primary-base text-white w-6 flex items-center justify-center rounded-full text-xs mt-1">{countMsg}</div>}
-            </div>
+  return (
+    <div
+      onClick={() => {
+        setSelected(id);
+        name && setName(name);
+        readMsg(inbox);
+        setMessages({ ...messages, to: id, inbox_id: inbox });
+      }}
+      className={`flex gap-3 justify-between py-3 px-4 h-16 cursor-pointer ${selected === id && "bg-primary-light-200"}`}
+    >
+      <div className="flex gap-3 items-center">
+        <ImageM src={image ?? "/images/layanan-pelanggan.png"} className="rounded-full shrink-0" w={36} h={36} radius={999} />
+        <div>
+          <p className="font-semibold text-dark truncate max-w-[100px]">{name}</p>
+          <p className="text-xs text-dark">{lastMsg}</p>
         </div>
-    );
+      </div>
+      <div className="flex flex-col items-center">
+        <p className="text-xs text-primary-base whitespace-nowrap">{time}</p>
+        {(countMsg ?? 0) > 0 && <div className="bg-primary-base text-white w-6 flex items-center justify-center rounded-full text-xs mt-1">{countMsg}</div>}
+      </div>
+    </div>
+  );
 };
 
-const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean, toggleOpenTab?: () => void, creatorIdOpen?: number }) => {
-    const [chat, setChat] = useState<InboxListProps[]>([]);
-    const [chatFetched, setChatFetched] = useState(false);
-    const [selected, setSelected] = useState<number>();
-    const [messagerName, setName] = useState<string>('');
-    const [user, setUser] = useState<UserProps>();
-    const users = useLoggedUser();
-    const [supportContacts, setSupportContacts] = useState<SupportContact[]>([]);
-    const [searchedChats, setSearchedChats] = useState<InboxListProps[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
+const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean; toggleOpenTab?: () => void; creatorIdOpen?: number }) => {
+  const [chat, setChat] = useState<InboxListProps[]>([]);
+  const [chatFetched, setChatFetched] = useState(false);
+  const [selected, setSelected] = useState<number>();
+  const [messagerName, setName] = useState<string>("");
+  const [user, setUser] = useState<UserProps>();
+  const users = useLoggedUser();
+  const [supportContacts, setSupportContacts] = useState<SupportContact[]>([]);
+  const [searchedChats, setSearchedChats] = useState<InboxListProps[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-    const [messages, setMessages] = useState<ChatProps>({
-        inbox_id: 0,
-        from: 0,
-        to: selected ?? 0,
-        message: ''
-    });
-    const [newMessage, setNewMessage] = useState<string>('');
-    const [modalVisible, setModalVisible] = useState(false);
+  const [messages, setMessages] = useState<ChatProps>({
+    inbox_id: 0,
+    from: 0,
+    to: selected ?? 0,
+    message: "",
+  });
+  const [newMessage, setNewMessage] = useState<string>("");
+  const [modalVisible, setModalVisible] = useState(false);
 
-    useEffect(() => {
-        if (!echo) {
-            console.error("Echo instance not available!");
-            return;
-        }
-
-        const channelName = `chat.${users?.id}`;
-        const channel = echo.channel(channelName);
-
-        if (users?.id) {
-            channel.listen('.CustomerChat', (data: any) => {
-                setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
-                    ...e,
-                    chats: [
-                        ...e.chats,
-                        data.data
-                    ]
-                }) : e));
-                const audio = new Audio('/audio/live-chat.wav');
-                audio.play();
-            });
-        }
-
-        return () => {
-            channel.stopListening(".CustomerChat");
-        };
-    }, [users]);    
-
-    useEffect(() => {
-        if (creatorIdOpen) {
-            const creatorExist = chat.find(e => e.to?.has_creator?.id == creatorIdOpen);
-
-            if (creatorExist) {
-                setSelected(creatorExist?.to.id);
-                setName(creatorExist?.to.has_creator?.name ?? '-');
-                setMessages({
-                    from: users?.id ?? 0,
-                    to: creatorExist?.to?.id ?? 0,
-                    message: '',
-                    inbox_id: creatorExist.id
-                })
-            } else {
-                if (chatFetched) {
-                    getCreator();
-                }
-            }
-        }
-    }, [openTab]);
-
-    const getCreator = async () => {
-        if (Boolean(creatorIdOpen)) {
-            await fetch<{}, GetCreatorResponse>({
-                url: `creator/${creatorIdOpen}`,
-                method: 'GET',
-                success: ({ data }) => {
-                    if (data) {
-                        setSelected(data?.has_user.id);
-                        setName(data?.name);
-                        setMessages({
-                            from: users?.id ?? 0,
-                            to: data?.has_user?.id ?? 0,
-                            inbox_id: 0,
-                            message: ''
-                        });
-                        setChat([
-                            {
-                                lastMsg: '',
-                                id: 0,
-                                to: {
-                                    ...data.has_user,
-                                    email: data.has_user.email,
-                                    role_id: data.has_user.role_id,
-                                    email_verified_at: data.has_user.email_verified_at,
-                                    otp_code: null,
-                                    otp_expiry_time: data.has_user.otp_expiry_time,
-                                    event_status_id: 0,
-                                    has_creator: {
-                                        ...data
-                                    }
-                                },
-                                from: {
-                                    id: users?.id ?? 0,
-                                    name: users?.name ?? '',
-                                    role_id: users?.role_id ?? 0,
-                                    email: users?.email ?? '',
-                                    email_verified_at: new Date(),
-                                    otp_code: null,
-                                    otp_expiry_time: new Date(),
-                                    created_at: new Date(),
-                                    updated_at: new Date(),
-                                    event_status_id: 0
-                                },
-                                created_at: moment(new Date()).format('YYYY-MM-DD'),
-                                updated_at: moment(new Date()).format('YYYY-MM-DD'),
-                                deleted_at: null,
-                                chats: []
-                            },
-                            ...chat
-                        ])
-                    }
-                },
-                error: () => alert('failed get Creator'),
-            });
-        }
+  useEffect(() => {
+    if (!echo) {
+      console.error("Echo instance not available!");
+      return;
     }
 
-    const handleButtonClick = (form?: React.FormEvent) => {
-        form?.preventDefault();
-        const token = Cookies.get('token'); // Ambil token dari cookies
-        if (!token) {
-            setModalVisible(true); // Hanya set modalVisible ke true jika tidak ada token
-        } else {
-            // Tindakan lain jika token ada (misalnya, tampilkan pesan atau lakukan sesuatu yang lain)
-            console.log('Token is present, modal will not be opened.');
-        }
-    };
+    const channelName = `chat.${users?.id}`;
+    const channel = echo.channel(channelName);
 
-    const defaultSupportContact: Dummy = {
-        id: 1,
-        from: {
-            id: 0,
-            name: 'Kolektix Support'
-        },
-        to: {
-            id: 0,
-            name: 'User'
-        },
-        chats: [
-            {
-                message: 'Halo, ada yang bisa kami bantu?',
-                created_at: new Date().toISOString()
-            }
-        ],
-        lastMsg: 'Ada yang bisa kami bantu?',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: ''
-    };
-
-    const [supportContact, setSupportContact] = useState<Dummy | null>(defaultSupportContact);
-
-    const scrollDown = () => {
-        if (messageBoxRef.current) {
-            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
-        }
-        setTimeout(() => {
-            if (messageBoxRef.current) {
-                messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
-            }
-        }, 200)
+    if (users?.id) {
+      channel.listen(".CustomerChat", (data: any) => {
+        setChat((chat) =>
+          chat.map((e) =>
+            e.id == data.data.inbox_id
+              ? {
+                  ...e,
+                  chats: [...e.chats, data.data],
+                }
+              : e
+          )
+        );
+        const audio = new Audio("/audio/live-chat.wav");
+        audio.play();
+      });
     }
 
-    useEffect(() => {
-        if (users) {
-            setUser(users);
-            if (users.id) {
-                setMessages({
-                    ...messages,
-                    from: users.id
-                });
-            }
-        }
-    }, [users]);
-
-    const getData = () => {
-        Get('inbox', {})
-            .then((res: any) => {
-                const chatlist = (res as InboxListProps[])
-                .filter(e => (Boolean(e.from) && (Boolean(e.to))))
-                .filter(e => e.from.id == users?.id)
-
-                setChat(chatlist);
-                setChatFetched(true);
-            })
-            .catch((err: any) => {
-                console.log(err);
-            });
+    return () => {
+      channel.stopListening(".CustomerChat");
     };
+  }, [users]);
 
-    const getChatSupportData = async () => {
-        try {
-            const token = Cookies.get('token');
-            const response = await axios.get(`${config.wsUrl}chat-support`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            console.log('Response dari API:', response.data);
-            if (response && response.data && response.data.data) {
-                const contactsData = response.data.data.map((contact: any) => {
-                    const replies = contact.has_replies || [];
-                    const lastReply = replies.length > 0 ? replies[replies.length - 1] : null;
+  useEffect(() => {
+    if (creatorIdOpen) {
+      const creatorExist = chat.find((e) => e.to?.has_creator?.id == creatorIdOpen);
 
-                    return {
-                        id: contact.id,
-                        name: 'Kolektix Support',
-                        lastMessage: lastReply ? lastReply.message : 'Belum ada pesan',
-                        lastMessageTime: lastReply ? formatDate(lastReply.created_at) : 'Belum ada pesan',
-                        lastMessageDate: lastReply ? formatDate(lastReply.created_at) : 'Belum ada pesan',
-                        has_replies: replies
-                    };
-                });
-
-                setSupportContacts(contactsData); // Simpan kontak `chat-support` ke state
-            }
-        } catch (error) {
-            console.error('Error fetching chat support data:', error);
-        } finally {
-            scrollDown();
-        }
-    };
-
-    const sendMessage = (form?: React.FormEvent) => {
-        form?.preventDefault();
-        if (newMessage.trim()) {
-            Post(messages.inbox_id == 0 ? 'inbox' : 'inbox-chat',
-                { ...messages, message: newMessage }
-            )
-                .then((res: any) => {
-                    console.log(res);
-                    getData();
-                    setNewMessage('');
-                    if (messageBoxRef.current) {
-                        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
-                    }
-                    if (messages.inbox_id == 0) {
-                        setMessages(e => ({ ...e, inbox_id: res?.data?.id ?? res?.data?.data?.id}))
-                    }
-                })
-                .catch((err: any) => {
-                    toast.error(err.response.data.message);
-                });
-        }
-        
-    };
-
-    const sendSupportMessage = (form?: React.FormEvent) => {
-        form?.preventDefault();
-
-        if (newMessage.trim()) {
-            // Ambil token dari cookie menggunakan js-cookie
-            const token = Cookies.get('token');
-
-            // Periksa apakah token ada
-            if (!token) {
-                console.error('Token tidak ditemukan.');
-                return;
-            }
-
-            // Kirim pesan dengan menambahkan Authorization header
-            axios
-                .post(
-                    `${config.wsUrl}chat-support`,
-                    { message: newMessage },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                )
-                .then((res) => {
-                    console.log('Pesan terkirim:', res.data);
-                    getChatSupportData(); // Memperbarui daftar chat setelah mengirim pesan tanpa reload halaman
-                    setNewMessage(''); // Reset input
-                    scrollDown()
-                })
-                .catch((err) => {
-                    toast.error(err.response?.data?.message || 'Error mengirim pesan.');
-                    console.error('Error mengirim pesan:', err);
-                    scrollDown()
-                })
-                .finally(() => {
-                    scrollDown()
-                });
-        }
-    };
-
-    useEffect(() => {
-        if (users) {
-            getData();
-        }
-        getChatSupportData();
-    }, [users]);
-
-    const totalUnread = useMemo(() => {
-        return chat.reduce((q, n) => q + n.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length, 0);
-    }, [chat]);
-
-    useEffect(() => {
-      if (Boolean(searchQuery)) {
-        setSearchedChats(chat.filter(e => e.from.has_creator?.name?.toLowerCase().includes(searchQuery.toLowerCase())));
+      if (creatorExist) {
+        setSelected(creatorExist?.to.id);
+        setName(creatorExist?.to.has_creator?.name ?? "-");
+        setMessages({
+          from: users?.id ?? 0,
+          to: creatorExist?.to?.id ?? 0,
+          message: "",
+          inbox_id: creatorExist.id,
+        });
       } else {
-        setSearchedChats([]);
+        if (chatFetched) {
+          getCreator();
+        }
       }
-    }, [searchQuery]);
+    }
+  }, [openTab]);
 
-    const messageBoxRef = useRef<HTMLDivElement | null>(null);
-    
-    useEffect(() => {
+  const getCreator = async () => {
+    if (Boolean(creatorIdOpen)) {
+      await fetch<{}, GetCreatorResponse>({
+        url: `creator/${creatorIdOpen}`,
+        method: "GET",
+        success: ({ data }) => {
+          if (data) {
+            setSelected(data?.has_user.id);
+            setName(data?.name);
+            setMessages({
+              from: users?.id ?? 0,
+              to: data?.has_user?.id ?? 0,
+              inbox_id: 0,
+              message: "",
+            });
+            setChat([
+              {
+                lastMsg: "",
+                id: 0,
+                to: {
+                  ...data.has_user,
+                  email: data.has_user.email,
+                  role_id: data.has_user.role_id,
+                  email_verified_at: data.has_user.email_verified_at,
+                  otp_code: null,
+                  otp_expiry_time: data.has_user.otp_expiry_time,
+                  event_status_id: 0,
+                  has_creator: {
+                    ...data,
+                  },
+                },
+                from: {
+                  id: users?.id ?? 0,
+                  name: users?.name ?? "",
+                  role_id: users?.role_id ?? 0,
+                  email: users?.email ?? "",
+                  email_verified_at: new Date(),
+                  otp_code: null,
+                  otp_expiry_time: new Date(),
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                  event_status_id: 0,
+                },
+                created_at: moment(new Date()).format("YYYY-MM-DD"),
+                updated_at: moment(new Date()).format("YYYY-MM-DD"),
+                deleted_at: null,
+                chats: [],
+              },
+              ...chat,
+            ]);
+          }
+        },
+        error: () => alert("failed get Creator"),
+      });
+    }
+  };
+
+  const handleButtonClick = (form?: React.FormEvent) => {
+    form?.preventDefault();
+    const token = Cookies.get("token"); // Ambil token dari cookies
+    if (!token) {
+      setModalVisible(true); // Hanya set modalVisible ke true jika tidak ada token
+    } else {
+      // Tindakan lain jika token ada (misalnya, tampilkan pesan atau lakukan sesuatu yang lain)
+      console.log("Token is present, modal will not be opened.");
+    }
+  };
+
+  const defaultSupportContact: Dummy = {
+    id: 1,
+    from: {
+      id: 0,
+      name: "Kolektix Support",
+    },
+    to: {
+      id: 0,
+      name: "User",
+    },
+    chats: [
+      {
+        message: "Halo, ada yang bisa kami bantu?",
+        created_at: new Date().toISOString(),
+      },
+    ],
+    lastMsg: "Ada yang bisa kami bantu?",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    deleted_at: "",
+  };
+
+  const [supportContact, setSupportContact] = useState<Dummy | null>(defaultSupportContact);
+
+  const scrollDown = () => {
+    if (messageBoxRef.current) {
+      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
+    }
+    setTimeout(() => {
       if (messageBoxRef.current) {
-        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight + 9999;
       }
-    }, [chat, selected])
+    }, 200);
+  };
 
-    return (
-        <>
-            <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className={`${users?.id ? 'z-[100]' : 'z-[48]'} [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100`}>
-                <Accordion selectedKeys={openTab ? "1" : undefined} onSelectionChange={() => toggleOpenTab && toggleOpenTab()}>
-                    <AccordionItem
-                        key="1"
-                        title={
-                            <div className="flex items-center text-primary-base w-full relative">
-                                <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
-                                <p className="ml-2 text-[18px]">Chat</p>
-                                {totalUnread > 0 && (
-                                    <Badge color="red" ml={10} pos="absolute" className={`top-[-18px] right-[-30px] indicatorTotalBadge`}>
-                                        {totalUnread}
-                                    </Badge>
-                                )}
-                                {(users?.id && Boolean(users.has_creator)) && (
-                                //   <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
-                                    <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden !absolute right-0 !z-50`}>
-                                      <Icon icon="majesticons:open-line" className={`!text-[20px] !text-primary-base`} />
-                                    </ActionIcon>
-                                //   </Tooltip>
-                                )}
-                            </div>
-                        }
-                    >
-                        {user && user.id ? (
-                            <div className="flex !h-[80vh] w-[calc(100vw_-_15px)] md:w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
-                                {/* Contact List */}
-                                <div className={`${selected === undefined ? '' : 'hidden md:block'} w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0`}>
-                                    <Box p={5}>
-                                      <TextInput
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        leftSection={<Icon icon="uiw:search" />}
-                                        placeholder="Cari Chat"
-                                        variant="unstyled"
-                                      />
-                                    </Box>
+  useEffect(() => {
+    if (users) {
+      setUser(users);
+      if (users.id) {
+        setMessages({
+          ...messages,
+          from: users.id,
+        });
+      }
+    }
+  }, [users]);
 
-                                    {/* Kontak Support */}
-                                    <ChatList image={"/images/layanan-pelanggan.png"} name="Kolektix Support" lastMsg={supportContacts[0]?.lastMessage || 'Belum ada pesan'} time={supportContacts[0]?.lastMessageTime || 'Belum ada pesan'} key="kolektix-support" setSelected={setSelected} selected={selected} setName={setName} setMessages={setMessages} messages={messages} id={0} inbox={0} />
+  const getData = () => {
+    Get("inbox", {})
+      .then((res: any) => {
+        const chatlist = (res as InboxListProps[]).filter((e) => Boolean(e.from) && Boolean(e.to)).filter((e) => e.from.id == users?.id);
 
-                                    {(searchQuery && searchedChats.length == 0) && (
-                                      <Card>
-                                        <Text size="sm" c="gray">Chat tidak ditemukan</Text>
-                                      </Card>
+        setChat(chatlist);
+        setChatFetched(true);
+      })
+      .catch((err: any) => {
+        console.log(err);
+      });
+  };
+
+  const getChatSupportData = async () => {
+    try {
+      const token = Cookies.get("token");
+      const response = await axios.get(`${config.wsUrl}chat-support`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Response dari API:", response.data);
+      if (response && response.data && response.data.data) {
+        const contactsData = response.data.data.map((contact: any) => {
+          const replies = contact.has_replies || [];
+          const lastReply = replies.length > 0 ? replies[replies.length - 1] : null;
+
+          return {
+            id: contact.id,
+            name: "Kolektix Support",
+            lastMessage: lastReply ? lastReply.message : "Belum ada pesan",
+            lastMessageTime: lastReply ? formatDate(lastReply.created_at) : "Belum ada pesan",
+            lastMessageDate: lastReply ? formatDate(lastReply.created_at) : "Belum ada pesan",
+            has_replies: replies,
+          };
+        });
+
+        setSupportContacts(contactsData); // Simpan kontak `chat-support` ke state
+      }
+    } catch (error) {
+      console.error("Error fetching chat support data:", error);
+    } finally {
+      scrollDown();
+    }
+  };
+
+  const sendMessage = (form?: React.FormEvent) => {
+    form?.preventDefault();
+    if (newMessage.trim()) {
+      Post(messages.inbox_id == 0 ? "inbox" : "inbox-chat", { ...messages, message: newMessage })
+        .then((res: any) => {
+          console.log(res);
+          getData();
+          setNewMessage("");
+          if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+          }
+          if (messages.inbox_id == 0) {
+            setMessages((e) => ({ ...e, inbox_id: res?.data?.id ?? res?.data?.data?.id }));
+          }
+        })
+        .catch((err: any) => {
+          toast.error(err.response.data.message);
+        });
+    }
+  };
+
+  const sendSupportMessage = (form?: React.FormEvent) => {
+    form?.preventDefault();
+
+    if (newMessage.trim()) {
+      // Ambil token dari cookie menggunakan js-cookie
+      const token = Cookies.get("token");
+
+      // Periksa apakah token ada
+      if (!token) {
+        console.error("Token tidak ditemukan.");
+        return;
+      }
+
+      // Kirim pesan dengan menambahkan Authorization header
+      axios
+        .post(
+          `${config.wsUrl}chat-support`,
+          { message: newMessage },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        .then((res) => {
+          console.log("Pesan terkirim:", res.data);
+          getChatSupportData(); // Memperbarui daftar chat setelah mengirim pesan tanpa reload halaman
+          setNewMessage(""); // Reset input
+          scrollDown();
+        })
+        .catch((err) => {
+          toast.error(err.response?.data?.message || "Error mengirim pesan.");
+          console.error("Error mengirim pesan:", err);
+          scrollDown();
+        })
+        .finally(() => {
+          scrollDown();
+        });
+    }
+  };
+
+  useEffect(() => {
+    if (users) {
+      getData();
+    }
+    getChatSupportData();
+  }, [users]);
+
+  const totalUnread = useMemo(() => {
+    return chat.reduce((q, n) => q + n.chats.filter((e) => e.status == "unread" && e.user_id != users?.id).length, 0);
+  }, [chat]);
+
+  useEffect(() => {
+    if (Boolean(searchQuery)) {
+      setSearchedChats(chat.filter((e) => e.from.has_creator?.name?.toLowerCase().includes(searchQuery.toLowerCase())));
+    } else {
+      setSearchedChats([]);
+    }
+  }, [searchQuery]);
+
+  const messageBoxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (messageBoxRef.current) {
+      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+    }
+  }, [chat, selected]);
+
+  return (
+    <>
+      <AuthModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <div
+        className={`${
+          users?.id ? "z-[100]" : "z-[48]"
+        } [&_h2>button]:!py-2 [&_h2>button]:!pr-2 [&_h2>button>span]:!hidden [&_h2[data-open]>button>span]:!block [&_h2[data-open]_.indicatorTotalBadge]:!opacity-0 [&_h2[data-open]_.redirectBtn]:!block fixed bottom-2 md:bottom-6 right-0 md:right-6 transition-all duration-300 bg-white shadow-xl rounded-lg opacity-100`}
+      >
+        <Accordion selectedKeys={openTab ? "1" : undefined} onSelectionChange={() => toggleOpenTab && toggleOpenTab()}>
+          <AccordionItem
+            key="1"
+            title={
+              <div className="flex items-center text-primary-base w-full relative">
+                <FontAwesomeIcon icon={faCommentDots} className="ml-2 text-gray-600" />
+                <p className="ml-2 text-[18px]">Chat</p>
+                {totalUnread > 0 && (
+                  <Badge color="red" ml={10} pos="absolute" className={`top-[-18px] right-[-30px] indicatorTotalBadge`}>
+                    {totalUnread}
+                  </Badge>
+                )}
+                {users?.id && Boolean(users.has_creator) && (
+                  //   <Tooltip label="Buka di dashboard" bg="white" c="gray" className={`shadow-lg`} withArrow>
+                  <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden !absolute right-0 !z-50`}>
+                    <Icon icon="majesticons:open-line" className={`!text-[20px] !text-primary-base`} />
+                  </ActionIcon>
+                  //   </Tooltip>
+                )}
+              </div>
+            }
+          >
+            {user && user.id ? (
+              <div className="flex !h-[80vh] w-[calc(100vw_-_15px)] md:w-[90vw] lg:w-[70vw] transition-all duration-300 flex-col md:flex-row shadow-2xl overflow-x-hidden box-border">
+                {/* Contact List */}
+                <div className={`${selected === undefined ? "" : "hidden md:block"} w-full md:w-1/3 bg-gray-100 border-r-[#d0d0d0] overflow-y-auto border-e-2 flex-shrink-0`}>
+                  <Box p={5}>
+                    <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Chat" variant="unstyled" />
+                  </Box>
+
+                  {/* Kontak Support */}
+                  <ChatList
+                    image={"/images/layanan-pelanggan.png"}
+                    name="Kolektix Support"
+                    lastMsg={supportContacts[0]?.lastMessage || "Belum ada pesan"}
+                    time={supportContacts[0]?.lastMessageTime || "Belum ada pesan"}
+                    key="kolektix-support"
+                    setSelected={setSelected}
+                    selected={selected}
+                    setName={setName}
+                    setMessages={setMessages}
+                    messages={messages}
+                    id={0}
+                    inbox={0}
+                  />
+
+                  {searchQuery && searchedChats.length == 0 && (
+                    <Card>
+                      <Text size="sm" c="gray">
+                        Chat tidak ditemukan
+                      </Text>
+                    </Card>
+                  )}
+
+                  {/* Kontak Lain */}
+                  {chat.length > 0 ? (
+                    (searchQuery ? searchedChats : chat)
+                      .filter((item: InboxListProps) => item.from.id == user?.id)
+                      .sort((a, b) => {
+                        const aChat = a.chats[0];
+                        const bChat = b.chats[0];
+                        if (!aChat && !bChat) return 0;
+                        if (!aChat) return -1;
+                        if (!bChat) return 1;
+                        return new Date(aChat.created_at).getTime() - new Date(bChat.created_at).getTime();
+                      })
+                      .map((item: InboxListProps) => (
+                        <ChatList
+                          countMsg={item.chats.filter((e) => e.status == "unread" && e.user_id != users?.id).length}
+                          name={item.to.has_creator?.name ?? "-"}
+                          lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : "Belum Ada Pesan"}
+                          time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format("YYYY-MM-DD"))}
+                          key={item.to.id}
+                          setSelected={setSelected}
+                          selected={selected}
+                          id={item?.to?.id ?? 0}
+                          setName={setName}
+                          setMessages={setMessages}
+                          messages={messages}
+                          inbox={item.id}
+                          image={item.to.has_creator?.image_url}
+                        />
+                      ))
+                  ) : (
+                    <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
+                  )}
+                </div>
+
+                {/* Chat Window */}
+                <div className={`${selected === undefined ? "hidden md:flex" : "flex"} flex-col h-full w-full`}>
+                  {messagerName !== "" && (
+                    <div className="flex items-center py-4 px-3 h-16 gap-3">
+                      <div className={`md:!hidden`}>
+                        <ActionIcon variant="transparent" c="gray" onClick={() => setSelected(undefined)}>
+                          <Icon icon="uiw:left" />
+                        </ActionIcon>
+                      </div>
+                      <ImageM src={chat.find((e) => e.from.id == selected)?.from.has_creator?.image_url ?? "/images/layanan-pelanggan.png"} className="rounded-full shrink-0" w={36} h={36} radius={999} />
+                      <div>
+                        <p className="font-semibold text-dark">{messagerName}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messageBoxRef} className="flex-1 p-4 flex flex-col overflow-y-auto bg-chat w-full">
+                    {/* Cek apakah kontak yang dipilih adalah Kolektix Support */}
+                    {selected === 0 ? (
+                      <>
+                        {/* Render pesan dari Kolektix Support */}
+                        {supportContacts.map((supportContact, index) => {
+                          let lastDate: string | null = null;
+
+                          return (
+                            <div key={index}>
+                              {supportContact.has_replies.map((reply: any, replyIndex: number) => {
+                                const currentDate = formatDateDiff(reply.created_at);
+                                const showDateLabel = currentDate !== lastDate;
+                                if (showDateLabel) {
+                                  lastDate = currentDate;
+                                }
+
+                                const isAdminReply = reply.reply_from.email === "admin@kolektix.com";
+                                const messageContent = reply.message || "Ada yang bisa kami bantu?";
+
+                                return (
+                                  <div key={replyIndex}>
+                                    {showDateLabel && (
+                                      <div className="flex justify-center">
+                                        <Chip size="sm">{currentDate}</Chip>
+                                      </div>
                                     )}
-
-                                    {/* Kontak Lain */}
-                                    {chat.length > 0 ? (
-                                        (searchQuery ? searchedChats : chat)
-                                            .filter((item: InboxListProps) => item.from.id == user?.id)
-                                            .sort((a, b) => {
-
-                                                const aChat = a.chats[0];
-                                                const bChat = b.chats[0];
-                                                if (!aChat && !bChat) return 0; 
-                                                if (!aChat) return -1; 
-                                                if (!bChat) return 1; 
-                                                return new Date(aChat.created_at).getTime() - new Date(bChat.created_at).getTime();
-
-                                            })
-                                            .map((item: InboxListProps) => (
-                                                <ChatList
-                                                    countMsg={item.chats.filter((e) => e.status == 'unread' && e.user_id != users?.id).length}
-                                                    name={item.to.has_creator?.name ?? '-'}
-                                                    lastMsg={item.chats[0] ? item.chats[item.chats.length - 1].message : 'Belum Ada Pesan'}
-                                                    time={formatDate(item.chats[0] ? item.chats[item.chats.length - 1].created_at : moment(new Date()).format('YYYY-MM-DD'))}
-                                                    key={item.to.id} setSelected={setSelected}
-                                                    selected={selected}
-                                                    id={item?.to?.id ?? 0}
-                                                    setName={setName}
-                                                    setMessages={setMessages}
-                                                    messages={messages}
-                                                    inbox={item.id}
-                                                    image={item.to.has_creator?.image_url}
-                                                />
-                                            ))
-                                    ) : (
-                                        <p className="p-2 text-gray-500">Belum ada kontak lain.</p>
-                                    )}
-                                </div>
-
-                                {/* Chat Window */}
-                                <div className={`${selected === undefined ? 'hidden md:flex' : 'flex'} flex-col h-full w-full`}>
-                                    {messagerName !== '' && (
-                                        <div className="flex items-center py-4 px-3 h-16 gap-3">
-                                            <div className={`md:!hidden`}>
-                                                <ActionIcon variant='transparent' c="gray" onClick={() => setSelected(undefined)}>
-                                                    <Icon icon="uiw:left" />
-                                                </ActionIcon>
-                                            </div>
-                                            <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
-                                            <div>
-                                                <p className="font-semibold text-dark">{messagerName}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div ref={messageBoxRef} className="flex-1 p-4 flex flex-col overflow-y-auto bg-chat w-full">
-                                        {/* Cek apakah kontak yang dipilih adalah Kolektix Support */}
-                                        {selected === 0 ? (
-                                            <>
-                                                {/* Render pesan dari Kolektix Support */}
-                                                {supportContacts.map((supportContact, index) => {
-                                                    let lastDate: string | null = null;
-
-                                                    return (
-                                                        <div key={index}>
-                                                            {supportContact.has_replies.map((reply: any, replyIndex: number) => {
-                                                                const currentDate = formatDateDiff(reply.created_at);
-                                                                const showDateLabel = currentDate !== lastDate;
-                                                                if (showDateLabel) {
-                                                                    lastDate = currentDate;
-                                                                }
-
-                                                                const isAdminReply = reply.reply_from.email === 'admin@kolektix.com';
-                                                                const messageContent = reply.message || 'Ada yang bisa kami bantu?';
-
-                                                                return (
-                                                                    <div key={replyIndex}>
-                                                                        {showDateLabel && (
-                                                                            <div className="flex justify-center">
-                                                                                <Chip size="sm">{currentDate}</Chip>
-                                                                            </div>
-                                                                        )}
-                                                                        {/* Balikkan penempatan dan warna chat Kolektix Support */}
-                                                                        <div className={`flex flex-col gap-2 px-4 lg:px-16 ${isAdminReply ? '' : 'items-end'}`}>
-                                                                            <div className={`${isAdminReply ? 'bg-primary-base text-white' : 'bg-white text-dark'} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1`}>
-                                                                                <p className="flex-grow">{messageContent}</p>
-                                                                                <span className="text-[11px] ml-2 pt-1">
-                                                                                    {new Date(reply.created_at).toLocaleTimeString('en-US', {
-                                                                                        hour: '2-digit',
-                                                                                        minute: '2-digit',
-                                                                                        hour12: false
-                                                                                    })}
-                                                                                </span>
-                                                                                {!isAdminReply && (
-                                                                                  <Icon
-                                                                                    icon={true ? "solar:check-read-linear" : "ci:check"}
-                                                                                    className={`text-grey text-[18px] ml-[3px] translate-y-[2px] shrink-0`}
-                                                                                  />
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </>
-                                        ) : (
-                                            // Render pesan dari kontak lain
-                                            (() => {
-                                                let lastDate: string | null = null;
-                                                return chat
-                                                    .filter((chatitem: any) => (chatitem.from.id === user.id && chatitem.to.id === selected) || (chatitem.to.id === user.id && chatitem.from.id === selected))
-                                                    .flatMap((chatitem) =>
-                                                        chatitem.chats.map((chat) => ({
-                                                            ...chat,
-                                                            fromId: chatitem.from.id,
-                                                            createdAt: chat.created_at
-                                                        }))
-                                                    )
-                                                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                                                    .map((chat, index) => {
-                                                        const currentDate = formatDateDiff(chat.createdAt);
-                                                        const showDateLabel = currentDate !== lastDate;
-
-                                                        if (showDateLabel) {
-                                                            lastDate = currentDate;
-                                                        }
-
-                                                        return (
-                                                            <div key={index}>
-                                                                {showDateLabel && (
-                                                                    <div className="flex justify-center">
-                                                                        <Chip size="sm">{currentDate}</Chip>
-                                                                    </div>
-                                                                )}
-                                                                {/* Balikkan penempatan dan warna chat pengguna */}
-                                                                <div className={`flex flex-col gap-2 ${chat.user_id == user.id ? 'items-end' : ''} px-4 lg:px-16`}>
-                                                                    <div className={`${chat.user_id == user.id ? 'bg-white text-dark' : ' bg-primary-base text-white'} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}>
-                                                                        <p className="flex-grow">{chat.message}</p>
-                                                                        <span className={`text-[11px] ml-2 ${chat.user_id == user.id ? 'text-grey' : ' text-primary-light-200'}`}>
-                                                                            {new Date(chat.createdAt).toLocaleTimeString('en-US', {
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit',
-                                                                                hour12: false
-                                                                            })}
-                                                                        </span>
-                                                                        {chat.user_id == user.id && (
-                                                                          <Icon
-                                                                            icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
-                                                                            className={`${chat.status ? 'text-primary-base' : 'text-grey'} text-[18px] ml-[3px] shrink-0`}
-                                                                          />
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    });
-                                            })()
-                                        )}
+                                    {/* Balikkan penempatan dan warna chat Kolektix Support */}
+                                    <div className={`flex flex-col gap-2 px-4 lg:px-16 ${isAdminReply ? "" : "items-end"}`}>
+                                      <div className={`${isAdminReply ? "bg-primary-base text-white" : "bg-white text-dark"} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1`}>
+                                        <p className="flex-grow">{messageContent}</p>
+                                        <span className="text-[11px] ml-2 pt-1">
+                                          {new Date(reply.created_at).toLocaleTimeString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: false,
+                                          })}
+                                        </span>
+                                        {!isAdminReply && <Icon icon={true ? "solar:check-read-linear" : "ci:check"} className={`text-grey text-[18px] ml-[3px] translate-y-[2px] shrink-0`} />}
+                                      </div>
                                     </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      // Render pesan dari kontak lain
+                      (() => {
+                        let lastDate: string | null = null;
+                        return chat
+                          .filter((chatitem: any) => (chatitem.from.id === user.id && chatitem.to.id === selected) || (chatitem.to.id === user.id && chatitem.from.id === selected))
+                          .flatMap((chatitem) =>
+                            chatitem.chats.map((chat) => ({
+                              ...chat,
+                              fromId: chatitem.from.id,
+                              createdAt: chat.created_at,
+                            }))
+                          )
+                          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                          .map((chat, index) => {
+                            const currentDate = formatDateDiff(chat.createdAt);
+                            const showDateLabel = currentDate !== lastDate;
 
-                                    {selected !== 0 ? (
-                                        <form onSubmit={sendMessage}>
-                                            <div className="flex items-center p-3 bg-white w-full shadow-md">
-                                                <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                                <button
-                                                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
-                                                    onClick={sendMessage}
-                                                >
-                                                    <Image src={paperplane} alt='paperplane' />
-                                                </button>
-                                            </div>
-                                        </form>
-                                    ) : (
-                                        <form onSubmit={sendSupportMessage}>
-                                            <div className="flex items-center p-3 pt-0 bg-white w-full shadow-md mt-4">
-                                                <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
-                                                <button
-                                                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full'
-                                                    onClick={sendSupportMessage}
-                                                >
-                                                    <Image src={paperplane} alt='paperplane' />
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
+                            if (showDateLabel) {
+                              lastDate = currentDate;
+                            }
+
+                            return (
+                              <div key={index}>
+                                {showDateLabel && (
+                                  <div className="flex justify-center">
+                                    <Chip size="sm">{currentDate}</Chip>
+                                  </div>
+                                )}
+                                {/* Balikkan penempatan dan warna chat pengguna */}
+                                <div className={`flex flex-col gap-2 ${chat.user_id == user.id ? "items-end" : ""} px-4 lg:px-16`}>
+                                  <div className={`${chat.user_id == user.id ? "bg-white text-dark" : " bg-primary-base text-white"} rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}>
+                                    <p className="flex-grow">{chat.message}</p>
+                                    <span className={`text-[11px] ml-2 ${chat.user_id == user.id ? "text-grey" : " text-primary-light-200"}`}>
+                                      {new Date(chat.createdAt).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                      })}
+                                    </span>
+                                    {chat.user_id == user.id && <Icon icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"} className={`${chat.status ? "text-primary-base" : "text-grey"} text-[18px] ml-[3px] shrink-0`} />}
+                                  </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 shadow-2xl overflow-x-hidden box-border">
-                                <p className="text-gray-500 text-dark mb-4">Silakan login untuk mengakses fitur chat.</p>
-                                <button
-                                    className="bg-primary-base text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
-                                    onClick={() => setModalVisible(true)}
-                                >
-                                    Login
-                                </button>
-                            </div>
-                        )}
-                    </AccordionItem>
-                </Accordion>
-                <ToastContainer />
-            </div>
-        </>
-    );
+                              </div>
+                            );
+                          });
+                      })()
+                    )}
+                  </div>
+
+                  {selected !== 0 ? (
+                    <form onSubmit={sendMessage}>
+                      <div className="flex items-center p-3 bg-white w-full shadow-md">
+                        <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
+                        <button className="text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full" onClick={sendMessage}>
+                          <Image src={paperplane} alt="paperplane" />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <form onSubmit={sendSupportMessage}>
+                      <div className="flex items-center p-3 pt-0 bg-white w-full shadow-md mt-4">
+                        <Input fullWidth color="primary" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Ketik pesan anda" aria-label="Ketik pesan anda" />
+                        <button className="text-white bg-primary-dark w-10 h-10 hover:bg-primary-base shrink-0 ml-[7px] flex items-center justify-center rounded-full" onClick={sendSupportMessage}>
+                          <Image src={paperplane} alt="paperplane" />
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[80vh] w-[90vw] lg:w-[70vw] transition-all duration-300 shadow-2xl overflow-x-hidden box-border">
+                <p className="text-gray-500 text-dark mb-4">Silakan login untuk mengakses fitur chat.</p>
+                <button className="bg-primary-base text-white px-4 py-2 rounded-lg hover:bg-primary-dark" onClick={() => setModalVisible(true)}>
+                  Login
+                </button>
+              </div>
+            )}
+          </AccordionItem>
+        </Accordion>
+        <ToastContainer />
+      </div>
+    </>
+  );
 };
 
 export default Chat;

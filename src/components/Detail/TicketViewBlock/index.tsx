@@ -1,16 +1,16 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
-import DateTab from '@/components/DateTab';
-import { TicketProps } from '@/utils/globalInterface';
-import Cookies from 'js-cookie';
-import { useRouter } from 'next/router';
-import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton, Image } from '@mantine/core';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import { Context } from '@/pages/event/[slug]';
-import { useTranslation } from 'react-i18next';
-import config from '@/Config';
-import { Slide } from 'react-slideshow-image';
-import 'react-slideshow-image/dist/styles.css'
-import { Modal, ModalContent } from '@nextui-org/react';
+import { useContext, useEffect, useMemo, useState } from "react";
+import DateTab from "@/components/DateTab";
+import { TicketProps } from "@/utils/globalInterface";
+import Cookies from "js-cookie";
+import { useRouter } from "next/router";
+import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton, Image } from "@mantine/core";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import { Context } from "@/pages/event/[slug]";
+import { useTranslation } from "react-i18next";
+import config from "@/Config";
+import { Slide } from "react-slideshow-image";
+import "react-slideshow-image/dist/styles.css";
+import { Modal, ModalContent } from "@nextui-org/react";
 
 interface Props {
   counts: { [key: number]: number | string[] };
@@ -29,22 +29,7 @@ interface Props {
   venue: any;
 }
 
-const TicketViewBlock = ({
-  maxOrder,
-  isGratis,
-  counts,
-  setCounts,
-  data,
-  isLogin,
-  totalSubtotalPrice,
-  totalCount,
-  scrollToTop,
-  setStep,
-  selected,
-  setSelected,
-  storeLocalStorage,
-  venue,
-}: Props) => {
+const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin, totalSubtotalPrice, totalCount, scrollToTop, setStep, selected, setSelected, storeLocalStorage, venue }: Props) => {
   const { t } = useTranslation();
   const [edit, setEdit] = useState(false);
   const [showVenue, setShowVenue] = useState(false);
@@ -54,14 +39,14 @@ const TicketViewBlock = ({
 
   const router = useRouter();
   const redirectLogin = () => {
-    Cookies.set('ticketCount', JSON.stringify(counts));
-    Cookies.set('prevPath', router.asPath);
-    selected && Cookies.set('selected', selected.toString());
-    router.push('/auth');
+    Cookies.set("ticketCount", JSON.stringify(counts));
+    Cookies.set("prevPath", router.asPath);
+    selected && Cookies.set("selected", selected.toString());
+    router.push("/auth");
   };
 
   const total = useMemo(() => {
-    return ticket?.reduce((c, n) => c + (n.subtotal_price), 0)
+    return ticket?.reduce((c, n) => c + n.subtotal_price, 0);
   }, [ticket]);
 
   const handleDelete = (index: number) => {
@@ -78,15 +63,19 @@ const TicketViewBlock = ({
 
       setTicket(ticket?.filter((_, i) => i != index));
     }
-  }
+  };
 
   const SummaryBody = () => (
     <Stack gap={15}>
       <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
-        <Text size="sm" fw={600}>{t('selectedTicket')}</Text>
+        <Text size="sm" fw={600}>
+          {t("selectedTicket")}
+        </Text>
         <UnstyledButton onClick={() => setEdit(!edit)}>
-          <Flex align="center" className={`${edit ? '[&_*]:!text-grey' : '[&_*]:!text-primary-base'}`} gap={8}>
-            <Text fw={600} size="sm">{edit ? t('selectedTicketEndEdit') : 'Edit'}</Text>
+          <Flex align="center" className={`${edit ? "[&_*]:!text-grey" : "[&_*]:!text-primary-base"}`} gap={8}>
+            <Text fw={600} size="sm">
+              {edit ? t("selectedTicketEndEdit") : "Edit"}
+            </Text>
             {!edit && <Icon icon="iconoir:edit" />}
           </Flex>
         </UnstyledButton>
@@ -98,14 +87,25 @@ const TicketViewBlock = ({
         {ticket?.map((e, i) => (
           <Flex gap={10} wrap="wrap" justify="space-between" key={i}>
             <Flex gap={10}>
-              <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`}/>
+              <Icon icon="fa-solid:ticket-alt" className={`text-primary-base mt-[2px]`} />
               <Stack gap={0}>
-                <Text size="sm">Tiket {e.name} <Badge ml={5} className={`translate-y-[-3px]`} size="xs" color="red">{e.seat_number?.length ?? e.qty_ticket}x</Badge></Text>
-                {e.seat_number && <Text size="xs" c="gray">Seat No: {e.seat_number.join(', ')}</Text>}
+                <Text size="sm">
+                  Tiket {e.name}{" "}
+                  <Badge ml={5} className={`translate-y-[-3px]`} size="xs" color="red">
+                    {e.seat_number?.length ?? e.qty_ticket}x
+                  </Badge>
+                </Text>
+                {e.seat_number && (
+                  <Text size="xs" c="gray">
+                    Seat No: {e.seat_number.join(", ")}
+                  </Text>
+                )}
               </Stack>
             </Flex>
 
-            <Text fw={600} ml="auto" size="sm"><NumberFormatter value={e.subtotal_price}/></Text>
+            <Text fw={600} ml="auto" size="sm">
+              <NumberFormatter value={e.subtotal_price} />
+            </Text>
 
             {edit && (
               <Tooltip label="Hapus Tiket">
@@ -119,7 +119,7 @@ const TicketViewBlock = ({
 
         {(ticket?.length ?? 0) == 0 && (
           <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" radius={10}>
-            {t('selectedTicketEmpty')}
+            {t("selectedTicketEmpty")}
           </Alert>
         )}
 
@@ -129,28 +129,23 @@ const TicketViewBlock = ({
 
             <Flex gap={10} wrap="wrap" justify="space-between">
               <Text size="sm">Total</Text>
-              <Text fw={600} ml="auto" size="sm"><NumberFormatter value={total ?? 0}/></Text>
+              <Text fw={600} ml="auto" size="sm">
+                <NumberFormatter value={total ?? 0} />
+              </Text>
             </Flex>
           </>
         )}
       </Stack>
     </Stack>
-  )
+  );
 
   useEffect(() => {
-    console.log('venue', venue);
+    console.log("venue", venue);
   }, [venue]);
 
   return (
-    <div className='text-dark my-5 '>
-      <Drawer
-        opened={openDetail}
-        onClose={() => setOpenDetail(!openDetail)}
-        withCloseButton={false}
-        position="bottom"
-        radius="20px 20px 0 0"
-        size="50vh"
-      >
+    <div className="text-dark my-5 ">
+      <Drawer opened={openDetail} onClose={() => setOpenDetail(!openDetail)} withCloseButton={false} position="bottom" radius="20px 20px 0 0" size="50vh">
         <Stack gap={20} py={15} px={5} mih="calc(50vh - 30px)">
           {/* <Text c="gray" ta="center" size="sm">Detail Pembayaran</Text> */}
           <SummaryBody />
@@ -160,35 +155,24 @@ const TicketViewBlock = ({
             disabled={totalCount === 0}
             onClick={() => {
               if (isLogin) {
-                Cookies.remove('ticketCount', { path: '/' });
+                Cookies.remove("ticketCount", { path: "/" });
                 setStep(33);
                 scrollToTop();
               } else storeLocalStorage();
-            }}>
+            }}
+          >
             Beli Tiket
           </Button>
         </Stack>
       </Drawer>
 
       <Flex gap={20}>
-        <div
-          className='rounded-t-xl shadow-md p-4 w-full max-w-[700px] md:py-8 overflow-y-scroll h-100 border-2 border-primary-light-200 mb-[60px] md:mb-[90px]'
-          id='ticket-picker'
-        >
-          <DateTab
-            maxOrder={maxOrder}
-            counts={counts}
-            setCounts={setCounts}
-            data={data}
-            isLogin={isLogin}
-            selected={selected}
-            setSelected={setSelected}
-          />
+        <div className="rounded-t-xl shadow-md p-4 w-full max-w-[700px] md:py-8 overflow-y-scroll h-100 border-2 border-primary-light-200 mb-[60px] md:mb-[90px]" id="ticket-picker">
+          <DateTab maxOrder={maxOrder} counts={counts} setCounts={setCounts} data={data} isLogin={isLogin} selected={selected} setSelected={setSelected} />
           <button></button>
         </div>
 
-        <Stack >
-          
+        <Stack>
           <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
             <SummaryBody />
           </Card>
@@ -197,23 +181,22 @@ const TicketViewBlock = ({
             <Card miw={320} withBorder className={`flex-grow h-fit md:max-w-[400px] md:!block !hidden !sticky top-[90px]`} radius={10} p={20}>
               <Stack gap={15}>
                 <Flex justify="space-between" gap={10} wrap="wrap" align="center" w="100%">
-                  <Text size="sm" fw={600}>Venue Layout</Text>
+                  <Text size="sm" fw={600}>
+                    Venue Layout
+                  </Text>
                 </Flex>
                 <Divider />
                 <Stack gap={15}>
-                  <Slide 
-                    autoplay={false}
-                  >
-                    {venue?.map((e: { title: string, image: string }, i: number) => (
+                  <Slide autoplay={false}>
+                    {venue?.map((e: { title: string; image: string }, i: number) => (
                       <>
-                        <UnstyledButton 
+                        <UnstyledButton
                           key={i}
                           onClick={() => {
-                              setShowVenue(!showVenue);
-                            }
-                          }
+                            setShowVenue(!showVenue);
+                          }}
                         >
-                          <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
+                          <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5} />
                         </UnstyledButton>
                       </>
                     ))}
@@ -222,76 +205,64 @@ const TicketViewBlock = ({
               </Stack>
             </Card>
           )}
-
         </Stack>
       </Flex>
 
-      <div className='flex justify-between items-center bg-[#eff5ff] px-5 py-3 rounded-b-xl shadow-md w-full fixed bottom-0 left-0 z-50'>
+      <div className="flex justify-between items-center bg-[#eff5ff] px-5 py-3 rounded-b-xl shadow-md w-full fixed bottom-0 left-0 z-50">
         <div>
           <p>Total {totalCount} Tiket</p>
-          <p className='font-semibold'>Rp {totalSubtotalPrice.toLocaleString('id-ID')}</p>
+          <p className="font-semibold">Rp {totalSubtotalPrice.toLocaleString("id-ID")}</p>
         </div>
-        <div className='flex gap-4 items-center'>
+        <div className="flex gap-4 items-center">
           <Button
             onClick={() => setOpenDetail(true)}
-            rightSection={(
+            rightSection={
               <Flex gap={10} align="center">
-                <Badge color="red" size="sm">{totalCount}</Badge>
+                <Badge color="red" size="sm">
+                  {totalCount}
+                </Badge>
                 <Icon icon="uiw:up" />
               </Flex>
-            )}
+            }
             variant="transparent"
-            className={`md:!hidden !text-primary-base`}>
+            className={`md:!hidden !text-primary-base`}
+          >
             Detail
           </Button>
           {isLogin ? (
             <button
-              className='bg-primary-base text-white px-4 py-2 font-semibold text-sm rounded-2xl disabled:bg-primary-disabled disabled:cursor-not-allowed'
+              className="bg-primary-base text-white px-4 py-2 font-semibold text-sm rounded-2xl disabled:bg-primary-disabled disabled:cursor-not-allowed"
               onClick={() => {
-                Cookies.remove('ticketCount', { path: '/' });
+                Cookies.remove("ticketCount", { path: "/" });
                 setStep(33);
                 scrollToTop();
               }}
               disabled={totalCount === 0}
             >
-              {isGratis ? 'Registrasi' : 'Beli'} Tiket {totalCount > 0 && `x${totalCount}`}
+              {isGratis ? "Registrasi" : "Beli"} Tiket {totalCount > 0 && `x${totalCount}`}
             </button>
           ) : (
-            <button
-              className='bg-primary-base text-white px-4 py-2 font-semibold text-sm rounded-2xl disabled:bg-primary-disabled disabled:cursor-not-allowed'
-              onClick={storeLocalStorage}
-              disabled={totalCount === 0}
-            >
-              {isGratis ? 'Registrasi' : 'Beli'} Tiket {totalCount > 0 && `x${totalCount}`}
+            <button className="bg-primary-base text-white px-4 py-2 font-semibold text-sm rounded-2xl disabled:bg-primary-disabled disabled:cursor-not-allowed" onClick={storeLocalStorage} disabled={totalCount === 0}>
+              {isGratis ? "Registrasi" : "Beli"} Tiket {totalCount > 0 && `x${totalCount}`}
             </button>
           )}
         </div>
       </div>
-      <Modal
-        isOpen={showVenue}
-        onOpenChange={setShowVenue}
-        placement='auto'
-        size='4xl'
-        closeButton
-        aria-labelledby='modal-title'
-        aria-describedby='modal-description'
-      >
-        <ModalContent className='text-dark font-inter h-full'>
-        {(onClose) => {
-          return (
-            <div className="flex flex-col w-full h-full overflow-auto">
-               <Slide 
-                  autoplay={false}
-                >
-                  {venue?.map((e: { title: string, image:string }, i: number) => (
+      <Modal isOpen={showVenue} onOpenChange={setShowVenue} placement="auto" size="4xl" closeButton aria-labelledby="modal-title" aria-describedby="modal-description">
+        <ModalContent className="text-dark font-inter h-full">
+          {(onClose) => {
+            return (
+              <div className="flex flex-col w-full h-full overflow-auto">
+                <Slide autoplay={false}>
+                  {venue?.map((e: { title: string; image: string }, i: number) => (
                     <>
-                      <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5}/>
+                      <Image src={`${config.assetUrl}event/${e.image}`} alt="image" radius={8} mt={-5} />
                     </>
                   ))}
                 </Slide>
-            </div>
-          );
-        }}
+              </div>
+            );
+          }}
         </ModalContent>
       </Modal>
     </div>

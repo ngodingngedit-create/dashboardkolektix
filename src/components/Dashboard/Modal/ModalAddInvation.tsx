@@ -1,5 +1,5 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem } from "@nextui-org/react";
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import fetch from "@/utils/fetch";
 import { useListState } from "@mantine/hooks";
 import { useForm, zodResolver } from "@mantine/form";
@@ -16,13 +16,15 @@ interface AddEventModalProps {
   eventData?: EventProps;
 }
 
-export type CategoryResponse = { id: number, name: string };
+export type CategoryResponse = { id: number; name: string };
 
-type InvitationStore<T = {
-  fullname: string;
-  email: string;
-  phone: string;
-}[]> = {
+type InvitationStore<
+  T = {
+    fullname: string;
+    email: string;
+    phone: string;
+  }[]
+> = {
   event_id: number;
   invitation_cat_id?: number;
   invitation_title: string;
@@ -32,9 +34,12 @@ type InvitationStore<T = {
   image?: Blob;
   is_one_receiver?: boolean;
   is_banner_image?: boolean;
-}
+  event_invitation_status?: {
+    id: number;
+  };
+};
 
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = typeof window !== "undefined";
 
 export const invitationStoreSchema = z.object({
   event_id: z.number().int().positive(),
@@ -42,11 +47,15 @@ export const invitationStoreSchema = z.object({
   invitation_title: z.string().nonempty("Judul undangan tidak boleh kosong"),
   invitation_description: z.string().nonempty("Deskripsi undangan tidak boleh kosong"),
   total_qty: z.number().int().nonnegative(),
-  details: z.array(z.object({
-      fullname: z.string().nonempty("Nama lengkap tidak boleh kosong."),
-      email: z.string().email("Format email tidak valid."),
-      phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
-  })).nonempty("Detail tidak boleh kosong."),
+  details: z
+    .array(
+      z.object({
+        fullname: z.string().nonempty("Nama lengkap tidak boleh kosong."),
+        email: z.string().email("Format email tidak valid."),
+        phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
+      })
+    )
+    .nonempty("Detail tidak boleh kosong."),
   image: z.instanceof(Blob).optional().nullable(),
 });
 
@@ -57,21 +66,19 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
   const form = useForm<InvitationStore>({
     initialValues: {
       event_id: eventId ?? 0,
-      invitation_title: '',
-      invitation_description: '',
+      invitation_title: "",
+      invitation_description: "",
       total_qty: 1,
-      details: [
-        { fullname: '', email: '', phone: '' }
-      ],
+      details: [{ fullname: "", email: "", phone: "" }],
       is_one_receiver: false,
       is_banner_image: true,
     },
     validate: zodResolver(invitationStoreSchema),
-    onValuesChange: val => {
+    onValuesChange: (val) => {
       if (val.is_one_receiver) val.details = [...[val.details[0]]];
       return val;
-    }
-  })
+    },
+  });
 
   useEffect(() => {
     form.reset();
@@ -84,43 +91,45 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
 
   const getCategory = async () => {
     await fetch<any, CategoryResponse[]>({
-      url: 'invitation-category',
-      method: 'GET',
+      url: "invitation-category",
+      method: "GET",
       data: {},
-      before: () => setLoading.append('getcategory'),
+      before: () => setLoading.append("getcategory"),
       success: ({ data }) => data && setCategory(data),
-      complete: () => setLoading.filter(e => e != 'getcategory'),
+      complete: () => setLoading.filter((e) => e != "getcategory"),
       error: () => {},
     });
-  }
+  };
 
   const handleSubmit = async () => {
     const valid = form.validate();
     if (valid.hasErrors) {
       notifications.show({
-        position: 'top-right',
-        color: 'red',
-        message: 'Lengkapi Terlebih dahulu Form Invitation'
+        position: "top-right",
+        color: "red",
+        message: "Lengkapi Terlebih dahulu Form Invitation",
       });
       return;
-    };
+    }
 
     await fetch<InvitationStore<string>, any>({
-      url: 'invitations',
-      method: 'POST',
+      url: "invitations",
+      method: "POST",
       data: {
         ...form.values,
-        details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details)
+        details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details),
       },
-      before: () => setLoading.append('submit'),
-      success: () => { onClose() },
-      complete: () => setLoading.filter(e => e != 'submit'),
+      before: () => setLoading.append("submit"),
+      success: () => {
+        onClose();
+      },
+      complete: () => setLoading.filter((e) => e != "submit"),
     });
   };
 
   useEffect(() => {
     if (form.values.total_qty > 0) {
-      form.setValues({ details: Array(form.values.total_qty).fill({ fullname: '', email: '', phone: '' } )})
+      form.setValues({ details: Array(form.values.total_qty).fill({ fullname: "", email: "", phone: "" }) });
     }
   }, [form.values.total_qty]);
 
@@ -135,30 +144,27 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
                 label="Gambar"
                 dimension={[300, 100]}
                 value={form.values.image ?? (form.values.is_banner_image ? eventData?.image_url : undefined)}
-                onChange={e => form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined })}
+                onChange={(e) => (form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined }))}
               />
-              <Checkbox
-                label="Gunakan Gambar Event"
-                checked={form.values.is_banner_image}
-                onChange={e => form.setValues({ is_banner_image: e.target.checked })}
-              />
+              <Checkbox label="Gunakan Gambar Event" checked={form.values.is_banner_image} onChange={(e) => form.setValues({ is_banner_image: e.target.checked })} />
             </Stack>
             <div className="flex flex-wrap gap-4">
               <Box className="flex-1 relative min-w-[30%]">
                 <Select
                   isInvalid={Boolean(form.errors.invitation_cat_id)}
                   description={form.errors.invitation_cat_id}
-                  
                   label={<span className="text-dark">Invitation Category</span>}
                   value={form.values.invitation_cat_id}
                   onChange={(e) => form.setValues({ invitation_cat_id: category.find((_, i) => i == parseInt(e.target.value))?.id })}
                   labelPlacement="outside" // Label di atas input
                 >
-                {category.map((e, i) => (
-                  <SelectItem key={i} value={e.id}>{e.name}</SelectItem>
-                ))}
+                  {category.map((e, i) => (
+                    <SelectItem key={i} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
                 </Select>
-                <LoadingOverlay visible={loading.includes('getcategory')} loaderProps={{  size: 'md', color: '#194e9e' }} />
+                <LoadingOverlay visible={loading.includes("getcategory")} loaderProps={{ size: "md", color: "#194e9e" }} />
               </Box>
               <Input
                 isInvalid={Boolean(form.errors.invitation_title)}
@@ -166,7 +172,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
                 className="flex-1 min-w-[30%]"
                 label={<span className="text-dark">Invitation Title</span>}
                 value={form.values.invitation_title}
-                onChange={(e) =>  form.setValues({ invitation_title: e.target.value })}
+                onChange={(e) => form.setValues({ invitation_title: e.target.value })}
                 labelPlacement="outside" // Label di atas input
               />
             </div>
@@ -193,15 +199,10 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
                 className="flex-1 max-w-[20%]"
                 label={<span className="text-dark">Total Qty</span>}
                 value={String(form.values.total_qty)}
-                onChange={(e) =>  form.setValues({ total_qty: parseInt(e.target.value) })}
+                onChange={(e) => form.setValues({ total_qty: parseInt(e.target.value) })}
                 labelPlacement="outside" // Label di atas input
               />
-              <Checkbox
-                className={`md:mb-[10px]`}
-                label="Kirim ke satu penerima"
-                checked={form.values.is_one_receiver}
-                onChange={e => form.setValues({ is_one_receiver: e.target.checked })}
-              />
+              <Checkbox className={`md:mb-[10px]`} label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
             </Flex>
 
             {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
@@ -241,7 +242,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button onClick={handleSubmit} isLoading={loading.includes('submit')} className="bg-primary text-white">
+          <Button onClick={handleSubmit} isLoading={loading.includes("submit")} className="bg-primary text-white">
             Tambah Invitation
           </Button>
           <Button variant="flat" onPress={onClose}>
