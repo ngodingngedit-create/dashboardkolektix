@@ -268,7 +268,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
   const user = useLoggedUser();
   const params = useParams();
 
-  // Fungsi untuk format rupiah idr
+  // Fungsi untuk format rupiah idr 100.000
   function formatRupiah(amountVal: number | string) {
     const num = Number(amountVal) || 0;
     return new Intl.NumberFormat("id-ID", {
