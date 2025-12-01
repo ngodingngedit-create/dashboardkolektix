@@ -334,7 +334,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const canAccessMerchandise = () => {
-    // Cek 1: User harus punya creator profile
+    // Cek 1: User harus punya creator profilefcon
     if (!user?.has_creator) return false;
 
     // Cek 2: User harus punya permission untuk module Merchandise (module_id: 2)

@@ -497,9 +497,9 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 <NumberFormatter value={ticketData.price} />
               </Text>
 
-              {typeof ticketData?.promo_price !== "undefined" && (ticketData.price ?? 0) > ticketData.promo_price && (
+              {hasPromoPrice && (
                 <Text component="div" size="sm" c="red" style={{ textDecoration: "line-through", textDecorationColor: "red", marginTop: 6 }}>
-                  <NumberFormatter value={ticketData.price} />
+                  <NumberFormatter value={ticketData.promo_price} />
                 </Text>
               )}
             </Box>

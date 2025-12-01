@@ -78,6 +78,7 @@ import fetch from "@/utils/fetch";
 import { Alert, Box, Card, Flex, NumberFormatter, Stack, Text, Badge } from "@mantine/core";
 import { useListState } from "@mantine/hooks";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 
 type ComponentProps = {
   user_id: number;
@@ -186,16 +187,15 @@ export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<Com
       await fetch<any, WithdrawHistory[]>({
         url: "withdraw",
         method: "GET",
+        params: {
+          user_id: user_id, // Filter berdasarkan user/creator
+        },
         before: () => setLoading.append("getdata"),
         success: (data) => {
-          // --------------- FILTER: hanya tampilkan yang punya event_id ---------------
-          const filteredByEvent = (data as WithdrawHistory[]).filter((e) => e.event_id != null); // event_id !== null/undefined
-          setList(filteredByEvent);
-          // --------------------------------------------------------------------------
-          //
-          // Jika kamu ingin menampilkan semua milik user OR yg punya event_id:
-          // const filtered = (data as WithdrawHistory[]).filter(e => e.user_id == user_id || e.event_id != null);
-          // setList(filtered);
+          // Filter berdasarkan user_id saja (karena event_id null)
+          const filtered = (data as WithdrawHistory[]).filter((e) => e.user_id === user_id);
+          setList(filtered);
+          console.log("Withdraw Data for User:", user_id, filtered);
         },
         complete: () => setLoading.filter((e) => e != "getdata"),
       });

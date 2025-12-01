@@ -327,7 +327,9 @@ const WithDraw = () => {
 
       <div>
         <h2 className="text-lg text-dark font-semibold mb-4 bg-white p-4">Riwayat Transaksi</h2>
-        <div className="space-y-4">{/* <WithdrawHistoryList user_id={6} onTransactionClick={(t: Transaction) => handleTransactionClick(t)} /> */}</div>
+        <div className="space-y-4">
+          <WithdrawHistoryList user_id={loggedUser?.id ?? 0} />
+        </div>
       </div>
 
       <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />

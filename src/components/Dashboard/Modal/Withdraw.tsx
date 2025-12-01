@@ -403,7 +403,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
       url: "withdraw",
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Cookies.get("token")}`,
+        Authorization: `Bearer ${Cookies.get("token") || process.env.NEXT_PUBLIC_API_TOKEN || ""}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
