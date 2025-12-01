@@ -120,7 +120,7 @@ export default function Dashboard() {
           </AccordionItem>
 
           {/* Job Section */}
-          <AccordionItem key="lowongan" title="Lowongan">
+          {/* <AccordionItem key="lowongan" title="Lowongan">
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable icon="material-symbols:list-alt-outline" title="Lowongan yang aktif" value={0} />
@@ -129,10 +129,10 @@ export default function Dashboard() {
                 <CreatorTable icon="hugeicons:wanted" title="Pelamar belum direspon" value={0} yBorderNone />
               </div>
             </div>
-          </AccordionItem>
+          </AccordionItem> */}
 
           {/* Merchandise Section */}
-          <AccordionItem key="merchandise" title="Merchandise">
+          {/* <AccordionItem key="merchandise" title="Merchandise">
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable icon="fluent-mdl2:product-variant" title="Sedang dijual" value={0} />
@@ -143,7 +143,7 @@ export default function Dashboard() {
                 <CreatorTable icon="ix:product-management" title="Total Penjualan Merchandise" currency value={0} />
               </div>
             </div>
-          </AccordionItem>
+          </AccordionItem> */}
         </Accordion>
       </Card>
     </div>

@@ -16,6 +16,7 @@ import { useDidUpdate, useListState } from "@mantine/hooks";
 import { toast } from "react-toastify";
 import { modals } from "@mantine/modals";
 import Cookies from "js-cookie";
+import { Tooltip } from "@mantine/core";
 
 interface EventCardProps {
   id: number | string;
@@ -34,15 +35,17 @@ interface EventCardProps {
   creatorSlug?: string;
   has_creator?: {
     slug: string;
+    is_verified?: number;
   };
   maxWidth?: number;
   start_date?: string;
   start_time?: string;
   end_date?: string;
   end_time?: string;
+  verified?: number;
 }
 
-const EventCard = ({ id, maxWidth, slug, title, date, location, img, description, price, creatorImg, creatorSlug, creator, has_creator, end, start_date, start_time, end_date, end_time, bookmark_id }: EventCardProps) => {
+const EventCard = ({ id, maxWidth, slug, title, date, location, img, description, price, creatorImg, creatorSlug, creator, end, start_date, start_time, end_date, end_time, bookmark_id, verified }: EventCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
@@ -183,6 +186,13 @@ const EventCard = ({ id, maxWidth, slug, title, date, location, img, description
         <Link className="flex items-center p-3" href={`/creator/${creatorSlug}`}>
           <Images type="creator" path={creatorImg} alt="image" className="w-8 h-8 border border-primary-light-200 rounded-full object-contain" width={200} height={200} />
           <p className="ml-2 text-dark text-sm font-semibold truncate max-w-[200px]">{creator}</p>
+          {verified == 1 && (
+            <Tooltip label="Telah diverifikasi" withArrow position="top">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4 ml-2 cursor-pointer">
+                <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+              </svg>
+            </Tooltip>
+          )}
         </Link>
       </div>
     </div>

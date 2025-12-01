@@ -325,7 +325,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean; to
   const getChatSupportData = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await axios.get(`${config.wsUrl}/chat-support`, {
+      const response = await axios.get(`${config.wsUrl}chat-support`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -205,6 +205,7 @@ import { useListState } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import Cookies from "js-cookie";
 import { useParams } from "next/navigation";
+import router from "next/router";
 
 interface Bank {
   id: number;
@@ -215,7 +216,14 @@ interface Bank {
   account_name: string;
 }
 
+export interface EventDataProps {
+  id: number;
+  event_id: number;
+  creator_id: string;
+}
+
 interface EventData {
+  id: number;
   creator_id: string;
   event_name: string;
   slug: string;
@@ -241,7 +249,7 @@ interface TarikDanaModalProps {
 }
 
 type SubmitWithdraw = {
-  user_id: number;
+  // user_id: number;
   user_bank_id: number;
   amount: number;
   name: string;
@@ -256,6 +264,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
   const [banks, setBanks] = useState<Bank[]>([]);
   const [amount, setAmount] = useState("");
   const [eventData, setEventData] = useState<EventData | null>(null);
+  const [eventDatas, setEventDatas] = useState<EventDataProps | null>(null);
   const user = useLoggedUser();
   const params = useParams();
 
@@ -268,6 +277,29 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
       minimumFractionDigits: 0,
     }).format(num);
   }
+
+  const { slug } = router.query;
+
+  const getDataEvent = () => {
+    Get(`event/${slug}`, {})
+      .then((res: any) => {
+        console.log("Fetched event data:", res.data?.id);
+        setEventDatas(res.data);
+        console.log("Event data fetched:", res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  console.log("Event ID (yang benar):", eventDatas?.id); // 102
+  console.log("Creator ID (bukan ini):", eventDatas?.creator_id); // 40
+
+  useEffect(() => {
+    if (slug) {
+      getDataEvent();
+    }
+  }, [slug]);
 
   // Fetch event data
   const fetchEventData = () => {
@@ -351,6 +383,9 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
     }
   };
 
+  const authToken = Cookies.get("token") || process.env.NEXT_PUBLIC_API_TOKEN || "";
+  console.log("auth token :", authToken);
+
   const handleSubmit = async (close?: () => void) => {
     const parsedAmount = Number(amount.replace(/\D/g, ""));
     const availableBalance = calculateAvailableBalance();
@@ -400,20 +435,21 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
     }
 
     await fetch<SubmitWithdraw, any>({
-      url: "withdraw",
+      url: "withdraw/store-creator",
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Cookies.get("token") || process.env.NEXT_PUBLIC_API_TOKEN || ""}`,
+        Authorization: `Bearer ${authToken}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       data: {
-        user_id: user.id,
+        // user_id: user.id,
         user_bank_id: selectedBank.id,
         amount: parsedAmount,
         name: selectedBank.account_name ?? "-",
         bank_account: selectedBank.account_number ?? "0",
         transaction_status_id: 1,
+        event_id: Number(eventDatas?.id),
       },
       before: () => loadingHandlers.append("submit"),
       success: (data) => {

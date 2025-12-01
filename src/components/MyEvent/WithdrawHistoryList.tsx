@@ -252,7 +252,7 @@ export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<Com
                       {/* tampilkan event_id bila perlu */}
                       {e.event_id != null && (
                         <Text size="xs" c="gray.6">
-                          Event ID: {e.event_id}
+                          Invoice No: {e.invoice_no}
                         </Text>
                       )}
                     </Stack>

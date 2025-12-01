@@ -387,10 +387,12 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                   <p className="text-grey">Total Harga</p>
                   <p className="font-semibold">{formatIDR(item?.total_price)}</p>
                 </div>
-                <div className="mb-4 flex justify-between">
-                  <p className="text-grey">Admin Fee</p>
-                  <p className="font-semibold">{formatIDR(item?.admin_fee)}</p>
-                </div>
+                {item?.admin_fee && item.admin_fee !== 0 ? (
+                  <div className="mb-4 flex justify-between">
+                    <p className="text-grey">Admin Fee</p>
+                    <p className="font-semibold">{formatIDR(item?.admin_fee)}</p>
+                  </div>
+                ) : null}
                 <div className="mb-4 flex justify-between">
                   <p className="text-grey">Grand Total</p>
                   <p className="font-semibold">{formatIDR(item?.grandtotal)}</p>
