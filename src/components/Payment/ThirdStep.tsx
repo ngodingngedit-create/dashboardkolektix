@@ -561,10 +561,12 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
             </div>
 
             {/* PPN 10% */}
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-grey mb-1">PPN</p>
-              <p className="text-xs mb-1">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
-            </div>
+            {taxAmount && taxAmount > 0 ? (
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-grey mb-1">PPN</p>
+                <p className="text-xs mb-1">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
+              </div>
+            ) : null}
 
             {/* Ticket Fee (pengganti admin fee) */}
             <div className="flex justify-between items-center">
@@ -753,10 +755,12 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                 </div>
 
                 {/* PPN */}
-                <div className="flex items-center justify-between px-4">
-                  <p className="text-sm mb-1">PPN</p>
-                  <p className="text-sm text-grey">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
-                </div>
+                {taxAmount && taxAmount > 0 ? (
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-grey mb-1">PPN</p>
+                    <p className="text-xs mb-1">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
+                  </div>
+                ) : null}
 
                 {/* Ticket Fee (pengganti admin fee) */}
                 <div className="flex items-center justify-between px-4">

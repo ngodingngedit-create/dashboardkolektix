@@ -232,7 +232,7 @@ interface EventData {
 }
 
 const WithDraw = () => {
-  // const router = useRouter();
+  const router = useRouter();
   // const { slug } = router.query;
   // const { creator_id } = router.query;
 

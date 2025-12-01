@@ -2039,8 +2039,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </Button>
               </Stack>
             </Card>
-            <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm mt-3 overflow-hidden">
-              <div className="border-b p-3">
+            <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
+              <div className="border-b border-b-primary-light-200 p-3">
                 <p className="font-semibold">Ringkasan Pesanan</p>
               </div>
 
@@ -2284,7 +2284,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                   return (
                     <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
-                      <div className="border-b px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
+                      <div className="border border-primary-light-200 px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                         {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mr-[10px]" />}
                         <Stack gap={0} className="flex-grow">
                           <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketForOwner?.name ?? ""} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner.seat_number})` : ""}` : "Data Pemesan"}</p>
@@ -2434,14 +2434,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </Card>
 
                 {/* Summary box (sama seperti mobile) */}
-                <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm overflow-hidden">
-                  <div className="border-b p-3">
+                <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
+                  <div className="border-b border-b-primary-light-200 p-3">
                     <p className="font-semibold">Ringkasan Pesanan</p>
                   </div>
 
                   {ticket.map((t) => (
                     <div className="border-b p-3 border-primary-light-200 flex gap-3" key={t.event_ticket_id}>
-                      <div className="px-3 flex items-center border rounded-md border-primary-light">
+                      <div className="px-3 flex items-center border rounded-md border-primary-light-200">
                         <FontAwesomeIcon icon={faTicket} className="text-primary" />
                       </div>
                       <div>
@@ -2513,12 +2513,18 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         // gunakan helper untuk menghitung tax & label (percentage / nominal)
                         const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                        return (
-                          <div className="py-3 px-4 flex justify-between items-center">
-                            <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
-                            <p className="font-semibold">{tax > 0 ? <NumberFormatter value={tax} /> : <Text>0</Text>}</p>
-                          </div>
-                        );
+                        // Hanya tampilkan jika tax > 0
+                        if (tax > 0) {
+                          return (
+                            <div className="py-3 px-4 flex justify-between items-center">
+                              <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                              <p className="font-semibold">
+                                <NumberFormatter value={tax} />
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null; // Return null jika tax = 0 (akan di-hide)
                       })()
                     : null}
 

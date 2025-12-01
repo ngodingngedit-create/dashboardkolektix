@@ -498,7 +498,17 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
               </Text>
 
               {hasPromoPrice && (
-                <Text component="div" size="sm" c="red" style={{ textDecoration: "line-through", textDecorationColor: "red", marginTop: 6 }}>
+                <Text
+                  component="div"
+                  size="sm"
+                  c="red"
+                  fw={700}
+                  style={{
+                    textDecoration: "line-through",
+                    textDecorationColor: "red",
+                    marginTop: 6,
+                  }}
+                >
                   <NumberFormatter value={ticketData.promo_price} />
                 </Text>
               )}
