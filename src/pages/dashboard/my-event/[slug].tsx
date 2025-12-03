@@ -105,9 +105,6 @@ interface EventData {
   total_unpaid: number;
   total_views: number;
   total_withdraw: number;
-  total_ticket_sold: number;
-  total_ticket_pending: number;
-  total_ticket_fail: number;
 }
 
 // Tambahkan interface ini di bagian atas file, setelah interface EventData
@@ -928,27 +925,11 @@ const MyEventDetail = () => {
                 title="Statistik Event"
                 className="border border-primary-light-200 px-4 rounded-lg"
               >
-                <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                  <Flex align="center" gap={7}>
-                    <p className="text-grey">Total Penjualan Online</p>
-                    <Icon
-                      icon="hugeicons:money-04"
-                      className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
-                    />
-                  </Flex>
-                  <p className="font-semibold">
-                    Rp
-                    {(eventData?.total_price_sell_online || 0).toLocaleString(
-                      "id-ID"
-                    )}
-                  </p>
-                </div>
-
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
                   {/* Total View */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total View s</p>
+                      <p className="text-grey">Total View</p>
                       <Icon
                         icon="tabler:users"
                         className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
@@ -1003,7 +984,7 @@ const MyEventDetail = () => {
                   </div>
 
                   {/* Data Event Lainnya */}
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Admin Fee</p>
                       <Icon
@@ -1017,11 +998,11 @@ const MyEventDetail = () => {
                         "id-ID"
                       )}
                     </p>
-                  </div> */}
+                  </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Kategori Tiket</p>
+                      <p className="text-grey">Total Tiket</p>
                       <Icon
                         icon="mingcute:ticket-line"
                         className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
@@ -1043,7 +1024,7 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_buy || 0}</p>
                   </div>
 
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Online</p>
                       <Icon
@@ -1054,9 +1035,9 @@ const MyEventDetail = () => {
                     <p className="font-semibold">
                       {eventData?.total_online || 0}
                     </p>
-                  </div> */}
+                  </div>
 
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Offline</p>
                       <Icon
@@ -1067,7 +1048,7 @@ const MyEventDetail = () => {
                     <p className="font-semibold">
                       {eventData?.total_offline || 0}
                     </p>
-                  </div> */}
+                  </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
@@ -1079,6 +1060,22 @@ const MyEventDetail = () => {
                     </Flex>
                     <p className="font-semibold">
                       {eventData?.total_unpaid || 0}
+                    </p>
+                  </div>
+
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                    <Flex align="center" gap={7}>
+                      <p className="text-grey">Total Penjualan Online</p>
+                      <Icon
+                        icon="hugeicons:money-04"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
+                    </Flex>
+                    <p className="font-semibold">
+                      Rp
+                      {(eventData?.total_price_sell_online || 0).toLocaleString(
+                        "id-ID"
+                      )}
                     </p>
                   </div>
 
