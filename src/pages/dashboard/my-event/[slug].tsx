@@ -1,4 +1,11 @@
-import React, { useState, useMemo, useCallback, useEffect, createContext, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  createContext,
+  useRef,
+} from "react";
 import EventCardCreator from "@/components/Card/EventCard/creator";
 import { useAsyncList } from "@react-stately/data";
 import config from "@/Config";
@@ -6,9 +13,28 @@ import { useRouter } from "next/router";
 import axios from "axios";
 import DetailModal from "@/components/Dashboard/Modal/ModalInvation";
 import EditEventModal from "@/components/Dashboard/Modal/ModalEditInvation";
-import AddEventModal, { CategoryResponse } from "@/components/Dashboard/Modal/ModalAddInvation";
+import AddEventModal, {
+  CategoryResponse,
+} from "@/components/Dashboard/Modal/ModalAddInvation";
 import InvitationDetailModal from "@/components/Dashboard/Modal/ModalDetailInvation";
-import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, DropdownTrigger, Dropdown, DropdownMenu, DropdownItem, Pagination, Accordion, AccordionItem, Selection } from "@nextui-org/react";
+import {
+  Spinner,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Input,
+  DropdownTrigger,
+  Dropdown,
+  DropdownMenu,
+  DropdownItem,
+  Pagination,
+  Accordion,
+  AccordionItem,
+  Selection,
+} from "@nextui-org/react";
 import { EventProps } from "@/utils/globalInterface";
 import { EventTicket, SeatmapData } from "@/utils/formInterface";
 import { Tabs, Tab } from "@nextui-org/react";
@@ -19,16 +45,41 @@ import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket
 import ModalEditTicket from "@/components/EventCreator/Modal/ModalEditTicket";
 import DescriptionBlock from "@/components/Detail/DescriptionBlock";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faDownload,
+  faEye,
+  faPaperPlane,
+  faPencil,
+  faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import * as XLSX from "xlsx";
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Legend } from "chart.js";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend,
+} from "chart.js";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import { get } from "http";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM, Box, Center } from "@mantine/core";
+import {
+  ActionIcon,
+  Card,
+  Divider,
+  Flex,
+  NumberFormatter,
+  Stack,
+  Text,
+  Tooltip,
+  Button as ButtonM,
+  Box,
+  Center,
+} from "@mantine/core";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import useLoggedUser from "@/utils/useLoggedUser";
 import fetch from "@/utils/fetch";
@@ -54,6 +105,9 @@ interface EventData {
   total_unpaid: number;
   total_views: number;
   total_withdraw: number;
+  total_ticket_sold: number;
+  total_ticket_pending: number;
+  total_ticket_fail: number;
 }
 
 // Tambahkan interface ini di bagian atas file, setelah interface EventData
@@ -121,8 +175,10 @@ const MyEventDetail = () => {
   const { slug } = router.query;
   const [data, setData] = useState<EventProps>();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
-  const [editTicketData, setEditTicketData] = useState<EventTicket>(defaultForm);
-  const [isEditTicketModalOpen, setIsEditTicketModalOpen] = useState<boolean>(false);
+  const [editTicketData, setEditTicketData] =
+    useState<EventTicket>(defaultForm);
+  const [isEditTicketModalOpen, setIsEditTicketModalOpen] =
+    useState<boolean>(false);
   const [addTicket, showAddTicket] = useState<boolean>(false);
   const [idxTicket, setIdxTicket] = useState<number>();
   const [loading, setLoading] = useState(false);
@@ -134,10 +190,14 @@ const MyEventDetail = () => {
   const [filterValue, setFilterValue] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
+  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(
+    new Set([])
+  );
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [transactionFilter, setTransactionFilter] = useState<"all" | "online" | "offline">("all");
+  const [transactionFilter, setTransactionFilter] = useState<
+    "all" | "online" | "offline"
+  >("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -148,13 +208,18 @@ const MyEventDetail = () => {
   const [invitationFilter, setInvitationFilter] = useState("");
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
-  const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
+  const [invitationCategory, setInvitationCategory] =
+    useState<CategoryResponse[]>();
   const [transactionList, setTransactionList] = useState<any[]>([]);
-  const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
+  const [withdrawHistoryList, setWithdrawHistoryList] = useState<
+    WithdrawHistory[]
+  >([]);
   const [totalWithdrawn, setTotalWithdrawn] = useState(0);
   const params = useParams();
 
-  const remainingBalance = (eventData?.total_price_sell || 0) - withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
+  const remainingBalance =
+    (eventData?.total_price_sell || 0) -
+    withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
       url: "invitation-category",
@@ -168,10 +233,14 @@ const MyEventDetail = () => {
   const getWithdrawHistory = async () => {
     try {
       const response = await axios.get(`${config.wsUrl}withdraw`);
-      const withdrawData = Array.isArray(response.data) ? response.data : response.data.data || [];
+      const withdrawData = Array.isArray(response.data)
+        ? response.data
+        : response.data.data || [];
 
       // Filter berdasarkan event_id
-      const filteredData = withdrawData.filter((item: WithdrawHistory) => item.event_id === data?.id);
+      const filteredData = withdrawData.filter(
+        (item: WithdrawHistory) => item.event_id === data?.id
+      );
 
       setWithdrawHistoryList(filteredData);
       console.log("Filtered Withdraw Data for event:", filteredData);
@@ -238,7 +307,8 @@ const MyEventDetail = () => {
       .then((res: any) => {
         if (res.data) {
           setData(res.data);
-          res?.data?.seatmap && setSeatmap.setState(JSON.parse(res?.data?.seatmap));
+          res?.data?.seatmap &&
+            setSeatmap.setState(JSON.parse(res?.data?.seatmap));
           console.log("masuk", res);
           const eventId = res.data.id;
           setTicket(res.data.has_event_ticket);
@@ -257,7 +327,9 @@ const MyEventDetail = () => {
   };
   const getReportData = async (id: string | number) => {
     try {
-      const response = await axios.get(`${config.wsUrl}event/show-report/${id}`);
+      const response = await axios.get(
+        `${config.wsUrl}event/show-report/${id}`
+      );
       const result = response.data;
 
       if (Array.isArray(result.data)) {
@@ -276,7 +348,9 @@ const MyEventDetail = () => {
   const getTransactions = async () => {
     try {
       const response = await axios.get(`${config.wsUrl}transaction`);
-      const payload = Array.isArray(response.data) ? response.data : response.data.data ?? [];
+      const payload = Array.isArray(response.data)
+        ? response.data
+        : response.data.data ?? [];
 
       setTransactionList(payload); // <-- simpan di sini
     } catch (err) {
@@ -292,11 +366,14 @@ const MyEventDetail = () => {
 
   const sendETicket = async (invoiceNo: any, email: any) => {
     try {
-      const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
-        params: {
-          email: email, // Pass the email here as a query parameter
-        },
-      });
+      const response = await axios.get(
+        `${config.wsUrl}transaction/send/eticket/${invoiceNo}`,
+        {
+          params: {
+            email: email, // Pass the email here as a query parameter
+          },
+        }
+      );
       console.log("E-ticket sent successfully:", response.data);
       setLoading(false);
       toast.success(`E-ticket sent successfully to ${email}`); // Use toast for success notification
@@ -307,7 +384,9 @@ const MyEventDetail = () => {
   };
 
   const handleDownloadTransaction = async () => {
-    window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
+    window.open(
+      `${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`
+    );
   };
 
   // useEffect(() => {
@@ -340,9 +419,13 @@ const MyEventDetail = () => {
     }
 
     return invitationData.filter((item) => {
-      const matchesInvoice = item.invoice_no.toLowerCase().includes(filterValue.toLowerCase());
+      const matchesInvoice = item.invoice_no
+        .toLowerCase()
+        .includes(filterValue.toLowerCase());
       const matchesStatus = item.transaction_status_id === 2; // Status filter
-      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
+      const matchesType =
+        transactionFilter === "all" ||
+        item.type_transaction === transactionFilter;
 
       return matchesInvoice && matchesStatus && matchesType;
     });
@@ -356,10 +439,13 @@ const MyEventDetail = () => {
     return filteredItems.slice(start, end);
   }, [page, filteredItems, rowsPerPage]);
 
-  const onSearchChange = useCallback((e: { target: { value: React.SetStateAction<string> } }) => {
-    setFilterValue(e.target.value);
-    setPage(1);
-  }, []);
+  const onSearchChange = useCallback(
+    (e: { target: { value: React.SetStateAction<string> } }) => {
+      setFilterValue(e.target.value);
+      setPage(1);
+    },
+    []
+  );
 
   const onRowsPerPageChange = useCallback((e: { target: { value: any } }) => {
     setRowsPerPage(Number(e.target.value));
@@ -421,7 +507,9 @@ const MyEventDetail = () => {
   const getInvitationEventData = async (id: string | number) => {
     setLoading(true); // Start loading
     try {
-      const response = await axios.get(`${config.wsUrl}invitations/event/${id}`);
+      const response = await axios.get(
+        `${config.wsUrl}invitations/event/${id}`
+      );
       console.log("Response from API:", response.data); // Print API response
       setInvitation(response.data); // Set invitation data
     } catch (err) {
@@ -433,11 +521,14 @@ const MyEventDetail = () => {
 
   const sendEventETicket = async (invoiceNo: any, email: any) => {
     try {
-      const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
-        params: {
-          email: email,
-        },
-      });
+      const response = await axios.get(
+        `${config.wsUrl}transaction/send/eticket/${invoiceNo}`,
+        {
+          params: {
+            email: email,
+          },
+        }
+      );
       console.log("E-ticket sent successfully:", response.data);
       setLoading(false);
       toast.success(`E-ticket sent successfully to ${email}`);
@@ -452,7 +543,11 @@ const MyEventDetail = () => {
       return []; // If it's not an array, return an empty array
     }
 
-    return invitation.filter((item) => item.invitation_title.toLowerCase().includes(invitationFilter.toLowerCase()));
+    return invitation.filter((item) =>
+      item.invitation_title
+        .toLowerCase()
+        .includes(invitationFilter.toLowerCase())
+    );
   }, [invitation, invitationFilter]);
 
   const eventPages = Math.ceil(filteredEventItems.length / rowsPerPage);
@@ -463,15 +558,21 @@ const MyEventDetail = () => {
     return filteredEventItems.slice(start, end);
   }, [page, filteredEventItems, rowsPerPage]);
 
-  const onEventSearchChange = useCallback((e: { target: { value: React.SetStateAction<string> } }) => {
-    setInvitationFilter(e.target.value);
-    setPage(1);
-  }, []);
+  const onEventSearchChange = useCallback(
+    (e: { target: { value: React.SetStateAction<string> } }) => {
+      setInvitationFilter(e.target.value);
+      setPage(1);
+    },
+    []
+  );
 
-  const onEventRowsPerPageChange = useCallback((e: { target: { value: any } }) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  }, []);
+  const onEventRowsPerPageChange = useCallback(
+    (e: { target: { value: any } }) => {
+      setRowsPerPage(Number(e.target.value));
+      setPage(1);
+    },
+    []
+  );
 
   const getEventStatusClass = (statusId: any) => {
     switch (statusId) {
@@ -506,7 +607,9 @@ const MyEventDetail = () => {
   const getEventData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      const response = await axios.get(
+        `${config.wsUrl}event-view-list-by-slug/${slug}`
+      );
       if (response && response.data) {
         setEventData(response.data);
         console.log(response.data, "tes uhuy");
@@ -524,7 +627,10 @@ const MyEventDetail = () => {
       {
         label: "Jumlah Transaksi",
         data: [eventData?.total_online || 0, eventData?.total_offline || 0],
-        backgroundColor: ["rgba(75, 192, 192, 0.6)", "rgba(153, 102, 255, 0.6)"],
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+        ],
       },
     ],
   };
@@ -570,9 +676,12 @@ const MyEventDetail = () => {
     async load({ signal }) {
       if (data?.id) {
         try {
-          let res = await axios.get(`${config.wsUrl}list-transaction-by-event?event_id=${data.id}`, {
-            signal,
-          });
+          let res = await axios.get(
+            `${config.wsUrl}list-transaction-by-event?event_id=${data.id}`,
+            {
+              signal,
+            }
+          );
           let json = await res.data;
           setIsLoading(false);
 
@@ -620,16 +729,53 @@ const MyEventDetail = () => {
       ["Total View", eventData?.total_views || 0],
       ["Total Bookmarks", 0],
       ["Total Tiket Terjual", eventData?.total_paid || 0],
-      ["Total Penjualan", `Rp${eventData?.total_price_sell ? eventData.total_price_sell.toLocaleString("id-ID") : 0}`],
-      ["Total Admin Fee", `Rp${eventData?.total_admin_fee ? eventData.total_admin_fee.toLocaleString("id-ID") : 0}`],
+      [
+        "Total Penjualan",
+        `Rp${
+          eventData?.total_price_sell
+            ? eventData.total_price_sell.toLocaleString("id-ID")
+            : 0
+        }`,
+      ],
+      [
+        "Total Admin Fee",
+        `Rp${
+          eventData?.total_admin_fee
+            ? eventData.total_admin_fee.toLocaleString("id-ID")
+            : 0
+        }`,
+      ],
       ["Total Tiket", eventData?.total_ticket || 0],
       ["Total Pembelian", eventData?.total_buy || 0],
       ["Total Online", eventData?.total_online || 0],
       ["Total Offline", eventData?.total_offline || 0],
       ["Total Pembayaran Belum Lunas", eventData?.total_unpaid || 0],
-      ["Total Penjualan Online", `Rp${eventData?.total_price_sell_online ? eventData.total_price_sell_online.toLocaleString("id-ID") : 0}`],
-      ["Total Penjualan Offline", `Rp${eventData?.total_price_sell_offline ? eventData.total_price_sell_offline.toLocaleString("id-ID") : 0}`],
-      ["Grand Total", `Rp${eventData?.total_price_sell && eventData?.total_admin_fee ? (eventData.total_price_sell - eventData.total_admin_fee).toLocaleString("id-ID") : 0}`],
+      [
+        "Total Penjualan Online",
+        `Rp${
+          eventData?.total_price_sell_online
+            ? eventData.total_price_sell_online.toLocaleString("id-ID")
+            : 0
+        }`,
+      ],
+      [
+        "Total Penjualan Offline",
+        `Rp${
+          eventData?.total_price_sell_offline
+            ? eventData.total_price_sell_offline.toLocaleString("id-ID")
+            : 0
+        }`,
+      ],
+      [
+        "Grand Total",
+        `Rp${
+          eventData?.total_price_sell && eventData?.total_admin_fee
+            ? (
+                eventData.total_price_sell - eventData.total_admin_fee
+              ).toLocaleString("id-ID")
+            : 0
+        }`,
+      ],
     ];
 
     // Membuat worksheet dan workbook
@@ -638,14 +784,19 @@ const MyEventDetail = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Penjualan");
 
     // Mengunduh file Excel
-    XLSX.writeFile(workbook, `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`);
+    XLSX.writeFile(
+      workbook,
+      `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`
+    );
   };
 
   return !loading && data ? (
     <>
       <div>
         <Breadcrumbs className="mb-5 p-5">
-          <BreadcrumbItem onPress={() => router.push("/dashboard/my-event")}>Event Saya</BreadcrumbItem>
+          <BreadcrumbItem onPress={() => router.push("/dashboard/my-event")}>
+            Event Saya
+          </BreadcrumbItem>
           <BreadcrumbItem>Detail Event</BreadcrumbItem>
         </Breadcrumbs>
         <div className="p-5 flex flex-col md:flex-row lg:flex gap-2">
@@ -667,15 +818,24 @@ const MyEventDetail = () => {
             />
 
             <div className="flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4">
-              <h5 className="text-lg font-semibold mb-2">Share your event link</h5>
-              <QrCode slug={`${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
+              <h5 className="text-lg font-semibold mb-2">
+                Share your event link
+              </h5>
+              <QrCode
+                slug={`${window.location.origin}/event/${data.slug}`}
+                errorCorrectionLevel="H"
+                margin={8}
+                logoSizeRatio={0.22}
+              />
               {
                 <Button
                   label="Download QR Code"
                   color="primary"
                   className="mt-4"
                   onClick={() => {
-                    const qrCodeCanvas = document.querySelector(".qrcode canvas") as HTMLCanvasElement;
+                    const qrCodeCanvas = document.querySelector(
+                      ".qrcode canvas"
+                    ) as HTMLCanvasElement;
                     if (qrCodeCanvas) {
                       const link = document.createElement("a");
                       link.href = qrCodeCanvas.toDataURL("image/png");
@@ -688,13 +848,27 @@ const MyEventDetail = () => {
             </div>
 
             <div className="text-center w-full my-4">
-              <Button label="Check-in" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
+              <Button
+                label="Check-in"
+                color="primary"
+                className="w-full"
+                onClick={() =>
+                  router.push(`/dashboard/my-event/checkin/${data.slug}`)
+                }
+              />
             </div>
             {/* <div className="text-center w-full my-4">
               <Button label="Check-out" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkout/${data.slug}`)} />
             </div> */}
             <div className="text-center w-full my-4">
-              <Button label="Penjualan" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
+              <Button
+                label="Penjualan"
+                color="primary"
+                className="w-full"
+                onClick={() =>
+                  router.push(`/dashboard/my-event/sell/${data.slug}`)
+                }
+              />
             </div>
             {/* <div className='text-center w-full my-4'>
               <Button
@@ -715,10 +889,18 @@ const MyEventDetail = () => {
                       <p className="text-grey">Total Pendapatan Event</p>
                       <h6>
                         Rp.
-                        {((eventData?.total_price_sell || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")}
+                        {(
+                          (eventData?.total_price_sell || 0) -
+                          (eventData?.total_withdraw || 0)
+                        ).toLocaleString("id-ID")}
                       </h6>
                     </div>
-                    <Button color="primary" label="Tarik Dana" className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    <Button
+                      color="primary"
+                      label="Tarik Dana"
+                      className="w-full md:w-auto"
+                      onClick={() => setIsModalOpen(true)}
+                    />
                   </div>
                 }
               >
@@ -727,28 +909,64 @@ const MyEventDetail = () => {
                   <Text size="sm" fw={600} c="gray">
                     Riwayat Tarik Dana
                   </Text>
-                  <WithdrawHistoryList user_id={user?.id ?? 0} setUpdate={updateWithdrawHistory} />
+                  <WithdrawHistoryList
+                    user_id={user?.id ?? 0}
+                    setUpdate={updateWithdrawHistory}
+                  />
                 </Stack>
               </AccordionItem>
             </Accordion>
 
-            <Accordion selectedKeys={selectedKeys} onSelectionChange={setSelectedKeys} className="rounded-lg shadow-sm p-0" aria-label="Event Data Accordion">
-              <AccordionItem key="1" title="Statistik Event" className="border border-primary-light-200 px-4 rounded-lg">
+            <Accordion
+              selectedKeys={selectedKeys}
+              onSelectionChange={setSelectedKeys}
+              className="rounded-lg shadow-sm p-0"
+              aria-label="Event Data Accordion"
+            >
+              <AccordionItem
+                key="1"
+                title="Statistik Event"
+                className="border border-primary-light-200 px-4 rounded-lg"
+              >
+                <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  <Flex align="center" gap={7}>
+                    <p className="text-grey">Total Penjualan Online</p>
+                    <Icon
+                      icon="hugeicons:money-04"
+                      className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                    />
+                  </Flex>
+                  <p className="font-semibold">
+                    Rp
+                    {(eventData?.total_price_sell_online || 0).toLocaleString(
+                      "id-ID"
+                    )}
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
                   {/* Total View */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total View</p>
-                      <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <p className="text-grey">Total View s</p>
+                      <Icon
+                        icon="tabler:users"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_views || 0}</p>
+                    <p className="font-semibold">
+                      {eventData?.total_views || 0}
+                    </p>
                   </div>
 
                   {/* Total Bookmarks */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Bookmarks</p>
-                      <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="meteor-icons:bookmark"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
                     <p className="font-semibold">0</p>
                   </div>
@@ -757,83 +975,127 @@ const MyEventDetail = () => {
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Tiket Terjual</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="mingcute:ticket-line"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_paid || 0}</p>
+                    <p className="font-semibold">
+                      {eventData?.total_paid || 0}
+                    </p>
                   </div>
 
                   {/* Total Penjualan */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Penjualan</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="mingcute:ticket-line"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">Rp{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p>
+                    <p className="font-semibold">
+                      Rp
+                      {(eventData?.total_price_sell || 0).toLocaleString(
+                        "id-ID"
+                      )}
+                    </p>
                   </div>
 
                   {/* Data Event Lainnya */}
-                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Admin Fee</p>
-                      <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="hugeicons:money-04"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">Rp {(eventData?.total_admin_fee || 0).toLocaleString("id-ID")}</p>
-                  </div>
+                    <p className="font-semibold">
+                      Rp{" "}
+                      {(eventData?.total_admin_fee || 0).toLocaleString(
+                        "id-ID"
+                      )}
+                    </p>
+                  </div> */}
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Tiket</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <p className="text-grey">Kategori Tiket</p>
+                      <Icon
+                        icon="mingcute:ticket-line"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_ticket || 0}</p>
+                    <p className="font-semibold">
+                      {eventData?.total_ticket || 0}
+                    </p>
                   </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Pembelian</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="mingcute:ticket-line"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_buy || 0}</p>
                   </div>
 
-                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Online</p>
-                      <Icon icon="icon-park-outline:web-page" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="icon-park-outline:web-page"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_online || 0}</p>
-                  </div>
+                    <p className="font-semibold">
+                      {eventData?.total_online || 0}
+                    </p>
+                  </div> */}
 
-                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Offline</p>
-                      <Icon icon="hugeicons:cashier" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="hugeicons:cashier"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_offline || 0}</p>
-                  </div>
+                    <p className="font-semibold">
+                      {eventData?.total_offline || 0}
+                    </p>
+                  </div> */}
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Pembayaran Belum Lunas</p>
-                      <Icon icon="hugeicons:money-not-found-03" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="hugeicons:money-not-found-03"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_unpaid || 0}</p>
-                  </div>
-
-                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan Online</p>
-                      <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">Rp{(eventData?.total_price_sell_online || 0).toLocaleString("id-ID")}</p>
+                    <p className="font-semibold">
+                      {eventData?.total_unpaid || 0}
+                    </p>
                   </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Penjualan Offline</p>
-                      <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                      <Icon
+                        icon="hugeicons:money-04"
+                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
+                      />
                     </Flex>
-                    <p className="font-semibold">Rp{(eventData?.total_price_sell_offline || 0).toLocaleString("id-ID")}</p>
+                    <p className="font-semibold">
+                      Rp
+                      {(
+                        eventData?.total_price_sell_offline || 0
+                      ).toLocaleString("id-ID")}
+                    </p>
                   </div>
                 </div>
               </AccordionItem>
@@ -854,10 +1116,17 @@ const MyEventDetail = () => {
                     }}
                   >
                     <Tab title="Deskripsi" className="px-2">
-                      <div dangerouslySetInnerHTML={{ __html: data.description }}></div>
+                      <div
+                        dangerouslySetInnerHTML={{ __html: data.description }}
+                      ></div>
                     </Tab>
                     <Tab title="Syarat & Ketentuan" className="px-2">
-                      <div className="ml-5" dangerouslySetInnerHTML={{ __html: data.term_condition }}></div>
+                      <div
+                        className="ml-5"
+                        dangerouslySetInnerHTML={{
+                          __html: data.term_condition,
+                        }}
+                      ></div>
                     </Tab>
                   </Tabs>
                 </Tab>
@@ -890,8 +1159,17 @@ const MyEventDetail = () => {
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invoice" value={filterValue} onChange={onSearchChange} />
-                          <select onChange={onRowsPerPageChange} value={rowsPerPage} className="border border-light-grey p-2 rounded-md w-full md:w-auto">
+                          <Input
+                            type="text"
+                            placeholder="Search by Invoice"
+                            value={filterValue}
+                            onChange={onSearchChange}
+                          />
+                          <select
+                            onChange={onRowsPerPageChange}
+                            value={rowsPerPage}
+                            className="border border-light-grey p-2 rounded-md w-full md:w-auto"
+                          >
                             <option value={5}>5</option>
                             <option value={10}>10</option>
                             <option value={20}>20</option>
@@ -900,10 +1178,48 @@ const MyEventDetail = () => {
 
                         {/* Transaction Type Buttons */}
                         <div className="flex gap-4 mb-4 items-center">
-                          <Button label="All" onClick={() => setTransactionFilter("all")} color={transactionFilter === "all" ? "primary" : "secondary"} fullWidth />
-                          <Button label="Online" onClick={() => setTransactionFilter("online")} color={transactionFilter === "online" ? "primary" : "secondary"} fullWidth />
-                          <Button label="Offline" onClick={() => setTransactionFilter("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} fullWidth />
-                          <ButtonM className={`shrink-0`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
+                          <Button
+                            label="All"
+                            onClick={() => setTransactionFilter("all")}
+                            color={
+                              transactionFilter === "all"
+                                ? "primary"
+                                : "secondary"
+                            }
+                            fullWidth
+                          />
+                          <Button
+                            label="Online"
+                            onClick={() => setTransactionFilter("online")}
+                            color={
+                              transactionFilter === "online"
+                                ? "primary"
+                                : "secondary"
+                            }
+                            fullWidth
+                          />
+                          <Button
+                            label="Offline"
+                            onClick={() => setTransactionFilter("offline")}
+                            color={
+                              transactionFilter === "offline"
+                                ? "primary"
+                                : "secondary"
+                            }
+                            fullWidth
+                          />
+                          <ButtonM
+                            className={`shrink-0`}
+                            leftSection={
+                              <Icon
+                                icon="uiw:download"
+                                className={`text-[20px]`}
+                              />
+                            }
+                            variant="transparent"
+                            color="#194e9e"
+                            onClick={handleDownloadTransaction}
+                          >
                             Download
                           </ButtonM>
                         </div>
@@ -917,16 +1233,37 @@ const MyEventDetail = () => {
                             wrapper: "max-h-[382px]",
                           }}
                           topContentPlacement="outside"
-                          bottomContent={<Pagination className="items-center" page={page} total={pages} onChange={setPage} />}
+                          bottomContent={
+                            <Pagination
+                              className="items-center"
+                              page={page}
+                              total={pages}
+                              onChange={setPage}
+                            />
+                          }
                         >
                           <TableHeader>
-                            <TableColumn className="font-bold text-sm">No</TableColumn>
-                            <TableColumn className="font-bold text-sm">Email</TableColumn>
-                            <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-                            <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-                            <TableColumn className="font-bold text-sm">Status</TableColumn>
-                            <TableColumn className="font-bold text-sm">Type</TableColumn>
-                            <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              No
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              Email
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              No.Invoice
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              Waktu Dikirim
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              Status
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              Type
+                            </TableColumn>
+                            <TableColumn className="font-bold text-sm">
+                              Aksi
+                            </TableColumn>
                           </TableHeader>
                           <TableBody items={filteredItems}>
                             {(item) => (
@@ -937,28 +1274,61 @@ const MyEventDetail = () => {
                                     item?.id
                                   ) + 1}
                                 </TableCell>
-                                <TableCell className="border-b-1 text-sm">{item?.has_user?.email}</TableCell>
-                                <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
-                                <TableCell className="border-b-1 text-sm">{item?.created_at && new Date(item.created_at).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}</TableCell>
+                                <TableCell className="border-b-1 text-sm">
+                                  {item?.has_user?.email}
+                                </TableCell>
+                                <TableCell className="border-b-1 text-sm">
+                                  {item?.invoice_no}
+                                </TableCell>
+                                <TableCell className="border-b-1 text-sm">
+                                  {item?.created_at &&
+                                    new Date(
+                                      item.created_at
+                                    ).toLocaleDateString("en-GB", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                </TableCell>
                                 <TableCell className="border-b-1">
                                   {(() => {
-                                    const statusId = findTransactionStatus(item.invoice_no);
+                                    const statusId = findTransactionStatus(
+                                      item.invoice_no
+                                    );
 
-                                    return <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(statusId)}`}>{getStatusText(statusId)}</span>;
+                                    return (
+                                      <span
+                                        className={`px-2 py-1 rounded-md text-white ${getStatusClass(
+                                          statusId
+                                        )}`}
+                                      >
+                                        {getStatusText(statusId)}
+                                      </span>
+                                    );
                                   })()}
                                 </TableCell>
 
-                                <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
+                                <TableCell className="border-b-1 text-sm">
+                                  {item.type_transaction}
+                                </TableCell>
                                 <TableCell className="border-b-1">
                                   <Tooltip label="Kirim Ulang">
                                     <FontAwesomeIcon
                                       icon={faPaperPlane}
                                       className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2"
                                       onClick={() => {
-                                        if (item?.has_user && item.has_user.email) {
-                                          sendETicket(item.invoice_no, item.has_user.email);
+                                        if (
+                                          item?.has_user &&
+                                          item.has_user.email
+                                        ) {
+                                          sendETicket(
+                                            item.invoice_no,
+                                            item.has_user.email
+                                          );
                                         } else {
-                                          toast.error("Email tidak tersedia untuk pengguna ini.");
+                                          toast.error(
+                                            "Email tidak tersedia untuk pengguna ini."
+                                          );
                                         }
                                       }}
                                     />
@@ -969,7 +1339,10 @@ const MyEventDetail = () => {
                                       className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"
                                       onClick={() => {
                                         console.log("row item:", item);
-                                        console.log("local ticket var:", ticket);
+                                        console.log(
+                                          "local ticket var:",
+                                          ticket
+                                        );
                                         openDetailModal(item, ticket);
                                       }}
                                     />
@@ -989,29 +1362,64 @@ const MyEventDetail = () => {
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invitation Title" value={invitationFilter} onChange={onEventSearchChange} />
-                          <select onChange={onEventRowsPerPageChange} value={rowsPerPage} className="border border-light-grey p-2 rounded-md w-full md:w-auto">
+                          <Input
+                            type="text"
+                            placeholder="Search by Invitation Title"
+                            value={invitationFilter}
+                            onChange={onEventSearchChange}
+                          />
+                          <select
+                            onChange={onEventRowsPerPageChange}
+                            value={rowsPerPage}
+                            className="border border-light-grey p-2 rounded-md w-full md:w-auto"
+                          >
                             <option value={5}>5</option>
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
                           <Tooltip label="Tambah Invitation Baru">
-                            <FontAwesomeIcon className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" onClick={openAddModal} icon={faPlus} />
+                            <FontAwesomeIcon
+                              className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"
+                              onClick={openAddModal}
+                              icon={faPlus}
+                            />
                           </Tooltip>
                         </div>
                         {loading ? (
                           <p>Loading...</p> // Show loading indicator
                         ) : (
-                          <Table aria-label="Event Invitation Table" bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
+                          <Table
+                            aria-label="Event Invitation Table"
+                            bottomContent={
+                              <Pagination
+                                className="items-center"
+                                page={page}
+                                total={eventPages}
+                                onChange={setPage}
+                              />
+                            }
+                          >
                             <TableHeader>
-                              <TableColumn className="font-bold text-md">No</TableColumn>
-                              <TableColumn className="font-bold text-md">Judul Undangan</TableColumn>
-                              <TableColumn className="font-bold text-md">Type</TableColumn>
-                              <TableColumn className="font-bold text-md">Qty</TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                No
+                              </TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                Judul Undangan
+                              </TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                Type
+                              </TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                Qty
+                              </TableColumn>
                               {/* <TableColumn className='font-bold text-md'>Deskripsi</TableColumn> */}
-                              <TableColumn className="font-bold text-md">Status</TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                Status
+                              </TableColumn>
                               {/*<TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn> */}
-                              <TableColumn className="font-bold text-md">Aksi</TableColumn>
+                              <TableColumn className="font-bold text-md">
+                                Aksi
+                              </TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
                               {(item) => (
@@ -1022,13 +1430,31 @@ const MyEventDetail = () => {
                                       item?.id
                                     ) + 1}
                                   </TableCell>
-                                  <TableCell className="border-b-1">{item?.invitation_title}</TableCell>
-                                  <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
-                                  <TableCell className="border-b-1">{item?.total_qty}</TableCell>
+                                  <TableCell className="border-b-1">
+                                    {item?.invitation_title}
+                                  </TableCell>
+                                  <TableCell className="border-b-1">
+                                    {invitationCategory?.find(
+                                      (e) => e.id == item?.invitation_cat_id
+                                    )?.name ?? "-"}
+                                  </TableCell>
+                                  <TableCell className="border-b-1">
+                                    {item?.total_qty}
+                                  </TableCell>
                                   <TableCell className="border-b-1">
                                     {(() => {
-                                      const statusId = item?.event_invitation_status?.id ?? null;
-                                      return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
+                                      const statusId =
+                                        item?.event_invitation_status?.id ??
+                                        null;
+                                      return (
+                                        <span
+                                          className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(
+                                            statusId
+                                          )}`}
+                                        >
+                                          {getStatusTextInvitation(statusId)}
+                                        </span>
+                                      );
                                     })()}
                                   </TableCell>
                                   {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
@@ -1039,16 +1465,30 @@ const MyEventDetail = () => {
                                         icon={faPaperPlane}
                                         className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2"
                                         onClick={() => {
-                                          if (item?.has_user && item.has_user.email) {
-                                            sendEventETicket(item.invoice_no, item.has_user.email);
+                                          if (
+                                            item?.has_user &&
+                                            item.has_user.email
+                                          ) {
+                                            sendEventETicket(
+                                              item.invoice_no,
+                                              item.has_user.email
+                                            );
                                           } else {
-                                            toast.error("Email tidak tersedia untuk pengguna ini.");
+                                            toast.error(
+                                              "Email tidak tersedia untuk pengguna ini."
+                                            );
                                           }
                                         }}
                                       />
                                     </Tooltip>
                                     <Tooltip label="Lihat Detail">
-                                      <FontAwesomeIcon icon={faEye} className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" onClick={() => openInvitationModal(item)} />
+                                      <FontAwesomeIcon
+                                        icon={faEye}
+                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2"
+                                        onClick={() =>
+                                          openInvitationModal(item)
+                                        }
+                                      />
                                     </Tooltip>
                                     {/* <FontAwesomeIcon 
                                       icon={faPencil} 
@@ -1070,10 +1510,16 @@ const MyEventDetail = () => {
                     <div className="bg-white">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 pb-3 border-b border-b-primary-light-200">
                         <h6>Ringkasan</h6>
-                        <p onClick={downloadLaporan} className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer">
+                        <p
+                          onClick={downloadLaporan}
+                          className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer"
+                        >
                           <span>
                             <Tooltip label="download">
-                              <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                              <FontAwesomeIcon
+                                icon={faDownload}
+                                className="mr-2"
+                              />
                             </Tooltip>
                           </span>
                           Download Laporan
@@ -1081,21 +1527,41 @@ const MyEventDetail = () => {
                       </div>
                       <div className="flex flex-col mx-3 gap-3 border-b py-3 border-b-primary-light-200">
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Total Penjualan Tiket Online</p>
-                          <p className="font-semibold">Rp{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p>
+                          <p className="text-dark-grey">
+                            Total Penjualan Tiket Online
+                          </p>
+                          <p className="font-semibold">
+                            Rp
+                            {(eventData?.total_price_sell || 0).toLocaleString(
+                              "id-ID"
+                            )}
+                          </p>
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-dark-grey">Total Promo</p>
                           <p className="font-semibold">{`(-) Rp0`}</p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Biaya Layanan Penjualan Tiket Online</p>
-                          <p className="font-semibold">Rp{(eventData?.total_admin_fee || 0).toLocaleString("id-ID")}</p>
+                          <p className="text-dark-grey">
+                            Biaya Layanan Penjualan Tiket Online
+                          </p>
+                          <p className="font-semibold">
+                            Rp
+                            {(eventData?.total_admin_fee || 0).toLocaleString(
+                              "id-ID"
+                            )}
+                          </p>
                         </div>
                       </div>
                       <div className="flex justify-between px-3 py-4">
                         <p className="text-primary">Total</p>
-                        <p className="font-semibold">Rp{((eventData?.total_price_sell || 0) - (eventData?.total_admin_fee || 0)).toLocaleString("id-ID")}</p>
+                        <p className="font-semibold">
+                          Rp
+                          {(
+                            (eventData?.total_price_sell || 0) -
+                            (eventData?.total_admin_fee || 0)
+                          ).toLocaleString("id-ID")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1105,9 +1571,22 @@ const MyEventDetail = () => {
           </div>
         </div>
       </div>
-      <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-      <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
-      <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
+      <DetailModal
+        item={selectedItem}
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+      />
+      <AddEventModal
+        eventData={data}
+        isOpen={isAddModalOpen}
+        onClose={closeAddModal}
+        eventId={data.id}
+      />
+      <EditEventModal
+        item={selectedEvent}
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
+      />
       <TarikDanaModal
         isOpen={isModalOpen}
         setIsOpen={setIsModalOpen}
@@ -1118,8 +1597,14 @@ const MyEventDetail = () => {
         }}
         eventSlug={params.slug}
       />
-      <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
-      <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
+      <InvitationDetailModal
+        invitation={selectedInvitation}
+        isOpen={isInvitationModalOpen}
+        onClose={closeInvitationModal}
+      />
+      <Context.Provider
+        value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}
+      >
         <ModalCreateTicket
           isOpen={addTicket}
           setIsOpen={showAddTicket}
