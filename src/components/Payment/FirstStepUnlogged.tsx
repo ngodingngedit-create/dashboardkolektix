@@ -1454,8 +1454,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   const [bank, setBank] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<any>(null);
 
-  const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
-  const adminFee = totalTicketFee;
+  // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
+  // const adminFee = totalTicketFee;
 
   const computeTax = (detail: any, subtotalAfterVoucher: number) => {
     const d = normalizeDetail(detail);
@@ -1580,6 +1580,38 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
     return total;
   }, [ticket, allBundlingInfo]);
+
+  const totalTicketFee = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let totalFee = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+      const fee = item.ticket_fee || 0;
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 Admin fee per paket × jumlah paket
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        totalFee += fee * packageCount;
+
+        console.log(`Bundling ${item.name} admin fee:`, {
+          feePerPackage: fee,
+          packageCount,
+          subtotalFee: fee * packageCount,
+          qty_ticket: item.qty_ticket,
+          bundlingQty,
+        });
+      } else {
+        // Non-bundling: admin fee normal (per tiket)
+        totalFee += fee * item.qty_ticket;
+      }
+    });
+
+    return totalFee;
+  }, [ticket, allBundlingInfo]);
+
+  const adminFee = totalTicketFee; // atau langsung pakai totalTicketFee
 
   const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
     return (

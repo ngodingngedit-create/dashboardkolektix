@@ -440,6 +440,14 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   // Total ticket_fee dari tiap ticket yang dibeli
   const totalTicketFee = transactionData.tickets.reduce((sum, ticket) => {
     const fee = ticket.has_event_ticket?.ticket_fee ?? 0;
+    const isBundling = ticket.has_event_ticket?.is_bundling === 1;
+    const bundlingQty = ticket.has_event_ticket?.bundling_qty || 0;
+
+    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+      const packageCount = Math.floor(ticket.qty_ticket / bundlingQty);
+      return sum + fee * (packageCount > 0 ? packageCount : 1);
+    }
+
     return sum + fee * ticket.qty_ticket;
   }, 0);
 

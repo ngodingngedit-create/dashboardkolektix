@@ -994,13 +994,13 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
   const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>([]);
   const [voucherFields, setVoucherFields] = useState([""]);
-  const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
+  // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   const [vouchers, setVouchers] = useState<{ name: string; amount: number }[]>([]);
   const { width } = useWindowSize();
   const userData = useLoggedUser();
   const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
 
-  const adminFee = totalTicketFee;
+  // const adminFee = totalTicketFee;
 
   const firstTicket = detail.has_event_ticket && detail.has_event_ticket[0];
   const isBundlingGlobal = firstTicket ? firstTicket.is_bundling === 1 : false;
@@ -1341,6 +1341,38 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     return total;
   }, [ticket, allBundlingInfo]);
 
+  const totalTicketFee = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let totalFee = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+      const fee = item.ticket_fee || 0;
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 Admin fee per paket × jumlah paket
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        totalFee += fee * packageCount;
+
+        console.log(`Bundling ${item.name} admin fee:`, {
+          feePerPackage: fee,
+          packageCount,
+          subtotalFee: fee * packageCount,
+          qty_ticket: item.qty_ticket,
+          bundlingQty,
+        });
+      } else {
+        // Non-bundling: admin fee normal (per tiket)
+        totalFee += fee * item.qty_ticket;
+      }
+    });
+
+    return totalFee;
+  }, [ticket, allBundlingInfo]);
+
+  const adminFee = totalTicketFee; // atau langsung pakai totalTicketFee
+
   // --- Return layout (mobile / desktop) aligned with FirstStepUnlogged design ---
   return (
     width &&
@@ -1402,23 +1434,58 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             <p className="font-semibold text-xs sm:text-sm">Ringkasan</p>
           </div>
 
-          {ticket.map((item: FormTicket) => (
-            <div className="border-b p-1.5 sm:p-2 border-primary-light-200 flex gap-1.5 sm:gap-2" key={item.event_ticket_id}>
-              <div className="px-1.5 sm:px-2 flex items-center border rounded-md border-primary-light shrink-0">
-                <FontAwesomeIcon icon={faTicket} className="text-primary text-xs sm:text-sm" />
+          {ticket.map((item: FormTicket) => {
+            const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+            // Tentukan display quantity (jumlah paket)
+            let displayQty = item.qty_ticket;
+            let packageCount = 1;
+
+            if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+              packageCount = Math.floor(item.qty_ticket / bundlingQty);
+              displayQty = packageCount; // Tampilkan jumlah paket
+            }
+
+            const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+
+            // Display subtotal
+            const displaySubtotal =
+              isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                ? item.price * packageCount // Harga per paket × jumlah paket
+                : item.price * item.qty_ticket;
+
+            return (
+              <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+                <div className="px-3 flex items-center border rounded-md border-primary-light">
+                  <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm mb-1 font-semibold">
+                    {item.name}
+                    {bundlingInfo}
+                  </p>
+                  <p className="text-xs text-grey">
+                    {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
+                    {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-semibold truncate">{item.name}</p>
-                <p className="text-grey text-xs">
-                  {item.qty_ticket}x Rp{item.price}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs border-t border-primary-light-200">
-            <p>Jumlah</p>
-            <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : "Gratis"}</p>
+            <p>
+              {`Jumlah (${displayTotalCount} ${
+                // 💡 KONDISI: Cek apakah ADA ticket yang bundling
+                ticket.some((item) => {
+                  const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                  return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                })
+                  ? "Paket" // Jika ADA bundling → "Paket"
+                  : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+              })`}
+            </p>
+            <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
           </div>
 
           {vouchers.length > 0 && (
@@ -1433,7 +1500,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
 
           {(() => {
             const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-            const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
+            const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
             return (
               <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm">
                 <p>Subtotal</p>
@@ -1480,7 +1547,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             <p className="font-semibold">
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
+                const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                 const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                 const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
                 return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
@@ -1618,16 +1685,18 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                     ) : null}
 
                     {/* ADDED assistant input - same design as other inputs */}
-                    <Field className="mb-1.5 sm:mb-2">
-                      <Label className="text-xs sm:text-sm font-base text-grey">Assistant</Label>
-                      <Input
-                        type="text"
-                        value={item.is_assistant || ""}
-                        onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
-                        placeholder="Nama Assistant"
-                        className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
-                      />
-                    </Field>
+                    {detail.is_assistant ? (
+                      <Field className="mb-1.5 sm:mb-2">
+                        <Label className="text-xs sm:text-sm font-base text-grey">Assistant</Label>
+                        <Input
+                          type="text"
+                          value={item.is_assistant || ""}
+                          onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
+                          placeholder="Nama Assistant"
+                          className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                        />
+                      </Field>
+                    ) : null}
 
                     {detail.is_kelas ? (
                       <Field className="mb-1.5 sm:mb-2">
@@ -1822,16 +1891,18 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         {detail.is_name ? <InputField fullWidth type="text" label={t("fullName")} placeholder={t("fullName")} value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} /> : null}
 
                         {/* Assistant for desktop */}
-                        <Field className="mb-2">
-                          <Label className="text-sm font-base text-grey">Assistant</Label>
-                          <Input
-                            type="text"
-                            value={item.is_assistant || ""}
-                            onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
-                            placeholder="Nama Assistant"
-                            className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
-                          />
-                        </Field>
+                        {detail.is_assistant ? (
+                          <Field className="mb-2">
+                            <Label className="text-sm font-base text-grey">Assistant</Label>
+                            <Input
+                              type="text"
+                              value={item.is_assistant || ""}
+                              onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
+                              placeholder="Nama Assistant"
+                              className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                            />
+                          </Field>
+                        ) : null}
 
                         {detail.is_gender ? (
                           <Field className="mb-2">
