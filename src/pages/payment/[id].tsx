@@ -23,8 +23,7 @@ const Payment = () => {
   const { id } = router.query;
   const [step, setStep] = useState<number>(0);
   const [transactionData, setTransactionData] = useState<TransactionProps>();
-  const [showModalTransaction, setShowModalTransaction] =
-    useState<boolean>(false);
+  const [showModalTransaction, setShowModalTransaction] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const isBrowser = () => typeof window !== "undefined";
   function padToTwoDigits(num: number) {
@@ -33,20 +32,7 @@ const Payment = () => {
   const now = new Date();
   const targetDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mei",
-    "Jun",
-    "Jul",
-    "Agu",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Des",
-  ];
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   const dayName = days[targetDate.getDay()];
   const day = padToTwoDigits(targetDate.getDate());
   const month = months[targetDate.getMonth()];
@@ -56,6 +42,40 @@ const Payment = () => {
   const { width } = useWindowSize();
 
   const formattedDate = `${dayName}, ${day} ${month} ${year} ${hours}:${minutes}`;
+
+  // Hitung grandtotal dengan bundling logic (untuk Step 2)
+  const calculateGrandtotalWithBundling = (transaction: TransactionProps) => {
+    if (!transaction?.tickets) return transaction?.grandtotal || 0;
+
+    // Hitung base amount dengan bundling logic
+    const baseAmount = transaction.tickets.reduce((total, item) => {
+      const isBundling = item.has_event_ticket?.is_bundling === 1;
+      const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        return total + (packageCount > 0 ? item.price * packageCount : item.price * item.qty_ticket);
+      }
+      return total + item.price * item.qty_ticket;
+    }, 0);
+
+    // Hitung voucher discount (jika ada di transaction data)
+    const voucherDiscount = 0; // Tidak ada data voucher di Step 2
+
+    const subtotal = Math.max(baseAmount - voucherDiscount, 0);
+    const ppnValue = Number(transaction.has_event.ppn);
+    const taxAmount = subtotal > 0 ? subtotal * (ppnValue / 100) : 0;
+
+    // Hitung ticket fee
+    const totalTicketFee = transaction.tickets.reduce((sum, ticket) => {
+      const fee = ticket.has_event_ticket?.ticket_fee ?? 0;
+      return sum + fee * ticket.qty_ticket;
+    }, 0);
+
+    return subtotal + totalTicketFee + taxAmount;
+  };
+
+  const frontendGrandtotal = transactionData ? calculateGrandtotalWithBundling(transactionData) : 0;
 
   const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
     return (
@@ -78,10 +98,7 @@ const Payment = () => {
           </div>
         </div>
         <p className="text-sm text-center font-light my-5 px-4">
-          Batas pembayaran sampai dengan{" "}
-          <span className="font-semibold">{formattedDate}</span> Harap
-          selesaikan pembayaran sebelum waktu tersebut untuk menghindari
-          pembatalan otomatis.
+          Batas pembayaran sampai dengan <span className="font-semibold">{formattedDate}</span> Harap selesaikan pembayaran sebelum waktu tersebut untuk menghindari pembatalan otomatis.
         </p>
       </div>
     );
@@ -144,28 +161,14 @@ const Payment = () => {
       {!loading ? (
         transactionData ? (
           <div className="text-dark">
-            {step === 0 && (
-              <ThirdStep
-                scrollToTop={scrollToTop}
-                setLoading={setLoading}
-                setStep={setStep}
-                transactionData={transactionData}
-                loading={loading}
-              />
-            )}
+            {step === 0 && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} loading={loading} />}
             {step === 2 && (
               <div className="bg-primary-light text-dark">
                 <Image src={Foto} alt="Banner" className="w-full" />
 
                 <div className="bg-white">
                   <div className="border-b-2 p-3 border-primary-light">
-                    <Countdown
-                      date={targetDate}
-                      intervalDelay={0}
-                      precision={3}
-                      renderer={renderer}
-                      autoStart={true}
-                    />
+                    <Countdown date={targetDate} intervalDelay={0} precision={3} renderer={renderer} autoStart={true} />
                   </div>
                   <div className="border-b-2 p-3 border-primary-light flex gap-3"></div>
                 </div>
@@ -173,42 +176,24 @@ const Payment = () => {
                 <div className="bg-white mt-1">
                   <div className="border-b-2 p-3 border-primary-light flex gap-3">
                     <div className="flex items-center gap-3">
-                      <p className=" font-semibold">
-                        {transactionData.payment_method.payment_name}
-                      </p>
-                      <Images
-                        type="logo"
-                        path={transactionData.payment_method.logo}
-                        alt={transactionData.payment_method.payment_name}
-                        className="w-8 h-8 object-contain"
-                      />
+                      <p className=" font-semibold">{transactionData.payment_method.payment_name}</p>
+                      <Images type="logo" path={transactionData.payment_method.logo} alt={transactionData.payment_method.payment_name} className="w-8 h-8 object-contain" />
                     </div>
                   </div>
                   <div className="bg-white mt-1">
                     <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                       <div>
                         <p className="text-xs text-grey mb-1">Kode Invoice</p>
-                        <p className="text-sm mb-1">
-                          {transactionData.invoice_no}
-                        </p>
+                        <p className="text-sm mb-1">{transactionData.invoice_no}</p>
                       </div>
                       <div>
                         <p className="text-xs text-grey mb-1">No. Rekening</p>
-                        <p className="text-sm mb-1">
-                          {transactionData.payment_method.account_no}
-                        </p>
-                        <p className="text-xs mb-1">
-                          Atas Nama{" "}
-                          {transactionData.payment_method.account_name}
-                        </p>
+                        <p className="text-sm mb-1">{transactionData.payment_method.account_no}</p>
+                        <p className="text-xs mb-1">Atas Nama {transactionData.payment_method.account_name}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-grey mb-1">
-                          Total Pembayaran
-                        </p>
-                        <p className="text-sm mb-1">{`Rp${transactionData.grandtotal.toLocaleString(
-                          "id-ID"
-                        )}`}</p>
+                        <p className="text-xs text-grey mb-1">Total Pembayaran</p>
+                        <p className="text-sm mb-1">{`Rp${transactionData.grandtotal.toLocaleString("id-ID")}`}</p>
                       </div>
                     </div>
                   </div>
@@ -216,56 +201,32 @@ const Payment = () => {
                 <div className="bg-white mt-1">
                   <div className="border-b-2 p-3 border-primary-light flex flex-col gap-2">
                     <div className="flex justify-between">
-                      <p className="text-xs text-grey mb-1">
-                        Regular Ticket {`x(${transactionData.total_qty})`}
-                      </p>
-                      <p className="text-xs mb-1">
-                        Rp{transactionData.total_price.toLocaleString("id-ID")}
-                      </p>
+                      <p className="text-xs text-grey mb-1">Regular Ticket {`x(${transactionData.total_qty})`}</p>
+                      <p className="text-xs mb-1">Rp{transactionData.total_price.toLocaleString("id-ID")}</p>
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-grey mb-1">Pajak</p>
                       <p className="text-xs mb-1">
                         Rp
-                        {transactionData.ppn
-                          ? transactionData.ppn.toLocaleString("id-ID")
-                          : 0}
+                        {transactionData.ppn ? transactionData.ppn.toLocaleString("id-ID") : 0}
                       </p>
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-grey mb-1">Biaya Admin</p>
                       <p className="text-xs mb-1">
                         Rp
-                        {transactionData.admin_fee
-                          ? transactionData.admin_fee.toLocaleString("id-ID")
-                          : 0}
+                        {transactionData.admin_fee ? transactionData.admin_fee.toLocaleString("id-ID") : 0}
                       </p>
                     </div>
                     <div className="border-t-2 border-primary-light">
                       <div className="flex items-center justify-between font-semibold">
                         <p>Total Pembayaran</p>
-                        <p>{`Rp${transactionData.grandtotal.toLocaleString(
-                          "id-ID"
-                        )}`}</p>
+                        <p>{`Rp${transactionData.grandtotal.toLocaleString("id-ID")}`}</p>
                       </div>
-                      <button
-                        className="w-full bg-primary-dark text-white py-2 rounded-lg my-3"
-                        onClick={() =>
-                          setShowModalTransaction(!showModalTransaction)
-                        }
-                      >
-                        {loading ? (
-                          <Spinner color="default" size="sm" />
-                        ) : (
-                          "Upload Bukti Pembayaran"
-                        )}
+                      <button className="w-full bg-primary-dark text-white py-2 rounded-lg my-3" onClick={() => setShowModalTransaction(!showModalTransaction)}>
+                        {loading ? <Spinner color="default" size="sm" /> : "Upload Bukti Pembayaran"}
                       </button>
-                      <ModalTransaction
-                        id={transactionData.id}
-                        invoice={transactionData.invoice_no}
-                        isOpen={showModalTransaction}
-                        setIsOpen={setShowModalTransaction}
-                      />
+                      <ModalTransaction id={transactionData.id} invoice={transactionData.invoice_no} isOpen={showModalTransaction} setIsOpen={setShowModalTransaction} />
                     </div>
                   </div>
                 </div>
@@ -273,11 +234,7 @@ const Payment = () => {
             )}
           </div>
         ) : (
-          id && (
-            <div className="min-h-screen flex justify-center items-center text-dark">
-              Data pembayaran tidak ditemukan
-            </div>
-          )
+          id && <div className="min-h-screen flex justify-center items-center text-dark">Data pembayaran tidak ditemukan</div>
         )
       ) : (
         <div className="min-h-screen flex justify-center items-center">

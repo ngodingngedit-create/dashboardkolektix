@@ -25,6 +25,8 @@ export interface TicketProps {
   is_finish: number;
   is_ready: number;
   is_promo: number;
+  is_bundling: number;
+  bundling_qty: number;
   promo_title: string;
   promo_price: number;
   has_event_ticket?: EventTicketPromo[];
@@ -315,6 +317,64 @@ interface ChatProps {
   user: UserProps;
 }
 
+export interface EventTicketProps {
+  id: number;
+  event_id: string; // bisa juga number, sesuaikan API
+  ticket_type_id: number;
+
+  available_seat_number: string | null;
+  taken_seat_number: string | null;
+  seat_color: string | null;
+
+  ticket_category: string; // "Festival" | "Seated" | dll, boleh dipersempit nanti
+  name: string;
+  description: string | null;
+
+  qty: number;
+  sold_qty: number;
+  price: number;
+  ticket_fee: number;
+
+  detail_venue_name: string | null;
+  detail_venue_address: string | null;
+  detail_venue_link: string | null;
+
+  event_schedule_date: string;
+
+  // 👉 ini yang kamu butuh
+  is_bundling: 0 | 1;
+  bundling_qty: number;
+  bundling_dates: string | null;
+
+  ticket_date: string;
+  starting_time: string;
+  ticket_end: string;
+  ending_time: string;
+
+  is_soldout: 0 | 1;
+  is_finish: 0 | 1;
+  is_ready: 0 | 1;
+  is_fullbook: 0 | 1;
+
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  max_buy_ticket: number | null;
+  ticket_sold: number | null;
+  ticket_type: string;
+
+  is_promo: 0 | 1;
+  promo_title: string | null;
+  promo_price: number | null;
+
+  has_ordered_seatnumber: {
+    seatnumber_ticket: string | null;
+  }[];
+}
+
 export interface EventProps {
   id: number;
   creator_id: string;
@@ -355,6 +415,7 @@ export interface EventProps {
   has_category_event?: {
     name: string;
   };
+  has_event_ticket?: EventTicketProps[];
   created_by: string;
   updated_by: string;
   created_at: Date;

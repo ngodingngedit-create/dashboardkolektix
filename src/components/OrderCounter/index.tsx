@@ -89,6 +89,18 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
 
   console.log("DEBUG ticketData:", ticketData);
 
+  const bundlingEnabled = Number(ticketData?.is_bundling ?? 0) === 1;
+  const bundlingQty = Number(ticketData?.bundling_qty ?? 0);
+
+  // step naik/turun
+  const step = bundlingEnabled && bundlingQty > 0 ? bundlingQty : 1;
+
+  // batas maksimal order (kalau tidak ada, pakai 9999)
+  const max = maxOrder ?? 9999;
+
+  const canDecrement = count - step >= 0;
+  const canIncrement = count + step <= max;
+
   const tickets = ticketData ?? [];
 
   console.log("DEBUG tickets:", tickets);
@@ -182,12 +194,23 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
               {t("selectSeat")} {(count ?? 0) > 0 && `(x${count})`}
             </Button>
           ) : (
+            // <Flex align="center" gap={15}>
+            //   <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+            //     <Icon icon="uiw:minus" />
+            //   </ActionIcon>
+            //   <Text>{count}</Text>
+            //   <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
+            //     <Icon icon="uiw:plus" />
+            //   </ActionIcon>
+            // </Flex>
             <Flex align="center" gap={15}>
-              <ActionIcon color="#194e9e" onClick={() => setCount(count - 1)} disabled={count <= 0}>
+              <ActionIcon color="#194e9e" onClick={() => setCount(count - step)} disabled={!canDecrement}>
                 <Icon icon="uiw:minus" />
               </ActionIcon>
+
               <Text>{count}</Text>
-              <ActionIcon color="#194e9e" onClick={() => setCount(count + 1)} disabled={(maxOrder ?? 9999) == count}>
+
+              <ActionIcon color="#194e9e" onClick={() => setCount(count + step)} disabled={!canIncrement}>
                 <Icon icon="uiw:plus" />
               </ActionIcon>
             </Flex>
@@ -368,42 +391,6 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     //   </Stack>
     // </Card>
     <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? "!pb-[150px]" : ""}`} bg={isSoldOut || isReady || isFinish ? "#fafafa" : undefined}>
-      {/* RIBBON (absolute sehingga tidak mempengaruhi layout) */}
-      {/* RIBBON */}
-      {/* <Flex
-        style={{
-          position: "absolute",
-          top: -1, // nempel ke atas Card
-          left: "50%", // midpoint Card
-          transform: "translateX(-50%)", // supaya benar-benar center
-          width: "35%", // setengah Card
-          background: "#b70303",
-          color: "white",
-          padding: "4px 10px",
-          borderRadius: "0 0 999px 999px", // kiri & kanan bawah melengkung
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          lineHeight: 1,
-          gap: 10,
-          alignItems: "center",
-          justifyContent: "center", // biar text benar-benar center
-          display: "flex", // pastikan flex
-          zIndex: 20,
-        }}
-      >
-        <Text size="xs" component="span" style={{ width: 40, textAlign: "right", fontSize: 10 }}>
-          Special
-        </Text>
-
-        <Flex px={6} py={1} className="rounded-full" style={{ background: "#FFFFFF" }}>
-          <Text size="xs" fw={700} style={{ fontSize: 16, color: "#b70303", fontStyle: "italic" }} component="span">
-            PAY DAY
-          </Text>
-        </Flex>
-
-        <Text size="xs" component="span" style={{ width: 40, textAlign: "left", fontSize: 10 }}>
-          Discount
-        </Text>
-      </Flex> */}
       {hasPromo && (
         <Flex className="special-banner">
           <Text className="side-text">Special</Text>

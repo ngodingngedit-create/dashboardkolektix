@@ -1311,7 +1311,7 @@
 // src/components/Payment/FirstStepUnlogged.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import useWindowSize from "@/utils/useWindowSize";
 import { useRouter } from "next/router";
 import { EventProps, TransactionProps } from "@/utils/globalInterface";
@@ -1498,6 +1498,88 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     // console.log("FirstStepUnlogged");
     // console.log("Ticket data:", ticket);
   }, []);
+
+  const allBundlingInfo = detail.has_event_ticket
+    ? detail.has_event_ticket.map((ticket) => ({
+        id: ticket.id,
+        isBundling: ticket.is_bundling === 1,
+        bundlingQty: ticket.bundling_qty,
+      }))
+    : [];
+
+  // Fungsi untuk mendapatkan bundling info berdasarkan event_ticket_id
+  // Atau jika mau cari berdasarkan ID nanti:
+  const getBundlingInfo = (event_ticket_id: number) => {
+    if (!detail.has_event_ticket) return { isBundling: false, bundlingQty: 0 };
+
+    const ticket = detail.has_event_ticket.find((t) => t.id === event_ticket_id);
+    return {
+      isBundling: ticket ? ticket.is_bundling === 1 : false,
+      bundlingQty: ticket ? ticket.bundling_qty : 0,
+    };
+  };
+
+  console.log("is_bundling", allBundlingInfo);
+
+  const displayTotalCount = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let count = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 HITUNG JUMLAH PAKET: qty_ticket (fisik) / bundling_qty
+        // Contoh: bundling_qty = 2, qty_ticket = 4 → 4/2 = 2 paket
+        // Contoh: bundling_qty = 2, qty_ticket = 2 → 2/2 = 1 paket
+        // Contoh: bundling_qty = 3, qty_ticket = 6 → 6/3 = 2 paket
+
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        count += packageCount;
+
+        console.log(`Bundling ${item.name}:`, {
+          physicalTickets: item.qty_ticket,
+          bundlingQty,
+          packageCount,
+          addedToCount: packageCount,
+        });
+      } else {
+        // Non-bundling: jumlah tiket fisik
+        count += item.qty_ticket;
+      }
+    });
+
+    return count;
+  }, [ticket, allBundlingInfo]);
+  // Lalu gunakan displayTotalCount di semua tempat
+
+  const displayTotalSubtotalPrice = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let total = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 Harga per paket × jumlah paket
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        total += item.price * packageCount;
+
+        console.log(`Bundling ${item.name} price:`, {
+          pricePerPackage: item.price,
+          packageCount,
+          subtotal: item.price * packageCount,
+        });
+      } else {
+        // Non-bundling: harga normal
+        total += item.price * item.qty_ticket;
+      }
+    });
+
+    return total;
+  }, [ticket, allBundlingInfo]);
 
   const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
     return (
@@ -1735,7 +1817,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
 
-    const subtotal = totalSubtotalPrice; // prop
+    const subtotal = displayTotalSubtotalPrice; // prop
     const adminFee = totalTicketFee;
 
     const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -2044,23 +2126,58 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 <p className="font-semibold">Ringkasan Pesanan</p>
               </div>
 
-              {ticket.map((t) => (
-                <div className="border-b p-3 border-primary-light-200 flex gap-3" key={t.event_ticket_id}>
-                  <div className="px-3 flex items-center border rounded-md border-primary-light">
-                    <FontAwesomeIcon icon={faTicket} className="text-primary" />
+              {ticket.map((item: FormTicket) => {
+                const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+                // Tentukan display quantity (jumlah paket)
+                let displayQty = item.qty_ticket;
+                let packageCount = 1;
+
+                if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                  packageCount = Math.floor(item.qty_ticket / bundlingQty);
+                  displayQty = packageCount; // Tampilkan jumlah paket
+                }
+
+                const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+
+                // Display subtotal
+                const displaySubtotal =
+                  isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                    ? item.price * packageCount // Harga per paket × jumlah paket
+                    : item.price * item.qty_ticket;
+
+                return (
+                  <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+                    <div className="px-3 flex items-center border rounded-md border-primary-light">
+                      <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1 font-semibold">
+                        {item.name}
+                        {bundlingInfo}
+                      </p>
+                      <p className="text-xs text-grey">
+                        {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
+                        {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm mb-1 font-semibold">{t.name}</p>
-                    <p className="text-grey text-xs">
-                      {t.qty_ticket} Tiket x {t.price}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="py-3 px-4 flex justify-between items-center">
-                <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
+                <p>
+                  {`Jumlah (${displayTotalCount} ${
+                    // 💡 KONDISI: Cek apakah ADA ticket yang bundling
+                    ticket.some((item) => {
+                      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                      return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                    })
+                      ? "Paket" // Jika ADA bundling → "Paket"
+                      : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                  })`}
+                </p>
+                <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
               </div>
 
               {vouchers.length > 0 && (
@@ -2074,7 +2191,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
+                const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                 return (
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>Subtotal</p>
@@ -2087,9 +2204,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               {detail?.ppn !== undefined
                 ? (() => {
-                    const subtotalTiket = totalSubtotalPrice;
+                    const subtotalTiket = displayTotalSubtotalPrice;
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
                     // gunakan helper untuk menghitung tax & label (percentage / nominal)
                     const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
@@ -2121,7 +2238,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 <p className="font-semibold">
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
+                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                     const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                     const grandTotal = subtotalAfterVoucher + adminFee + tax;
                     return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
@@ -2439,23 +2556,58 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     <p className="font-semibold">Ringkasan Pesanan</p>
                   </div>
 
-                  {ticket.map((t) => (
-                    <div className="border-b p-3 border-primary-light-200 flex gap-3" key={t.event_ticket_id}>
-                      <div className="px-3 flex items-center border rounded-md border-primary-light-200">
-                        <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                  {ticket.map((item: FormTicket) => {
+                    const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+                    // Tentukan display quantity (jumlah paket)
+                    let displayQty = item.qty_ticket;
+                    let packageCount = 1;
+
+                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                      packageCount = Math.floor(item.qty_ticket / bundlingQty);
+                      displayQty = packageCount; // Tampilkan jumlah paket
+                    }
+
+                    const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+
+                    // Display subtotal
+                    const displaySubtotal =
+                      isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                        ? item.price * packageCount // Harga per paket × jumlah paket
+                        : item.price * item.qty_ticket;
+
+                    return (
+                      <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+                        <div className="px-3 flex items-center border rounded-md border-primary-light">
+                          <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm mb-1 font-semibold">
+                            {item.name}
+                            {bundlingInfo}
+                          </p>
+                          <p className="text-xs text-grey">
+                            {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
+                            {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm mb-1 font-semibold">{t.name}</p>
-                        <p className=" text-grey text-xs">
-                          {t.qty_ticket} Tiket x {t.price}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   <div className="py-3 px-4 flex justify-between items-center">
-                    <p>{`Jumlah (${totalCount} Tiket)`}</p>
-                    <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
+                    <p>
+                      {`Jumlah (${displayTotalCount} ${
+                        // 💡 KONDISI: Cek apakah ADA ticket yang bundling
+                        ticket.some((item) => {
+                          const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                          return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                        })
+                          ? "Paket" // Jika ADA bundling → "Paket"
+                          : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                      })`}
+                    </p>
+                    <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
                   </div>
 
                   {/* Total Voucher */}
@@ -2471,9 +2623,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                   {/* Subtotal after voucher */}
                   {(() => {
-                    const subtotalTiket = totalSubtotalPrice;
+                    const subtotalTiket = displayTotalSubtotalPrice;
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
                     return (
                       <div className="py-3 px-4 flex justify-between items-center">
@@ -2506,9 +2658,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   {/* TAX */}
                   {detail?.ppn !== undefined
                     ? (() => {
-                        const subtotalTiket = totalSubtotalPrice;
+                        const subtotalTiket = displayTotalSubtotalPrice;
                         const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                        const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+                        const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
                         // gunakan helper untuk menghitung tax & label (percentage / nominal)
                         const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
@@ -2542,7 +2694,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     <p>Total Pembayaran</p>
                     <p className="font-semibold">
                       {(() => {
-                        const subtotalTiket = totalSubtotalPrice;
+                        const subtotalTiket = displayTotalSubtotalPrice;
                         const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                         const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 

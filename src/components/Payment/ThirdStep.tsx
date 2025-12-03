@@ -390,6 +390,7 @@
 // export default ThirdStep;
 
 import React from "react";
+import { useMemo } from "react";
 import useWindowSize from "@/utils/useWindowSize";
 import { EventProps, PaymentMethod, TransactionProps, TransactionTicketProps } from "@/utils/globalInterface";
 import Image from "next/image";
@@ -414,17 +415,27 @@ interface StepPaymentProps {
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
   voucher?: Voucher[];
+  detail?: EventProps;
 }
 
-const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher }: StepPaymentProps) => {
+const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher, detail }: StepPaymentProps) => {
   const router = useRouter();
   const { width } = useWindowSize();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
   // Only proceed if transactionData exists
   if (!width || !transactionData) return null;
 
   // Use values from transactionData (already calculated by backend)
   // This ensures display matches what was sent to Xendit
-  const baseAmount = transactionData.tickets.reduce((sum, ticket) => sum + ticket.price * ticket.qty_ticket, 0);
+  // const baseAmount = transactionData.tickets.reduce((sum, ticket) => sum + ticket.price * ticket.qty_ticket, 0);
 
   // Total ticket_fee dari tiap ticket yang dibeli
   const totalTicketFee = transactionData.tickets.reduce((sum, ticket) => {
@@ -435,14 +446,33 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   // voucher total (frontend display)
   const voucherDiscount = voucher?.reduce((sum, v) => sum + (v.amount || 0), 0) || 0;
 
-  // Subtotal: jumlah tiket dikurangi total voucher
-  const subtotal = baseAmount - voucherDiscount;
+  // // Subtotal: jumlah tiket dikurangi total voucher
+  // const subtotal = baseAmount - voucherDiscount;
 
-  // PPN 10% berdasarkan subtotal (seperti yang kamu minta)
+  // // PPN 10% berdasarkan subtotal (seperti yang kamu minta)
   const ppnValue = Number(transactionData.has_event.ppn);
+  // const taxAmount = subtotal > 0 ? subtotal * (ppnValue / 100) : 0;
+
+  // // Total pembayaran sesuai formula: subtotal + ticket fee + ppn
+  // const grandtotal = subtotal + totalTicketFee + taxAmount;
+  const baseAmount = transactionData.tickets.reduce((total, item) => {
+    const isBundling = item.has_event_ticket?.is_bundling === 1;
+    const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
+
+    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+      const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+      return total + (packageCount > 0 ? item.price * packageCount : item.price * item.qty_ticket);
+    }
+    return total + item.price * item.qty_ticket;
+  }, 0);
+
+  // 2. Hitung subtotal (setelah voucher)
+  const subtotal = Math.max(baseAmount - voucherDiscount, 0);
+
+  // 3. Hitung tax
   const taxAmount = subtotal > 0 ? subtotal * (ppnValue / 100) : 0;
 
-  // Total pembayaran sesuai formula: subtotal + ticket fee + ppn
+  // 4. Hitung grandtotal (yang akan dikirim ke Xendit)
   const grandtotal = subtotal + totalTicketFee + taxAmount;
 
   // Use grandtotal from transactionData to match Xendit exactly (we still display backend grandtotal where required)
@@ -715,31 +745,100 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
               <div className="border-b border-b-primary-light-200 p-3">
                 <p className="font-semibold">Ringkasan Pesanan</p>
               </div>
-              {transactionData.tickets.map((item: TransactionTicketProps) => (
-                <div className="border-b p-3 border-primary-light flex gap-3" key={item.event_ticket_id}>
-                  <div className="px-3 flex items-center border rounded-md border-primary-light">
-                    <FontAwesomeIcon icon={faTicket} className="text-primary" />
+              {transactionData.tickets.map((item: TransactionTicketProps) => {
+                // Ambil langsung dari item.has_event_ticket
+                const isBundling = item.has_event_ticket?.is_bundling === 1;
+                const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
+
+                console.log("Direct from has_event_ticket:", {
+                  name: item.has_event_ticket?.name,
+                  isBundling,
+                  bundlingQty,
+                  qty_ticket: item.qty_ticket,
+                  price: item.price,
+                });
+
+                // Tentukan display quantity
+                let displayQty = item.qty_ticket;
+                let packageCount = item.qty_ticket;
+                let isActuallyBundling = isBundling;
+
+                if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                  packageCount = Math.floor(item.qty_ticket / bundlingQty);
+
+                  if (packageCount > 0) {
+                    displayQty = packageCount;
+                  } else {
+                    isActuallyBundling = false;
+                  }
+                }
+
+                const bundlingInfo = isActuallyBundling ? ` (paket ${bundlingQty} orang)` : "";
+
+                const displaySubtotal = isActuallyBundling ? item.price * packageCount : item.price * item.qty_ticket;
+
+                return (
+                  <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.id}>
+                    <div className="px-3 flex items-center border rounded-md border-primary-light">
+                      <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1 font-semibold">
+                        {item.has_event_ticket?.name}
+                        {bundlingInfo}
+                      </p>
+                      <p className="text-xs text-grey">
+                        {displayQty} {isActuallyBundling ? (displayQty === 1 ? "Paket" : "Paket") : displayQty === 1 ? "Tiket" : "Tiket"} x {formatCurrency(item.price)} = {formatCurrency(displaySubtotal)}
+                        {isActuallyBundling && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm mb-1 font-semibold">{item.has_event_ticket.name}</p>
-                    <p className="text-sm text-grey">
-                      {item.qty_ticket} Tiket x {item.price}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="border border-primary-light-200 rounded-lg bg-white">
               <div className="border-b border-b-primary-light-200 p-3">
                 <p className="font-semibold">Detail Pembayaran</p>
               </div>
               <div className="flex flex-col gap-2 py-3 border-b border-b-primary-light-200">
-                {transactionData.tickets.map((item: TransactionTicketProps) => (
-                  <div className="flex items-center justify-between px-4" key={item.event_ticket_id}>
-                    <p className="text-sm mb-1">{`${item.has_event_ticket.name} (x${item.qty_ticket})`}</p>
-                    <p className="text-sm text-grey">Rp{(item.price * item.qty_ticket).toLocaleString("id-ID")}</p>
-                  </div>
-                ))}
+                {transactionData.tickets.map((item: TransactionTicketProps) => {
+                  // Ambil data bundling langsung dari item.has_event_ticket
+                  const isBundling = item.has_event_ticket?.is_bundling === 1;
+                  const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
+
+                  // Tentukan display quantity dan package count
+                  let displayQty = item.qty_ticket; // default jumlah tiket fisik
+                  let packageCount = item.qty_ticket; // default untuk non-bundling
+                  let isActuallyBundling = isBundling;
+                  let bundlingInfo = "";
+
+                  if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                    packageCount = Math.floor(item.qty_ticket / bundlingQty);
+
+                    if (packageCount > 0) {
+                      displayQty = packageCount; // Tampilkan jumlah paket
+                      bundlingInfo = ` (paket ${bundlingQty} orang)`;
+                    } else {
+                      // Jika packageCount = 0, anggap non-bundling
+                      isActuallyBundling = false;
+                      displayQty = item.qty_ticket;
+                    }
+                  }
+
+                  // Hitung subtotal berdasarkan bundling atau non-bundling
+                  const displaySubtotal = isActuallyBundling
+                    ? item.price * packageCount // Harga per paket × jumlah paket
+                    : item.price * item.qty_ticket; // Harga normal
+
+                  return (
+                    <div className="flex items-center justify-between px-4" key={item.id}>
+                      <div>
+                        <p className="text-sm mb-1">{`${item.has_event_ticket?.name} (x${displayQty} ${isActuallyBundling ? "Paket" : "Tiket"})`}</p>
+                      </div>
+                      <p className="text-sm text-grey">{formatCurrency(displaySubtotal)}</p>
+                    </div>
+                  );
+                })}
 
                 {voucher && Array.isArray(voucher) && voucher.length > 0 ? (
                   <div className="flex items-center justify-between px-4">
@@ -749,10 +848,28 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                 ) : null}
 
                 {/* SUBTOTAL */}
-                <div className="flex items-center justify-between px-4">
-                  <p className="text-sm mb-1">Subtotal</p>
-                  <p className="text-sm text-grey">Rp{subtotal.toLocaleString("id-ID")}</p>
-                </div>
+                {(() => {
+                  // Hitung total display subtotal
+                  const totalDisplaySubtotal = transactionData.tickets.reduce((total, item) => {
+                    const isBundling = item.has_event_ticket?.is_bundling === 1;
+                    const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
+
+                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                      const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+                      return total + (packageCount > 0 ? item.price * packageCount : item.price * item.qty_ticket);
+                    }
+                    return total + item.price * item.qty_ticket;
+                  }, 0);
+
+                  const subtotalAfterVoucher = Math.max(totalDisplaySubtotal - voucherDiscount, 0);
+
+                  return (
+                    <div className="flex items-center justify-between px-4">
+                      <p className="text-sm mb-1">Subtotal</p>
+                      <p className="text-sm text-grey">{formatCurrency(subtotalAfterVoucher)}</p>
+                    </div>
+                  );
+                })()}
 
                 {/* PPN */}
                 {taxAmount && taxAmount > 0 ? (
@@ -770,7 +887,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
               </div>
               <div className="py-3 px-4 flex justify-between items-center">
                 <p className="font-semibold">{`Total Pembayaran`}</p>
-                <p className="font-semibold">Rp{Math.round(grandtotal).toLocaleString("id-ID")}</p>
+                <p className="font-semibold">{formatCurrency(grandtotal)}</p>
               </div>
             </div>
           </div>

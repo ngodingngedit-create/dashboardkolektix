@@ -876,9 +876,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import useWindowSize from "@/utils/useWindowSize";
-import { EventProps } from "@/utils/globalInterface";
+import { EventProps, TicketProps } from "@/utils/globalInterface";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Field, Label, Input } from "@headlessui/react";
@@ -907,6 +907,9 @@ interface FormTicket {
   payment_status: string;
   seat_number?: string[] | string;
   ticket_fee?: number;
+  data?: TicketProps[];
+  // is_bundling?: number;
+  // bundling_qty?: number;
 }
 
 interface ErrorForm {
@@ -998,6 +1001,17 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
   const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
 
   const adminFee = totalTicketFee;
+
+  const firstTicket = detail.has_event_ticket && detail.has_event_ticket[0];
+  const isBundlingGlobal = firstTicket ? firstTicket.is_bundling === 1 : false;
+  const bundlingQtyGlobal = firstTicket ? firstTicket.bundling_qty : 0;
+
+  console.log("Bundling data from detail:", {
+    hasFirstTicket: !!firstTicket,
+    isBundlingGlobal,
+    bundlingQtyGlobal,
+    firstTicket,
+  });
 
   // const computeTax = (detail: any, subtotalAfterVoucher: number) => {
   //   // const ppnType = detail?.ppn_type || "percentage";
@@ -1244,6 +1258,88 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     setVoucherFields(newVoucherFields);
     setVouchers(newVouchers.filter(Boolean));
   };
+
+  const allBundlingInfo = detail.has_event_ticket
+    ? detail.has_event_ticket.map((ticket) => ({
+        id: ticket.id,
+        isBundling: ticket.is_bundling === 1,
+        bundlingQty: ticket.bundling_qty,
+      }))
+    : [];
+
+  // Fungsi untuk mendapatkan bundling info berdasarkan event_ticket_id
+  // Atau jika mau cari berdasarkan ID nanti:
+  const getBundlingInfo = (event_ticket_id: number) => {
+    if (!detail.has_event_ticket) return { isBundling: false, bundlingQty: 0 };
+
+    const ticket = detail.has_event_ticket.find((t) => t.id === event_ticket_id);
+    return {
+      isBundling: ticket ? ticket.is_bundling === 1 : false,
+      bundlingQty: ticket ? ticket.bundling_qty : 0,
+    };
+  };
+
+  console.log("is_bundling", allBundlingInfo);
+
+  const displayTotalCount = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let count = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 HITUNG JUMLAH PAKET: qty_ticket (fisik) / bundling_qty
+        // Contoh: bundling_qty = 2, qty_ticket = 4 → 4/2 = 2 paket
+        // Contoh: bundling_qty = 2, qty_ticket = 2 → 2/2 = 1 paket
+        // Contoh: bundling_qty = 3, qty_ticket = 6 → 6/3 = 2 paket
+
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        count += packageCount;
+
+        console.log(`Bundling ${item.name}:`, {
+          physicalTickets: item.qty_ticket,
+          bundlingQty,
+          packageCount,
+          addedToCount: packageCount,
+        });
+      } else {
+        // Non-bundling: jumlah tiket fisik
+        count += item.qty_ticket;
+      }
+    });
+
+    return count;
+  }, [ticket, allBundlingInfo]);
+  // Lalu gunakan displayTotalCount di semua tempat
+
+  const displayTotalSubtotalPrice = useMemo(() => {
+    if (!ticket || ticket.length === 0) return 0;
+
+    let total = 0;
+
+    ticket.forEach((item) => {
+      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        // 💡 Harga per paket × jumlah paket
+        const packageCount = Math.floor(item.qty_ticket / bundlingQty);
+        total += item.price * packageCount;
+
+        console.log(`Bundling ${item.name} price:`, {
+          pricePerPackage: item.price,
+          packageCount,
+          subtotal: item.price * packageCount,
+        });
+      } else {
+        // Non-bundling: harga normal
+        total += item.price * item.qty_ticket;
+      }
+    });
+
+    return total;
+  }, [ticket, allBundlingInfo]);
 
   // --- Return layout (mobile / desktop) aligned with FirstStepUnlogged design ---
   return (
@@ -1804,7 +1900,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 </div>
               </div>
             </div>
-
             <Card withBorder radius={10} p={20}>
               <Stack gap={20}>
                 <Flex gap={10} align="center">
@@ -1848,24 +1943,63 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 <p className="font-semibold">Ringkasan Pesanan</p>
               </div>
 
-              {ticket.map((item: FormTicket) => (
-                <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
-                  <div className="px-3 flex items-center border rounded-md border-primary-light">
-                    <FontAwesomeIcon icon={faTicket} className="text-primary" />
+              {ticket.map((item: FormTicket) => {
+                const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+
+                // Tentukan display quantity (jumlah paket)
+                let displayQty = item.qty_ticket;
+                let packageCount = 1;
+
+                if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                  packageCount = Math.floor(item.qty_ticket / bundlingQty);
+                  displayQty = packageCount; // Tampilkan jumlah paket
+                }
+
+                const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+
+                // Display subtotal
+                const displaySubtotal =
+                  isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                    ? item.price * packageCount // Harga per paket × jumlah paket
+                    : item.price * item.qty_ticket;
+
+                return (
+                  <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
+                    <div className="px-3 flex items-center border rounded-md border-primary-light">
+                      <FontAwesomeIcon icon={faTicket} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm mb-1 font-semibold">
+                        {item.name}
+                        {bundlingInfo}
+                      </p>
+                      <p className="text-xs text-grey">
+                        {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
+                        {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm mb-1 font-semibold">{item.name}</p>
-                    <p className="text-xs text-grey">
-                      {item.qty_ticket} Tiket x {item.price}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="py-3 px-4 flex justify-between items-center">
+                <p>
+                  {`Jumlah (${displayTotalCount} ${
+                    // 💡 KONDISI: Cek apakah ADA ticket yang bundling
+                    ticket.some((item) => {
+                      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                      return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                    })
+                      ? "Paket" // Jika ADA bundling → "Paket"
+                      : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                  })`}
+                </p>
+                <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
+              </div>
+              {/* <div className="py-3 px-4 flex justify-between items-center">
                 <p>{`${t("jumlah")} (${totalCount} ${t("ticket")})`}</p>
                 <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
-              </div>
+              </div> */}
 
               {vouchers.length > 0 && (
                 <div className="py-3 px-4 flex justify-between items-center">
@@ -1877,7 +2011,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               )}
 
               {(() => {
-                const subtotalTiket = totalSubtotalPrice;
+                const subtotalTiket = displayTotalSubtotalPrice;
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                 const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
@@ -1928,7 +2062,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 <p className="font-semibold">
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(totalSubtotalPrice - totalVoucher, 0);
+                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                     const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                     const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
                     return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
