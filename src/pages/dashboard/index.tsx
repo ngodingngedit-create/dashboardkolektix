@@ -105,7 +105,7 @@ export default function Dashboard() {
       <Card>
         <Accordion defaultExpandedKeys={["event"]}>
           {/* Event Section */}
-          <AccordionItem key="event" title="Event Saya">
+          <AccordionItem key="event" title="Rekap Semua Event">
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
                 <CreatorTable icon="mdi:event-star" title="Jumlah Event" value={calculateTotalEvents()} />

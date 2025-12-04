@@ -42,6 +42,7 @@
   animation: scrollLoop 40s linear infinite;
   align-items: stretch;
   -webkit-overflow-scrolling: touch;
+  animation-play-state: running;
 }
 
 /* 🌀 Loop mulus */

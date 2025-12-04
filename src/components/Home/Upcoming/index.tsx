@@ -73,6 +73,78 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                         />
                       </div>
                     ))}
+                    {upcomingEvents.map((event: EventProps) => (
+                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps) => (
+                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps) => (
+                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps) => (
+                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                        />
+                      </div>
+                    ))}
                   </>
                 ) : (
                   <p>No upcoming events found.</p>

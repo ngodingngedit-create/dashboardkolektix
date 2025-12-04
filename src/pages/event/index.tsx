@@ -297,6 +297,7 @@ const Event = () => {
                     start_time={event.start_time}
                     end_date={event.end_date}
                     end_time={event.end_time}
+                    verified={event.has_creator?.is_verified}
                   />
                 ))
               ) : (

@@ -54,6 +54,10 @@ interface EventData {
   total_unpaid: number;
   total_views: number;
   total_withdraw: number;
+  total_ticket_failed: number;
+  total_ticket_pending: number;
+  total_ticket_sold: number;
+  total_pendapatan: number;
 }
 
 // Tambahkan interface ini di bagian atas file, setelah interface EventData
@@ -715,7 +719,7 @@ const MyEventDetail = () => {
                       <p className="text-grey">Total Pendapatan Event</p>
                       <h6>
                         Rp.
-                        {((eventData?.total_price_sell || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")}
+                        {((eventData?.total_pendapatan || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")}
                       </h6>
                     </div>
                     <Button color="primary" label="Tarik Dana" className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
@@ -764,6 +768,42 @@ const MyEventDetail = () => {
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
+                  </div>
+
+                  {/* Total Transaksi Gagal */}
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                    <Flex align="center" gap={7}>
+                      <p className="text-grey">Transaksi Gagal</p>
+                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                    </Flex>
+                    <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
+                  </div>
+
+                  {/* Total Transaksi Pending */}
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                    <Flex align="center" gap={7}>
+                      <p className="text-grey">Transaksi Pending</p>
+                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                    </Flex>
+                    <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
+                  </div>
+
+                  {/* Total Tiket Terjual */}
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                    <Flex align="center" gap={7}>
+                      <p className="text-grey">Ticket Terjual</p>
+                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                    </Flex>
+                    <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
+                  </div>
+
+                  {/* Total Withdraw */}
+                  <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
+                    <Flex align="center" gap={7}>
+                      <p className="text-grey">Total Withdraw</p>
+                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
+                    </Flex>
+                    <p className="font-semibold">{eventData?.total_withdraw || 0}</p>
                   </div>
 
                   {/* Total View */}
