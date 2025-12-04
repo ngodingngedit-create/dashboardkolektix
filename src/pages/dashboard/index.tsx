@@ -108,11 +108,11 @@ export default function Dashboard() {
           <AccordionItem key="event" title="Event Saya">
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable icon="mdi:event-star" title="Event Berjalan" value={calculateTotalEvents()} />
+                <CreatorTable icon="mdi:event-star" title="Jumlah Event" value={calculateTotalEvents()} />
                 <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal("total_unpaid")} yBorderNone />
                 <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={calculateTotal("total_views")} yBorderNone />
                 <CreatorTable icon="hugeicons:invoice" title="Total Transaksi" value={calculateTotal("total_paid")} yBorderNone />
-                <CreatorTable icon="heroicons-outline:ticket" title="Total Tiket Terjual" value={calculateTotal("total_ticket")} xBorderNone />
+                <CreatorTable icon="heroicons-outline:ticket" title="Total Kategori Ticket" value={calculateTotal("total_ticket")} xBorderNone />
                 {/* <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} /> */}
                 <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} />
               </div>
