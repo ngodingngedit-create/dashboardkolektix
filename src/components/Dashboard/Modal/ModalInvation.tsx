@@ -182,7 +182,15 @@ interface Detail {
         transaction_id?: number | string | null;
         seat_number?: string | null;
         has_event_ticket?: {
+          id: number;
           ticket_category?: string | null;
+          is_bundling: number;
+          bundling_qty: number;
+          bundling_dates: string | null;
+          qty: number;
+          sold_qty: number;
+          price: number;
+          ticket_fee: number;
         } | null;
         transaction_status_id?: number | null;
         // allow other possible fields
@@ -222,6 +230,32 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
   const etickets = item?.has_eticket ?? [];
   const ownerKeys = ownersList.map((_, i) => `pemilik-${i}`);
   const defaultExpanded = ["pemesan", ...ownerKeys]; // optional: buka semua pemilik juga
+
+  const calculateTotalQtyWithBundling = () => {
+    if (!item?.has_eticket || item.has_eticket.length === 0) {
+      return Number(item?.total_qty) || 0;
+    }
+
+    // Ambil data bundling dari eticket pertama (asumsi semua sama)
+    const firstEticket = item.has_eticket[0];
+    const ticketData = firstEticket?.has_event_ticket;
+
+    if (!ticketData) return item.has_eticket.length;
+
+    const isBundling = ticketData.is_bundling === 1;
+    const bundlingQty = ticketData.bundling_qty ?? 0; // ← PAKAI nullish coalescing
+    const totalPhysicalQty = item.has_eticket.length;
+
+    // Pastikan bundlingQty number dan valid
+    const validBundlingQty = Number(bundlingQty) || 0;
+
+    if (isBundling && validBundlingQty >= 2 && validBundlingQty <= 4) {
+      const packageCount = Math.floor(totalPhysicalQty / validBundlingQty);
+      return packageCount > 0 ? packageCount : 1;
+    }
+
+    return totalPhysicalQty;
+  };
 
   return (
     <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="5xl">
@@ -379,13 +413,21 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                       : "-"}
                   </p>
                 </div>
-                <div className="mb-4 flex justify-between">
+                {/* <div className="mb-4 flex justify-between">
                   <p className="text-grey">Total Qty</p>
                   <p className="font-semibold">{item?.total_qty ?? "-"}</p>
+                </div> */}
+                <div className="mb-4 flex justify-between">
+                  <p className="text-grey">Total Qty</p>
+                  <p className="font-semibold">
+                    {item ? calculateTotalQtyWithBundling() : "-"}
+                    {/* HAPUS parameter (item) */}
+                  </p>
                 </div>
+
                 <div className="mb-4 flex justify-between">
                   <p className="text-grey">Total Harga</p>
-                  <p className="font-semibold">{formatIDR(item?.total_price)}</p>
+                  <p className="font-semibold">{formatIDR(item?.grandtotal)}</p>
                 </div>
                 {item?.admin_fee && item.admin_fee !== 0 ? (
                   <div className="mb-4 flex justify-between">
