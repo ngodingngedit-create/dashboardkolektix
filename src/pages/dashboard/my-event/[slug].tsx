@@ -719,7 +719,8 @@ const MyEventDetail = () => {
                       <p className="text-grey">Total Pendapatan Event</p>
                       <h6>
                         Rp.
-                        {((eventData?.total_pendapatan || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")}
+                        {/* {((eventData?.total_pendapatan || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")} */}
+                        {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
                       </h6>
                     </div>
                     <Button color="primary" label="Tarik Dana" className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
