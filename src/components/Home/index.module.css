@@ -39,10 +39,11 @@
   display: flex;
   gap: 1rem;
   width: max-content;
-  animation: scrollLoop 40s linear infinite;
+  animation: scrollLoop 180s linear infinite;
   align-items: stretch;
   -webkit-overflow-scrolling: touch;
   animation-play-state: running;
+  -webkit-animation: scrollLoop 180s linear infinite;
 }
 
 /* 🌀 Loop mulus */

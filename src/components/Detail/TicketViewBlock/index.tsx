@@ -52,7 +52,7 @@ const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin,
         const bundlingQty = Number(item.bundling_qty ?? 0);
         const price = Number(item?.price ?? 0);
 
-        if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+        if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
           // 💡 PERUBAHAN PENTING:
           // physicalTicketQty = jumlah tiket fisik (misal: 2, 4, 6, ...)
           // bundlingQty = 2/3/4 (berapa tiket per paket)
@@ -141,10 +141,10 @@ const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin,
           const bundlingQty = Number(originalTicket?.bundling_qty ?? 0);
 
           // Tentukan display quantity: jika bundling 2-4, tampilkan 1
-          const displayQty = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? 1 : e.seat_number?.length ?? e.qty_ticket;
+          const displayQty = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? 1 : e.seat_number?.length ?? e.qty_ticket;
 
           // Tentukan display price: jika bundling 2-4, tampilkan price bukan subtotal_price
-          const displayPrice = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? e.price : e.subtotal_price;
+          const displayPrice = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? e.price : e.subtotal_price;
 
           return (
             <Flex gap={10} wrap="wrap" justify="space-between" key={i}>
