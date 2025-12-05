@@ -443,7 +443,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
     const isBundling = ticket.has_event_ticket?.is_bundling === 1;
     const bundlingQty = ticket.has_event_ticket?.bundling_qty || 0;
 
-    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+    if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
       const packageCount = Math.floor(ticket.qty_ticket / bundlingQty);
       return sum + fee * (packageCount > 0 ? packageCount : 1);
     }
@@ -467,7 +467,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
     const isBundling = item.has_event_ticket?.is_bundling === 1;
     const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
 
-    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+    if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
       const packageCount = Math.floor(item.qty_ticket / bundlingQty);
       return total + (packageCount > 0 ? item.price * packageCount : item.price * item.qty_ticket);
     }
@@ -771,7 +771,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                 let packageCount = item.qty_ticket;
                 let isActuallyBundling = isBundling;
 
-                if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                   packageCount = Math.floor(item.qty_ticket / bundlingQty);
 
                   if (packageCount > 0) {
@@ -820,7 +820,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                   let isActuallyBundling = isBundling;
                   let bundlingInfo = "";
 
-                  if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                  if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                     packageCount = Math.floor(item.qty_ticket / bundlingQty);
 
                     if (packageCount > 0) {
@@ -862,7 +862,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                     const isBundling = item.has_event_ticket?.is_bundling === 1;
                     const bundlingQty = item.has_event_ticket?.bundling_qty || 0;
 
-                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                       const packageCount = Math.floor(item.qty_ticket / bundlingQty);
                       return total + (packageCount > 0 ? item.price * packageCount : item.price * item.qty_ticket);
                     }

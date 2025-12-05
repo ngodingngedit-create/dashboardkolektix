@@ -1529,7 +1529,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     ticket.forEach((item) => {
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
         // 💡 HITUNG JUMLAH PAKET: qty_ticket (fisik) / bundling_qty
         // Contoh: bundling_qty = 2, qty_ticket = 4 → 4/2 = 2 paket
         // Contoh: bundling_qty = 2, qty_ticket = 2 → 2/2 = 1 paket
@@ -1562,7 +1562,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     ticket.forEach((item) => {
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
         // 💡 Harga per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         total += item.price * packageCount;
@@ -1590,7 +1590,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
       const fee = item.ticket_fee || 0;
 
-      if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+      if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
         // 💡 Admin fee per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         totalFee += fee * packageCount;
@@ -2165,16 +2165,16 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 let displayQty = item.qty_ticket;
                 let packageCount = 1;
 
-                if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                   packageCount = Math.floor(item.qty_ticket / bundlingQty);
                   displayQty = packageCount; // Tampilkan jumlah paket
                 }
 
-                const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+                const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
 
                 // Display subtotal
                 const displaySubtotal =
-                  isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                  isBundling && bundlingQty >= 2 && bundlingQty <= 99
                     ? item.price * packageCount // Harga per paket × jumlah paket
                     : item.price * item.qty_ticket;
 
@@ -2190,7 +2190,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       </p>
                       <p className="text-xs text-grey">
                         {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
-                        {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                        {isBundling && bundlingQty >= 2 && bundlingQty <= 99 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
                       </p>
                     </div>
                   </div>
@@ -2203,7 +2203,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                     ticket.some((item) => {
                       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
-                      return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                      return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                     })
                       ? "Paket" // Jika ADA bundling → "Paket"
                       : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
@@ -2595,16 +2595,16 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     let displayQty = item.qty_ticket;
                     let packageCount = 1;
 
-                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 4) {
+                    if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                       packageCount = Math.floor(item.qty_ticket / bundlingQty);
                       displayQty = packageCount; // Tampilkan jumlah paket
                     }
 
-                    const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 4 ? ` (paket ${bundlingQty} orang)` : "";
+                    const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
 
                     // Display subtotal
                     const displaySubtotal =
-                      isBundling && bundlingQty >= 2 && bundlingQty <= 4
+                      isBundling && bundlingQty >= 2 && bundlingQty <= 99
                         ? item.price * packageCount // Harga per paket × jumlah paket
                         : item.price * item.qty_ticket;
 
@@ -2620,7 +2620,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           </p>
                           <p className="text-xs text-grey">
                             {displayQty} {displayQty === 1 ? "Paket" : "Paket"} x {item.price} = Rp {displaySubtotal.toLocaleString("id-ID")}
-                            {isBundling && bundlingQty >= 2 && bundlingQty <= 4 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
+                            {isBundling && bundlingQty >= 2 && bundlingQty <= 99 && <span className="text-[10px] text-gray-500 block">({item.qty_ticket} tiket fisik)</span>}
                           </p>
                         </div>
                       </div>
@@ -2633,7 +2633,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                         ticket.some((item) => {
                           const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
-                          return isBundling && bundlingQty >= 2 && bundlingQty <= 4;
+                          return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                         })
                           ? "Paket" // Jika ADA bundling → "Paket"
                           : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
