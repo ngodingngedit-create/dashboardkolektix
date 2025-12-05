@@ -239,6 +239,7 @@ interface EventData {
   total_unpaid: number;
   total_views: number;
   total_withdraw: number;
+  total_pendapatan: number;
 }
 
 interface TarikDanaModalProps {
@@ -353,7 +354,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
         if (res && res.event_name) {
           console.log("✅ Event data found:", {
             name: res.event_name,
-            total_price_sell: res.total_price_sell,
+            total_price_sell: res.total_pendapatan,
             total_withdraw: res.total_withdraw,
           });
           setEventData(res);
@@ -373,9 +374,9 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
       return 0;
     }
 
-    const totalEarned = Number(eventData.total_price_sell) || 0;
+    const totalEarned = Number(eventData.total_pendapatan) || 0;
     const totalWithdrawn = Number(eventData.total_withdraw) || 0;
-    const availableBalance = totalEarned - totalWithdrawn;
+    const availableBalance = totalEarned;
 
     console.log("💰 Balance Calculation:", {
       totalEarned,
