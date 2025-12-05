@@ -56,7 +56,7 @@ const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin,
           // 💡 PERUBAHAN PENTING:
           // physicalTicketQty = jumlah tiket fisik (misal: 2, 4, 6, ...)
           // bundlingQty = 2/3/4 (berapa tiket per paket)
-          // packageCount = berapa paket yang dibeli
+          // packageCount = berapa paket yang dibeli.
           const packageCount = Math.ceil(physicalTicketQty / bundlingQty);
 
           // Setiap paket = 1 tiket display
