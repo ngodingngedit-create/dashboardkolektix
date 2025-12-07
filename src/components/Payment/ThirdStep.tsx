@@ -497,6 +497,9 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
     indicator: "",
     content: "px-4",
   };
+
+  const nomor_telp = transactionData?.identities?.[0].no_telp;
+  console.log("no telp", nomor_telp);
   return (
     width &&
     transactionData &&
@@ -541,10 +544,19 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
             ) : (
               <></>
             )}
-            {transactionData.has_event.is_phone_number ? (
+            {/* {transactionData.has_event.is_phone_number ? (
               <div>
                 <p className="text-xs text-grey mb-1">No. Telepon / Handphone</p>
-                <p className="text-sm mb-1">{"+62" + transactionData.identities[0].no_telp}</p>
+                <p className="text-sm mb-1">{"+62" + transactionData.identities[0]?.no_telp}</p>
+              </div>
+            ) : (
+              <></>
+            )} */}
+            {/* Cek dulu apakah has_event ada */}
+            {transactionData.has_event && transactionData.has_event.is_phone_number ? (
+              <div>
+                <p className="text-xs text-grey mb-1">No. Telepon / Handphone</p>
+                <p className="text-sm mb-1">{transactionData.identities[0]?.no_telp ? `+${transactionData.identities[0].no_telp}` : "Tidak tersedia"}</p>
               </div>
             ) : (
               <></>
@@ -708,7 +720,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                     {transactionData.has_event.is_phone_number ? (
                       <div>
                         <p className="text-grey mb-1">No. Telepon / Handphone</p>
-                        <p className="font-semibold mb-1">{"+62" + item.no_telp}</p>
+                        <p className="font-semibold mb-1">{"+" + item.no_telp}</p>
                       </div>
                     ) : (
                       <></>

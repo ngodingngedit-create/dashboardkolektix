@@ -201,6 +201,8 @@ export interface TransactionProps {
   has_event: EventProps;
   identities: IdentityProps[];
   tickets: TransactionTicketProps[];
+  countryCode: number;
+  no_telp: number;
 }
 
 export interface PaymentMethod {
@@ -636,4 +638,5 @@ interface IdentityProps {
   updated_at: Date;
   deleted_at: Date | null;
   is_pemesan?: 1 | 0;
+  countryCode: number;
 }

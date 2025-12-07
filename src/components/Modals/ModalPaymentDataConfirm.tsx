@@ -44,7 +44,7 @@ export default function ModalPaymentDataConfirmation({ isOpen, onConfirm, messag
                 </div>
                 <div>
                   <p className=" text-grey mb-1">No. Telepon / Handphone</p>
-                  <p className="font-semibold">{"+62" + data.no_telp}</p>
+                  <p className="font-semibold">{"+" + data.no_telp}</p>
                 </div>
                 <div className="border border-primary-light-200 bg-primary-light px-3 flex flex-col divide-y divide-primary-light-200 rounded-xl mb-3">
                   <div className="flex gap-3 py-3">
