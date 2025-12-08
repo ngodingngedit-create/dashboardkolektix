@@ -918,6 +918,10 @@ interface ErrorForm {
   email: boolean;
   countryCode: boolean;
   phone: boolean;
+  // tambahan
+  nikLength?: boolean;
+  phoneFormat?: boolean;
+  phoneLength?: boolean;
 }
 
 interface Form {
@@ -990,6 +994,74 @@ const normalizeDetail = (detail: Detail) => {
   return normalized;
 };
 
+// Fungsi validasi KTP
+const validateNIK = (nik: string): { isValid: boolean; errorMessage?: string } => {
+  const cleanedNIK = nik.replace(/\D/g, "");
+
+  if (cleanedNIK.length < 16) {
+    return {
+      isValid: false,
+      errorMessage: "NIK harus 16 digit",
+    };
+  }
+
+  if (cleanedNIK.length > 16) {
+    return {
+      isValid: false,
+      errorMessage: "Maksimal NIK adalah 16 digit",
+    };
+  }
+
+  return { isValid: true };
+};
+
+// Fungsi validasi nomor telepon
+const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: string } => {
+  // Hapus semua karakter non-digit
+  const cleanedPhone = phone.replace(/\D/g, "");
+
+  // Validasi: tidak boleh dimulai dengan 62 atau 0
+  if (cleanedPhone.startsWith("62")) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon tidak boleh dimulai dengan 62",
+    };
+  }
+
+  if (cleanedPhone.startsWith("0")) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon tidak boleh dimulai dengan 0",
+    };
+  }
+
+  // Validasi panjang maksimal 11 digit (tidak termasuk kode negara)
+  if (cleanedPhone.length > 11) {
+    return {
+      isValid: false,
+      errorMessage: "Maksimal 11 digit (tidak termasuk kode negara)",
+    };
+  }
+
+  // Validasi panjang minimal (biasanya 9-11 digit untuk Indonesia)
+  if (cleanedPhone.length < 9) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon terlalu pendek",
+    };
+  }
+
+  // Validasi format nomor (harus angka semua)
+  if (!/^\d+$/.test(cleanedPhone)) {
+    return {
+      isValid: false,
+      errorMessage: "Format nomor telepon tidak valid",
+    };
+  }
+
+  return { isValid: true };
+};
+
 const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, ticket, totalCount, onSubmit, form, setForm, error, totalSubtotalPrice, setFormValid }: StepPaymentProps) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>([]);
@@ -1000,6 +1072,12 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
   const userData = useLoggedUser();
   const [collapse, setCollapse] = useState<boolean[]>(form.map((_, index) => index === 0));
   const [displayValues, setDisplayValues] = useState<{ [key: number]: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    [key: number]: {
+      nik?: string;
+      phone?: string;
+    };
+  }>({});
 
   // const adminFee = totalTicketFee;
 
@@ -1097,16 +1175,44 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     let newForm = [...form];
 
     if (field === "no_telp") {
-      // Update display value
+      // Update display value (hanya angka)
       const displayVal = value.replaceAll(/\D/g, "");
       setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
 
-      // Format untuk backend (SAMA PERSIS dengan kode lama)
+      // Format untuk backend
       let phone = value.replaceAll(/\D/g, "");
       phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
       phone = phone.replace(/^0/, "62");
 
       newForm[index] = { ...newForm[index], [field]: phone };
+
+      // Validasi real-time untuk nomor telepon
+      if (detail.is_phone_number == 1) {
+        const validation = validatePhoneNumber(phone);
+        setFieldErrors((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            phone: validation.isValid ? undefined : validation.errorMessage,
+          },
+        }));
+      }
+    } else if (field === "nik") {
+      // Hanya menerima angka dan batasi panjang
+      const numericValue = value.replace(/\D/g, "").slice(0, 16);
+      newForm[index] = { ...newForm[index], [field]: numericValue };
+
+      // Validasi real-time untuk NIK
+      if (detail.is_noidentity == 1) {
+        const validation = validateNIK(numericValue);
+        setFieldErrors((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            nik: validation.isValid ? undefined : validation.errorMessage,
+          },
+        }));
+      }
     } else {
       newForm[index] = { ...newForm[index], [field]: value };
     }
@@ -1116,11 +1222,49 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     setFormValid(isFormValid);
   };
 
+  // const handleInput = (index: number, field: keyof Form, value: string) => {
+  //   let newForm = [...form];
+
+  //   if (field === "no_telp") {
+  //     // Update display value
+  //     const displayVal = value.replaceAll(/\D/g, "");
+  //     setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
+
+  //     // Format untuk backend (SAMA PERSIS dengan kode lama)
+  //     let phone = value.replaceAll(/\D/g, "");
+  //     phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
+  //     phone = phone.replace(/^0/, "62");
+
+  //     newForm[index] = { ...newForm[index], [field]: phone };
+  //   } else {
+  //     newForm[index] = { ...newForm[index], [field]: value };
+  //   }
+
+  //   setForm(newForm);
+  //   const isFormValid = newForm.every(formValidation);
+  //   setFormValid(isFormValid);
+  // };
+
   const copyOrderer = (targetIndex: number) => {
     if (form.length > 0 && targetIndex > 0 && targetIndex < form.length) {
       let newForm = [...form];
       newForm[targetIndex] = { ...newForm[0], is_pemesan: 0 };
       setForm(newForm);
+
+      // COPY JUGA displayValues untuk no_telp
+      if (displayValues[0]) {
+        setDisplayValues((prev) => ({
+          ...prev,
+          [targetIndex]: displayValues[0],
+        }));
+      }
+
+      // Reset error untuk form yang dicopy
+      setFieldErrors((prev) => ({
+        ...prev,
+        [targetIndex]: {},
+      }));
+
       const isFormValid = newForm.every(formValidation);
       setFormValid(isFormValid);
     }
@@ -1146,6 +1290,19 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
         is_assistant: "",
       };
       setForm(newForm);
+
+      // RESET displayValues
+      setDisplayValues((prev) => ({
+        ...prev,
+        [targetIndex]: "",
+      }));
+
+      // Reset error
+      setFieldErrors((prev) => ({
+        ...prev,
+        [targetIndex]: {},
+      }));
+
       const isFormValid = newForm.every(formValidation);
       setFormValid(isFormValid);
     }
@@ -1681,18 +1838,20 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         <Input
                           type="text"
                           className={`${
-                            error.nik ? "border-danger" : "border-primary-light"
-                          } [&::-webkit-inner-spin-button]:appearance-none mt-0.5 sm:mt-1 block w-full rounded-lg border t bg-white/5 py-1 px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
-                          placeholder="1234 567 890"
+                            fieldErrors[index]?.nik ? "border-danger" : "border-primary-light"
+                          } [&::-webkit-inner-spin-button]:appearance-none mt-0.5 sm:mt-1 block w-full rounded-lg border bg-white/5 py-1 px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                          placeholder="3277*************"
                           value={item.nik}
                           onChange={(e) => {
-                            const numericValue = e.target.value.replace(/\D/g, "").slice(0, 17);
+                            const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16); // Ganti 17 jadi 16
                             handleInput(index, "nik", numericValue);
                           }}
-                          maxLength={17}
+                          maxLength={16} // Ganti 17 jadi 16
                         />
-                        {error.nik && item.nik.length < 16 && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Minimal NIK adalah 16 Digit</p>}
-                        {error.nik && item.nik.length > 17 && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Maksimal NIK adalah 17 Digit</p>}
+                        {/* TAMPILKAN ERROR DARI VALIDASI BARU */}
+                        {fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.nik}</p>}
+                        {/* ATAU ERROR LAMA JIKA MASIH ADA */}
+                        {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Minimal NIK adalah 16 Digit</p>}
                       </Field>
                     ) : null}
 
@@ -1816,13 +1975,60 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                             </select>
                           </form>
                           <Input
-                            className="mt-0.5 sm:mt-1 w-4/5 block rounded-lg border border-primary-light bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                            className={`${
+                              fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                            } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                             placeholder="Contoh: 81234567890"
-                            value={displayValues[index] || ""} // Tampilkan tanpa 628
-                            onChange={(e) => handleInput(index, "no_telp", e.target.value)}
+                            value={displayValues[index] || ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const numericValue = value.replace(/\D/g, "");
+
+                              // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
+                              if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
+                                // Tampilkan error
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  [index]: {
+                                    ...prev[index],
+                                    phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
+                                  },
+                                }));
+                                // Jangan update nilai
+                                return;
+                              }
+
+                              // BLOKIR JIKA LEBIH DARI 11 DIGIT
+                              if (numericValue.length > 11) {
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  [index]: {
+                                    ...prev[index],
+                                    phone: "Maksimal 11 digit",
+                                  },
+                                }));
+                                // Potong jadi 11 digit
+                                const trimmedValue = numericValue.slice(0, 11);
+                                handleInput(index, "no_telp", trimmedValue);
+                                return;
+                              }
+
+                              // Jika valid, reset error
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                [index]: {
+                                  ...prev[index],
+                                  phone: undefined,
+                                },
+                              }));
+
+                              handleInput(index, "no_telp", numericValue);
+                            }}
                             type="tel"
                           />
                         </div>
+                        {/* Tambahkan pesan error validasi */}
+                        {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                       </Field>
                     ) : null}
                   </div>
@@ -1886,7 +2092,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                   <div className={`px-5 pt-3 pb-5 ${collapse[index] ? "" : "max-h-0"} transition-max-height delay-100 duration-150 ease-in-out`}>
                     <div className={`${collapse[index] ? "opacity-100" : "opacity-0"} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                       <div className={`${collapse[index] ? "visible" : "invisible"} flex flex-col gap-3`}>
-                        {detail.is_noidentity ? (
+                        {/* {detail.is_noidentity ? (
                           <div className="grid grid-cols-4 gap-3">
                             <div>
                               <InputSelect
@@ -1907,8 +2113,46 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                               {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                             </div>
                           </div>
-                        ) : null}
+                        ) : null} */}
 
+                        {detail.is_noidentity ? (
+                          <div className="grid grid-cols-4 gap-3">
+                            <div>
+                              <InputSelect
+                                label="Identitas"
+                                required
+                                onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
+                                options={[
+                                  { key: "1", label: "KTP" },
+                                  { key: "2", label: "SIM" },
+                                  { key: "3", label: "Kartu Pelajar" },
+                                  { key: "4", label: "Passport" },
+                                  { key: "5", label: "KTM" },
+                                ]}
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <div className="relative">
+                                <InputField
+                                  fullWidth
+                                  type="number"
+                                  label="Nomor Identitas"
+                                  placeholder={`${t("example")}: 3277************`}
+                                  value={item.nik}
+                                  onChange={(e) => {
+                                    // Hanya ambil 16 digit pertama
+                                    const value = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                    handleInput(index, "nik", value);
+                                  }}
+                                />
+                                {/* ERROR DARI VALIDASI BARU */}
+                                {fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">{fieldErrors[index]?.nik}</p>}
+                                {/* ERROR LAMA */}
+                                {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
                         {detail.is_name ? <InputField fullWidth type="text" label={t("fullName")} placeholder={t("fullName")} value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} /> : null}
 
                         {/* Assistant for desktop */}
@@ -1971,7 +2215,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         ) : null}
                         {detail.is_company ? <InputField fullWidth type="text" label={t("company")} placeholder={t("company")} value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} /> : null}
                         {detail.is_email ? <InputField fullWidth type="text" label="Email" placeholder={`${t("example")}: example@example.com`} value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} /> : null}
-                        {detail.is_phone_number ? (
+                        {/* {detail.is_phone_number ? (
                           <Field className="mb-1.5 sm:mb-2">
                             <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
                             <div className="flex gap-1 sm:gap-2 items-center">
@@ -1993,6 +2237,77 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                                 type="tel"
                               />
                             </div>
+                          </Field>
+                        ) : null} */}
+                        {detail.is_phone_number ? (
+                          <Field className="mb-1.5 sm:mb-2">
+                            <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
+                            <div className="flex gap-1 sm:gap-2 items-center">
+                              <form className="max-w-sm block mt-0.5 sm:mt-1">
+                                <select
+                                  id="countries"
+                                  className="bg-gray-50 border border-primary-light text-dark text-xs sm:text-sm rounded-lg focus:ring-primary-base focus:border-primary-light block w-full py-1 sm:py-1.5 px-1.5 sm:px-2"
+                                  value={item.countryCode}
+                                  onChange={(e) => handleInput(index, "countryCode", e.target.value)}
+                                >
+                                  <option value="+62">+62</option>
+                                </select>
+                              </form>
+                              <Input
+                                className={`${
+                                  fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                                } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                                placeholder="Contoh: 81234567890"
+                                value={displayValues[index] || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numericValue = value.replace(/\D/g, "");
+
+                                  // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
+                                  if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
+                                    // Tampilkan error
+                                    setFieldErrors((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
+                                      },
+                                    }));
+                                    // Jangan update nilai
+                                    return;
+                                  }
+
+                                  // BLOKIR JIKA LEBIH DARI 11 DIGIT
+                                  if (numericValue.length > 11) {
+                                    setFieldErrors((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        phone: "Maksimal 11 digit",
+                                      },
+                                    }));
+                                    // Potong jadi 11 digit
+                                    const trimmedValue = numericValue.slice(0, 11);
+                                    handleInput(index, "no_telp", trimmedValue);
+                                    return;
+                                  }
+
+                                  // Jika valid, reset error
+                                  setFieldErrors((prev) => ({
+                                    ...prev,
+                                    [index]: {
+                                      ...prev[index],
+                                      phone: undefined,
+                                    },
+                                  }));
+
+                                  handleInput(index, "no_telp", numericValue);
+                                }}
+                                type="tel"
+                              />
+                            </div>
+                            {/* Tambahkan pesan error validasi */}
+                            {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                           </Field>
                         ) : null}
                       </div>

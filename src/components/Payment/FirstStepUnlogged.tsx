@@ -1332,7 +1332,7 @@ import Images from "../Images";
 import { toast } from "react-toastify";
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import React from "react";
-import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput } from "@mantine/core";
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput, Modal } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
@@ -1359,6 +1359,10 @@ interface ErrorForm {
   phone: boolean;
   is_profession: boolean;
   is_company: boolean;
+  //tambahan
+  nikLength?: boolean;
+  phoneFormat?: boolean;
+  phoneLength?: boolean;
 }
 
 interface Form {
@@ -1378,6 +1382,9 @@ interface Form {
   birthdate?: string;
   kelas?: string;
   gender?: string;
+  is_insurance?: number;
+  insurance_amount?: number;
+  insurance_require?: number;
 }
 
 interface StepPaymentProps {
@@ -1430,6 +1437,74 @@ const normalizeDetail = (detail: Detail) => {
   return normalized;
 };
 
+// Fungsi validasi KTP
+const validateNIK = (nik: string): { isValid: boolean; errorMessage?: string } => {
+  const cleanedNIK = nik.replace(/\D/g, "");
+
+  if (cleanedNIK.length < 16) {
+    return {
+      isValid: false,
+      errorMessage: "NIK harus 16 digit",
+    };
+  }
+
+  if (cleanedNIK.length > 16) {
+    return {
+      isValid: false,
+      errorMessage: "Maksimal NIK adalah 16 digit",
+    };
+  }
+
+  return { isValid: true };
+};
+
+// Fungsi validasi nomor telepon
+const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: string } => {
+  // Hapus semua karakter non-digit
+  const cleanedPhone = phone.replace(/\D/g, "");
+
+  // Validasi: tidak boleh dimulai dengan 62 atau 0
+  if (cleanedPhone.startsWith("62")) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon tidak boleh dimulai dengan 62",
+    };
+  }
+
+  if (cleanedPhone.startsWith("0")) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon tidak boleh dimulai dengan 0",
+    };
+  }
+
+  // Validasi panjang maksimal 11 digit (tidak termasuk kode negara)
+  if (cleanedPhone.length > 11) {
+    return {
+      isValid: false,
+      errorMessage: "Maksimal 11 digit (tidak termasuk kode negara)",
+    };
+  }
+
+  // Validasi panjang minimal (biasanya 9-11 digit untuk Indonesia)
+  if (cleanedPhone.length < 9) {
+    return {
+      isValid: false,
+      errorMessage: "Nomor telepon terlalu pendek",
+    };
+  }
+
+  // Validasi format nomor (harus angka semua)
+  if (!/^\d+$/.test(cleanedPhone)) {
+    return {
+      isValid: false,
+      errorMessage: "Format nomor telepon tidak valid",
+    };
+  }
+
+  return { isValid: true };
+};
+
 const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalSubtotalPrice, forms, isOpen, setIsOpen, setFormValid, step, setStep }: StepPaymentProps) => {
   const { width } = useWindowSize();
   const [voucherFields, setVoucherFields] = useState<string[]>([""]);
@@ -1454,6 +1529,13 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   const [bank, setBank] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<any>(null);
   const [displayValues, setDisplayValues] = useState<{ [key: number]: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    [key: number]: {
+      nik?: string;
+      phone?: string;
+    };
+  }>({});
+  const [insuranceModalOpen, setInsuranceModalOpen] = useState(false);
 
   // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   // const adminFee = totalTicketFee;
@@ -1699,16 +1781,44 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     let newForm = [...form];
 
     if (field === "no_telp") {
-      // Update display value
+      // Update display value (hanya angka)
       const displayVal = value.replaceAll(/\D/g, "");
       setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
 
-      // Format untuk backend (SAMA PERSIS dengan kode lama)
+      // Format untuk backend
       let phone = value.replaceAll(/\D/g, "");
       phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
       phone = phone.replace(/^0/, "62");
 
       newForm[index] = { ...newForm[index], [field]: phone };
+
+      // Validasi real-time untuk nomor telepon
+      if (detail.is_phone_number == 1) {
+        const validation = validatePhoneNumber(phone);
+        setFieldErrors((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            phone: validation.isValid ? undefined : validation.errorMessage,
+          },
+        }));
+      }
+    } else if (field === "nik") {
+      // Hanya menerima angka dan batasi panjang
+      const numericValue = value.replace(/\D/g, "").slice(0, 16);
+      newForm[index] = { ...newForm[index], [field]: numericValue };
+
+      // Validasi real-time untuk NIK
+      if (detail.is_noidentity == 1) {
+        const validation = validateNIK(numericValue);
+        setFieldErrors((prev) => ({
+          ...prev,
+          [index]: {
+            ...prev[index],
+            nik: validation.isValid ? undefined : validation.errorMessage,
+          },
+        }));
+      }
     } else {
       newForm[index] = { ...newForm[index], [field]: value };
     }
@@ -1746,6 +1856,21 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       let newForm = [...form];
       newForm[targetIndex] = { ...newForm[0], is_pemesan: 0 };
       setForm(newForm);
+
+      // COPY JUGA displayValues untuk no_telp
+      if (displayValues[0]) {
+        setDisplayValues((prev) => ({
+          ...prev,
+          [targetIndex]: displayValues[0],
+        }));
+      }
+
+      // Reset error untuk form yang dicopy
+      setFieldErrors((prev) => ({
+        ...prev,
+        [targetIndex]: {},
+      }));
+
       const isFormValid = newForm.every(formValidation);
       setFormValid(isFormValid);
     }
@@ -1765,13 +1890,27 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         is_company: "",
         identity_type_id: 1,
         event_ticket_id: 1,
-        // clear new fields too
+        gender: "",
         birthdate: "",
         kelas: "",
-        gender: "",
         is_assistant: "",
       };
       setForm(newForm);
+
+      // RESET displayValues
+      setDisplayValues((prev) => ({
+        ...prev,
+        [targetIndex]: "",
+      }));
+
+      // Reset error
+      setFieldErrors((prev) => ({
+        ...prev,
+        [targetIndex]: {},
+      }));
+
+      const isFormValid = newForm.every(formValidation);
+      setFormValid(isFormValid);
     }
   };
 
@@ -2279,6 +2418,96 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   })()
                 : null}
 
+              {/* Cek apakah ada asuransi */}
+              {detail?.is_insurance === 1 && (
+                <>
+                  <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 flex items-center border rounded-md border-primary-light">
+                        <Icon icon="mdi:shield-check" className="text-primary" />
+                      </div>
+                      <div>
+                        <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
+                          Pakai Asuransi
+                        </button>
+                        {/* Ambil harga dari insurance_amount */}
+                        <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"}</p>
+                      </div>
+                    </div>
+
+                    {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
+                    {detail?.insurance_require === 0 ? (
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        onChange={(e) => {
+                          console.log("Asuransi:", e.target.checked);
+                          // Tambahkan logika untuk menambah/mengurangi total jika perlu
+                        }}
+                      />
+                    ) : (
+                      // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
+                      <div className="text-xs text-primary font-semibold">Wajib</div>
+                    )}
+                  </div>
+
+                  {/* Modal Asuransi */}
+                  <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
+                    <div className="flex flex-col sm:flex-row gap-4 p-4">
+                      <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
+                        <div className="bg-blue-50 p-4 rounded-full mb-3">
+                          <Icon icon="mdi:shield-check" className="text-blue-600 text-4xl" />
+                        </div>
+                        <p className="text-sm font-semibold text-center">Proteksi Tiket Anda</p>
+                      </div>
+
+                      <div className="w-full sm:w-3/4">
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Apa itu Asuransi Tiket?</h4>
+                            <p className="text-xs text-gray-600">Asuransi tiket melindungi pembelian tiket Anda dari berbagai kondisi tidak terduga yang dapat menghalangi Anda menghadiri event.</p>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Manfaat yang Didapat:</h4>
+                            <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                              <li>Pengembalian dana 100% jika sakit mendadak dengan surat dokter</li>
+                              <li>Perlindungan kecelakaan saat perjalanan ke venue</li>
+                              <li>Proteksi terhadap bencana alam yang mengakibatkan event batal</li>
+                              <li>Coverage untuk kondisi darurat keluarga inti</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Syarat & Ketentuan:</h4>
+                            <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                              <li>Klaim harus diajukan maksimal 7 hari setelah event</li>
+                              <li>Dokumen pendukung wajib dilampirkan</li>
+                              <li>Tidak berlaku untuk kondisi pre-existing</li>
+                              <li>Masa tunggu 24 hari setelah pembelian</li>
+                            </ul>
+                          </div>
+
+                          <div className="pt-2">
+                            <p className="text-xs text-gray-500">
+                              Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
+                            </p>
+                            {/* Tampilkan status wajib/opsional */}
+                            {detail?.insurance_require === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t flex justify-end">
+                      <Button onClick={() => setInsuranceModalOpen(false)} size="xs">
+                        Mengerti
+                      </Button>
+                    </div>
+                  </Modal>
+                </>
+              )}
+
               {adminFee > 0 && (
                 <div className="py-3 px-4 flex justify-between items-center">
                   <p>Biaya Admin</p>
@@ -2348,8 +2577,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     {/* collapse wrapper: gunakan overflow-hidden + max-h */}
                     <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
                       <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
-                        {detail.is_noidentity == 1 && (
-                          <div className="grid grid-cols-2 gap-3 ">
+                        {detail.is_noidentity ? (
+                          <Field className="mb-1.5 sm:mb-2">
                             <div>
                               <InputSelect
                                 label="Identitas"
@@ -2364,12 +2593,26 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 ]}
                               />
                             </div>
-                            <div className="col-span-3">
-                              <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
-                              {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
-                            </div>
-                          </div>
-                        )}
+                            <Label className="text-xs sm:text-sm font-base text-grey">Nomor Induk KTP</Label>
+                            <Input
+                              type="text"
+                              className={`${
+                                fieldErrors[index]?.nik ? "border-danger" : "border-primary-light"
+                              } [&::-webkit-inner-spin-button]:appearance-none mt-0.5 sm:mt-1 block w-full rounded-lg border bg-white/5 py-1 px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                              placeholder="3277*************"
+                              value={item.nik}
+                              onChange={(e) => {
+                                const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16); // Ganti 17 jadi 16
+                                handleInput(index, "nik", numericValue);
+                              }}
+                              maxLength={16} // Ganti 17 jadi 16
+                            />
+                            {/* TAMPILKAN ERROR DARI VALIDASI BARU */}
+                            {fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.nik}</p>}
+                            {/* ATAU ERROR LAMA JIKA MASIH ADA */}
+                            {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Minimal NIK adalah 16 Digit</p>}
+                          </Field>
+                        ) : null}
 
                         {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
                         {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
@@ -2433,13 +2676,60 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 </select>
                               </form>
                               <Input
-                                className="mt-0.5 sm:mt-1 w-4/5 block rounded-lg border border-primary-light bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                                className={`${
+                                  fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                                } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                                 placeholder="Contoh: 81234567890"
-                                value={displayValues[index] || ""} // Tampilkan tanpa 628
-                                onChange={(e) => handleInput(index, "no_telp", e.target.value)}
+                                value={displayValues[index] || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const numericValue = value.replace(/\D/g, "");
+
+                                  // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
+                                  if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
+                                    // Tampilkan error
+                                    setFieldErrors((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
+                                      },
+                                    }));
+                                    // Jangan update nilai
+                                    return;
+                                  }
+
+                                  // BLOKIR JIKA LEBIH DARI 11 DIGIT
+                                  if (numericValue.length > 11) {
+                                    setFieldErrors((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        phone: "Maksimal 11 digit",
+                                      },
+                                    }));
+                                    // Potong jadi 11 digit
+                                    const trimmedValue = numericValue.slice(0, 11);
+                                    handleInput(index, "no_telp", trimmedValue);
+                                    return;
+                                  }
+
+                                  // Jika valid, reset error
+                                  setFieldErrors((prev) => ({
+                                    ...prev,
+                                    [index]: {
+                                      ...prev[index],
+                                      phone: undefined,
+                                    },
+                                  }));
+
+                                  handleInput(index, "no_telp", numericValue);
+                                }}
                                 type="tel"
                               />
                             </div>
+                            {/* Tambahkan pesan error validasi */}
+                            {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                           </Field>
                         ) : null}
                       </div>
@@ -2500,7 +2790,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                       <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
                         <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
-                          {detail.is_noidentity == 1 && (
+                          {detail.is_noidentity ? (
                             <div className="grid grid-cols-4 gap-3">
                               <div>
                                 <InputSelect
@@ -2517,11 +2807,27 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 />
                               </div>
                               <div className="col-span-3">
-                                <InputField fullWidth type="number" label="Nomor Identitas" placeholder="Contoh: 123456789012345" value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} inputProps={{ maxLength: 16 }} />
-                                {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                                <div className="relative">
+                                  <InputField
+                                    fullWidth
+                                    type="number"
+                                    label="Nomor Identitas"
+                                    placeholder={`Contoh : 1234567890123456`}
+                                    value={item.nik}
+                                    onChange={(e) => {
+                                      // Hanya ambil 16 digit pertama
+                                      const value = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                      handleInput(index, "nik", value);
+                                    }}
+                                  />
+                                  {/* ERROR DARI VALIDASI BARU */}
+                                  {fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">{fieldErrors[index]?.nik}</p>}
+                                  {/* ERROR LAMA */}
+                                  {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
+                                </div>
                               </div>
                             </div>
-                          )}
+                          ) : null}
 
                           {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
                           {detail.is_assistant == 1 && <InputField fullWidth type="text" label="Assistant" placeholder="Nama Assistant" value={item.is_assistant || ""} onChange={(e) => handleInput(index, "is_assistant", e.target.value)} />}
@@ -2585,13 +2891,60 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                   </select>
                                 </form>
                                 <Input
-                                  className="mt-0.5 sm:mt-1 w-4/5 block rounded-lg border border-primary-light bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
+                                  className={`${
+                                    fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                                  } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                                   placeholder="Contoh: 81234567890"
-                                  value={displayValues[index] || ""} // Tampilkan tanpa 628
-                                  onChange={(e) => handleInput(index, "no_telp", e.target.value)}
+                                  value={displayValues[index] || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    const numericValue = value.replace(/\D/g, "");
+
+                                    // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
+                                    if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
+                                      // Tampilkan error
+                                      setFieldErrors((prev) => ({
+                                        ...prev,
+                                        [index]: {
+                                          ...prev[index],
+                                          phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
+                                        },
+                                      }));
+                                      // Jangan update nilai
+                                      return;
+                                    }
+
+                                    // BLOKIR JIKA LEBIH DARI 11 DIGIT
+                                    if (numericValue.length > 11) {
+                                      setFieldErrors((prev) => ({
+                                        ...prev,
+                                        [index]: {
+                                          ...prev[index],
+                                          phone: "Maksimal 11 digit",
+                                        },
+                                      }));
+                                      // Potong jadi 11 digit
+                                      const trimmedValue = numericValue.slice(0, 11);
+                                      handleInput(index, "no_telp", trimmedValue);
+                                      return;
+                                    }
+
+                                    // Jika valid, reset error
+                                    setFieldErrors((prev) => ({
+                                      ...prev,
+                                      [index]: {
+                                        ...prev[index],
+                                        phone: undefined,
+                                      },
+                                    }));
+
+                                    handleInput(index, "no_telp", numericValue);
+                                  }}
                                   type="tel"
                                 />
                               </div>
+                              {/* Tambahkan pesan error validasi */}
+                              {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                             </Field>
                           ) : null}
                         </div>
@@ -2758,6 +3111,95 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         );
                       })()
                     : null} */}
+                  {/* Cek apakah ada asuransi */}
+                  {detail?.is_insurance === 1 && (
+                    <>
+                      <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
+                        <div className="flex items-center gap-3">
+                          <div className="px-3 flex items-center border rounded-md border-primary-light">
+                            <Icon icon="mdi:shield-check" className="text-primary" />
+                          </div>
+                          <div>
+                            <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
+                              {detail?.has_insurance?.[0]?.title || "Pakai Asuransi"}
+                            </button>
+                            {/* Ambil harga dari insurance_amount */}
+                            <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p>
+                          </div>
+                        </div>
+
+                        {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
+                        {detail?.insurance_require === 0 ? (
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            onChange={(e) => {
+                              console.log("Asuransi:", e.target.checked);
+                              // Tambahkan logika untuk menambah/mengurangi total jika perlu
+                            }}
+                          />
+                        ) : (
+                          // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
+                          <div className="text-xs text-primary font-semibold">Wajib</div>
+                        )}
+                      </div>
+
+                      {/* Modal Asuransi */}
+                      <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
+                        <div className="flex flex-col sm:flex-row gap-4 p-4">
+                          <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
+                            <div className="bg-blue-50 p-4 rounded-full mb-3">
+                              <Icon icon="mdi:shield-check" className="text-blue-600 text-4xl" />
+                            </div>
+                            <p className="text-sm font-semibold text-center">Proteksi Tiket Anda</p>
+                          </div>
+
+                          <div className="w-full sm:w-3/4">
+                            <div className="space-y-3">
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">Apa itu Asuransi Tiket?</h4>
+                                <p className="text-xs text-gray-600">Asuransi tiket melindungi pembelian tiket Anda dari berbagai kondisi tidak terduga yang dapat menghalangi Anda menghadiri event.</p>
+                              </div>
+
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">Manfaat yang Didapat:</h4>
+                                <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                                  <li>Pengembalian dana 100% jika sakit mendadak dengan surat dokter</li>
+                                  <li>Perlindungan kecelakaan saat perjalanan ke venue</li>
+                                  <li>Proteksi terhadap bencana alam yang mengakibatkan event batal</li>
+                                  <li>Coverage untuk kondisi darurat keluarga inti</li>
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">Syarat & Ketentuan:</h4>
+                                <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                                  <li>Klaim harus diajukan maksimal 7 hari setelah event</li>
+                                  <li>Dokumen pendukung wajib dilampirkan</li>
+                                  <li>Tidak berlaku untuk kondisi pre-existing</li>
+                                  <li>Masa tunggu 24 hari setelah pembelian</li>
+                                </ul>
+                              </div>
+
+                              <div className="pt-2">
+                                <p className="text-xs text-gray-500">
+                                  Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
+                                </p>
+                                {/* Tampilkan status wajib/opsional */}
+                                {detail?.insurance_require === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t flex justify-end">
+                          <Button onClick={() => setInsuranceModalOpen(false)} size="xs">
+                            Mengerti
+                          </Button>
+                        </div>
+                      </Modal>
+                    </>
+                  )}
                   {/* TAX */}
                   {detail?.ppn !== undefined
                     ? (() => {

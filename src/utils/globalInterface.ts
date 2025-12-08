@@ -433,6 +433,9 @@ export interface EventProps {
   is_phone_number: 1 | 0;
   is_kelas: 1 | 0;
   is_assistant: 1 | 0;
+  is_insurance: number;
+  insurance_require: number;
+  insurance_amount: number;
   grand_total: number;
   transaction_saldo_by_event: {
     event_id: number;
@@ -443,6 +446,16 @@ export interface EventProps {
   };
   seatmap?: SeatmapData[];
   max_use_voucher?: number;
+  has_insurance?: Insurance[];
+}
+
+interface Insurance {
+  title?: string;
+  description?: string;
+  insurance?: {
+    name?: string;
+    addres?: string;
+  }
 }
 
 interface EventSocmed {
