@@ -203,6 +203,9 @@ export interface TransactionProps {
   tickets: TransactionTicketProps[];
   countryCode: number;
   no_telp: number;
+  insurance_amount: number;
+  is_insurance: number;
+  insurance_required: number;
 }
 
 export interface PaymentMethod {
@@ -434,7 +437,7 @@ export interface EventProps {
   is_kelas: 1 | 0;
   is_assistant: 1 | 0;
   is_insurance: number;
-  insurance_require: number;
+  insurance_required: number;
   insurance_amount: number;
   grand_total: number;
   transaction_saldo_by_event: {
@@ -446,16 +449,17 @@ export interface EventProps {
   };
   seatmap?: SeatmapData[];
   max_use_voucher?: number;
-  has_insurance?: Insurance[];
+  has_insurances?: Insurance[];
+  is_promo?: number;
 }
 
-interface Insurance {
+export interface Insurance {
   title?: string;
   description?: string;
   insurance?: {
     name?: string;
-    addres?: string;
-  }
+    address?: string;
+  };
 }
 
 interface EventSocmed {
@@ -638,6 +642,9 @@ export interface TransactionTicketProps {
   deleted_at: Date | null;
   code: string;
   etiket_number?: string; // Add this property if it exists in the data
+  is_insurance?: number;
+  insurance_amount?: number;
+  insurance_require?: number;
 }
 
 interface IdentityProps {

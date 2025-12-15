@@ -390,7 +390,7 @@
 // export default ThirdStep;
 
 import React from "react";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import useWindowSize from "@/utils/useWindowSize";
 import { EventProps, PaymentMethod, TransactionProps, TransactionTicketProps } from "@/utils/globalInterface";
 import Image from "next/image";
@@ -415,10 +415,10 @@ interface StepPaymentProps {
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
   voucher?: Voucher[];
-  detail?: EventProps;
+  // detail?: EventProps;
 }
 
-const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher, detail }: StepPaymentProps) => {
+const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher }: StepPaymentProps) => {
   const router = useRouter();
   const { width } = useWindowSize();
 
@@ -436,6 +436,16 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   // Use values from transactionData (already calculated by backend)
   // This ensures display matches what was sent to Xendit
   // const baseAmount = transactionData.tickets.reduce((sum, ticket) => sum + ticket.price * ticket.qty_ticket, 0);
+  // Konstanta untuk insurance data
+  const insuranceData = {
+    isInsuranceActive: transactionData?.is_insurance,
+    insuranceAmount: transactionData?.insurance_amount || 0,
+    insuranceRequired: transactionData?.insurance_required === 1,
+    insuranceTotal: transactionData?.insurance_amount ? transactionData.insurance_amount : 0,
+    quantityTotal: transactionData?.total_qty || 0,
+  };
+
+  console.log("insurance", insuranceData);
 
   // Total ticket_fee dari tiap ticket yang dibeli
   const totalTicketFee = transactionData.tickets.reduce((sum, ticket) => {
@@ -891,11 +901,25 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
                   );
                 })()}
 
+                {/* Jumlah Asuransi */}
+                {/* Jumlah Asuransi */}
+                {insuranceData.isInsuranceActive && insuranceData.insuranceTotal > 0 ? (
+                  <div className="flex justify-between items-center px-4">
+                    <p className="text-sm mb-1">Asuransi</p>
+                    <p className="text-sm text-grey">
+                      Rp{formatCurrency(insuranceData.insuranceTotal)}
+                      <span className="text-xs text-gray-500 ml-1">
+                        ({insuranceData.quantityTotal} x Rp{formatCurrency(insuranceData.insuranceAmount)})
+                      </span>
+                    </p>
+                  </div>
+                ) : null}
+
                 {/* PPN */}
                 {taxAmount && taxAmount > 0 ? (
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs text-grey mb-1">PPN</p>
-                    <p className="text-xs mb-1">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
+                  <div className="flex justify-between items-center px-4">
+                    <p className="text-sm mb-1">PPN</p>
+                    <p className="text-sm text-grey">Rp{Math.round(taxAmount).toLocaleString("id-ID")}</p>
                   </div>
                 ) : null}
 

@@ -43,19 +43,39 @@ interface EventCardProps {
   end_date?: string;
   end_time?: string;
   verified?: number;
+  is_promo?: number;
 }
 
-const EventCard = ({ id, maxWidth, slug, title, date, location, img, description, price, creatorImg, creatorSlug, creator, end, start_date, start_time, end_date, end_time, bookmark_id, verified }: EventCardProps) => {
+const EventCard = ({ id, maxWidth, slug, title, date, location, img, description, price, creatorImg, creatorSlug, creator, end, start_date, start_time, end_date, end_time, bookmark_id, verified, is_promo }: EventCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
 
   const currentDate = new Date();
 
-  const eventDate = (event: Date) => {
-    const date = new Date(event);
-    const month = date.toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-    return month;
+  const eventDate = (startDate: Date, endDate: Date) => {
+    const start = moment(startDate);
+    const end = moment(endDate);
+
+    // Jika tanggal sama
+    if (start.isSame(end, "day")) {
+      return start.format("D MMM YYYY");
+    }
+
+    // Jika is_promo = 0, tampilkan start date saja
+    if (is_promo === 0) {
+      return start.format("D MMM YYYY");
+    }
+
+    // Format untuk is_promo = 1
+    if (start.year() === end.year()) {
+      if (start.month() === end.month()) {
+        return `${start.format("D")}-${end.format("D MMM YYYY")}`;
+      }
+      return `${start.format("D MMM")} - ${end.format("D MMM YYYY")}`;
+    }
+
+    return `${start.format("D MMM YYYY")} - ${end.format("D MMM YYYY")}`;
   };
 
   const isEventEnded = currentDate > new Date(end);
@@ -171,7 +191,7 @@ const EventCard = ({ id, maxWidth, slug, title, date, location, img, description
         </Link>
         <p className="mb-3 font-normal text-sm">
           <FontAwesomeIcon icon={faCalendar} className="mr-3 text-primary-base" />
-          <span className="text-grey">{`${eventDate(date)}`}</span>
+          <span className="text-grey">{`${eventDate(date, end)}`}</span>
         </p>
         <div className="flex justify-between text-dark items-center font-semibold">
           <p>{price === 0 ? "Free" : `Rp${price?.toLocaleString("id-ID")}`}</p>

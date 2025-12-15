@@ -174,6 +174,7 @@ const EventList = ({ data, loading }: ListProps) => {
                   creator={event.has_creator?.name}
                   creatorSlug={event.has_creator?.slug} // 🔹 tetap ada
                   verified={event.has_creator?.is_verified}
+                  is_promo={event.is_promo}
                 />
               </div>
             ))}

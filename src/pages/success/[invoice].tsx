@@ -16,6 +16,21 @@ import { modals } from "@mantine/modals";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTicket } from "@fortawesome/free-solid-svg-icons";
 
+interface FormTicket {
+  event_id: number;
+  event_ticket_id: number;
+  name: string;
+  price: number;
+  subtotal_price: number;
+  qty_ticket: number;
+  payment_status: string;
+  seat_number?: string[];
+  ticket_fee?: number;
+  is_insurance?: number;
+  insurance_amount?: number;
+  insurance_require?: number;
+}
+
 export default function Invoice() {
   const [isr, setIsr] = useState(false);
   const [data, setData] = useState<TransactionProps>();
@@ -25,10 +40,38 @@ export default function Invoice() {
   const [city, setCity] = useState<City>();
   const [province, setProvince] = useState<Province>();
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
+  const [ticket, setTicket] = useState<FormTicket>();
 
   useEffect(() => {
     getData();
   }, [invoice]);
+
+  // Di dalam component Invoice, tambahkan useEffect untuk mengecek data ticket
+  useEffect(() => {
+    if (data?.tickets && data.tickets.length > 0) {
+      console.log("=== DATA TICKET ===");
+
+      data.tickets.forEach((ticket, index) => {
+        console.log(`Ticket ${index + 1}:`, {
+          name: ticket.has_event_ticket?.name,
+          qty: ticket.qty_ticket,
+          price: ticket.has_event_ticket?.price,
+          is_insurance: ticket.is_insurance,
+          insurance_amount: ticket.insurance_amount,
+          insurance_require: ticket.insurance_require,
+        });
+      });
+
+      // Atau jika hanya butuh satu ticket (contoh: ticket pertama)
+      if (data.tickets[0]) {
+        console.log("Detail ticket pertama:", {
+          is_insurance: data.tickets[0].is_insurance,
+          insurance_amount: data.tickets[0].insurance_amount,
+          insurance_require: data.tickets[0].insurance_require,
+        });
+      }
+    }
+  }, [data]);
 
   const getData = async () => {
     if (!invoice) {
@@ -118,16 +161,45 @@ export default function Invoice() {
 
   const [createdAtText, setCreatedAtText] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [insuranceChecked, setInsuranceChecked] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
+    // Jika ada asuransi di transaction atau event
+    if (data?.is_insurance === 1 || data?.has_event?.insurance_required === 1) {
+      setInsuranceChecked(true);
+    } else {
+      setInsuranceChecked(false);
+    }
+  }, [data?.is_insurance, data?.has_event?.insurance_required]);
+
+  useEffect(() => {
     if (data?.created_at && isMounted) {
       setCreatedAtText(moment(data.created_at).format("HH:mm, DD MMMM YYYY"));
     }
   }, [data, isMounted]);
+
+  // const calculateInsuranceTotal = () => {
+  //   if (!insuranceChecked || !data?.insurance_amount || !data?.total_qty) return 0;
+
+  //   // insurance_amount biasanya per tiket
+  //   return data?.insurance_amount * data?.total_qty;
+  // };
+
+  // Hitung total asuransi berdasarkan semua ticket
+  const calculateInsuranceTotal = () => {
+    // Cek apakah ada asuransi di transaction
+    if (data?.is_insurance === 1 && data?.insurance_amount && data?.total_qty) {
+      return data.insurance_amount * data.total_qty;
+    }
+    return 0;
+  };
+
+  // Cek apakah ada asuransi di salah satu ticket
+  const hasInsurance = data?.is_insurance === 1 || data?.has_event?.is_insurance === 1;
 
   return (
     <div className={`bg-primary-light mt-[-10px] pt-[20px] pb-[30px] mb-[-20px]`}>
@@ -255,11 +327,40 @@ export default function Invoice() {
 
               {(data?.grandtotal ?? 0) > 0 && (
                 <Stack gap={10} className={`md:max-w-[250px] shrink-0`}>
+                  {/* <Text fw={600} c="gray.8">
+                    Total Pembayaran
+                  </Text>
+                  <Card bg="gray.1">
+                    <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
+                      <Text size="xl" fw={600}>
+                        {(data?.grandtotal ?? 0) > 0 ? (
+                          <NumberFormatter value={data?.grandtotal ?? 999999} />
+                        ) : (
+                          <Text fw={600} c="green">
+                            Free
+                          </Text>
+                        )}
+                      </Text> */}
                   <Text fw={600} c="gray.8">
                     Total Pembayaran
                   </Text>
                   <Card bg="gray.1">
                     <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
+                      {/* Bagian Asuransi - DIATAS */}
+                      {hasInsurance && (
+                        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-semibold text-blue-700">{(data?.insurance_required === 1) ? "Anda Sudah Tercover Oleh Asuransi (Wajib)" : "Anda Sudah Tercover Oleh Asuransi (Opsional)"}</p>
+                              <p className="text-xs text-blue-600 mt-1">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <Text size="xl" fw={600}>
                         {(data?.grandtotal ?? 0) > 0 ? (
                           <NumberFormatter value={data?.grandtotal ?? 999999} />

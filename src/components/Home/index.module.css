@@ -174,3 +174,38 @@
   pointer-events: none;
   visibility: hidden;
 }
+
+/* Merchandise Card Styles */
+.cardContainer {
+  transition: all 0.3s ease;
+}
+
+.cardContainer:hover {
+  transform: translateY(-4px);
+}
+
+/* Untuk line clamp */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Image hover effect */
+.cardImg {
+  transition: transform 0.3s ease;
+}
+
+.cardImg:hover {
+  transform: scale(1.05);
+}

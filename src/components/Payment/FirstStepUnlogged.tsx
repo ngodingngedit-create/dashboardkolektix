@@ -1535,10 +1535,40 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       phone?: string;
     };
   }>({});
+  const [insuranceChecked, setInsuranceChecked] = useState(false);
   const [insuranceModalOpen, setInsuranceModalOpen] = useState(false);
+  // Cek apakah ada data insurance
+  const hasInsuranceData = detail?.has_insurances && detail.has_insurances.length > 0;
+
+  // Ambil insurance pertama jika ada
+  const firstInsurance = hasInsuranceData ? detail.has_insurances?.[0] : null;
+
+  // Data insurance dengan fallback
+  const insuranceInfo = {
+    title: firstInsurance?.title ?? "Tidak ada asuransi",
+    description: firstInsurance?.description ?? "Tidak ada Deskripsi",
+    provider: firstInsurance?.insurance?.name ?? "",
+    address: firstInsurance?.insurance?.address ?? "",
+    hasInsurance: hasInsuranceData,
+  };
 
   // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   // const adminFee = totalTicketFee;
+
+  useEffect(() => {
+    if (detail?.insurance_required === 1) {
+      setInsuranceChecked(true); // Wajib = auto checked
+    } else {
+      setInsuranceChecked(false); // Opsional = unchecked
+    }
+  }, [detail?.insurance_required]);
+
+  // const calculateInsuranceTotal = () => {
+  //   if (!insuranceChecked || !detail?.insurance_amount || totalCount === 0) return 0;
+
+  //   // insurance_amount biasanya per tiket
+  //   return detail.insurance_amount * totalCount;
+  // };
 
   const computeTax = (detail: any, subtotalAfterVoucher: number) => {
     const d = normalizeDetail(detail);
@@ -1695,6 +1725,47 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   }, [ticket, allBundlingInfo]);
 
   const adminFee = totalTicketFee; // atau langsung pakai totalTicketFee
+
+  console.log("insurance_amount", transactionData?.grandtotal);
+
+  const calculateInsuranceTotal = () => {
+    // Jika wajib atau opsional dan dipilih
+    if ((detail?.insurance_required === 1 || insuranceChecked) && detail?.insurance_amount && displayTotalCount > 0) {
+      return detail.insurance_amount * displayTotalCount;
+    }
+    return 0;
+  };
+
+  // Di dalam submitForm, tetap gunakan:
+  const eventHasInsurance = detail?.is_insurance === 1;
+  const insuranceRequired = detail?.insurance_required === 1;
+  const insuranceAmount = detail?.insurance_amount || 0;
+
+  // Determine if insurance is selected
+  let isInsuranceSelected = false;
+  let is_insurance_value = 0;
+
+  if (insuranceRequired) {
+    // Jika wajib, selalu true
+    isInsuranceSelected = true;
+    is_insurance_value = 1;
+  } else if (eventHasInsurance) {
+    // Jika opsional, gunakan state dari checkbox
+    isInsuranceSelected = insuranceChecked;
+    is_insurance_value = insuranceChecked ? 1 : 0;
+  }
+
+  const InsuranceTotal = calculateInsuranceTotal();
+
+  const calculateGrandTotal = () => {
+    const subtotalTiket = displayTotalSubtotalPrice;
+    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+    const insuranceTotal = calculateInsuranceTotal();
+    const tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
+
+    return subtotalAfterVoucher + adminFee + tax + insuranceTotal;
+  };
 
   const renderer: CountdownRendererFn = ({ hours, minutes, seconds }) => {
     return (
@@ -2011,7 +2082,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
 
-    const subtotal = displayTotalSubtotalPrice; // prop
+    const subtotal = displayTotalSubtotalPrice;
     const adminFee = totalTicketFee;
 
     const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -2048,12 +2119,80 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       taxLabel = `${detail?.ppn ?? 0}%`;
     }
 
-    const grandtotal = subtotalAfterVoucher + adminFee + tax;
+    // LOGIKA ASURANSI BERDASARKAN detail LANGSUNG
+    // Di kode Anda, detail sudah punya properti asuransi
+    const eventHasInsurance = detail?.is_insurance === 1;
+    const insuranceRequired = detail?.insurance_required === 1;
+    const insuranceAmount = detail?.insurance_amount || 0;
+
+    // Determine if insurance is selected
+    let isInsuranceSelected = false;
+    let is_insurance_value = 0;
+    let insurance_required_value = insuranceRequired ? 1 : 0;
+
+    if (insuranceRequired) {
+      // Jika wajib, selalu true
+      isInsuranceSelected = true;
+      is_insurance_value = 1;
+      insurance_required_value = 1;
+    } else if (eventHasInsurance) {
+      // Jika opsional, gunakan state dari checkbox
+      isInsuranceSelected = insuranceChecked;
+      is_insurance_value = insuranceChecked ? 1 : 0;
+      insurance_required_value = insuranceChecked ? 1 : 0;
+    }
+
+    // Hitung total insurance
+    const InsuranceTotal = isInsuranceSelected ? insuranceAmount * displayTotalCount : 0;
+
+    const grandtotal = subtotalAfterVoucher + adminFee + tax + InsuranceTotal;
 
     const allSeatNumbers = ticket.map((t) => (Array.isArray(t.seat_number) ? t.seat_number : JSON.parse(t.seat_number || "[]"))).flat();
 
     let seatIndex = 0;
 
+    // const payload = {
+    //   event_id: detail?.id,
+    //   admin_fee: detail?.admin_fee,
+    //   payment_method: payment ? payment : "4",
+    //   grandtotal: grandtotal,
+    //   // tambahan info PPN supaya backend / Xendit punya referensi
+    //   ppn_type: detail?.ppn_type ?? "percentage",
+    //   ppn: detail?.ppn ?? 0,
+    //   ppn_amount: tax,
+
+    //   // KIRIM DATA ASURANSI sesuai logika di atas
+    //   is_insurance: is_insurance_value,
+    //   insurance_amount: insuranceAmount,
+    //   insurance_total: InsuranceTotal,
+    //   insurance_required: insurance_required_value,
+
+    //   identities: form.map((identity) => {
+    //     if (identity.is_pemesan === 1) return identity;
+
+    //     const seat_number = allSeatNumbers[seatIndex] || "";
+    //     seatIndex++;
+
+    //     return {
+    //       ...identity,
+    //       seat_number: identity.seat_number || seat_number,
+    //     };
+    //   }),
+    //   tickets: ticket.map((e) => ({
+    //     ...e,
+    //     seatnumber_ticket: JSON.stringify(e.seat_number),
+    //   })),
+    //   bank_code: bank,
+    //   expiration_date: isoString,
+    //   vouchers:
+    //     vouchers.length > 0
+    //       ? vouchers.map((v) => ({
+    //           voucher_id: v.id,
+    //           voucher_code: v.name,
+    //           voucher_amount: v.amount,
+    //         }))
+    //       : [],
+    // };
     const payload = {
       event_id: detail?.id,
       admin_fee: detail?.admin_fee,
@@ -2063,6 +2202,13 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       ppn_type: detail?.ppn_type ?? "percentage",
       ppn: detail?.ppn ?? 0,
       ppn_amount: tax,
+
+      // KIRIM DATA ASURANSI sesuai logika di atas
+      is_insurance: is_insurance_value, // 1 jika dipilih (wajib/opsional), 0 jika tidak
+      insurance_amount: insuranceAmount,
+      insurance_total: InsuranceTotal,
+      insurance_required: isInsuranceSelected ? 1 : 0, // INI DARI PILIHAN USER
+
       identities: form.map((identity) => {
         if (identity.is_pemesan === 1) return identity;
 
@@ -2077,6 +2223,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       tickets: ticket.map((e) => ({
         ...e,
         seatnumber_ticket: JSON.stringify(e.seat_number),
+        // Jika backend perlu data insurance di level ticket juga
+        is_insurance: is_insurance_value,
+        insurance_amount: isInsuranceSelected ? insuranceAmount : 0,
+        insurance_require: detail?.insurance_required || 0, // kirim nilai dari event
       })),
       bank_code: bank,
       expiration_date: isoString,
@@ -2090,6 +2240,20 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           : [],
     };
 
+    // DEBUG: Log payload untuk memastikan data benar
+    console.log("=== INSURANCE PAYLOAD ===");
+    console.log({
+      eventHasInsurance,
+      insuranceRequired,
+      insuranceAmount,
+      isInsuranceSelected,
+      is_insurance_value,
+      insurance_required_value,
+      InsuranceTotal,
+      displayTotalCount,
+      insuranceChecked,
+    });
+
     setLoading(true);
     Post("transaction-without-auth", payload)
       .then((res: any) => {
@@ -2102,7 +2266,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         }
 
         if (res.xendit_invoice && res.xendit_invoice.invoice_url) {
-          // If amount mismatch, still open invoice; logs help backend debug.
           router.push(res.xendit_invoice.invoice_url);
         } else if (res.xendit_invoice && res.xendit_invoice.va_number?.length > 0) {
           setXenditInvoice(res.xendit_invoice.va_number[0]);
@@ -2261,6 +2424,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     setVoucherFields(newVoucherFields);
     setVouchers(newVouchers.filter(Boolean));
   };
+
+  console.log("title insurance", detail?.has_insurances?.[0]?.title);
 
   return step === 0 ? (
     <>
@@ -2431,18 +2596,22 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           Pakai Asuransi
                         </button>
                         {/* Ambil harga dari insurance_amount */}
-                        <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"}</p>
+                        {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
+                        <p className="text-xs text-grey">
+                          Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
+                          {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
+                        </p>
                       </div>
                     </div>
 
                     {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
-                    {detail?.insurance_require === 0 ? (
+                    {detail?.insurance_required === 0 ? (
                       <input
                         type="checkbox"
                         className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                         onChange={(e) => {
-                          console.log("Asuransi:", e.target.checked);
-                          // Tambahkan logika untuk menambah/mengurangi total jika perlu
+                          setInsuranceChecked(e.target.checked);
+                          console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
                         }}
                       />
                     ) : (
@@ -2464,28 +2633,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       <div className="w-full sm:w-3/4">
                         <div className="space-y-3">
                           <div>
-                            <h4 className="font-semibold text-sm mb-1">Apa itu Asuransi Tiket?</h4>
-                            <p className="text-xs text-gray-600">Asuransi tiket melindungi pembelian tiket Anda dari berbagai kondisi tidak terduga yang dapat menghalangi Anda menghadiri event.</p>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold text-sm mb-1">Manfaat yang Didapat:</h4>
-                            <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                              <li>Pengembalian dana 100% jika sakit mendadak dengan surat dokter</li>
-                              <li>Perlindungan kecelakaan saat perjalanan ke venue</li>
-                              <li>Proteksi terhadap bencana alam yang mengakibatkan event batal</li>
-                              <li>Coverage untuk kondisi darurat keluarga inti</li>
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold text-sm mb-1">Syarat & Ketentuan:</h4>
-                            <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                              <li>Klaim harus diajukan maksimal 7 hari setelah event</li>
-                              <li>Dokumen pendukung wajib dilampirkan</li>
-                              <li>Tidak berlaku untuk kondisi pre-existing</li>
-                              <li>Masa tunggu 24 hari setelah pembelian</li>
-                            </ul>
+                            <h4 className="font-semibold text-sm mb-1">{insuranceInfo.title}</h4>
+                            <p className="text-xs text-gray-600">{insuranceInfo.description}</p>
                           </div>
 
                           <div className="pt-2">
@@ -2493,7 +2642,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                               Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                             </p>
                             {/* Tampilkan status wajib/opsional */}
-                            {detail?.insurance_require === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                            {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                           </div>
                         </div>
                       </div>
@@ -2519,12 +2668,18 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>Total Pembayaran</p>
-                <p className="font-semibold">
+                {/* <p className="font-semibold">
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                     const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                     const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                     const grandTotal = subtotalAfterVoucher + adminFee + tax;
+                    return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
+                  })()}
+                </p> */}
+                <p className="font-semibold">
+                  {(() => {
+                    const grandTotal = calculateGrandTotal();
                     return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
                   })()}
                 </p>
@@ -3121,21 +3276,25 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           </div>
                           <div>
                             <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
-                              {detail?.has_insurance?.[0]?.title || "Pakai Asuransi"}
+                              Pakai Asuransi
                             </button>
                             {/* Ambil harga dari insurance_amount */}
-                            <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p>
+                            {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
+                            <p className="text-xs text-grey">
+                              Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
+                              {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
+                            </p>
                           </div>
                         </div>
 
                         {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
-                        {detail?.insurance_require === 0 ? (
+                        {detail?.insurance_required === 0 ? (
                           <input
                             type="checkbox"
                             className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                             onChange={(e) => {
-                              console.log("Asuransi:", e.target.checked);
-                              // Tambahkan logika untuk menambah/mengurangi total jika perlu
+                              setInsuranceChecked(e.target.checked);
+                              console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
                             }}
                           />
                         ) : (
@@ -3157,28 +3316,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           <div className="w-full sm:w-3/4">
                             <div className="space-y-3">
                               <div>
-                                <h4 className="font-semibold text-sm mb-1">Apa itu Asuransi Tiket?</h4>
-                                <p className="text-xs text-gray-600">Asuransi tiket melindungi pembelian tiket Anda dari berbagai kondisi tidak terduga yang dapat menghalangi Anda menghadiri event.</p>
-                              </div>
-
-                              <div>
-                                <h4 className="font-semibold text-sm mb-1">Manfaat yang Didapat:</h4>
-                                <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                                  <li>Pengembalian dana 100% jika sakit mendadak dengan surat dokter</li>
-                                  <li>Perlindungan kecelakaan saat perjalanan ke venue</li>
-                                  <li>Proteksi terhadap bencana alam yang mengakibatkan event batal</li>
-                                  <li>Coverage untuk kondisi darurat keluarga inti</li>
-                                </ul>
-                              </div>
-
-                              <div>
-                                <h4 className="font-semibold text-sm mb-1">Syarat & Ketentuan:</h4>
-                                <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                                  <li>Klaim harus diajukan maksimal 7 hari setelah event</li>
-                                  <li>Dokumen pendukung wajib dilampirkan</li>
-                                  <li>Tidak berlaku untuk kondisi pre-existing</li>
-                                  <li>Masa tunggu 24 hari setelah pembelian</li>
-                                </ul>
+                                <h4 className="font-semibold text-sm mb-1">{insuranceInfo.title}</h4>
+                                <p className="text-xs text-gray-600">{insuranceInfo.description}</p>
                               </div>
 
                               <div className="pt-2">
@@ -3186,7 +3325,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                   Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                                 </p>
                                 {/* Tampilkan status wajib/opsional */}
-                                {detail?.insurance_require === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                                {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                               </div>
                             </div>
                           </div>
@@ -3237,16 +3376,26 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   {/* Total */}
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>Total Pembayaran</p>
-                    <p className="font-semibold">
+                    {/* <p className="font-semibold">
                       {(() => {
                         const subtotalTiket = displayTotalSubtotalPrice;
                         const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                         const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
 
+                        // Hitung biaya asuransi
+                        const insuranceTotal = calculateInsuranceTotal();
+
                         const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
 
-                        const grandTotal = subtotalAfterVoucher + adminFee + tax;
+                        // Tambahkan insurance ke grand total
+                        const grandTotal = subtotalAfterVoucher + adminFee + tax + insuranceTotal;
 
+                        return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
+                      })()}
+                    </p> */}
+                    <p className="font-semibold">
+                      {(() => {
+                        const grandTotal = calculateGrandTotal();
                         return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
                       })()}
                     </p>
@@ -3351,7 +3500,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 <div className="mt-3">
                   <p className="text-xs text-grey mb-1">Total Pembayaran</p>
                   <p className="text-sm mb-1">
-                    {xenditInvoice ? `Rp${xenditInvoice.transfer_amount.toLocaleString("id-ID")}` : `Rp${(transactionData.grandtotal - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}
+                    {xenditInvoice
+                      ? `Rp${xenditInvoice.transfer_amount.toLocaleString("id-ID")}`
+                      : `Rp${(transactionData.grandtotal + detail?.insurance_amount - vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0)).toLocaleString("id-ID")}`}
                   </p>
                 </div>
               </div>

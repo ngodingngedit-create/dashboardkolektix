@@ -877,6 +877,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { Modal } from "@mantine/core";
 import useWindowSize from "@/utils/useWindowSize";
 import { EventProps, TicketProps } from "@/utils/globalInterface";
 import Image from "next/image";
@@ -1078,6 +1079,48 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       phone?: string;
     };
   }>({});
+
+  const [insuranceChecked, setInsuranceChecked] = useState(false);
+  const [insuranceModalOpen, setInsuranceModalOpen] = useState(false);
+  // Cek apakah ada data insurance
+  const hasInsuranceData = detail?.has_insurances && detail.has_insurances.length > 0;
+
+  // Ambil insurance pertama jika ada
+  const firstInsurance = hasInsuranceData ? detail.has_insurances?.[0] : null;
+
+  // Data insurance dengan fallback
+  const insuranceInfo = {
+    title: firstInsurance?.title ?? "Tidak ada asuransi",
+    description: firstInsurance?.description ?? "Tidak ada Deskripsi",
+    provider: firstInsurance?.insurance?.name ?? "",
+    address: firstInsurance?.insurance?.address ?? "",
+    hasInsurance: hasInsuranceData,
+  };
+
+  useEffect(() => {
+    if (detail?.insurance_required === 1) {
+      setInsuranceChecked(true); // Wajib = auto checked
+    } else {
+      setInsuranceChecked(false); // Opsional = unchecked
+    }
+  }, [detail?.insurance_required]);
+
+  const calculateInsuranceTotal = () => {
+    if (!insuranceChecked || !detail?.insurance_amount || totalCount === 0) return 0;
+
+    // insurance_amount biasanya per tiket
+    return detail.insurance_amount * totalCount;
+  };
+
+  const calculateGrandTotal = () => {
+    const subtotalTiket = displayTotalSubtotalPrice;
+    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+    const insuranceTotal = calculateInsuranceTotal();
+    const tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
+
+    return subtotalAfterVoucher + adminFee + tax + insuranceTotal;
+  };
 
   // const adminFee = totalTicketFee;
 
@@ -1692,6 +1735,79 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             );
           })()}
 
+          {detail?.is_insurance === 1 && (
+            <>
+              <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
+                <div className="flex items-center gap-3">
+                  <div className="px-3 flex items-center border rounded-md border-primary-light">
+                    <Icon icon="mdi:shield-check" className="text-primary" />
+                  </div>
+                  <div>
+                    <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
+                      Pakai Asuransi
+                    </button>
+                    {/* Ambil harga dari insurance_amount */}
+                    {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
+                    <p className="text-xs text-grey">
+                      Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
+                      {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
+                {detail?.insurance_required === 0 ? (
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                    onChange={(e) => {
+                      setInsuranceChecked(e.target.checked);
+                      console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
+                    }}
+                  />
+                ) : (
+                  // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
+                  <div className="text-xs text-primary font-semibold">Wajib</div>
+                )}
+              </div>
+
+              {/* Modal Asuransi */}
+              <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
+                <div className="flex flex-col sm:flex-row gap-4 p-4">
+                  <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
+                    <div className="bg-blue-50 p-4 rounded-full mb-3">
+                      <Icon icon="mdi:shield-check" className="text-blue-600 text-4xl" />
+                    </div>
+                    <p className="text-sm font-semibold text-center">Proteksi Tiket Anda</p>
+                  </div>
+
+                  <div className="w-full sm:w-3/4">
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-sm mb-1">{insuranceInfo.title}</h4>
+                        <p className="text-xs text-gray-600">{insuranceInfo.description}</p>
+                      </div>
+
+                      <div className="pt-2">
+                        <p className="text-xs text-gray-500">
+                          Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
+                        </p>
+                        {/* Tampilkan status wajib/opsional */}
+                        {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t flex justify-end">
+                  <Button onClick={() => setInsuranceModalOpen(false)} size="xs">
+                    Mengerti
+                  </Button>
+                </div>
+              </Modal>
+            </>
+          )}
+
           {detail?.ppn !== undefined
             ? (() => {
                 const subtotalTiket = totalSubtotalPrice;
@@ -1725,13 +1841,19 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
 
           <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm border-t border-primary-light-200">
             <p>{t("totalPayment")}</p>
-            <p className="font-semibold">
+            {/* <p className="font-semibold">
               {(() => {
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                 const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                 const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                 const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
                 return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
+              })()}
+            </p> */}
+            <p className="font-semibold">
+              {(() => {
+                const grandTotal = calculateGrandTotal();
+                return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
               })()}
             </p>
           </div>
@@ -2453,6 +2575,79 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 );
               })()}
 
+              {detail?.is_insurance === 1 && (
+                <>
+                  <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 flex items-center border rounded-md border-primary-light">
+                        <Icon icon="mdi:shield-check" className="text-primary" />
+                      </div>
+                      <div>
+                        <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
+                          Pakai Asuransi
+                        </button>
+                        {/* Ambil harga dari insurance_amount */}
+                        {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
+                        <p className="text-xs text-grey">
+                          Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
+                          {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
+                    {detail?.insurance_required === 0 ? (
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                        onChange={(e) => {
+                          setInsuranceChecked(e.target.checked);
+                          console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
+                        }}
+                      />
+                    ) : (
+                      // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
+                      <div className="text-xs text-primary font-semibold">Wajib</div>
+                    )}
+                  </div>
+
+                  {/* Modal Asuransi */}
+                  <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
+                    <div className="flex flex-col sm:flex-row gap-4 p-4">
+                      <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
+                        <div className="bg-blue-50 p-4 rounded-full mb-3">
+                          <Icon icon="mdi:shield-check" className="text-blue-600 text-4xl" />
+                        </div>
+                        <p className="text-sm font-semibold text-center">Proteksi Tiket Anda</p>
+                      </div>
+
+                      <div className="w-full sm:w-3/4">
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">{insuranceInfo.title}</h4>
+                            <p className="text-xs text-gray-600">{insuranceInfo.description}</p>
+                          </div>
+
+                          <div className="pt-2">
+                            <p className="text-xs text-gray-500">
+                              Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
+                            </p>
+                            {/* Tampilkan status wajib/opsional */}
+                            {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t flex justify-end">
+                      <Button onClick={() => setInsuranceModalOpen(false)} size="xs">
+                        Mengerti
+                      </Button>
+                    </div>
+                  </Modal>
+                </>
+              )}
+
               {/* TAX */}
               {detail?.ppn !== undefined
                 ? (() => {
@@ -2487,13 +2682,19 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>{t("totalPayment")}</p>
-                <p className="font-semibold">
+                {/* <p className="font-semibold">
                   {(() => {
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                     const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                     const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
                     const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
                     return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
+                  })()}
+                </p> */}
+                <p className="font-semibold">
+                  {(() => {
+                    const grandTotal = calculateGrandTotal();
+                    return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
                   })()}
                 </p>
               </div>
