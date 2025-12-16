@@ -82,6 +82,7 @@ const Merchandise = () => {
                 creatorImage={item.creator.image_url}
                 redirect={`/merchandise/${item.slug}`}
                 image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
+                location={item.has_store_location?.store_name}
               />
             ))}
           </div>
@@ -116,6 +117,7 @@ const Merchandise = () => {
               creatorImage={item.creator?.image_url}
               redirect={`/merchandise/${item.slug}`}
               image={item.product_image?.length > 0 ? item.product_image[0].image_url : undefined}
+              location={item.has_store_location?.store_name}
             />
           ))}
         </div>

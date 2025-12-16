@@ -161,6 +161,7 @@ interface Detail {
   payment_status?: string;
   total_price?: string | number | null;
   total_qty?: string | number | null;
+  is_insurance?: number;
   type_transaction?: string;
   has_user?: {
     name?: string | null;
@@ -439,6 +440,11 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
                   <p className="text-grey">Grand Total</p>
                   <p className="font-semibold">{formatIDR(item?.grandtotal)}</p>
                 </div>
+                {item?.is_insurance == 1 ? (
+                  <div className="mb-4 flex justify-between">
+                    <p className="text-grey">Anda Tercover Asuransi!</p>
+                  </div>
+                ) : null}
               </div>
             </div>
           </ModalBody>

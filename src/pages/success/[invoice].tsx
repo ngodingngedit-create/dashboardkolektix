@@ -199,7 +199,7 @@ export default function Invoice() {
   };
 
   // Cek apakah ada asuransi di salah satu ticket
-  const hasInsurance = data?.is_insurance === 1 || data?.has_event?.is_insurance === 1;
+  const hasInsurance = (data?.insurance_amount ?? 0) > 0;
 
   return (
     <div className={`bg-primary-light mt-[-10px] pt-[20px] pb-[30px] mb-[-20px]`}>
@@ -347,15 +347,14 @@ export default function Invoice() {
                   <Card bg="gray.1">
                     <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
                       {/* Bagian Asuransi - DIATAS */}
-                      {hasInsurance && (
+                      {insuranceChecked && (
                         <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
                           <div className="flex items-start gap-2">
                             <svg className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                             <div>
-                              <p className="text-sm font-semibold text-blue-700">{(data?.insurance_required === 1) ? "Anda Sudah Tercover Oleh Asuransi (Wajib)" : "Anda Sudah Tercover Oleh Asuransi (Opsional)"}</p>
-                              <p className="text-xs text-blue-600 mt-1">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</p>
+                              <p className="text-sm font-semibold text-blue-700">Anda Sudah Tercover Oleh Asuransi</p>
                             </div>
                           </div>
                         </div>

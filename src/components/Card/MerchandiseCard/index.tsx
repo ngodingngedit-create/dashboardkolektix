@@ -18,9 +18,10 @@ interface MerchCardProps {
   creatorImage?: string;
   redirect: string;
   image?: string;
+  location: string;
 }
 
-const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image }: MerchCardProps & {}) => {
+const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image, location }: MerchCardProps & {}) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
 
@@ -40,16 +41,21 @@ const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, 
         <Image className={`${styles.cardImg} rounded-t-lg ${showBuyButton ? "scale-105" : ""} transition-transform duration-300`} src={image ?? Foto} width={500} height={500} alt="" />
         <button
           onClick={(e) => {
-            e.preventDefault(); // Mencegah navigasi ke link
-            e.stopPropagation(); // Mencegah event bubbling
+            e.preventDefault();
+            e.stopPropagation();
             handleBuyClick(e);
           }}
-          className={`absolute bottom-3 right-3 bg-white/90 hover:bg-white text-dark px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-300 transform ${
-            showBuyButton ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"
-          } flex items-center gap-2 shadow-md hover:shadow-lg border border-gray-200 z-10`}
-          style={{
-            backdropFilter: "blur(4px)",
-          }}
+          className={`absolute bottom-3 right-3 
+    bg-white/20 hover:bg-white/30
+    backdrop-blur-md
+    text-white
+    px-3 py-2 rounded-lg font-semibold text-sm
+    transition-all duration-300 transform
+    ${showBuyButton ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"}
+    flex items-center gap-2
+    shadow-lg
+    border border-white/30
+    z-10`}
         >
           <FontAwesomeIcon icon={faShoppingCart} className="text-sm" />
           Beli Merch
@@ -72,7 +78,7 @@ const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, 
           </div>
           <div className="flex items-center text-xs mt-[5px]">
             <p className="text-xs">
-              <span className="ml-1 text-grey">Location - Jakarta</span>
+              <span className="ml-1 text-grey">Location - {location}</span>
             </p>
           </div>
         </div>

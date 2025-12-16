@@ -245,11 +245,12 @@ export default function Home() {
       <HeroSection data={upcoming} loading={loading} slider={sliderData} />
       <CategoryBlock />
       <EventList data={data} loading={loading} />
-      {/* <PromoBlock />
-      <ChatBox /> */}
-      {/* <JobsList data={vacancy} loading={loading} /> */}
-      {/* <TalentList /> */}
+
+      {/* <JobsList data={vacancy} loading={loading} />
+      <TalentList /> */}
       <MerchandiseList data={merchandiseData} loading={merchandiseLoading} />
+      <PromoBlock />
+      <ChatBox />
     </main>
   );
 }
