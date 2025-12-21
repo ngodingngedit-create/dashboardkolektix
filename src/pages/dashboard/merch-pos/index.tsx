@@ -647,7 +647,6 @@
 //     </Stack>
 //   );
 // }
-
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
@@ -697,12 +696,11 @@ export default function Index({}: Readonly<ComponentProps>) {
   const [loading, setLoading] = useListState<string>();
   const [searchQuery, setSearchQuery] = useState("");
   const [merch, setMerch] = useState<MerchListResponse[]>();
-  const [productCache, setProductCache] = useState<Record<number, MerchListResponse>>({}); // <-- CACHE
+  const [productCache, setProductCache] = useState<Record<number, MerchListResponse>>({});
   const [discount, setDiscount] = useState(0);
   const [openSelect, setOpenSelect] = useState(false);
   const [openCustForm, setOpenCustForm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("Qris");
-
   const [selected, setSelected] = useState<
     {
       id: number;
@@ -783,14 +781,10 @@ export default function Index({}: Readonly<ComponentProps>) {
         console.log("Filtered items (status==2) count:", filtered.length);
         setMerch(filtered);
 
-        // --- MERGE into product cache so selected items keep stable data across pages ---
         setProductCache((prev) => {
           const next = { ...prev };
           for (const it of filtered) {
-            // prefer newer incoming item to update cache
             next[it.id] = it;
-            // also merge variants keyed by variant id if you later want to lookup variant by id
-            // (not strictly necessary here)
           }
           return next;
         });
@@ -841,10 +835,9 @@ export default function Index({}: Readonly<ComponentProps>) {
     );
   }, [merch, searchQuery]);
 
-  // IMPORTANT: use productCache as source of truth for resolving selected item details
   const selectedList = useMemo(() => {
     return selected.map((e) => {
-      const product = productCache[e.id]; // <-- lookup from cache instead of current page merch
+      const product = productCache[e.id];
       const name = product?.product_name;
       const variant_name = product?.product_varian?.find((z) => z.id == e.variant_id)?.varian_name;
       const image = (product?.product_image?.length ?? 0) > 0 ? product?.product_image[0].image_url : "#";
@@ -857,7 +850,6 @@ export default function Index({}: Readonly<ComponentProps>) {
   }, [selected, productCache]);
 
   const handleAddProduct = (product: MerchListResponse) => {
-    // when adding, also ensure product is cached (so selectedList can always resolve it)
     setProductCache((prev) => ({ ...prev, [product.id]: product }));
 
     if (product.product_varian.length > 0) {
@@ -978,51 +970,6 @@ export default function Index({}: Readonly<ComponentProps>) {
     modals.closeAll();
   };
 
-  const handleSave = async () => {
-    const summary: MerchCheckoutOffline["summary"] = {};
-    for (const s of handleSummary.detail) summary[s[0]] = s[1];
-
-    const data: MerchCheckoutOffline = {
-      product: selectedList.map((e) => ({
-        id: e.id,
-        variant_id: e.variant_id,
-        qty: e.count,
-        price: e.price,
-        subtotal: e.subtotal,
-      })),
-      customer_name: custValue.name,
-      customer_email: custValue.email,
-      customer_phone: custValue.phone,
-      customer_address: custValue.address,
-      grandtotal: handleSummary.total,
-      creator_id: user?.has_creator?.id ?? 0,
-      summary,
-      discount,
-      payment_method: paymentMethod,
-    };
-    const next = () => {
-      Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
-      router.push("/dashboard/merch-pos-invoice");
-    };
-    await fetch<MerchCheckoutOffline, any>({
-      url: "merch-offline",
-      method: "POST",
-      data,
-      before: () => setLoading.append("submit"),
-      success: () => {
-        next();
-      },
-      complete: () => setLoading.filter((e) => e != "submit"),
-      error: (err) => {
-        next();
-        notifications.show({
-          message: err?.response?.data?.message ?? "Terjadi Kesalahan",
-          color: "red",
-        });
-      },
-    });
-  };
-
   const handleCheckout = async () => {
     if (!paymentMethod) {
       notifications.show({ message: "Pilih metode pembayaran terlebih dahulu.", color: "red" });
@@ -1084,7 +1031,7 @@ export default function Index({}: Readonly<ComponentProps>) {
       city_id: 1,
       address_detail: payloadAddress,
       address_name: payloadName,
-      zipcode: Math.floor(10000 + Math.random() * 90000).toString(), // ✅ Generate random 5 digit zipcode,
+      zipcode: Math.floor(10000 + Math.random() * 90000).toString(),
       latitude: "",
       longitude: "",
       nama_penerima: payloadName,
@@ -1093,7 +1040,6 @@ export default function Index({}: Readonly<ComponentProps>) {
     };
 
     try {
-      // ✅ STEP 1: Hit Xendit API dulu
       await fetch<any, { invoice_url: string }>({
         url: "order-product",
         method: "POST",
@@ -1112,32 +1058,12 @@ export default function Index({}: Readonly<ComponentProps>) {
         success: async ({ data }) => {
           console.log("Xendit response:", data);
 
-          // ✅ STEP 2: Kalau Xendit sukses, baru save offline
           await handleSave();
-
-          // ✅ STEP 3: Redirect ke Xendit invoice
-          // if (data?.isFree) {
-          //   router.push("/success/" + data.invoice_no);
-          //   return;
-          // }
 
           if (data?.invoice_url) {
             router.push(data.invoice_url);
             return;
           }
-
-          // if (data?.xendit_invoice?.invoice_url) {
-          //   router.push(data.xendit_invoice.invoice_url);
-          //   return;
-          // }
-
-          // if (data?.xendit_invoice?.va_number?.length > 0) {
-          //   notifications.show({
-          //     message: "Checkout berhasil! Silakan lakukan pembayaran.",
-          //     color: "green",
-          //   });
-          //   return;
-          // }
 
           notifications.show({
             message: "Checkout sukses, tapi invoice tidak tersedia.",
@@ -1170,60 +1096,57 @@ export default function Index({}: Readonly<ComponentProps>) {
     }
   };
 
-  // // ✅ handleSave tetap sama, tidak diubah
-  // const handleCheckout = async () => {
-  //   const summary: MerchCheckoutOffline["summary"] = {};
-  //   for (const s of handleSummary.detail) summary[s[0]] = s[1];
+  const handleSave = async () => {
+    const summary: MerchCheckoutOffline["summary"] = {};
+    for (const s of handleSummary.detail) summary[s[0]] = s[1];
 
-  //   const data: MerchCheckoutOffline = {
-  //     product: selectedList.map((e) => ({
-  //       id: e.id,
-  //       variant_id: e.variant_id,
-  //       qty: e.count,
-  //       price: e.price,
-  //       subtotal: e.subtotal,
-  //     })),
-  //     customer_name: custValue.name,
-  //     customer_email: custValue.email,
-  //     customer_phone: custValue.phone,
-  //     customer_address: custValue.address,
-  //     grandtotal: handleSummary.total,
-  //     creator_id: user?.has_creator?.id ?? 0,
-  //     summary,
-  //     discount,
-  //     payment_method: paymentMethod,
-  //   };
-
-  //   const next = () => {
-  //     Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
-  //     // ✅ JANGAN router.push di sini, biar handleCheckout yang handle redirect
-  //   };
-
-  //   await fetch<MerchCheckoutOffline, any>({
-  //     url: "merch-offline",
-  //     method: "POST",
-  //     data,
-  //     before: () => setLoading.append("submit"),
-  //     success: () => {
-  //       next();
-  //     },
-  //     complete: () => setLoading.filter((e) => e != "submit"),
-  //     error: (err) => {
-  //       next();
-  //       notifications.show({
-  //         message: err?.response?.data?.message ?? "Terjadi Kesalahan",
-  //         color: "red",
-  //       });
-  //     },
-  //   });
-  // };
+    const data: MerchCheckoutOffline = {
+      product: selectedList.map((e) => ({
+        id: e.id,
+        variant_id: e.variant_id,
+        qty: e.count,
+        price: e.price,
+        subtotal: e.subtotal,
+      })),
+      customer_name: custValue.name,
+      customer_email: custValue.email,
+      customer_phone: custValue.phone,
+      customer_address: custValue.address,
+      grandtotal: handleSummary.total,
+      creator_id: user?.has_creator?.id ?? 0,
+      summary,
+      discount,
+      payment_method: paymentMethod,
+    };
+    const next = () => {
+      Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
+      router.push("/dashboard/merch-pos-invoice");
+    };
+    await fetch<MerchCheckoutOffline, any>({
+      url: "merch-offline",
+      method: "POST",
+      data,
+      before: () => setLoading.append("submit"),
+      success: () => {
+        next();
+      },
+      complete: () => setLoading.filter((e) => e != "submit"),
+      error: (err) => {
+        next();
+        notifications.show({
+          message: err?.response?.data?.message ?? "Terjadi Kesalahan",
+          color: "red",
+        });
+      },
+    });
+  };
 
   const PER_PAGE = 10;
   const [pageNum, setPageNum] = useState(1);
   const isGuest = custValue.name?.startsWith("Guest ") && custValue.email?.includes("guest_");
 
   return (
-    <Stack className={`md:!p-[20px_30px]`}>
+    <Stack className={`md:!p-[20px_30px] h-screen flex flex-col`}>
       <Modal title="Data Pembeli" opened={openCustForm} onClose={handleCustomerSave} closeOnClickOutside={false} centered>
         <Stack gap={15}>
           <Button
@@ -1269,15 +1192,29 @@ export default function Index({}: Readonly<ComponentProps>) {
         </Stack>
       </Modal>
 
-      <Flex gap={15} className={`!h-[calc(100vh_-_140px)] md:!h-[calc(100vh_-_180px)]`} pos="relative">
-        <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static`}>
+      {/* <Card radius={999} className={`!bg-primary-base !p-[5px_16px] w-fit m-[10px_10px_0]`}>
+        <Flex align="center" gap={10}>
+          <Icon icon="hugeicons:cashier" className={`text-[20px] text-white`} />
+          <Text size="md" fw={400} className={`!text-white`}>
+            Penjualan Offline
+          </Text>
+        </Flex>
+      </Card> */}
+
+      {/* Main Content Area - Scrollable */}
+      <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
+        {/* Left Panel - Product Selection */}
+        <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static overflow-hidden flex flex-col`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
-          <Stack gap={20} h="100%">
-            <Text fw={600} c="#0B387C">
-              Pilih Produk
-            </Text>
-            <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" />
-            <Stack gap={10} className={`overflow-y-auto`} h="100%">
+          <Stack gap={20} h="100%" className="flex flex-col">
+            <div>
+              <Text fw={600} c="#0B387C">
+                Pilih Produk
+              </Text>
+              <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" mt={10} />
+            </div>
+
+            <Stack gap={10} className={`overflow-y-auto flex-grow`}>
               {merchList?.map((e, i) => (
                 <UnstyledButton disabled={(e.stock ?? 0) <= 0} className={`${(e.stock ?? 0) <= 0 ? "opacity-75" : ""}`} key={i} onClick={() => e.raw && handleAddProduct(e.raw)}>
                   <Card p={10} withBorder radius={8} className={`relative ${(e.stock ?? 0) <= 0 ? "!bg-[#f5f5f5]" : "hover:!bg-[#fafafa]"}`}>
@@ -1312,35 +1249,38 @@ export default function Index({}: Readonly<ComponentProps>) {
               )}
             </Stack>
 
-            <Flex gap={10} mt={10}>
-              <Button
-                onClick={() => {
-                  setPageNum(pageNum - 1);
-                  getMerchList(pageNum - 1);
-                }}
-                disabled={pageNum <= 1}
-              >
-                Prev
-              </Button>
-              <Button
-                onClick={() => {
-                  setPageNum(pageNum + 1);
-                  getMerchList(pageNum + 1);
-                }}
-              >
-                Next
-              </Button>
-            </Flex>
+            <Stack gap={10} mt="auto">
+              <Flex gap={10} mt={10}>
+                <Button
+                  onClick={() => {
+                    setPageNum(pageNum - 1);
+                    getMerchList(pageNum - 1);
+                  }}
+                  disabled={pageNum <= 1}
+                >
+                  Prev
+                </Button>
+                <Button
+                  onClick={() => {
+                    setPageNum(pageNum + 1);
+                    getMerchList(pageNum + 1);
+                  }}
+                >
+                  Next
+                </Button>
+              </Flex>
 
-            <Button size="md" onClick={() => setOpenSelect(!openSelect)} rightSection={<Icon icon="uiw:right" />} className={`shrink-0 md:!hidden`} c="gray" variant="light">
-              Tutup
-            </Button>
+              <Button size="md" onClick={() => setOpenSelect(!openSelect)} rightSection={<Icon icon="uiw:right" />} className={`shrink-0 md:!hidden`} c="gray" variant="light">
+                Tutup
+              </Button>
+            </Stack>
           </Stack>
         </Card>
 
-        <Card withBorder w="100%" p={0} radius={10} h="100%">
-          <Stack gap={0} h="100%">
-            <Card p={20} className={`flex-grow h-full`}>
+        {/* Right Panel - Order Details */}
+        <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden">
+          <div className="flex-grow overflow-y-auto">
+            <Card p={20} className="h-auto">
               <Flex align="center" gap={10} mb={20}>
                 <Icon icon="uiw:information-o" className={`text-primary-base`} />
                 <Text fw={600} c="#0B387C">
@@ -1348,9 +1288,13 @@ export default function Index({}: Readonly<ComponentProps>) {
                 </Text>
               </Flex>
 
-              <Stack gap={12} className={`overflow-y-auto flex-grow`} justify="start">
+              <Stack
+                gap={12}
+                className={`overflow-y-auto max-h-[calc(3*(80px+12px))]`} // 3 items + gap
+                justify="start"
+              >
                 {selectedList.map((e, i) => (
-                  <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] shrink-0`}>
+                  <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] flex-shrink-0`}>
                     <Flex gap={10} wrap="wrap">
                       <Flex gap={10} className={`flex-grow`}>
                         <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
@@ -1398,7 +1342,7 @@ export default function Index({}: Readonly<ComponentProps>) {
               </Stack>
             </Card>
 
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
+            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
               <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
                 <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
                   Data Pembeli
@@ -1410,7 +1354,7 @@ export default function Index({}: Readonly<ComponentProps>) {
               </Flex>
             </Card>
 
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
+            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
               <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
                 <Flex gap={7} align="center">
                   <Icon icon="teenyicons:discount-outline" className={`text-primary-base`} />
@@ -1422,7 +1366,7 @@ export default function Index({}: Readonly<ComponentProps>) {
               </Flex>
             </Card>
 
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
+            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
               <Stack>
                 <Accordion
                   w="calc(100% + 40px)"
@@ -1430,90 +1374,150 @@ export default function Index({}: Readonly<ComponentProps>) {
                   mx={-20}
                   mt={-12}
                   className={`
-                                        ${handleSummary.detail.filter((e) => Boolean(e[1]) || e[1] < 0).length > 0 ? "" : "!hidden"}
-                                        [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
-                                        [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
-                                    `}
+                    ${handleSummary.detail.filter((e) => Boolean(e[1]) || e[1] < 0).length > 0 ? "" : "!hidden"}
+                    [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
+                    [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
+                  `}
+                ></Accordion>
+                <Accordion
+                  variant="separated"
+                  radius="md"
+                  chevronPosition="right"
+                  className="w-full"
+                  styles={{
+                    item: {
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#ffffff",
+                      "&[data-active]": {
+                        backgroundColor: "#f9fafb",
+                      },
+                    },
+                    control: {
+                      padding: "16px 20px",
+                      fontWeight: 600,
+                      fontSize: "0.95rem",
+                      color: "#0B387C",
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                      },
+                    },
+                    chevron: {
+                      color: "#0B387C",
+                    },
+                    content: {
+                      padding: "0 20px 16px 20px",
+                    },
+                  }}
                 >
                   <Accordion.Item value="customer">
-                    {/* CONTROL: tombol harus selalu dirender (server + client) */}
-                    <Accordion.Control>Data Pembeli</Accordion.Control>
-
+                    <Accordion.Control>
+                      <div className="flex items-center gap-2">
+                        <Icon icon="mdi:account-outline" className="text-lg" />
+                        <span>Data Pembeli</span>
+                      </div>
+                    </Accordion.Control>
                     <Accordion.Panel>
-                      <Stack px={20} py={5} gap={12} className="!w-full">
-                        {/* langsung tampilkan data (hapus guard !custMounted) */}
+                      <div className="space-y-4 pt-2">
                         {custValue.name || custValue.email || custValue.phone || custValue.address ? (
-                          <Stack gap={10} className="!w-full">
-                            <Flex justify="space-between" align="center">
-                              <Text size="sm" c="gray.7">
-                                Nama
-                              </Text>
-                              <Text size="sm" fw={600} className="text-right">
-                                {custValue.name || "-"}
-                              </Text>
-                            </Flex>
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Icon icon="mdi:account" className="text-base" />
+                                  <span>Nama</span>
+                                </div>
+                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.name || "-"}</div>
+                              </div>
 
-                            <Flex justify="space-between" align="center">
-                              <Text size="sm" c="gray.7">
-                                Email
-                              </Text>
-                              <Text size="sm" fw={600} className="text-right">
-                                {custValue.email || "-"}
-                              </Text>
-                            </Flex>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Icon icon="mdi:email-outline" className="text-base" />
+                                  <span>Email</span>
+                                </div>
+                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.email || "-"}</div>
+                              </div>
 
-                            <Flex justify="space-between" align="center">
-                              <Text size="sm" c="gray.7">
-                                No. Telp
-                              </Text>
-                              <Text size="sm" fw={600} className="text-right">
-                                {custValue.phone || "-"}
-                              </Text>
-                            </Flex>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Icon icon="mdi:phone-outline" className="text-base" />
+                                  <span>No. Telp</span>
+                                </div>
+                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.phone || "-"}</div>
+                              </div>
 
-                            <Flex justify="space-between" align="flex-start">
-                              <Text size="sm" c="gray.7">
-                                Alamat
-                              </Text>
-                              <Text size="sm" fw={600} className="text-right" style={{ maxWidth: "60%", whiteSpace: "pre-wrap" }}>
-                                {custValue.address || "-"}
-                              </Text>
-                            </Flex>
-                          </Stack>
+                              <div className="space-y-1 md:col-span-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Icon icon="mdi:map-marker-outline" className="text-base" />
+                                  <span>Alamat</span>
+                                </div>
+                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                              <Button variant="light" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-sm" />} onClick={() => setOpenCustForm(true)}>
+                                Edit Data
+                              </Button>
+                            </div>
+                          </>
                         ) : (
-                          <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
-                            Belum ada data pembeli
-                          </Alert>
+                          <div className="text-center py-6">
+                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                              <Icon icon="mdi:account-question" className="text-2xl text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 mb-4">Belum ada data pembeli</p>
+                            <Button variant="light" color="blue" size="sm" leftSection={<Icon icon="mdi:plus" />} onClick={() => setOpenCustForm(true)}>
+                              Tambah Data Pembeli
+                            </Button>
+                          </div>
                         )}
-                      </Stack>
+                      </div>
                     </Accordion.Panel>
                   </Accordion.Item>
+
                   <Accordion.Item value="summary">
-                    <Accordion.Control>Detail Pembayaran</Accordion.Control>
+                    <Accordion.Control>
+                      <div className="flex items-center gap-2">
+                        <Icon icon="mdi:receipt-text-outline" className="text-lg" />
+                        <span>Detail Pembayaran</span>
+                      </div>
+                    </Accordion.Control>
                     <Accordion.Panel>
-                      <Stack px={10} gap={10}>
+                      <div className="space-y-3 pt-2">
                         {handleSummary.detail
                           .filter((e) => Boolean(e[1]) || e[1] < 0)
                           .map((e, i) => (
-                            <Flex gap={10} align="center" justify="space-between" key={i}>
-                              <Text size="sm" c="gray.8">
-                                {e[0]}
-                              </Text>
-                              <Text size="sm" fw={600} c={e[1] < 0 ? "red" : undefined}>
+                            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                              <div className="flex items-center gap-2">
+                                {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-gray-400" />}
+                                {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-gray-400" />}
+                                {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-gray-400" />}
+                                <span className="text-sm text-gray-600">{e[0]}</span>
+                              </div>
+                              <div className={`text-sm font-semibold ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
                                 <NumberFormatter prefix="Rp " value={e[1]} />
-                              </Text>
-                            </Flex>
+                              </div>
+                            </div>
                           ))}
 
-                        <Flex gap={10} align="center" justify="space-between">
-                          <Text size="sm" c="gray.8">
-                            Total Pembayaran
-                          </Text>
-                          <Text size="sm" fw={600} className="text-primary-base">
-                            <NumberFormatter prefix="Rp " value={handleSummary.total} />
-                          </Text>
-                        </Flex>
-                      </Stack>
+                        <div className="pt-4 mt-3 border-t border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Icon icon="mdi:cash-multiple" className="text-lg text-primary-base" />
+                              <span className="text-sm font-semibold text-primary-base">Total Pembayaran</span>
+                            </div>
+                            <div className="text-lg font-bold text-primary-base">
+                              <NumberFormatter prefix="Rp " value={handleSummary.total} />
+                            </div>
+                          </div>
+
+                          {discount !== 0 && (
+                            <div className="mt-2 text-xs text-gray-500 text-right">
+                              {discount > 0 ? <span className="text-green-600">✓ Diskon Rp {discount.toLocaleString("id-ID")} diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </Accordion.Panel>
                   </Accordion.Item>
                 </Accordion>
@@ -1542,7 +1546,6 @@ export default function Index({}: Readonly<ComponentProps>) {
                       };
 
                       if (isGuest) {
-                        // TOGGLE OFF
                         safeChange("name", "");
                         safeChange("email", "");
                         safeChange("phone", "");
@@ -1550,7 +1553,6 @@ export default function Index({}: Readonly<ComponentProps>) {
                         return;
                       }
 
-                      // TOGGLE ON Guest
                       const randomId = Math.floor(100000 + Math.random() * 900000);
                       const randomName = `Guest ${randomId}`;
                       const randomEmail = `guest_${randomId}@mail.com`;
@@ -1568,24 +1570,34 @@ export default function Index({}: Readonly<ComponentProps>) {
                     {isGuest ? "Guest Aktif" : "Gunakan Guest"}
                   </Button>
                 </Flex>
-                <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-                  <Stack gap={0}>
-                    <Text size="xs" className={`!text-primary-base`}>
-                      Total Pembayaran
-                    </Text>
-                    <Text>
-                      <NumberFormatter className={`font-[600]`} value={handleSummary.total} />
-                    </Text>
-                  </Stack>
-                  <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
-                    Bayar
-                  </Button>
-                </Flex>
               </Stack>
             </Card>
-          </Stack>
+          </div>
         </Card>
       </Flex>
+
+      {/* FLOATING PAYMENT BAR - Adjusted untuk sidebar */}
+      <div
+        className="fixed bottom-0 z-50"
+        style={{
+          left: "calc(45px + 20px)", // Sesuaikan dengan lebar sidebar + margin
+          right: "20px",
+        }}
+      >
+        <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
+              <span className="text-base font-bold">
+                <NumberFormatter value={handleSummary.total} />
+              </span>
+            </div>
+            <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} size="md" radius="xl" className="min-w-[120px]">
+              Bayar
+            </Button>
+          </div>
+        </div>
+      </div>
     </Stack>
   );
 }

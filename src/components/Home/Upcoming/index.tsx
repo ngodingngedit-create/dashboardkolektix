@@ -154,6 +154,9 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                   <EventCardLoading />
                   <EventCardLoading />
                   <EventCardLoading />
+                  <EventCardLoading />
+                  <EventCardLoading />
+                  <EventCardLoading />
                 </>
               )}
             </div>

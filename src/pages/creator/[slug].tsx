@@ -10,6 +10,13 @@ import { useRouter } from "next/router";
 import { MerchListResponse } from "../dashboard/merch/type";
 import MerchandiseCard from "@/components/Card/MerchandiseCard";
 
+// Tambahkan ikon back (atau Anda bisa menggunakan ikon dari library yang sudah ada)
+const BackIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+  </svg>
+);
+
 interface Creator {
   id: string;
   name: string;
@@ -109,9 +116,19 @@ const CreatoMenu: React.FC = () => {
 
   return (
     <div className="min-h-screen mx-auto">
-      <div className="w-full">
+      <div className="w-full relative">
+        {/* Tombol Back di atas kiri */}
+        <button
+          onClick={() => router.push("/")}
+          className="absolute top-4 left-4 z-10 flex items-center justify-center w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          aria-label="Kembali ke homepage"
+        >
+          <BackIcon />
+        </button>
+
         <img src="https://storage.nu.or.id/storage/post/16_9/mid/img-20211125-094750_1637808730.jpg" alt="Descriptive Alt Text" className="w-full h-52 sm:h-64 md:h-72 lg:h-80 object-cover" />
       </div>
+      {/* ... kode selanjutnya tetap sama ... */}
       <div className="mx-auto w-full md:w-10/12 px-4 sm:px-6 md:px-8 lg:px-0">
         <div className="relative">
           <Images

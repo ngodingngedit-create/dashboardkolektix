@@ -1268,7 +1268,7 @@ const EventDetails = () => {
               paymentList={detail.has_event_payment_method.map((e) => e.has_payment_method)}
             />
           )}
-          {stepParams === "100" && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} xenditInvoice={xenditInvoice} loading={loading} />}
+          {stepParams === "100" && <ThirdStep voucher={voucher} scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} detail={detail} xenditInvoice={xenditInvoice} loading={loading} />}
           {step === 2 && transactionData && (
             <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
               {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium" />}

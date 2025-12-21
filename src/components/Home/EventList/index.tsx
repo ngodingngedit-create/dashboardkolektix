@@ -180,7 +180,7 @@ const EventList = ({ data, loading }: ListProps) => {
             ))}
           </div>
         ) : (
-          <div className={`${styles.eventContainer} min-h-80 gap-6 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}>
+          <div className={`${styles.eventContainer2} min-h-80 gap-6 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}>
             <EventCardLoading />
             <EventCardLoading />
             <EventCardLoading />

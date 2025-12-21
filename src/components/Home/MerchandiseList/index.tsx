@@ -150,32 +150,35 @@ const MerchandiseList = ({ data, loading }: MerchandiseListProps) => {
   const displayedMerchandise = data.slice(0, 6);
 
   return displayedMerchandise.length > 0 ? (
-    <div className="my-12 md:mx-auto md:max-w-7xl md:px-10">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Bagian kiri: Segera Koleksi (Judul) */}
-        <div className="lg:col-span-1 flex items-center justify-center lg:justify-start">
-          <div className="text-center lg:text-left">
+    <div className="my-12 md:mx-auto md:max-w-10xl md:px-8 bg-blue-100 py-6">
+      {/* Desktop & Mobile sama-sama pakai scroll horizontal */}
+      <div className="flex flex-col lg:flex-row">
+        {/* Bagian kiri: Segera Koleksi - Hanya di desktop */}
+        <div className="hidden lg:flex lg:w-1/4 flex items-center justify-center">
+          <div className="text-center">
             <h2 className="text-4xl lg:text-5xl font-bold text-dark mb-4">Segera Koleksi</h2>
 
-            {/* Placeholder untuk gambar - bisa diganti dengan gambar asli nanti */}
             <div className="bg-gray-200 rounded-xl h-64 w-full flex items-center justify-center mb-6">
               <div className="relative w-full h-full mx-auto">
-                {" "}
-                {/* atur ukuran disini */}
-                <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain" sizes="100vw" priority={false} />
+                <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain" sizes="25vw" priority={false} />
               </div>
             </div>
-
-            <Link href="/upcoming" className="inline-flex items-center gap-2 text-primary-base hover:text-primary-dark font-medium">
-              Lihat Selengkapnya
-              <FontAwesomeIcon icon={faCircleArrowRight} />
-            </Link>
           </div>
         </div>
 
-        {/* Bagian kanan: Daftar Merchandise */}
-        <div className="lg:col-span-3">
-          <div className="flex justify-between items-center text-dark mb-4 px-0 lg:px-6">
+        {/* Bagian kanan: Semua konten */}
+        <div className="lg:w-3/4">
+          {/* Mobile Header - Ada "Segera Koleksi" */}
+          <div className="lg:hidden flex justify-between items-center text-dark mb-4 px-4">
+            <h2 className="text-2xl font-bold">Segera Koleksi</h2>
+            <Link href="/merchandise" className="text-primary-base flex gap-2 items-center text-sm">
+              Lihat Semua
+              <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs" />
+            </Link>
+          </div>
+
+          {/* Desktop Header - Tidak ada "Segera Koleksi" */}
+          <div className="hidden lg:flex justify-between items-center text-dark mb-4 px-6">
             <h3 className={styles.heading}></h3>
             <Link href="/merchandise" className="text-primary-base flex gap-2 items-center">
               Lihat Semua
@@ -183,33 +186,44 @@ const MerchandiseList = ({ data, loading }: MerchandiseListProps) => {
             </Link>
           </div>
 
-          {!loading ? (
-            <div className={`${styles.eventContainer2} min-h-80 gap-4 items-center w-full pb-3 px-0 md:px-3 md:ml-0`}>
-              {displayedMerchandise.map((item) => (
-                <div key={item.id} className={styles.eventCard}>
-                  <MerchandiseCard
-                    name={item.product_name}
-                    price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
-                    sale={0}
-                    creator={item.creator.name}
-                    creatorid={item.creator.id}
-                    creatorImage={item.creator.image_url}
-                    redirect={`/merchandise/${item.slug}`}
-                    image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
-                    location={item.has_store_location?.store_name}
-                  />
+          {/* Container untuk semua device - Scroll horizontal */}
+          <div className={`${styles.eventContainer2} w-full pb-4 px-4 lg:px-8`}>
+            {/* Mobile/Tablet: Card Segera Koleksi ada di sini */}
+            {/* <div className="lg:hidden ${styles.eventCard} min-w-[280px] lg:min-w-0">
+              <div className="bg-gray-100 rounded-lg h-64 w-full overflow-hidden flex flex-col">
+                <div className="relative h-40 w-full flex-grow">
+                  <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain p-4" sizes="(max-width: 1024px) 100vw" priority={false} />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className={`${styles.eventContainer} min-h-80 gap-4 items-center w-full pb-3 px-0 md:px-3 md:ml-0`}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className={styles.eventCard}>
-                  <div className="animate-pulse bg-gray-200 rounded-lg h-64 w-full"></div>
+                <div className="p-4">
+                  <h3 className="text-xl font-bold text-dark mb-2">Segera Koleksi</h3>
+                  <p className="text-sm text-gray-600">Koleksi merchandise eksklusif</p>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            </div> */}
+
+            {/* Merchandise Cards untuk semua device */}
+            {!loading
+              ? displayedMerchandise.map((item) => (
+                  <div key={item.id} className={`${styles.eventCard} min-w-[280px] lg:min-w-[300px] p-3 gap-6`}>
+                    <MerchandiseCard
+                      name={item.product_name}
+                      price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
+                      sale={0}
+                      creator={item.creator.name}
+                      creatorid={item.creator.id}
+                      creatorImage={item.creator.image_url}
+                      redirect={`/merchandise/${item.slug}`}
+                      image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
+                      location={item.has_store_location?.store_name}
+                    />
+                  </div>
+                ))
+              : Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className={`${styles.eventCard} min-w-[280px] lg:min-w-[300px]`}>
+                    <div className="animate-pulse bg-gray-200 rounded-lg h-64 w-full"></div>
+                  </div>
+                ))}
+          </div>
         </div>
       </div>
     </div>

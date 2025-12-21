@@ -272,8 +272,8 @@ export default function Cart() {
 
     result.push(["Biaya Admin", 2000]);
 
-    const subtotal = result.reduce((q, n) => q + n[1], 0);
-    result.push(["PPN (11%)", subtotal * 0.11]);
+    // const subtotal = result.reduce((q, n) => q + n[1], 0);
+    // result.push(["PPN (11%)", subtotal * 0.11]);
 
     const grandtotal = result.reduce((q, n) => q + n[1], 0);
     result.push(["Total", grandtotal]);

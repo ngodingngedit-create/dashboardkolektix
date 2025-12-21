@@ -415,10 +415,10 @@ interface StepPaymentProps {
   transactionData: TransactionProps | null;
   scrollToTop: () => void;
   voucher?: Voucher[];
-  // detail?: EventProps;
+  detail?: EventProps;
 }
 
-const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher }: StepPaymentProps) => {
+const  ThirdStep = ({ transactionData, detail, setLoading, setStep, scrollToTop, xenditInvoice, loading, voucher }: StepPaymentProps) => {
   const router = useRouter();
   const { width } = useWindowSize();
 
@@ -438,12 +438,14 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   // const baseAmount = transactionData.tickets.reduce((sum, ticket) => sum + ticket.price * ticket.qty_ticket, 0);
   // Konstanta untuk insurance data
   const insuranceData = {
-    isInsuranceActive: transactionData?.is_insurance,
-    insuranceAmount: transactionData?.insurance_amount || 0,
-    insuranceRequired: transactionData?.insurance_required === 1,
-    insuranceTotal: transactionData?.insurance_amount ? transactionData.insurance_amount : 0,
+    isInsuranceActive: detail?.is_insurance,
+    insuranceAmount: detail?.insurance_amount || 0,
+    insuranceRequired: detail?.insurance_required === 1,
+    insuranceTotal: detail?.insurance_amount ? transactionData.insurance_amount : 0,
     quantityTotal: transactionData?.total_qty || 0,
   };
+
+  const TotalInsurance = insuranceData.insuranceAmount * insuranceData.quantityTotal;
 
   console.log("insurance", insuranceData);
 
@@ -491,7 +493,7 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
   const taxAmount = subtotal > 0 ? subtotal * (ppnValue / 100) : 0;
 
   // 4. Hitung grandtotal (yang akan dikirim ke Xendit)
-  const grandtotal = subtotal + totalTicketFee + taxAmount;
+  const grandtotal = subtotal + totalTicketFee + taxAmount + TotalInsurance;
 
   // Use grandtotal from transactionData to match Xendit exactly (we still display backend grandtotal where required)
   // const grandtotal = transactionData.grandtotal || 0;
@@ -903,13 +905,13 @@ const ThirdStep = ({ transactionData, setLoading, setStep, scrollToTop, xenditIn
 
                 {/* Jumlah Asuransi */}
                 {/* Jumlah Asuransi */}
-                {insuranceData.isInsuranceActive && insuranceData.insuranceTotal > 0 ? (
+                {insuranceData.isInsuranceActive ? (
                   <div className="flex justify-between items-center px-4">
                     <p className="text-sm mb-1">Asuransi</p>
                     <p className="text-sm text-grey">
-                      Rp{formatCurrency(insuranceData.insuranceTotal)}
+                      {/* Rp{formatCurrency(insuranceData.insuranceTotal)} */}
                       <span className="text-xs text-gray-500 ml-1">
-                        ({insuranceData.quantityTotal} x Rp{formatCurrency(insuranceData.insuranceAmount)})
+                        ({insuranceData.quantityTotal} x {formatCurrency(insuranceData.insuranceAmount)})
                       </span>
                     </p>
                   </div>

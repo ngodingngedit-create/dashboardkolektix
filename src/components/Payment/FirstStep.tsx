@@ -942,6 +942,7 @@ interface Form {
   birthdate?: string;
   is_kelas?: string;
   is_assistant?: string;
+  is_insurance?: number;
 }
 
 interface StepPaymentProps {

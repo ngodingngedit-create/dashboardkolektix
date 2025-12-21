@@ -1,100 +1,104 @@
-import Foto from "@images/Foto=2.png";
-import Image from "next/image";
-import { useState } from "react";
-import styles from "./index.module.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBookmark, faStar } from "@fortawesome/free-regular-svg-icons";
-import { faStar as starSolid } from "@fortawesome/free-solid-svg-icons";
-import { faCalendar, faLocationDot, faBookmark as bookmarkSolid, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import Link from "next/link";
-import { NumberFormatter } from "@mantine/core";
+// import Foto from "@images/Foto=2.png";
+// import Image from "next/image";
+// import { useState } from "react";
+// import styles from "./index.module.css";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faBookmark, faStar } from "@fortawesome/free-regular-svg-icons";
+// import { faStar as starSolid } from "@fortawesome/free-solid-svg-icons";
+// import { faCalendar, faLocationDot, faBookmark as bookmarkSolid, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+// import Link from "next/link";
+// import { NumberFormatter } from "@mantine/core";
 
-interface MerchCardProps {
-  name: string;
-  price: number;
-  sale: number;
-  creator: string;
-  creatorid?: number;
-  creatorImage?: string;
-  redirect: string;
-  image?: string;
-  location: string;
-}
+// interface MerchCardProps {
+//   name: string;
+//   price: number;
+//   sale: number;
+//   creator: string;
+//   creatorid?: number;
+//   creatorImage?: string;
+//   redirect: string;
+//   image?: string;
+//   location: string;
+// }
 
-const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image, location }: MerchCardProps & {}) => {
-  const [bookmark, setBookmark] = useState<boolean>(false);
-  const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
+// const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image, location }: MerchCardProps & {}) => {
+//   const [bookmark, setBookmark] = useState<boolean>(false);
+//   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
 
-  const handleBuyClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Logic untuk beli merchandise
-    console.log("Beli merchandise:", name);
-    // Redirect ke halaman checkout atau tambahkan ke cart
-    window.location.href = redirect; // Atau gunakan router.push jika ada
-  };
+//   const handleBuyClick = (e: React.MouseEvent) => {
+//     e.preventDefault();
+//     e.stopPropagation();
+//     // Logic untuk beli merchandise
+//     console.log("Beli merchandise:", name);
+//     // Redirect ke halaman checkout atau tambahkan ke cart
+//     window.location.href = redirect; // Atau gunakan router.push jika ada
+//   };
 
-  return (
-    <Link href={redirect} className="bg-white rounded-lg border border-primary-light-200 shadow-md ml-1 md:ml-0 w-full relative block" onMouseEnter={() => setShowBuyButton(true)} onMouseLeave={() => setShowBuyButton(false)}>
-      {/* Bagian Gambar dengan Button Overlay */}
-      <div className="relative overflow-hidden">
-        <Image className={`${styles.cardImg} rounded-t-lg ${showBuyButton ? "scale-105" : ""} transition-transform duration-300`} src={image ?? Foto} width={500} height={500} alt="" />
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleBuyClick(e);
-          }}
-          className={`absolute bottom-3 right-3 
-    bg-white/20 hover:bg-white/30
-    backdrop-blur-md
-    text-white
-    px-3 py-2 rounded-lg font-semibold text-sm
-    transition-all duration-300 transform
-    ${showBuyButton ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"}
-    flex items-center gap-2
-    shadow-lg
-    border border-white/30
-    z-10`}
-        >
-          <FontAwesomeIcon icon={faShoppingCart} className="text-sm" />
-          Beli Merch
-        </button>
-      </div>
-      <div>
-        <div className={`p-[10px]`}>
-          <p className="mb-2 text-dark font-[500] leading-[140%] text-[0.8rem]">{name}</p>
-          <div>
-            <p className="text-dark text-[0.8rem] font-[500]">
-              <NumberFormatter value={price} />
-            </p>
-            {/* <p className='text-dark-grey text-[0.7rem] line-through'><NumberFormatter value={sale} /></p> */}
-          </div>
-          <div className="flex items-center text-xs mt-[5px]">
-            <p className="text-xs">
-              <FontAwesomeIcon icon={starSolid} className="text-warning-400" />
-              <span className="ml-1 text-grey">4.8</span>
-            </p>
-          </div>
-          <div className="flex items-center text-xs mt-[5px]">
-            <p className="text-xs">
-              <span className="ml-1 text-grey">Location - {location}</span>
-            </p>
-          </div>
-        </div>
-        <Link href={`/creator/${creator}`} className="flex items-center gap-2 border-t p-[10px] border-t-primary-light-200 border-dashed relative z-20">
-          <Image src={creatorImage ?? "https://kolektix.com"} alt="creator logo" className="h-8 w-8 rounded-full" height={50} width={50} />
-          <div>
-            <p className="text-dark font-[400] text-xs">{creator}</p>
-            {/* <div className='text-grey text-[10px]'>Jakarta</div> */}
-          </div>
-        </Link>
-      </div>
-    </Link>
-  );
-};
+//   return (
+//     <Link href={redirect} className="bg-white rounded-lg border border-primary-light-200 shadow-md ml-1 md:ml-0 w-full relative block" onMouseEnter={() => setShowBuyButton(true)} onMouseLeave={() => setShowBuyButton(false)}>
+//       {/* Bagian Gambar dengan Button Overlay */}
+//       <div className="relative overflow-hidden">
+//         <Image className={`${styles.cardImg} rounded-t-lg ${showBuyButton ? "scale-105" : ""} transition-transform duration-300`} src={image ?? Foto} width={500} height={500} alt="" />
+//         <button
+//           onClick={(e) => {
+//             e.preventDefault();
+//             e.stopPropagation();
+//             handleBuyClick(e);
+//           }}
+//           className={`absolute bottom-3 right-3
+//     bg-white/20 hover:bg-white/30
+//     backdrop-blur-md
+//     text-white
+//     px-3 py-2 rounded-lg font-semibold text-sm
+//     transition-all duration-300 transform
+//     ${showBuyButton ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"}
+//     flex items-center gap-2
+//     shadow-lg
+//     border border-white/30
+//     z-10`}
+//         >
+//           <FontAwesomeIcon icon={faShoppingCart} className="text-sm" />
+//         </button>
+//       </div>
+//       <div>
+//         <div className={`p-[10px]`}>
+//           <p className="mb-2 text-dark font-[500] leading-[140%] text-[0.8rem]">{name}</p>
+//           <div>
+//             {/* <p className="text-dark text-[0.8rem] font-[500]">
+//               <NumberFormatter value={price} />
+//             </p> */}
+//             {/* <p className='text-dark-grey text-[0.7rem] line-through'><NumberFormatter value={sale} /></p> */}
+//           </div>
+//           <div className="flex items-center text-xs mt-[5px]">
+//             <p className="text-xs">
+//               <FontAwesomeIcon icon={starSolid} className="text-warning-400" />
+//               <span className="ml-1 text-grey">4.8</span>
+//             </p>
+//           </div>
+//           <div className="flex items-center text-xs mt-[5px]">
+//             <p className="text-xs">
+//               <span className="ml-1 text-grey">Location - {location}</span>
+//             </p>
+//           </div>
+//         </div>
+//         <Link href={`/creator/${creator}`} className="flex items-center gap-2 border-t p-[10px] border-t-primary-light-200 border-dashed relative z-20">
+//           <Image src={creatorImage ?? "https://kolektix.com"} alt="creator logo" className="h-8 w-8 rounded-full" height={50} width={50} />
+//           <div>
+//             <p className="text-dark font-[400] text-xs">{creator}</p>
+//             {/* <div className='text-grey text-[10px]'>Jakarta</div> */}
+//           </div>
+//           <div className="w-full">
+//             <p className="text-dark text-[1rem] font-[600] text-right">
+//               <NumberFormatter value={price} />
+//             </p>
+//           </div>
+//         </Link>
+//       </div>
+//     </Link>
+//   );
+// };
 
-export default MerchandiseCard;
+// export default MerchandiseCard;
 
 // import Foto from "@images/Foto=2.png";
 // import Image from "next/image";
@@ -215,3 +219,150 @@ export default MerchandiseCard;
 // };
 
 // export default MerchandiseCard;
+
+import Foto from "@images/Foto=2.png";
+import Image from "next/image";
+import { useState } from "react";
+import styles from "./index.module.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBookmark as bookmarkRegular } from "@fortawesome/free-regular-svg-icons";
+import { faBookmark as bookmarkSolid, faStar as starSolid, faCalendar, faLocationDot, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import Link from "next/link";
+import { NumberFormatter } from "@mantine/core";
+
+interface MerchCardProps {
+  name: string;
+  price: number;
+  sale: number;
+  creator: string;
+  creatorid?: number;
+  creatorImage?: string;
+  redirect: string;
+  image?: string;
+  location: string;
+  date?: string;
+}
+
+const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, redirect, image, location, date }: MerchCardProps) => {
+  const [bookmark, setBookmark] = useState<boolean>(false);
+  const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
+
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBookmark(!bookmark);
+  };
+
+  const handleBuyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("Beli merchandise:", name);
+    window.location.href = redirect;
+  };
+
+  // Format harga ke format Indonesia
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  return (
+    <Link
+      href={redirect}
+      className="bg-white rounded-lg border border-primary-light-200 shadow-md w-full relative block hover:shadow-lg transition-shadow duration-300"
+      onMouseEnter={() => setShowBuyButton(true)}
+      onMouseLeave={() => setShowBuyButton(false)}
+    >
+      {/* Bagian Gambar dengan Bookmark Button */}
+      <div className="relative overflow-hidden rounded-t-lg">
+        <Image className={`${styles.cardImg} w-full h-48 object-cover transition-transform duration-300 ${showBuyButton ? "scale-105" : ""}`} src={image ?? Foto} width={500} height={500} alt={name} />
+
+        {/* Bookmark Button di pojok kanan atas */}
+        <button
+          onClick={handleBookmarkClick}
+          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-white/80 hover:bg-white rounded-full transition-all duration-200 z-10"
+          aria-label={bookmark ? "Hapus bookmark" : "Tambahkan bookmark"}
+        >
+          <FontAwesomeIcon icon={bookmark ? bookmarkSolid : bookmarkRegular} className={bookmark ? "text-primary-500" : "text-gray-600"} size="sm" />
+        </button>
+
+        {/* Tombol Beli (versi asli) - muncul saat hover */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleBuyClick(e);
+          }}
+          className={`absolute bottom-3 right-3 
+            bg-white/20 hover:bg-white/30
+            backdrop-blur-md
+            text-white
+            px-3 py-2 rounded-lg font-semibold text-sm
+            transition-all duration-300 transform
+            ${showBuyButton ? "translate-y-0 opacity-100 scale-100" : "translate-y-4 opacity-0 scale-95"}
+            flex items-center gap-2
+            shadow-lg
+            border border-white/30
+            z-10`}
+        >
+          <FontAwesomeIcon icon={faShoppingCart} className="text-sm" />
+        </button>
+      </div>
+
+      {/* Bagian Konten */}
+      <div className="p-3">
+        {/* Nama Merchandise */}
+        <h3 className="text-dark font-bold text-sm mb-2 line-clamp-2">{name}</h3>
+
+        {/* Rating dan Lokasi */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            {/* Rating */}
+            {/* <div className="flex items-center">
+              <FontAwesomeIcon icon={starSolid} className="text-warning-400 text-xs mr-1" />
+              <span className="text-gray-600 text-xs">4.8</span>
+            </div> */}
+
+            {/* Lokasi */}
+            <div className="flex items-center">
+              <FontAwesomeIcon icon={faLocationDot} className="text-gray-400 text-xs mr-1" />
+              <span className="text-gray-600 text-xs truncate max-w-[120px]">{location}</span>
+            </div>
+          </div>
+
+          {/* Tanggal (jika ada) */}
+          {date && (
+            <div className="flex items-center text-gray-500 text-xs">
+              <FontAwesomeIcon icon={faCalendar} className="mr-1" />
+              {date}
+            </div>
+          )}
+        </div>
+
+        {/* Creator dan Harga (layout kiri-kanan) */}
+        <div className="pt-2 border-t border-blue-100 border-dashed flex items-center justify-between">
+          {/* Bagian Kiri: Creator Info */}
+          <Link href={`/creator/${creatorid || creator}`} className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+            <Image src={creatorImage ?? "/default-avatar.png"} alt={`${creator} logo`} className="h-7 w-7 rounded-full object-cover flex-shrink-0" height={28} width={28} />
+            <div className="min-w-0">
+              <p className="text-gray-500 text-[8px] leading-tight">Disediakan oleh</p>
+              <p className="text-dark font-semibold text-xs truncate">{creator}</p>
+            </div>
+          </Link>
+
+          {/* Bagian Kanan: Harga */}
+          <div className="text-right ml-2 flex-shrink-0">
+            <div className="text-dark font-bold text-sm">{formatPrice(price)}</div>
+            {sale > 0 && <div className="text-gray-400 text-[10px] line-through">{formatPrice(price + (price * sale) / 100)}</div>}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+export default MerchandiseCard;
