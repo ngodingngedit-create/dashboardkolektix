@@ -35,8 +35,6 @@
   }
 }
 
-/* Atau jika mau simpel, hapus eventContainer2 dan gunakan Tailwind grid saja */
-
 /* ------------------ ORIGINAL + MERGE FIXES ------------------ */
 
 .eventContainer {
@@ -44,7 +42,6 @@
   overflow: hidden;
   width: 100%;
   mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
-  /* tambahan: beri ruang agar shadow tidak terpotong di desktop juga */
   padding-left: 0.75rem;
   padding-right: 0.75rem;
   box-sizing: border-box;
@@ -77,21 +74,15 @@
   animation-play-state: paused;
 }
 
-/* Hilangkan scrollbar */
-.eventContainer::-webkit-scrollbar {
-  display: none;
-}
-
 /* ---------- event card (tweaks untuk shadow & ukuran) ---------- */
 .eventCard {
   flex: 0 0 auto;
   box-sizing: border-box;
   border-radius: 12px;
-  overflow: visible; /* biarkan shadow keluar */
+  overflow: visible;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
-  width: 280px; /* sesuai EventCard maxWidth */
+  width: 280px;
   min-width: 200px;
-  /* shadow disesuaikan supaya tidak tampak 'tipis' pada background gelap */
   box-shadow: 0 10px 24px rgba(2, 37, 90, 0.1);
   position: relative;
   z-index: 2;
@@ -116,13 +107,6 @@
   border-color: transparent;
 }
 
-/* Jika di desktop ingin juga bisa scroll manual */
-@media (min-width: 768px) {
-  .eventContainer {
-    overflow-x: auto;
-  }
-}
-
 /* category card spacing (as original) */
 .categoryCard:first-child {
   margin-left: 1rem;
@@ -133,58 +117,114 @@
 }
 
 /* ------------------ MOBILE-SPECIFIC OVERRIDES ------------------ */
-/* Pada mobile kita tetap biarkan looping (sesuai permintaan) tetapi
-   matikan mask-image supaya shadow kartu tidak terpotong.
-   Juga perhalus ukuran dan shadow agar rapi di layar sempit. */
+/* ------------------ MOBILE STYLES ------------------ */
 @media (max-width: 767px) {
   .eventContainer {
-    /* nonaktifkan mask yang memotong shadow di mobile */
     mask-image: none;
     -webkit-mask-image: none;
-
-    /* beri ruang ekstra agar shadow tidak menempel ke tepi */
     padding-left: 1rem;
     padding-right: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0;
+    touch-action: pan-x;
+    cursor: grab;
+  }
+
+  .eventContainer::-webkit-scrollbar {
+    display: none;
   }
 
   .scrollTrack {
-    /* tetap looping di mobile */
-    animation: scrollLoop 40s linear infinite;
+    display: flex;
     gap: 0.8rem;
     width: max-content;
-    /* juga izinkan touch scroll bila user ingin manual */
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x proximity; /* opsional: membantu posisi saat manual scroll */
     padding: 0.6rem 0;
+    animation: scrollLoopMobile 40s linear infinite;
+    -webkit-animation: scrollLoopMobile 40s linear infinite;
+    animation-play-state: running;
+  }
+
+  /* Pause animasi saat container di-click/tap */
+  .eventContainer:active .scrollTrack {
+    animation-play-state: paused;
   }
 
   .eventCard {
     width: 240px;
     min-width: 180px;
     border-radius: 10px;
-    /* sedikit lebih hangat shadow agar terlihat namun tak berlebihan */
     box-shadow: 0 10px 22px rgba(2, 37, 90, 0.1);
-    scroll-snap-align: start; /* optional */
+    scroll-snap-align: start;
     z-index: 2;
   }
 
-  /* subtle scrollbar styling di mobile (optional) */
-  .scrollTrack::-webkit-scrollbar {
-    height: 8px;
+  @keyframes scrollLoopMobile {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-50% - 0.4rem));
+    }
   }
-  .scrollTrack::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.12);
+
+  .eventCard {
+    width: 240px;
+    min-width: 180px;
+    border-radius: 10px;
+    box-shadow: 0 10px 22px rgba(2, 37, 90, 0.1);
+    scroll-snap-align: start;
+    z-index: 2;
+
+    /* Prevent text selection saat drag */
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .scrollTrack::-webkit-scrollbar-track {
-    background: transparent;
+
+  /* Keyframes untuk mobile */
+  @keyframes scrollLoopMobile {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-50% - 0.4rem));
+    }
+  }
+}
+
+/* ------------------ DESKTOP ONLY (min-width: 768px) ------------------ */
+@media (min-width: 768px) {
+  /* Desktop: biar bisa scroll manual juga */
+  .eventContainer {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+
+    /* HIDE scrollbar di desktop */
+    scrollbar-width: none;
+    padding-bottom: 0;
+  }
+
+  /* Hide scrollbar di desktop */
+  .eventContainer::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Desktop: aktifkan animasi */
+  .scrollTrack {
+    animation: scrollLoop 180s linear infinite;
+    -webkit-animation: scrollLoop 180s linear infinite;
+  }
+
+  /* Pause animasi saat hover di desktop */
+  .eventContainer:hover .scrollTrack {
+    animation-play-state: paused;
   }
 }
 
 /* ------------------ OPTIONAL: seam spacer rule (tidy) ------------------ */
-/* Jika kamu menggunakan duplikat set untuk loop, dan seam terlihat,
-   kamu bisa menyesuaikan spacer ini; tidak wajib mengubah JSX. */
 .scrollTrack > .spacer {
   min-width: 0.75rem;
   pointer-events: none;
@@ -224,4 +264,80 @@
 
 .cardImg:hover {
   transform: scale(1.05);
+}
+
+/* ... CSS sebelumnya tetap ... */
+
+/* ==================== MERCH CONTAINER ==================== */
+.merchContainer {
+  display: flex;
+  justify-content: flex-start;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.merchContainer::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==================== MERCH CARD ==================== */
+.merchCard {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 10px 24px rgba(2, 37, 90, 0.1);
+  position: relative;
+  z-index: 2;
+  background-color: white;
+}
+
+.merchCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 30px rgba(2, 37, 90, 0.15);
+}
+
+/* ==================== MOBILE STYLES (40-60, 1 CARD VISIBLE) ==================== */
+@media (max-width: 767px) {
+  .merchContainer {
+    gap: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    width: 100%;
+  }
+
+  .merchCard {
+    /* Card mengambil hampir full width dari container 60% */
+    width: calc(60vw - 2rem); /* 60% viewport - padding */
+    min-width: calc(60vw - 2rem);
+    max-width: calc(60vw - 2rem);
+    border-radius: 8px;
+  }
+
+  /* Atau fixed width untuk konsisten */
+  /* .merchCard {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+  } */
+}
+
+/* ==================== DESKTOP STYLES ==================== */
+@media (min-width: 768px) {
+  .merchContainer {
+    gap: 1.2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .merchCard {
+    width: 280px;
+    min-width: 280px;
+    border-radius: 12px;
+  }
 }

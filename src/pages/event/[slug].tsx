@@ -107,6 +107,33 @@ export const Context = createContext<{
   setCounts?: Dispatch<SetStateAction<{ [key: string]: number | string[] }>>;
 }>({});
 
+// Fungsi untuk mendapatkan zona waktu
+const getTimeZone = (): string => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (timezone.includes("Asia/Jakarta") || timezone.includes("Asia/Bangkok")) {
+    return "WIB";
+  } else if (timezone.includes("Asia/Makassar") || timezone.includes("Asia/Ujung_Pandang")) {
+    return "WITA";
+  } else if (timezone.includes("Asia/Jayapura")) {
+    return "WIT";
+  }
+  return "WIB";
+};
+
+// Fungsi untuk format tanggal dengan tahun
+const formatDateWithYear = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString("id-ID", { month: "short" });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+// Fungsi untuk format waktu dengan zona waktu
+const formatTimeWithZone = (time: string) => {
+  return `${time} ${getTimeZone()}`;
+};
+
 const EventDetails = () => {
   const { t } = useTranslation();
   const { width } = useWindowSize();
@@ -233,8 +260,8 @@ const EventDetails = () => {
     navigator.clipboard
       .writeText(url)
       .then(() => {
-        setAlert("Tautan berhasil disalin!"); // Pass a string value to setAlert
-        setTimeout(() => setAlert(""), 1000); // Sembunyikan alert setelah 3 detik
+        setAlert("Tautan berhasil disalin!");
+        setTimeout(() => setAlert(""), 1000);
       })
       .catch((error) => {
         console.error("Gagal menyalin tautan:", error);
@@ -287,7 +314,6 @@ const EventDetails = () => {
       store.put({ id: "transactionStorage", data });
 
       transaction.oncomplete = () => {
-        //console.log('Data berhasil disimpan ke IndexedDB');
         router.push("/transaction-woauth");
       };
 
@@ -300,8 +326,6 @@ const EventDetails = () => {
   };
 
   const setLocalStorageValue = () => {
-    //console.log('Menghapus data dari IndexedDB');
-
     openDatabase()
       .then((db) => {
         const transaction = db.transaction("transactionStore", "readwrite");
@@ -387,10 +411,8 @@ const EventDetails = () => {
     const availableIndex = data.findIndex((ticket) => ticket.is_soldout === 0 && ticket.is_finish === 0);
     if (selectedTab) {
       setSelectedDate(selectedTab);
-      //console.log(selectedTab);
     } else if (availableIndex !== -1 && selectedDate === null) {
       setSelectedDate(availableIndex);
-      //console.log(`Available Index: ${availableIndex}`);
     }
   }, [selectedTab, data]);
 
@@ -400,8 +422,6 @@ const EventDetails = () => {
     setFirstLoad(true);
     Get(`event/${slug}`, {})
       .then((res: any) => {
-        //console.log('Response Data:', res.data); // Log data respons
-
         setVenueLayout(res.data.has_venue_layout);
         setDetail({
           ...res.data,
@@ -421,8 +441,6 @@ const EventDetails = () => {
         setFirstLoad(false);
       })
       .catch((err: any) => {
-        //console.log('Error:', err); // Log error
-
         setFirstLoad(false);
       });
   };
@@ -435,7 +453,6 @@ const EventDetails = () => {
     userData !== undefined ? setIsLogin(true) : setIsLogin(false);
   }, []);
 
-  // SUBMIT DATA
   const submitData = () => {
     console.log("submitData");
     console.log("voucher", voucher);
@@ -450,18 +467,15 @@ const EventDetails = () => {
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
 
-    // ✅ CORRECT CALCULATION - Tax from subtotal AFTER voucher (not ticket fee)
     const subtotalBeforeVoucher = totalSubtotalPrice;
     const voucherDiscount = voucher.reduce((sum, v) => sum + v.amount, 0);
     const subtotalAfterVoucher = subtotalBeforeVoucher - voucherDiscount;
     const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
 
-    // Tax calculated from subtotal AFTER voucher (NOT including ticket fee)
     const taxAmount = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
 
     const grandtotal = subtotalAfterVoucher + totalTicketFee + taxAmount;
 
-    // ✅ DEBUG: Verify all calculations
     console.log("=== PAYMENT CALCULATION VERIFICATION ===");
     console.log("1. Subtotal (before voucher):", subtotalBeforeVoucher);
     console.log("2. Vouchers detail:", voucher);
@@ -494,8 +508,6 @@ const EventDetails = () => {
         seatnumber_ticket: JSON.stringify(e.seat_number),
         ticket_fee: e.ticket_fee,
       })),
-      //grandtotal: detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) - voucher.reduce((sum, v) => sum + v.amount, 0) : 0,
-      // ✅ Correct grandtotal - tax calculated AFTER voucher
       grandtotal: grandtotal,
       bank_code: bank ?? "xendit",
       expiration_date: isoString,
@@ -506,7 +518,6 @@ const EventDetails = () => {
 
     if (payment) payload.payment_method = payment;
 
-    // ✅ DEBUG: Log final payload
     console.log("=== PAYLOAD TO BACKEND ===");
     console.log("Grandtotal in payload:", payload.grandtotal);
     console.log("Admin fee in payload:", payload.admin_fee);
@@ -526,7 +537,6 @@ const EventDetails = () => {
         setTransactionData(res.data);
 
         if (res.xendit_invoice && res.xendit_invoice.va_number) {
-          //console.log(res.xendit_invoice);
           setXenditInvoice(res.xendit_invoice.va_number[0]);
         }
 
@@ -537,15 +547,12 @@ const EventDetails = () => {
       })
       .catch((err: any) => {
         if (err?.response?.data?.out_of_stock) {
-          // toast.error(`Maaf, tiket yang tersedia tidak mencukupi`);
           notifications.show({
             color: "red",
             position: "top-right",
             message: `Maaf, tiket yang tersedia tidak mencukupi`,
           });
-          // router.push('/event');
         } else {
-          // toast.error(err?.response?.data?.message || err?.message || 'Terjadi kesalahan.');
           notifications.show({
             color: "red",
             position: "top-right",
@@ -579,7 +586,7 @@ const EventDetails = () => {
           event_id: detail?.id ?? 0,
           event_ticket_id: parseInt(id),
           price: ticketItem?.price || 0,
-          ticket_fee: ticketItem?.ticket_fee || 0, // Get ticket_fee from the found ticket item
+          ticket_fee: ticketItem?.ticket_fee || 0,
           name: ticketItem?.name || "",
           subtotal_price: (ticketItem?.price || 0) * (typeof counts[id] == "number" ? counts[id] : counts[id].length),
           qty_ticket: (typeof counts[parseInt(id)] == "number" ? counts[parseInt(id)] : (counts[parseInt(id)] as string[]).length) as number,
@@ -596,12 +603,10 @@ const EventDetails = () => {
       if (!triggered) {
         Post("event-counter", { event_id: id })
           .then((res) => {
-            //console.log(res);
             setFirstLoad(false);
             setTriggered(true);
           })
           .catch((err) => {
-            //console.log(err);
             setTriggered(true);
             setFirstLoad(false);
           });
@@ -627,14 +632,12 @@ const EventDetails = () => {
       getData();
       getPaymentMethod();
     }
-    //eslint-disable-next-line
   }, [slug]);
 
   useEffect(() => {
     if (data.length > 0) {
       updateDataBasedOnCounts();
     }
-    //eslint-disable-next-line
   }, [counts]);
 
   function scrollToTop() {
@@ -663,11 +666,9 @@ const EventDetails = () => {
     setLoading(true);
     Get(`payment-method/${id}`, {})
       .then((res: any) => {
-        // //console.log(res);
         setPaymentMethod(res.data);
       })
       .catch((err: any) => {
-        //console.log(err);
         setLoading(false);
       });
   };
@@ -676,12 +677,10 @@ const EventDetails = () => {
     setFirstLoad(true);
     Get(`payment-method`, {})
       .then((res: any) => {
-        //console.log(res, 'metod');
         setPaymentList(res);
         setFirstLoad(false);
       })
       .catch((err: any) => {
-        //console.log(err);
         setFirstLoad(false);
       });
   };
@@ -706,10 +705,8 @@ const EventDetails = () => {
     const userData = Cookies.get("user_data");
 
     if (userData) {
-      // If user is logged in, navigate to /chat
       router.push("/chat");
     } else {
-      // If user is not logged in, show the AuthModal
       setAuthModalVisible(true);
     }
   };
@@ -722,7 +719,6 @@ const EventDetails = () => {
         router.push(`/event/${slug}`);
       }
     }
-    //eslint-disable-next-line
   }, [step, slug]);
 
   function padToTwoDigits(num: number) {
@@ -800,10 +796,6 @@ const EventDetails = () => {
     setVoucher((prevVouchers) => prevVouchers.filter((_, i) => i !== index));
   };
 
-  //useEffect(() => {
-  //    console.log('voucher', voucher);
-  //}, [voucher]);
-
   return !firstLoad && detail ? (
     detail && (
       <Context.Provider
@@ -827,10 +819,6 @@ const EventDetails = () => {
             <meta name="author" content="PT.Kolektix Maju Bersama" />
             <meta name="copyright" content="&copy;2024 kolektix Maju Bersama" />
             <meta name="description" content={detail ? detail?.description.replace(/(<([^>]+)>)/gi, "") : ""} />
-            {/* <meta
-                      name='keywords'
-                      content='kolektix, amis, konser amis, amis darurat judi, malas tour, amis malas tour 2024, konser amis kolektix, beli konser amis, tiket konser band, amis, darurat judi, bagaimana &amp; jika kristen masuk sorga , majelis agama, konser amis, Kolektix &amp; Amis Kolaborasi'
-                    /> */}
             <meta name="robots" content="index, follow" />
             <meta name="googlebot" content="index, follow" />
             <title>Kolektix.com | {detail?.name}</title>
@@ -872,11 +860,7 @@ const EventDetails = () => {
                       </div>
                     </div>
                     <div className="">
-                      <button
-                        disabled={loading}
-                        className="text-white text-xs mb-1"
-                        // onClick={() => (step === 33 ? setStep(66) : setStep(100))}
-                      >
+                      <button disabled={loading} className="text-white text-xs mb-1">
                         {t("next")}
                       </button>
                       <p className="text-white text-sm">{step === 33 ? "Konfirmasi" : "Pembayaran"}</p>
@@ -924,7 +908,7 @@ const EventDetails = () => {
                         loading={loading}
                         disabled={!isFormValid || loading}
                         onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData() : setStep(66)) : setStep(100))}
-                      /> // onClick={() => (step === 33 ? isOnePayment ? setStep(66) : submitForm() : setStep(100))} />
+                      />
                     )}
                   </Flex>
                 </div>
@@ -1022,17 +1006,6 @@ const EventDetails = () => {
                                 <p className=" font-normal text-sm mr-3">{detail.has_event_social_meida.ig_name}</p>
                               </Link>
                             )}
-                            {/* {detail.has_event_social_meida?.facebook && (
-                                                      <Link
-                                                        href={detail.has_event_social_meida?.facebook}
-                                                        target='_blank'
-                                                        rel='noreferrer'
-                                                        className='flex items-center'
-                                                      >
-                                                        <FontAwesomeIcon icon={faFacebook} className='mr-2 text-lg ' />
-                                                        <p className=' font-normal text-sm'>{detail.name}</p>
-                                                      </Link>
-                                                    )} */}
                           </div>
                           <div className="flex items-center">
                             <div className="relative">
@@ -1071,7 +1044,7 @@ const EventDetails = () => {
                             <Flex align="center" gap={10}>
                               <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
                               <Text>
-                                {detail?.start_time.toString()} - {detail?.end_time.toString()}
+                                {detail?.start_time.toString()} - {detail?.end_time.toString()} {getTimeZone()}
                               </Text>
                             </Flex>
                             <Link href={detail?.location_map ?? "#"} target="_blank">
@@ -1083,7 +1056,9 @@ const EventDetails = () => {
                             <Text size="sm" c="gray">
                               {t("organizedBy")}
                             </Text>
-                            <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
+                            <Flex align="center" gap={10}>
+                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
+                            </Flex>
                           </Stack>
                         </div>
 
@@ -1138,26 +1113,10 @@ const EventDetails = () => {
 
                 <Flex justify="space-between" gap={10} px={20} display="none">
                   <Box></Box>
-
-                  {/* {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                                    <Flex align="center" gap={5} className={` bottom-7 right-7`}>
-                                        {timeToEvent.map((e, i) => (
-                                            // <AspectRatio key={i}>
-                                                <Card key={i} radius={10} p={0} className={`border border-black/50 backdrop-blur-sm`} py={5} px={10}>
-                                                    <Flex align="center" justify="center" h="100%" gap={3} c="black">
-                                                        <Text fw={600} size="14px">{e[0]}</Text>
-                                                        <Text size="9px">{e[1]}</Text>
-                                                    </Flex>
-                                                </Card>
-                                            // </AspectRatio>
-                                        ))}
-                                    </Flex>
-                                )} */}
                 </Flex>
 
                 <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
                   <Flex gap={10} justify="space-between" mb={5} align="center">
-                    {/* <Stack gap={5}> */}
                     <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
                     {detail.has_event_social_meida?.ig_name && (
                       <Link href={detail.has_event_social_meida?.instagram + "/" + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
@@ -1169,19 +1128,23 @@ const EventDetails = () => {
                         </Flex>
                       </Link>
                     )}
-                    {/* </Stack> */}
                   </Flex>
                   <h3 className="mb-3">{detail?.name}</h3>
+
+                  {/* MODIFIKASI DI SINI - Tanggal dengan tahun */}
                   <p className="mb-3 font-normal text-sm">
                     <FontAwesomeIcon icon={faCalendar} className="mr-3 text-grey" />
-                    <span className="text-dark">{detail && `${formatDate(detail?.start_date)}  ${detail.end_date !== detail.start_date ? "-" + formatDate(detail?.end_date) : ""}`}</span>
+                    <span className="text-dark">{detail && `${formatDateWithYear(detail?.start_date)}` + (detail.end_date !== detail.start_date ? ` - ${formatDateWithYear(detail?.end_date)}` : "")}</span>
                   </p>
+
+                  {/* MODIFIKASI DI SINI - Waktu dengan zona waktu */}
                   <p className="mb-3 font-normal text-sm">
                     <FontAwesomeIcon icon={faClock} className="mr-3 text-grey" />
                     <span className="text-dark">
-                      {detail?.start_time} - {detail?.end_time}
+                      {formatTimeWithZone(detail?.start_time || "")} - {formatTimeWithZone(detail?.end_time || "")}
                     </span>
                   </p>
+
                   <Link href={detail?.location_map ?? "#"} target="_blank">
                     <p className="mb-3 font-normal text-sm">
                       <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
@@ -1191,9 +1154,16 @@ const EventDetails = () => {
                 </div>
                 <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
                   <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
-                  <div className={`w-full`}>
-                    <p>{t("organizedBy")}</p>
-                    <p className="font-semibold">{detail?.has_creator?.name}</p>
+                  <div className={`w-full flex items-center gap-2`}>
+                    <div>
+                      <p>{t("organizedBy")}</p>
+                      <p className="font-semibold">{detail?.has_creator?.name}</p>
+                    </div>
+                    {detail?.has_creator?.is_verified === 1 && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
+                        <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                      </svg>
+                    )}
                   </div>
                   <ActionIcon color="#0B387C" variant="transparent" size="lg">
                     <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)} />
@@ -1364,7 +1334,6 @@ const EventDetails = () => {
                 <div className="border-b-2 p-3 border-primary-light flex gap-3">
                   <div className="flex items-center gap-3">
                     <p className="font-semibold">{xenditInvoice.bank_code}</p>
-                    {/* <Image src={paymen} alt='BCA' /> */}
                   </div>
                 </div>
                 <div className="bg-white mt-1">
@@ -1381,7 +1350,6 @@ const EventDetails = () => {
                           <FontAwesomeIcon icon={isCopied ? faCheck : faCopy} />
                         </button>
                       </div>
-                      {/* <p className='text-xs mb-1'>Atas Nama {paymentMethod.account_name}</p> */}
                     </div>
                     <div>
                       <p className="text-xs text-grey mb-1">Total Pembayaran</p>
@@ -1451,7 +1419,7 @@ const EventCountdown = ({ startdate, starttime }: { startdate?: string; starttim
     const diffInSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
 
     if (diffInSeconds < 0) {
-      return []; // Jika tanggal sudah lewat, kembalikan array kosong
+      return [];
     }
 
     const secondsInMinute = 60;

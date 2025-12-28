@@ -137,8 +137,6 @@ import MerchandiseCard from "@/components/Card/MerchandiseCard";
 import styles from "../index.module.css";
 import { MerchListResponse } from "@/pages/dashboard/merch/type";
 import Image from "next/image";
-// Pastikan file benar-benar ada di src/assets/promo.png
-import segeraKoleksiImage from "@/src/assets/promo.png";
 
 interface MerchandiseListProps {
   data: MerchListResponse[];
@@ -146,65 +144,40 @@ interface MerchandiseListProps {
 }
 
 const MerchandiseList = ({ data, loading }: MerchandiseListProps) => {
-  // Ambil 6 item pertama untuk ditampilkan
   const displayedMerchandise = data.slice(0, 6);
 
   return displayedMerchandise.length > 0 ? (
     <div className="my-12 md:mx-auto md:max-w-10xl md:px-8 bg-blue-100 py-6">
-      {/* Desktop & Mobile sama-sama pakai scroll horizontal */}
-      <div className="flex flex-col lg:flex-row">
-        {/* Bagian kiri: Segera Koleksi - Hanya di desktop */}
-        <div className="hidden lg:flex lg:w-1/4 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-4xl lg:text-5xl font-bold text-dark mb-4">Segera Koleksi</h2>
-
-            <div className="bg-gray-200 rounded-xl h-64 w-full flex items-center justify-center mb-6">
-              <div className="relative w-full h-full mx-auto">
-                <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain" sizes="25vw" priority={false} />
+      {/* Container utama - 40-60 di mobile, 25-75 di desktop */}
+      <div className="flex flex-row items-start w-full">
+        {/* Bagian kiri: Segera Koleksi - 40% mobile, 25% desktop */}
+        <div className="flex w-2/5 md:w-1/4 flex-col items-center justify-center px-2 md:px-4">
+          <div className="text-center w-full">
+            <h2 className="text-2xl md:text-5xl font-bold text-dark mb-1 md:mb-4">Segera Koleksi</h2>
+            <div className="bg-gray-200 rounded-lg md:rounded-xl h-64 md:h-64 w-full flex items-center justify-center">
+              {/* GAMBAR DIPERBESAR UNTUK DESKTOP */}
+              <div className="relative w-full h-full">
+                <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain" sizes="(max-width: 767px) 40vw, 25vw" priority={false} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bagian kanan: Semua konten */}
-        <div className="lg:w-3/4">
-          {/* Mobile Header - Ada "Segera Koleksi" */}
-          <div className="lg:hidden flex justify-between items-center text-dark mb-4 px-4">
-            <h2 className="text-2xl font-bold">Segera Koleksi</h2>
-            <Link href="/merchandise" className="text-primary-base flex gap-2 items-center text-sm">
+        {/* Bagian kanan: Merchandise List - 60% mobile, 75% desktop */}
+        <div className="w-3/5 md:w-3/4 pl-2 md:pl-4 overflow-hidden">
+          {/* Header "Lihat Semua" - DI KANAN */}
+          <div className="w-full flex justify-end mb-2 md:mb-4 pr-2 md:pr-0">
+            <Link href="/merchandise" className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap">
               Lihat Semua
-              <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs" />
+              <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs md:text-base flex-shrink-0" />
             </Link>
           </div>
 
-          {/* Desktop Header - Tidak ada "Segera Koleksi" */}
-          <div className="hidden lg:flex justify-between items-center text-dark mb-4 px-6">
-            <h3 className={styles.heading}></h3>
-            <Link href="/merchandise" className="text-primary-base flex gap-2 items-center">
-              Lihat Semua
-              <FontAwesomeIcon icon={faCircleArrowRight} />
-            </Link>
-          </div>
-
-          {/* Container untuk semua device - Scroll horizontal */}
-          <div className={`${styles.eventContainer2} w-full pb-4 px-4 lg:px-8`}>
-            {/* Mobile/Tablet: Card Segera Koleksi ada di sini */}
-            {/* <div className="lg:hidden ${styles.eventCard} min-w-[280px] lg:min-w-0">
-              <div className="bg-gray-100 rounded-lg h-64 w-full overflow-hidden flex flex-col">
-                <div className="relative h-40 w-full flex-grow">
-                  <Image src="/images/promo.png" alt="Segera Koleksi" fill className="object-contain p-4" sizes="(max-width: 1024px) 100vw" priority={false} />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-bold text-dark mb-2">Segera Koleksi</h3>
-                  <p className="text-sm text-gray-600">Koleksi merchandise eksklusif</p>
-                </div>
-              </div>
-            </div> */}
-
-            {/* Merchandise Cards untuk semua device */}
+          {/* Container merchandise - 1 CARD VISIBLE DI MOBILE */}
+          <div className={styles.merchContainer}>
             {!loading
               ? displayedMerchandise.map((item) => (
-                  <div key={item.id} className={`${styles.eventCard} min-w-[280px] lg:min-w-[300px] p-3 gap-6`}>
+                  <div key={item.id} className={styles.merchCard}>
                     <MerchandiseCard
                       name={item.product_name}
                       price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
@@ -219,8 +192,8 @@ const MerchandiseList = ({ data, loading }: MerchandiseListProps) => {
                   </div>
                 ))
               : Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className={`${styles.eventCard} min-w-[280px] lg:min-w-[300px]`}>
-                    <div className="animate-pulse bg-gray-200 rounded-lg h-64 w-full"></div>
+                  <div key={index} className={styles.merchCard}>
+                    <div className="animate-pulse bg-gray-200 rounded-lg h-28 md:h-64 w-full"></div>
                   </div>
                 ))}
           </div>
@@ -230,11 +203,10 @@ const MerchandiseList = ({ data, loading }: MerchandiseListProps) => {
   ) : (
     !loading && (
       <div className="my-12 md:mx-auto md:max-w-7xl md:px-10">
-        <div className="flex justify-between items-center text-dark mb-4 px-6">
-          <h3 className={styles.heading}>Merchandise</h3>
-          <Link href="/merchandise" className="text-primary-base flex gap-2 items-center">
+        <div className="flex justify-end items-center text-dark mb-4 px-6">
+          <Link href="/merchandise" className="text-primary-base flex gap-2 items-center whitespace-nowrap">
             Lihat Semua
-            <FontAwesomeIcon icon={faCircleArrowRight} />
+            <FontAwesomeIcon icon={faCircleArrowRight} className="flex-shrink-0" />
           </Link>
         </div>
         <div className="text-center py-12">

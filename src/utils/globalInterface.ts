@@ -139,6 +139,7 @@ export interface CreatorProps {
   longitude: string;
   latitude: string;
   website: string;
+  is_verified?: 0 | 1;
   status: "active" | "inactive";
   event_coordinator_name: string | null;
   event_cordinator_phone: string | null;

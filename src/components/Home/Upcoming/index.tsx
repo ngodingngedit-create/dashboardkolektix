@@ -32,12 +32,12 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
           </div>
           <div className={`${styles.eventContainer} min-h-80 items-center w-full pb-3 md:px-3 px-0 md:ml-0`}>
             <div className={styles.scrollTrack}>
-              {/* 🔁 Set pertama */}
               {!loading ? (
                 upcomingEvents.length > 0 ? (
                   <>
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                    {/* Set pertama */}
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`first-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -50,13 +50,14 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
-                    {/* 🔁 Set kedua (duplikat biar looping mulus) */}
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`second-${event.id}`}>
+
+                    {/* Set kedua (untuk looping di desktop) */}
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -69,12 +70,12 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -87,12 +88,12 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -105,12 +106,12 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -123,12 +124,12 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
-                    {upcomingEvents.map((event: EventProps) => (
-                      <div className={styles.eventCard} key={`first-${event.id}`}>
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
                         <EventCard
                           id={event.id}
                           maxWidth={300}
@@ -141,7 +142,61 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
                           price={event.starting_price}
                           creatorImg={event.has_creator?.image}
                           creator={event.has_creator?.name}
-                          creatorSlug={event.has_creator?.slug} // 🔹 tambahkan ini
+                          creatorSlug={event.has_creator?.slug}
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug}
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug}
+                        />
+                      </div>
+                    ))}
+                    {upcomingEvents.map((event: EventProps, index) => (
+                      <div className={styles.eventCard} key={`second-${event.id}-${index}`}>
+                        <EventCard
+                          id={event.id}
+                          maxWidth={300}
+                          title={event.name}
+                          img={event.image_url ?? ""}
+                          date={new Date(event.start_date)}
+                          end={new Date(event.end_date)}
+                          slug={event.slug}
+                          location={event.location_city}
+                          price={event.starting_price}
+                          creatorImg={event.has_creator?.image}
+                          creator={event.has_creator?.name}
+                          creatorSlug={event.has_creator?.slug}
                         />
                       </div>
                     ))}
