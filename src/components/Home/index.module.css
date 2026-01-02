@@ -19,6 +19,7 @@
   justify-content: flex-start;
   overflow-x: scroll;
   scroll-snap-type: x mandatory;
+  gap: 0.9rem;
 }
 
 @media (min-width: 768px) {

@@ -415,6 +415,7 @@ export interface EventProps {
   has_event_status: EventStatus;
   has_event_payment_method: EventPaymentMethod[];
   has_event_social_meida: EventSocmed;
+  upcoming: number;
   has_event_topic?: {
     name: string;
   };

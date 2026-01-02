@@ -983,7 +983,13 @@ const EventDetails = () => {
                     <div className="flex justify-between px-8 gap-5 h-full items-stretch">
                       <Stack w="100%">
                         <Box pos="relative">
-                          {detail && detail.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />}
+                          {/* {detail && detail?.image && <ImagesWithModal type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />} */}
+
+                          {detail?.image ? (
+                            <ImagesWithModal type="event" path={detail.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />
+                          ) : (
+                            <div className="w-full h-72 bg-white lg:rounded-3xl md:rounded-2xl rounded-full"></div>
+                          )}
 
                           {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
                             <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">

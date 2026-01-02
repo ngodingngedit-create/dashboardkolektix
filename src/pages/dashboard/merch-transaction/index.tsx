@@ -419,6 +419,47 @@ const MerchandiseTransaction: React.FC = () => {
     setPage(1);
   };
 
+  // Fungsi untuk mendapatkan status dan warna berdasarkan transaction_status_id
+  const getStatusInfo = (statusId?: number) => {
+    switch (statusId) {
+      case 1: // pending
+        return {
+          text: "Pending",
+          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          bgColor: "bg-yellow-100",
+          textColor: "text-yellow-800",
+        };
+      case 2: // success
+        return {
+          text: "Success",
+          color: "bg-green-100 text-green-800 border-green-200",
+          bgColor: "bg-green-100",
+          textColor: "text-green-800",
+        };
+      case 3: // failed
+        return {
+          text: "Failed",
+          color: "bg-red-100 text-red-800 border-red-200",
+          bgColor: "bg-red-100",
+          textColor: "text-red-800",
+        };
+      case 4: // expired
+        return {
+          text: "Expired",
+          color: "bg-gray-100 text-gray-800 border-gray-200",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-800",
+        };
+      default:
+        return {
+          text: "Unknown",
+          color: "bg-gray-100 text-gray-800 border-gray-200",
+          bgColor: "bg-gray-100",
+          textColor: "text-gray-800",
+        };
+    }
+  };
+
   // Fetch data creators
   const getCreators = async () => {
     setLoadingCreators(true);
@@ -472,20 +513,22 @@ const MerchandiseTransaction: React.FC = () => {
         // Join all names with a separator
         const productName = productNames.length > 0 ? productNames.join(" | ") : "-";
 
-        // Get creator info from transaction data
+        // Get creator info from transaction data - FIXED VERSION
         let creatorId = 0;
         let creatorName = "Unknown";
 
-        // Try to get creator info from transaction data
-        if (item.creator_id) {
+        // Priority 1: Jika ada creator object lengkap
+        if (item.creator?.id) {
+          creatorId = item.creator.id;
+          creatorName = item.creator.name || item.creator.username || item.creator.email || "Unknown";
+        }
+        // Priority 2: Jika ada creator_id langsung
+        else if (item.creator_id) {
           creatorId = item.creator_id;
-          creatorName = "Loading...";
-        } else if (item.user_id) {
+        }
+        // Priority 3: Jika ada user_id
+        else if (item.user_id) {
           creatorId = parseInt(item.user_id) || 0;
-          creatorName = "Loading...";
-        } else if (item.creator) {
-          creatorId = item.creator.id || 0;
-          creatorName = item.creator.name || item.creator.username || "Unknown";
         }
 
         return {
@@ -522,13 +565,23 @@ const MerchandiseTransaction: React.FC = () => {
     if (creators.length === 0) return data;
 
     return data.map((item) => {
-      // Find creator by id
-      const foundCreator = creators.find((creator) => creator.id === item.creator_id || parseInt(creator.user_id) === item.creator_id || creator.has_user?.id === item.creator_id);
+      // Find creator by id - IMPROVED MATCHING LOGIC
+      const foundCreator = creators.find((creator) => {
+        // Match by creator.id
+        if (creator.id === item.creator_id) return true;
+        // Match by creator.has_user.id
+        if (creator.has_user?.id === item.creator_id) return true;
+        // Match by creator.user_id (converted to number)
+        if (parseInt(creator.user_id) === item.creator_id) return true;
+        return false;
+      });
 
       if (foundCreator) {
         return {
           ...item,
           creator_name: foundCreator.has_user?.name || foundCreator.name || "Unknown",
+          // Ensure creator_id is consistent with creator's id
+          creator_id: foundCreator.id,
         };
       }
 
@@ -536,7 +589,7 @@ const MerchandiseTransaction: React.FC = () => {
     });
   }, [data, creators]);
 
-  // Filter data by creator and invoice search
+  // Filter data by creator and invoice search - FIXED FILTER LOGIC
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
 
@@ -557,17 +610,30 @@ const MerchandiseTransaction: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
+  // Hitung total merchandise (jumlah item yang ditampilkan di halaman ini)
+  const totalMerchandiseInPage = useMemo(() => {
+    return paginatedItems.length;
+  }, [paginatedItems]);
+
+  // Hitung total price dari item yang ditampilkan di halaman ini
+  const totalPriceInPage = useMemo(() => {
+    return paginatedItems.reduce((sum, item) => {
+      const price = Number(item.total_price) || 0;
+      return sum + price;
+    }, 0);
+  }, [paginatedItems]);
+
   // --- Export to CSV (can be opened in Excel) ---
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     if (!rows || rows.length === 0) {
       // Create a minimal CSV with headers to avoid empty file
-      const headers = ["Invoice Number", "Nama Produk", "SKU", "Total Qty", "Total Price", "Transaction Status ID", "Voucher", "Creator"];
+      const headers = ["Invoice Number", "Nama Produk", "SKU", "Total Qty", "Total Price", "Transaction Status", "Voucher", "Creator"];
       const csvContent = headers.join(",") + "\n";
       downloadCSV(csvContent);
       return;
     }
 
-    const headers = ["Invoice Number", "Nama Produk", "SKU", "Total Qty", "Total Price", "Transaction Status ID", "Voucher", "Creator"];
+    const headers = ["Invoice Number", "Nama Produk", "SKU", "Total Qty", "Total Price", "Transaction Status", "Voucher", "Creator"];
     const escapeCell = (value: any) => {
       if (value === null || value === undefined) return "";
       const str = String(value);
@@ -578,7 +644,16 @@ const MerchandiseTransaction: React.FC = () => {
     };
 
     const lines = rows.map((r) =>
-      [escapeCell(r.invoice_no), escapeCell(r.product_name), escapeCell(r.sku), escapeCell(r.total_qty), escapeCell(r.total_price), escapeCell(r.transaction_status_id), escapeCell(r.voucher), escapeCell(r.creator_name)].join(",")
+      [
+        escapeCell(r.invoice_no),
+        escapeCell(r.product_name),
+        escapeCell(r.sku),
+        escapeCell(r.total_qty),
+        escapeCell(r.total_price),
+        escapeCell(getStatusInfo(r.transaction_status_id).text), // Export status text
+        escapeCell(r.voucher),
+        escapeCell(r.creator_name),
+      ].join(",")
     );
 
     const csvContent = headers.join(",") + "\n" + lines.join("\n");
@@ -633,11 +708,12 @@ const MerchandiseTransaction: React.FC = () => {
 
   return (
     <Card className={`!overflow-auto`} p={20} m={10} withBorder>
-      {/* Statistic Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Statistic Cards - UPDATED TO SHOW FILTERED DATA */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
           <p className="text-lg font-semibold mt-1 text-gray-800">Rp {filtered.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0).toLocaleString("id-ID")}</p>
+          {selectedCreator !== "all" && <p className="text-xs text-gray-500 mt-1">(Filtered by creator)</p>}
         </div>
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Dikirim</h3>
@@ -649,6 +725,13 @@ const MerchandiseTransaction: React.FC = () => {
             Diambil {filtered.filter((item) => item.transaction_status_id === 4).length} / {filtered.length} transaksi
           </p>
         </div>
+        <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Merchandise</h3>
+          <p className="text-lg font-semibold mt-1 text-gray-800">
+            {filtered.length} item{filtered.length !== 1 ? "s" : ""}
+          </p>
+          {selectedCreator !== "all" && <p className="text-xs text-gray-500 mt-1">(Filtered)</p>}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -659,7 +742,7 @@ const MerchandiseTransaction: React.FC = () => {
             <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto space-y-2 md:space-y-0">
               <div className="flex items-center gap-2 w-full md:w-auto">
                 <Input type="text" placeholder="Search by Invoice" value={filterValue} onChange={onSearchChange} className="w-full md:w-64" size="sm" />
-                <select value={selectedCreator} onChange={onCreatorChange} className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48" disabled={creators.length === 0}>
+                <select value={selectedCreator} onChange={onCreatorChange} className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48" disabled={loadingCreators}>
                   <option value="all">All Creators</option>
                   {creators.map((creator) => (
                     <option key={creator.id} value={`${creator.id}-${creator.name}`}>
@@ -668,7 +751,13 @@ const MerchandiseTransaction: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <button type="button" onClick={() => exportToCSV(filtered)} className="px-3 py-2 rounded-md border border-light-grey bg-white hover:bg-gray-50 text-sm flex items-center gap-2 whitespace-nowrap" title="Export to Excel">
+              <button
+                type="button"
+                onClick={() => exportToCSV(filtered)}
+                className="px-3 py-2 rounded-md border border-light-grey bg-white hover:bg-gray-50 text-sm flex items-center gap-2 whitespace-nowrap"
+                title="Export to Excel"
+                disabled={filtered.length === 0}
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
@@ -676,7 +765,7 @@ const MerchandiseTransaction: React.FC = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>Export</span>
+                <span>Export ({filtered.length})</span>
               </button>
             </div>
 
@@ -687,11 +776,31 @@ const MerchandiseTransaction: React.FC = () => {
             </select>
           </div>
 
+          {/* Filter Status Indicator */}
+          {selectedCreator !== "all" && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-blue-700">
+                    Showing transactions for: <strong>{creators.find((c) => c.id.toString() === selectedCreator.split("-")[0])?.has_user?.name || creators.find((c) => c.id.toString() === selectedCreator.split("-")[0])?.name}</strong>
+                  </span>
+                </div>
+                <button onClick={() => setSelectedCreator("all")} className="text-sm text-blue-600 hover:text-blue-800 underline">
+                  Clear filter
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Perbaikan di sini: Tampilkan pesan berbeda berdasarkan kondisi */}
           {data.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No data available</div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Data tidak ditemukan untuk filter yang dipilih</div>
+            <div className="text-center py-8 text-gray-500">
+              {selectedCreator !== "all"
+                ? `No transactions found for selected creator${filterValue ? ` and invoice containing "${filterValue}"` : ""}`
+                : `No transactions found${filterValue ? ` for invoice containing "${filterValue}"` : ""}`}
+            </div>
           ) : (
             <>
               <Table
@@ -711,37 +820,69 @@ const MerchandiseTransaction: React.FC = () => {
                   <TableColumn>SKU</TableColumn>
                   <TableColumn>Total Qty</TableColumn>
                   <TableColumn>Total Price</TableColumn>
-                  <TableColumn>Transaction Status ID</TableColumn>
+                  <TableColumn>Transaction Status</TableColumn>
                   <TableColumn>Voucher</TableColumn>
                   <TableColumn>Creator</TableColumn>
                   <TableColumn width={100}>Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {paginatedItems.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
-                      <TableCell>{item.invoice_no}</TableCell>
-                      <TableCell>{item.product_name}</TableCell>
-                      <TableCell>{item.sku}</TableCell>
-                      <TableCell>{item.total_qty}</TableCell>
-                      <TableCell>{item.total_price?.toLocaleString("id-ID")}</TableCell>
-                      <TableCell>{item.transaction_status_id}</TableCell>
-                      <TableCell>{item.voucher}</TableCell>
-                      <TableCell>{item.creator_name}</TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleViewInvoice(item.invoice_no || "")}
-                          className="text-blue-600 hover:text-blue-800 text-sm underline"
-                          disabled={!item.invoice_no || item.invoice_no === "-"}
-                          title={!item.invoice_no || item.invoice_no === "-" ? "Invoice number not available" : `View ${item.invoice_no}`}
-                        >
-                          View
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {paginatedItems.map((item, index) => {
+                    const statusInfo = getStatusInfo(item.transaction_status_id);
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
+                        <TableCell>{item.invoice_no}</TableCell>
+                        <TableCell>{item.product_name}</TableCell>
+                        <TableCell>{item.sku}</TableCell>
+                        <TableCell>{item.total_qty}</TableCell>
+                        <TableCell>Rp {Number(item.total_price || 0).toLocaleString("id-ID")}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}>{statusInfo.text}</span>
+                        </TableCell>
+                        <TableCell>{item.voucher}</TableCell>
+                        <TableCell>{item.creator_name}</TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => handleViewInvoice(item.invoice_no || "")}
+                            className="text-blue-600 hover:text-blue-800 text-sm underline"
+                            disabled={!item.invoice_no || item.invoice_no === "-"}
+                            title={!item.invoice_no || item.invoice_no === "-" ? "Invoice number not available" : `View ${item.invoice_no}`}
+                          >
+                            View
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
+
+              {/* Total Summary Section */}
+              {paginatedItems.length > 0 && (
+                <div className="mt-4 p-4 bg-gray-50 border border-light-grey rounded-md">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm text-gray-700">
+                        Showing <span className="font-semibold">{(page - 1) * rowsPerPage + 1}</span> to <span className="font-semibold">{Math.min(page * rowsPerPage, filtered.length)}</span> of{" "}
+                        <span className="font-semibold">{filtered.length}</span> entries
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Merchandise in Page</div>
+                        <div className="text-lg font-semibold text-gray-800">
+                          {totalMerchandiseInPage} item{totalMerchandiseInPage !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price in Page</div>
+                        <div className="text-lg font-semibold text-gray-800">Rp {totalPriceInPage.toLocaleString("id-ID")}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-start items-center gap-2 mt-4">
                 <Pagination page={page} total={totalPages} onChange={(p) => setPage(Number(p))} className="items-center" size="sm" />

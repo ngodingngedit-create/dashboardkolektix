@@ -198,39 +198,38 @@
 // };
 
 // export default Merch;
-import { Get } from "@/utils/REST";
-import { Badge, Box, Card, Flex, LoadingOverlay, ScrollArea, SegmentedControl, Select, Stack, Table, Tabs, Text, Title, Pagination, Button } from "@mantine/core";
+
+import { Badge, Box, Card, Flex, Select, Stack, Tabs, Text, Title, Pagination, Button, SegmentedControl, Input } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
-import _ from "lodash";
 import moment from "moment";
-import { Tab } from "@nextui-org/react";
 import TableData from "@/components/TableData";
-import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse } from "./type";
+import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse, EventData } from "./type";
 import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
+import axios from "axios";
+import config from "@/Config";
 
 const Merch = () => {
   const [isr, setIsr] = useState(false);
-  const [dataList, setDataList] = useState<TransactionListResponse[]>();
+  const [dataList, setDataList] = useState<TransactionListResponse[]>([]);
   const [dataListEticket, setDataListEticket] = useState<EticketListResponse[]>();
   const [eventList, setEventList] = useState<EventListResponse[]>();
+  const [eventData, setEventData] = useState<EventData | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number>();
+  const [selectedTicket, setSelectedTicket] = useState<string>("all");
+  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
   const [loading, setLoading] = useListState<string>();
+  const [loadingEventData, setLoadingEventData] = useState(false);
   const [transactionSegment, setTransactionSegment] = useState<string>("all");
   const user = useLoggedUser();
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  // Statistic state
-  const [statistics, setStatistics] = useState({
-    totalSales: 0,
-    pendingTransactions: 0,
-    totalTickets: 0,
-  });
+  const [slug, setSlug] = useState<string>("");
+  const [selectedTab, setSelectedTab] = useState<string>("transaksi");
+  const [searchValue, setSearchValue] = useState<string>("");
 
   useEffect(() => {
     setIsr(true);
@@ -244,29 +243,68 @@ const Merch = () => {
     getData();
   }, [selectedEvent]);
 
+  useDidUpdate(() => {
+    if (selectedEvent && eventList) {
+      const currentEvent = eventList.find((e) => e.id === selectedEvent);
+      if (currentEvent?.has_event_ticket?.length) {
+        const ticketsArray = currentEvent.has_event_ticket.map((ticket) => ({
+          value: String(ticket.id),
+          label: ticket.name,
+        }));
+        setAvailableTickets([{ value: "all", label: "Semua Tiket" }, ...ticketsArray]);
+      } else {
+        setAvailableTickets([{ value: "all", label: "Semua Tiket" }]);
+      }
+    }
+  }, [selectedEvent, eventList]);
+
+  const getEventData = async () => {
+    setLoadingEventData(true);
+    try {
+      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      if (response && response.data) {
+        setEventData(response.data);
+        console.log(response.data, "Event data loaded");
+      }
+    } catch (error) {
+      console.error("Error fetching event data:", error);
+    } finally {
+      setLoadingEventData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (slug) {
+      getEventData();
+    }
+  }, [slug]);
+
   const getEvent = async () => {
     await fetch<any, EventListResponse[]>({
       url: "event",
       method: "GET",
       before: () => setLoading.append(""),
       success: ({ data }) => {
-        if ((data?.length ?? 0) > 0 && data) {
+        if (data?.length) {
           const _data = data.filter((e) => parseInt(e.creator_id) == user?.has_creator?.id);
           setEventList(_data);
           if (_data.length > 0) {
             setSelectedEvent(_data[0].id);
+            const selectedEventSlug = _data[0].slug || "";
+            setSlug(selectedEventSlug);
           }
         }
       },
       complete: () => setLoading.filter((e) => e != ""),
     });
+
     await fetch<any, any>({
       url: "transaction-statuses",
       method: "GET",
       before: () => setLoading.append(""),
       success: (_data) => {
         const data = _data as TransactionStatusResponse[];
-        if ((data?.length ?? 0) > 0 && data) {
+        if (data?.length) {
           setTransactionStatus(data);
         }
       },
@@ -283,8 +321,10 @@ const Merch = () => {
       before: () => setLoading.append("getdata"),
       success: ({ data }) => {
         if (data) {
-          setDataList(data);
-          calculateStatistics(data);
+          const dataArray = Array.isArray(data) ? data : [];
+          setDataList(dataArray);
+        } else {
+          setDataList([]);
         }
       },
       complete: () => setLoading.filter((e) => e != "getdata"),
@@ -294,7 +334,7 @@ const Merch = () => {
       url: `checkin-list/${selectedEvent}`,
       method: "GET",
       before: () => setLoading.append("getdata"),
-      success: ({ data }) => data && setDataList(data),
+      success: () => {},
       complete: () => setLoading.filter((e) => e != "getdata"),
     });
 
@@ -307,33 +347,98 @@ const Merch = () => {
     });
   };
 
-  const calculateStatistics = (data: TransactionListResponse[]) => {
-    let totalSales = 0;
-    let pendingTransactions = 0;
-    let totalTickets = 0;
+  const listTransaksi = useMemo(() => {
+    if (!Array.isArray(dataList)) return [];
 
-    data.forEach((transaction) => {
-      const amount = (transaction as any).total || (transaction as any).amount || (transaction as any).total_amount || 0;
+    let filteredData = dataList.filter((e) => (transactionSegment === "all" ? true : e.type_transaction === transactionSegment));
 
-      if (transaction.payment_status === "Verified") {
-        totalSales += amount;
+    // Filter berdasarkan tiket yang dipilih
+    if (selectedTicket !== "all") {
+      const selectedTicketId = parseInt(selectedTicket);
+
+      filteredData = filteredData.filter((transaction) => {
+        // Cek apakah transaksi memiliki ticket dengan event_ticket_id yang sesuai
+        return transaction.tickets?.some((ticket) => parseInt(ticket.event_ticket_id) === selectedTicketId);
+      });
+    }
+
+    // Filter berdasarkan pencarian
+    if (searchValue) {
+      const searchTerm = searchValue.toLowerCase();
+      filteredData = filteredData.filter((transaction) => {
+        const invoiceNo = transaction.invoice_no?.toLowerCase() || "";
+        const email = transaction.identities?.find((id) => id.is_pemesan == 1)?.email?.toLowerCase() || "";
+
+        return invoiceNo.includes(searchTerm) || email.includes(searchTerm);
+      });
+    }
+
+    return filteredData.map((e) => {
+      // Cari nama tiket dari transaksi
+      let ticketName = "-";
+      const identity = e.identities?.find((id) => id.is_pemesan == 1);
+
+      // Ambil data tiket dari properti tickets
+      if (e.tickets && e.tickets.length > 0) {
+        // Ambil nama tiket dari ticket pertama (atau gabungkan jika ada multiple)
+        const ticketNames = e.tickets.map((ticket) => ticket.has_event_ticket?.name || "-");
+        ticketName = ticketNames.join(", ");
       }
 
-      if (transaction.payment_status === "Pending" || transaction.transaction_status_id === 1) {
-        pendingTransactions++;
-      }
-
-      totalTickets += transaction.identities?.length || 0;
+      return {
+        ID: e.id,
+        Email: identity?.email ?? "-",
+        "No. Invoice": e.invoice_no,
+        "Waktu Dikirim": e.payment_date ? moment(e.payment_date).format("HH:mm:ss DD MMM YYYY") : "-",
+        "Nama Tiket": ticketName,
+        Status: (
+          <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find((z) => z.id == e.transaction_status_id)?.bgcolor}>
+            {transactionStatus?.find((z) => z.id == e.transaction_status_id)?.name}
+          </Badge>
+        ),
+      };
     });
+  }, [dataList, transactionSegment, transactionStatus, selectedTicket, searchValue]);
 
-    setStatistics({
-      totalSales,
+  // Statistik untuk tab Data Penjualan
+  const salesStatistics = useMemo(() => {
+    const filtered = listTransaksi;
+
+    // Hitung total tiket yang sudah dibayar (Verified)
+    const totalTickets = dataList.reduce((sum, transaction) => {
+      if (transaction.payment_status === "Verified" && transaction.tickets) {
+        return sum + transaction.tickets.reduce((ticketSum, ticket) => ticketSum + (ticket.qty_ticket || 0), 0);
+      }
+      return sum;
+    }, 0);
+
+    const pendingTransactions = eventData?.total_unpaid || 0;
+
+    // Hitung total checkin dari data eticket
+    const totalCheckin = dataListEticket?.filter((e) => Boolean(e.is_checkin)).length || 0;
+
+    // Hitung total invitation - contoh: semua pemesan yang Verified
+    // Anda mungkin perlu menyesuaikan ini dengan logika invitation yang sebenarnya
+    const totalInvitation = dataList?.filter((e) => e.payment_status === "Verified").length || 0;
+
+    return {
+      totalSales: eventData?.total_price_sell_online || 0,
       pendingTransactions,
       totalTickets,
-    });
-  };
+      totalTransactions: filtered.length,
+      totalCheckin,
+      totalInvitation,
+    };
+  }, [listTransaksi, eventData, dataList, dataListEticket]);
 
-  // Fungsi untuk export ke Excel/CSV
+  const paginatedListTransaksi = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return listTransaksi.slice(startIndex, endIndex);
+  }, [listTransaksi, page, itemsPerPage]);
+
+  const totalPages = Math.ceil(listTransaksi.length / itemsPerPage);
+
   const exportToExcel = () => {
     if (!listTransaksi || listTransaksi.length === 0) {
       alert("Tidak ada data untuk diexport");
@@ -341,30 +446,21 @@ const Merch = () => {
     }
 
     try {
-      // Header CSV
-      const headers = ["ID", "Email", "No. Invoice", "Waktu Dikirim", "Status", "Type"];
-
-      // Data CSV - ambil text dari React elements
+      const headers = ["ID", "Email", "No. Invoice", "Waktu Dikirim", "Status", "Nama Tiket"];
       const csvRows = [
         headers.join(","),
         ...listTransaksi.map((item) => {
-          // Extract text dari React element Status
           let statusText = "Unknown";
-          if (item.Status && item.Status.props && item.Status.props.children) {
+          if (item.Status?.props?.children) {
             statusText = item.Status.props.children;
           }
 
-          // Extract text dari React element Type
-          let typeText = "Unknown";
-          if (item.Type && item.Type.props && item.Type.props.children) {
-            typeText = item.Type.props.children;
-          }
+          const ticketName = item["Nama Tiket"] || "-";
 
-          return [item.ID, `"${item.Email}"`, `"${item["No. Invoice"]}"`, `"${item["Waktu Dikirim"]}"`, `"${statusText}"`, `"${typeText}"`].join(",");
+          return [item.ID, `"${item.Email}"`, `"${item["No. Invoice"]}"`, `"${item["Waktu Dikirim"]}"`, `"${statusText}"`, `"${ticketName}"`].join(",");
         }),
       ];
 
-      // Buat blob dan download
       const csvContent = csvRows.join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -386,10 +482,11 @@ const Merch = () => {
   };
 
   const listPemesan = useMemo(() => {
+    if (!Array.isArray(dataList)) return [];
+
     return dataList
       ?.filter((e) => e.payment_status == "Verified")
-      .map((e) => e.identities)
-      .flat()
+      .flatMap((e) => e.identities || [])
       .map((e) => ({
         "No. Identitas": e.nik,
         "Nama Pemesan": e.full_name,
@@ -399,32 +496,9 @@ const Merch = () => {
       }));
   }, [dataList]);
 
-  const listTransaksi = useMemo(() => {
-    let filteredData = dataList?.filter((e) => (transactionSegment == "all" ? true : e.type_transaction == transactionSegment)) || [];
-
-    return filteredData.map((e) => ({
-      ID: e.id,
-      Email: e.identities.find((e) => e.is_pemesan == 1)?.email ?? "-",
-      "No. Invoice": e.invoice_no,
-      "Waktu Dikirim": moment(e.payment_date).format("HH:mm:ss DD MMM YYYY"),
-      Status: (
-        <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find((z) => z.id == e.transaction_status_id)?.bgcolor}>
-          {transactionStatus?.find((z) => z.id == e.transaction_status_id)?.name}
-        </Badge>
-      ),
-      Type: <Text className={`capitalize`}>{e.type_transaction}</Text>,
-    }));
-  }, [dataList, transactionSegment, transactionStatus]);
-
-  const paginatedListTransaksi = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return listTransaksi.slice(startIndex, endIndex);
-  }, [listTransaksi, page, itemsPerPage]);
-
-  const totalPages = Math.ceil(listTransaksi.length / itemsPerPage);
-
   const listCheckin = useMemo(() => {
+    if (!Array.isArray(dataListEticket)) return [];
+
     return dataListEticket
       ?.filter((e) => Boolean(e.is_checkin))
       .map((e) => ({
@@ -437,36 +511,6 @@ const Merch = () => {
 
   return (
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card withBorder padding="lg" radius="md">
-          <Text fw={500} size="sm" c="dimmed">
-            Total Penjualan
-          </Text>
-          <Title order={3} mt="xs">
-            Rp {statistics.totalSales.toLocaleString("id-ID")}
-          </Title>
-        </Card>
-
-        <Card withBorder padding="lg" radius="md">
-          <Text fw={500} size="sm" c="dimmed">
-            Transaksi Pending
-          </Text>
-          <Title order={3} mt="xs">
-            {statistics.pendingTransactions}
-          </Title>
-        </Card>
-
-        <Card withBorder padding="lg" radius="md">
-          <Text fw={500} size="sm" c="dimmed">
-            Total Tiket
-          </Text>
-          <Title order={3} mt="xs">
-            {statistics.totalTickets}
-          </Title>
-        </Card>
-      </div>
-
       <Flex gap={20} justify="space-between" align="center">
         <Stack gap={0}>
           <Title order={1} size="h2">
@@ -476,7 +520,9 @@ const Merch = () => {
             Halaman Report Event Anda
           </Text>
         </Stack>
+      </Flex>
 
+      <Flex gap={20} justify="flex-end" align="center">
         <Flex align="center" gap={10}>
           <Text size="sm">Pilih Event</Text>
           <Select
@@ -484,36 +530,124 @@ const Merch = () => {
             data={eventList?.map((e) => ({ value: String(e.id), label: e.name }))}
             onChange={(e) => {
               if (e) {
-                setSelectedEvent(parseInt(e));
+                const selectedId = parseInt(e);
+                setSelectedEvent(selectedId);
+                setSelectedTicket("all");
                 setPage(1);
+                setSearchValue("");
+
+                const selectedEventItem = eventList?.find((item) => item.id === selectedId);
+                if (selectedEventItem?.slug) {
+                  setSlug(selectedEventItem.slug);
+                }
               }
             }}
             placeholder="Pilih event"
             style={{ width: 200 }}
           />
-          <Button onClick={exportToExcel} variant="outline" disabled={!listTransaksi || listTransaksi.length === 0}>
-            Export Excel
-          </Button>
         </Flex>
+
+        <Flex align="center" gap={10}>
+          <Text size="sm">Pilih Tiket</Text>
+          <Select
+            value={selectedTicket}
+            data={availableTickets}
+            onChange={(value) => {
+              if (value) {
+                setSelectedTicket(value);
+                setPage(1);
+              }
+            }}
+            placeholder="Pilih tiket"
+            style={{ width: 200 }}
+            disabled={availableTickets.length <= 1}
+          />
+        </Flex>
+
+        <Button onClick={exportToExcel} variant="outline" disabled={!listTransaksi || listTransaksi.length === 0}>
+          Export Excel
+        </Button>
       </Flex>
 
-      <Tabs defaultValue="pemesan">
-        <Tabs.List>
-          <Tabs.Tab value="transaksi">Data Penjualan</Tabs.Tab>
-          <Tabs.Tab value="pemesan">Data Pemesan</Tabs.Tab>
-          <Tabs.Tab value="checkin">Data Checkin</Tabs.Tab>
-          <Tabs.Tab value="invitation">Data Invitation</Tabs.Tab>
-        </Tabs.List>
+      {/* Tabs Container */}
+      <Card className={`!overflow-auto`} p={20} withBorder>
+        {/* Statistics Cards - Hanya tampil di tab Data Penjualan */}
+        {selectedTab === "transaksi" && (
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            {/* Card 1: Total Penjualan */}
+            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">Rp {salesStatistics.totalSales.toLocaleString("id-ID")}</p>
+            </div>
 
-        <Tabs.Panel value="pemesan">
-          <Box mt={20}>
-            <TableData loading={loading.includes("getdata")} tablekey="pemesan" withRowIndex data={listPemesan ?? []} mapData={(e) => ({ ...e })} />
-          </Box>
-        </Tabs.Panel>
+            {/* Card 2: Transaksi Pending */}
+            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
+            </div>
 
-        <Tabs.Panel value="transaksi">
-          <Box mt={20}>
-            {/* Filter Controls */}
+            {/* Card 3: Total Tiket */}
+            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
+            </div>
+
+            {/* Card 4: Total Checkin (BARU) */}
+            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
+            </div>
+
+            {/* Card 5: Total Invitation (BARU) */}
+            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Invitation</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">0 invitation</p>
+              <p className="text-xs text-gray-500 mt-1"></p>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs Navigation */}
+        <div className="mb-6">
+          <div className="flex border-b border-gray-200">
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                selectedTab === "transaksi" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setSelectedTab("transaksi")}
+            >
+              Data Penjualan
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                selectedTab === "pemesan" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setSelectedTab("pemesan")}
+            >
+              Data Pemesan
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                selectedTab === "checkin" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setSelectedTab("checkin")}
+            >
+              Data Checkin
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                selectedTab === "invitation" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setSelectedTab("invitation")}
+            >
+              Data Invitation
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content - Data Penjualan */}
+        {selectedTab === "transaksi" && (
+          <div className="pt-4">
             <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="md">
               <Flex gap="md" align="center" wrap="wrap">
                 <SegmentedControl
@@ -531,54 +665,48 @@ const Merch = () => {
                   color="#0b387c"
                 />
               </Flex>
-
-              <Flex gap="md" align="center">
-                <Text size="sm">Items per page:</Text>
-                <Select
-                  value={String(itemsPerPage)}
-                  onChange={(value) => {
-                    setItemsPerPage(Number(value));
-                    setPage(1);
-                  }}
-                  data={[
-                    { value: "5", label: "5" },
-                    { value: "10", label: "10" },
-                    { value: "20", label: "20" },
-                    { value: "50", label: "50" },
-                  ]}
-                  style={{ width: 100 }}
-                />
-              </Flex>
             </Flex>
 
-            {/* Table without extra props */}
-            <TableData loading={loading.includes("getdata")} tablekey="transaksi" withRowIndex data={paginatedListTransaksi ?? []} mapData={(e) => ({ ...e })} />
+            <TableData loading={loading.includes("getdata")} tablekey="transaksi" withRowIndex data={paginatedListTransaksi} mapData={(e) => ({ ...e })} />
 
-            {/* Pagination Controls */}
             {listTransaksi.length > 0 && (
               <Flex justify="space-between" align="center" mt="md">
                 <Text size="sm" c="dimmed">
                   Showing {(page - 1) * itemsPerPage + 1} to {Math.min(page * itemsPerPage, listTransaksi.length)} of {listTransaksi.length} entries
                 </Text>
-
                 <Pagination value={page} onChange={setPage} total={totalPages} radius="md" size="sm" withEdges />
               </Flex>
             )}
-          </Box>
-        </Tabs.Panel>
+          </div>
+        )}
 
-        <Tabs.Panel value="checkin">
-          <Box mt={20}>
-            <TableData loading={loading.includes("getdata")} tablekey="checkin" withRowIndex data={listCheckin ?? []} mapData={(e) => ({ ...e })} />
-          </Box>
-        </Tabs.Panel>
+        {/* Tab Content - Data Pemesan */}
+        {selectedTab === "pemesan" && (
+          <div className="pt-4">
+            <Box mt={20}>
+              <TableData loading={loading.includes("getdata")} tablekey="pemesan" withRowIndex data={listPemesan} mapData={(e) => ({ ...e })} />
+            </Box>
+          </div>
+        )}
 
-        <Tabs.Panel value="invitation">
-          <Box mt={20}>
-            <TableData loading={loading.includes("getdata")} tablekey="invitation" withRowIndex data={[]} mapData={(e: any) => ({ ...e })} />
-          </Box>
-        </Tabs.Panel>
-      </Tabs>
+        {/* Tab Content - Data Checkin */}
+        {selectedTab === "checkin" && (
+          <div className="pt-4">
+            <Box mt={20}>
+              <TableData loading={loading.includes("getdata")} tablekey="checkin" withRowIndex data={listCheckin} mapData={(e) => ({ ...e })} />
+            </Box>
+          </div>
+        )}
+
+        {/* Tab Content - Data Invitation */}
+        {selectedTab === "invitation" && (
+          <div className="pt-4">
+            <Box mt={20}>
+              <TableData loading={loading.includes("getdata")} tablekey="invitation" withRowIndex data={[]} mapData={(e: any) => ({ ...e })} />
+            </Box>
+          </div>
+        )}
+      </Card>
     </div>
   );
 };

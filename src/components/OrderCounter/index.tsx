@@ -390,7 +390,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
     //     </Flex>
     //   </Stack>
     // </Card>
-    <Card radius={10} withBorder p={20} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? "!pb-[150px]" : ""}`} bg={isSoldOut || isReady || isFinish ? "#fafafa" : undefined}>
+    <Card radius={10} withBorder p={30} className={`!border-primary-disabled/35 !overflow-visible relative ${seatmapOpen == index ? "!pb-[150px]" : ""}`} bg={isSoldOut || isReady || isFinish ? "#fafafa" : undefined}>
       {hasPromo && (
         <Flex className="special-banner">
           <Text className="side-text">Special</Text>

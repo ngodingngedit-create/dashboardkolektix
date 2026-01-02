@@ -328,8 +328,6 @@ import { AppMainContext } from "../_app";
 import AuthModal from "@/components/AuthModal";
 import ChatBox from "@/components/chat";
 import { notifications } from "@mantine/notifications";
-// const router = useRouter();
-// const { slug } = router.query;
 
 export type CartStorage = {
   variant_id: number;
@@ -338,10 +336,28 @@ export type CartStorage = {
   price: number;
 };
 
+// Interface untuk data review dari API
+interface ReviewData {
+  id: number;
+  user_id: number;
+  product_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
 const MerchandiseDetail = () => {
   const [activeTab, setActiveTab] = useState<"description" | "reviews">("description");
   const [isr, setIsr] = useState(false);
   const [mainData, setMainData] = useState<MerchListResponse>();
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const [count, setCount] = useState<number>(0);
   const [imageActive, setImage] = useState<number>(0);
   const [loading, setLoading] = useListState<string>();
@@ -360,6 +376,12 @@ const MerchandiseDetail = () => {
   useEffect(() => {
     getData();
   }, [isr]);
+
+  useEffect(() => {
+    if (slug && activeTab === "reviews") {
+      getReviews();
+    }
+  }, [slug, activeTab]);
 
   useEffect(() => {
     const stock = _.find(mainData?.product_varian, ["id", selectedVariant])?.stock_qty;
@@ -381,77 +403,58 @@ const MerchandiseDetail = () => {
       .catch(() => setLoading.filter((e) => e != "getdata"));
   };
 
-  // pastikan di top file ada: import Cookies from "js-cookie";
+  const getReviews = () => {
+    if (!slug) return;
 
-  // const getData = async () => {
-  //   // tambahkan loading flag (sama pola di kode lain)
-  //   setLoading.append("getdata");
+    setLoadingReviews(true);
+    Get(`product-reviews/${slug}`, {})
+      .then((res: any) => {
+        if (res.data && Array.isArray(res.data)) {
+          setReviews(res.data);
+        } else {
+          setReviews([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching reviews:", err);
+        setReviews([]);
+      })
+      .finally(() => {
+        setLoadingReviews(false);
+      });
+  };
 
-  //   try {
-  //     if (!slug) {
-  //       console.warn("getData aborted: slug is empty");
-  //       return;
-  //     }
+  // Fungsi untuk mendapatkan warna avatar berdasarkan nama
+  const getAvatarColor = (name: string) => {
+    const colors = ["bg-blue-500", "bg-pink-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-red-500", "bg-indigo-500", "bg-teal-500"];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
 
-  //     const url = `${process.env.NEXT_PUBLIC_URL?.replace(/\/$/, "")}/product/${encodeURIComponent(slug)}`;
-  //     console.log("Fetching product detail:", url);
+  // Fungsi untuk format tanggal
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  //     // ambil token dari env dulu, fallback ke cookie/localStorage
-  //     const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
-  //     const cookieToken = Cookies.get("token") || (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
-  //     const token = envToken || cookieToken || "";
-
-  //     const headers: Record<string, string> = {
-  //       Accept: "application/json",
-  //     };
-  //     if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  //     const res = await fetch(url, {
-  //       method: "GET",
-  //       headers,
-  //       // jika backend pakai cookie-based auth, uncomment:
-  //       // credentials: "include",
-  //     } as RequestInit);
-
-  //     if (!res.ok) {
-  //       // baca pesan error kalau ada
-  //       let errText = `HTTP error! status: ${res.status}`;
-  //       try {
-  //         const errJson = await res.json();
-  //         errText += ` - ${errJson?.message ?? JSON.stringify(errJson)}`;
-  //       } catch {
-  //         // ignore JSON parse error
-  //       }
-  //       throw new Error(errText);
-  //     }
-
-  //     const json = await res.json();
-  //     console.log("Product API response:", json);
-
-  //     const payload = json?.data ?? json; // jika struktur berbeda, ambil fallback
-
-  //     // set main data
-  //     setMainData(payload);
-
-  //     // logic variant / qty sama seperti aslinya
-  //     const hasVariants = (payload?.product_varian?.length ?? 0) > 0;
-  //     if (hasVariants) {
-  //       const firstVar = payload.product_varian[0];
-  //       setSelectedVariant(firstVar?.id);
-  //       // set count: kalau stock > 1 -> 1, else 0
-  //       setCount((firstVar?.stock_qty ?? 0) > 1 ? 1 : 0);
-  //     } else {
-  //       setCount((payload?.qty ?? 0) > 1 ? 1 : 0);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error fetching product detail:", err);
-  //     // optional: pakai notifications jika tersedia di file ini
-  //     // notifications.show({ message: "Gagal memuat detail produk", color: "red" });
-  //   } finally {
-  //     // hilangkan loading flag
-  //     setLoading.filter((e) => e !== "getdata");
-  //   }
-  // };
+    if (diffDays === 0) {
+      return "Hari ini";
+    } else if (diffDays === 1) {
+      return "Kemarin";
+    } else if (diffDays < 7) {
+      return `${diffDays} hari yang lalu`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} minggu yang lalu`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} bulan yang lalu`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `${years} tahun yang lalu`;
+    }
+  };
 
   const handleAddCart = () => {
     setLoading.append("addcart");
@@ -512,8 +515,8 @@ const MerchandiseDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
+        {/* Gambar produk */}
         <div className="grid grid-cols-2 gap-2 auto-rows-min">
-          {/* --- GAMBAR UTAMA --- */}
           <div className="col-span-2 md:col-span-4">
             {mainData.product_image.length === 0 ? (
               <AspectRatio ratio={1}>
@@ -528,7 +531,7 @@ const MerchandiseDetail = () => {
             )}
           </div>
 
-          {/* --- MOBILE THUMBNAIL (SCROLL) --- */}
+          {/* Mobile thumbnail */}
           <div className="col-span-2 md:hidden w-full overflow-x-auto mt-1">
             <div className="flex gap-2 flex-nowrap">
               {mainData.product_image.map((e, i) => (
@@ -548,7 +551,7 @@ const MerchandiseDetail = () => {
             </div>
           </div>
 
-          {/* --- DESKTOP THUMBNAIL (SCROLL HORIZONTAL) --- */}
+          {/* Desktop thumbnail */}
           <div className="hidden md:block col-span-2 w-full overflow-x-auto mt-1">
             <div className="flex gap-2 flex-nowrap pb-1">
               {mainData.product_image.map((e, i) => (
@@ -563,7 +566,7 @@ const MerchandiseDetail = () => {
           </div>
         </div>
 
-        {/* ==== Detail Produk ==== */}
+        {/* Detail produk */}
         <div className="flex flex-col gap-2 divide-y divide-primary-light-200">
           <h3 className="text-lg md:text-xl">{mainData.product_name}</h3>
           <div className="flex gap-2 items-center !border-y-0">
@@ -571,11 +574,10 @@ const MerchandiseDetail = () => {
             <p>&bull;</p>
             <p className="text-xs md:text-sm">
               <FontAwesomeIcon icon={faStar} className="text-warning-400" />
-              <span className="ml-1">{mainData.average_star}</span>
+              <span className="ml-1">{mainData.average_star || 0}</span>
             </p>
-            <p className="ml-auto text-xs md:text-sm">Review: {mainData.total_review}</p>
+            <p className="ml-auto text-xs md:text-sm">Review: {mainData.total_review || 0}</p>
           </div>
-          {/* Harga + icon */}
           <div className="!border-t-0 flex justify-between items-center">
             <h3 className="text-xl">
               <NumberFormatter value={parseInt(selectedVariant ? _.find(mainData.product_varian, ["id", selectedVariant])?.price ?? "0" : mainData.price)} />
@@ -589,19 +591,14 @@ const MerchandiseDetail = () => {
               </ActionIcon>
             </Flex>
           </div>
-          {/* Creator */}
           <div className="flex flex-row justify-start items-center pt-3 pb-2">
             <CreatorTitle image={mainData.creator.image_url} creator={mainData.creator.name} location="Jakarta" />
-            <div className="flex gap-1 px-9">{/* <p>Review: {mainData.total_review}</p> */}</div>
           </div>
-          {/* Varian */}
           {mainData?.product_varian?.length > 0 && (
             <div className="pt-3 pb-1">
               <p className="font-semibold">
                 Pilih {mainData.product_varian.map((e) => e?.product_varian_category?.varian_name)[0]}: <span className="text-grey font-normal">{_.find(mainData.product_varian, ["id", selectedVariant])?.varian_name}</span>
               </p>
-
-              {/* Container untuk scroll horizontal */}
               <div className="overflow-x-auto my-2">
                 <div className="flex gap-2 pb-2 min-w-min">
                   {mainData.product_varian.map((e, i) => (
@@ -621,7 +618,6 @@ const MerchandiseDetail = () => {
           )}
           <div className="py-3">
             {/* Tab Navigation */}
-            {/* Tab Navigation */}
             <div className="flex border-b border-gray-200 mb-4">
               <button
                 className={`py-2 md:py-2 px-3 md:px-4 font-medium text-sm md:text-sm ${activeTab === "description" ? "text-primary border-b-2 border-primary" : "text-gray-500 hover:text-gray-700"}`}
@@ -633,7 +629,7 @@ const MerchandiseDetail = () => {
                 className={`py-2 md:py-2 px-3 md:px-4 font-medium text-sm md:text-sm ${activeTab === "reviews" ? "text-primary border-b-2 border-primary" : "text-gray-500 hover:text-gray-700"}`}
                 onClick={() => setActiveTab("reviews")}
               >
-                Ulasan
+                Ulasan ({reviews.length})
               </button>
             </div>
 
@@ -644,21 +640,55 @@ const MerchandiseDetail = () => {
                   <div className="prose max-w-none text-gray-700 text-sm md:text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: mainData.description }} />
                 </div>
               ) : (
-                <div className="text-center py-6 md:py-8">
-                  <div className="mb-3 md:mb-4">
-                    <svg className="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-base md:text-base font-semibold text-gray-600 mb-1 md:mb-2">Belum Ada Ulasan</h3>
-                  <p className="text-gray-500 text-sm md:text-sm">Jadilah yang pertama memberikan ulasan untuk produk ini</p>
+                <div className="space-y-4">
+                  {loadingReviews ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                      <p className="mt-4 text-gray-500">Memuat ulasan...</p>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-8 border border-gray-200 rounded-lg">
+                      <Icon icon="mdi:message-text-outline" className="text-gray-300 text-4xl mx-auto mb-3" />
+                      <p className="text-gray-500">Belum ada ulasan untuk produk ini</p>
+                      <p className="text-sm text-gray-400 mt-1">Jadilah yang pertama memberikan ulasan</p>
+                    </div>
+                  ) : (
+                    // Review cards dari API
+                    reviews.map((review) => {
+                      const userName = review.user?.name || "Pengguna";
+                      const userInitial = userName.charAt(0).toUpperCase();
+                      const avatarColor = getAvatarColor(userName);
+
+                      return (
+                        <div key={review.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${avatarColor}`}>{userInitial}</div>
+                              <div className="ml-3">
+                                <div className="font-medium text-gray-900">{userName}</div>
+                                <div className="flex items-center mt-1">
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <FontAwesomeIcon key={i} icon={faStar} className={`text-sm ${i < review.rating ? "text-warning-400" : "text-gray-300"}`} />
+                                    ))}
+                                  </div>
+                                  <span className="text-xs text-gray-500 ml-2">{formatDate(review.created_at)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {review.comment && <p className="mt-3 text-gray-700 text-sm leading-relaxed">{review.comment}</p>}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* ==== Jumlah + Tombol ==== */}
+        {/* Jumlah + Tombol */}
         <div className="border border-primary-light-200 rounded-lg p-3 h-fit flex flex-col gap-2 shadow-sm">
           <div className="flex items-center justify-between">
             <h5 className="text-lg md:text-xl">Jumlah</h5>
@@ -678,7 +708,6 @@ const MerchandiseDetail = () => {
             </div>
           </div>
 
-          {/* Desktop jumlah */}
           <div className="hidden md:flex flex-col md:flex-row items-center gap-4">
             <div className="flex items-center">
               <div className="border border-primary-light-200 rounded-md py-2 px-5 flex gap-4">
@@ -706,73 +735,33 @@ const MerchandiseDetail = () => {
             </h5>
           </div>
 
-          {/* <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} mt={5} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />}>
-            Tambah Keranjang
-          </Button>
-
-          <Button onClick={handleDirectOrder} disabled={count <= 0} mt={5} size="md" radius="xl" color="#0B387C" variant="outline">
-            Beli Sekarang
-          </Button> */}
-
-          {/* <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ flex: 1 }}>
-              Tambah Keranjang
-            </Button>
-
-            <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ flex: 1 }}>
-              Beli Sekarang
-            </Button>
-          </div> */}
-
-          {/* TOMBOL TAMBAH KERANJANG (tetap seperti itu aja) */}
-          {/* <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-            <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ flex: 1 }}>
-              Tambah Keranjang
-            </Button>
-          </div> */}
-
-          {/* ROW BARU */}
-          {/* <div className="action-row"> */}
-          {/* Chat (1/4 mobile) */}
-          {/* <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" /> */}
-
-          {/* Beli Sekarang (3/4 mobile) */}
-          {/* <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" className="btn-buy">
-              Beli Sekarang
-            </Button>
-          </div> */}
-          {/* --- Tambah Keranjang (desktop & mobile selalu 1 row sendiri) --- */}
           <div className="mt-5">
             <Button onClick={handleAddCart} disabled={count <= 0} loading={loading.includes("addcart")} size="md" radius="xl" color="#0B387C" leftSection={<Icon icon="uiw:plus" />} style={{ width: "100%" }}>
               Tambah Keranjang
             </Button>
           </div>
 
-          {/* --- DESKTOP: Beli Sekarang (1 row) --- */}
           <div className="hidden md:block mt-3">
             <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
               Beli Sekarang
             </Button>
           </div>
 
-          {/* --- DESKTOP: Chat 1/2 kanan, kiri kosong --- */}
           <div className="hidden md:flex mt-3 gap-3">
-            <div className="w-3/5"></div> {/* kosong */}
+            <div className="w-3/5"></div>
             <div className="w-2/5 flex justify-end">
-              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" style={{ width: "100%" }}>
+              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} style={{ width: "100%" }}>
                 Chat
               </Button>
             </div>
           </div>
 
-          {/* --- MOBILE: Beli Sekarang + Chat satu row (chat 1/4, beli 3/4) --- */}
           <div className="flex md:hidden mt-3 gap-3">
             <div className="w-2/5">
-              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} size="md" color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} className="btn-chat" style={{ width: "100%" }}>
+              <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} size="md" color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} style={{ width: "100%" }}>
                 Chat
               </Button>
             </div>
-
             <div className="w-3/5">
               <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
                 Beli Sekarang

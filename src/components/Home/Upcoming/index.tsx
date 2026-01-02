@@ -17,7 +17,7 @@ const Upcoming = ({ className, data, loading }: UpcomingProps) => {
   // console.log(data);
   const currentDate = new Date();
 
-  const upcomingEvents = data.filter((event) => new Date(event.end_date) > currentDate);
+  const upcomingEvents = data.filter((event) => event.upcoming === 1 && new Date(event.end_date) > currentDate);
 
   return (
     <div className="mb-12 md:mx-auto md:max-w-7xl md:px-10 md:mt-[15px]">

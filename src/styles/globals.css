@@ -12,10 +12,10 @@
   top: -1px;
   left: 50%;
   transform: translateX(-50%);
-  width: 35%;
+  width: 75%;
   background: #b70303;
   color: white;
-  padding: 4px 10px;
+  padding: 2px 10px;
   border-radius: 0 0 999px 999px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -36,7 +36,7 @@
 /* PAY DAY pill */
 .special-banner .payday-pill {
   background: white;
-  padding: 4px 6px;
+  padding: 0px 8px;
   border-radius: 999px;
 }
 

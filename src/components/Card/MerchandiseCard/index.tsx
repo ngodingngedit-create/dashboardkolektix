@@ -287,7 +287,7 @@ const MerchandiseCard = ({ name, price, sale, creator, creatorid, creatorImage, 
           className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-white/80 hover:bg-white rounded-full transition-all duration-200 z-10"
           aria-label={bookmark ? "Hapus bookmark" : "Tambahkan bookmark"}
         >
-          <FontAwesomeIcon icon={bookmark ? bookmarkSolid : bookmarkRegular} className={bookmark ? "text-primary-500" : "text-gray-600"} size="sm" />
+          <FontAwesomeIcon icon={bookmark ? bookmarkSolid : bookmarkRegular} className={bookmark ? "text-primary-500" : "text-gray-600"} size="lg" />
         </button>
 
         {/* Tombol Beli (versi asli) - muncul saat hover */}

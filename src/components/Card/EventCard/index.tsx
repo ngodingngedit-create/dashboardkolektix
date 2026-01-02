@@ -68,14 +68,8 @@ const EventCard = ({ id, maxWidth, slug, title, date, location, img, description
     }
 
     // Format untuk is_promo = 1
-    if (start.year() === end.year()) {
-      if (start.month() === end.month()) {
-        return `${start.format("D")}-${end.format("D MMM YYYY")}`;
-      }
-      return `${start.format("D MMM")} - ${end.format("D MMM YYYY")}`;
-    }
-
-    return `${start.format("D MMM YYYY")} - ${end.format("D MMM YYYY")}`;
+    // Selalu tampilkan: 16 Dec - 14 Jan 2026
+    return `${start.format("D MMM")} - ${end.format("D MMM YYYY")}`;
   };
 
   const isEventEnded = currentDate > new Date(end);
