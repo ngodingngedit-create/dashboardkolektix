@@ -60,7 +60,6 @@ interface EventData {
   total_pendapatan: number;
 }
 
-// Tambahkan interface ini di bagian atas file, setelah interface EventData
 interface WithdrawHistory {
   id: number;
   event_id: number | null;
@@ -94,7 +93,11 @@ interface WithdrawHistory {
 }
 
 interface InvitationDataItem {
+  id: string | number;
   invoice_no: string;
+  has_user?: {
+    email: string;
+  };
   // Add other properties as needed
 }
 
@@ -148,7 +151,7 @@ const MyEventDetail = () => {
   const [selectedInvitation, setSelectedInvitation] = useState(null);
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
   const [invitationData, setInvitationData] = useState<any[]>([]);
-  const [invitation, setInvitation] = useState<any[]>([]); // Consider renaming to invitation to avoid confusion
+  const [invitation, setInvitation] = useState<any[]>([]);
   const [invitationFilter, setInvitationFilter] = useState("");
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
@@ -156,9 +159,11 @@ const MyEventDetail = () => {
   const [transactionList, setTransactionList] = useState<any[]>([]);
   const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
   const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  const [sendingEmails, setSendingEmails] = useState<Record<string, boolean>>({});
   const params = useParams();
 
   const remainingBalance = (eventData?.total_price_sell || 0) - withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
+
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
       url: "invitation-category",
@@ -189,14 +194,6 @@ const MyEventDetail = () => {
     (window as any).withdrawList = withdrawHistoryList;
   }, [withdrawHistoryList]);
 
-  const totalAmount = console.log("=== DEBUG WITHDRAW CALCULATION ===");
-  console.log("Total Price Sell:", eventData?.total_price_sell);
-  console.log("Total Admin Fee:", eventData?.total_admin_fee);
-  console.log("Total Withdrawn:", totalWithdrawn);
-  console.log("Remaining Balance:", remainingBalance);
-  console.log("Withdraw History List:", withdrawHistoryList);
-  console.log("===================================");
-
   const openAddModal = () => {
     setIsAddModalOpen(true);
   };
@@ -217,13 +214,13 @@ const MyEventDetail = () => {
 
   const openDetailModal = (item: any, ticket: any) => {
     setSelectedItem(item);
-    setSelectedTicket(ticket); // Set the selected item details
-    setIsDetailModalOpen(true); // Open the modal
+    setSelectedTicket(ticket);
+    setIsDetailModalOpen(true);
   };
 
   const closeDetailModal = () => {
-    setIsDetailModalOpen(false); // Close the modal
-    setSelectedItem(null); // Clear selected item
+    setIsDetailModalOpen(false);
+    setSelectedItem(null);
   };
 
   const openInvitationModal = (item: any) => {
@@ -259,6 +256,7 @@ const MyEventDetail = () => {
         setLoading(false);
       });
   };
+
   const getReportData = async (id: string | number) => {
     try {
       const response = await axios.get(`${config.wsUrl}event/show-report/${id}`);
@@ -275,14 +273,12 @@ const MyEventDetail = () => {
     }
   };
 
-  // Tambahkan ini di dekat fungsi getReportData / getInvitationEventData
-  // ---- Tambahkan/replace ini di dalam komponen MyEventDetail ----
   const getTransactions = async () => {
     try {
       const response = await axios.get(`${config.wsUrl}transaction`);
       const payload = Array.isArray(response.data) ? response.data : response.data.data ?? [];
 
-      setTransactionList(payload); // <-- simpan di sini
+      setTransactionList(payload);
     } catch (err) {
       console.error("Error fetching transactions", err);
       setTransactionList([]);
@@ -294,19 +290,50 @@ const MyEventDetail = () => {
     return trx?.transaction_status_id ?? null;
   };
 
-  const sendETicket = async (invoiceNo: any, email: any) => {
+  const sendETicket = async (invoiceNo: string, email: string, itemId: string | number) => {
+    // Pastikan itemId adalah string untuk key yang konsisten
+    const itemIdStr = String(itemId);
+
+    // Set loading untuk item spesifik
+    setSendingEmails((prev) => ({
+      ...prev,
+      [itemIdStr]: true,
+    }));
+
     try {
       const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
-        params: {
-          email: email, // Pass the email here as a query parameter
-        },
+        params: { email },
       });
+
       console.log("E-ticket sent successfully:", response.data);
-      setLoading(false);
-      toast.success(`E-ticket sent successfully to ${email}`); // Use toast for success notification
-    } catch (error) {
+
+      // Success notification
+      notifications.show({
+        title: "Berhasil!",
+        message: `E-ticket berhasil dikirim ke ${email}`,
+        color: "green",
+        position: "top-right",
+      });
+    } catch (error: any) {
       console.error("Error sending e-ticket:", error);
-      toast.error("Failed to send e-ticket."); // Use toast for error notification
+
+      // Error notification
+      const errorMessage = error.response?.data?.message || "Gagal mengirim e-ticket. Silakan coba lagi.";
+      notifications.show({
+        title: "Gagal!",
+        message: errorMessage,
+        color: "red",
+        position: "top-right",
+      });
+    } finally {
+      // Reset loading untuk item spesifik setelah delay kecil
+      // untuk memastikan animasi spinner terlihat
+      setTimeout(() => {
+        setSendingEmails((prev) => ({
+          ...prev,
+          [itemIdStr]: false,
+        }));
+      }, 300);
     }
   };
 
@@ -314,19 +341,11 @@ const MyEventDetail = () => {
     window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
   };
 
-  // useEffect(() => {
-  //   if (slug) {
-  //     getData();
-  //     getInvitationCategory();
-  //     getWithdrawHistory();
-  //   }
-  // }, [slug, user?.id]);
-
   useEffect(() => {
     if (slug) {
       console.log("Slug is available:", slug);
       getData();
-      getInvitationCategory;
+      getInvitationCategory();
     } else {
       console.warn("Slug is undefined or missing.");
     }
@@ -343,12 +362,15 @@ const MyEventDetail = () => {
       return [];
     }
 
+    const lowerFilterValue = filterValue.toLowerCase();
+
     return invitationData.filter((item) => {
-      const matchesInvoice = item.invoice_no.toLowerCase().includes(filterValue.toLowerCase());
-      const matchesStatus = item.transaction_status_id === 2; // Status filter
+      const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
+      const matchesEmail = item.has_user?.email?.toLowerCase().includes(lowerFilterValue) || false;
+      const matchesStatus = item.transaction_status_id === 2;
       const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
 
-      return matchesInvoice && matchesStatus && matchesType;
+      return (matchesInvoice || matchesEmail) && matchesStatus && matchesType;
     });
   }, [invitationData, filterValue, transactionFilter]);
 
@@ -373,15 +395,15 @@ const MyEventDetail = () => {
   const getStatusClass = (statusId: any) => {
     switch (statusId) {
       case 1:
-        return "bg-warning"; // For Pending
+        return "bg-warning";
       case 2:
-        return "bg-success"; // For Verified / Paid
+        return "bg-success";
       case 3:
-        return "bg-danger"; // For Failed
+        return "bg-danger";
       case 4:
-        return "bg-secondary"; // For Expired
+        return "bg-secondary";
       default:
-        return ""; // Default or unknown status
+        return "";
     }
   };
 
@@ -423,15 +445,15 @@ const MyEventDetail = () => {
   };
 
   const getInvitationEventData = async (id: string | number) => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const response = await axios.get(`${config.wsUrl}invitations/event/${id}`);
-      console.log("Response from API:", response.data); // Print API response
-      setInvitation(response.data); // Set invitation data
+      console.log("Response from API:", response.data);
+      setInvitation(response.data);
     } catch (err) {
       console.error("Error fetching event invitation data:", err);
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
 
@@ -453,7 +475,7 @@ const MyEventDetail = () => {
 
   const filteredEventItems = useMemo(() => {
     if (!Array.isArray(invitation)) {
-      return []; // If it's not an array, return an empty array
+      return [];
     }
 
     return invitation.filter((item) => item.invitation_title.toLowerCase().includes(invitationFilter.toLowerCase()));
@@ -480,15 +502,15 @@ const MyEventDetail = () => {
   const getEventStatusClass = (statusId: any) => {
     switch (statusId) {
       case 1:
-        return "bg-warning"; // Pending
+        return "bg-warning";
       case 2:
-        return "bg-success"; // Verified / Paid
+        return "bg-success";
       case 3:
-        return "bg-danger"; // Failed
+        return "bg-danger";
       case 4:
-        return "bg-secondary"; // Expired
+        return "bg-secondary";
       default:
-        return ""; // Default
+        return "";
     }
   };
 
@@ -542,17 +564,12 @@ const MyEventDetail = () => {
   const onEditTicket = (data: EventTicket, idx: number) => {
     console.log("Editing ticket:", data, idx);
     setIdxTicket(idx);
-    setEditTicketData(data); // Ubah dari setEditTicket
-    setIsEditTicketModalOpen(true); // Ubah dari setShowEditTicket
+    setEditTicketData(data);
+    setIsEditTicketModalOpen(true);
   };
 
   const onAddTicket = () => {
-    // setEditTicket({
-    //   ...defaultForm,
-    // });
     router.replace(`/edit-event/${data?.slug}?addTiket=true`);
-    //setIdxTicket(undefined);
-    //showAddTicket(true);
   };
 
   const deleteTicket = (idx: number) => {
@@ -560,15 +577,6 @@ const MyEventDetail = () => {
     arr.splice(idx, 1);
     setTicket(arr);
   };
-
-  useEffect(() => {
-    if (slug) {
-      console.log("Slug is available:", slug);
-      getData();
-    } else {
-      console.warn("Slug is undefined or missing.");
-    }
-  }, [slug]);
 
   let list = useAsyncList({
     async load({ signal }) {
@@ -618,7 +626,6 @@ const MyEventDetail = () => {
   const downloadLaporan = () => {
     if (!eventData) return;
 
-    // Data yang akan dimasukkan ke dalam file Excel
     const dataLaporan = [
       ["Ringkasan Penjualan Tiket"],
       ["Total View", eventData?.total_views || 0],
@@ -636,12 +643,10 @@ const MyEventDetail = () => {
       ["Grand Total", `Rp${eventData?.total_price_sell && eventData?.total_admin_fee ? (eventData.total_price_sell - eventData.total_admin_fee).toLocaleString("id-ID") : 0}`],
     ];
 
-    // Membuat worksheet dan workbook
     const worksheet = XLSX.utils.aoa_to_sheet(dataLaporan);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Penjualan");
 
-    // Mengunduh file Excel
     XLSX.writeFile(workbook, `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`);
   };
 
@@ -694,20 +699,9 @@ const MyEventDetail = () => {
             <div className="text-center w-full my-4">
               <Button label="Check-in" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
             </div>
-            {/* <div className="text-center w-full my-4">
-              <Button label="Check-out" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkout/${data.slug}`)} />
-            </div> */}
             <div className="text-center w-full my-4">
               <Button label="Penjualan" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
             </div>
-            {/* <div className='text-center w-full my-4'>
-              <Button
-                label='Penjualan'
-                color='primary'
-                onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)}
-                className='w-full'
-              />
-          </div> */}
           </div>
 
           <div className="w-full flex flex-col gap-4 text-dark px-4 md:px-6 lg:px-8">
@@ -719,7 +713,6 @@ const MyEventDetail = () => {
                       <p className="text-grey">Total Pendapatan Event</p>
                       <h6>
                         Rp.
-                        {/* {((eventData?.total_pendapatan || 0) - (eventData?.total_withdraw || 0)).toLocaleString("id-ID")} */}
                         {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
                       </h6>
                     </div>
@@ -762,7 +755,6 @@ const MyEventDetail = () => {
                     </p>
                   </div>
 
-                  {/* Total Tiket Terjual */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Transaksi</p>
@@ -771,7 +763,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
                   </div>
 
-                  {/* Total Transaksi Gagal */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Transaksi Gagal</p>
@@ -780,7 +771,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
                   </div>
 
-                  {/* Total Transaksi Pending */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Transaksi Pending</p>
@@ -789,7 +779,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
                   </div>
 
-                  {/* Total Tiket Terjual */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Ticket Terjual</p>
@@ -798,7 +787,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
                   </div>
 
-                  {/* Total Withdraw */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Withdraw</p>
@@ -807,7 +795,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_withdraw || 0}</p>
                   </div>
 
-                  {/* Total View */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total View</p>
@@ -816,7 +803,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">{eventData?.total_views || 0}</p>
                   </div>
 
-                  {/* Total Bookmarks */}
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Total Bookmarks</p>
@@ -825,35 +811,6 @@ const MyEventDetail = () => {
                     <p className="font-semibold">0</p>
                   </div>
 
-                  {/* Total Penjualan */}
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">
-                      Rp
-                      {(eventData?.total_price_sell || 0).toLocaleString("id-ID")}
-                    </p>
-                  </div> */}
-
-                  {/* Data Event Lainnya */}
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Admin Fee</p>
-                      <Icon
-                        icon="hugeicons:money-04"
-                        className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`}
-                      />
-                    </Flex>
-                    <p className="font-semibold">
-                      Rp{" "}
-                      {(eventData?.total_admin_fee || 0).toLocaleString(
-                        "id-ID"
-                      )}
-                    </p>
-                  </div> */}
-
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
                       <p className="text-grey">Jenis Tiket</p>
@@ -861,44 +818,10 @@ const MyEventDetail = () => {
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket || 0}</p>
                   </div>
-
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Pembelian</p>
-                      <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">{eventData?.total_buy || 0}</p>
-                  </div> */}
-
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Transaksi Online</p>
-                      <Icon icon="icon-park-outline:web-page" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">{eventData?.total_online || 0}</p>
-                  </div> */}
-
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Offline</p>
-                      <Icon icon="hugeicons:cashier" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">{eventData?.total_offline || 0}</p>
-                  </div> */}
-
-                  {/* <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
-                    <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Pembayaran Belum Lunas</p>
-                      <Icon icon="hugeicons:money-not-found-03" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
-                    </Flex>
-                    <p className="font-semibold">{eventData?.total_unpaid || 0}</p>
-                  </div> */}
                 </div>
               </AccordionItem>
             </Accordion>
-            {/* <div className="mx-auto">
-              <Bar data={chartData} />
-            </div> */}
+
             <div className="border border-primary-light-200 rounded-lg shadow-sm">
               <Tabs className="flex flex-col" variant="underlined">
                 <Tab title="Detail" className="px-2">
@@ -927,7 +850,6 @@ const MyEventDetail = () => {
                 <Tab title="Tiket">
                   <div className="flex justify-between items-center px-3 py-2">
                     <h6 className="text-lg font-semibold">Tiket</h6>
-                    {/* <Button label="Tambah Tiket" color="primary" onClick={onAddTicket} className="w-full md:w-auto" /> */}
                   </div>
                   <div className="px-3">
                     {ticket.length > 0 &&
@@ -942,7 +864,6 @@ const MyEventDetail = () => {
                             description={el.description}
                             name={el.name}
                             onEdit={() => onEditTicket(el, index)}
-                            // onDelete={() => deleteTicket(index)}
                           />
                         </div>
                       ))}
@@ -953,7 +874,7 @@ const MyEventDetail = () => {
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invoice" value={filterValue} onChange={onSearchChange} />
+                          <Input type="text" placeholder="Search by Invoice or Email" value={filterValue} onChange={onSearchChange} />
                           <select onChange={onRowsPerPageChange} value={rowsPerPage} className="border border-light-grey p-2 rounded-md w-full md:w-auto">
                             <option value={5}>5</option>
                             <option value={10}>10</option>
@@ -991,12 +912,12 @@ const MyEventDetail = () => {
                             <TableColumn className="font-bold text-sm">Type</TableColumn>
                             <TableColumn className="font-bold text-sm">Aksi</TableColumn>
                           </TableHeader>
-                          <TableBody items={filteredItems}>
+                          <TableBody items={items}>
                             {(item) => (
                               <TableRow key={item?.id}>
                                 <TableCell className="border-b-1 text-sm">
                                   {_.indexOf(
-                                    filteredItems.map((e) => e?.id),
+                                    items.map((e) => e?.id),
                                     item?.id
                                   ) + 1}
                                 </TableCell>
@@ -1019,30 +940,39 @@ const MyEventDetail = () => {
                                 </TableCell>
 
                                 <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-                                <TableCell className="border-b-1">
+                                <TableCell className="border-b-1 flex items-center">
                                   <Tooltip label="Kirim Ulang">
-                                    <FontAwesomeIcon
-                                      icon={faPaperPlane}
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2"
+                                    <button
+                                      disabled={sendingEmails[String(item?.id)]}
+                                      className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
                                       onClick={() => {
                                         if (item?.has_user && item.has_user.email) {
-                                          sendETicket(item.invoice_no, item.has_user.email);
+                                          sendETicket(item.invoice_no, item.has_user.email, item.id);
                                         } else {
-                                          toast.error("Email tidak tersedia untuk pengguna ini.");
+                                          notifications.show({
+                                            title: "Error",
+                                            message: "Email tidak tersedia untuk pengguna ini.",
+                                            color: "red",
+                                            position: "top-right",
+                                          });
                                         }
                                       }}
-                                    />
+                                    >
+                                      {sendingEmails[String(item?.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+                                    </button>
                                   </Tooltip>
                                   <Tooltip label="Lihat Detail">
-                                    <FontAwesomeIcon
-                                      icon={faEye}
-                                      className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2"
-                                      onClick={() => {
-                                        console.log("row item:", item);
-                                        console.log("local ticket var:", ticket);
-                                        openDetailModal(item, ticket);
-                                      }}
-                                    />
+                                    <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
+                                      <FontAwesomeIcon
+                                        icon={faEye}
+                                        className="text-white text-sm"
+                                        onClick={() => {
+                                          console.log("row item:", item);
+                                          console.log("local ticket var:", ticket);
+                                          openDetailModal(item, ticket);
+                                        }}
+                                      />
+                                    </button>
                                   </Tooltip>
                                 </TableCell>
                               </TableRow>
@@ -1066,11 +996,13 @@ const MyEventDetail = () => {
                             <option value={20}>20</option>
                           </select>
                           <Tooltip label="Tambah Invitation Baru">
-                            <FontAwesomeIcon className="ml-2 cursor-pointer w-10 bg-primary-base text-white rounded-md p-2" onClick={openAddModal} icon={faPlus} />
+                            <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
+                              <FontAwesomeIcon icon={faPlus} className="text-white text-sm" onClick={openAddModal} />
+                            </button>
                           </Tooltip>
                         </div>
                         {loading ? (
-                          <p>Loading...</p> // Show loading indicator
+                          <p>Loading...</p>
                         ) : (
                           <Table aria-label="Event Invitation Table" bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
                             <TableHeader>
@@ -1078,9 +1010,7 @@ const MyEventDetail = () => {
                               <TableColumn className="font-bold text-md">Judul Undangan</TableColumn>
                               <TableColumn className="font-bold text-md">Type</TableColumn>
                               <TableColumn className="font-bold text-md">Qty</TableColumn>
-                              {/* <TableColumn className='font-bold text-md'>Deskripsi</TableColumn> */}
                               <TableColumn className="font-bold text-md">Status</TableColumn>
-                              {/*<TableColumn className='font-bold text-md'>Waktu Dikirim</TableColumn> */}
                               <TableColumn className="font-bold text-md">Aksi</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
@@ -1101,30 +1031,27 @@ const MyEventDetail = () => {
                                       return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
                                     })()}
                                   </TableCell>
-                                  {/* <TableCell className='border-b-1'>{item?.invitation_description}</TableCell>
-                                  <TableCell className='border-b-1'>{item?.created_at && new Date(item.created_at).toString()}</TableCell> */}
-                                  <TableCell className="border-b-1">
+                                  <TableCell className="border-b-1 flex items-center">
                                     <Tooltip label="Kirim Ulang">
-                                      <FontAwesomeIcon
-                                        icon={faPaperPlane}
-                                        className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2"
-                                        onClick={() => {
-                                          if (item?.has_user && item.has_user.email) {
-                                            sendEventETicket(item.invoice_no, item.has_user.email);
-                                          } else {
-                                            toast.error("Email tidak tersedia untuk pengguna ini.");
-                                          }
-                                        }}
-                                      />
+                                      <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
+                                        <FontAwesomeIcon
+                                          icon={faPaperPlane}
+                                          className="text-white text-sm"
+                                          onClick={() => {
+                                            if (item?.has_user && item.has_user.email) {
+                                              sendEventETicket(item.invoice_no, item.has_user.email);
+                                            } else {
+                                              toast.error("Email tidak tersedia untuk pengguna ini.");
+                                            }
+                                          }}
+                                        />
+                                      </button>
                                     </Tooltip>
                                     <Tooltip label="Lihat Detail">
-                                      <FontAwesomeIcon icon={faEye} className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" onClick={() => openInvitationModal(item)} />
+                                      <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
+                                        <FontAwesomeIcon icon={faEye} className="text-white text-sm" onClick={() => openInvitationModal(item)} />
+                                      </button>
                                     </Tooltip>
-                                    {/* <FontAwesomeIcon 
-                                      icon={faPencil} 
-                                      className="ml-2 cursor-pointer bg-primary-base w-10 text-white rounded-md p-2" 
-                                      onClick={() => openEditModal(item)}
-                                    /> */}
                                   </TableCell>
                                 </TableRow>
                               )}
@@ -1192,35 +1119,15 @@ const MyEventDetail = () => {
         setIsOpen={setIsModalOpen}
         onSubmit={() => {
           setUpdateWithdrawHistory(updateWithdrawHistory + 1);
-          getWithdrawHistory(); // Tambahkan ini untuk refresh data withdraw
+          getWithdrawHistory();
           console.log("withdraw submitted");
         }}
         eventSlug={params.slug}
       />
       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
-        <ModalCreateTicket
-          isOpen={addTicket}
-          setIsOpen={showAddTicket}
-          ticket={ticket}
-          setTicket={setTicket}
-          data={editTicketData} // Ubah dari editTicket
-          setIdx={setIdxTicket}
-          idx={idxTicket}
-          eventId={data.id}
-          endDate={data.end_date}
-        />
-        <ModalEditTicket
-          isOpen={isEditTicketModalOpen} // Ubah dari editTicket (yang sebelumnya salah)
-          setIsOpen={setIsEditTicketModalOpen} // Ubah dari setShowEditTicket
-          ticket={ticket}
-          setTicket={setTicket}
-          data={editTicketData} // Ubah dari editTicket
-          setIdx={setIdxTicket}
-          idx={idxTicket}
-          eventId={data.id}
-          endDate={data.end_date}
-        />
+        <ModalCreateTicket isOpen={addTicket} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
+        <ModalEditTicket isOpen={isEditTicketModalOpen} setIsOpen={setIsEditTicketModalOpen} ticket={ticket} setTicket={setTicket} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
       </Context.Provider>
     </>
   ) : (
@@ -1233,6 +1140,3 @@ const MyEventDetail = () => {
 };
 
 export default MyEventDetail;
-function getReportData(eventId: any) {
-  throw new Error("Function not implemented.");
-}
