@@ -1458,7 +1458,7 @@ const validateNIK = (nik: string): { isValid: boolean; errorMessage?: string } =
   return { isValid: true };
 };
 
-// Fungsi validasi nomor telepon
+// Fungsi validasi nomor telepon - VERSI DIPERBAIKI (13 digit maksimal)
 const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: string } => {
   // Hapus semua karakter non-digit
   const cleanedPhone = phone.replace(/\D/g, "");
@@ -1478,19 +1478,19 @@ const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: 
     };
   }
 
-  // Validasi panjang maksimal 11 digit (tidak termasuk kode negara)
-  if (cleanedPhone.length > 11) {
+  // Validasi panjang maksimal 13 digit
+  if (cleanedPhone.length > 13) {
     return {
       isValid: false,
-      errorMessage: "Maksimal 11 digit (tidak termasuk kode negara)",
+      errorMessage: "Maksimal 13 digit",
     };
   }
 
-  // Validasi panjang minimal (biasanya 9-11 digit untuk Indonesia)
+  // Validasi panjang minimal
   if (cleanedPhone.length < 9) {
     return {
       isValid: false,
-      errorMessage: "Nomor telepon terlalu pendek",
+      errorMessage: "Nomor telepon terlalu pendek (minimal 9 digit)",
     };
   }
 
@@ -1552,9 +1552,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     hasInsurance: hasInsuranceData,
   };
 
-  // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
-  // const adminFee = totalTicketFee;
-
   useEffect(() => {
     if (detail?.insurance_required === 1) {
       setInsuranceChecked(true); // Wajib = auto checked
@@ -1562,13 +1559,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       setInsuranceChecked(false); // Opsional = unchecked
     }
   }, [detail?.insurance_required]);
-
-  // const calculateInsuranceTotal = () => {
-  //   if (!insuranceChecked || !detail?.insurance_amount || totalCount === 0) return 0;
-
-  //   // insurance_amount biasanya per tiket
-  //   return detail.insurance_amount * totalCount;
-  // };
 
   const computeTax = (detail: any, subtotalAfterVoucher: number) => {
     const d = normalizeDetail(detail);
@@ -1621,7 +1611,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     : [];
 
   // Fungsi untuk mendapatkan bundling info berdasarkan event_ticket_id
-  // Atau jika mau cari berdasarkan ID nanti:
   const getBundlingInfo = (event_ticket_id: number) => {
     if (!detail.has_event_ticket) return { isBundling: false, bundlingQty: 0 };
 
@@ -1643,20 +1632,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 HITUNG JUMLAH PAKET: qty_ticket (fisik) / bundling_qty
-        // Contoh: bundling_qty = 2, qty_ticket = 4 → 4/2 = 2 paket
-        // Contoh: bundling_qty = 2, qty_ticket = 2 → 2/2 = 1 paket
-        // Contoh: bundling_qty = 3, qty_ticket = 6 → 6/3 = 2 paket
-
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         count += packageCount;
-
-        console.log(`Bundling ${item.name}:`, {
-          physicalTickets: item.qty_ticket,
-          bundlingQty,
-          packageCount,
-          addedToCount: packageCount,
-        });
       } else {
         // Non-bundling: jumlah tiket fisik
         count += item.qty_ticket;
@@ -1665,7 +1642,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
     return count;
   }, [ticket, allBundlingInfo]);
-  // Lalu gunakan displayTotalCount di semua tempat
 
   const displayTotalSubtotalPrice = useMemo(() => {
     if (!ticket || ticket.length === 0) return 0;
@@ -1676,15 +1652,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 Harga per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         total += item.price * packageCount;
-
-        console.log(`Bundling ${item.name} price:`, {
-          pricePerPackage: item.price,
-          packageCount,
-          subtotal: item.price * packageCount,
-        });
       } else {
         // Non-bundling: harga normal
         total += item.price * item.qty_ticket;
@@ -1704,17 +1673,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       const fee = item.ticket_fee || 0;
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 Admin fee per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         totalFee += fee * packageCount;
-
-        console.log(`Bundling ${item.name} admin fee:`, {
-          feePerPackage: fee,
-          packageCount,
-          subtotalFee: fee * packageCount,
-          qty_ticket: item.qty_ticket,
-          bundlingQty,
-        });
       } else {
         // Non-bundling: admin fee normal (per tiket)
         totalFee += fee * item.qty_ticket;
@@ -1724,9 +1684,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     return totalFee;
   }, [ticket, allBundlingInfo]);
 
-  const adminFee = totalTicketFee; // atau langsung pakai totalTicketFee
-
-  console.log("insurance_amount", transactionData?.grandtotal);
+  const adminFee = totalTicketFee;
 
   const calculateInsuranceTotal = () => {
     // Jika wajib atau opsional dan dipilih
@@ -1736,7 +1694,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     return 0;
   };
 
-  // Di dalam submitForm, tetap gunakan:
   const eventHasInsurance = detail?.is_insurance === 1;
   const insuranceRequired = detail?.insurance_required === 1;
   const insuranceAmount = detail?.insurance_amount || 0;
@@ -1831,23 +1788,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     );
   };
 
-  // const handleInput = (index: number, field: keyof Form, value: string) => {
-  //   let newForm = [...form];
-  //   if (field == "no_telp") {
-  //     var phone = value.replaceAll(/\D/g, "");
-  //     phone = phone.replace(/^(?!0|6)(\d+)/, "628$1");
-  //     phone = phone.replace(/^0/, "62");
-  //     newForm[index] = { ...newForm[index], [field]: phone };
-  //   } else {
-  //     newForm[index] = { ...newForm[index], [field]: value };
-  //   }
-  //   setForm(newForm);
-
-  //   const isFormValid = newForm.every(formValidation);
-
-  //   setFormValid(isFormValid);
-  // };
-
+  // HANDLEINPUT YANG DIPERBAIKI
   const handleInput = (index: number, field: keyof Form, value: string) => {
     let newForm = [...form];
 
@@ -1856,23 +1797,33 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       const displayVal = value.replaceAll(/\D/g, "");
       setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
 
-      // Format untuk backend
-      let phone = value.replaceAll(/\D/g, "");
-      phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
-      phone = phone.replace(/^0/, "62");
+      // Format untuk backend - TAMBAHKAN 62 di depan
+      const phoneForBackend = "62" + displayVal;
+      newForm[index] = { ...newForm[index], [field]: phoneForBackend };
 
-      newForm[index] = { ...newForm[index], [field]: phone };
-
-      // Validasi real-time untuk nomor telepon
+      // Validasi real-time untuk nomor telepon (gunakan displayVal tanpa 62)
       if (detail.is_phone_number == 1) {
-        const validation = validatePhoneNumber(phone);
-        setFieldErrors((prev) => ({
-          ...prev,
-          [index]: {
-            ...prev[index],
-            phone: validation.isValid ? undefined : validation.errorMessage,
-          },
-        }));
+        const validation = validatePhoneNumber(displayVal); // Validasi TANPA 62
+
+        if (!validation.isValid) {
+          // Set error jika validasi gagal
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              phone: validation.errorMessage,
+            },
+          }));
+        } else {
+          // Hapus error jika validasi berhasil
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              phone: undefined,
+            },
+          }));
+        }
       }
     } else if (field === "nik") {
       // Hanya menerima angka dan batasi panjang
@@ -1882,16 +1833,63 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       // Validasi real-time untuk NIK
       if (detail.is_noidentity == 1) {
         const validation = validateNIK(numericValue);
+
+        if (!validation.isValid) {
+          // Set error jika validasi gagal
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              nik: validation.errorMessage,
+            },
+          }));
+        } else {
+          // Hapus error jika validasi berhasil
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              nik: undefined,
+            },
+          }));
+        }
+      }
+    } else {
+      newForm[index] = { ...newForm[index], [field]: value };
+
+      // Untuk field lain, reset error jika ada
+      if (field === "email" && detail.is_email == 1 && value) {
+        // Validasi email sederhana
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              email: "Format email tidak valid",
+            },
+          }));
+        } else {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              email: undefined,
+            },
+          }));
+        }
+      }
+
+      // Reset error untuk field yang diisi
+      if ((field === "full_name" && value.trim()) || (field === "is_profession" && value.trim()) || (field === "is_company" && value.trim()) || (field === "is_assistant" && value.trim()) || (field === "kelas" && value.trim())) {
         setFieldErrors((prev) => ({
           ...prev,
           [index]: {
             ...prev[index],
-            nik: validation.isValid ? undefined : validation.errorMessage,
+            [field]: undefined,
           },
         }));
       }
-    } else {
-      newForm[index] = { ...newForm[index], [field]: value };
     }
 
     setForm(newForm);
@@ -1987,96 +1985,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
   const router = useRouter();
 
-  // const submitForm = () => {
-  //   const now = new Date();
-  //   now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
-  //   const isoString = now.toISOString();
-
-  //   const subtotal = totalSubtotalPrice; // Use the prop that was passed to the component
-  //   const adminFee = totalTicketFee;
-  //   const voucherDiscount = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-  //   // ✅ Tax dihitung dari subtotal SETELAH dikurangi voucher
-  //   const subtotalAfterVoucher = subtotal - voucherDiscount;
-  //   const tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-  //   const grandtotal = subtotalAfterVoucher + adminFee + tax;
-
-  //   const allSeatNumbers = ticket.map((t) => (Array.isArray(t.seat_number) ? t.seat_number : JSON.parse(t.seat_number || "[]"))).flat();
-
-  //   let seatIndex = 0;
-  //   const payload = {
-  //     event_id: detail?.id,
-  //     admin_fee: detail?.admin_fee,
-  //     payment_method: payment ? payment : "4",
-  //     grandtotal: grandtotal,
-  //     identities: form.map((identity) => {
-  //       if (identity.is_pemesan === 1) return identity;
-
-  //       const seat_number = allSeatNumbers[seatIndex] || "";
-  //       seatIndex++;
-
-  //       return {
-  //         ...identity,
-  //         seat_number: identity.seat_number || seat_number,
-  //       };
-  //     }),
-  //     tickets: ticket.map((e) => ({
-  //       ...e,
-  //       seatnumber_ticket: JSON.stringify(e.seat_number),
-  //     })),
-  //     bank_code: bank,
-  //     expiration_date: isoString,
-  //     vouchers:
-  //       vouchers.length > 0
-  //         ? vouchers.map((v) => ({
-  //             voucher_id: v.id,
-  //             voucher_code: v.name,
-  //             voucher_amount: v.amount,
-  //           }))
-  //         : [],
-  //   };
-
-  //   setLoading(true);
-  //   Post("transaction-without-auth", payload)
-  //     .then((res: any) => {
-  //       setTransactionData(res.data);
-
-  //       if (res?.isFree) {
-  //         router.push("/success/" + res.invoice_no);
-  //         return;
-  //       }
-
-  //       if (res.xendit_invoice && res.xendit_invoice.invoice_url) {
-  //         router.push(res.xendit_invoice.invoice_url);
-  //       } else if (res.xendit_invoice && res.xendit_invoice.va_number?.length > 0) {
-  //         setXenditInvoice(res.xendit_invoice.va_number[0]);
-  //         setLoading(false);
-  //         setIsOpen(false);
-  //         setStep(3);
-  //       }
-
-  //       if (res.data.payment_method === "2" && !res.xendit_invoice_url) {
-  //         getPaymentMethodById("2");
-  //       }
-  //     })
-  //     .catch((err: any) => {
-  //       setLoading(false);
-
-  //       if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
-  //         notifications.show({
-  //           color: "red",
-  //           position: "top-right",
-  //           message: "Tiket sudah habis terjual",
-  //         });
-  //       } else {
-  //         notifications.show({
-  //           color: "red",
-  //           position: "top-right",
-  //           message: err.response?.data?.message ?? err.message,
-  //         });
-  //       }
-  //     });
-  // };
-
   const submitForm = () => {
     const now = new Date();
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
@@ -2120,7 +2028,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     }
 
     // LOGIKA ASURANSI BERDASARKAN detail LANGSUNG
-    // Di kode Anda, detail sudah punya properti asuransi
     const eventHasInsurance = detail?.is_insurance === 1;
     const insuranceRequired = detail?.insurance_required === 1;
     const insuranceAmount = detail?.insurance_amount || 0;
@@ -2151,48 +2058,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
     let seatIndex = 0;
 
-    // const payload = {
-    //   event_id: detail?.id,
-    //   admin_fee: detail?.admin_fee,
-    //   payment_method: payment ? payment : "4",
-    //   grandtotal: grandtotal,
-    //   // tambahan info PPN supaya backend / Xendit punya referensi
-    //   ppn_type: detail?.ppn_type ?? "percentage",
-    //   ppn: detail?.ppn ?? 0,
-    //   ppn_amount: tax,
-
-    //   // KIRIM DATA ASURANSI sesuai logika di atas
-    //   is_insurance: is_insurance_value,
-    //   insurance_amount: insuranceAmount,
-    //   insurance_total: InsuranceTotal,
-    //   insurance_required: insurance_required_value,
-
-    //   identities: form.map((identity) => {
-    //     if (identity.is_pemesan === 1) return identity;
-
-    //     const seat_number = allSeatNumbers[seatIndex] || "";
-    //     seatIndex++;
-
-    //     return {
-    //       ...identity,
-    //       seat_number: identity.seat_number || seat_number,
-    //     };
-    //   }),
-    //   tickets: ticket.map((e) => ({
-    //     ...e,
-    //     seatnumber_ticket: JSON.stringify(e.seat_number),
-    //   })),
-    //   bank_code: bank,
-    //   expiration_date: isoString,
-    //   vouchers:
-    //     vouchers.length > 0
-    //       ? vouchers.map((v) => ({
-    //           voucher_id: v.id,
-    //           voucher_code: v.name,
-    //           voucher_amount: v.amount,
-    //         }))
-    //       : [],
-    // };
     const payload = {
       event_id: detail?.id,
       admin_fee: detail?.admin_fee,
@@ -2204,10 +2069,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       ppn_amount: tax,
 
       // KIRIM DATA ASURANSI sesuai logika di atas
-      is_insurance: is_insurance_value, // 1 jika dipilih (wajib/opsional), 0 jika tidak
+      is_insurance: is_insurance_value,
       insurance_amount: insuranceAmount,
       insurance_total: InsuranceTotal,
-      insurance_required: isInsuranceSelected ? 1 : 0, // INI DARI PILIHAN USER
+      insurance_required: isInsuranceSelected ? 1 : 0,
 
       identities: form.map((identity) => {
         if (identity.is_pemesan === 1) return identity;
@@ -2223,10 +2088,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       tickets: ticket.map((e) => ({
         ...e,
         seatnumber_ticket: JSON.stringify(e.seat_number),
-        // Jika backend perlu data insurance di level ticket juga
         is_insurance: is_insurance_value,
         insurance_amount: isInsuranceSelected ? insuranceAmount : 0,
-        insurance_require: detail?.insurance_required || 0, // kirim nilai dari event
+        insurance_require: detail?.insurance_required || 0,
       })),
       bank_code: bank,
       expiration_date: isoString,
@@ -2239,20 +2103,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             }))
           : [],
     };
-
-    // DEBUG: Log payload untuk memastikan data benar
-    console.log("=== INSURANCE PAYLOAD ===");
-    console.log({
-      eventHasInsurance,
-      insuranceRequired,
-      insuranceAmount,
-      isInsuranceSelected,
-      is_insurance_value,
-      insurance_required_value,
-      InsuranceTotal,
-      displayTotalCount,
-      insuranceChecked,
-    });
 
     setLoading(true);
     Post("transaction-without-auth", payload)
@@ -2431,10 +2281,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     <>
       {width &&
         (width < 768 ? (
-          // MOBILE
+          // MOBILE - DIPERBAIKI
           <div className="bg-primary-light mt-32 lg:mt-0 pb-8">
-            {" "}
-            {/* pb-8 untuk spacing bawah yang wajar */}
             <div className="border-b p-3 border-primary-light flex items-center gap-3">
               <div className="px-2 py-1 border rounded-md border-primary-light">{detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}</div>
               <div>
@@ -2488,22 +2336,17 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
               {ticket.map((item: FormTicket) => {
                 const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-                // Tentukan display quantity (jumlah paket)
                 let displayQty = item.qty_ticket;
                 let packageCount = 1;
 
                 if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                   packageCount = Math.floor(item.qty_ticket / bundlingQty);
-                  displayQty = packageCount; // Tampilkan jumlah paket
+                  displayQty = packageCount;
                 }
 
                 const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
 
-                // Display subtotal
-                const displaySubtotal =
-                  isBundling && bundlingQty >= 2 && bundlingQty <= 99
-                    ? item.price * packageCount // Harga per paket × jumlah paket
-                    : item.price * item.qty_ticket;
+                const displaySubtotal = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? item.price * packageCount : item.price * item.qty_ticket;
 
                 return (
                   <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
@@ -2527,13 +2370,12 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>
                   {`Jumlah (${displayTotalCount} ${
-                    // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                     ticket.some((item) => {
                       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
                       return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                     })
-                      ? "Paket" // Jika ADA bundling → "Paket"
-                      : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                      ? "Paket"
+                      : "Tiket"
                   })`}
                 </p>
                 <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
@@ -2567,7 +2409,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                     const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
-                    // gunakan helper untuk menghitung tax & label (percentage / nominal)
                     const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
                     if (tax <= 0) return null;
@@ -2583,7 +2424,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   })()
                 : null}
 
-              {/* Cek apakah ada asuransi */}
               {detail?.is_insurance === 1 && (
                 <>
                   <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
@@ -2595,8 +2435,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
                           Pakai Asuransi
                         </button>
-                        {/* Ambil harga dari insurance_amount */}
-                        {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
                         <p className="text-xs text-grey">
                           Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
                           {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
@@ -2604,7 +2442,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       </div>
                     </div>
 
-                    {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
                     {detail?.insurance_required === 0 ? (
                       <input
                         type="checkbox"
@@ -2615,12 +2452,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                         }}
                       />
                     ) : (
-                      // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
                       <div className="text-xs text-primary font-semibold">Wajib</div>
                     )}
                   </div>
 
-                  {/* Modal Asuransi */}
                   <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
                     <div className="flex flex-col sm:flex-row gap-4 p-4">
                       <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
@@ -2641,7 +2476,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             <p className="text-xs text-gray-500">
                               Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                             </p>
-                            {/* Tampilkan status wajib/opsional */}
                             {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                           </div>
                         </div>
@@ -2668,15 +2502,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>Total Pembayaran</p>
-                {/* <p className="font-semibold">
-                  {(() => {
-                    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
-                    const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-                    const grandTotal = subtotalAfterVoucher + adminFee + tax;
-                    return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
-                  })()}
-                </p> */}
                 <p className="font-semibold">
                   {(() => {
                     const grandTotal = calculateGrandTotal();
@@ -2685,7 +2510,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </p>
               </div>
             </div>
-            {/* FORM PEMILIK TIKET (MOBILE) */}
+            {/* FORM PEMILIK TIKET (MOBILE) - DIPERBAIKI */}
             <div className="mt-3">
               {form.map((item, index) => {
                 let ticketForOwner = null;
@@ -2729,7 +2554,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       </div>
                     )}
 
-                    {/* collapse wrapper: gunakan overflow-hidden + max-h */}
                     <div className={`px-5 pt-3 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapse[index] ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
                       <div className={`${collapse[index] ? "block" : "hidden"} flex flex-col gap-3`}>
                         {detail.is_noidentity ? (
@@ -2757,14 +2581,12 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                               placeholder="3277*************"
                               value={item.nik}
                               onChange={(e) => {
-                                const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16); // Ganti 17 jadi 16
+                                const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16);
                                 handleInput(index, "nik", numericValue);
                               }}
-                              maxLength={16} // Ganti 17 jadi 16
+                              maxLength={16}
                             />
-                            {/* TAMPILKAN ERROR DARI VALIDASI BARU */}
                             {fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.nik}</p>}
-                            {/* ATAU ERROR LAMA JIKA MASIH ADA */}
                             {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Minimal NIK adalah 16 Digit</p>}
                           </Field>
                         ) : null}
@@ -2799,7 +2621,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           </Field>
                         )}
 
-                        {/* ...sisa field sama seperti di mobile */}
                         {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
                         {detail.is_profession == 1 && (
                           <InputField
@@ -2815,7 +2636,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
                         )}
                         {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
-                        {/* {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />} */}
+
+                        {/* BAGIAN TELEPON MOBILE - DIPERBAIKI */}
                         {detail.is_phone_number ? (
                           <Field className="mb-1.5 sm:mb-2">
                             <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
@@ -2839,51 +2661,12 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   const numericValue = value.replace(/\D/g, "");
-
-                                  // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
-                                  if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
-                                    // Tampilkan error
-                                    setFieldErrors((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
-                                      },
-                                    }));
-                                    // Jangan update nilai
-                                    return;
-                                  }
-
-                                  // BLOKIR JIKA LEBIH DARI 11 DIGIT
-                                  if (numericValue.length > 11) {
-                                    setFieldErrors((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        phone: "Maksimal 11 digit",
-                                      },
-                                    }));
-                                    // Potong jadi 11 digit
-                                    const trimmedValue = numericValue.slice(0, 11);
-                                    handleInput(index, "no_telp", trimmedValue);
-                                    return;
-                                  }
-
-                                  // Jika valid, reset error
-                                  setFieldErrors((prev) => ({
-                                    ...prev,
-                                    [index]: {
-                                      ...prev[index],
-                                      phone: undefined,
-                                    },
-                                  }));
-
                                   handleInput(index, "no_telp", numericValue);
                                 }}
                                 type="tel"
+                                maxLength={13}
                               />
                             </div>
-                            {/* Tambahkan pesan error validasi */}
                             {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                           </Field>
                         ) : null}
@@ -2895,10 +2678,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             </div>
           </div>
         ) : (
-          // DESKTOP
+          // DESKTOP - DIPERBAIKI
           <div className="bg-primary-light pb-8">
-            {" "}
-            {/* hapus min-h-screen untuk menghindari gap */}
             <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20">
               <h2 className="col-span-5 mb-4">Personal Informasi</h2>
 
@@ -2970,14 +2751,11 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                     placeholder={`Contoh : 1234567890123456`}
                                     value={item.nik}
                                     onChange={(e) => {
-                                      // Hanya ambil 16 digit pertama
                                       const value = e.target.value.replace(/\D/g, "").slice(0, 16);
                                       handleInput(index, "nik", value);
                                     }}
                                   />
-                                  {/* ERROR DARI VALIDASI BARU */}
                                   {fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">{fieldErrors[index]?.nik}</p>}
-                                  {/* ERROR LAMA */}
                                   {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                                 </div>
                               </div>
@@ -3014,7 +2792,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             </Field>
                           )}
 
-                          {/* ...sisa field sama seperti di mobile */}
                           {detail.is_kelas == 1 && <InputField fullWidth type="text" label="Kelas" placeholder="Contoh: Kelas I" value={item.kelas} onChange={(e) => handleInput(index, "kelas", e.target.value)} />}
                           {detail.is_profession == 1 && (
                             <InputField
@@ -3030,7 +2807,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             <InputField fullWidth type="text" label="Perusahaan Atau Organisasi" placeholder="Nama perusahaan atau organisasi" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />
                           )}
                           {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
-                          {/* {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />} */}
+
+                          {/* BAGIAN TELEPON DESKTOP - DIPERBAIKI */}
                           {detail.is_phone_number ? (
                             <Field className="mb-1.5 sm:mb-2">
                               <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
@@ -3054,51 +2832,12 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     const numericValue = value.replace(/\D/g, "");
-
-                                    // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
-                                    if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
-                                      // Tampilkan error
-                                      setFieldErrors((prev) => ({
-                                        ...prev,
-                                        [index]: {
-                                          ...prev[index],
-                                          phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
-                                        },
-                                      }));
-                                      // Jangan update nilai
-                                      return;
-                                    }
-
-                                    // BLOKIR JIKA LEBIH DARI 11 DIGIT
-                                    if (numericValue.length > 11) {
-                                      setFieldErrors((prev) => ({
-                                        ...prev,
-                                        [index]: {
-                                          ...prev[index],
-                                          phone: "Maksimal 11 digit",
-                                        },
-                                      }));
-                                      // Potong jadi 11 digit
-                                      const trimmedValue = numericValue.slice(0, 11);
-                                      handleInput(index, "no_telp", trimmedValue);
-                                      return;
-                                    }
-
-                                    // Jika valid, reset error
-                                    setFieldErrors((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        phone: undefined,
-                                      },
-                                    }));
-
                                     handleInput(index, "no_telp", numericValue);
                                   }}
                                   type="tel"
+                                  maxLength={13}
                                 />
                               </div>
-                              {/* Tambahkan pesan error validasi */}
                               {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                             </Field>
                           ) : null}
@@ -3122,7 +2861,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                 </div>
 
                 <Card withBorder radius={10} p={20}>
-                  {/* voucher UI (sama seperti mobile) */}
                   <Stack gap={20}>
                     <Flex gap={10} align="center">
                       <Icon icon="mdi:voucher-outline" className="text-primary-base text-[20px]" />
@@ -3161,7 +2899,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   </Stack>
                 </Card>
 
-                {/* Summary box (sama seperti mobile) */}
+                {/* Summary box */}
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
                   <div className="border-b border-b-primary-light-200 p-3">
                     <p className="font-semibold">Ringkasan Pesanan</p>
@@ -3170,22 +2908,17 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   {ticket.map((item: FormTicket) => {
                     const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-                    // Tentukan display quantity (jumlah paket)
                     let displayQty = item.qty_ticket;
                     let packageCount = 1;
 
                     if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                       packageCount = Math.floor(item.qty_ticket / bundlingQty);
-                      displayQty = packageCount; // Tampilkan jumlah paket
+                      displayQty = packageCount;
                     }
 
                     const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
 
-                    // Display subtotal
-                    const displaySubtotal =
-                      isBundling && bundlingQty >= 2 && bundlingQty <= 99
-                        ? item.price * packageCount // Harga per paket × jumlah paket
-                        : item.price * item.qty_ticket;
+                    const displaySubtotal = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? item.price * packageCount : item.price * item.qty_ticket;
 
                     return (
                       <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
@@ -3209,19 +2942,17 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>
                       {`Jumlah (${displayTotalCount} ${
-                        // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                         ticket.some((item) => {
                           const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
                           return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                         })
-                          ? "Paket" // Jika ADA bundling → "Paket"
-                          : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                          ? "Paket"
+                          : "Tiket"
                       })`}
                     </p>
                     <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
                   </div>
 
-                  {/* Total Voucher */}
                   {vouchers.length > 0 && (
                     <div className="py-3 px-4 flex justify-between items-center">
                       <p>Total Voucher</p>
@@ -3232,7 +2963,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     </div>
                   )}
 
-                  {/* Subtotal after voucher */}
                   {(() => {
                     const subtotalTiket = displayTotalSubtotalPrice;
                     const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
@@ -3248,25 +2978,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     );
                   })()}
 
-                  {/* TAX
-                  {detail.ppn
-                    ? (() => {
-                        const subtotalTiket = totalSubtotalPrice;
-                        const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                        const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
-
-                        const taxBase = subtotalAfterVoucher + adminFee;
-                        const tax = detail.ppn ? Math.round(taxBase * (detail.ppn / 100)) : 0;
-
-                        return (
-                          <div className="py-3 px-4 flex justify-between items-center">
-                            <p>Tax ({detail.ppn}%)</p>
-                            <p className="font-semibold">{detail.ppn > 0 ? <NumberFormatter value={tax} /> : <Text>Free</Text>}</p>
-                          </div>
-                        );
-                      })()
-                    : null} */}
-                  {/* Cek apakah ada asuransi */}
                   {detail?.is_insurance === 1 && (
                     <>
                       <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
@@ -3278,8 +2989,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
                               Pakai Asuransi
                             </button>
-                            {/* Ambil harga dari insurance_amount */}
-                            {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
                             <p className="text-xs text-grey">
                               Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
                               {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
@@ -3287,23 +2996,19 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                           </div>
                         </div>
 
-                        {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
                         {detail?.insurance_required === 0 ? (
                           <input
                             type="checkbox"
                             className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                             onChange={(e) => {
                               setInsuranceChecked(e.target.checked);
-                              console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
                             }}
                           />
                         ) : (
-                          // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
                           <div className="text-xs text-primary font-semibold">Wajib</div>
                         )}
                       </div>
 
-                      {/* Modal Asuransi */}
                       <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
                         <div className="flex flex-col sm:flex-row gap-4 p-4">
                           <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
@@ -3324,7 +3029,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 <p className="text-xs text-gray-500">
                                   Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                                 </p>
-                                {/* Tampilkan status wajib/opsional */}
                                 {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                               </div>
                             </div>
@@ -3339,17 +3043,15 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       </Modal>
                     </>
                   )}
-                  {/* TAX */}
+
                   {detail?.ppn !== undefined
                     ? (() => {
                         const subtotalTiket = displayTotalSubtotalPrice;
                         const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
                         const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
-                        // gunakan helper untuk menghitung tax & label (percentage / nominal)
                         const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                        // Hanya tampilkan jika tax > 0
                         if (tax > 0) {
                           return (
                             <div className="py-3 px-4 flex justify-between items-center">
@@ -3360,7 +3062,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             </div>
                           );
                         }
-                        return null; // Return null jika tax = 0 (akan di-hide)
+                        return null;
                       })()
                     : null}
 
@@ -3373,26 +3075,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     </div>
                   )}
 
-                  {/* Total */}
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>Total Pembayaran</p>
-                    {/* <p className="font-semibold">
-                      {(() => {
-                        const subtotalTiket = displayTotalSubtotalPrice;
-                        const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                        const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
-
-                        // Hitung biaya asuransi
-                        const insuranceTotal = calculateInsuranceTotal();
-
-                        const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-
-                        // Tambahkan insurance ke grand total
-                        const grandTotal = subtotalAfterVoucher + adminFee + tax + insuranceTotal;
-
-                        return grandTotal > 0 ? <NumberFormatter value={grandTotal} /> : <Text>Free</Text>;
-                      })()}
-                    </p> */}
                     <p className="font-semibold">
                       {(() => {
                         const grandTotal = calculateGrandTotal();
@@ -3459,8 +3143,6 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   ) : (
     step === 3 && transactionData && (
       <div className="bg-primary-light max-w-xl mx-auto py-8 px-4">
-        {" "}
-        {/* centered, padding wajar */}
         {detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-full h-auto rounded-md object-cover mb-6" />}
         <div className="bg-white rounded-md overflow-hidden shadow-sm">
           <div className="border-b-2 p-3 border-primary-light">
