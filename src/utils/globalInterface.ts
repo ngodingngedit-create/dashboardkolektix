@@ -207,6 +207,18 @@ export interface TransactionProps {
   insurance_amount: number;
   is_insurance: number;
   insurance_required: number;
+  transaction_merches?: TransactionMerch[];
+}
+
+export interface TransactionMerch {
+  id: number;
+  transaction_id: number;
+  event_merch_id: number;
+  product_variant_id: number;
+  qty: number;
+  price: number;
+  subtotal: number;
+  noted: string;
 }
 
 export interface PaymentMethod {
@@ -379,6 +391,8 @@ export interface EventTicketProps {
   has_ordered_seatnumber: {
     seatnumber_ticket: string | null;
   }[];
+
+  is_bundling_merch: 0 | 1;
 }
 
 export interface EventProps {

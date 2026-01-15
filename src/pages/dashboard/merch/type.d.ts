@@ -74,6 +74,7 @@ export type MerchListResponse = {
 };
 
 export type MerchPromoResponse = {
+  id: number;
   promo_id: number;
   promo_name: string;
   promo_slug: string;

@@ -170,7 +170,7 @@ const MyEventDetail = () => {
       method: "GET",
       data: {},
       success: ({ data }) => data && setInvitationCategory(data),
-      error: () => {},
+      error: () => { },
     });
   };
 
@@ -221,6 +221,7 @@ const MyEventDetail = () => {
   const closeDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedItem(null);
+    setSelectedTicket(null);
   };
 
   const openInvitationModal = (item: any) => {

@@ -199,7 +199,7 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Tabs, Text, Title, Pagination, Button, SegmentedControl, Input } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
@@ -209,6 +209,8 @@ import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDownload, faEye, faPaperPlane, faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 const Merch = () => {
   const [isr, setIsr] = useState(false);
@@ -223,6 +225,7 @@ const Merch = () => {
   const [loading, setLoading] = useListState<string>();
   const [loadingEventData, setLoadingEventData] = useState(false);
   const [transactionSegment, setTransactionSegment] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const user = useLoggedUser();
 
   const [page, setPage] = useState(1);
@@ -230,6 +233,8 @@ const Merch = () => {
   const [slug, setSlug] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState<string>("transaksi");
   const [searchValue, setSearchValue] = useState<string>("");
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionListResponse | null>(null);
 
   useEffect(() => {
     setIsr(true);
@@ -334,7 +339,7 @@ const Merch = () => {
       url: `checkin-list/${selectedEvent}`,
       method: "GET",
       before: () => setLoading.append("getdata"),
-      success: () => {},
+      success: () => { },
       complete: () => setLoading.filter((e) => e != "getdata"),
     });
 
@@ -357,9 +362,14 @@ const Merch = () => {
       const selectedTicketId = parseInt(selectedTicket);
 
       filteredData = filteredData.filter((transaction) => {
-        // Cek apakah transaksi memiliki ticket dengan event_ticket_id yang sesuai
         return transaction.tickets?.some((ticket) => parseInt(ticket.event_ticket_id) === selectedTicketId);
       });
+    }
+
+    // Filter berdasarkan status
+    if (selectedStatus !== "all") {
+      const statusId = parseInt(selectedStatus);
+      filteredData = filteredData.filter((transaction) => transaction.transaction_status_id === statusId);
     }
 
     // Filter berdasarkan pencarian
@@ -368,37 +378,59 @@ const Merch = () => {
       filteredData = filteredData.filter((transaction) => {
         const invoiceNo = transaction.invoice_no?.toLowerCase() || "";
         const email = transaction.identities?.find((id) => id.is_pemesan == 1)?.email?.toLowerCase() || "";
+        const name = transaction.identities?.find((id) => id.is_pemesan == 1)?.full_name?.toLowerCase() || "";
 
-        return invoiceNo.includes(searchTerm) || email.includes(searchTerm);
+        return invoiceNo.includes(searchTerm) || email.includes(searchTerm) || name.includes(searchTerm);
       });
     }
 
     return filteredData.map((e) => {
       // Cari nama tiket dari transaksi
       let ticketName = "-";
+      let ticketPrice = 0;
       const identity = e.identities?.find((id) => id.is_pemesan == 1);
 
       // Ambil data tiket dari properti tickets
       if (e.tickets && e.tickets.length > 0) {
-        // Ambil nama tiket dari ticket pertama (atau gabungkan jika ada multiple)
         const ticketNames = e.tickets.map((ticket) => ticket.has_event_ticket?.name || "-");
         ticketName = ticketNames.join(", ");
+
+        // Hitung total harga tiket (price * qty)
+        ticketPrice = e.tickets.reduce((sum, ticket) => {
+          return sum + (ticket.price || 0) * (ticket.qty_ticket || 0);
+        }, 0);
       }
 
       return {
-        ID: e.id,
+        ...e, // Simpan data asli untuk akses di action
+        No: null, // Akan diisi oleh TableData withRowIndex
+        Nama: identity?.full_name || "-",
         Email: identity?.email ?? "-",
         "No. Invoice": e.invoice_no,
-        "Waktu Dikirim": e.payment_date ? moment(e.payment_date).format("HH:mm:ss DD MMM YYYY") : "-",
         "Nama Tiket": ticketName,
+        "Harga Tiket": `Rp ${ticketPrice.toLocaleString("id-ID")}`,
         Status: (
           <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find((z) => z.id == e.transaction_status_id)?.bgcolor}>
             {transactionStatus?.find((z) => z.id == e.transaction_status_id)?.name}
           </Badge>
         ),
+        Action: (
+          <Group gap="xs">
+            <ActionIcon
+              color="blue"
+              variant="subtle"
+              onClick={() => {
+                setSelectedTransaction(e);
+                setViewModalOpen(true);
+              }}
+            >
+              <FontAwesomeIcon icon={faEye} size="sm" />
+            </ActionIcon>
+          </Group>
+        ),
       };
     });
-  }, [dataList, transactionSegment, transactionStatus, selectedTicket, searchValue]);
+  }, [dataList, transactionSegment, transactionStatus, selectedTicket, selectedStatus, searchValue]);
 
   // Statistik untuk tab Data Penjualan
   const salesStatistics = useMemo(() => {
@@ -417,17 +449,12 @@ const Merch = () => {
     // Hitung total checkin dari data eticket
     const totalCheckin = dataListEticket?.filter((e) => Boolean(e.is_checkin)).length || 0;
 
-    // Hitung total invitation - contoh: semua pemesan yang Verified
-    // Anda mungkin perlu menyesuaikan ini dengan logika invitation yang sebenarnya
-    const totalInvitation = dataList?.filter((e) => e.payment_status === "Verified").length || 0;
-
     return {
       totalSales: eventData?.total_price_sell_online || 0,
       pendingTransactions,
       totalTickets,
       totalTransactions: filtered.length,
       totalCheckin,
-      totalInvitation,
     };
   }, [listTransaksi, eventData, dataList, dataListEticket]);
 
@@ -446,18 +473,28 @@ const Merch = () => {
     }
 
     try {
-      const headers = ["ID", "Email", "No. Invoice", "Waktu Dikirim", "Status", "Nama Tiket"];
+      const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Status"];
       const csvRows = [
         headers.join(","),
-        ...listTransaksi.map((item) => {
+        ...listTransaksi.map((item, index) => {
           let statusText = "Unknown";
           if (item.Status?.props?.children) {
             statusText = item.Status.props.children;
           }
 
           const ticketName = item["Nama Tiket"] || "-";
+          // Remove "Rp " from the price for cleaner export
+          const ticketPrice = item["Harga Tiket"]?.replace("Rp ", "") || "0";
 
-          return [item.ID, `"${item.Email}"`, `"${item["No. Invoice"]}"`, `"${item["Waktu Dikirim"]}"`, `"${statusText}"`, `"${ticketName}"`].join(",");
+          return [
+            index + 1,
+            `"${item.Nama}"`,
+            `"${item.Email}"`,
+            `"${item["No. Invoice"]}"`,
+            `"${ticketName}"`,
+            ticketPrice,
+            `"${statusText}"`,
+          ].join(",");
         }),
       ];
 
@@ -507,6 +544,14 @@ const Merch = () => {
       }));
   }, [dataListEticket]);
 
+  const listVoucher = useMemo(() => {
+    // Ini contoh data voucher - Anda perlu mengganti dengan data asli dari API
+    return [
+      { "Kode Voucher": "DISKON50", "Nama Pemesan": "John Doe", "Email": "john@example.com", "Status": "Terpakai", "Tanggal Pakai": "2024-01-15" },
+      { "Kode Voucher": "SALE30", "Nama Pemesan": "Jane Smith", "Email": "jane@example.com", "Status": "Aktif", "Tanggal Pakai": "-" },
+    ];
+  }, []);
+
   if (!isr) return <></>;
 
   return (
@@ -533,6 +578,7 @@ const Merch = () => {
                 const selectedId = parseInt(e);
                 setSelectedEvent(selectedId);
                 setSelectedTicket("all");
+                setSelectedStatus("all");
                 setPage(1);
                 setSearchValue("");
 
@@ -564,7 +610,12 @@ const Merch = () => {
           />
         </Flex>
 
-        <Button onClick={exportToExcel} variant="outline" disabled={!listTransaksi || listTransaksi.length === 0}>
+        <Button
+          onClick={exportToExcel}
+          variant="outline"
+          leftSection={<FontAwesomeIcon icon={faDownload} />}
+          disabled={!listTransaksi || listTransaksi.length === 0}
+        >
           Export Excel
         </Button>
       </Flex>
@@ -592,17 +643,16 @@ const Merch = () => {
               <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
             </div>
 
-            {/* Card 4: Total Checkin (BARU) */}
+            {/* Card 4: Total Checkin */}
             <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
               <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
               <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
             </div>
 
-            {/* Card 5: Total Invitation (BARU) */}
+            {/* Card 5: Total Transaksi */}
             <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Invitation</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">0 invitation</p>
-              <p className="text-xs text-gray-500 mt-1"></p>
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
+              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
             </div>
           </div>
         )}
@@ -611,36 +661,32 @@ const Merch = () => {
         <div className="mb-6">
           <div className="flex border-b border-gray-200">
             <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                selectedTab === "transaksi" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${selectedTab === "transaksi" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               onClick={() => setSelectedTab("transaksi")}
             >
               Data Penjualan
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                selectedTab === "pemesan" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${selectedTab === "pemesan" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               onClick={() => setSelectedTab("pemesan")}
             >
               Data Pemesan
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                selectedTab === "checkin" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${selectedTab === "checkin" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               onClick={() => setSelectedTab("checkin")}
             >
               Data Checkin
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                selectedTab === "invitation" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-              onClick={() => setSelectedTab("invitation")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${selectedTab === "voucher" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              onClick={() => setSelectedTab("voucher")}
             >
-              Data Invitation
+              Data Voucher
             </button>
           </div>
         </div>
@@ -664,10 +710,56 @@ const Merch = () => {
                   radius="xl"
                   color="#0b387c"
                 />
+
+                <Select
+                  placeholder="Filter Status"
+                  value={selectedStatus}
+                  onChange={(value) => {
+                    if (value) {
+                      setSelectedStatus(value);
+                      setPage(1);
+                    }
+                  }}
+                  data={[
+                    { value: "all", label: "Semua Status" },
+                    ...(transactionStatus?.map((status) => ({
+                      value: String(status.id),
+                      label: status.name
+                    })) || [])
+                  ]}
+                  style={{ width: 200 }}
+                  leftSection={<FontAwesomeIcon icon={faDownload} size="sm" />}
+                />
+
+                <Input
+                  placeholder="Cari Nama, Email, atau Invoice..."
+                  value={searchValue}
+                  onChange={(e) => {
+                    setSearchValue(e.target.value);
+                    setPage(1);
+                  }}
+                  style={{ width: 300 }}
+                  leftSection={<FontAwesomeIcon icon={faDownload} size="sm" />}
+                />
               </Flex>
             </Flex>
 
-            <TableData loading={loading.includes("getdata")} tablekey="transaksi" withRowIndex data={paginatedListTransaksi} mapData={(e) => ({ ...e })} />
+            <TableData
+              loading={loading.includes("getdata")}
+              tablekey="transaksi"
+              withRowIndex
+              data={paginatedListTransaksi}
+              mapData={(e) => ({
+                No: null,
+                Nama: e.Nama,
+                Email: e.Email,
+                "No. Invoice": e["No. Invoice"],
+                "Nama Tiket": e["Nama Tiket"],
+                "Harga Tiket": e["Harga Tiket"],
+                Status: e.Status,
+                Action: e.Action
+              })}
+            />
 
             {listTransaksi.length > 0 && (
               <Flex justify="space-between" align="center" mt="md">
@@ -698,15 +790,77 @@ const Merch = () => {
           </div>
         )}
 
-        {/* Tab Content - Data Invitation */}
-        {selectedTab === "invitation" && (
+        {/* Tab Content - Data Voucher */}
+        {selectedTab === "voucher" && (
           <div className="pt-4">
             <Box mt={20}>
-              <TableData loading={loading.includes("getdata")} tablekey="invitation" withRowIndex data={[]} mapData={(e: any) => ({ ...e })} />
+              <TableData loading={loading.includes("getdata")} tablekey="voucher" withRowIndex data={listVoucher} mapData={(e) => ({ ...e })} />
             </Box>
           </div>
         )}
       </Card>
+
+      {/* Modal View Detail Transaksi */}
+      <Modal
+        opened={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Detail Transaksi"
+        size="lg"
+      >
+        {selectedTransaction && (
+          <Stack gap="md">
+            <Flex justify="space-between">
+              <Text fw={500}>No. Invoice:</Text>
+              <Text>{selectedTransaction.invoice_no}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Nama:</Text>
+              <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || "-"}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Email:</Text>
+              <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || "-"}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Status:</Text>
+              <Badge color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor}>
+                {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
+              </Badge>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Tipe Transaksi:</Text>
+              <Text>{selectedTransaction.type_transaction}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Total Price:</Text>
+              <Text fw={600}>Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text fw={500}>Tanggal Transaksi:</Text>
+              <Text>{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY HH:mm:ss") : "-"}</Text>
+            </Flex>
+
+            {/* Detail Tiket */}
+            {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
+              <div>
+                <Text fw={500} mb="xs">Detail Tiket:</Text>
+                {selectedTransaction.tickets.map((ticket, index) => (
+                  <Card key={index} withBorder mb="xs" p="sm">
+                    <Flex justify="space-between">
+                      <Text size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                      <Text size="sm">Qty: {ticket.qty_ticket}</Text>
+                    </Flex>
+                    <Flex justify="space-between">
+                      <Text size="sm">Harga per Tiket: Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
+                      <Text size="sm" fw={500}>Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 0)).toLocaleString("id-ID")}</Text>
+                    </Flex>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Stack>
+        )}
+      </Modal>
     </div>
   );
 };

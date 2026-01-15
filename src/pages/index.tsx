@@ -427,11 +427,8 @@ import { EventProps, SliderProps, VacancyProps } from "@/utils/globalInterface";
 import { MerchListResponse, MerchPromoResponse } from "@/pages/dashboard/merch/type";
 import Cookies from "js-cookie";
 import PromoBlock from "@/components/Home/PromoBlock";
-import MerchandiseList from "@/components/Home/MerchandiseList";
 import ChatBox from "@/components/chat";
 import PromoMerchandiseList from "@/components/Home/MerchandiseList/index";
-import JobsList from "@/components/Home/JobsList";
-import TalentList from "@/components/Home/TalentList";
 
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -501,12 +498,10 @@ export default function Home() {
       });
   };
 
-  // Di file Home (index.tsx)
   const getUpcomingData = () => {
     handleRequestStart();
     Get("event-up-coming", {
-      // Tambahkan parameter untuk mendapatkan semua upcoming
-      params: { all: true }, // atau sesuai dengan API Anda
+      params: { all: true },
     })
       .then((res: any) => {
         setUpcoming(res.data);
@@ -518,18 +513,6 @@ export default function Home() {
   };
 
   const getMerchandiseData = () => {
-    const token = Cookies.get("token");
-
-    // VALIDASI: Jika tidak ada token, skip API call
-    if (!token) {
-      console.log("No token found, skipping merchandise data fetch");
-      setMerchandiseData([]);
-      setPromoData(null);
-      setMerchandiseLoading(false);
-      setPromoLoading(false);
-      return;
-    }
-
     setMerchandiseLoading(true);
     setPromoLoading(true);
 
@@ -585,14 +568,14 @@ export default function Home() {
     if (token) {
       // Hanya panggil jika ada token
       getVacancy();
-      getMerchandiseData();
     } else {
       // Set default state untuk data yang butuh auth
-      console.log("User not authenticated, skipping protected APIs");
+      console.log("User not authenticated, skipping vacancy API");
       setVacancy([]);
-      setMerchandiseData([]);
-      setPromoData(null);
     }
+
+    // Panggil merchandise data tanpa validasi token
+    getMerchandiseData();
   }, []);
 
   return (
@@ -600,8 +583,6 @@ export default function Home() {
       <HeroSection data={upcoming} loading={loading} slider={sliderData} />
       <CategoryBlock />
       <EventList data={data} loading={loading} />
-      {/* <JobsList data={vacancy} loading={loading} />
-      <TalentList /> */}
 
       {/* Promo Merchandise Section - hanya muncul jika promoData ada */}
       <PromoMerchandiseList data={promoData} loading={promoLoading} />

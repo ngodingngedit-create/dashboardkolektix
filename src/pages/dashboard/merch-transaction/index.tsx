@@ -369,9 +369,29 @@
 // export default MerchandiseTransaction;
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Input, Pagination, Tabs, Tab } from "@nextui-org/react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  Input,
+  Pagination,
+  Tabs,
+  Tab,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Divider
+} from "@nextui-org/react";
 import { Card } from "@mantine/core";
 import { Get } from "@/utils/REST";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faDownload, faFileInvoice, faUser, faBox, faShoppingCart, faTruck, faReceipt, faTag, faCalendar, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
 interface CreatorData {
   id: number;
@@ -382,6 +402,16 @@ interface CreatorData {
     name: string;
     email: string;
   };
+}
+
+interface ShippingAddress {
+  id?: number;
+  order_id?: number;
+  address_detail?: string;
+  address_name?: string;
+  nama_penerima?: string;
+  phone?: string;
+  [key: string]: any;
 }
 
 interface MerchandiseTransactionData {
@@ -395,6 +425,16 @@ interface MerchandiseTransactionData {
   voucher?: number | string;
   creator_id?: number;
   creator_name?: string;
+  // Tambahan field untuk modal detail
+  detail?: any[];
+  order_date?: string;
+  customer_name?: string;
+  customer_email?: string;
+  shipping_address?: ShippingAddress | string;
+  // Tambahan field dari response API
+  status_name?: string;
+  payment_method?: string;
+  notes?: string;
 }
 
 const MerchandiseTransaction: React.FC = () => {
@@ -408,6 +448,10 @@ const MerchandiseTransaction: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<string>("transaksi");
   const [selectedCreator, setSelectedCreator] = useState<string>("all");
   const [loadingCreators, setLoadingCreators] = useState<boolean>(false);
+
+  // State untuk modal detail
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<MerchandiseTransactionData | null>(null);
 
   const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterValue(e.target.value);
@@ -458,6 +502,37 @@ const MerchandiseTransaction: React.FC = () => {
           textColor: "text-gray-800",
         };
     }
+  };
+
+  // Fungsi untuk format shipping address
+  const formatShippingAddress = (address: ShippingAddress | string | undefined): string => {
+    if (!address) return "-";
+
+    if (typeof address === "string") return address;
+
+    // Jika address adalah object
+    const addr = address as ShippingAddress;
+
+    // Buat string address dari object
+    const parts: string[] = [];
+
+    if (addr.nama_penerima) {
+      parts.push(addr.nama_penerima);
+    }
+
+    if (addr.address_detail) {
+      parts.push(addr.address_detail);
+    }
+
+    if (addr.address_name) {
+      parts.push(addr.address_name);
+    }
+
+    if (addr.phone) {
+      parts.push(`Telp: ${addr.phone}`);
+    }
+
+    return parts.length > 0 ? parts.join(", ") : "-";
   };
 
   // Fetch data creators
@@ -513,7 +588,7 @@ const MerchandiseTransaction: React.FC = () => {
         // Join all names with a separator
         const productName = productNames.length > 0 ? productNames.join(" | ") : "-";
 
-        // Get creator info from transaction data - FIXED VERSION
+        // Get creator info from transaction data
         let creatorId = 0;
         let creatorName = "Unknown";
 
@@ -531,6 +606,9 @@ const MerchandiseTransaction: React.FC = () => {
           creatorId = parseInt(item.user_id) || 0;
         }
 
+        // Format shipping address
+        const shippingAddress = item.shipping_address || item.address || "-";
+
         return {
           id: item.id ?? item.order_product_id ?? 0,
           invoice_no: item.invoice_no ?? item.invoiceNo ?? item.invoice ?? "-",
@@ -542,6 +620,16 @@ const MerchandiseTransaction: React.FC = () => {
           voucher: item.voucher ?? item.voucher_code ?? "-",
           creator_id: creatorId,
           creator_name: creatorName,
+          // Tambahan data untuk modal
+          detail: item.detail || [],
+          order_date: item.created_at || item.order_date || item.date || "-",
+          customer_name: item.customer_name || item.customer?.name || item.nama_penerima || "-",
+          customer_email: item.customer_email || item.customer?.email || "-",
+          shipping_address: shippingAddress,
+          // Tambahan field
+          status_name: item.status_name || item.status?.name || "-",
+          payment_method: item.payment_method || item.payment?.method || "-",
+          notes: item.notes || item.note || "-",
         };
       });
 
@@ -589,7 +677,7 @@ const MerchandiseTransaction: React.FC = () => {
     });
   }, [data, creators]);
 
-  // Filter data by creator and invoice search - FIXED FILTER LOGIC
+  // Filter data by creator and invoice search
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
 
@@ -623,6 +711,14 @@ const MerchandiseTransaction: React.FC = () => {
     }, 0);
   }, [paginatedItems]);
 
+  // Hitung total price dari SEMUA item yang difilter
+  const totalPriceAllFiltered = useMemo(() => {
+    return filtered.reduce((sum, item) => {
+      const price = Number(item.total_price) || 0;
+      return sum + price;
+    }, 0);
+  }, [filtered]);
+
   // --- Export to CSV (can be opened in Excel) ---
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     if (!rows || rows.length === 0) {
@@ -650,7 +746,7 @@ const MerchandiseTransaction: React.FC = () => {
         escapeCell(r.sku),
         escapeCell(r.total_qty),
         escapeCell(r.total_price),
-        escapeCell(getStatusInfo(r.transaction_status_id).text), // Export status text
+        escapeCell(getStatusInfo(r.transaction_status_id).text),
         escapeCell(r.voucher),
         escapeCell(r.creator_name),
       ].join(",")
@@ -684,14 +780,49 @@ const MerchandiseTransaction: React.FC = () => {
   };
   // --- end export functions ---
 
-  // Function to View - open URL from .env
-  const handleViewInvoice = (invoiceNo: string) => {
-    if (invoiceNo && invoiceNo !== "-") {
-      const baseUrl = process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
-      const viewUrl = `${baseUrl}merch-invoice/${invoiceNo}`;
-      window.open(viewUrl, "_blank", "noopener,noreferrer");
+  // Function to open modal detail
+  const handleViewDetail = (transaction: MerchandiseTransactionData) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
+  };
+
+  // Format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString || dateString === "-") return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
     }
   };
+
+  // Format currency
+  const formatCurrency = (amount?: number | string) => {
+    const num = Number(amount) || 0;
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(num);
+  };
+
+  function onRowsPerPageChange(event: React.ChangeEvent<HTMLSelectElement>): void {
+    setRowsPerPage(Number(event.target.value));
+    setPage(1);
+  }
 
   if (loading || loadingCreators) {
     return <div>Loading...</div>;
@@ -701,18 +832,13 @@ const MerchandiseTransaction: React.FC = () => {
     return <div>Error: {error}</div>;
   }
 
-  function onRowsPerPageChange(event: React.ChangeEvent<HTMLSelectElement>): void {
-    setRowsPerPage(Number(event.target.value));
-    setPage(1);
-  }
-
   return (
     <Card className={`!overflow-auto`} p={20} m={10} withBorder>
-      {/* Statistic Cards - UPDATED TO SHOW FILTERED DATA */}
+      {/* Statistic Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
-          <p className="text-lg font-semibold mt-1 text-gray-800">Rp {filtered.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0).toLocaleString("id-ID")}</p>
+          <p className="text-lg font-semibold mt-1 text-gray-800">Rp {totalPriceAllFiltered.toLocaleString("id-ID")}</p>
           {selectedCreator !== "all" && <p className="text-xs text-gray-500 mt-1">(Filtered by creator)</p>}
         </div>
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
@@ -758,13 +884,7 @@ const MerchandiseTransaction: React.FC = () => {
                 title="Export to Excel"
                 disabled={filtered.length === 0}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <FontAwesomeIcon icon={faDownload} className="h-4 w-4 text-green-600" />
                 <span>Export ({filtered.length})</span>
               </button>
             </div>
@@ -823,7 +943,7 @@ const MerchandiseTransaction: React.FC = () => {
                   <TableColumn>Transaction Status</TableColumn>
                   <TableColumn>Voucher</TableColumn>
                   <TableColumn>Creator</TableColumn>
-                  <TableColumn width={100}>Actions</TableColumn>
+                  <TableColumn width={80}>Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
                   {paginatedItems.map((item, index) => {
@@ -843,14 +963,15 @@ const MerchandiseTransaction: React.FC = () => {
                         <TableCell>{item.voucher}</TableCell>
                         <TableCell>{item.creator_name}</TableCell>
                         <TableCell>
-                          <button
-                            onClick={() => handleViewInvoice(item.invoice_no || "")}
-                            className="text-blue-600 hover:text-blue-800 text-sm underline"
-                            disabled={!item.invoice_no || item.invoice_no === "-"}
-                            title={!item.invoice_no || item.invoice_no === "-" ? "Invoice number not available" : `View ${item.invoice_no}`}
-                          >
-                            View
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleViewDetail(item)}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                              title={`View details for ${item.invoice_no}`}
+                            >
+                              <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
+                            </button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -879,6 +1000,10 @@ const MerchandiseTransaction: React.FC = () => {
                         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Price in Page</div>
                         <div className="text-lg font-semibold text-gray-800">Rp {totalPriceInPage.toLocaleString("id-ID")}</div>
                       </div>
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total All Filtered</div>
+                        <div className="text-lg font-semibold text-gray-800">Rp {totalPriceAllFiltered.toLocaleString("id-ID")}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -905,6 +1030,247 @@ const MerchandiseTransaction: React.FC = () => {
           </div>
         </Tab>
       </Tabs>
+
+      {/* Modal Detail Transaksi */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        size="3xl"
+        scrollBehavior="inside"
+        className="max-w-4xl"
+      >
+        <ModalContent>
+          <>
+            <ModalHeader className="flex flex-col gap-1 py-4 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faFileInvoice} className="h-5 w-5 text-blue-600" />
+                    Detail Transaksi
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">Invoice: {selectedTransaction?.invoice_no || "-"}</p>
+                </div>
+                {selectedTransaction && (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusInfo(selectedTransaction.transaction_status_id).color}`}>
+                    {getStatusInfo(selectedTransaction.transaction_status_id).text}
+                  </span>
+                )}
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-4">
+              {selectedTransaction && (
+                <div className="space-y-5">
+                  {/* Section 1: Invoice & Order Info */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FontAwesomeIcon icon={faReceipt} className="h-4 w-4 text-blue-600" />
+                      <h3 className="text-sm font-semibold text-gray-700">Informasi Transaksi</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Invoice Number</p>
+                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.invoice_no || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Tanggal Order</p>
+                        <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
+                          <FontAwesomeIcon icon={faCalendar} className="h-3 w-3 text-gray-400" />
+                          {formatDate(selectedTransaction.order_date)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Voucher</p>
+                        <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
+                          <FontAwesomeIcon icon={faTag} className="h-3 w-3 text-gray-400" />
+                          {selectedTransaction.voucher || "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <Divider className="my-2" />
+
+                  {/* Section 2: Customer & Shipping Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-green-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Informasi Customer</h3>
+                      </div>
+                      <div className="space-y-2 pl-1">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nama</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.customer_name || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Email</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.customer_email || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FontAwesomeIcon icon={faTruck} className="h-4 w-4 text-orange-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Alamat Pengiriman</h3>
+                      </div>
+                      <div className="pl-1">
+                        <p className="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
+                        <p className="text-sm font-medium text-gray-800 leading-relaxed">
+                          {formatShippingAddress(selectedTransaction.shipping_address)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Product & Creator Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FontAwesomeIcon icon={faBox} className="h-4 w-4 text-purple-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Informasi Produk</h3>
+                      </div>
+                      <div className="space-y-2 pl-1">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nama Produk</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.product_name || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">SKU</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.sku || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-indigo-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Informasi Creator</h3>
+                      </div>
+                      <div className="space-y-2 pl-1">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nama Creator</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.creator_name || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Creator ID</p>
+                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.creator_id || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Order Summary */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FontAwesomeIcon icon={faShoppingCart} className="h-4 w-4 text-gray-600" />
+                      <h3 className="text-sm font-semibold text-gray-700">Ringkasan Order</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Total Quantity</p>
+                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.total_qty || 0} item(s)</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Metode Pembayaran</p>
+                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.payment_method || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Total Harga</p>
+                        <p className="text-lg font-bold text-blue-700">{formatCurrency(selectedTransaction.total_price)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 5: Notes (if exists) */}
+                  {selectedTransaction.notes && selectedTransaction.notes !== "-" && (
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 text-yellow-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Catatan</h3>
+                      </div>
+                      <p className="text-sm text-gray-700 pl-6">{selectedTransaction.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Section 6: Order Items Table */}
+                  {selectedTransaction.detail && selectedTransaction.detail.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FontAwesomeIcon icon={faBox} className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-semibold text-gray-700">Detail Item ({selectedTransaction.detail.length})</h3>
+                      </div>
+                      <div className="overflow-x-auto border rounded-lg">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produk</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Qty</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Harga</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {selectedTransaction.detail.map((item: any, index: number) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{index + 1}</td>
+                                <td className="px-3 py-2 text-xs font-medium text-gray-900 max-w-xs truncate">
+                                  {item.product?.product_name ||
+                                    item.product_name ||
+                                    item.product?.name ||
+                                    item.name ||
+                                    "-"}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700 text-center">{item.quantity || item.qty || 0}</td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700 text-right">{formatCurrency(item.price || item.product?.price)}</td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900 text-right">
+                                  {formatCurrency((item.quantity || item.qty || 0) * (Number(item.price) || Number(item.product?.price) || 0))}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ModalBody>
+            <ModalFooter className="py-3 border-t">
+              <div className="flex justify-between items-center w-full">
+                <Button
+                  color="default"
+                  variant="light"
+                  onPress={handleCloseModal}
+                  className="text-sm"
+                >
+                  Tutup
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    onPress={() => {
+                      if (selectedTransaction?.invoice_no && selectedTransaction.invoice_no !== "-") {
+                        const baseUrl = process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
+                        const viewUrl = `${baseUrl}merch-invoice/${selectedTransaction.invoice_no}`;
+                        window.open(viewUrl, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    isDisabled={!selectedTransaction?.invoice_no || selectedTransaction.invoice_no === "-"}
+                    className="text-sm"
+                  >
+                    <FontAwesomeIcon icon={faEye} className="h-3 w-3 mr-2" />
+                    Lihat Invoice Lengkap
+                  </Button>
+                </div>
+              </div>
+            </ModalFooter>
+          </>
+        </ModalContent>
+      </Modal>
     </Card>
   );
 };

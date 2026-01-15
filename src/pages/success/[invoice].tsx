@@ -182,13 +182,6 @@ export default function Invoice() {
     }
   }, [data, isMounted]);
 
-  // const calculateInsuranceTotal = () => {
-  //   if (!insuranceChecked || !data?.insurance_amount || !data?.total_qty) return 0;
-
-  //   // insurance_amount biasanya per tiket
-  //   return data?.insurance_amount * data?.total_qty;
-  // };
-
   // Hitung total asuransi berdasarkan semua ticket
   const calculateInsuranceTotal = () => {
     // Cek apakah ada asuransi di transaction
@@ -318,7 +311,6 @@ export default function Invoice() {
                       <Text size="xs" fw={300}>
                         Tanggal Pesanan Dibuat
                       </Text>
-                      {/* <Text size="sm">{moment(data?.created_at).format("HH:mm, DD MMMM YYYY")}</Text> */}
                       <Text size="sm">{createdAtText ?? "Memuat waktu..."}</Text>
                     </Stack>
                   </SimpleGrid>
@@ -327,20 +319,6 @@ export default function Invoice() {
 
               {(data?.grandtotal ?? 0) > 0 && (
                 <Stack gap={10} className={`md:max-w-[250px] shrink-0`}>
-                  {/* <Text fw={600} c="gray.8">
-                    Total Pembayaran
-                  </Text>
-                  <Card bg="gray.1">
-                    <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
-                      <Text size="xl" fw={600}>
-                        {(data?.grandtotal ?? 0) > 0 ? (
-                          <NumberFormatter value={data?.grandtotal ?? 999999} />
-                        ) : (
-                          <Text fw={600} c="green">
-                            Free
-                          </Text>
-                        )}
-                      </Text> */}
                   <Text fw={600} c="gray.8">
                     Total Pembayaran
                   </Text>
@@ -445,6 +423,62 @@ export default function Invoice() {
                         </Text>
                       </Stack>
                     ))}
+                  </SimpleGrid>
+                </Card>
+              </Stack>
+            </Flex>
+
+            <Flex gap={20} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
+              <Stack gap={10} className={`lg:max-w-[630px] shrink-0`}>
+                <Text fw={600} c="gray.8">
+                  Informasi Merchandise
+                </Text>
+                <Card withBorder>
+                  <SimpleGrid className={`!grid-cols-1 !gap-[15px]`}>
+                    {data?.transaction_merches && data.transaction_merches.length > 0 ? (
+                      data.transaction_merches.map((merch, index) => (
+                        <Stack key={index} gap={0}>
+                          <Flex align="center" gap={10}>
+                            <Icon
+                              icon="tabler:shirt"
+                              className={`text-primary-base text-[20px] shrink-0`}
+                            />
+                            <Stack gap={0} className="flex-grow">
+                              <Text size="md" fw={600}>
+                                {merch.noted || "Merchandise"}
+                              </Text>
+                              <Text size="sm" fw={300}>
+                                {merch.qty} Item × {new Intl.NumberFormat("id-ID", {
+                                  style: "currency",
+                                  currency: "IDR"
+                                }).format(Number(merch.price) || 0)}
+                              </Text>
+                              {merch.noted && (
+                                <Text size="xs" fw={300} c="gray" mt={5}>
+                                  Catatan: {merch.noted}
+                                </Text>
+                              )}
+                            </Stack>
+                            <Text size="md" fw={600}>
+                              {new Intl.NumberFormat("id-ID", {
+                                style: "currency",
+                                currency: "IDR"
+                              }).format(Number(merch.subtotal) || 0)}
+                            </Text>
+                          </Flex>
+                        </Stack>
+                      ))
+                    ) : (
+                      <Flex align="center" gap={10} py={10}>
+                        <Icon
+                          icon="tabler:shirt-off"
+                          className={`text-gray-400 text-[20px]`}
+                        />
+                        <Text size="sm" c="gray">
+                          Tidak ada merchandise yang dibeli
+                        </Text>
+                      </Flex>
+                    )}
                   </SimpleGrid>
                 </Card>
               </Stack>
