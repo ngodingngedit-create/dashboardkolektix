@@ -392,6 +392,7 @@ import { Card } from "@mantine/core";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faDownload, faFileInvoice, faUser, faBox, faShoppingCart, faTruck, faReceipt, faTag, faCalendar, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import useLoggedUser from "@/utils/useLoggedUser";
 
 interface CreatorData {
   id: number;
@@ -438,6 +439,7 @@ interface MerchandiseTransactionData {
 }
 
 const MerchandiseTransaction: React.FC = () => {
+  const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [creators, setCreators] = useState<CreatorData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -457,11 +459,6 @@ const MerchandiseTransaction: React.FC = () => {
     setFilterValue(e.target.value);
     setPage(1);
   }, []);
-
-  const onCreatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCreator(e.target.value);
-    setPage(1);
-  };
 
   // Fungsi untuk mendapatkan status dan warna berdasarkan transaction_status_id
   const getStatusInfo = (statusId?: number) => {
@@ -535,7 +532,7 @@ const MerchandiseTransaction: React.FC = () => {
     return parts.length > 0 ? parts.join(", ") : "-";
   };
 
-  // Fetch data creators
+  // Fetch data creators (tetap untuk kebutuhan mapping creator name)
   const getCreators = async () => {
     setLoadingCreators(true);
     try {
@@ -548,13 +545,29 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
-  // Fetch transaction data
+  // Fetch transaction data HANYA untuk creator yang sedang login
   const getData = async () => {
     setLoading(true);
     try {
       const res: any = await Get("order-bycreator", {});
+
+      // Filter data berdasarkan creator_id yang sedang login
+      const creatorId = user?.has_creator?.id;
+      let filteredData = res?.data || [];
+
+      if (creatorId) {
+        filteredData = filteredData.filter((item: any) => {
+          // Cek berbagai kemungkinan field untuk creator_id
+          const itemCreatorId = item.creator_id ||
+            item.creator?.id ||
+            (item.user_id ? parseInt(item.user_id) : null);
+
+          return itemCreatorId === creatorId;
+        });
+      }
+
       // Map response to flatten product_name and normalize fields
-      const mapped: MerchandiseTransactionData[] = (res?.data || []).map((item: any) => {
+      const mapped: MerchandiseTransactionData[] = filteredData.map((item: any) => {
         // Collect ALL product names from detail[]
         const productNames: string[] = [];
 
@@ -590,12 +603,12 @@ const MerchandiseTransaction: React.FC = () => {
 
         // Get creator info from transaction data
         let creatorId = 0;
-        let creatorName = "Unknown";
+        let creatorName = user?.has_creator?.name || "Creator";
 
         // Priority 1: Jika ada creator object lengkap
         if (item.creator?.id) {
           creatorId = item.creator.id;
-          creatorName = item.creator.name || item.creator.username || item.creator.email || "Unknown";
+          creatorName = item.creator.name || item.creator.username || item.creator.email || creatorName;
         }
         // Priority 2: Jika ada creator_id langsung
         else if (item.creator_id) {
@@ -677,15 +690,9 @@ const MerchandiseTransaction: React.FC = () => {
     });
   }, [data, creators]);
 
-  // Filter data by creator and invoice search
+  // Filter data HANYA berdasarkan pencarian invoice (creator sudah difilter di awal)
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
-
-    // Filter by creator
-    if (selectedCreator !== "all") {
-      const [creatorId] = selectedCreator.split("-");
-      result = result.filter((item) => item.creator_id?.toString() === creatorId);
-    }
 
     // Filter by invoice number
     if (filterValue) {
@@ -693,7 +700,7 @@ const MerchandiseTransaction: React.FC = () => {
     }
 
     return result;
-  }, [dataWithCreatorNames, selectedCreator, filterValue]);
+  }, [dataWithCreatorNames, filterValue]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
@@ -839,7 +846,7 @@ const MerchandiseTransaction: React.FC = () => {
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
           <p className="text-lg font-semibold mt-1 text-gray-800">Rp {totalPriceAllFiltered.toLocaleString("id-ID")}</p>
-          {selectedCreator !== "all" && <p className="text-xs text-gray-500 mt-1">(Filtered by creator)</p>}
+          <p className="text-xs text-gray-500 mt-1">Creator: {user?.has_creator?.name || "You"}</p>
         </div>
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Dikirim</h3>
@@ -856,7 +863,6 @@ const MerchandiseTransaction: React.FC = () => {
           <p className="text-lg font-semibold mt-1 text-gray-800">
             {filtered.length} item{filtered.length !== 1 ? "s" : ""}
           </p>
-          {selectedCreator !== "all" && <p className="text-xs text-gray-500 mt-1">(Filtered)</p>}
         </div>
       </div>
 
@@ -868,14 +874,15 @@ const MerchandiseTransaction: React.FC = () => {
             <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto space-y-2 md:space-y-0">
               <div className="flex items-center gap-2 w-full md:w-auto">
                 <Input type="text" placeholder="Search by Invoice" value={filterValue} onChange={onSearchChange} className="w-full md:w-64" size="sm" />
-                <select value={selectedCreator} onChange={onCreatorChange} className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48" disabled={loadingCreators}>
+                {/* HAPUS DROPDOWN FILTER CREATOR */}
+                {/* <select value={selectedCreator} onChange={onCreatorChange} className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48" disabled={loadingCreators}>
                   <option value="all">All Creators</option>
                   {creators.map((creator) => (
                     <option key={creator.id} value={`${creator.id}-${creator.name}`}>
                       {creator.has_user?.name || creator.name}
                     </option>
                   ))}
-                </select>
+                </select> */}
               </div>
               <button
                 type="button"
@@ -896,8 +903,22 @@ const MerchandiseTransaction: React.FC = () => {
             </select>
           </div>
 
-          {/* Filter Status Indicator */}
-          {selectedCreator !== "all" && (
+          {/* Info Creator yang sedang login */}
+          {user?.has_creator?.id && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-blue-700">
+                    Showing transactions for: <strong>{user?.has_creator?.name || "Your Account"}</strong>
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500">Creator ID: {user?.has_creator?.id}</span>
+              </div>
+            </div>
+          )}
+
+          {/* HAPUS Filter Status Indicator karena tidak ada filter creator lagi */}
+          {/* {selectedCreator !== "all" && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -910,16 +931,14 @@ const MerchandiseTransaction: React.FC = () => {
                 </button>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Perbaikan di sini: Tampilkan pesan berbeda berdasarkan kondisi */}
           {data.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No data available</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {selectedCreator !== "all"
-                ? `No transactions found for selected creator${filterValue ? ` and invoice containing "${filterValue}"` : ""}`
-                : `No transactions found${filterValue ? ` for invoice containing "${filterValue}"` : ""}`}
+              {`No transactions found for invoice containing "${filterValue}"`}
             </div>
           ) : (
             <>

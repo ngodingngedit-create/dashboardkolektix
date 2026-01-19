@@ -896,10 +896,9 @@
 // };
 
 // export default Merch;
-
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Image as MImage, Flex, ActionIcon, Switch } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Image as MImage, Flex, ActionIcon, Switch, Group } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
 import NextImage from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
@@ -945,82 +944,9 @@ const Merch: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRender, page]);
 
-  // const getData = async (pageNum: number = 1) => {
-  //   setLoading2(true);
-
-  //   try {
-  //     const creatorId = user?.has_creator?.id;
-  //     if (!creatorId) {
-  //       console.warn("getData aborted: no creator id on user", user);
-  //       setMerchList([]);
-  //       setLastPage(1);
-  //       return;
-  //     }
-
-  //     const qs = new URLSearchParams({
-  //       per_page: String(PER_PAGE),
-  //       page: String(pageNum),
-  //       creator_id: String(creatorId),
-  //     }).toString();
-
-  //     const url = `${process.env.NEXT_PUBLIC_URL}/product-bymerchant?${qs}`;
-  //     console.log("Fetching:", url);
-
-  //     const envToken = process.env.NEXT_PUBLIC_API_TOKEN || "";
-  //     const cookieToken = Cookies.get("authToken") || (typeof window !== "undefined" ? localStorage.getItem("authToken") || "" : "");
-  //     const token = envToken || cookieToken || "";
-
-  //     const headers: Record<string, string> = {
-  //       Accept: "application/json",
-  //     };
-  //     if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  //     const res = await fetch(url, {
-  //       method: "GET",
-  //       headers,
-  //     } as RequestInit);
-
-  //     if (!res.ok) {
-  //       throw new Error(`HTTP error! status: ${res.status}`);
-  //     }
-
-  //     const json = await res.json();
-  //     console.log("API data:", json);
-
-  //     const pagination = json?.data;
-  //     const list: MerchListResponse[] = Array.isArray(pagination?.data) ? pagination.data : Array.isArray(pagination) ? pagination : [];
-
-  //     setMerchList(Array.isArray(list) ? list : []);
-  //     const computedLastPage = pagination?.last_page ?? 1;
-  //     setLastPage(Number(computedLastPage) || 1);
-  //   } catch (err) {
-  //     console.error("Error fetching data:", err);
-  //     setMerchList([]);
-  //   } finally {
-  //     setLoading2(false);
-  //   }
-  // };
-
-  // const handleToggleStatus = async (id: number, status: boolean) => {
-  //   setLoading((prev) => [...prev, "toggle-status"]);
-  //   try {
-  //     const res: any = await Post(`product_toggle_status/${id}`, {
-  //       status: status ? 2 : 3,
-  //     });
-  //     if (res?.status) {
-  //       setMerchList((prev) => prev.map((e) => (e.id === id ? { ...e, product_status_id: status ? 2 : 3 } : e)));
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setLoading((prev) => prev.filter((s) => s !== "toggle-status"));
-  //   }
-  // };
-
   const getData = (pageNum: number = 1) => {
     setLoading2(true);
 
-    // ✅ GUARD: Pastikan punya creator_id
     const creatorId = user?.has_creator?.id;
 
     if (!creatorId) {
@@ -1034,7 +960,7 @@ const Merch: React.FC = () => {
     const qs = new URLSearchParams({
       per_page: String(PER_PAGE),
       page: String(pageNum),
-      creator_id: String(creatorId), // ✅ Kirim creator_id ke API langsung
+      creator_id: String(creatorId),
     }).toString();
 
     Get(`product?${qs}`, {})
@@ -1042,11 +968,9 @@ const Merch: React.FC = () => {
         if (res.data) {
           console.log("Merchant data response:", res);
 
-          // Ambil data dari response (sudah di-filter oleh backend)
           const products = Array.isArray(res.data) ? res.data : [];
           const totalLastPage = res?.last_page ?? 1;
 
-          // Set data ke state
           setMerchList(products);
           setLastPage(totalLastPage);
 
@@ -1067,7 +991,6 @@ const Merch: React.FC = () => {
   };
 
   const handleToggleStatus = async (id: number, status: boolean) => {
-    // client-side guard: pastikan item ada di merchList dan milik creator user
     const creatorId = user?.has_creator?.id;
     const item = merchList.find((p) => p.id === id);
 
@@ -1076,8 +999,6 @@ const Merch: React.FC = () => {
       return;
     }
 
-    // Jika API mengembalikan creator_id di item gunakan itu; field ini mungkin bernama merchant_id / creator_id tergantung API
-    // Contoh asumsi: item.creator_id
     if (creatorId && item.creator_id && String(item.creator_id) !== String(creatorId)) {
       console.warn(`Toggle aborted: product ${id} does not belong to creator ${creatorId}`);
       return;
@@ -1121,7 +1042,6 @@ const Merch: React.FC = () => {
     });
   };
 
-  // splitted function (stable reference via useMemo returning a function)
   const splittedByStatus = useMemo(() => {
     return (status: number) => merchList.filter((e) => e.product_status_id === status);
   }, [merchList]);
@@ -1138,6 +1058,7 @@ const Merch: React.FC = () => {
   const [category, setCategory] = useState<string>("");
   const [method, setMethod] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [locationFilter, setLocationFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
 
   const itemSearchText = (item: MerchListResponse) => {
@@ -1151,16 +1072,16 @@ const Merch: React.FC = () => {
     if (item.qty !== undefined) parts.push(String(item.qty));
     if (item.product_status_id !== undefined) parts.push(String(item.product_status_id));
     if (item.product_image?.length) parts.push(item.product_image.map((p: any) => String(p?.image_url ?? "")).join(" "));
+    if (item.has_store_location?.store_name) parts.push(String(item.has_store_location.store_name));
+
     return parts.join(" ").toLowerCase();
   };
 
-  // precompute filtered arrays per tab status (useMemo top-level)
   const filteredMap = useMemo(() => {
     const map = new Map<number, MerchListResponse[]>();
     for (const [status] of tabStatus) {
       const baseList = splittedByStatus(status) || [];
       const filtered = (baseList || []).filter((item) => {
-        // date filter
         if (startDate || endDate) {
           const dateStr = (item as any).date || (item as any).created_at || "";
           if (dateStr) {
@@ -1177,25 +1098,28 @@ const Merch: React.FC = () => {
           }
         }
 
-        // category
         if (category) {
           const catField = (item as any).category || (item as any).category_id || "";
           if (!String(catField).toLowerCase().includes(category.toLowerCase())) return false;
         }
 
-        // method
         if (method) {
           const m = (item as any).payment_method || (item as any).method || "";
           if (!String(m).toLowerCase().includes(method.toLowerCase())) return false;
         }
 
-        // status filter
         if (statusFilter) {
           if (statusFilter === "active" && item.product_status_id !== 2) return false;
           if (statusFilter === "inactive" && item.product_status_id === 2) return false;
         }
 
-        // search
+        if (locationFilter) {
+          const itemLocation = item.has_store_location?.store_name || "";
+          if (!String(itemLocation).toLowerCase().includes(locationFilter.toLowerCase())) {
+            return false;
+          }
+        }
+
         if (search) {
           const needle = search.toLowerCase().trim();
           if (!itemSearchText(item).includes(needle)) return false;
@@ -1207,17 +1131,7 @@ const Merch: React.FC = () => {
       map.set(status, filtered);
     }
     return map;
-    // deps include everything used inside
-  }, [splittedByStatus, startDate, endDate, category, method, statusFilter, search, tabStatus]);
-
-  // optional debug: uncomment to log if any symbol exists (remove after fix)
-  // useEffect(() => {
-  //   for (const item of merchList) {
-  //     for (const k of Object.keys(item as any)) {
-  //       if (typeof (item as any)[k] === "symbol") console.error("Symbol found in merch item", k, (item as any)[k]);
-  //     }
-  //   }
-  // }, [merchList]);
+  }, [splittedByStatus, startDate, endDate, category, method, statusFilter, locationFilter, search, tabStatus]);
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
@@ -1261,20 +1175,72 @@ const Merch: React.FC = () => {
             <Tab key={status} title={label}>
               <Card className="!overflow-auto" p={0} withBorder>
                 {/* filter bar */}
-                <div className="bg-white px-4 py-3 border-b">
-                  <div className="flex flex-wrap gap-3 items-center">
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border rounded-full px-3 py-2" placeholder="Tanggal Mulai" />
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border rounded-full px-3 py-2" placeholder="Tanggal Akhir" />
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="border rounded-full px-3 py-2">
-                      <option value="">Semua Kategori</option>
-                    </select>
+                <div className="bg-white px-6 py-4 border-b">
+                  <div className="flex flex-col gap-4">
+                    {/* Baris 1: Filter Tanggal dan Lokasi */}
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Tanggal:</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Mulai"
+                          />
+                          <span className="text-gray-400">-</span>
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Akhir"
+                          />
+                        </div>
+                      </div>
 
-                    <div className="flex-1" />
+                      <div className="w-px h-6 bg-gray-300"></div>
 
-                    <div className="flex items-center gap-2">
-                      <Input isClearable value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Cari disini..." className="w-64" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lokasi:</span>
+                        <Input
+                          type="text"
+                          value={locationFilter}
+                          onChange={(e) => setLocationFilter(e.target.value)}
+                          className="w-48"
+                          size="sm"
+                          placeholder="Cari lokasi..."
+                          classNames={{
+                            input: "text-sm py-2",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Baris 2: Search dan Reset */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          isClearable
+                          value={search}
+                          onChange={(e: any) => setSearch(e.target.value)}
+                          placeholder="Cari merchandise..."
+                          className="min-w-[300px]"
+                          size="sm"
+                          startContent={
+                            <Icon icon="akar-icons:search" className="text-lg text-gray-400" />
+                          }
+                          classNames={{
+                            input: "text-sm py-2 pl-2",
+                          }}
+                        />
+                      </div>
+
                       <ButtonM
                         size="sm"
+                        variant="light"
+                        color="gray"
                         onClick={() => {
                           setSearch("");
                           setStartDate("");
@@ -1282,28 +1248,32 @@ const Merch: React.FC = () => {
                           setCategory("");
                           setMethod("");
                           setStatusFilter("");
+                          setLocationFilter("");
                         }}
+                        leftSection={<Icon icon="ph:arrow-counter-clockwise" className="text-base" />}
                       >
-                        Reset
+                        Reset Filter
                       </ButtonM>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-[8px] overflow-hidden">
-                  <Table removeWrapper className="rounded-[8px] [&_td]:py-[15px] min-w-[700px]">
+                  <Table removeWrapper className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]">
                     <TableHeader>
                       <TableColumn>No</TableColumn>
                       <TableColumn>Info Produk</TableColumn>
                       <TableColumn>SKU</TableColumn>
                       <TableColumn>Harga</TableColumn>
                       <TableColumn>Stock</TableColumn>
+                      <TableColumn>Lokasi</TableColumn>
                       <TableColumn>Aktif</TableColumn>
                     </TableHeader>
 
                     <TableBody>
                       {filtered.length === 0 ? (
                         <TableRow key="empty">
+                          <TableCell>{null}</TableCell>
                           <TableCell>{null}</TableCell>
                           <TableCell>{null}</TableCell>
                           <TableCell>{null}</TableCell>
@@ -1319,6 +1289,7 @@ const Merch: React.FC = () => {
                           const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
                           const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
                           const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
+                          const location = item.has_store_location?.store_name || "-";
 
                           return (
                             <TableRow key={safeId}>
@@ -1337,6 +1308,10 @@ const Merch: React.FC = () => {
                               </TableCell>
 
                               <TableCell>{stock ?? 0}</TableCell>
+
+                              <TableCell className="whitespace-nowrap">
+                                {String(location)}
+                              </TableCell>
 
                               <TableCell>
                                 <div className="flex items-center gap-[10px]">
@@ -1368,7 +1343,9 @@ const Merch: React.FC = () => {
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg">Belum ada merchandise yang dibuat</p>
-                        <p className="text-grey max-w-72 mt-[10px]">Mulai buat merchandise dengan klik button “Buat Merchandise” di bawah.</p>
+                        <p className="text-grey max-w-72 mt-[10px]">
+                          Mulai buat merchandise dengan klik button &quot;Buat Merchandise&quot; di bawah.
+                        </p>
                       </div>
                       <Button label="Buat Merchandise" color="primary" className="mt-4" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
                     </div>

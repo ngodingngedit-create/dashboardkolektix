@@ -234,38 +234,41 @@ interface PromoMerchandiseListProps {
 
 const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
   if (!data) {
-    return null; // Return null agar tidak render apa-apa jika tidak ada data
+    return null;
   }
 
-  // Perbaikan: handle jika products adalah object, bukan array
   let displayedProducts: PromoProduct[] = [];
 
   if (data.products) {
     if (Array.isArray(data.products)) {
-      // Jika products adalah array
       displayedProducts = data.products.filter((product: PromoProduct) => product.product_status_id === 2).slice(0, 6);
     } else {
-      // Jika products adalah object single product
-      const product = data.products as any; // Type assertion karena tipe mungkin tidak sesuai
+      const product = data.products as any;
       if (product.product_status_id === 2) {
         displayedProducts = [product];
       }
     }
   }
 
+  const cleanUrl = data.promo_banner_url ?
+    data.promo_banner_url.replace(/\\/g, '') :
+    null;
+
+  console.log("test image", cleanUrl)
+
   return (
     <div className="my-12 md:mx-auto md:max-w-10xl md:px-8 bg-blue-100 py-6">
-      {/* Container utama - 40-60 di mobile, 25-75 di desktop */}
       <div className="flex flex-row items-start w-full">
-        {/* Bagian kiri: Segera Koleksi - 40% mobile, 25% desktop */}
+        {/* Bagian kiri */}
         <div className="flex w-2/5 md:w-1/4 flex-col items-center justify-center px-2 md:px-4">
           <div className="text-center w-full">
-            <h2 className="text-2xl md:text-5xl font-bold text-dark mb-1 md:mb-4">{data.promo_name || "Segera Koleksi"}</h2>
+            <h2 className="text-2xl md:text-5xl font-bold text-dark mb-1 md:mb-4">
+              {data.promo_name || "Segera Koleksi"}
+            </h2>
             <div className="bg-gray-200 rounded-lg md:rounded-xl h-64 md:h-64 w-full flex items-center justify-center">
-              {/* GAMBAR DIPERBESAR UNTUK DESKTOP */}
               <div className="relative w-full h-full">
                 <Image
-                  src={data.promo_banner ? `/images/promo/${data.promo_banner}` : "../../public/images/promo.png"}
+                  src={cleanUrl || "/images/promo/promo-default.png"}
                   alt={data.promo_name || "Segera Koleksi"}
                   fill
                   className="object-contain"
@@ -277,17 +280,18 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
           </div>
         </div>
 
-        {/* Bagian kanan: Merchandise List - 60% mobile, 75% desktop */}
+        {/* Bagian kanan */}
         <div className="w-3/5 md:w-3/4 pl-2 md:pl-4 overflow-hidden">
-          {/* Header "Lihat Semua" - DI KANAN */}
           <div className="w-full flex justify-end mb-2 md:mb-4 pr-2 md:pr-0">
-            <Link href={`/promo/${data.promo_slug || data.promo_id}`} className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap">
+            <Link
+              href={`/promo/${data.promo_slug || data.promo_id}`}
+              className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap"
+            >
               Lihat Semua
               <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs md:text-base flex-shrink-0" />
             </Link>
           </div>
 
-          {/* Container merchandise - 1 CARD VISIBLE DI MOBILE */}
           <div className={styles.merchContainer}>
             {!loading ? (
               displayedProducts.length > 0 ? (

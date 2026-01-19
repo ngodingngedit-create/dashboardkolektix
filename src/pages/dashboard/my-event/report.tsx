@@ -199,7 +199,7 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, TextInput } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
@@ -210,7 +210,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faPaperPlane, faPencil, faPlus, faSearch, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faTrash } from "@fortawesome/free-solid-svg-icons";
 
 const Merch = () => {
   const [isr, setIsr] = useState(false);
@@ -235,6 +235,24 @@ const Merch = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionListResponse | null>(null);
+
+  // State untuk CRUD Voucher
+  const [vouchers, setVouchers] = useState([
+    { id: 1, kode: "DISKON50", namaPemesan: "John Doe", email: "john@example.com", status: "Terpakai", tanggalPakai: "2024-01-15" },
+    { id: 2, kode: "SALE30", namaPemesan: "Jane Smith", email: "jane@example.com", status: "Aktif", tanggalPakai: "-" },
+  ]);
+  const [voucherModalOpen, setVoucherModalOpen] = useState(false);
+  const [voucherForm, setVoucherForm] = useState({
+    id: null as number | null,
+    kode: "",
+    namaPemesan: "",
+    email: "",
+    status: "Aktif",
+    tanggalPakai: ""
+  });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [voucherToDelete, setVoucherToDelete] = useState<number | null>(null);
+  const [searchVoucher, setSearchVoucher] = useState<string>("");
 
   useEffect(() => {
     setIsr(true);
@@ -395,7 +413,7 @@ const Merch = () => {
         const ticketNames = e.tickets.map((ticket) => ticket.has_event_ticket?.name || "-");
         ticketName = ticketNames.join(", ");
 
-        // Hitung total harga tiket (price * qty)
+        // Hitung total harga tiket (price * qty) - HANYA TIKET
         ticketPrice = e.tickets.reduce((sum, ticket) => {
           return sum + (ticket.price || 0) * (ticket.qty_ticket || 0);
         }, 0);
@@ -403,12 +421,11 @@ const Merch = () => {
 
       return {
         ...e, // Simpan data asli untuk akses di action
-        No: null, // Akan diisi oleh TableData withRowIndex
         Nama: identity?.full_name || "-",
         Email: identity?.email ?? "-",
         "No. Invoice": e.invoice_no,
         "Nama Tiket": ticketName,
-        "Harga Tiket": `Rp ${ticketPrice.toLocaleString("id-ID")}`,
+        "Harga Tiket": `Rp ${ticketPrice.toLocaleString("id-ID")}`, // HANYA Harga Tiket, tidak termasuk merch
         Status: (
           <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find((z) => z.id == e.transaction_status_id)?.bgcolor}>
             {transactionStatus?.find((z) => z.id == e.transaction_status_id)?.name}
@@ -544,13 +561,102 @@ const Merch = () => {
       }));
   }, [dataListEticket]);
 
+  const filteredVouchers = useMemo(() => {
+    if (!searchVoucher) return vouchers;
+
+    const searchTerm = searchVoucher.toLowerCase();
+    return vouchers.filter(voucher =>
+      voucher.kode.toLowerCase().includes(searchTerm) ||
+      voucher.namaPemesan.toLowerCase().includes(searchTerm) ||
+      voucher.email.toLowerCase().includes(searchTerm) ||
+      voucher.status.toLowerCase().includes(searchTerm)
+    );
+  }, [vouchers, searchVoucher]);
+
   const listVoucher = useMemo(() => {
-    // Ini contoh data voucher - Anda perlu mengganti dengan data asli dari API
-    return [
-      { "Kode Voucher": "DISKON50", "Nama Pemesan": "John Doe", "Email": "john@example.com", "Status": "Terpakai", "Tanggal Pakai": "2024-01-15" },
-      { "Kode Voucher": "SALE30", "Nama Pemesan": "Jane Smith", "Email": "jane@example.com", "Status": "Aktif", "Tanggal Pakai": "-" },
-    ];
-  }, []);
+    return filteredVouchers.map((voucher) => ({
+      ...voucher,
+      "Kode Voucher": voucher.kode,
+      "Nama Pemesan": voucher.namaPemesan,
+      "Email": voucher.email,
+      "Status": (
+        <Badge color={voucher.status === "Aktif" ? "green" : "orange"}>
+          {voucher.status}
+        </Badge>
+      ),
+      "Tanggal Pakai": voucher.tanggalPakai,
+      "Action": (
+        <Group gap="xs">
+          <ActionIcon
+            color="blue"
+            variant="subtle"
+            onClick={() => handleEditVoucher(voucher)}
+          >
+            <FontAwesomeIcon icon={faPencil} size="sm" />
+          </ActionIcon>
+          <ActionIcon
+            color="red"
+            variant="subtle"
+            onClick={() => handleDeleteClick(voucher.id)}
+          >
+            <FontAwesomeIcon icon={faTrash} size="sm" />
+          </ActionIcon>
+        </Group>
+      )
+    }));
+  }, [filteredVouchers]);
+
+  // Fungsi CRUD Voucher
+  const handleAddVoucher = () => {
+    setVoucherForm({
+      id: null,
+      kode: "",
+      namaPemesan: "",
+      email: "",
+      status: "Aktif",
+      tanggalPakai: ""
+    });
+    setVoucherModalOpen(true);
+  };
+
+  const handleEditVoucher = (voucher: any) => {
+    setVoucherForm({
+      id: voucher.id,
+      kode: voucher.kode,
+      namaPemesan: voucher.namaPemesan,
+      email: voucher.email,
+      status: voucher.status,
+      tanggalPakai: voucher.tanggalPakai
+    });
+    setVoucherModalOpen(true);
+  };
+
+  const handleSaveVoucher = () => {
+    if (voucherForm.id) {
+      // Update voucher
+      setVouchers(vouchers.map(v =>
+        v.id === voucherForm.id ? { ...voucherForm, id: voucherForm.id } as any : v
+      ));
+    } else {
+      // Add new voucher
+      const newId = Math.max(...vouchers.map(v => v.id)) + 1;
+      setVouchers([...vouchers, { ...voucherForm, id: newId }]);
+    }
+    setVoucherModalOpen(false);
+  };
+
+  const handleDeleteClick = (id: number) => {
+    setVoucherToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteVoucher = () => {
+    if (voucherToDelete) {
+      setVouchers(vouchers.filter(v => v.id !== voucherToDelete));
+      setDeleteModalOpen(false);
+      setVoucherToDelete(null);
+    }
+  };
 
   if (!isr) return <></>;
 
@@ -622,40 +728,38 @@ const Merch = () => {
 
       {/* Tabs Container */}
       <Card className={`!overflow-auto`} p={20} withBorder>
-        {/* Statistics Cards - Hanya tampil di tab Data Penjualan */}
-        {selectedTab === "transaksi" && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {/* Card 1: Total Penjualan */}
-            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">Rp {salesStatistics.totalSales.toLocaleString("id-ID")}</p>
-            </div>
-
-            {/* Card 2: Transaksi Pending */}
-            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
-            </div>
-
-            {/* Card 3: Total Tiket */}
-            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
-            </div>
-
-            {/* Card 4: Total Checkin */}
-            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
-            </div>
-
-            {/* Card 5: Total Transaksi */}
-            <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
-              <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
-            </div>
+        {/* Statistics Cards - Tampil di semua tab (tetap statistik Data Penjualan) */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          {/* Card 1: Total Penjualan */}
+          <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
+            <p className="text-lg font-semibold mt-1 text-gray-800">Rp {salesStatistics.totalSales.toLocaleString("id-ID")}</p>
           </div>
-        )}
+
+          {/* Card 2: Transaksi Pending */}
+          <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
+            <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
+          </div>
+
+          {/* Card 3: Total Tiket */}
+          <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
+            <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
+          </div>
+
+          {/* Card 4: Total Checkin */}
+          <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
+            <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
+          </div>
+
+          {/* Card 5: Total Transaksi */}
+          <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
+            <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
+          </div>
+        </div>
 
         {/* Tabs Navigation */}
         <div className="mb-6">
@@ -728,19 +832,19 @@ const Merch = () => {
                     })) || [])
                   ]}
                   style={{ width: 200 }}
-                  leftSection={<FontAwesomeIcon icon={faDownload} size="sm" />}
+                  leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
                 />
 
-                <Input
-                  placeholder="Cari Nama, Email, atau Invoice..."
+                {/* <Input
+                  placeholder="Cari Data"
                   value={searchValue}
                   onChange={(e) => {
                     setSearchValue(e.target.value);
                     setPage(1);
                   }}
                   style={{ width: 300 }}
-                  leftSection={<FontAwesomeIcon icon={faDownload} size="sm" />}
-                />
+                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                /> */}
               </Flex>
             </Flex>
 
@@ -750,7 +854,6 @@ const Merch = () => {
               withRowIndex
               data={paginatedListTransaksi}
               mapData={(e) => ({
-                No: null,
                 Nama: e.Nama,
                 Email: e.Email,
                 "No. Invoice": e["No. Invoice"],
@@ -775,6 +878,13 @@ const Merch = () => {
         {/* Tab Content - Data Pemesan */}
         {selectedTab === "pemesan" && (
           <div className="pt-4">
+            <Flex justify="space-between" align="center" mb="md">
+              {/* <Input
+                placeholder="Cari Data"
+                style={{ width: 300 }}
+                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+              /> */}
+            </Flex>
             <Box mt={20}>
               <TableData loading={loading.includes("getdata")} tablekey="pemesan" withRowIndex data={listPemesan} mapData={(e) => ({ ...e })} />
             </Box>
@@ -784,6 +894,13 @@ const Merch = () => {
         {/* Tab Content - Data Checkin */}
         {selectedTab === "checkin" && (
           <div className="pt-4">
+            <Flex justify="space-between" align="center" mb="md">
+              {/* <Input
+                placeholder="Cari Data"
+                style={{ width: 300 }}
+                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+              /> */}
+            </Flex>
             <Box mt={20}>
               <TableData loading={loading.includes("getdata")} tablekey="checkin" withRowIndex data={listCheckin} mapData={(e) => ({ ...e })} />
             </Box>
@@ -793,71 +910,345 @@ const Merch = () => {
         {/* Tab Content - Data Voucher */}
         {selectedTab === "voucher" && (
           <div className="pt-4">
+            <Flex justify="space-between" align="center" mb="md">
+              {/* <Input
+                placeholder="Cari Data"
+                value={searchVoucher}
+                onChange={(e) => setSearchVoucher(e.target.value)}
+                style={{ width: 300 }}
+                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+              /> */}
+              <Button
+                onClick={handleAddVoucher}
+                leftSection={<FontAwesomeIcon icon={faPlus} />}
+              >
+                Tambah Voucher
+              </Button>
+            </Flex>
             <Box mt={20}>
-              <TableData loading={loading.includes("getdata")} tablekey="voucher" withRowIndex data={listVoucher} mapData={(e) => ({ ...e })} />
+              <TableData
+                loading={loading.includes("getdata")}
+                tablekey="voucher"
+                withRowIndex
+                data={listVoucher}
+                mapData={(e) => ({
+                  "Kode Voucher": e["Kode Voucher"],
+                  "Nama Pemesan": e["Nama Pemesan"],
+                  "Email": e["Email"],
+                  "Status": e["Status"],
+                  "Tanggal Pakai": e["Tanggal Pakai"],
+                  "Action": e["Action"]
+                })}
+              />
             </Box>
           </div>
         )}
       </Card>
 
+      {/* Modal untuk Tambah/Edit Voucher */}
+      <Modal
+        opened={voucherModalOpen}
+        onClose={() => setVoucherModalOpen(false)}
+        title={voucherForm.id ? "Edit Voucher" : "Tambah Voucher"}
+        size="md"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Kode Voucher"
+            placeholder="Masukkan kode voucher"
+            value={voucherForm.kode}
+            onChange={(e) => setVoucherForm({ ...voucherForm, kode: e.target.value })}
+            required
+          />
+          <TextInput
+            label="Nama Pemesan"
+            placeholder="Masukkan nama pemesan"
+            value={voucherForm.namaPemesan}
+            onChange={(e) => setVoucherForm({ ...voucherForm, namaPemesan: e.target.value })}
+            required
+          />
+          <TextInput
+            label="Email"
+            placeholder="Masukkan email"
+            value={voucherForm.email}
+            onChange={(e) => setVoucherForm({ ...voucherForm, email: e.target.value })}
+            required
+          />
+          <Select
+            label="Status"
+            value={voucherForm.status}
+            onChange={(value) => setVoucherForm({ ...voucherForm, status: value || "Aktif" })}
+            data={[
+              { value: "Aktif", label: "Aktif" },
+              { value: "Terpakai", label: "Terpakai" }
+            ]}
+          />
+          <TextInput
+            label="Tanggal Pakai"
+            placeholder="YYYY-MM-DD"
+            value={voucherForm.tanggalPakai}
+            onChange={(e) => setVoucherForm({ ...voucherForm, tanggalPakai: e.target.value })}
+          />
+          <Flex justify="flex-end" gap="md">
+            <Button variant="outline" onClick={() => setVoucherModalOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveVoucher}>
+              {voucherForm.id ? "Update" : "Simpan"}
+            </Button>
+          </Flex>
+        </Stack>
+      </Modal>
+
+      {/* Modal Konfirmasi Hapus */}
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Konfirmasi Hapus"
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text>Apakah Anda yakin ingin menghapus voucher ini?</Text>
+          <Flex justify="flex-end" gap="md">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Batal
+            </Button>
+            <Button color="red" onClick={handleDeleteVoucher}>
+              Hapus
+            </Button>
+          </Flex>
+        </Stack>
+      </Modal>
+
       {/* Modal View Detail Transaksi */}
       <Modal
         opened={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
-        title="Detail Transaksi"
+        title={
+          <Flex align="center" gap="sm">
+            <FontAwesomeIcon icon={faReceipt} />
+            <Text fw={600}>Detail Transaksi</Text>
+          </Flex>
+        }
         size="lg"
+        radius="md"
+        padding="xl"
       >
         {selectedTransaction && (
-          <Stack gap="md">
-            <Flex justify="space-between">
-              <Text fw={500}>No. Invoice:</Text>
-              <Text>{selectedTransaction.invoice_no}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Nama:</Text>
-              <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || "-"}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Email:</Text>
-              <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || "-"}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Status:</Text>
-              <Badge color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor}>
-                {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
-              </Badge>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Tipe Transaksi:</Text>
-              <Text>{selectedTransaction.type_transaction}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Total Price:</Text>
-              <Text fw={600}>Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fw={500}>Tanggal Transaksi:</Text>
-              <Text>{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY HH:mm:ss") : "-"}</Text>
-            </Flex>
+          <Stack gap="lg">
+            {/* Header Info Transaksi */}
+            <Card withBorder shadow="sm" radius="md" p="lg">
+              <Stack gap="xs">
+                <Flex justify="space-between" align="center">
+                  <Text fw={600} size="sm" c="dimmed">No. Invoice</Text>
+                  <Text fw={600} size="lg" className="font-mono">{selectedTransaction.invoice_no}</Text>
+                </Flex>
+                <Flex justify="space-between" align="center">
+                  <Text fw={600} size="sm" c="dimmed">Status</Text>
+                  <Badge
+                    size="lg"
+                    color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor}
+                    radius="sm"
+                  >
+                    {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
+                  </Badge>
+                </Flex>
+              </Stack>
+            </Card>
 
-            {/* Detail Tiket */}
-            {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
-              <div>
-                <Text fw={500} mb="xs">Detail Tiket:</Text>
-                {selectedTransaction.tickets.map((ticket, index) => (
-                  <Card key={index} withBorder mb="xs" p="sm">
-                    <Flex justify="space-between">
-                      <Text size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
-                      <Text size="sm">Qty: {ticket.qty_ticket}</Text>
+            {/* Info Pembeli */}
+            <Card withBorder shadow="sm" radius="md" p="lg">
+              <Text fw={600} size="md" mb="md">Informasi Pembeli</Text>
+              <Stack gap="sm">
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Nama</Text>
+                  <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || "-"}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Email</Text>
+                  <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || "-"}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Tipe Transaksi</Text>
+                  <Badge color={selectedTransaction.type_transaction === "online" ? "blue" : "orange"} variant="light">
+                    {selectedTransaction.type_transaction?.toUpperCase()}
+                  </Badge>
+                </Flex>
+              </Stack>
+            </Card>
+
+            {/* Detail Harga */}
+            <Card withBorder shadow="sm" radius="md" p="lg">
+              <Text fw={600} size="md" mb="md">Ringkasan Pembayaran</Text>
+              <Stack gap="sm">
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Tanggal Transaksi</Text>
+                  <Text>{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY HH:mm:ss") : "-"}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Total Pembayaran</Text>
+                  <Text fw={700} size="lg" c="blue">
+                    Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
+                  </Text>
+                </Flex>
+              </Stack>
+            </Card>
+
+            {/* Accordion untuk Detail Tiket dan Merch */}
+            <Accordion
+              variant="separated"
+              radius="md"
+              chevron={<FontAwesomeIcon icon={faChevronDown} />}
+              styles={{
+                chevron: {
+                  '&[data-rotate]': {
+                    transform: 'rotate(-180deg)',
+                  },
+                },
+              }}
+            >
+              {/* Detail Tiket */}
+              {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
+                <Accordion.Item value="tickets">
+                  <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} />}>
+                    <Flex align="center" gap="sm">
+                      <Text fw={600}>Detail Tiket</Text>
+                      <Badge size="sm" color="blue" variant="light">
+                        {selectedTransaction.tickets.length} item
+                      </Badge>
                     </Flex>
-                    <Flex justify="space-between">
-                      <Text size="sm">Harga per Tiket: Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
-                      <Text size="sm" fw={500}>Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 0)).toLocaleString("id-ID")}</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack gap="md">
+                      {selectedTransaction.tickets.map((ticket, index) => (
+                        <Card
+                          key={index}
+                          withBorder
+                          radius="sm"
+                          p="md"
+                          style={{ borderLeft: '4px solid #228be6' }}
+                        >
+                          <Flex justify="space-between" align="start" mb="xs">
+                            <div>
+                              <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                              <Text size="xs" c="dimmed">Qty: {ticket.qty_ticket} tiket</Text>
+                            </div>
+                            <Badge color="blue" variant="light">
+                              Rp {(ticket.price || 0).toLocaleString("id-ID")}
+                            </Badge>
+                          </Flex>
+                          <Flex justify="space-between" align="center">
+                            <Text size="sm" c="dimmed">Subtotal</Text>
+                            <Text fw={600} size="sm">
+                              Rp {((ticket.price || 0) * (ticket.qty_ticket || 0)).toLocaleString("id-ID")}
+                            </Text>
+                          </Flex>
+                        </Card>
+                      ))}
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Detail Merch */}
+              {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
+                <Accordion.Item value="merch">
+                  <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} />}>
+                    <Flex align="center" gap="sm">
+                      <Text fw={600}>Detail Merchandise</Text>
+                      <Badge size="sm" color="green" variant="light">
+                        {selectedTransaction.transaction_merches.length} item
+                      </Badge>
                     </Flex>
-                  </Card>
-                ))}
-              </div>
-            )}
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack gap="md">
+                      {selectedTransaction.transaction_merches.map((merch: any, index: number) => (
+                        <Card
+                          key={index}
+                          withBorder
+                          radius="sm"
+                          p="md"
+                          style={{ borderLeft: '4px solid #40c057' }}
+                        >
+                          <Flex justify="space-between" align="start" mb="xs">
+                            <div>
+                              <Text fw={600} size="sm">
+                                Merch {index + 1}
+                                {merch.product_variant?.varian_name && (
+                                  <Badge size="xs" color="gray" ml="sm">
+                                    {merch.product_variant.varian_name}
+                                  </Badge>
+                                )}
+                              </Text>
+                              <Text size="xs" c="dimmed">Qty: {merch.qty} pcs</Text>
+                            </div>
+                            <Badge color="green" variant="light">
+                              Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}
+                            </Badge>
+                          </Flex>
+
+                          {merch.product_variant && (
+                            <Flex gap="md" mb="xs">
+                              <Badge size="xs" color="gray" variant="outline">
+                                SKU: {merch.product_variant.sku || "-"}
+                              </Badge>
+                            </Flex>
+                          )}
+
+                          <Flex justify="space-between" align="center">
+                            <div>
+                              <Text size="sm" c="dimmed">Subtotal</Text>
+                              {merch.noted && (
+                                <Text size="xs" c="dimmed" mt={4}>
+                                  Catatan: {merch.noted}
+                                </Text>
+                              )}
+                            </div>
+                            <Text fw={600} size="sm">
+                              Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}
+                            </Text>
+                          </Flex>
+                        </Card>
+                      ))}
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+            </Accordion>
+
+            {/* Ringkasan Total */}
+            <Card withBorder shadow="sm" radius="md" p="lg" bg="blue.0">
+              <Stack gap="xs">
+                {/* Subtotal Tiket */}
+                {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
+                  <Flex justify="space-between">
+                    <Text fw={500} size="sm">Subtotal Tiket</Text>
+                    <Text fw={600} size="sm">
+                      Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + ((ticket.price || 0) * (ticket.qty_ticket || 0)), 0).toLocaleString("id-ID")}
+                    </Text>
+                  </Flex>
+                )}
+
+                {/* Subtotal Merch */}
+                {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
+                  <Flex justify="space-between">
+                    <Text fw={500} size="sm">Subtotal Merch</Text>
+                    <Text fw={600} size="sm">
+                      Rp {selectedTransaction.transaction_merches.reduce((sum, merch) => sum + (parseFloat(merch.price || "0") * (merch.qty || 0)), 0).toLocaleString("id-ID")}
+                    </Text>
+                  </Flex>
+                )}
+
+                {/* Total Keseluruhan */}
+                <Flex justify="space-between" align="center" pt="xs" style={{ borderTop: '1px solid #dee2e6' }}>
+                  <Text fw={700} size="lg">Total Transaksi</Text>
+                  <Text fw={800} size="xl" c="blue">
+                    Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
+                  </Text>
+                </Flex>
+              </Stack>
+            </Card>
           </Stack>
         )}
       </Modal>

@@ -79,6 +79,7 @@ export type MerchPromoResponse = {
   promo_name: string;
   promo_slug: string;
   promo_banner: string;
+  promo_banner_url: string;
   start_date: string;
   end_date: string;
   products: PromoProduct[];

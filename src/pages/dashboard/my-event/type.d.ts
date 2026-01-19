@@ -109,6 +109,35 @@ export type TransactionListResponse = {
       ticket_type: null | object; // Can define a specific structure if exists for ticket types.
     };
   }>;
+  transaction_merches: Array<{
+    id: number;
+    transaction_id: number;
+    transaction_identity_id: number;
+    event_merch_id: number;
+    product_variant_id: number;
+    qty: number;
+    price: string;
+    subtotal: string;
+    noted: string;
+    created_at: string;
+    updated_at: string;
+    product_variant: {
+      id: number;
+      product_id: number,
+      varian_category_id: number,
+      sku: string,
+      price: string,
+      weight: string,
+      stock_qty: number,
+      status_product: string,
+      created_by: null,
+      updated_by: null,
+      deleted_at: null,
+      created_at: string,
+      updated_at: string,
+      varian_name: string
+    }
+  }>;
 };
 
 export type EventListResponse = {
