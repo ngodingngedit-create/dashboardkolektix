@@ -834,17 +834,6 @@ const Merch = () => {
                   style={{ width: 200 }}
                   leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
                 />
-
-                {/* <Input
-                  placeholder="Cari Data"
-                  value={searchValue}
-                  onChange={(e) => {
-                    setSearchValue(e.target.value);
-                    setPage(1);
-                  }}
-                  style={{ width: 300 }}
-                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-                /> */}
               </Flex>
             </Flex>
 
@@ -879,11 +868,7 @@ const Merch = () => {
         {selectedTab === "pemesan" && (
           <div className="pt-4">
             <Flex justify="space-between" align="center" mb="md">
-              {/* <Input
-                placeholder="Cari Data"
-                style={{ width: 300 }}
-                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-              /> */}
+              {/* Input search bisa ditambahkan di sini jika diperlukan */}
             </Flex>
             <Box mt={20}>
               <TableData loading={loading.includes("getdata")} tablekey="pemesan" withRowIndex data={listPemesan} mapData={(e) => ({ ...e })} />
@@ -895,11 +880,7 @@ const Merch = () => {
         {selectedTab === "checkin" && (
           <div className="pt-4">
             <Flex justify="space-between" align="center" mb="md">
-              {/* <Input
-                placeholder="Cari Data"
-                style={{ width: 300 }}
-                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-              /> */}
+              {/* Input search bisa ditambahkan di sini jika diperlukan */}
             </Flex>
             <Box mt={20}>
               <TableData loading={loading.includes("getdata")} tablekey="checkin" withRowIndex data={listCheckin} mapData={(e) => ({ ...e })} />
@@ -911,13 +892,13 @@ const Merch = () => {
         {selectedTab === "voucher" && (
           <div className="pt-4">
             <Flex justify="space-between" align="center" mb="md">
-              {/* <Input
-                placeholder="Cari Data"
+              <Input
+                placeholder="Cari Voucher"
                 value={searchVoucher}
                 onChange={(e) => setSearchVoucher(e.target.value)}
                 style={{ width: 300 }}
                 leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-              /> */}
+              />
               <Button
                 onClick={handleAddVoucher}
                 leftSection={<FontAwesomeIcon icon={faPlus} />}
@@ -1026,13 +1007,44 @@ const Merch = () => {
         onClose={() => setViewModalOpen(false)}
         title={
           <Flex align="center" gap="sm">
-            <FontAwesomeIcon icon={faReceipt} />
-            <Text fw={600}>Detail Transaksi</Text>
+            <FontAwesomeIcon icon={faReceipt} color="white" />
+            <Text fw={600} c="white">Detail Transaksi</Text>
           </Flex>
         }
         size="lg"
         radius="md"
-        padding="xl"
+        styles={{
+          header: {
+            backgroundColor: '#0b387c',
+            color: 'white',
+            margin: 0,
+            borderTopLeftRadius: '8px',
+            borderTopRightRadius: '8px',
+            padding: '16px 20px',
+          },
+          content: {
+            padding: 0,
+          },
+          title: {
+            fontSize: '16px',
+            fontWeight: 600,
+            color: 'white',
+            flex: 1,
+          },
+          close: {
+            color: 'white',
+            marginRight: '4px',
+          },
+          body: {
+            padding: '20px',
+          }
+        }}
+        closeButtonProps={{
+          'aria-label': 'Close modal',
+          style: {
+            backgroundColor: 'transparent',
+          }
+        }}
       >
         {selectedTransaction && (
           <Stack gap="lg">

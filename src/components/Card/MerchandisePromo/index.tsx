@@ -1,3 +1,4 @@
+// MerchandisePromo/index.tsx (versi lebih fleksibel)
 import Image from "next/image";
 import { useState } from "react";
 import styles from "./index.module.css";
@@ -6,8 +7,10 @@ import { faBookmark as bookmarkRegular } from "@fortawesome/free-regular-svg-ico
 import { faBookmark as bookmarkSolid, faStar as starSolid, faCalendar, faLocationDot, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { NumberFormatter } from "@mantine/core";
+import { toast } from "react-toastify";
 
 interface PromoMerchCardProps {
+  id?: number; // Jadikan optional dengan ?
   name: string;
   price: number;
   sale: number;
@@ -18,9 +21,13 @@ interface PromoMerchCardProps {
   image?: string;
   location?: string;
   date?: string;
+  isBookmarked?: boolean;
+  onBookmarkToggle?: (id: number) => void;
+  showBookmark?: boolean;
 }
 
-const PromoMerchandiseCard = ({ 
+const MerchandisePromo = ({ 
+  id,
   name, 
   price, 
   sale, 
@@ -30,25 +37,57 @@ const PromoMerchandiseCard = ({
   redirect, 
   image, 
   location, 
-  date 
+  date,
+  isBookmarked = false,
+  onBookmarkToggle,
+  showBookmark = false,
 }: PromoMerchCardProps) => {
-  const [bookmark, setBookmark] = useState<boolean>(false);
+  const [bookmark, setBookmark] = useState<boolean>(isBookmarked);
   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  const handleBookmarkClick = (e: React.MouseEvent) => {
+  useState(() => {
+    setBookmark(isBookmarked);
+  });
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setBookmark(!bookmark);
+    
+    if (isProcessing) return;
+    
+    if (!showBookmark) {
+      toast.error("Silakan login untuk menyimpan bookmark");
+      return;
+    }
+    
+    if (!id) {
+      toast.error("Bookmark tidak tersedia untuk produk ini");
+      return;
+    }
+    
+    setIsProcessing(true);
+    try {
+      const newBookmarkState = !bookmark;
+      setBookmark(newBookmarkState);
+      
+      if (onBookmarkToggle && id) {
+        await onBookmarkToggle(id);
+      }
+    } catch (error) {
+      setBookmark(!bookmark);
+      console.error("Error toggling bookmark:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Beli merchandise:", name);
     window.location.href = redirect;
   };
 
-  // Format harga ke format Indonesia
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -65,7 +104,6 @@ const PromoMerchandiseCard = ({
       onMouseEnter={() => setShowBuyButton(true)}
       onMouseLeave={() => setShowBuyButton(false)}
     >
-      {/* Bagian Gambar dengan Bookmark Button */}
       <div className="relative overflow-hidden rounded-t-lg">
         <div className={`${styles.cardImg} w-full h-48 object-cover transition-transform duration-300 ${showBuyButton ? "scale-105" : ""}`}>
           <Image
@@ -80,16 +118,27 @@ const PromoMerchandiseCard = ({
           />
         </div>
 
-        {/* Bookmark Button di pojok kanan atas */}
-        <button
-          onClick={handleBookmarkClick}
-          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-white/80 hover:bg-white rounded-full transition-all duration-200 z-10"
-          aria-label={bookmark ? "Hapus bookmark" : "Tambahkan bookmark"}
-        >
-          <FontAwesomeIcon icon={bookmark ? bookmarkSolid : bookmarkRegular} className={bookmark ? "text-primary-500" : "text-gray-600"} size="lg" />
-        </button>
+        {showBookmark && id && (
+          <button
+            onClick={handleBookmarkClick}
+            disabled={isProcessing}
+            className={`absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 z-10
+              ${bookmark 
+                ? 'bg-primary-100 text-primary-500 hover:bg-primary-200' 
+                : 'bg-white/80 hover:bg-white text-gray-600'
+              }
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+            aria-label={bookmark ? "Hapus bookmark" : "Tambahkan bookmark"}
+          >
+            <FontAwesomeIcon 
+              icon={bookmark ? bookmarkSolid : bookmarkRegular} 
+              className={bookmark ? "text-primary-500" : "text-gray-600"} 
+              size="lg" 
+            />
+          </button>
+        )}
 
-        {/* Tombol Beli (versi asli) - muncul saat hover */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -112,22 +161,17 @@ const PromoMerchandiseCard = ({
         </button>
       </div>
 
-      {/* Bagian Konten */}
       <div className="p-3">
-        {/* Nama Merchandise */}
         <h3 className="text-dark font-bold text-sm mb-2 line-clamp-2">{name}</h3>
 
-        {/* Rating dan Lokasi */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            {/* Lokasi */}
             <div className="flex items-center">
               <FontAwesomeIcon icon={faLocationDot} className="text-gray-400 text-xs mr-1" />
               <span className="text-gray-600 text-xs truncate max-w-[120px]">{location || "Unknown"}</span>
             </div>
           </div>
 
-          {/* Tanggal (jika ada) */}
           {date && (
             <div className="flex items-center text-gray-500 text-xs">
               <FontAwesomeIcon icon={faCalendar} className="mr-1" />
@@ -139,10 +183,12 @@ const PromoMerchandiseCard = ({
           )}
         </div>
 
-        {/* Creator dan Harga (layout kiri-kanan) */}
         <div className="pt-2 border-t border-blue-100 border-dashed flex items-center justify-between">
-          {/* Bagian Kiri: Creator Info */}
-          <Link href={`/creator/${creatorid || creator}`} className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+          <Link 
+            href={`/creator/${creatorid || creator}`} 
+            className="flex items-center gap-2 flex-1 min-w-0" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <Image 
               src={creatorImage || "/images/default-avatar.png"} 
               alt={`${creator} logo`} 
@@ -159,10 +205,13 @@ const PromoMerchandiseCard = ({
             </div>
           </Link>
 
-          {/* Bagian Kanan: Harga */}
           <div className="text-right ml-2 flex-shrink-0">
             <div className="text-dark font-bold text-sm">{formatPrice(price)}</div>
-            {sale > 0 && <div className="text-gray-400 text-[10px] line-through">{formatPrice(price + (price * sale) / 100)}</div>}
+            {sale > 0 && (
+              <div className="text-gray-400 text-[10px] line-through">
+                {formatPrice(price + (price * sale) / 100)}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -170,4 +219,4 @@ const PromoMerchandiseCard = ({
   );
 };
 
-export default PromoMerchandiseCard;
+export default MerchandisePromo;

@@ -367,7 +367,6 @@
 // };
 
 // export default MerchandiseTransaction;
-
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Table,
@@ -386,12 +385,14 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  Divider
+  Divider,
+  Accordion,
+  AccordionItem
 } from "@nextui-org/react";
 import { Card } from "@mantine/core";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faDownload, faFileInvoice, faUser, faBox, faShoppingCart, faTruck, faReceipt, faTag, faCalendar, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faDownload, faFileInvoice, faUser, faBox, faShoppingCart, faTruck, faReceipt, faTag, faCalendar, faInfoCircle, faChevronDown, faChevronRight, faCreditCard, faMapMarkerAlt, faStore, faPhone, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
 
 interface CreatorData {
@@ -426,13 +427,11 @@ interface MerchandiseTransactionData {
   voucher?: number | string;
   creator_id?: number;
   creator_name?: string;
-  // Tambahan field untuk modal detail
   detail?: any[];
   order_date?: string;
   customer_name?: string;
   customer_email?: string;
   shipping_address?: ShippingAddress | string;
-  // Tambahan field dari response API
   status_name?: string;
   payment_method?: string;
   notes?: string;
@@ -451,7 +450,6 @@ const MerchandiseTransaction: React.FC = () => {
   const [selectedCreator, setSelectedCreator] = useState<string>("all");
   const [loadingCreators, setLoadingCreators] = useState<boolean>(false);
 
-  // State untuk modal detail
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] = useState<MerchandiseTransactionData | null>(null);
 
@@ -460,31 +458,30 @@ const MerchandiseTransaction: React.FC = () => {
     setPage(1);
   }, []);
 
-  // Fungsi untuk mendapatkan status dan warna berdasarkan transaction_status_id
   const getStatusInfo = (statusId?: number) => {
     switch (statusId) {
-      case 1: // pending
+      case 1:
         return {
           text: "Pending",
           color: "bg-yellow-100 text-yellow-800 border-yellow-200",
           bgColor: "bg-yellow-100",
           textColor: "text-yellow-800",
         };
-      case 2: // success
+      case 2:
         return {
           text: "Success",
           color: "bg-green-100 text-green-800 border-green-200",
           bgColor: "bg-green-100",
           textColor: "text-green-800",
         };
-      case 3: // failed
+      case 3:
         return {
           text: "Failed",
           color: "bg-red-100 text-red-800 border-red-200",
           bgColor: "bg-red-100",
           textColor: "text-red-800",
         };
-      case 4: // expired
+      case 4:
         return {
           text: "Expired",
           color: "bg-gray-100 text-gray-800 border-gray-200",
@@ -501,38 +498,18 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
-  // Fungsi untuk format shipping address
   const formatShippingAddress = (address: ShippingAddress | string | undefined): string => {
     if (!address) return "-";
-
     if (typeof address === "string") return address;
-
-    // Jika address adalah object
     const addr = address as ShippingAddress;
-
-    // Buat string address dari object
     const parts: string[] = [];
-
-    if (addr.nama_penerima) {
-      parts.push(addr.nama_penerima);
-    }
-
-    if (addr.address_detail) {
-      parts.push(addr.address_detail);
-    }
-
-    if (addr.address_name) {
-      parts.push(addr.address_name);
-    }
-
-    if (addr.phone) {
-      parts.push(`Telp: ${addr.phone}`);
-    }
-
+    if (addr.nama_penerima) parts.push(addr.nama_penerima);
+    if (addr.address_detail) parts.push(addr.address_detail);
+    if (addr.address_name) parts.push(addr.address_name);
+    if (addr.phone) parts.push(`Telp: ${addr.phone}`);
     return parts.length > 0 ? parts.join(", ") : "-";
   };
 
-  // Fetch data creators (tetap untuk kebutuhan mapping creator name)
   const getCreators = async () => {
     setLoadingCreators(true);
     try {
@@ -545,36 +522,26 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
-  // Fetch transaction data HANYA untuk creator yang sedang login
   const getData = async () => {
     setLoading(true);
     try {
       const res: any = await Get("order-bycreator", {});
-
-      // Filter data berdasarkan creator_id yang sedang login
       const creatorId = user?.has_creator?.id;
       let filteredData = res?.data || [];
 
       if (creatorId) {
         filteredData = filteredData.filter((item: any) => {
-          // Cek berbagai kemungkinan field untuk creator_id
           const itemCreatorId = item.creator_id ||
             item.creator?.id ||
             (item.user_id ? parseInt(item.user_id) : null);
-
           return itemCreatorId === creatorId;
         });
       }
 
-      // Map response to flatten product_name and normalize fields
       const mapped: MerchandiseTransactionData[] = filteredData.map((item: any) => {
-        // Collect ALL product names from detail[]
         const productNames: string[] = [];
-
-        // If there's a detail array, iterate and collect names from known places
         if (Array.isArray(item.detail) && item.detail.length > 0) {
           item.detail.forEach((d: any) => {
-            // d.product may be object with product_name
             if (d?.product && (d.product.product_name || d.product_name)) {
               productNames.push(d.product.product_name ?? d.product_name);
             } else if (d?.product_name) {
@@ -587,7 +554,6 @@ const MerchandiseTransaction: React.FC = () => {
           });
         }
 
-        // If no names found yet, check other possible fields on root item
         if (productNames.length === 0) {
           if (item?.product && (item.product.product_name || item.product.name)) {
             productNames.push(item.product.product_name ?? item.product.name);
@@ -598,28 +564,19 @@ const MerchandiseTransaction: React.FC = () => {
           }
         }
 
-        // Join all names with a separator
         const productName = productNames.length > 0 ? productNames.join(" | ") : "-";
-
-        // Get creator info from transaction data
         let creatorId = 0;
         let creatorName = user?.has_creator?.name || "Creator";
 
-        // Priority 1: Jika ada creator object lengkap
         if (item.creator?.id) {
           creatorId = item.creator.id;
           creatorName = item.creator.name || item.creator.username || item.creator.email || creatorName;
-        }
-        // Priority 2: Jika ada creator_id langsung
-        else if (item.creator_id) {
+        } else if (item.creator_id) {
           creatorId = item.creator_id;
-        }
-        // Priority 3: Jika ada user_id
-        else if (item.user_id) {
+        } else if (item.user_id) {
           creatorId = parseInt(item.user_id) || 0;
         }
 
-        // Format shipping address
         const shippingAddress = item.shipping_address || item.address || "-";
 
         return {
@@ -633,13 +590,11 @@ const MerchandiseTransaction: React.FC = () => {
           voucher: item.voucher ?? item.voucher_code ?? "-",
           creator_id: creatorId,
           creator_name: creatorName,
-          // Tambahan data untuk modal
           detail: item.detail || [],
           order_date: item.created_at || item.order_date || item.date || "-",
           customer_name: item.customer_name || item.customer?.name || item.nama_penerima || "-",
           customer_email: item.customer_email || item.customer?.email || "-",
           shipping_address: shippingAddress,
-          // Tambahan field
           status_name: item.status_name || item.status?.name || "-",
           payment_method: item.payment_method || item.payment?.method || "-",
           notes: item.notes || item.note || "-",
@@ -656,23 +611,16 @@ const MerchandiseTransaction: React.FC = () => {
   };
 
   useEffect(() => {
-    // Fetch both data in parallel
     Promise.all([getData(), getCreators()]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update creator names when creators data is loaded
   const dataWithCreatorNames = useMemo(() => {
     if (creators.length === 0) return data;
-
     return data.map((item) => {
-      // Find creator by id - IMPROVED MATCHING LOGIC
       const foundCreator = creators.find((creator) => {
-        // Match by creator.id
         if (creator.id === item.creator_id) return true;
-        // Match by creator.has_user.id
         if (creator.has_user?.id === item.creator_id) return true;
-        // Match by creator.user_id (converted to number)
         if (parseInt(creator.user_id) === item.creator_id) return true;
         return false;
       });
@@ -681,55 +629,30 @@ const MerchandiseTransaction: React.FC = () => {
         return {
           ...item,
           creator_name: foundCreator.has_user?.name || foundCreator.name || "Unknown",
-          // Ensure creator_id is consistent with creator's id
           creator_id: foundCreator.id,
         };
       }
-
       return item;
     });
   }, [data, creators]);
 
-  // Filter data HANYA berdasarkan pencarian invoice (creator sudah difilter di awal)
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
-
-    // Filter by invoice number
     if (filterValue) {
       result = result.filter((item) => (item.invoice_no ?? "").toString().toLowerCase().includes(filterValue.toLowerCase()));
     }
-
     return result;
   }, [dataWithCreatorNames, filterValue]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
-  // Hitung total merchandise (jumlah item yang ditampilkan di halaman ini)
-  const totalMerchandiseInPage = useMemo(() => {
-    return paginatedItems.length;
-  }, [paginatedItems]);
+  const totalMerchandiseInPage = useMemo(() => paginatedItems.length, [paginatedItems]);
+  const totalPriceInPage = useMemo(() => paginatedItems.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0), [paginatedItems]);
+  const totalPriceAllFiltered = useMemo(() => filtered.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0), [filtered]);
 
-  // Hitung total price dari item yang ditampilkan di halaman ini
-  const totalPriceInPage = useMemo(() => {
-    return paginatedItems.reduce((sum, item) => {
-      const price = Number(item.total_price) || 0;
-      return sum + price;
-    }, 0);
-  }, [paginatedItems]);
-
-  // Hitung total price dari SEMUA item yang difilter
-  const totalPriceAllFiltered = useMemo(() => {
-    return filtered.reduce((sum, item) => {
-      const price = Number(item.total_price) || 0;
-      return sum + price;
-    }, 0);
-  }, [filtered]);
-
-  // --- Export to CSV (can be opened in Excel) ---
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     if (!rows || rows.length === 0) {
-      // Create a minimal CSV with headers to avoid empty file
       const headers = ["Invoice Number", "Nama Produk", "SKU", "Total Qty", "Total Price", "Transaction Status", "Voucher", "Creator"];
       const csvContent = headers.join(",") + "\n";
       downloadCSV(csvContent);
@@ -740,7 +663,6 @@ const MerchandiseTransaction: React.FC = () => {
     const escapeCell = (value: any) => {
       if (value === null || value === undefined) return "";
       const str = String(value);
-      // Escape double quotes by doubling them, and wrap cell in quotes if contains comma/newline/quote
       const needsQuotes = /[,"\n]/.test(str);
       const escaped = str.replace(/"/g, '""');
       return needsQuotes ? `"${escaped}"` : escaped;
@@ -777,7 +699,6 @@ const MerchandiseTransaction: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      // Fallback: open in new tab
       const win = window.open();
       if (win) {
         win.document.write(`<pre>${csvContent}</pre>`);
@@ -785,21 +706,17 @@ const MerchandiseTransaction: React.FC = () => {
       }
     }
   };
-  // --- end export functions ---
 
-  // Function to open modal detail
   const handleViewDetail = (transaction: MerchandiseTransactionData) => {
     setSelectedTransaction(transaction);
     setIsModalOpen(true);
   };
 
-  // Close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTransaction(null);
   };
 
-  // Format date
   const formatDate = (dateString?: string) => {
     if (!dateString || dateString === "-") return "-";
     try {
@@ -816,7 +733,6 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount?: number | string) => {
     const num = Number(amount) || 0;
     return new Intl.NumberFormat('id-ID', {
@@ -839,9 +755,62 @@ const MerchandiseTransaction: React.FC = () => {
     return <div>Error: {error}</div>;
   }
 
+  // Komponen untuk modal
+  const InfoCard = ({ 
+    title, 
+    icon, 
+    children, 
+    color = "blue" 
+  }: { 
+    title: string; 
+    icon: React.ReactNode; 
+    children: React.ReactNode; 
+    color?: "blue" | "green" | "purple" | "orange" | "indigo" | "yellow"; 
+  }) => {
+    const colors = {
+      blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200",
+      green: "bg-gradient-to-br from-green-50 to-green-100 border-green-200",
+      purple: "bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200",
+      orange: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+      indigo: "bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200",
+      yellow: "bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200",
+    };
+
+    return (
+      <div className={`${colors[color]} rounded-xl border p-4 shadow-sm transition-all hover:shadow-md`}>
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+          <div className={`p-2 rounded-lg ${
+            color === "blue" ? "bg-blue-100 text-blue-600" :
+            color === "green" ? "bg-green-100 text-green-600" :
+            color === "purple" ? "bg-purple-100 text-purple-600" :
+            color === "orange" ? "bg-orange-100 text-orange-600" :
+            color === "indigo" ? "bg-indigo-100 text-indigo-600" :
+            "bg-yellow-100 text-yellow-600"
+          }`}>
+            {icon}
+          </div>
+          <h3 className="font-semibold text-gray-800">{title}</h3>
+        </div>
+        <div className="space-y-3">
+          {children}
+        </div>
+      </div>
+    );
+  };
+
+  const InfoItem = ({ label, value, icon }: { label: string; value: string | React.ReactNode; icon?: React.ReactNode }) => (
+    <div className="flex items-start gap-2">
+      {icon && <div className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0">{icon}</div>}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-gray-500 mb-0.5">{label}</p>
+        <div className="text-sm font-medium text-gray-800 break-words">{value}</div>
+      </div>
+    </div>
+  );
+
   return (
     <Card className={`!overflow-auto`} p={20} m={10} withBorder>
-      {/* Statistic Cards */}
+      {/* Statistic Cards (Kembali ke versi awal) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
@@ -869,20 +838,11 @@ const MerchandiseTransaction: React.FC = () => {
       {/* Tabs */}
       <Tabs aria-label="Transaction Tabs" selectedKey={selectedTab} onSelectionChange={(key) => setSelectedTab(key as string)} className="mb-6">
         <Tab key="transaksi" title="Transaksi">
-          {/* Search, Filter, Export, and Pagination Controls */}
+          {/* Search, Filter, Export, and Pagination Controls (Kembali ke versi awal) */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto space-y-2 md:space-y-0">
               <div className="flex items-center gap-2 w-full md:w-auto">
                 <Input type="text" placeholder="Search by Invoice" value={filterValue} onChange={onSearchChange} className="w-full md:w-64" size="sm" />
-                {/* HAPUS DROPDOWN FILTER CREATOR */}
-                {/* <select value={selectedCreator} onChange={onCreatorChange} className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48" disabled={loadingCreators}>
-                  <option value="all">All Creators</option>
-                  {creators.map((creator) => (
-                    <option key={creator.id} value={`${creator.id}-${creator.name}`}>
-                      {creator.has_user?.name || creator.name}
-                    </option>
-                  ))}
-                </select> */}
               </div>
               <button
                 type="button"
@@ -917,23 +877,7 @@ const MerchandiseTransaction: React.FC = () => {
             </div>
           )}
 
-          {/* HAPUS Filter Status Indicator karena tidak ada filter creator lagi */}
-          {/* {selectedCreator !== "all" && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-blue-700">
-                    Showing transactions for: <strong>{creators.find((c) => c.id.toString() === selectedCreator.split("-")[0])?.has_user?.name || creators.find((c) => c.id.toString() === selectedCreator.split("-")[0])?.name}</strong>
-                  </span>
-                </div>
-                <button onClick={() => setSelectedCreator("all")} className="text-sm text-blue-600 hover:text-blue-800 underline">
-                  Clear filter
-                </button>
-              </div>
-            </div>
-          )} */}
-
-          {/* Perbaikan di sini: Tampilkan pesan berbeda berdasarkan kondisi */}
+          {/* Table (Kembali ke versi awal) */}
           {data.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No data available</div>
           ) : filtered.length === 0 ? (
@@ -998,7 +942,7 @@ const MerchandiseTransaction: React.FC = () => {
                 </TableBody>
               </Table>
 
-              {/* Total Summary Section */}
+              {/* Total Summary Section (Kembali ke versi awal) */}
               {paginatedItems.length > 0 && (
                 <div className="mt-4 p-4 bg-gray-50 border border-light-grey rounded-md">
                   <div className="flex justify-between items-center">
@@ -1050,244 +994,291 @@ const MerchandiseTransaction: React.FC = () => {
         </Tab>
       </Tabs>
 
-      {/* Modal Detail Transaksi */}
+      {/* Modal Detail Transaksi - DESAIN MODERN dengan header biru */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        size="3xl"
+        size="4xl"
         scrollBehavior="inside"
-        className="max-w-4xl"
+        classNames={{
+          base: "bg-gradient-to-b from-gray-50 to-white",
+          backdrop: "backdrop-blur-sm",
+          header: "border-b-0",
+          footer: "border-t-0",
+        }}
       >
         <ModalContent>
-          <>
-            <ModalHeader className="flex flex-col gap-1 py-4 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <FontAwesomeIcon icon={faFileInvoice} className="h-5 w-5 text-blue-600" />
-                    Detail Transaksi
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-1">Invoice: {selectedTransaction?.invoice_no || "-"}</p>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-1 py-6 bg-blue-600 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                      <FontAwesomeIcon icon={faFileInvoice} className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">Detail Transaksi</h2>
+                      <p className="text-sm opacity-90">{selectedTransaction?.invoice_no || "-"}</p>
+                    </div>
+                  </div>
+                  {selectedTransaction && (
+                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold backdrop-blur-sm ${getStatusInfo(selectedTransaction.transaction_status_id).color}`}>
+                      {getStatusInfo(selectedTransaction.transaction_status_id).text}
+                    </span>
+                  )}
                 </div>
+              </ModalHeader>
+              <ModalBody className="py-6">
                 {selectedTransaction && (
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusInfo(selectedTransaction.transaction_status_id).color}`}>
-                    {getStatusInfo(selectedTransaction.transaction_status_id).text}
-                  </span>
+                  <div className="space-y-6">
+                    {/* Grid Cards */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Ringkasan Transaksi */}
+                      <InfoCard 
+                        title="Ringkasan Transaksi" 
+                        icon={<FontAwesomeIcon icon={faReceipt} className="h-4 w-4" />} 
+                        color="blue"
+                      >
+                        <InfoItem 
+                          label="Invoice Number" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faFileInvoice} className="h-3 w-3 text-blue-500" />
+                              <span>{selectedTransaction.invoice_no || "-"}</span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Tanggal Order" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faCalendar} className="h-3 w-3 text-green-500" />
+                              <span>{formatDate(selectedTransaction.order_date)}</span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Voucher" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faTag} className="h-3 w-3 text-purple-500" />
+                              <span className={selectedTransaction.voucher === "-" ? "text-gray-400" : "text-gray-800"}>
+                                {selectedTransaction.voucher === "-" ? "Tidak ada" : selectedTransaction.voucher}
+                              </span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Metode Pembayaran" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faCreditCard} className="h-3 w-3 text-orange-500" />
+                              <span>{selectedTransaction.payment_method || "-"}</span>
+                            </div>
+                          } 
+                        />
+                      </InfoCard>
+
+                      {/* Informasi Produk */}
+                      <InfoCard 
+                        title="Informasi Produk" 
+                        icon={<FontAwesomeIcon icon={faBox} className="h-4 w-4" />} 
+                        color="purple"
+                      >
+                        <InfoItem 
+                          label="Nama Produk" 
+                          value={
+                            <div className="bg-gray-50 p-2 rounded-lg">
+                              <p className="text-sm font-medium">{selectedTransaction.product_name || "-"}</p>
+                            </div>
+                          } 
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <InfoItem label="SKU" value={selectedTransaction.sku || "-"} />
+                          <InfoItem 
+                            label="Quantity" 
+                            value={
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                                {selectedTransaction.total_qty || 0} item
+                              </span>
+                            } 
+                          />
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-gray-500 mb-1">Total Harga</p>
+                          <p className="text-xl font-bold text-green-600">{formatCurrency(selectedTransaction.total_price)}</p>
+                        </div>
+                      </InfoCard>
+
+                      {/* Informasi Customer */}
+                      <InfoCard 
+                        title="Informasi Customer" 
+                        icon={<FontAwesomeIcon icon={faUser} className="h-4 w-4" />} 
+                        color="green"
+                      >
+                        <InfoItem 
+                          label="Nama Customer" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faUser} className="h-3 w-3 text-gray-400" />
+                              <span>{selectedTransaction.customer_name || "-"}</span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Email" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faEnvelope} className="h-3 w-3 text-gray-400" />
+                              <span>{selectedTransaction.customer_email || "-"}</span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Telepon" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faPhone} className="h-3 w-3 text-gray-400" />
+                              <span>
+                                {typeof selectedTransaction.shipping_address === 'object' && 
+                                 selectedTransaction.shipping_address?.phone 
+                                  ? selectedTransaction.shipping_address.phone 
+                                  : "-"}
+                              </span>
+                            </div>
+                          } 
+                        />
+                      </InfoCard>
+
+                      {/* Informasi Creator */}
+                      <InfoCard 
+                        title="Informasi Creator" 
+                        icon={<FontAwesomeIcon icon={faStore} className="h-4 w-4" />} 
+                        color="indigo"
+                      >
+                        <InfoItem 
+                          label="Nama Creator" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faStore} className="h-3 w-3 text-indigo-400" />
+                              <span>{selectedTransaction.creator_name || "-"}</span>
+                            </div>
+                          } 
+                        />
+                        <InfoItem 
+                          label="Creator ID" 
+                          value={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faUser} className="h-3 w-3 text-gray-400" />
+                              <span>{selectedTransaction.creator_id || "-"}</span>
+                            </div>
+                          } 
+                        />
+                      </InfoCard>
+
+                      {/* Alamat Pengiriman */}
+                      <div className="lg:col-span-2">
+                        <InfoCard 
+                          title="Alamat Pengiriman" 
+                          icon={<FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4" />} 
+                          color="orange"
+                        >
+                          <div className="p-3 bg-white border border-orange-100 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-gray-700 leading-relaxed">
+                                {formatShippingAddress(selectedTransaction.shipping_address)}
+                              </p>
+                            </div>
+                          </div>
+                        </InfoCard>
+                      </div>
+
+                      {/* Detail Items */}
+                      {selectedTransaction.detail && selectedTransaction.detail.length > 0 && (
+                        <div className="lg:col-span-2">
+                          <InfoCard 
+                            title={`Detail Item (${selectedTransaction.detail.length})`} 
+                            icon={<FontAwesomeIcon icon={faShoppingCart} className="h-4 w-4" />} 
+                            color="yellow"
+                          >
+                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                              {selectedTransaction.detail.map((item: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg hover:border-yellow-200 transition-colors">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-800">
+                                      {item.product?.product_name || item.product_name || item.product?.name || item.name || `Item ${index + 1}`}
+                                    </p>
+                                    <div className="flex items-center gap-4 mt-1">
+                                      <span className="text-xs text-gray-500">Qty: {item.quantity || item.qty || 0}</span>
+                                      <span className="text-xs text-gray-500">
+                                        Harga: {formatCurrency(item.price || item.product?.price)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold text-gray-800">
+                                      {formatCurrency((item.quantity || item.qty || 0) * (Number(item.price) || Number(item.product?.price) || 0))}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Subtotal</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </InfoCard>
+                        </div>
+                      )}
+
+                      {/* Catatan */}
+                      {selectedTransaction.notes && selectedTransaction.notes !== "-" && (
+                        <div className="lg:col-span-2">
+                          <InfoCard 
+                            title="Catatan" 
+                            icon={<FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />} 
+                            color="yellow"
+                          >
+                            <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
+                              <p className="text-sm text-gray-700">{selectedTransaction.notes}</p>
+                            </div>
+                          </InfoCard>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </ModalHeader>
-            <ModalBody className="py-4">
-              {selectedTransaction && (
-                <div className="space-y-5">
-                  {/* Section 1: Invoice & Order Info */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FontAwesomeIcon icon={faReceipt} className="h-4 w-4 text-blue-600" />
-                      <h3 className="text-sm font-semibold text-gray-700">Informasi Transaksi</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Invoice Number</p>
-                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.invoice_no || "-"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Tanggal Order</p>
-                        <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                          <FontAwesomeIcon icon={faCalendar} className="h-3 w-3 text-gray-400" />
-                          {formatDate(selectedTransaction.order_date)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Voucher</p>
-                        <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                          <FontAwesomeIcon icon={faTag} className="h-3 w-3 text-gray-400" />
-                          {selectedTransaction.voucher || "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Divider */}
-                  <Divider className="my-2" />
-
-                  {/* Section 2: Customer & Shipping Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-green-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Informasi Customer</h3>
-                      </div>
-                      <div className="space-y-2 pl-1">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Nama</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.customer_name || "-"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Email</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.customer_email || "-"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <FontAwesomeIcon icon={faTruck} className="h-4 w-4 text-orange-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Alamat Pengiriman</h3>
-                      </div>
-                      <div className="pl-1">
-                        <p className="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
-                        <p className="text-sm font-medium text-gray-800 leading-relaxed">
-                          {formatShippingAddress(selectedTransaction.shipping_address)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 3: Product & Creator Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <FontAwesomeIcon icon={faBox} className="h-4 w-4 text-purple-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Informasi Produk</h3>
-                      </div>
-                      <div className="space-y-2 pl-1">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Nama Produk</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.product_name || "-"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">SKU</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.sku || "-"}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-indigo-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Informasi Creator</h3>
-                      </div>
-                      <div className="space-y-2 pl-1">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Nama Creator</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.creator_name || "-"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Creator ID</p>
-                          <p className="text-sm font-medium text-gray-800">{selectedTransaction.creator_id || "-"}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 4: Order Summary */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FontAwesomeIcon icon={faShoppingCart} className="h-4 w-4 text-gray-600" />
-                      <h3 className="text-sm font-semibold text-gray-700">Ringkasan Order</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Total Quantity</p>
-                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.total_qty || 0} item(s)</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Metode Pembayaran</p>
-                        <p className="text-sm font-medium text-gray-800">{selectedTransaction.payment_method || "-"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Total Harga</p>
-                        <p className="text-lg font-bold text-blue-700">{formatCurrency(selectedTransaction.total_price)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 5: Notes (if exists) */}
-                  {selectedTransaction.notes && selectedTransaction.notes !== "-" && (
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 text-yellow-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Catatan</h3>
-                      </div>
-                      <p className="text-sm text-gray-700 pl-6">{selectedTransaction.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Section 6: Order Items Table */}
-                  {selectedTransaction.detail && selectedTransaction.detail.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <FontAwesomeIcon icon={faBox} className="h-4 w-4 text-gray-600" />
-                        <h3 className="text-sm font-semibold text-gray-700">Detail Item ({selectedTransaction.detail.length})</h3>
-                      </div>
-                      <div className="overflow-x-auto border rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produk</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Qty</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Harga</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Subtotal</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {selectedTransaction.detail.map((item: any, index: number) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{index + 1}</td>
-                                <td className="px-3 py-2 text-xs font-medium text-gray-900 max-w-xs truncate">
-                                  {item.product?.product_name ||
-                                    item.product_name ||
-                                    item.product?.name ||
-                                    item.name ||
-                                    "-"}
-                                </td>
-                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700 text-center">{item.quantity || item.qty || 0}</td>
-                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-700 text-right">{formatCurrency(item.price || item.product?.price)}</td>
-                                <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900 text-right">
-                                  {formatCurrency((item.quantity || item.qty || 0) * (Number(item.price) || Number(item.product?.price) || 0))}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </ModalBody>
-            <ModalFooter className="py-3 border-t">
-              <div className="flex justify-between items-center w-full">
-                <Button
-                  color="default"
-                  variant="light"
-                  onPress={handleCloseModal}
-                  className="text-sm"
-                >
-                  Tutup
-                </Button>
-                <div className="flex gap-2">
+              </ModalBody>
+              <ModalFooter className="py-5 bg-gray-50">
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <Button
-                    color="primary"
-                    variant="flat"
-                    onPress={() => {
-                      if (selectedTransaction?.invoice_no && selectedTransaction.invoice_no !== "-") {
-                        const baseUrl = process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
-                        const viewUrl = `${baseUrl}merch-invoice/${selectedTransaction.invoice_no}`;
-                        window.open(viewUrl, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                    isDisabled={!selectedTransaction?.invoice_no || selectedTransaction.invoice_no === "-"}
-                    className="text-sm"
+                    color="default"
+                    variant="light"
+                    onPress={handleCloseModal}
+                    className="flex-1 sm:flex-none"
                   >
-                    <FontAwesomeIcon icon={faEye} className="h-3 w-3 mr-2" />
-                    Lihat Invoice Lengkap
+                    Tutup
                   </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      color="primary"
+                      variant="solid"
+                      onPress={() => {
+                        if (selectedTransaction?.invoice_no && selectedTransaction.invoice_no !== "-") {
+                          const baseUrl = process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
+                          const viewUrl = `${baseUrl}merch-invoice/${selectedTransaction.invoice_no}`;
+                          window.open(viewUrl, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                      isDisabled={!selectedTransaction?.invoice_no || selectedTransaction.invoice_no === "-"}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      startContent={<FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />}
+                    >
+                      Lihat Invoice Lengkap
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </ModalFooter>
-          </>
+              </ModalFooter>
+            </>
+          )}
         </ModalContent>
       </Modal>
     </Card>

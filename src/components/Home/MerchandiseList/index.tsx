@@ -250,11 +250,9 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
     }
   }
 
-  const cleanUrl = data.promo_banner_url ?
-    data.promo_banner_url.replace(/\\/g, '') :
-    null;
+  const cleanUrl = data.promo_banner_url ? data.promo_banner_url.replace(/\\/g, "") : null;
 
-  console.log("test image", cleanUrl)
+  console.log("test image", cleanUrl);
 
   return (
     <div className="my-12 md:mx-auto md:max-w-10xl md:px-8 bg-blue-100 py-6">
@@ -262,19 +260,10 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
         {/* Bagian kiri */}
         <div className="flex w-2/5 md:w-1/4 flex-col items-center justify-center px-2 md:px-4">
           <div className="text-center w-full">
-            <h2 className="text-2xl md:text-5xl font-bold text-dark mb-1 md:mb-4">
-              {data.promo_name || "Segera Koleksi"}
-            </h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-dark mb-1 md:mb-4">{data.promo_name || "Segera Koleksi"}</h2>
             <div className="bg-gray-200 rounded-lg md:rounded-xl h-64 md:h-64 w-full flex items-center justify-center">
               <div className="relative w-full h-full">
-                <Image
-                  src={cleanUrl || "/images/promo/promo-default.png"}
-                  alt={data.promo_name || "Segera Koleksi"}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 767px) 40vw, 25vw"
-                  priority={false}
-                />
+                <Image src={cleanUrl || "/images/promo/promo-default.png"} alt={data.promo_name || "Segera Koleksi"} fill className="object-contain" sizes="(max-width: 767px) 40vw, 25vw" priority={false} />
               </div>
             </div>
           </div>
@@ -283,10 +272,7 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
         {/* Bagian kanan */}
         <div className="w-3/5 md:w-3/4 pl-2 md:pl-4 overflow-hidden">
           <div className="w-full flex justify-end mb-2 md:mb-4 pr-2 md:pr-0">
-            <Link
-              href={`/promo/${data.promo_slug || data.promo_id}`}
-              className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap"
-            >
+            <Link href={`/promo/${data.promo_slug || data.promo_id}`} className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap">
               Lihat Semua
               <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs md:text-base flex-shrink-0" />
             </Link>

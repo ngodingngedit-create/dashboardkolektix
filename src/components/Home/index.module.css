@@ -53,11 +53,11 @@
   display: flex;
   gap: 1rem;
   width: max-content;
-  animation: scrollLoop 180s linear infinite;
+  animation: scrollLoop 240s linear infinite; /* DIPERLAMBAT dari 180s */
   align-items: stretch;
   -webkit-overflow-scrolling: touch;
   animation-play-state: running;
-  -webkit-animation: scrollLoop 180s linear infinite;
+  -webkit-animation: scrollLoop 240s linear infinite;
 }
 
 /* 🌀 Loop mulus */
@@ -118,7 +118,6 @@
 }
 
 /* ------------------ MOBILE-SPECIFIC OVERRIDES ------------------ */
-/* ------------------ MOBILE STYLES ------------------ */
 @media (max-width: 767px) {
   .eventContainer {
     mask-image: none;
@@ -143,23 +142,14 @@
     gap: 0.8rem;
     width: max-content;
     padding: 0.6rem 0;
-    animation: scrollLoopMobile 40s linear infinite;
-    -webkit-animation: scrollLoopMobile 40s linear infinite;
+    animation: scrollLoopMobile 180s linear infinite; /* DIPERLAMBAT dari 40s */
+    -webkit-animation: scrollLoopMobile 180s linear infinite;
     animation-play-state: running;
   }
 
   /* Pause animasi saat container di-click/tap */
   .eventContainer:active .scrollTrack {
     animation-play-state: paused;
-  }
-
-  .eventCard {
-    width: 240px;
-    min-width: 180px;
-    border-radius: 10px;
-    box-shadow: 0 10px 22px rgba(2, 37, 90, 0.1);
-    scroll-snap-align: start;
-    z-index: 2;
   }
 
   @keyframes scrollLoopMobile {
@@ -183,43 +173,27 @@
     user-select: none;
     -webkit-user-select: none;
   }
-
-  /* Keyframes untuk mobile */
-  @keyframes scrollLoopMobile {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(calc(-50% - 0.4rem));
-    }
-  }
 }
 
 /* ------------------ DESKTOP ONLY (min-width: 768px) ------------------ */
 @media (min-width: 768px) {
-  /* Desktop: biar bisa scroll manual juga */
   .eventContainer {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-
-    /* HIDE scrollbar di desktop */
     scrollbar-width: none;
     padding-bottom: 0;
   }
 
-  /* Hide scrollbar di desktop */
   .eventContainer::-webkit-scrollbar {
     display: none;
   }
 
-  /* Desktop: aktifkan animasi */
   .scrollTrack {
-    animation: scrollLoop 180s linear infinite;
-    -webkit-animation: scrollLoop 180s linear infinite;
+    animation: scrollLoop 240s linear infinite; /* DIPERLAMBAT dari 180s */
+    -webkit-animation: scrollLoop 240s linear infinite;
   }
 
-  /* Pause animasi saat hover di desktop */
   .eventContainer:hover .scrollTrack {
     animation-play-state: paused;
   }
@@ -267,8 +241,6 @@
   transform: scale(1.05);
 }
 
-/* ... CSS sebelumnya tetap ... */
-
 /* ==================== MERCH CONTAINER ==================== */
 .merchContainer {
   display: flex;
@@ -303,7 +275,7 @@
   box-shadow: 0 15px 30px rgba(2, 37, 90, 0.15);
 }
 
-/* ==================== MOBILE STYLES (40-60, 1 CARD VISIBLE) ==================== */
+/* ==================== MOBILE STYLES ==================== */
 @media (max-width: 767px) {
   .merchContainer {
     gap: 1rem;
@@ -313,19 +285,11 @@
   }
 
   .merchCard {
-    /* Card mengambil hampir full width dari container 60% */
-    width: calc(60vw - 2rem); /* 60% viewport - padding */
+    width: calc(60vw - 2rem);
     min-width: calc(60vw - 2rem);
     max-width: calc(60vw - 2rem);
     border-radius: 8px;
   }
-
-  /* Atau fixed width untuk konsisten */
-  /* .merchCard {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-  } */
 }
 
 /* ==================== DESKTOP STYLES ==================== */

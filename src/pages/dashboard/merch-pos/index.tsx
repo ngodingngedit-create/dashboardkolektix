@@ -1192,15 +1192,6 @@ export default function Index({}: Readonly<ComponentProps>) {
         </Stack>
       </Modal>
 
-      {/* <Card radius={999} className={`!bg-primary-base !p-[5px_16px] w-fit m-[10px_10px_0]`}>
-        <Flex align="center" gap={10}>
-          <Icon icon="hugeicons:cashier" className={`text-[20px] text-white`} />
-          <Text size="md" fw={400} className={`!text-white`}>
-            Penjualan Offline
-          </Text>
-        </Flex>
-      </Card> */}
-
       {/* Main Content Area - Scrollable */}
       <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
         {/* Left Panel - Product Selection */}
@@ -1280,66 +1271,202 @@ export default function Index({}: Readonly<ComponentProps>) {
         {/* Right Panel - Order Details */}
         <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden">
           <div className="flex-grow overflow-y-auto">
+            {/* Rincian Pesanan Section - Updated Design */}
             <Card p={20} className="h-auto">
               <Flex align="center" gap={10} mb={20}>
-                <Icon icon="uiw:information-o" className={`text-primary-base`} />
-                <Text fw={600} c="#0B387C">
-                  Rincian Produk
-                </Text>
+                <div className="bg-primary-base/10 p-2 rounded-lg">
+                  <Icon icon="uiw:shopping-cart" className="text-primary-base text-lg" />
+                </div>
+                <div>
+                  <Text fw={700} size="lg" c="#0B387C">
+                    Rincian Pesanan
+                  </Text>
+                  <Text size="xs" c="gray.6">
+                    {selectedList.length} item dipilih
+                  </Text>
+                </div>
               </Flex>
 
-              <Stack
-                gap={12}
-                className={`overflow-y-auto max-h-[calc(3*(80px+12px))]`} // 3 items + gap
-                justify="start"
-              >
-                {selectedList.map((e, i) => (
-                  <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] flex-shrink-0`}>
-                    <Flex gap={10} wrap="wrap">
-                      <Flex gap={10} className={`flex-grow`}>
-                        <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
-                        <Stack gap={0}>
-                          <Text size="sm" className={`capitalize whitespace-nowrap`}>
-                            {e.name}
-                          </Text>
-                          {e.variant_name && (
-                            <Text size="xs" c="gray" mb={5} className={`capitalize`}>
-                              Varian: {e.variant_name}
-                            </Text>
-                          )}
-                          <Text size="sm" className={`whitespace-nowrap`}>
-                            <NumberFormatter value={e.subtotal} />
-                          </Text>
-                        </Stack>
-                      </Flex>
+              {selectedList.length === 0 ? (
+                <Card 
+                  withBorder 
+                  radius={12} 
+                  p={30} 
+                  className="text-center bg-gray-50/50 border-dashed border-2"
+                >
+                  <div className="mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
+                      <Icon icon="uiw:shopping-cart" className="text-3xl text-gray-400" />
+                    </div>
+                    <Text c="gray.6" size="sm" mb={10}>
+                      Belum ada produk yang dipilih
+                    </Text>
+                  </div>
+                  <Button 
+                    size="md" 
+                    className="md:!hidden" 
+                    onClick={() => setOpenSelect(!openSelect)}
+                    leftSection={<Icon icon="uiw:plus" />}
+                    variant="filled"
+                    color="primary"
+                    radius="md"
+                    fullWidth
+                  >
+                    Tambah Produk
+                  </Button>
+                </Card>
+              ) : (
+                <ScrollArea h={300} scrollbarSize={6}>
+                  <Stack gap={10}>
+                    {selectedList.map((e, i) => (
+                      <Card 
+                        key={i} 
+                        p={12} 
+                        withBorder 
+                        radius={10}
+                        className="hover:bg-gray-50/50 transition-all duration-200 group"
+                      >
+                        <Flex gap={12} align="center">
+                          {/* Product Image */}
+                          <div className="relative flex-shrink-0">
+                            <Image 
+                              src={e.image} 
+                              h={60} 
+                              w={60} 
+                              radius={8}
+                              className="border border-gray-200"
+                              fallbackSrc="https://placehold.co/60x60/EBF4FF/0B387C?text=Produk"
+                            />
+                            {e.count > 1 && (
+                              <div className="absolute -top-2 -right-2 bg-primary-base text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                                {e.count}
+                              </div>
+                            )}
+                          </div>
 
-                      <Flex gap={10} align="center" className={`shrink-0`}>
-                        <NumberInput
-                          min={1}
-                          max={e.stock}
-                          onChange={(e) => {
-                            setSelected(selected.map((_, x) => (x == i ? { ..._, count: parseInt(e as string) } : _)));
-                          }}
-                          value={e.count}
-                          size="xs"
-                          w={80}
+                          {/* Product Details */}
+                          <div className="flex-1 min-w-0">
+                            <Flex justify="space-between" align="flex-start" gap={8}>
+                              <div>
+                                <Text size="sm" fw={600} lineClamp={1} className="text-gray-800">
+                                  {e.name}
+                                </Text>
+                                {e.variant_name && (
+                                  <Flex align="center" gap={4} mt={2}>
+                                    <Icon icon="uiw:tag" className="text-xs text-gray-500" />
+                                    <Text size="xs" c="gray.6" className="capitalize">
+                                      {e.variant_name}
+                                    </Text>
+                                  </Flex>
+                                )}
+                              </div>
+                              <Text size="sm" fw={700} className="text-primary-base whitespace-nowrap">
+                                <NumberFormatter prefix="Rp " value={e.subtotal} />
+                              </Text>
+                            </Flex>
+
+                            {/* Price and Controls */}
+                            <Flex justify="space-between" align="center" mt={8}>
+                              <div className="flex items-center gap=3">
+                                <Text size="xs" c="gray.6">
+                                  @ <NumberFormatter prefix="Rp " value={e.price} />
+                                </Text>
+                                {e.stock < 10 && e.stock > 0 && (
+                                  <Text size="xs" c="orange" className="bg-orange-50 px-2 py-0.5 rounded-full">
+                                    Stok: {e.stock}
+                                  </Text>
+                                )}
+                                {e.stock === 0 && (
+                                  <Text size="xs" c="red" className="bg-red-50 px-2 py-0.5 rounded-full">
+                                    Stok Habis
+                                  </Text>
+                                )}
+                              </div>
+
+                              <Flex align="center" gap={8}>
+                                <NumberInput
+                                  min={1}
+                                  max={e.stock}
+                                  value={e.count}
+                                  onChange={(value) => {
+                                    const numValue = typeof value === 'string' ? parseInt(value) || 1 : value;
+                                    setSelected(selected.map((item, idx) => 
+                                      idx === i ? { ...item, count: numValue } : item
+                                    ));
+                                  }}
+                                  size="xs"
+                                  w={80}
+                                  className="[&_input]:text-center [&_input]:font-semibold"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#CBD5E0',
+                                      '&:focus': {
+                                        borderColor: '#0B387C'
+                                      }
+                                    }
+                                  }}
+                                />
+                                <ActionIcon 
+                                  onClick={() => handleDeleteItem(i)}
+                                  color="red.5" 
+                                  variant="subtle"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Icon icon="uiw:delete" className="text-base" />
+                                </ActionIcon>
+                              </Flex>
+                            </Flex>
+                          </div>
+                        </Flex>
+                      </Card>
+                    ))}
+                  </Stack>
+                </ScrollArea>
+              )}
+
+              {selectedList.length > 0 && (
+                <div className="mt-4">
+                  <Card 
+                    withBorder 
+                    radius={10} 
+                    p={12}
+                    className="bg-gray-50/50"
+                  >
+                    <Flex justify="space-between" align="center">
+                      <div>
+                        <Text size="sm" c="gray.7" fw={500}>
+                          Subtotal ({selectedList.length} item)
+                        </Text>
+                        <Text size="xs" c="gray.6">
+                          Total sebelum diskon
+                        </Text>
+                      </div>
+                      <Text size="md" fw={700} c="gray.8">
+                        <NumberFormatter 
+                          prefix="Rp " 
+                          value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} 
                         />
-                        <ActionIcon onClick={() => handleDeleteItem(i)} color="red.4" variant="transparent">
-                          <Icon icon="uiw:delete" />
-                        </ActionIcon>
-                      </Flex>
+                      </Text>
                     </Flex>
                   </Card>
-                ))}
-                {selected.length == 0 && (
-                  <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
-                    Belum ada produk yang dipilih
-                  </Alert>
-                )}
-                <Button size="md" className={`md:!hidden shrink-0`} onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
-                  Tambah Produk
+                </div>
+              )}
+
+              {selectedList.length > 0 && (
+                <Button 
+                  size="md" 
+                  className="md:!hidden mt-4"
+                  onClick={() => setOpenSelect(!openSelect)}
+                  leftSection={<Icon icon="uiw:plus" />}
+                  variant="light"
+                  color="primary"
+                  radius="md"
+                  fullWidth
+                >
+                  Tambah Produk Lain
                 </Button>
-              </Stack>
+              )}
             </Card>
 
             <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
@@ -1367,35 +1494,24 @@ export default function Index({}: Readonly<ComponentProps>) {
             </Card>
 
             <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-              <Stack>
-                <Accordion
-                  w="calc(100% + 40px)"
-                  chevronPosition="left"
-                  mx={-20}
-                  mt={-12}
-                  className={`
-                    ${handleSummary.detail.filter((e) => Boolean(e[1]) || e[1] < 0).length > 0 ? "" : "!hidden"}
-                    [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
-                    [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
-                  `}
-                ></Accordion>
+              <Stack gap={8}>
                 <Accordion
                   variant="separated"
-                  radius="md"
+                  radius="sm"
                   chevronPosition="right"
                   className="w-full"
                   styles={{
                     item: {
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid #e2e8f0",
                       backgroundColor: "#ffffff",
                       "&[data-active]": {
-                        backgroundColor: "#f9fafb",
+                        backgroundColor: "#f7fafc",
                       },
                     },
                     control: {
-                      padding: "16px 20px",
-                      fontWeight: 600,
-                      fontSize: "0.95rem",
+                      padding: "8px 12px",
+                      fontWeight: 500,
+                      fontSize: "0.85rem",
                       color: "#0B387C",
                       "&:hover": {
                         backgroundColor: "transparent",
@@ -1403,71 +1519,73 @@ export default function Index({}: Readonly<ComponentProps>) {
                     },
                     chevron: {
                       color: "#0B387C",
+                      width: "16px",
+                      height: "16px",
                     },
                     content: {
-                      padding: "0 20px 16px 20px",
+                      padding: "0 12px 8px 12px",
                     },
                   }}
                 >
                   <Accordion.Item value="customer">
                     <Accordion.Control>
                       <div className="flex items-center gap-2">
-                        <Icon icon="mdi:account-outline" className="text-lg" />
-                        <span>Data Pembeli</span>
+                        <Icon icon="mdi:account-outline" className="text-sm" />
+                        <span className="text-sm">Data Pembeli</span>
                       </div>
                     </Accordion.Control>
                     <Accordion.Panel>
-                      <div className="space-y-4 pt-2">
+                      <div className="space-y-3 pt-1">
                         {custValue.name || custValue.email || custValue.phone || custValue.address ? (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                  <Icon icon="mdi:account" className="text-base" />
+                            <div className="grid grid-cols-1 gap-2">
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                  <Icon icon="mdi:account" className="text-xs" />
                                   <span>Nama</span>
                                 </div>
-                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.name || "-"}</div>
+                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.name || "-"}</div>
                               </div>
 
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                  <Icon icon="mdi:email-outline" className="text-base" />
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                  <Icon icon="mdi:email-outline" className="text-xs" />
                                   <span>Email</span>
                                 </div>
-                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.email || "-"}</div>
+                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.email || "-"}</div>
                               </div>
 
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                  <Icon icon="mdi:phone-outline" className="text-base" />
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                  <Icon icon="mdi:phone-outline" className="text-xs" />
                                   <span>No. Telp</span>
                                 </div>
-                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded">{custValue.phone || "-"}</div>
+                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.phone || "-"}</div>
                               </div>
 
-                              <div className="space-y-1 md:col-span-2">
-                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                  <Icon icon="mdi:map-marker-outline" className="text-base" />
+                              <div>
+                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                  <Icon icon="mdi:map-marker-outline" className="text-xs" />
                                   <span>Alamat</span>
                                 </div>
-                                <div className="text-sm font-semibold text-gray-800 bg-gray-50 px-3 py-2 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
+                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
                               </div>
                             </div>
 
-                            <div className="flex justify-end pt-2">
-                              <Button variant="light" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-sm" />} onClick={() => setOpenCustForm(true)}>
-                                Edit Data
+                            <div className="flex justify-end pt-1">
+                              <Button variant="subtle" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
+                                Edit
                               </Button>
                             </div>
                           </>
                         ) : (
-                          <div className="text-center py-6">
-                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
-                              <Icon icon="mdi:account-question" className="text-2xl text-gray-400" />
+                          <div className="text-center py-3">
+                            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-2">
+                              <Icon icon="mdi:account-question" className="text-lg text-gray-400" />
                             </div>
-                            <p className="text-gray-500 mb-4">Belum ada data pembeli</p>
-                            <Button variant="light" color="blue" size="sm" leftSection={<Icon icon="mdi:plus" />} onClick={() => setOpenCustForm(true)}>
-                              Tambah Data Pembeli
+                            <p className="text-xs text-gray-500 mb-3">Belum ada data pembeli</p>
+                            <Button variant="light" color="blue" size="xs" leftSection={<Icon icon="mdi:plus" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
+                              Tambah Data
                             </Button>
                           </div>
                         )}
@@ -1478,42 +1596,42 @@ export default function Index({}: Readonly<ComponentProps>) {
                   <Accordion.Item value="summary">
                     <Accordion.Control>
                       <div className="flex items-center gap-2">
-                        <Icon icon="mdi:receipt-text-outline" className="text-lg" />
-                        <span>Detail Pembayaran</span>
+                        <Icon icon="mdi:receipt-text-outline" className="text-sm" />
+                        <span className="text-sm">Detail Pembayaran</span>
                       </div>
                     </Accordion.Control>
                     <Accordion.Panel>
-                      <div className="space-y-3 pt-2">
+                      <div className="space-y-2 pt-1">
                         {handleSummary.detail
                           .filter((e) => Boolean(e[1]) || e[1] < 0)
                           .map((e, i) => (
-                            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                              <div className="flex items-center gap-2">
-                                {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-gray-400" />}
-                                {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-gray-400" />}
-                                {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-gray-400" />}
-                                <span className="text-sm text-gray-600">{e[0]}</span>
+                            <div key={i} className="flex items-center justify-between py-1">
+                              <div className="flex items-center gap-1.5">
+                                {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-xs text-gray-400" />}
+                                {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-xs text-gray-400" />}
+                                {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-xs text-gray-400" />}
+                                <span className="text-xs text-gray-600">{e[0]}</span>
                               </div>
-                              <div className={`text-sm font-semibold ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
+                              <div className={`text-xs font-medium ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
                                 <NumberFormatter prefix="Rp " value={e[1]} />
                               </div>
                             </div>
                           ))}
 
-                        <div className="pt-4 mt-3 border-t border-gray-200">
+                        <div className="pt-2 mt-2 border-t border-gray-200">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Icon icon="mdi:cash-multiple" className="text-lg text-primary-base" />
-                              <span className="text-sm font-semibold text-primary-base">Total Pembayaran</span>
+                            <div className="flex items-center gap-1.5">
+                              <Icon icon="mdi:cash-multiple" className="text-sm text-primary-base" />
+                              <span className="text-xs font-semibold text-primary-base">Total</span>
                             </div>
-                            <div className="text-lg font-bold text-primary-base">
+                            <div className="text-sm font-bold text-primary-base">
                               <NumberFormatter prefix="Rp " value={handleSummary.total} />
                             </div>
                           </div>
 
                           {discount !== 0 && (
-                            <div className="mt-2 text-xs text-gray-500 text-right">
-                              {discount > 0 ? <span className="text-green-600">✓ Diskon Rp {discount.toLocaleString("id-ID")} diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
+                            <div className="mt-1 text-[10px] text-gray-500 text-right">
+                              {discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
                             </div>
                           )}
                         </div>
@@ -1521,7 +1639,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                     </Accordion.Panel>
                   </Accordion.Item>
                 </Accordion>
-                <Flex justify="flex-end" mt={10}>
+                <Flex justify="flex-end" mt={2}>
                   <Button
                     component="button"
                     type="button"

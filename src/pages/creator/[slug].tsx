@@ -239,6 +239,7 @@ const CreatoMenu: React.FC = () => {
               <>
                 {merchandise.map((item) => (
                   <MerchandiseCard
+                    id={item.id}
                     key={item.id}
                     name={item.product_name}
                     price={parseInt((item?.product_varian?.length ?? 0) > 0 ? item.product_varian[0].price : item.price)}
