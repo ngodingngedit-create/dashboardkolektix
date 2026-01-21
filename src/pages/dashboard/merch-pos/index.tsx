@@ -649,7 +649,7 @@
 // }
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
+import { Accordion, ActionIcon, Alert, Badge, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Table, Tabs, Text, Textarea, TextInput, UnstyledButton, TextInputProps } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
 import { useListState } from "@mantine/hooks";
@@ -661,6 +661,7 @@ import { z } from "zod";
 import _ from "lodash";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
+import { DateInput } from "@mantine/dates";
 
 type ComponentProps = {};
 
@@ -691,6 +692,22 @@ export type MerchCheckoutOffline = {
   payment_method?: string;
 };
 
+type TransactionItem = {
+  id: number;
+  invoice_number: string;
+  invoice_no: string;
+  customer_name: string;
+  total_amount: number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  items?: {
+    product_name: string;
+    quantity: number;
+    price: number;
+  }[];
+};
+
 export default function Index({}: Readonly<ComponentProps>) {
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>();
@@ -709,6 +726,15 @@ export default function Index({}: Readonly<ComponentProps>) {
     }[]
   >([]);
   const router = useRouter();
+  
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>('order');
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+  const [transactionSearch, setTransactionSearch] = useState("");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [transactionStatus, setTransactionStatus] = useState<string>("all");
 
   const {
     values: custValue,
@@ -731,7 +757,10 @@ export default function Index({}: Readonly<ComponentProps>) {
   });
 
   useEffect(() => {
-    if (user) getMerchList();
+    if (user) {
+      getMerchList();
+      getTransactions();
+    }
   }, [user]);
 
   const getMerchList = async (pageNum: number = 1) => {
@@ -798,6 +827,101 @@ export default function Index({}: Readonly<ComponentProps>) {
     });
   };
 
+  const getTransactions = async (page: number = 1) => {
+    const creatorId = user?.has_creator?.id;
+    if (!creatorId) return;
+
+    let url = `order-bycreator?creator_id=${creatorId}&page=${page}&limit=10&order_by=created_at&order_direction=desc`;
+
+    // Tambahkan filter pencarian
+    if (transactionSearch) {
+      url += `&search=${encodeURIComponent(transactionSearch)}`;
+    }
+
+    // Tambahkan filter status
+    if (transactionStatus !== "all") {
+      url += `&status=${transactionStatus}`;
+    }
+
+    // Tambahkan filter tanggal
+    if (startDate) {
+      const startDateStr = startDate.toISOString().split('T')[0];
+      url += `&start_date=${startDateStr}`;
+    }
+
+    if (endDate) {
+      const endDateStr = endDate.toISOString().split('T')[0];
+      url += `&end_date=${endDateStr}`;
+    }
+
+    await fetch<any, any>({
+      url,
+      method: "GET",
+      before: () => setLoading.append("get-transactions"),
+      success: ({ data }) => {
+        console.log("Transactions data:", data);
+        
+        let formattedTransactions: TransactionItem[] = [];
+        let total = 0;
+
+        if (data?.data) {
+          formattedTransactions = data.data.map((item: any) => ({
+            id: item.id,
+            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            customer_name: item.customer_name || item.nama_pemesan || "Guest",
+            total_amount: item.grandtotal || item.total_amount || 0,
+            status: item.status || "completed",
+            payment_method: item.payment_method || "Cash",
+            created_at: item.created_at || new Date().toISOString(),
+            items: item.items || item.products || []
+          }));
+          total = data.total || data.meta?.total || formattedTransactions.length;
+        } else if (Array.isArray(data)) {
+          formattedTransactions = data.map((item: any) => ({
+            id: item.id,
+            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            customer_name: item.customer_name || item.nama_pemesan || "Guest",
+            total_amount: item.grandtotal || item.total_amount || 0,
+            status: item.status || "completed",
+            payment_method: item.payment_method || "Cash",
+            created_at: item.created_at || new Date().toISOString(),
+            items: item.items || item.products || []
+          }));
+          total = formattedTransactions.length;
+        }
+
+        // Urutkan dari yang terbaru
+        formattedTransactions.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setTransactions(formattedTransactions);
+        setTotalTransactions(total);
+      },
+      complete: () => setLoading.filter((e) => e != "get-transactions"),
+      error: (err) => {
+        console.error("Error fetching transactions:", err);
+        notifications.show({ message: "Gagal memuat riwayat transaksi", color: "red" });
+      }
+    });
+  };
+
+  const handleSearchTransactions = () => {
+    setTransactionPage(1);
+    getTransactions(1);
+  };
+
+  const handleResetFilters = () => {
+    setTransactionSearch("");
+    setStartDate(null);
+    setEndDate(null);
+    setTransactionStatus("all");
+    setTransactionPage(1);
+    getTransactions(1);
+  };
+
   const merchList = useMemo(() => {
     const normalize = (s: unknown) =>
       (s ?? "")
@@ -848,6 +972,8 @@ export default function Index({}: Readonly<ComponentProps>) {
       return { id: e.id, variant_id: e.variant_id, name, variant_name, price, image, count: e.count, stock, subtotal };
     });
   }, [selected, productCache]);
+
+  // ... (kode handleAddProduct sampai handleSave tetap sama) ...
 
   const handleAddProduct = (product: MerchListResponse) => {
     setProductCache((prev) => ({ ...prev, [product.id]: product }));
@@ -1141,6 +1267,27 @@ export default function Index({}: Readonly<ComponentProps>) {
     });
   };
 
+  const renderStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { color: string; label: string }> = {
+      completed: { color: 'green', label: 'Selesai' },
+      pending: { color: 'yellow', label: 'Pending' },
+      cancelled: { color: 'red', label: 'Dibatalkan' },
+      processing: { color: 'blue', label: 'Diproses' },
+      paid: { color: 'green', label: 'Dibayar' },
+      unpaid: { color: 'orange', label: 'Belum Dibayar' },
+      success: { color: 'green', label: 'Sukses' },
+      failed: { color: 'red', label: 'Gagal' },
+    };
+
+    const config = statusConfig[status.toLowerCase()] || { color: 'gray', label: status };
+
+    return (
+      <Badge color={config.color} variant="light" size="sm">
+        {config.label}
+      </Badge>
+    );
+  };
+
   const PER_PAGE = 10;
   const [pageNum, setPageNum] = useState(1);
   const isGuest = custValue.name?.startsWith("Guest ") && custValue.email?.includes("guest_");
@@ -1192,9 +1339,7 @@ export default function Index({}: Readonly<ComponentProps>) {
         </Stack>
       </Modal>
 
-      {/* Main Content Area - Scrollable */}
       <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
-        {/* Left Panel - Product Selection */}
         <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static overflow-hidden flex flex-col`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
           <Stack gap={20} h="100%" className="flex flex-col">
@@ -1268,454 +1413,715 @@ export default function Index({}: Readonly<ComponentProps>) {
           </Stack>
         </Card>
 
-        {/* Right Panel - Order Details */}
         <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden">
           <div className="flex-grow overflow-y-auto">
-            {/* Rincian Pesanan Section - Updated Design */}
-            <Card p={20} className="h-auto">
-              <Flex align="center" gap={10} mb={20}>
-                <div className="bg-primary-base/10 p-2 rounded-lg">
-                  <Icon icon="uiw:shopping-cart" className="text-primary-base text-lg" />
-                </div>
-                <div>
-                  <Text fw={700} size="lg" c="#0B387C">
-                    Rincian Pesanan
-                  </Text>
-                  <Text size="xs" c="gray.6">
-                    {selectedList.length} item dipilih
-                  </Text>
-                </div>
-              </Flex>
-
-              {selectedList.length === 0 ? (
-                <Card 
-                  withBorder 
-                  radius={12} 
-                  p={30} 
-                  className="text-center bg-gray-50/50 border-dashed border-2"
+            <Tabs 
+              value={activeTab} 
+              onChange={setActiveTab}
+              classNames={{
+                root: "sticky top-0 z-10 bg-white",
+                tab: "data-[active=true]:bg-primary-base/10 data-[active=true]:text-primary-base py-3",
+                list: "border-b border-gray-200 px-4"
+              }}
+            >
+              <Tabs.List grow>
+                <Tabs.Tab 
+                  value="order" 
+                  leftSection={<Icon icon="uiw:shopping-cart" />}
                 >
-                  <div className="mb-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
-                      <Icon icon="uiw:shopping-cart" className="text-3xl text-gray-400" />
+                  Rincian Pesanan
+                </Tabs.Tab>
+                <Tabs.Tab 
+                  value="transactions" 
+                  leftSection={<Icon icon="uiw:file-text" />}
+                >
+                  Riwayat Transaksi
+                </Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="order" pt="md">
+                <Card p={20} className="h-auto">
+                  <Flex align="center" gap={10} mb={20}>
+                    <div className="bg-primary-base/10 p-2 rounded-lg">
+                      <Icon icon="uiw:shopping-cart" className="text-primary-base text-lg" />
                     </div>
-                    <Text c="gray.6" size="sm" mb={10}>
-                      Belum ada produk yang dipilih
-                    </Text>
-                  </div>
-                  <Button 
-                    size="md" 
-                    className="md:!hidden" 
-                    onClick={() => setOpenSelect(!openSelect)}
-                    leftSection={<Icon icon="uiw:plus" />}
-                    variant="filled"
-                    color="primary"
-                    radius="md"
-                    fullWidth
-                  >
-                    Tambah Produk
-                  </Button>
-                </Card>
-              ) : (
-                <ScrollArea h={300} scrollbarSize={6}>
-                  <Stack gap={10}>
-                    {selectedList.map((e, i) => (
-                      <Card 
-                        key={i} 
-                        p={12} 
-                        withBorder 
-                        radius={10}
-                        className="hover:bg-gray-50/50 transition-all duration-200 group"
+                    <div>
+                      <Text fw={700} size="lg" c="#0B387C">
+                        Rincian Pesanan
+                      </Text>
+                      <Text size="xs" c="gray.6">
+                        {selectedList.length} item dipilih
+                      </Text>
+                    </div>
+                  </Flex>
+
+                  {selectedList.length === 0 ? (
+                    <Card 
+                      withBorder 
+                      radius={12} 
+                      p={30} 
+                      className="text-center bg-gray-50/50 border-dashed border-2"
+                    >
+                      <div className="mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
+                          <Icon icon="uiw:shopping-cart" className="text-3xl text-gray-400" />
+                        </div>
+                        <Text c="gray.6" size="sm" mb={10}>
+                          Belum ada produk yang dipilih
+                        </Text>
+                      </div>
+                      <Button 
+                        size="md" 
+                        className="md:!hidden" 
+                        onClick={() => setOpenSelect(!openSelect)}
+                        leftSection={<Icon icon="uiw:plus" />}
+                        variant="filled"
+                        color="primary"
+                        radius="md"
+                        fullWidth
                       >
-                        <Flex gap={12} align="center">
-                          {/* Product Image */}
-                          <div className="relative flex-shrink-0">
-                            <Image 
-                              src={e.image} 
-                              h={60} 
-                              w={60} 
-                              radius={8}
-                              className="border border-gray-200"
-                              fallbackSrc="https://placehold.co/60x60/EBF4FF/0B387C?text=Produk"
+                        Tambah Produk
+                      </Button>
+                    </Card>
+                  ) : (
+                    <ScrollArea h={300} scrollbarSize={6}>
+                      <Stack gap={10}>
+                        {selectedList.map((e, i) => (
+                          <Card 
+                            key={i} 
+                            p={12} 
+                            withBorder 
+                            radius={10}
+                            className="hover:bg-gray-50/50 transition-all duration-200 group"
+                          >
+                            <Flex gap={12} align="center">
+                              <div className="relative flex-shrink-0">
+                                <Image 
+                                  src={e.image} 
+                                  h={60} 
+                                  w={60} 
+                                  radius={8}
+                                  className="border border-gray-200"
+                                  fallbackSrc="https://placehold.co/60x60/EBF4FF/0B387C?text=Produk"
+                                />
+                                {e.count > 1 && (
+                                  <div className="absolute -top-2 -right-2 bg-primary-base text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                                    {e.count}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <Flex justify="space-between" align="flex-start" gap={8}>
+                                  <div>
+                                    <Text size="sm" fw={600} lineClamp={1} className="text-gray-800">
+                                      {e.name}
+                                    </Text>
+                                    {e.variant_name && (
+                                      <Flex align="center" gap={4} mt={2}>
+                                        <Icon icon="uiw:tag" className="text-xs text-gray-500" />
+                                        <Text size="xs" c="gray.6" className="capitalize">
+                                          {e.variant_name}
+                                        </Text>
+                                      </Flex>
+                                    )}
+                                  </div>
+                                  <Text size="sm" fw={700} className="text-primary-base whitespace-nowrap">
+                                    <NumberFormatter prefix="Rp " value={e.subtotal} />
+                                  </Text>
+                                </Flex>
+
+                                <Flex justify="space-between" align="center" mt={8}>
+                                  <div className="flex items-center gap=3">
+                                    <Text size="xs" c="gray.6">
+                                      @ <NumberFormatter prefix="Rp " value={e.price} />
+                                    </Text>
+                                    {e.stock < 10 && e.stock > 0 && (
+                                      <Text size="xs" c="orange" className="bg-orange-50 px-2 py-0.5 rounded-full">
+                                        Stok: {e.stock}
+                                      </Text>
+                                    )}
+                                    {e.stock === 0 && (
+                                      <Text size="xs" c="red" className="bg-red-50 px-2 py-0.5 rounded-full">
+                                        Stok Habis
+                                      </Text>
+                                    )}
+                                  </div>
+
+                                  <Flex align="center" gap={8}>
+                                    <NumberInput
+                                      min={1}
+                                      max={e.stock}
+                                      value={e.count}
+                                      onChange={(value) => {
+                                        const numValue = typeof value === 'string' ? parseInt(value) || 1 : value;
+                                        setSelected(selected.map((item, idx) => 
+                                          idx === i ? { ...item, count: numValue } : item
+                                        ));
+                                      }}
+                                      size="xs"
+                                      w={80}
+                                      className="[&_input]:text-center [&_input]:font-semibold"
+                                      styles={{
+                                        input: {
+                                          borderColor: '#CBD5E0',
+                                          '&:focus': {
+                                            borderColor: '#0B387C'
+                                          }
+                                        }
+                                      }}
+                                    />
+                                    <ActionIcon 
+                                      onClick={() => handleDeleteItem(i)}
+                                      color="red.5" 
+                                      variant="subtle"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <Icon icon="uiw:delete" className="text-base" />
+                                    </ActionIcon>
+                                  </Flex>
+                                </Flex>
+                              </div>
+                            </Flex>
+                          </Card>
+                        ))}
+                      </Stack>
+                    </ScrollArea>
+                  )}
+
+                  {selectedList.length > 0 && (
+                    <div className="mt-4">
+                      <Card 
+                        withBorder 
+                        radius={10} 
+                        p={12}
+                        className="bg-gray-50/50"
+                      >
+                        <Flex justify="space-between" align="center">
+                          <div>
+                            <Text size="sm" c="gray.7" fw={500}>
+                              Subtotal ({selectedList.length} item)
+                            </Text>
+                            <Text size="xs" c="gray.6">
+                              Total sebelum diskon
+                            </Text>
+                          </div>
+                          <Text size="md" fw={700} c="gray.8">
+                            <NumberFormatter 
+                              prefix="Rp " 
+                              value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} 
                             />
-                            {e.count > 1 && (
-                              <div className="absolute -top-2 -right-2 bg-primary-base text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                                {e.count}
+                          </Text>
+                        </Flex>
+                      </Card>
+                    </div>
+                  )}
+
+                  {selectedList.length > 0 && (
+                    <Button 
+                      size="md" 
+                      className="md:!hidden mt-4"
+                      onClick={() => setOpenSelect(!openSelect)}
+                      leftSection={<Icon icon="uiw:plus" />}
+                      variant="light"
+                      color="primary"
+                      radius="md"
+                      fullWidth
+                    >
+                      Tambah Produk Lain
+                    </Button>
+                  )}
+                </Card>
+
+                <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
+                  <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
+                    <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
+                      Data Pembeli
+                    </Button>
+
+                    <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
+                      Metode Pembayaran {paymentMethod ? `(${paymentMethod})` : ""}
+                    </Button>
+                  </Flex>
+                </Card>
+
+                <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
+                  <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
+                    <Flex gap={7} align="center">
+                      <Icon icon="teenyicons:discount-outline" className={`text-primary-base`} />
+                      <Text size="sm" className={`!text-primary-base`}>
+                        Diskon Tambahan
+                      </Text>
+                    </Flex>
+                    <NumberInput prefix="Rp " hideControls placeholder="Masukan Diskon" value={discount} onChange={(e) => setDiscount(parseInt(e as string))} className={`[&_*]:!text-center`} />
+                  </Flex>
+                </Card>
+
+                <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
+                  <Stack gap={8}>
+                    <Accordion
+                      variant="separated"
+                      radius="sm"
+                      chevronPosition="right"
+                      className="w-full"
+                      styles={{
+                        item: {
+                          border: "1px solid #e2e8f0",
+                          backgroundColor: "#ffffff",
+                          "&[data-active]": {
+                            backgroundColor: "#f7fafc",
+                          },
+                        },
+                        control: {
+                          padding: "8px 12px",
+                          fontWeight: 500,
+                          fontSize: "0.85rem",
+                          color: "#0B387C",
+                          "&:hover": {
+                            backgroundColor: "transparent",
+                          },
+                        },
+                        chevron: {
+                          color: "#0B387C",
+                          width: "16px",
+                          height: "16px",
+                        },
+                        content: {
+                          padding: "0 12px 8px 12px",
+                        },
+                      }}
+                    >
+                      <Accordion.Item value="customer">
+                        <Accordion.Control>
+                          <div className="flex items-center gap-2">
+                            <Icon icon="mdi:account-outline" className="text-sm" />
+                            <span className="text-sm">Data Pembeli</span>
+                          </div>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <div className="space-y-3 pt-1">
+                            {custValue.name || custValue.email || custValue.phone || custValue.address ? (
+                              <>
+                                <div className="grid grid-cols-1 gap-2">
+                                  <div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                      <Icon icon="mdi:account" className="text-xs" />
+                                      <span>Nama</span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.name || "-"}</div>
+                                  </div>
+
+                                  <div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                      <Icon icon="mdi:email-outline" className="text-xs" />
+                                      <span>Email</span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.email || "-"}</div>
+                                  </div>
+
+                                  <div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                      <Icon icon="mdi:phone-outline" className="text-xs" />
+                                      <span>No. Telp</span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.phone || "-"}</div>
+                                  </div>
+
+                                  <div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                      <Icon icon="mdi:map-marker-outline" className="text-xs" />
+                                      <span>Alamat</span>
+                                    </div>
+                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end pt-1">
+                                  <Button variant="subtle" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
+                                    Edit
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-center py-3">
+                                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-2">
+                                  <Icon icon="mdi:account-question" className="text-lg text-gray-400" />
+                                </div>
+                                <p className="text-xs text-gray-500 mb-3">Belum ada data pembeli</p>
+                                <Button variant="light" color="blue" size="xs" leftSection={<Icon icon="mdi:plus" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
+                                  Tambah Data
+                                </Button>
                               </div>
                             )}
                           </div>
+                        </Accordion.Panel>
+                      </Accordion.Item>
 
-                          {/* Product Details */}
-                          <div className="flex-1 min-w-0">
-                            <Flex justify="space-between" align="flex-start" gap={8}>
-                              <div>
-                                <Text size="sm" fw={600} lineClamp={1} className="text-gray-800">
-                                  {e.name}
-                                </Text>
-                                {e.variant_name && (
-                                  <Flex align="center" gap={4} mt={2}>
-                                    <Icon icon="uiw:tag" className="text-xs text-gray-500" />
-                                    <Text size="xs" c="gray.6" className="capitalize">
-                                      {e.variant_name}
-                                    </Text>
-                                  </Flex>
-                                )}
-                              </div>
-                              <Text size="sm" fw={700} className="text-primary-base whitespace-nowrap">
-                                <NumberFormatter prefix="Rp " value={e.subtotal} />
-                              </Text>
-                            </Flex>
-
-                            {/* Price and Controls */}
-                            <Flex justify="space-between" align="center" mt={8}>
-                              <div className="flex items-center gap=3">
-                                <Text size="xs" c="gray.6">
-                                  @ <NumberFormatter prefix="Rp " value={e.price} />
-                                </Text>
-                                {e.stock < 10 && e.stock > 0 && (
-                                  <Text size="xs" c="orange" className="bg-orange-50 px-2 py-0.5 rounded-full">
-                                    Stok: {e.stock}
-                                  </Text>
-                                )}
-                                {e.stock === 0 && (
-                                  <Text size="xs" c="red" className="bg-red-50 px-2 py-0.5 rounded-full">
-                                    Stok Habis
-                                  </Text>
-                                )}
-                              </div>
-
-                              <Flex align="center" gap={8}>
-                                <NumberInput
-                                  min={1}
-                                  max={e.stock}
-                                  value={e.count}
-                                  onChange={(value) => {
-                                    const numValue = typeof value === 'string' ? parseInt(value) || 1 : value;
-                                    setSelected(selected.map((item, idx) => 
-                                      idx === i ? { ...item, count: numValue } : item
-                                    ));
-                                  }}
-                                  size="xs"
-                                  w={80}
-                                  className="[&_input]:text-center [&_input]:font-semibold"
-                                  styles={{
-                                    input: {
-                                      borderColor: '#CBD5E0',
-                                      '&:focus': {
-                                        borderColor: '#0B387C'
-                                      }
-                                    }
-                                  }}
-                                />
-                                <ActionIcon 
-                                  onClick={() => handleDeleteItem(i)}
-                                  color="red.5" 
-                                  variant="subtle"
-                                  size="sm"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <Icon icon="uiw:delete" className="text-base" />
-                                </ActionIcon>
-                              </Flex>
-                            </Flex>
+                      <Accordion.Item value="summary">
+                        <Accordion.Control>
+                          <div className="flex items-center gap-2">
+                            <Icon icon="mdi:receipt-text-outline" className="text-sm" />
+                            <span className="text-sm">Detail Pembayaran</span>
                           </div>
-                        </Flex>
-                      </Card>
-                    ))}
-                  </Stack>
-                </ScrollArea>
-              )}
-
-              {selectedList.length > 0 && (
-                <div className="mt-4">
-                  <Card 
-                    withBorder 
-                    radius={10} 
-                    p={12}
-                    className="bg-gray-50/50"
-                  >
-                    <Flex justify="space-between" align="center">
-                      <div>
-                        <Text size="sm" c="gray.7" fw={500}>
-                          Subtotal ({selectedList.length} item)
-                        </Text>
-                        <Text size="xs" c="gray.6">
-                          Total sebelum diskon
-                        </Text>
-                      </div>
-                      <Text size="md" fw={700} c="gray.8">
-                        <NumberFormatter 
-                          prefix="Rp " 
-                          value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} 
-                        />
-                      </Text>
-                    </Flex>
-                  </Card>
-                </div>
-              )}
-
-              {selectedList.length > 0 && (
-                <Button 
-                  size="md" 
-                  className="md:!hidden mt-4"
-                  onClick={() => setOpenSelect(!openSelect)}
-                  leftSection={<Icon icon="uiw:plus" />}
-                  variant="light"
-                  color="primary"
-                  radius="md"
-                  fullWidth
-                >
-                  Tambah Produk Lain
-                </Button>
-              )}
-            </Card>
-
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-              <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
-                <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                  Data Pembeli
-                </Button>
-
-                <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                  Metode Pembayaran {paymentMethod ? `(${paymentMethod})` : ""}
-                </Button>
-              </Flex>
-            </Card>
-
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-              <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
-                <Flex gap={7} align="center">
-                  <Icon icon="teenyicons:discount-outline" className={`text-primary-base`} />
-                  <Text size="sm" className={`!text-primary-base`}>
-                    Diskon Tambahan
-                  </Text>
-                </Flex>
-                <NumberInput prefix="Rp " hideControls placeholder="Masukan Diskon" value={discount} onChange={(e) => setDiscount(parseInt(e as string))} className={`[&_*]:!text-center`} />
-              </Flex>
-            </Card>
-
-            <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-              <Stack gap={8}>
-                <Accordion
-                  variant="separated"
-                  radius="sm"
-                  chevronPosition="right"
-                  className="w-full"
-                  styles={{
-                    item: {
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "#ffffff",
-                      "&[data-active]": {
-                        backgroundColor: "#f7fafc",
-                      },
-                    },
-                    control: {
-                      padding: "8px 12px",
-                      fontWeight: 500,
-                      fontSize: "0.85rem",
-                      color: "#0B387C",
-                      "&:hover": {
-                        backgroundColor: "transparent",
-                      },
-                    },
-                    chevron: {
-                      color: "#0B387C",
-                      width: "16px",
-                      height: "16px",
-                    },
-                    content: {
-                      padding: "0 12px 8px 12px",
-                    },
-                  }}
-                >
-                  <Accordion.Item value="customer">
-                    <Accordion.Control>
-                      <div className="flex items-center gap-2">
-                        <Icon icon="mdi:account-outline" className="text-sm" />
-                        <span className="text-sm">Data Pembeli</span>
-                      </div>
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <div className="space-y-3 pt-1">
-                        {custValue.name || custValue.email || custValue.phone || custValue.address ? (
-                          <>
-                            <div className="grid grid-cols-1 gap-2">
-                              <div>
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                  <Icon icon="mdi:account" className="text-xs" />
-                                  <span>Nama</span>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <div className="space-y-2 pt-1">
+                            {handleSummary.detail
+                              .filter((e) => Boolean(e[1]) || e[1] < 0)
+                              .map((e, i) => (
+                                <div key={i} className="flex items-center justify-between py-1">
+                                  <div className="flex items-center gap-1.5">
+                                    {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-xs text-gray-400" />}
+                                    {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-xs text-gray-400" />}
+                                    {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-xs text-gray-400" />}
+                                    <span className="text-xs text-gray-600">{e[0]}</span>
+                                  </div>
+                                  <div className={`text-xs font-medium ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
+                                    <NumberFormatter prefix="Rp " value={e[1]} />
+                                  </div>
                                 </div>
-                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.name || "-"}</div>
-                              </div>
+                              ))}
 
-                              <div>
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                  <Icon icon="mdi:email-outline" className="text-xs" />
-                                  <span>Email</span>
+                            <div className="pt-2 mt-2 border-t border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <Icon icon="mdi:cash-multiple" className="text-sm text-primary-base" />
+                                  <span className="text-xs font-semibold text-primary-base">Total</span>
                                 </div>
-                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.email || "-"}</div>
-                              </div>
-
-                              <div>
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                  <Icon icon="mdi:phone-outline" className="text-xs" />
-                                  <span>No. Telp</span>
+                                <div className="text-sm font-bold text-primary-base">
+                                  <NumberFormatter prefix="Rp " value={handleSummary.total} />
                                 </div>
-                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.phone || "-"}</div>
                               </div>
 
-                              <div>
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                  <Icon icon="mdi:map-marker-outline" className="text-xs" />
-                                  <span>Alamat</span>
+                              {discount !== 0 && (
+                                <div className="mt-1 text-[10px] text-gray-500 text-right">
+                                  {discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
                                 </div>
-                                <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
-                              </div>
-                            </div>
-
-                            <div className="flex justify-end pt-1">
-                              <Button variant="subtle" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
-                                Edit
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-center py-3">
-                            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-2">
-                              <Icon icon="mdi:account-question" className="text-lg text-gray-400" />
-                            </div>
-                            <p className="text-xs text-gray-500 mb-3">Belum ada data pembeli</p>
-                            <Button variant="light" color="blue" size="xs" leftSection={<Icon icon="mdi:plus" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
-                              Tambah Data
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-
-                  <Accordion.Item value="summary">
-                    <Accordion.Control>
-                      <div className="flex items-center gap-2">
-                        <Icon icon="mdi:receipt-text-outline" className="text-sm" />
-                        <span className="text-sm">Detail Pembayaran</span>
-                      </div>
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <div className="space-y-2 pt-1">
-                        {handleSummary.detail
-                          .filter((e) => Boolean(e[1]) || e[1] < 0)
-                          .map((e, i) => (
-                            <div key={i} className="flex items-center justify-between py-1">
-                              <div className="flex items-center gap-1.5">
-                                {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-xs text-gray-400" />}
-                                {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-xs text-gray-400" />}
-                                {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-xs text-gray-400" />}
-                                <span className="text-xs text-gray-600">{e[0]}</span>
-                              </div>
-                              <div className={`text-xs font-medium ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
-                                <NumberFormatter prefix="Rp " value={e[1]} />
-                              </div>
-                            </div>
-                          ))}
-
-                        <div className="pt-2 mt-2 border-t border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <Icon icon="mdi:cash-multiple" className="text-sm text-primary-base" />
-                              <span className="text-xs font-semibold text-primary-base">Total</span>
-                            </div>
-                            <div className="text-sm font-bold text-primary-base">
-                              <NumberFormatter prefix="Rp " value={handleSummary.total} />
+                              )}
                             </div>
                           </div>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    </Accordion>
+                    <Flex justify="flex-end" mt={2}>
+                      <Button
+                        component="button"
+                        type="button"
+                        size="xs"
+                        radius="sm"
+                        variant={isGuest ? "filled" : "blue"}
+                        color={isGuest ? "green" : "gray"}
+                        data-ssr="1"
+                        onClick={() => {
+                          const safeChange = (propName: keyof CustomerData, value: string) => {
+                            const p = custProps(propName as any) as any;
+                            if (!p) return;
+                            try {
+                              if (typeof p.onChange === "function") {
+                                p.onChange(value);
+                                return;
+                              }
+                            } catch {}
+                            try {
+                              if (typeof p.onChange === "function") p.onChange({ target: { value } });
+                            } catch {}
+                          };
 
-                          {discount !== 0 && (
-                            <div className="mt-1 text-[10px] text-gray-500 text-right">
-                              {discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                </Accordion>
-                <Flex justify="flex-end" mt={2}>
-                  <Button
-                    component="button"
-                    type="button"
-                    size="xs"
-                    radius="sm"
-                    variant={isGuest ? "filled" : "blue"}
-                    color={isGuest ? "green" : "gray"}
-                    data-ssr="1"
-                    onClick={() => {
-                      const safeChange = (propName: keyof CustomerData, value: string) => {
-                        const p = custProps(propName as any) as any;
-                        if (!p) return;
-                        try {
-                          if (typeof p.onChange === "function") {
-                            p.onChange(value);
+                          if (isGuest) {
+                            safeChange("name", "");
+                            safeChange("email", "");
+                            safeChange("phone", "");
+                            safeChange("address", "");
                             return;
                           }
-                        } catch {}
-                        try {
-                          if (typeof p.onChange === "function") p.onChange({ target: { value } });
-                        } catch {}
-                      };
 
-                      if (isGuest) {
-                        safeChange("name", "");
-                        safeChange("email", "");
-                        safeChange("phone", "");
-                        safeChange("address", "");
-                        return;
-                      }
+                          const randomId = Math.floor(100000 + Math.random() * 900000);
+                          const randomName = `Guest ${randomId}`;
+                          const randomEmail = `guest_${randomId}@mail.com`;
+                          const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
+                          const addrA = Math.floor(Math.random() * 101);
+                          const addrB = Math.floor(Math.random() * 101);
+                          const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
 
-                      const randomId = Math.floor(100000 + Math.random() * 900000);
-                      const randomName = `Guest ${randomId}`;
-                      const randomEmail = `guest_${randomId}@mail.com`;
-                      const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
-                      const addrA = Math.floor(Math.random() * 101);
-                      const addrB = Math.floor(Math.random() * 101);
-                      const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
+                          safeChange("name", randomName);
+                          safeChange("email", randomEmail);
+                          safeChange("phone", randomPhone);
+                          safeChange("address", randomAddress);
+                        }}
+                      >
+                        {isGuest ? "Guest Aktif" : "Gunakan Guest"}
+                      </Button>
+                    </Flex>
+                  </Stack>
+                </Card>
+              </Tabs.Panel>
 
-                      safeChange("name", randomName);
-                      safeChange("email", randomEmail);
-                      safeChange("phone", randomPhone);
-                      safeChange("address", randomAddress);
-                    }}
-                  >
-                    {isGuest ? "Guest Aktif" : "Gunakan Guest"}
-                  </Button>
-                </Flex>
-              </Stack>
-            </Card>
+              <Tabs.Panel value="transactions" pt="md">
+                <Card p={20}>
+                  <Flex align="center" gap={10} mb={20}>
+                    <div className="bg-primary-base/10 p-2 rounded-lg">
+                      <Icon icon="uiw:file-text" className="text-primary-base text-lg" />
+                    </div>
+                    <div>
+                      <Text fw={700} size="lg" c="#0B387C">
+                        Riwayat Transaksi
+                      </Text>
+                      <Text size="xs" c="gray.6">
+                        {totalTransactions} transaksi ditemukan
+                      </Text>
+                    </div>
+                  </Flex>
+
+                  {/* Filter Section */}
+                  <Card withBorder p="md" radius="md" mb="md" className="bg-gray-50/50">
+                    <Stack gap="md">
+                      <Text fw={600} size="sm">Filter Transaksi</Text>
+                      
+                      <Flex gap="md" wrap="wrap">
+                        <TextInput
+                          placeholder="Cari berdasarkan invoice..."
+                          value={transactionSearch}
+                          onChange={(e) => setTransactionSearch(e.target.value)}
+                          leftSection={<Icon icon="uiw:search" />}
+                          className="flex-1 min-w-[200px]"
+                          size="sm"
+                        />
+                        
+                        <DateInput
+                          placeholder="Tanggal Mulai"
+                          value={startDate}
+                          onChange={setStartDate}
+                          className="w-[150px]"
+                          size="sm"
+                          clearable
+                        />
+                        
+                        <DateInput
+                          placeholder="Tanggal Akhir"
+                          value={endDate}
+                          onChange={setEndDate}
+                          className="w-[150px]"
+                          size="sm"
+                          clearable
+                        />
+                        
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              rightSection={<Icon icon="uiw:down" />}
+                            >
+                              Status: {transactionStatus === "all" ? "Semua" : transactionStatus}
+                            </Button>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => setTransactionStatus("all")}>
+                              Semua Status
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item onClick={() => setTransactionStatus("paid")}>
+                              Dibayar
+                            </Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("unpaid")}>
+                              Belum Dibayar
+                            </Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("completed")}>
+                              Selesai
+                            </Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("pending")}>
+                              Pending
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Flex>
+
+                      <Flex gap="sm" justify="flex-end">
+                        <Button 
+                          variant="light" 
+                          size="sm"
+                          onClick={handleResetFilters}
+                          leftSection={<Icon icon="uiw:reload" />}
+                        >
+                          Reset
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={handleSearchTransactions}
+                          loading={loading.includes("get-transactions")}
+                          leftSection={<Icon icon="uiw:search" />}
+                        >
+                          Cari
+                        </Button>
+                      </Flex>
+                    </Stack>
+                  </Card>
+
+                  <LoadingOverlay visible={loading.includes("get-transactions")} />
+                  
+                  {transactions.length === 0 ? (
+                    <Card 
+                      withBorder 
+                      radius={12} 
+                      p={30} 
+                      className="text-center bg-gray-50/50 border-dashed border-2"
+                    >
+                      <div className="mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
+                          <Icon icon="uiw:file-text" className="text-3xl text-gray-400" />
+                        </div>
+                        <Text c="gray.6" size="sm" mb={10}>
+                          Tidak ada transaksi ditemukan
+                        </Text>
+                        <Button 
+                          onClick={() => getTransactions()}
+                          variant="light"
+                          size="sm"
+                          leftSection={<Icon icon="uiw:reload" />}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
+                    </Card>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <Table 
+                          striped 
+                          highlightOnHover
+                          verticalSpacing="sm"
+                          style={{ minWidth: '800px' }}
+                        >
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th style={{ minWidth: '150px' }}>Invoice No</Table.Th>
+                              <Table.Th style={{ minWidth: '150px' }}>Pelanggan</Table.Th>
+                              <Table.Th style={{ minWidth: '120px' }}>Total</Table.Th>
+                              <Table.Th style={{ minWidth: '120px' }}>Status</Table.Th>
+                              <Table.Th style={{ minWidth: '120px' }}>Pembayaran</Table.Th>
+                              <Table.Th style={{ minWidth: '120px' }}>Tanggal</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {transactions.map((transaction) => (
+                              <Table.Tr key={transaction.id}>
+                                <Table.Td>
+                                  <Text fw={500} size="sm">
+                                    {transaction.invoice_no || transaction.invoice_number}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text size="sm">{transaction.customer_name}</Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text fw={600} size="sm">
+                                    <NumberFormatter 
+                                      prefix="Rp " 
+                                      value={transaction.total_amount} 
+                                      thousandSeparator="."
+                                      decimalSeparator=","
+                                    />
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <div style={{ minWidth: '100px' }}>
+                                    {renderStatusBadge(transaction.status)}
+                                  </div>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Badge variant="outline" size="sm">
+                                    {transaction.payment_method}
+                                  </Badge>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text size="sm">
+                                    {new Date(transaction.created_at).toLocaleDateString('id-ID', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </Text>
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </div>
+                      
+                      <Flex justify="space-between" align="center" mt="md">
+                        <Text size="sm" c="gray.6">
+                          Halaman {transactionPage} - Menampilkan {transactions.length} dari {totalTransactions} transaksi
+                        </Text>
+                        
+                        <Flex gap={10}>
+                          <Button
+                            size="sm"
+                            variant="subtle"
+                            onClick={() => {
+                              if (transactionPage > 1) {
+                                const newPage = transactionPage - 1;
+                                setTransactionPage(newPage);
+                                getTransactions(newPage);
+                              }
+                            }}
+                            disabled={transactionPage <= 1}
+                          >
+                            Prev
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="subtle"
+                            onClick={() => {
+                              const newPage = transactionPage + 1;
+                              setTransactionPage(newPage);
+                              getTransactions(newPage);
+                            }}
+                            disabled={transactions.length < 10}
+                          >
+                            Next
+                          </Button>
+                        </Flex>
+                      </Flex>
+                    </>
+                  )}
+                </Card>
+              </Tabs.Panel>
+            </Tabs>
           </div>
         </Card>
       </Flex>
 
-      {/* FLOATING PAYMENT BAR - Adjusted untuk sidebar */}
-      <div
-        className="fixed bottom-0 z-50"
-        style={{
-          left: "calc(45px + 20px)", // Sesuaikan dengan lebar sidebar + margin
-          right: "20px",
-        }}
-      >
-        <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
-              <span className="text-base font-bold">
-                <NumberFormatter value={handleSummary.total} />
-              </span>
+      {activeTab === 'order' && (
+        <div
+          className="fixed bottom-0 z-50"
+          style={{
+            left: "calc(45px + 20px)",
+            right: "20px",
+          }}
+        >
+          <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
+                <span className="text-base font-bold">
+                  <NumberFormatter value={handleSummary.total} />
+                </span>
+              </div>
+              <Button 
+                loading={loading.includes("submit") || loading.includes("checkout")} 
+                onClick={handleCheckout} 
+                disabled={handleSummary.total <= 0 || !paymentMethod} 
+                size="md" 
+                radius="xl" 
+                className="min-w-[120px]"
+              >
+                Bayar
+              </Button>
             </div>
-            <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} size="md" radius="xl" className="min-w-[120px]">
-              Bayar
-            </Button>
           </div>
         </div>
-      </div>
+      )}
     </Stack>
   );
 }

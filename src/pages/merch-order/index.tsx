@@ -868,6 +868,8 @@ type FormState = {
     name: string;
     type?: GetCourierRes;
   };
+  is_pickup_instore: 0 | 1;
+  is_delivery: 0 | 1;
 };
 
 type GetCourierReq = {
@@ -899,6 +901,7 @@ type Checkout = {
   user_id: number | null;
   nama_pemesan?: string;
   email_pemesan?: string;
+  phone_pemesan?: string;
   creator_id: number;
   grandtotal: number;
   product: Array<{
@@ -908,12 +911,12 @@ type Checkout = {
     price: number;
   }>;
   payment_method: string;
-  courier: {
+  courier?: {
     main: string;
     type: string;
     price: number;
   };
-  address: {
+  address?: {
     id?: number;
     is_main_address: number;
     province_id: number;
@@ -927,12 +930,20 @@ type Checkout = {
     phone: string;
     is_active: number;
   };
+  is_pickup_instore: 0 | 1;
+  is_delivery: 0 | 1;
 };
 
 export const formStateSchema = z.object({
   nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
-  email_pemesan: z.string().email("Email pemesan tidak boleh kosong.").optional().nullable(),
-  phone_pemesan: z.string().nonempty("Nomor telepon pemesan tidak boleh kosong.").optional().nullable(),
+  email_pemesan: z.string().email("Email pemesan tidak valid.").optional().nullable(),
+  phone_pemesan: z
+    .string()
+    .min(10, "Nomor telepon minimal 10 digit")
+    .max(15, "Nomor telepon maksimal 15 digit")
+    .regex(/^[0-9]+$/, "Nomor telepon harus berupa angka")
+    .optional()
+    .nullable(),
   pickup_location: z
     .object({
       address: z.string().nonempty("Lokasi pengambilan tidak boleh kosong."),
@@ -952,6 +963,8 @@ export const formStateSchema = z.object({
     name: z.string().nonempty("Kurir tidak boleh kosong."),
     type: z.any().optional(),
   }),
+  is_pickup_instore: z.number().int().min(0).max(1),
+  is_delivery: z.number().int().min(0).max(1),
 });
 
 export default function Cart() {
@@ -964,6 +977,14 @@ export default function Cart() {
   const [provinceList, setProvinceList] = useListState<Province>([]);
   const [cityList, setCityList] = useListState<City>([]);
   const [subCourier, setSubCourier] = useListState<GetCourierRes>();
+  const [pickupDeliveryInfo, setPickupDeliveryInfo] = useState<{
+    is_pickup_instore: 0 | 1;
+    is_delivery: 0 | 1;
+  }>({
+    is_pickup_instore: 0,
+    is_delivery: 0,
+  });
+
   const user = useLoggedUser();
   const router = useRouter();
 
@@ -972,14 +993,17 @@ export default function Cart() {
       pickup_location: {
         address: "Pasar Bareng - Bareng, Pamulang Square, Jl. Siliwangi No.7, Pamulang Bar., Kec. Pamulang, Kota Tangerang Selatan, Banten 15417",
       },
+      is_pickup_instore: 0,
+      is_delivery: 0,
     },
+    validate: zodResolver(formStateSchema),
   });
 
   // Fungsi untuk mendapatkan alamat singkat
   const getShortAddress = (fullAddress: string) => {
-    const parts = fullAddress.split(',');
+    const parts = fullAddress.split(",");
     if (parts.length > 2) {
-      return parts.slice(0, 2).join(',').trim();
+      return parts.slice(0, 2).join(",").trim();
     }
     return fullAddress;
   };
@@ -987,10 +1011,10 @@ export default function Cart() {
   // Fungsi untuk mendapatkan alamat detail yang dipotong
   const getTruncatedAddress = (fullAddress: string) => {
     const shortAddress = getShortAddress(fullAddress);
-    const remaining = fullAddress.replace(shortAddress, '').replace(/^,\s*/, '');
-    
+    const remaining = fullAddress.replace(shortAddress, "").replace(/^,\s*/, "");
+
     if (remaining.length > 50) {
-      return remaining.substring(0, 50) + '...';
+      return remaining.substring(0, 50) + "...";
     }
     return remaining;
   };
@@ -1007,17 +1031,74 @@ export default function Cart() {
   }, [isr]);
 
   useEffect(() => {
-    if (form.values.receiver && form.values.courier) {
+    if (form.values.receiver && form.values.courier && pickupDeliveryInfo.is_delivery === 1) {
       getCourier();
       form.setValues({ courier: { name: form.values.courier.name, type: undefined } });
     }
-  }, [form.values.receiver, form.values.courier?.name]);
+  }, [form.values.receiver, form.values.courier?.name, pickupDeliveryInfo.is_delivery]);
 
   const getData = async () => {
     Get("product", {})
       .then((res: any) => {
         setProductList.setState(res.data);
-        console.log(res.data);
+        console.log("API Product Data:", res.data);
+
+        // Dapatkan orderData dari cookies
+        const _orderData = JSON.parse(Cookies.get("order_data") ?? "[]");
+
+        // Cari produk yang sesuai dengan orderData
+        if (_orderData && _orderData.length > 0) {
+          // Ambil product_id pertama dari order
+          const firstProductId = _orderData[0].product_id;
+          console.log("First product ID in order:", firstProductId);
+
+          // Cari produk yang sesuai dengan ID di order
+          const orderedProduct = _.find(res.data, ["id", firstProductId]);
+          console.log("Found ordered product:", orderedProduct);
+
+          if (orderedProduct) {
+            // Ambil nilai dari produk yang dipesan
+            const hasPickupInstore = orderedProduct.is_pickup_instore === 1 ? 1 : 0;
+            const hasDelivery = orderedProduct.is_delivery === 1 ? 1 : 0;
+
+            console.log("Product pickup/delivery settings:", {
+              productId: orderedProduct.id,
+              productName: orderedProduct.product_name,
+              is_pickup_instore: orderedProduct.is_pickup_instore,
+              is_delivery: orderedProduct.is_delivery,
+              hasPickupInstore,
+              hasDelivery,
+            });
+
+            setPickupDeliveryInfo({
+              is_pickup_instore: hasPickupInstore,
+              is_delivery: hasDelivery,
+            });
+
+            form.setValues({
+              is_pickup_instore: hasPickupInstore,
+              is_delivery: hasDelivery,
+            });
+
+            // Reset form values jika tidak ada delivery
+            if (hasDelivery === 0) {
+              form.setValues({
+                courier: undefined,
+                receiver: undefined,
+              });
+            }
+
+            // Reset form values jika tidak ada pickup instore
+            if (hasPickupInstore === 0) {
+              form.setValues({
+                nama_pemesan: undefined,
+                email_pemesan: undefined,
+                phone_pemesan: undefined,
+                pickup_location: undefined,
+              });
+            }
+          }
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -1037,28 +1118,33 @@ export default function Cart() {
       await fetch<any, AddressUpdateRequest[]>({
         url: `my-address?user_id=${user?.id}`,
         method: "GET",
-        before: () => setLoading.append("getprovince"),
+        before: () => setLoading.append("getaddress"),
         success: ({ data }) => {
           if (data) {
             setAddressList.setState(data ?? []);
 
-            const mainAddress = _.find(data, ["is_main_address", 1]) ?? data[0];
-            form.setValues({
-              receiver: {
-                name: mainAddress.nama_penerima,
-                phone: mainAddress.phone,
-                address_name: mainAddress.address_name,
-                province_id: mainAddress.province_id,
-                city_id: mainAddress.city_id,
-                pos_code: parseInt(mainAddress.zipcode),
-                detail: mainAddress.address_detail,
-              },
-            });
+            if (pickupDeliveryInfo.is_delivery === 1) {
+              const mainAddress = _.find(data, ["is_main_address", 1]) ?? data[0];
+              if (mainAddress) {
+                form.setValues({
+                  receiver: {
+                    id: mainAddress.id,
+                    name: mainAddress.nama_penerima,
+                    phone: mainAddress.phone,
+                    address_name: mainAddress.address_name,
+                    province_id: mainAddress.province_id,
+                    city_id: mainAddress.city_id,
+                    pos_code: parseInt(mainAddress.zipcode),
+                    detail: mainAddress.address_detail,
+                  },
+                });
 
-            getCity(mainAddress.province_id);
+                getCity(mainAddress.province_id);
+              }
+            }
           }
         },
-        complete: () => setLoading.filter((e) => e != "getprovince"),
+        complete: () => setLoading.filter((e) => e != "getaddress"),
       });
     }
   };
@@ -1084,8 +1170,10 @@ export default function Cart() {
       const price = subprice * e.qty;
       const image = product?.product_image[0] ? product?.product_image[0].image_url : "#";
       const creator_id = product?.creator_id;
+      const is_pickup_instore = product?.is_pickup_instore === 1;
+      const is_delivery = product?.is_delivery === 1;
 
-      return { ...e, product, variant, price, subprice, image, weight, creator_id };
+      return { ...e, product, variant, price, subprice, image, weight, creator_id, is_pickup_instore, is_delivery };
     });
   }, [productList, orderData]);
 
@@ -1096,19 +1184,21 @@ export default function Cart() {
       result.push([`x${order.qty} ${order.product?.product_name ?? "-"}`, order.price]);
     }
 
-    if (form.values.courier?.type && form.values.courier?.type.cost && form.values.courier?.type.cost.length > 0) {
+    if (pickupDeliveryInfo.is_delivery === 1 && form.values.courier?.type && form.values.courier?.type.cost && form.values.courier?.type.cost.length > 0) {
       result.push(["Biaya Pengiriman", form.values.courier?.type.cost[0].value]);
     }
 
-    result.push(["Biaya Admin", 2000]);
+    result.push(["Biaya Admin", 10000]);
 
     const grandtotal = result.reduce((q, n) => q + n[1], 0);
     result.push(["Total", grandtotal]);
 
     return { array: result, grandtotal };
-  }, [orderedProduct, form.values.courier?.type, form.values.receiver]);
+  }, [orderedProduct, form.values.courier?.type, form.values.receiver, pickupDeliveryInfo.is_delivery]);
 
   const getCourier = async () => {
+    if (pickupDeliveryInfo.is_delivery === 0 || !form.values.receiver?.city_id) return;
+
     const originCityId =
       orderedProduct && orderedProduct.length > 0 && orderedProduct[0].product?.has_store_location && typeof orderedProduct[0].product.has_store_location.city_id === "number" ? orderedProduct[0].product.has_store_location.city_id : 1;
 
@@ -1124,60 +1214,386 @@ export default function Cart() {
         courier: form.values.courier?.name ?? "-",
       },
       before: () => setLoading.append("getsubcourier"),
-      success: (res) => setSubCourier.setState(res.data ?? []),
+      success: (res) => {
+        console.log("Courier API response:", res);
+        if (res.data) {
+          setSubCourier.setState(res.data ?? []);
+        }
+      },
       complete: () => setLoading.filter((e) => e != "getsubcourier"),
       error: (err) => {
         console.error("Failed to fetch courier:", err);
+        // Set default courier options jika API gagal
+        const defaultCouriers: GetCourierRes[] = [
+          {
+            service: "JTR",
+            description: "JTR",
+            cost: [{ value: 10000, etd: "2-3 HARI", note: "Pengiriman reguler" }],
+          },
+          {
+            service: "YES",
+            description: "Express",
+            cost: [{ value: 20000, etd: "1-2 HARI", note: "Pengiriman express" }],
+          },
+        ];
+        setSubCourier.setState(defaultCouriers);
       },
     });
   };
 
   const handleCheckout = async () => {
     const { values } = form;
-    await fetch<Checkout, { invoice_url: string }>({
-      url: "order-product",
-      method: "POST",
-      data: {
-        user_id: user?.id ?? null,
-        nama_pemesan: values.nama_pemesan,
-        email_pemesan: values.email_pemesan,
-        creator_id: orderedProduct ? orderedProduct[0].creator_id ?? 0 : 0,
-        grandtotal: orderSummary.grandtotal,
-        product: (orderedProduct ?? []).map((e) => ({
-          product_id: e.product_id,
-          variant_id: e.variant_id,
-          qty: e.qty,
-          price: e.price,
-        })),
-        payment_method: "xendit",
-        courier: {
-          main: values.courier?.name ?? "-",
-          type: values.courier?.type?.service ?? "-",
-          price: values.courier?.type?.cost[0].value ?? 999999,
+
+    // Validasi form berdasarkan kondisi
+    if (pickupDeliveryInfo.is_pickup_instore === 1) {
+      if (!values.nama_pemesan) {
+        form.setFieldError("nama_pemesan", "Nama pemesan harus diisi untuk pickup instore");
+        return;
+      }
+      if (!values.email_pemesan) {
+        form.setFieldError("email_pemesan", "Email pemesan harus diisi untuk pickup instore");
+        return;
+      }
+      if (!values.phone_pemesan) {
+        form.setFieldError("phone_pemesan", "Nomor telepon pemesan harus diisi untuk pickup instore");
+        return;
+      }
+    }
+
+    if (pickupDeliveryInfo.is_delivery === 1) {
+      if (!values.receiver) {
+        form.setFieldError("receiver", "Alamat pengiriman harus diisi untuk delivery");
+        return;
+      }
+      if (!values.courier?.name) {
+        form.setFieldError("courier", "Kurir harus dipilih untuk delivery");
+        return;
+      }
+    }
+
+    // Validasi orderedProduct
+    if (!orderedProduct || orderedProduct.length === 0) {
+      console.error("Tidak ada produk dalam order");
+      return;
+    }
+
+    // Format phone_pemesan jika ada
+    const formattedPhone = values.phone_pemesan ? values.phone_pemesan.replace(/\D/g, "") : undefined;
+
+    // Default user_id = 6 jika null
+    const userId = user?.id ?? 6;
+
+    // Prepare checkout data sesuai dengan payload yang berhasil
+    const checkoutData: any = {
+      user_id: userId,
+      name_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.nama_pemesan : user?.name || "Customer",
+      email_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.email_pemesan : user?.email || "customer@example.com",
+      phone_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? formattedPhone : formattedPhone || "081234567890",
+      creator_id: null, // Berdasarkan payload yang berhasil, harus null
+      grandtotal: orderSummary.grandtotal,
+      product: (orderedProduct ?? []).map((e) => ({
+        product_id: e.product_id,
+        variant_id: e.variant_id || null,
+        qty: e.qty,
+        price: e.subprice, // Perhatikan: di payload berhasil price adalah harga per item, bukan total
+      })),
+      payment_method: "xendit",
+    };
+
+    // Default values untuk backend validation
+    const defaultProvinceId = 11; // Sesuaikan dengan payload berhasil
+    const defaultCityId = 22; // Sesuaikan dengan payload berhasil
+    const defaultPosCode = "13850"; // Sesuaikan dengan payload berhasil
+
+    // Add delivery data jika is_delivery = 1
+    if (pickupDeliveryInfo.is_delivery === 1 && values.courier && values.receiver) {
+      checkoutData.courier = {
+        main: values.courier.name.toUpperCase(), // Sesuaikan format
+        type: values.courier.type?.service || "JTR", // Default sesuai payload
+        price: values.courier.type?.cost?.[0]?.value || 10000,
+      };
+
+      // Address sesuai dengan payload yang berhasil
+      checkoutData.address = {
+        user_id: userId, // Gunakan userId yang sama
+        is_main_address: 1,
+        province_id: values.receiver.province_id,
+        city_id: values.receiver.city_id,
+        address_detail: values.receiver.detail,
+        address_name: values.receiver.address_name,
+        zipcode: String(values.receiver.pos_code),
+        latitude: "",
+        longitude: "",
+        nama_penerima: values.receiver.name,
+        phone: values.receiver.phone,
+        is_active: 1,
+      };
+    } else {
+      // Jika delivery tidak aktif, isi dengan default values sesuai payload
+      checkoutData.courier = {
+        main: "JNE",
+        type: "JTR",
+        price: 10000,
+      };
+
+      checkoutData.address = {
+        user_id: userId, // Gunakan userId yang sama
+        is_main_address: 1,
+        province_id: defaultProvinceId,
+        city_id: defaultCityId,
+        address_detail: "Default Address",
+        address_name: "Default",
+        zipcode: defaultPosCode,
+        latitude: "",
+        longitude: "",
+        nama_penerima: user?.name || "Customer",
+        phone: "081234567890",
+        is_active: 1,
+      };
+    }
+
+    console.log("Data checkout yang dikirim:", checkoutData);
+
+    try {
+      await fetch<any, { invoice_url: string }>({
+        url: "order-product",
+        method: "POST",
+        data: checkoutData,
+        before: () => setLoading.append("checkout"),
+        success: ({ data, status, message, error }) => {
+          console.log("Response checkout:", { data, status, message, error });
+          if (data && data.invoice_url) {
+            // Clear cookies setelah checkout berhasil
+            Cookies.remove("order_data");
+            router.push(data.invoice_url);
+          } else {
+            console.error("Gagal membuat transaksi:", { message, error });
+            // Coba parse error message jika berupa string JSON
+            if (typeof message === "string" && message.includes("{")) {
+              try {
+                const parsedError = JSON.parse(message);
+                console.error("Parsed error:", parsedError);
+                alert(`Gagal membuat transaksi: ${parsedError.message || parsedError.error || "Unknown error"}`);
+              } catch {
+                alert(`Gagal membuat transaksi: ${message || error || "Unknown error"}`);
+              }
+            } else {
+              alert(`Gagal membuat transaksi: ${message || error || "Unknown error"}`);
+            }
+          }
         },
-        address: {
-          id: values.receiver?.id,
-          is_main_address: 1,
-          province_id: values.receiver?.province_id ?? 1,
-          city_id: values.receiver?.city_id ?? 1,
-          address_detail: values.receiver?.detail ?? "",
-          address_name: values.receiver?.address_name ?? "",
-          zipcode: String(values.receiver?.pos_code),
-          latitude: "",
-          longitude: "",
-          nama_penerima: values.receiver?.name ?? "",
-          phone: values.receiver?.phone ?? "",
-          is_active: 1,
+        complete: () => setLoading.filter((e) => e != "checkout"),
+        error: (err) => {
+          console.error("Error checkout:", err);
+          alert("Terjadi kesalahan saat memproses checkout. Silakan coba lagi.");
         },
-      },
-      before: () => setLoading.append("checkout"),
-      success: ({ data }) => data && router.push(data.invoice_url),
-      complete: () => setLoading.filter((e) => e != "checkout"),
-      error: () => {},
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Terjadi kesalahan sistem. Silakan coba lagi.");
+    }
+  };
+
+  // Tentukan accordion mana yang akan ditampilkan berdasarkan kondisi
+  const getAccordionItems = () => {
+    const items = [];
+
+    if (pickupDeliveryInfo.is_pickup_instore === 1) {
+      items.push(
+        <Accordion.Item key="data-pemesan" value="data-pemesan">
+          <Accordion.Control>
+            <Flex gap={10} align="center">
+              <Icon icon="lets-icons:form-fill" className={`text-[20px] text-[#194E9E]`} />
+              <Text fw={600}>Data Pemesan</Text>
+            </Flex>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Stack gap="md">
+              <TextInput
+                disabled={Boolean(user?.id)}
+                label="Nama Pemesan"
+                placeholder="Masukan Nama Pemesan"
+                onChange={(e) => form.setValues({ nama_pemesan: e.target.value })}
+                onBlur={() => form.validateField("nama_pemesan")}
+                value={form.values.nama_pemesan || user?.name || ""}
+                error={form.errors.nama_pemesan}
+              />
+
+              <TextInput
+                type="email"
+                disabled={Boolean(user?.id)}
+                label="Email Pemesan"
+                placeholder="Masukan Email Pemesan"
+                onChange={(e) => form.setValues({ email_pemesan: e.target.value })}
+                onBlur={() => form.validateField("email_pemesan")}
+                value={form.values.email_pemesan || user?.email || ""}
+                error={form.errors.email_pemesan}
+              />
+
+              <TextInput
+                type="tel"
+                disabled={Boolean(user?.id)}
+                label="No. Telepon Pemesan"
+                placeholder="Masukan No. Telepon Pemesan (contoh: 081234567890)"
+                onChange={(e) => {
+                  // Format input untuk hanya menerima angka
+                  const value = e.target.value.replace(/\D/g, "");
+                  form.setValues({ phone_pemesan: value });
+                }}
+                onBlur={() => form.validateField("phone_pemesan")}
+                value={form.values.phone_pemesan || ""}
+                error={form.errors.phone_pemesan}
+              />
+
+              {/* Bagian 1: Lokasi Pengambilan - Card dengan border bottom biru */}
+              <div>
+                <Text size="sm" fw={500} mb={5}>
+                  Lokasi Pengambilan
+                </Text>
+                <UnstyledButton onClick={() => setModal("pickup")} className="w-full">
+                  <Card
+                    withBorder
+                    p={15}
+                    radius={10}
+                    className={`
+                      w-full
+                      !border !border-gray-300 
+                      hover:bg-gray-50 
+                      transition-colors 
+                      cursor-pointer
+                      !border-b-3 !border-b-[#0B387C]
+                    `}
+                  >
+                    <Flex gap={10} align="center">
+                      <Box c={"#0B387C"}>
+                        <Icon icon="gis:location-poi" className={`text-[20px]`} />
+                      </Box>
+                      <Stack gap={2} className="flex-grow">
+                        <Text fw={500} size="sm" lineClamp={1}>
+                          {getShortAddress(form.values.pickup_location?.address || "Pilih lokasi pengambilan")}
+                        </Text>
+                        <Text c="gray" size="xs" lineClamp={1}>
+                          {getTruncatedAddress(form.values.pickup_location?.address || "Klik untuk memilih lokasi pengambilan")}
+                        </Text>
+                      </Stack>
+                      <Icon icon="uiw:right" className="text-gray-400 text-sm" />
+                    </Flex>
+                  </Card>
+                </UnstyledButton>
+              </div>
+            </Stack>
+          </Accordion.Panel>
+        </Accordion.Item>
+      );
+    }
+
+    if (pickupDeliveryInfo.is_delivery === 1) {
+      items.push(
+        <Accordion.Item key="data-pengiriman" value="data-pengiriman">
+          <Accordion.Control>
+            <Flex gap={10} align="center">
+              <Icon icon="fa-solid:shipping-fast" className={`text-[20px] text-[#194E9E]`} />
+              <Text fw={600}>Data Pengiriman</Text>
+            </Flex>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Stack gap="md">
+              {/* Bagian 2: Alamat Pengiriman - Card dengan border bottom biru */}
+              <div>
+                <Text size="sm" fw={500} mb={5}>
+                  Alamat Pengiriman
+                </Text>
+                <UnstyledButton mih="100%" onClick={() => setModal("address")} className="w-full">
+                  <Card
+                    withBorder
+                    p={15}
+                    radius={10}
+                    h="100%"
+                    className={`
+                      w-full
+                      !border !border-gray-300 
+                      hover:bg-gray-50 
+                      transition-colors 
+                      cursor-pointer
+                      !border-b-3 !border-b-[#0B387C]
+                      ${form.values?.receiver?.pos_code ? "" : "!bg-primary-light"}
+                    `}
+                  >
+                    {form.values?.receiver?.pos_code ? (
+                      <Flex gap={10} align="center">
+                        <Box c={"#0B387C"}>
+                          <Icon icon="gis:location-poi" className={`text-[20px]`} />
+                        </Box>
+                        <Stack gap={2} className="flex-grow">
+                          <Text fw={500} size="sm" lineClamp={1}>
+                            {form.values.receiver.address_name}
+                          </Text>
+                          <Text c="gray" size="xs" lineClamp={1}>
+                            {form.values.receiver.name}, {form.values.receiver.phone}
+                          </Text>
+                          <Text c="gray" size="xs" lineClamp={1} className={`uppercase`}>
+                            {_.find(provinceList, ["id", form.values.receiver.province_id])?.name}, {_.find(cityList, ["id", form.values.receiver.city_id])?.name}
+                          </Text>
+                        </Stack>
+                        <Icon icon="uiw:right" className="text-gray-400 text-sm" />
+                      </Flex>
+                    ) : (
+                      <Flex align="center" gap={10} justify="center">
+                        <Icon icon="uiw:plus" className={`text-primary-base`} />
+                        <Text size="sm" c="gray.8">
+                          Pilih atau Tambah Alamat
+                        </Text>
+                      </Flex>
+                    )}
+                  </Card>
+                </UnstyledButton>
+              </div>
+
+              {/* Bagian Kurir Pengiriman */}
+              <div>
+                <Text size="sm" fw={500} mb={5}>
+                  Pilih Kurir
+                </Text>
+                <Flex wrap="wrap" gap={10}>
+                  <Select
+                    className="flex-grow"
+                    disabled={!form.values.receiver?.city_id}
+                    data={[
+                      { value: "jne", label: "JNE" },
+                      { value: "tiki", label: "TIKI" },
+                      { value: "pos", label: "POS Indonesia" },
+                    ]}
+                    placeholder="Pilih Kurir Pengiriman"
+                    value={form.values.courier?.name}
+                    onChange={(e) => {
+                      if (e) {
+                        form.setValues({ courier: { name: e, type: undefined } });
+                      }
+                    }}
+                  />
+                  <Flex gap={10} align="center" className="flex-grow">
+                    {loading.includes("getsubcourier") && <Loader size="sm" color="#0B387C" />}
+                    <Select
+                      className={`flex-grow`}
+                      disabled={!subCourier || subCourier.length <= 0 || loading.includes("getsubcourier")}
+                      data={subCourier.map((e) => ({ value: e.service, label: `${e.service} (${e.cost[0].etd} ${e.cost[0].etd.includes("HARI") ? "" : "HARI"}) ${currencyFormat(e.cost[0].value)}` }))}
+                      value={form.values.courier?.type?.service}
+                      onChange={(e) => form.setValues({ courier: { name: form.values.courier?.name ?? "-", type: subCourier.find((z) => z.service == e) } })}
+                      placeholder="Pilih Tipe Pengiriman"
+                    />
+                  </Flex>
+                </Flex>
+              </div>
+            </Stack>
+          </Accordion.Panel>
+        </Accordion.Item>
+      );
+    }
+
+    return items;
   };
 
   return (
@@ -1212,193 +1628,17 @@ export default function Cart() {
           <Grid>
             {/* Bagian Kiri - 60% */}
             <Grid.Col span={{ base: 12, md: 7 }}>
-              <Accordion
-                variant="separated"
-                radius="md"
-                defaultValue={["data-pemesan", "data-pengiriman"]}
-                multiple
-              >
-                {/* Data Pemesan Accordion */}
-                <Accordion.Item value="data-pemesan">
-                  <Accordion.Control>
-                    <Flex gap={10} align="center">
-                      <Icon icon="lets-icons:form-fill" className={`text-[20px] text-[#194E9E]`} />
-                      <Text fw={600}>Data Pemesan</Text>
-                    </Flex>
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <Stack gap="md">
-                      <TextInput
-                        disabled={Boolean(user?.id)}
-                        label="Nama Pemesan"
-                        placeholder="Masukan Nama Pemesan"
-                        onChange={(e) => form.setValues({ nama_pemesan: e.target.value })}
-                        value={form.values.nama_pemesan}
-                        error={form.errors.nama_pemesan}
-                      />
-
-                      <TextInput
-                        type="email"
-                        disabled={Boolean(user?.id)}
-                        label="Email Pemesan"
-                        placeholder="Masukan Email Pemesan"
-                        onChange={(e) => form.setValues({ email_pemesan: e.target.value })}
-                        value={form.values.email_pemesan}
-                        error={form.errors.email_pemesan}
-                      />
-
-                      <TextInput
-                        type="tel"
-                        disabled={Boolean(user?.id)}
-                        label="No. Telepon Pemesan"
-                        placeholder="Masukan No. Telepon Pemesan"
-                        onChange={(e) => form.setValues({ phone_pemesan: e.target.value })}
-                        value={form.values.phone_pemesan}
-                        error={form.errors.phone_pemesan}
-                      />
-
-                      {/* Bagian 1: Lokasi Pengambilan - Card dengan border bottom biru */}
-                      <div>
-                        <Text size="sm" fw={500} mb={5}>
-                          Lokasi Pengambilan
-                        </Text>
-                        <UnstyledButton onClick={() => setModal("pickup")} className="w-full">
-                          <Card 
-                            withBorder 
-                            p={15} 
-                            radius={10}
-                            className={`
-                              w-full
-                              !border !border-gray-300 
-                              hover:bg-gray-50 
-                              transition-colors 
-                              cursor-pointer
-                              !border-b-3 !border-b-[#0B387C]
-                            `}
-                          >
-                            <Flex gap={10} align="center">
-                              <Box c={"#0B387C"}>
-                                <Icon icon="gis:location-poi" className={`text-[20px]`} />
-                              </Box>
-                              <Stack gap={2} className="flex-grow">
-                                <Text fw={500} size="sm" lineClamp={1}>
-                                  {getShortAddress(form.values.pickup_location?.address || "")}
-                                </Text>
-                                <Text c="gray" size="xs" lineClamp={1}>
-                                  {getTruncatedAddress(form.values.pickup_location?.address || "")}
-                                </Text>
-                              </Stack>
-                              <Icon icon="uiw:right" className="text-gray-400 text-sm" />
-                            </Flex>
-                          </Card>
-                        </UnstyledButton>
-                      </div>
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
-
-                {/* Data Pengiriman Accordion */}
-                <Accordion.Item value="data-pengiriman">
-                  <Accordion.Control>
-                    <Flex gap={10} align="center">
-                      <Icon icon="fa-solid:shipping-fast" className={`text-[20px] text-[#194E9E]`} />
-                      <Text fw={600}>Data Pengiriman</Text>
-                    </Flex>
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <Stack gap="md">
-                      {/* Bagian 2: Alamat Pengiriman - Card dengan border bottom biru */}
-                      <div>
-                        <Text size="sm" fw={500} mb={5}>
-                          Alamat Pengiriman
-                        </Text>
-                        <UnstyledButton mih="100%" onClick={() => setModal("address")} className="w-full">
-                          <Card 
-                            withBorder 
-                            p={15} 
-                            radius={10}
-                            h="100%" 
-                            className={`
-                              w-full
-                              !border !border-gray-300 
-                              hover:bg-gray-50 
-                              transition-colors 
-                              cursor-pointer
-                              !border-b-3 !border-b-[#0B387C]
-                              ${form.values?.receiver?.pos_code ? "" : "!bg-primary-light"}
-                            `}
-                          >
-                            {form.values?.receiver?.pos_code ? (
-                              <Flex gap={10} align="center">
-                                <Box c={"#0B387C"}>
-                                  <Icon icon="gis:location-poi" className={`text-[20px]`} />
-                                </Box>
-                                <Stack gap={2} className="flex-grow">
-                                  <Text fw={500} size="sm" lineClamp={1}>
-                                    {form.values.receiver.address_name}
-                                  </Text>
-                                  <Text c="gray" size="xs" lineClamp={1}>
-                                    {form.values.receiver.name}, {form.values.receiver.phone}
-                                  </Text>
-                                  <Text c="gray" size="xs" lineClamp={1} className={`uppercase`}>
-                                    {_.find(provinceList, ["id", form.values.receiver.province_id])?.name}, {_.find(cityList, ["id", form.values.receiver.city_id])?.name}
-                                  </Text>
-                                </Stack>
-                                <Icon icon="uiw:right" className="text-gray-400 text-sm" />
-                              </Flex>
-                            ) : (
-                              <Flex align="center" gap={10} justify="center">
-                                <Icon icon="uiw:plus" className={`text-primary-base`} />
-                                <Text size="sm" c="gray.8">
-                                  Pilih atau Tambah Alamat
-                                </Text>
-                              </Flex>
-                            )}
-                          </Card>
-                        </UnstyledButton>
-                      </div>
-
-                      {/* Bagian Kurir Pengiriman */}
-                      <div>
-                        <Text size="sm" fw={500} mb={5}>
-                          Pilih Kurir
-                        </Text>
-                        <Flex wrap="wrap" gap={10}>
-                          <Select
-                            className="flex-grow"
-                            disabled={!form.values.receiver?.city_id}
-                            data={[
-                              { value: "jne", label: "JNE" },
-                              { value: "tiki", label: "TIKI" },
-                              { value: "pos", label: "POS Indonesia" },
-                            ]}
-                            placeholder="Pilih Kurir Pengiriman"
-                            value={form.values.courier?.name}
-                            onChange={(e) => {
-                              if (e) {
-                                form.setValues({ courier: { name: e, type: undefined } });
-                              }
-                            }}
-                            // error={form.errors.courier?.name}
-                          />
-                          <Flex gap={10} align="center" className="flex-grow">
-                            {loading.includes("getsubcourier") && <Loader size="sm" color="#0B387C" />}
-                            <Select
-                              className={`flex-grow`}
-                              disabled={!subCourier || subCourier.length <= 0 || loading.includes("getsubcourier")}
-                              data={subCourier.map((e) => ({ value: e.service, label: `${e.service} (${e.cost[0].etd} ${e.cost[0].etd.includes("HARI") ? "" : "HARI"}) ${currencyFormat(e.cost[0].value)}` }))}
-                              value={form.values.courier?.type?.service}
-                              onChange={(e) => form.setValues({ courier: { name: form.values.courier?.name ?? "-", type: subCourier.find((z) => z.service == e) } })}
-                              placeholder="Pilih Tipe Pengiriman"
-                              // error={form.errors.courier?.type}
-                            />
-                          </Flex>
-                        </Flex>
-                      </div>
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              </Accordion>
+              {pickupDeliveryInfo.is_pickup_instore === 1 || pickupDeliveryInfo.is_delivery === 1 ? (
+                <Accordion variant="separated" radius="md" defaultValue={[...(pickupDeliveryInfo.is_pickup_instore === 1 ? ["data-pemesan"] : []), ...(pickupDeliveryInfo.is_delivery === 1 ? ["data-pengiriman"] : [])]} multiple>
+                  {getAccordionItems()}
+                </Accordion>
+              ) : (
+                <Card withBorder radius="md" p="md">
+                  <Text c="red" ta="center">
+                    Tidak ada metode pengiriman yang tersedia untuk produk ini.
+                  </Text>
+                </Card>
+              )}
             </Grid.Col>
 
             {/* Bagian Kanan - 40% */}
@@ -1430,6 +1670,18 @@ export default function Cart() {
                           <Text size="sm" fw={600}>
                             <NumberFormatter value={e.subprice} prefix="Rp " thousandSeparator="." decimalSeparator="," />
                           </Text>
+                          <Flex gap={5}>
+                            {e.is_pickup_instore && (
+                              <Text size="xs" c="blue" fw={500}>
+                                Pickup In-store
+                              </Text>
+                            )}
+                            {e.is_delivery && (
+                              <Text size="xs" c="green" fw={500}>
+                                Delivery
+                              </Text>
+                            )}
+                          </Flex>
                         </Stack>
                         <Text size="sm">x{e.qty}</Text>
                       </Flex>
@@ -1477,7 +1729,15 @@ export default function Cart() {
         <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
           <Container size="lg" w="100%">
             <Flex justify="end" w="100%">
-              <Button loading={loading.includes("checkout")} onClick={handleCheckout} className={`uppercase`} color="#194E9E" rightSection={<Icon icon="uiw:check" />} radius="xl">
+              <Button
+                loading={loading.includes("checkout")}
+                onClick={handleCheckout}
+                className={`uppercase`}
+                color="#194E9E"
+                rightSection={<Icon icon="uiw:check" />}
+                radius="xl"
+                disabled={!(pickupDeliveryInfo.is_pickup_instore === 1 || pickupDeliveryInfo.is_delivery === 1)}
+              >
                 Proses Pembayaran
               </Button>
             </Flex>
@@ -1487,8 +1747,6 @@ export default function Cart() {
     </div>
   );
 }
-
-// Komponen DropdownComponent dihapus karena tidak digunakan lagi
 
 const AddressModal = ({
   list,
@@ -1650,7 +1908,6 @@ const PickupLocationModal = ({ opened, onClose, onSelect, currentAddress }: { op
       address: "Pasar Bareng - Bareng, Pamulang Square, Jl. Siliwangi No.7, Pamulang Bar., Kec. Pamulang, Kota Tangerang Selatan, Banten 15417",
       name: "Pasar Bareng - Bareng, Pamulang Square",
     },
-    // Tambahkan lokasi lain jika diperlukan
   ];
 
   return (

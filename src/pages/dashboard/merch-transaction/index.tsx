@@ -810,7 +810,7 @@ const MerchandiseTransaction: React.FC = () => {
 
   return (
     <Card className={`!overflow-auto`} p={20} m={10} withBorder>
-      {/* Statistic Cards (Kembali ke versi awal) */}
+      {/* Statistic Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</h3>
@@ -824,7 +824,7 @@ const MerchandiseTransaction: React.FC = () => {
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pengambilan</h3>
           <p className="text-lg font-semibold mt-1 text-gray-800 text-sm">
-            Diambil {filtered.filter((item) => item.transaction_status_id === 4).length} / {filtered.length} transaksi
+            Diambil 0 dari 0 transaksi
           </p>
         </div>
         <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
@@ -838,7 +838,7 @@ const MerchandiseTransaction: React.FC = () => {
       {/* Tabs */}
       <Tabs aria-label="Transaction Tabs" selectedKey={selectedTab} onSelectionChange={(key) => setSelectedTab(key as string)} className="mb-6">
         <Tab key="transaksi" title="Transaksi">
-          {/* Search, Filter, Export, and Pagination Controls (Kembali ke versi awal) */}
+          {/* Search, Filter, Export, and Pagination Controls */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto space-y-2 md:space-y-0">
               <div className="flex items-center gap-2 w-full md:w-auto">
@@ -877,7 +877,7 @@ const MerchandiseTransaction: React.FC = () => {
             </div>
           )}
 
-          {/* Table (Kembali ke versi awal) */}
+          {/* Table */}
           {data.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No data available</div>
           ) : filtered.length === 0 ? (
@@ -942,7 +942,7 @@ const MerchandiseTransaction: React.FC = () => {
                 </TableBody>
               </Table>
 
-              {/* Total Summary Section (Kembali ke versi awal) */}
+              {/* Total Summary Section */}
               {paginatedItems.length > 0 && (
                 <div className="mt-4 p-4 bg-gray-50 border border-light-grey rounded-md">
                   <div className="flex justify-between items-center">
@@ -1003,32 +1003,32 @@ const MerchandiseTransaction: React.FC = () => {
         classNames={{
           base: "bg-gradient-to-b from-gray-50 to-white",
           backdrop: "backdrop-blur-sm",
-          header: "border-b-0",
+          header: "border-b-0 px-6 pt-4 pb-3",
           footer: "border-t-0",
         }}
       >
         <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex flex-col gap-1 py-6 bg-blue-600 text-white">
+              <ModalHeader className="flex flex-col gap-1 py-3 bg-[#0b387c]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <FontAwesomeIcon icon={faFileInvoice} className="h-6 w-6" />
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <FontAwesomeIcon icon={faFileInvoice} className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold">Detail Transaksi</h2>
-                      <p className="text-sm opacity-90">{selectedTransaction?.invoice_no || "-"}</p>
+                      <h2 className="text-lg font-bold text-white">Detail Transaksi</h2>
+                      <p className="text-xs text-white/90 opacity-90">{selectedTransaction?.invoice_no || "-"}</p>
                     </div>
                   </div>
                   {selectedTransaction && (
-                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold backdrop-blur-sm ${getStatusInfo(selectedTransaction.transaction_status_id).color}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusInfo(selectedTransaction.transaction_status_id).bgColor} ${getStatusInfo(selectedTransaction.transaction_status_id).textColor}`}>
                       {getStatusInfo(selectedTransaction.transaction_status_id).text}
                     </span>
                   )}
                 </div>
               </ModalHeader>
-              <ModalBody className="py-6">
+              <ModalBody className="py-6 px-6">
                 {selectedTransaction && (
                   <div className="space-y-6">
                     {/* Grid Cards */}
@@ -1247,7 +1247,7 @@ const MerchandiseTransaction: React.FC = () => {
                   </div>
                 )}
               </ModalBody>
-              <ModalFooter className="py-5 bg-gray-50">
+              <ModalFooter className="py-5 bg-gray-50 px-6">
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <Button
                     color="default"
@@ -1269,7 +1269,7 @@ const MerchandiseTransaction: React.FC = () => {
                         }
                       }}
                       isDisabled={!selectedTransaction?.invoice_no || selectedTransaction.invoice_no === "-"}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-[#194E9E] hover:bg-[#163C7A] text-white"
                       startContent={<FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />}
                     >
                       Lihat Invoice Lengkap

@@ -922,6 +922,7 @@ const Merch: React.FC = () => {
   const [merchList, setMerchList] = useState<MerchListResponse[]>([]);
   const [loading, setLoading] = useState<string[]>([]);
   const [loading2, setLoading2] = useState<boolean>(false);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
 
   // pagination
   const [page, setPage] = useState<number>(1);
@@ -1050,6 +1051,45 @@ const Merch: React.FC = () => {
     setModalCreate(slug);
   };
 
+  const handleExcelImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validasi apakah file Excel
+      if (
+        file.type.includes("excel") ||
+        file.type.includes("spreadsheet") ||
+        file.name.endsWith(".xlsx") ||
+        file.name.endsWith(".xls") ||
+        file.name.endsWith(".csv")
+      ) {
+        setExcelFile(file);
+        // Proses file Excel di sini
+        console.log("File Excel yang dipilih:", file.name);
+
+        // Bisa tambahkan modal konfirmasi atau langsung upload
+        modals.openConfirmModal({
+          centered: true,
+          title: "Import Excel",
+          children: `Apakah anda yakin ingin mengimport data dari file "${file.name}"?`,
+          labels: { confirm: "Import", cancel: "Batal" },
+          onConfirm: () => {
+            // Upload ke API
+            const formData = new FormData();
+            formData.append("excel_file", file);
+            // Contoh: Post('import-merchandise', formData, {
+            //   headers: { 'Content-Type': 'multipart/form-data' }
+            // }).then(...).catch(...);
+            alert(`File "${file.name}" siap diimport.`);
+          },
+        });
+      } else {
+        alert("Silakan pilih file Excel (.xlsx, .xls, atau .csv)");
+      }
+    }
+    // Reset input file
+    event.target.value = "";
+  };
+
   /**
    * FILTER & SEARCH STATE
    */
@@ -1145,6 +1185,9 @@ const Merch: React.FC = () => {
         />
       )}
 
+      {/* Input file tersembunyi untuk import Excel */}
+      <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} style={{ display: "none" }} />
+
       <div className="flex flex-wrap items-center justify-between gap-[20px]">
         <Title order={1} size="h2">
           Merchandise Saya
@@ -1201,24 +1244,9 @@ const Merch: React.FC = () => {
                       </div>
 
                       <div className="w-px h-6 bg-gray-300"></div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Lokasi:</span>
-                        <Input
-                          type="text"
-                          value={locationFilter}
-                          onChange={(e) => setLocationFilter(e.target.value)}
-                          className="w-48"
-                          size="sm"
-                          placeholder="Cari lokasi..."
-                          classNames={{
-                            input: "text-sm py-2",
-                          }}
-                        />
-                      </div>
                     </div>
 
-                    {/* Baris 2: Search dan Reset */}
+                    {/* Baris 2: Search dan Action Buttons */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Input
@@ -1228,32 +1256,48 @@ const Merch: React.FC = () => {
                           placeholder="Cari merchandise..."
                           className="min-w-[300px]"
                           size="sm"
-                          startContent={
-                            <Icon icon="akar-icons:search" className="text-lg text-gray-400" />
-                          }
+                          startContent={<Icon icon="akar-icons:search" className="text-lg text-gray-400" />}
                           classNames={{
                             input: "text-sm py-2 pl-2",
                           }}
                         />
                       </div>
 
-                      <ButtonM
-                        size="sm"
-                        variant="light"
-                        color="gray"
-                        onClick={() => {
-                          setSearch("");
-                          setStartDate("");
-                          setEndDate("");
-                          setCategory("");
-                          setMethod("");
-                          setStatusFilter("");
-                          setLocationFilter("");
-                        }}
-                        leftSection={<Icon icon="ph:arrow-counter-clockwise" className="text-base" />}
-                      >
-                        Reset Filter
-                      </ButtonM>
+                      <div className="flex items-center gap-2">
+                        {/* Tombol Import Excel */}
+                        <ButtonM
+                          size="sm"
+                          variant="filled"
+                          color="#0B387C"
+                          onClick={() => {
+                            document.getElementById("excel-import-input")?.click();
+                          }}
+                          leftSection={<Icon icon="ph:upload-simple" className="text-base" />}
+                          radius="xl"
+                        >
+                          Import Excel
+                        </ButtonM>
+
+                        {/* Tombol Reset Filter */}
+                        <ButtonM
+                          size="sm"
+                          variant="light"
+                          color="gray"
+                          onClick={() => {
+                            setSearch("");
+                            setStartDate("");
+                            setEndDate("");
+                            setCategory("");
+                            setMethod("");
+                            setStatusFilter("");
+                            setLocationFilter("");
+                          }}
+                          leftSection={<Icon icon="ph:arrow-counter-clockwise" className="text-base" />}
+                          radius="xl"
+                        >
+                          Reset Filter
+                        </ButtonM>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1309,9 +1353,7 @@ const Merch: React.FC = () => {
 
                               <TableCell>{stock ?? 0}</TableCell>
 
-                              <TableCell className="whitespace-nowrap">
-                                {String(location)}
-                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{String(location)}</TableCell>
 
                               <TableCell>
                                 <div className="flex items-center gap-[10px]">

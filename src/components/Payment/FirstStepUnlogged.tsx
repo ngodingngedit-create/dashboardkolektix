@@ -1332,7 +1332,7 @@ import Images from "../Images";
 import { toast } from "react-toastify";
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import React from "react";
-import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput, Modal, Select } from "@mantine/core";
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput, Modal, Select, Badge, Divider } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
@@ -1447,7 +1447,7 @@ interface StepPaymentProps {
   onSubmitVoucher?: (data: { name: string; amount: number }) => void;
 }
 
-type Detail = { ppn?: any; ppn_type?: any;[k: string]: any };
+type Detail = { ppn?: any; ppn_type?: any; [k: string]: any };
 
 const normalizeDetail = (detail: Detail) => {
   const normalized: Detail = { ...detail };
@@ -1606,7 +1606,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             ticketName: ticketItem.name,
             seatNumber: ticketItem?.seat_number ? ticketItem.seat_number[i] : undefined,
             ticketPrice: ticketItem.price,
-            eventTicketId: ticketItem.event_ticket_id
+            eventTicketId: ticketItem.event_ticket_id,
           };
         }
         currentIndex++;
@@ -1647,11 +1647,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       setLoadingMerch(true);
 
       if (detail?.has_merches && Array.isArray(detail.has_merches)) {
-        const filteredMerches = detail.has_merches.filter(
-          (merch: EventMerchandise) =>
-            merch.is_active === 1 &&
-            merch.stock_qty > 0
-        );
+        const filteredMerches = detail.has_merches.filter((merch: EventMerchandise) => merch.is_active === 1 && merch.stock_qty > 0);
 
         const convertedProducts: any[] = filteredMerches.map((merch: EventMerchandise) => ({
           id: merch.product_id,
@@ -1659,7 +1655,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           price: merch.price.toString(),
           qty: merch.stock_qty,
           product_status_id: 2,
-          product_image: merch.product.product_image || [], // PERBAIKAN DI SINI
+          product_image: merch.product.product_image || [],
           slug: merch.product.slug,
           average_star: merch.product.average_star,
           total_review: merch.product.total_review,
@@ -1669,8 +1665,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
             title: merch.title,
             max_per_ticket: merch.max_per_ticket,
             is_required: merch.is_required,
-            varians: merch.varians
-          }
+            varians: merch.varians,
+          },
         }));
 
         setMerchProducts(convertedProducts);
@@ -1699,8 +1695,8 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   };
 
   useEffect(() => {
-    const hasBundlingMerchTickets = ticket.some(ticketItem => {
-      const ticketDetail = detail.has_event_ticket?.find(t => t.id === ticketItem.event_ticket_id);
+    const hasBundlingMerchTickets = ticket.some((ticketItem) => {
+      const ticketDetail = detail.has_event_ticket?.find((t) => t.id === ticketItem.event_ticket_id);
       return ticketDetail?.is_bundling_merch === 1;
     });
 
@@ -1747,10 +1743,10 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
   const allBundlingInfo = detail.has_event_ticket
     ? detail.has_event_ticket.map((ticket) => ({
-      id: ticket.id,
-      isBundling: ticket.is_bundling === 1,
-      bundlingQty: ticket.bundling_qty,
-    }))
+        id: ticket.id,
+        isBundling: ticket.is_bundling === 1,
+        bundlingQty: ticket.bundling_qty,
+      }))
     : [];
 
   const getBundlingInfo = (event_ticket_id: number) => {
@@ -1978,7 +1974,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         }
       }
     } else if (field === "merch_product_name") {
-      const selectedProduct = merchProducts.find(product => product.product_name === value);
+      const selectedProduct = merchProducts.find((product) => product.product_name === value);
       if (selectedProduct) {
         newForm[index] = {
           ...newForm[index],
@@ -1987,7 +1983,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           event_merch_id: selectedProduct.event_merch_data.event_merch_id,
           merch_price: parseFloat(selectedProduct.price) || 0,
           merch_variant_id: undefined,
-          merch_variant_name: ""
+          merch_variant_name: "",
         };
       }
     } else {
@@ -2014,11 +2010,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         }
       }
 
-      if ((field === "full_name" && value.trim()) ||
-        (field === "is_profession" && value.trim()) ||
-        (field === "is_company" && value.trim()) ||
-        (field === "is_assistant" && value.trim()) ||
-        (field === "kelas" && value.trim())) {
+      if ((field === "full_name" && value.trim()) || (field === "is_profession" && value.trim()) || (field === "is_company" && value.trim()) || (field === "is_assistant" && value.trim()) || (field === "kelas" && value.trim())) {
         setFieldErrors((prev) => ({
           ...prev,
           [index]: {
@@ -2104,7 +2096,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         merch_image_url: "",
         merch_price: 0,
         merch_variant_id: undefined,
-        merch_variant_name: ""
+        merch_variant_name: "",
       };
       setForm(newForm);
 
@@ -2190,12 +2182,12 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
     let seatIndex = 0;
 
     const merchPayload = form
-      .filter(f => f.event_merch_id && f.merch_product_name)
-      .map(f => ({
+      .filter((f) => f.event_merch_id && f.merch_product_name)
+      .map((f) => ({
         event_merch_id: f.event_merch_id,
         product_variant_id: f.merch_variant_id || null,
         qty: 1,
-        noted: f.merch_variant_name || f.merch_size || ""
+        noted: f.merch_variant_name || f.merch_size || "",
       }));
 
     const hasMerch = merchPayload.length > 0;
@@ -2235,13 +2227,13 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
       vouchers:
         vouchers.length > 0
           ? vouchers.map((v) => ({
-            voucher_id: v.id,
-            voucher_code: v.name,
-            voucher_amount: v.amount,
-          }))
+              voucher_id: v.id,
+              voucher_code: v.name,
+              voucher_amount: v.amount,
+            }))
           : [],
       is_merch: hasMerch ? 1 : 0,
-      merches: hasMerch ? merchPayload : undefined
+      merches: hasMerch ? merchPayload : undefined,
     };
 
     setLoading(true);
@@ -2415,7 +2407,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
   };
 
   const getMerchVariants = (productId: number) => {
-    const product = merchProducts.find(p => p.id === productId);
+    const product = merchProducts.find((p) => p.id === productId);
     if (!product || !product.event_merch_data?.varians) return [];
 
     return product.event_merch_data.varians;
@@ -2427,9 +2419,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
         (width < 768 ? (
           <div className="bg-primary-light mt-32 lg:mt-0 pb-8">
             <div className="border-b p-3 border-primary-light flex items-center gap-3">
-              <div className="px-2 py-1 border rounded-md border-primary-light">
-                {detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}
-              </div>
+              <div className="px-2 py-1 border rounded-md border-primary-light">{detail?.image_url && <Image src={detail.image_url} width={1000} height={1000} alt="banner" className="w-10 h-10 object-cover rounded-md" />}</div>
               <div>
                 <p className="text-sm mb-1">{detail?.name}</p>
                 <p className="text-xs text-grey">{totalCount} Tiket</p>
@@ -2455,13 +2445,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       }}
                       placeholder={`Masukan Kode Voucher ${i + 1}`}
                     />
-                    <Button
-                      loading={loadings.includes(`getvoucher-${i}`)}
-                      disabled={field.length < 3}
-                      size="xs"
-                      onClick={() => handleGetVoucher(i)}
-                      className="shrink-0"
-                    >
+                    <Button loading={loadings.includes(`getvoucher-${i}`)} disabled={field.length < 3} size="xs" onClick={() => handleGetVoucher(i)} className="shrink-0">
                       Submit
                     </Button>
                     {vouchers[i] && (
@@ -2521,13 +2505,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>
-                  {`Jumlah (${displayTotalCount} ${ticket.some((item) => {
-                    const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
-                    return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
-                  })
-                    ? "Paket"
-                    : "Tiket"
-                    })`}
+                  {`Jumlah (${displayTotalCount} ${
+                    ticket.some((item) => {
+                      const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                      return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
+                    })
+                      ? "Paket"
+                      : "Tiket"
+                  })`}
                 </p>
                 <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
               </div>
@@ -2556,23 +2541,23 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
               {detail?.ppn !== undefined
                 ? (() => {
-                  const subtotalTiket = displayTotalSubtotalPrice;
-                  const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                  const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
+                    const subtotalTiket = displayTotalSubtotalPrice;
+                    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
-                  const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
+                    const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                  if (tax <= 0) return null;
+                    if (tax <= 0) return null;
 
-                  return (
-                    <div className="py-3 px-4 flex justify-between items-center">
-                      <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
-                      <p className="font-semibold">
-                        <NumberFormatter value={tax} />
-                      </p>
-                    </div>
-                  );
-                })()
+                    return (
+                      <div className="py-3 px-4 flex justify-between items-center">
+                        <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                        <p className="font-semibold">
+                          <NumberFormatter value={tax} />
+                        </p>
+                      </div>
+                    );
+                  })()
                 : null}
 
               {detail?.is_insurance === 1 && (
@@ -2670,13 +2655,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                   handleInput(index, "seat_number", ticketInfo.seatNumber);
                 }
 
-                const selectedProduct = item.merch_product_id
-                  ? merchProducts.find(p => p.id === item.merch_product_id)
-                  : null;
+                const selectedProduct = item.merch_product_id ? merchProducts.find((p) => p.id === item.merch_product_id) : null;
 
-                const availableVariants = selectedProduct
-                  ? getMerchVariants(item.merch_product_id!)
-                  : [];
+                const availableVariants = selectedProduct ? getMerchVariants(item.merch_product_id!) : [];
 
                 return (
                   <div className="bg-white rounded-lg shadow-sm mb-3" key={index}>
@@ -2684,11 +2665,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                       <div className="flex items-center gap-3">
                         {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0" />}
                         <div>
-                          <p className="font-semibold">
-                            {index > 0
-                              ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}`
-                              : "Data Pemesan"}
-                          </p>
+                          <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}` : "Data Pemesan"}</p>
                           {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketInfo.ticketPrice ?? 0)}</p>}
                         </div>
                       </div>
@@ -2725,8 +2702,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                             <Label className="text-xs sm:text-sm font-base text-grey">Nomor Induk KTP</Label>
                             <Input
                               type="text"
-                              className={`${fieldErrors[index]?.nik ? "border-danger" : "border-primary-light"
-                                } [&::-webkit-inner-spin-button]:appearance-none mt-0.5 sm:mt-1 block w-full rounded-lg border bg-white/5 py-1 px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                              className={`${
+                                fieldErrors[index]?.nik ? "border-danger" : "border-primary-light"
+                              } [&::-webkit-inner-spin-button]:appearance-none mt-0.5 sm:mt-1 block w-full rounded-lg border bg-white/5 py-1 px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                               placeholder="3277*************"
                               value={item.nik}
                               onChange={(e) => {
@@ -2801,8 +2779,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                 </select>
                               </form>
                               <Input
-                                className={`${fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
-                                  } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                                className={`${
+                                  fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                                } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                                 placeholder="Contoh: 81234567890"
                                 value={displayValues[index] || ""}
                                 onChange={(e) => {
@@ -2838,7 +2817,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                         <option value="">Pilih Produk</option>
                                         {merchProducts.map((product) => (
                                           <option key={product.id} value={product.product_name}>
-                                            {product.product_name} - Rp {parseFloat(product.price).toLocaleString("id-ID")}
+                                            {product.product_name}
                                           </option>
                                         ))}
                                       </select>
@@ -2851,13 +2830,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                           title="Klik untuk preview"
                                         >
                                           {selectedProduct.product_image && selectedProduct.product_image.length > 0 && selectedProduct.product_image[0]?.image_url ? (
-                                            <Image
-                                              src={selectedProduct.product_image[0].image_url}
-                                              alt={selectedProduct.product_name}
-                                              width={32}
-                                              height={32}
-                                              className="w-full h-full object-cover"
-                                            />
+                                            <Image src={selectedProduct.product_image[0].image_url} alt={selectedProduct.product_name} width={32} height={32} className="w-full h-full object-cover" />
                                           ) : (
                                             <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-xs" />
                                           )}
@@ -2884,7 +2857,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                           ...newForm[index],
                                           merch_variant_id: variantId,
                                           merch_variant_name: selectedVariant.varian_name,
-                                          merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0")
+                                          merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0"),
                                         };
                                         setForm(newForm);
                                       }
@@ -2892,8 +2865,11 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                   >
                                     <option value="">Pilih Variant</option>
                                     {availableVariants.map((variant: any) => (
+                                      // <option key={variant.id} value={variant.id}>
+                                      //   {variant.varian_name} - Rp {parseFloat(variant.price).toLocaleString("id-ID")}
+                                      // </option>
                                       <option key={variant.id} value={variant.id}>
-                                        {variant.varian_name} - Rp {parseFloat(variant.price).toLocaleString("id-ID")}
+                                        {variant.varian_name}
                                       </option>
                                     ))}
                                   </select>
@@ -2943,24 +2919,16 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                     handleInput(index, "seat_number", ticketInfo.seatNumber);
                   }
 
-                  const selectedProduct = item.merch_product_id
-                    ? merchProducts.find(p => p.id === item.merch_product_id)
-                    : null;
+                  const selectedProduct = item.merch_product_id ? merchProducts.find((p) => p.id === item.merch_product_id) : null;
 
-                  const availableVariants = selectedProduct
-                    ? getMerchVariants(item.merch_product_id!)
-                    : [];
+                  const availableVariants = selectedProduct ? getMerchVariants(item.merch_product_id!) : [];
 
                   return (
                     <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
                       <div className="border border-primary-light-200 px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                         {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mr-[10px]" />}
                         <Stack gap={0} className="flex-grow">
-                          <p className="font-semibold">
-                            {index > 0
-                              ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}`
-                              : "Data Pemesan"}
-                          </p>
+                          <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}` : "Data Pemesan"}</p>
                           {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketInfo.ticketPrice ?? 0)}</p>}
                         </Stack>
                         <button className="text-grey">
@@ -3074,8 +3042,9 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                   </select>
                                 </form>
                                 <Input
-                                  className={`${fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
-                                    } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
+                                  className={`${
+                                    fieldErrors[index]?.phone ? "border-danger" : "border-primary-light"
+                                  } mt-0.5 sm:mt-1 w-4/5 block rounded-lg border bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200`}
                                   placeholder="Contoh: 81234567890"
                                   value={displayValues[index] || ""}
                                   onChange={(e) => {
@@ -3111,7 +3080,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                           <option value="">Pilih Produk</option>
                                           {merchProducts.map((product) => (
                                             <option key={product.id} value={product.product_name}>
-                                              {product.product_name} - Rp {parseFloat(product.price).toLocaleString("id-ID")}
+                                              {product.product_name}
                                             </option>
                                           ))}
                                         </select>
@@ -3124,13 +3093,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             title="Klik untuk preview"
                                           >
                                             {selectedProduct.product_image && selectedProduct.product_image.length > 0 && selectedProduct.product_image[0]?.image_url ? (
-                                              <Image
-                                                src={selectedProduct.product_image[0].image_url}
-                                                alt={selectedProduct.product_name}
-                                                width={40}
-                                                height={40}
-                                                className="w-full h-full object-cover"
-                                              />
+                                              <Image src={selectedProduct.product_image[0].image_url} alt={selectedProduct.product_name} width={40} height={40} className="w-full h-full object-cover" />
                                             ) : (
                                               <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-sm" />
                                             )}
@@ -3157,7 +3120,7 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
                                             ...newForm[index],
                                             merch_variant_id: variantId,
                                             merch_variant_name: selectedVariant.varian_name,
-                                            merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0")
+                                            merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0"),
                                           };
                                           setForm(newForm);
                                         }
@@ -3293,13 +3256,14 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>
-                      {`Jumlah (${displayTotalCount} ${ticket.some((item) => {
-                        const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
-                        return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
-                      })
-                        ? "Paket"
-                        : "Tiket"
-                        })`}
+                      {`Jumlah (${displayTotalCount} ${
+                        ticket.some((item) => {
+                          const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
+                          return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
+                        })
+                          ? "Paket"
+                          : "Tiket"
+                      })`}
                     </p>
                     <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
                   </div>
@@ -3398,24 +3362,24 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
 
                   {detail?.ppn !== undefined
                     ? (() => {
-                      const subtotalTiket = displayTotalSubtotalPrice;
-                      const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                      const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
+                        const subtotalTiket = displayTotalSubtotalPrice;
+                        const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                        const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
 
-                      const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
+                        const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                      if (tax > 0) {
-                        return (
-                          <div className="py-3 px-4 flex justify-between items-center">
-                            <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
-                            <p className="font-semibold">
-                              <NumberFormatter value={tax} />
-                            </p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()
+                        if (tax > 0) {
+                          return (
+                            <div className="py-3 px-4 flex justify-between items-center">
+                              <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
+                              <p className="font-semibold">
+                                <NumberFormatter value={tax} />
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()
                     : null}
 
                   {adminFee > 0 && (
@@ -3491,43 +3455,122 @@ const FirstStepUnlogged = ({ onSubmitVoucher, detail, ticket, totalCount, totalS
           </div>
         ))}
 
+      {/* Modal Preview Produk */}
       <Modal
         opened={productPreviewModalOpen}
         onClose={closeProductImageModal}
-        size="md"
+        size="lg"
         centered
-        withCloseButton={false}
-        padding={0}
-      >
-        <div className="relative">
-          {selectedProductImage && selectedProductImage !== "" ? (
-            <div className="w-full h-80 overflow-hidden">
-              <Image
-                src={selectedProductImage}
-                alt={selectedProductForPreview?.product_name || "Product"}
-                width={800}
-                height={600}
-                className="w-full h-full object-contain"
-              />
-            </div>
-          ) : (
-            <div className="w-full h-80 bg-gray-100 flex flex-col items-center justify-center">
-              <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-8xl mb-4" />
-              <p className="text-gray-500">Tidak ada gambar tersedia</p>
-            </div>
-          )}
-
-          <div className="absolute top-2 right-2">
-            <Button
-              onClick={closeProductImageModal}
-              variant="light"
-              color="gray"
-              size="xs"
-              className="bg-white/90 hover:bg-white"
-            >
-              <Icon icon="mdi:close" className="text-lg" />
-            </Button>
+        title={
+          <div className="flex items-center gap-2">
+            <Icon icon="mdi:image-search" className="text-primary" />
+            <span>Detail Produk</span>
           </div>
+        }
+        padding="lg"
+      >
+        {selectedProductForPreview && (
+          <div className="space-y-6">
+            {/* Gambar Produk */}
+            <div className="relative">
+              {selectedProductImage && selectedProductImage !== "" ? (
+                <div className="w-full h-64 md:h-80 overflow-hidden rounded-lg bg-gray-100">
+                  <Image src={selectedProductImage} alt={selectedProductForPreview.product_name} width={800} height={600} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                  <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-8xl mb-4" />
+                  <p className="text-gray-500">Tidak ada gambar tersedia</p>
+                </div>
+              )}
+            </div>
+
+            {/* Informasi Produk */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedProductForPreview.product_name}</h3>
+
+                <div className="flex items-center gap-4 mb-3">
+                  <Badge color="blue" variant="light" size="lg">
+                    Bundling
+                  </Badge>
+                  {selectedProductForPreview.average_star && (
+                    <div className="flex items-center gap-1">
+                      <Icon icon="mdi:star" className="text-yellow-500" />
+                      <span className="text-sm font-medium">{selectedProductForPreview.average_star}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Divider />
+
+              {/* Harga */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Harga</h4>
+                {selectedProductForPreview.event_merch_data?.varians?.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-gray-900 line-through">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                      <span className="text-sm text-gray-500">(Harga akan menyesuaikan variant)</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-primary">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Variant yang tersedia */}
+              {selectedProductForPreview.event_merch_data?.varians?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Variant Tersedia</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedProductForPreview.event_merch_data.varians.map((variant: any) => (
+                      <div key={variant.id} className={`border rounded-lg p-3 ${variant.stock_qty > 0 ? "border-gray-200" : "border-red-200 bg-red-50"}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-gray-900">{variant.varian_name}</p>
+                            <p className="text-sm font-bold text-primary mt-1 line-through">Rp {parseFloat(variant.price).toLocaleString("id-ID")}</p>
+                          </div>
+                          {variant.stock_qty > 0 ? (
+                            <Badge color="green" variant="light" size="sm">
+                              Stok: {variant.stock_qty}
+                            </Badge>
+                          ) : (
+                            <Badge color="red" variant="light" size="sm">
+                              Habis
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Informasi tambahan */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="text-center">
+                  <Icon icon="mdi:sale" className="text-2xl text-green-500 mx-auto mb-1" />
+                  <p className="text-xs font-medium text-gray-700">Terjual</p>
+                  <p className="text-sm font-bold">{selectedProductForPreview.total_sold || 0}</p>
+                </div>
+                <div className="text-center">
+                  <Icon icon="mdi:star-circle" className="text-2xl text-yellow-500 mx-auto mb-1" />
+                  <p className="text-xs font-medium text-gray-700">Rating</p>
+                  <p className="text-sm font-bold">{selectedProductForPreview.average_star || "-"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 pt-4 border-t">
+          <Button fullWidth onClick={closeProductImageModal} variant="light" color="gray">
+            Tutup Preview
+          </Button>
         </div>
       </Modal>
 

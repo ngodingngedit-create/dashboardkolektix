@@ -13,6 +13,8 @@ export type MerchListResponse = {
   created_by: string;
   description: string;
   add_to_flash_sale: 0 | 1;
+  is_delivery: number;
+  is_pickup_instore: number;
   product_image: {
     id: number;
     image_url: string;
