@@ -256,9 +256,9 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
 
   return (
     <div className="my-12 md:mx-auto md:max-w-10xl md:px-8 bg-blue-100 py-6">
-      <div className="flex flex-row items-start w-full">
+      <div className="flex flex-row items-start w-full relative">
         {/* Bagian kiri */}
-        <div className="flex w-2/5 md:w-1/4 flex-col items-center justify-center px-2 md:px-4">
+        <div className="flex w-2/5 md:w-1/4 flex-col items-center justify-center z-10">
           <div className="text-center w-full">
             <h2 className="text-2xl md:text-3xl font-bold text-dark mb-1 md:mb-4">{data.promo_name || "Segera Koleksi"}</h2>
             <div className="bg-gray-200 rounded-lg md:rounded-xl h-64 md:h-64 w-full flex items-center justify-center">
@@ -269,10 +269,10 @@ const PromoMerchandiseList = ({ data, loading }: PromoMerchandiseListProps) => {
           </div>
         </div>
 
-        {/* Bagian kanan */}
-        <div className="w-3/5 md:w-3/4 pl-2 md:pl-4 overflow-hidden">
+        {/* Bagian kanan - di-overlap ke kiri */}
+        <div className="w-3/5 md:w-3/4 ml-[-2rem] md:ml-[-4rem] overflow-hidden z-0">
           <div className="w-full flex justify-end mb-2 md:mb-4 pr-2 md:pr-0">
-            <Link href={`/promo/${data.promo_slug || data.promo_id}`} className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap">
+            <Link href={`/merchandise`} className="text-primary-base flex gap-1 md:gap-2 items-center text-xs md:text-base whitespace-nowrap">
               Lihat Semua
               <FontAwesomeIcon icon={faCircleArrowRight} className="text-xs md:text-base flex-shrink-0" />
             </Link>

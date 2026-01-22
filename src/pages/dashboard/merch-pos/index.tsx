@@ -735,6 +735,7 @@ export default function Index({}: Readonly<ComponentProps>) {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [transactionStatus, setTransactionStatus] = useState<string>("all");
+  const [printBillLoading, setPrintBillLoading] = useState(false);
 
   const {
     values: custValue,
@@ -833,17 +834,14 @@ export default function Index({}: Readonly<ComponentProps>) {
 
     let url = `order-bycreator?creator_id=${creatorId}&page=${page}&limit=10&order_by=created_at&order_direction=desc`;
 
-    // Tambahkan filter pencarian
     if (transactionSearch) {
       url += `&search=${encodeURIComponent(transactionSearch)}`;
     }
 
-    // Tambahkan filter status
     if (transactionStatus !== "all") {
       url += `&status=${transactionStatus}`;
     }
 
-    // Tambahkan filter tanggal
     if (startDate) {
       const startDateStr = startDate.toISOString().split('T')[0];
       url += `&start_date=${startDateStr}`;
@@ -892,7 +890,6 @@ export default function Index({}: Readonly<ComponentProps>) {
           total = formattedTransactions.length;
         }
 
-        // Urutkan dari yang terbaru
         formattedTransactions.sort((a, b) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
@@ -972,8 +969,6 @@ export default function Index({}: Readonly<ComponentProps>) {
       return { id: e.id, variant_id: e.variant_id, name, variant_name, price, image, count: e.count, stock, subtotal };
     });
   }, [selected, productCache]);
-
-  // ... (kode handleAddProduct sampai handleSave tetap sama) ...
 
   const handleAddProduct = (product: MerchListResponse) => {
     setProductCache((prev) => ({ ...prev, [product.id]: product }));
@@ -1060,7 +1055,6 @@ export default function Index({}: Readonly<ComponentProps>) {
   const openSelectPayment = () => {
     const payment = [
       { icon: "ph:money-wavy", text: "CASH" },
-      { icon: "basil:card-outline", text: "Credit Card" },
       { icon: "ph:money-wavy", text: "Qris" },
     ];
 
@@ -1094,6 +1088,194 @@ export default function Index({}: Readonly<ComponentProps>) {
     if (valid.hasErrors) return;
     setOpenCustForm(false);
     modals.closeAll();
+  };
+
+  const handlePrintBill = () => {
+    if (selectedList.length === 0) {
+      notifications.show({ message: "Pilih minimal 1 produk untuk print bill", color: "red" });
+      return;
+    }
+
+    setPrintBillLoading(true);
+
+    // Generate bill content
+    const billContent = generateBillContent();
+
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Bill</title>
+            <style>
+              body {
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                max-width: 300px;
+                margin: 0 auto;
+                padding: 10px;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 10px;
+                border-bottom: 1px dashed #000;
+                padding-bottom: 10px;
+              }
+              .store-name {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 5px;
+              }
+              .date {
+                font-size: 11px;
+                margin-bottom: 10px;
+              }
+              .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+              }
+              .items-table th {
+                text-align: left;
+                border-bottom: 1px solid #000;
+                padding: 5px 0;
+              }
+              .items-table td {
+                padding: 3px 0;
+                border-bottom: 1px dashed #ccc;
+              }
+              .total-section {
+                margin-top: 15px;
+                border-top: 1px solid #000;
+                padding-top: 10px;
+              }
+              .total-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+              }
+              .grand-total {
+                font-weight: bold;
+                font-size: 14px;
+                margin-top: 10px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 11px;
+                border-top: 1px dashed #000;
+                padding-top: 10px;
+              }
+              @media print {
+                @page {
+                  margin: 0;
+                  size: 80mm auto;
+                }
+                body {
+                  max-width: 80mm;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${billContent}
+            <script>
+              window.onload = function() {
+                window.print();
+                setTimeout(() => {
+                  window.close();
+                }, 1000);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    setTimeout(() => {
+      setPrintBillLoading(false);
+      notifications.show({
+        message: "Bill berhasil dicetak",
+        color: "green",
+      });
+    }, 1000);
+  };
+
+  const generateBillContent = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const timeStr = now.toLocaleTimeString('id-ID');
+    const invoiceNumber = `POS-${Date.now().toString().slice(-6)}`;
+
+    let itemsHTML = '';
+    selectedList.forEach((item, index) => {
+      itemsHTML += `
+        <tr>
+          <td>${item.name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
+          <td align="center">${item.count}</td>
+          <td align="right">${item.price.toLocaleString('id-ID')}</td>
+          <td align="right">${item.subtotal.toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    });
+
+    return `
+      <div class="header">
+        <div class="store-name">TOKO ${user?.has_creator?.name?.toUpperCase() || 'MERCH'}</div>
+        <div>Jl. Example No. 123</div>
+        <div>Telp: 021-12345678</div>
+        <div class="date">${dateStr} ${timeStr}</div>
+        <div>Invoice: ${invoiceNumber}</div>
+        ${custValue.name ? `<div>Pelanggan: ${custValue.name}</div>` : ''}
+      </div>
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Produk</th>
+            <th>Qty</th>
+            <th>Harga</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHTML}
+        </tbody>
+      </table>
+
+      <div class="total-section">
+        ${handleSummary.detail
+          .filter(([label, value]) => value !== 0)
+          .map(([label, value]) => `
+            <div class="total-row">
+              <span>${label}:</span>
+              <span>Rp ${Math.abs(value).toLocaleString('id-ID')}</span>
+            </div>
+          `).join('')}
+        
+        <div class="total-row grand-total">
+          <span>TOTAL:</span>
+          <span>Rp ${handleSummary.total.toLocaleString('id-ID')}</span>
+        </div>
+        
+        <div class="total-row">
+          <span>Pembayaran:</span>
+          <span>${paymentMethod}</span>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Terima kasih atas kunjungan Anda</div>
+        <div>*** ${invoiceNumber} ***</div>
+      </div>
+    `;
   };
 
   const handleCheckout = async () => {
@@ -1166,55 +1348,110 @@ export default function Index({}: Readonly<ComponentProps>) {
     };
 
     try {
-      await fetch<any, { invoice_url: string }>({
-        url: "order-product",
-        method: "POST",
-        data: {
-          user_id: user?.id ?? null,
-          nama_pemesan: payloadName,
-          email_pemesan: payloadEmail,
-          creator_id: creatorId,
-          grandtotal: handleSummary.total,
-          product: productsPayload,
-          payment_method: paymentMethod,
-          courier: courierPayload,
-          address: addressPayload,
-        },
-        before: () => setLoading.append("checkout"),
-        success: async ({ data }) => {
-          console.log("Xendit response:", data);
-
-          await handleSave();
-
-          if (data?.invoice_url) {
-            router.push(data.invoice_url);
-            return;
-          }
-
-          notifications.show({
-            message: "Checkout sukses, tapi invoice tidak tersedia.",
-            color: "yellow",
-          });
-        },
-        complete: () => setLoading.filter((e) => e != "checkout"),
-        error: (err) => {
-          console.error("handleCheckout error:", err);
-
-          if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+      // Jika pembayaran CASH, langsung simpan ke database tanpa ke Xendit
+      if (paymentMethod === "CASH") {
+        await fetch<any, any>({
+          url: "order-product",
+          method: "POST",
+          data: {
+            user_id: user?.id ?? null,
+            nama_pemesan: payloadName,
+            email_pemesan: payloadEmail,
+            creator_id: creatorId,
+            grandtotal: handleSummary.total,
+            product: productsPayload,
+            payment_method: paymentMethod,
+            courier: courierPayload,
+            address: addressPayload,
+            status: "completed", // Langsung completed untuk cash
+          },
+          before: () => setLoading.append("checkout"),
+          success: async ({ data }) => {
+            console.log("Cash payment success:", data);
+            
+            // Simpan data untuk invoice
+            await handleSave();
+            
             notifications.show({
-              color: "red",
-              message: "Produk sudah habis stok",
+              message: "Pembayaran Cash berhasil diproses",
+              color: "green",
             });
-            return;
-          }
+            
+            // Print bill otomatis setelah checkout cash
+            handlePrintBill();
+          },
+          complete: () => setLoading.filter((e) => e != "checkout"),
+          error: (err) => {
+            console.error("Cash payment error:", err);
+            
+            if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+              notifications.show({
+                color: "red",
+                message: "Produk sudah habis stok",
+              });
+              return;
+            }
+            
+            const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
+            notifications.show({ message: msg, color: "red" });
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      } 
+      // Jika pembayaran QRIS, arahkan ke Xendit
+      else if (paymentMethod === "Qris") {
+        await fetch<any, { invoice_url: string }>({
+          url: "order-product",
+          method: "POST",
+          data: {
+            user_id: user?.id ?? null,
+            nama_pemesan: payloadName,
+            email_pemesan: payloadEmail,
+            creator_id: creatorId,
+            grandtotal: handleSummary.total,
+            product: productsPayload,
+            payment_method: paymentMethod,
+            courier: courierPayload,
+            address: addressPayload,
+          },
+          before: () => setLoading.append("checkout"),
+          success: async ({ data }) => {
+            console.log("Xendit response:", data);
 
-          const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
-          notifications.show({ message: msg, color: "red" });
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+            await handleSave();
+
+            if (data?.invoice_url) {
+              router.push(data.invoice_url);
+              return;
+            }
+
+            notifications.show({
+              message: "Checkout sukses, tapi invoice tidak tersedia.",
+              color: "yellow",
+            });
+          },
+          complete: () => setLoading.filter((e) => e != "checkout"),
+          error: (err) => {
+            console.error("handleCheckout error:", err);
+
+            if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+              notifications.show({
+                color: "red",
+                message: "Produk sudah habis stok",
+              });
+              return;
+            }
+
+            const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
+            notifications.show({ message: msg, color: "red" });
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      }
     } catch (err) {
       console.error("unexpected handleCheckout error:", err);
       notifications.show({ message: "Terjadi kesalahan tak terduga saat checkout.", color: "red" });
@@ -1873,7 +2110,6 @@ export default function Index({}: Readonly<ComponentProps>) {
                     </div>
                   </Flex>
 
-                  {/* Filter Section */}
                   <Card withBorder p="md" radius="md" mb="md" className="bg-gray-50/50">
                     <Stack gap="md">
                       <Text fw={600} size="sm">Filter Transaksi</Text>
@@ -2102,11 +2338,25 @@ export default function Index({}: Readonly<ComponentProps>) {
         >
           <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
             <div className="flex justify-between items-center">
-              <div className="flex flex-col">
-                <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
-                <span className="text-base font-bold">
-                  <NumberFormatter value={handleSummary.total} />
-                </span>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="light"
+                  color="gray"
+                  onClick={handlePrintBill}
+                  loading={printBillLoading}
+                  disabled={selectedList.length === 0}
+                  leftSection={<Icon icon="uiw:printer" />}
+                  size="md"
+                >
+                  Print Bill
+                </Button>
+                <div className="h-6 border-l border-gray-300"></div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
+                  <span className="text-base font-bold">
+                    <NumberFormatter prefix="Rp " value={handleSummary.total} />
+                  </span>
+                </div>
               </div>
               <Button 
                 loading={loading.includes("submit") || loading.includes("checkout")} 

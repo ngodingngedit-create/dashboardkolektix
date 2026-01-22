@@ -889,7 +889,7 @@ import { formatDate } from "@/utils/useFormattedDate";
 import { Switch } from "@nextui-org/react";
 import useLoggedUser from "@/utils/useLoggedUser";
 import React from "react";
-import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput } from "@mantine/core";
+import { Button, Card, Flex, Group, NumberFormatter, Stack, Text, TextInput, Badge, Divider } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
@@ -909,8 +909,6 @@ interface FormTicket {
   seat_number?: string[] | string;
   ticket_fee?: number;
   data?: TicketProps[];
-  // is_bundling?: number;
-  // bundling_qty?: number;
 }
 
 interface ErrorForm {
@@ -919,7 +917,6 @@ interface ErrorForm {
   email: boolean;
   countryCode: boolean;
   phone: boolean;
-  // tambahan
   nikLength?: boolean;
   phoneFormat?: boolean;
   phoneLength?: boolean;
@@ -937,16 +934,63 @@ interface Form {
   identity_type_id: number;
   event_ticket_id: number;
   seat_number?: string;
-  // NEW
-  is_gender?: string;
+  gender?: string; // Changed from is_gender
   birthdate?: string;
-  is_kelas?: string;
-  is_assistant?: string;
+  kelas?: string; // Changed from is_kelas
+  assistant?: string; // Changed from is_assistant
   is_insurance?: number;
+  // Merchandise fields
+  merch_size?: string;
+  merch_product_name?: string;
+  merch_product_id?: number;
+  merch_image_url?: string;
+  merch_price?: number;
+  merch_variant_id?: number;
+  merch_variant_name?: string;
+  event_merch_id?: number;
+}
+
+interface EventMerchandise {
+  id: number;
+  event_id: number;
+  event_ticket_id: number;
+  product_id: number;
+  title: string;
+  price: number;
+  stock_qty: number;
+  max_per_ticket: number;
+  is_required: number;
+  is_active: number;
+  product: {
+    id: number;
+    product_name: string;
+    slug: string;
+    average_star: string;
+    total_review: number;
+    total_sold: number;
+    product_image?: {
+      id: number;
+      product_id: number;
+      image: string;
+      image_url: string;
+    }[];
+  };
+  varians: {
+    id: number;
+    product_id: number;
+    varian_name: string;
+    sku: string;
+    price: string;
+    stock_qty: number;
+  }[];
+}
+
+interface EventDetailWithMerch extends EventProps {
+  has_merches?: EventMerchandise[];
 }
 
 interface StepPaymentProps {
-  detail: EventProps;
+  detail: EventDetailWithMerch;
   ticket: FormTicket[];
   totalCount: number;
   onSubmit: () => void;
@@ -965,7 +1009,6 @@ type Detail = { ppn?: any; ppn_type?: any; [k: string]: any };
 const normalizeDetail = (detail: Detail) => {
   const normalized: Detail = { ...detail };
 
-  // normalisasi ppn_type: treat null/undefined/""/"null" -> "percentage"
   const rawType = detail?.ppn_type;
   if (rawType === null || rawType === undefined || rawType === "" || rawType === "null") {
     normalized.ppn_type = "percentage";
@@ -973,10 +1016,6 @@ const normalizeDetail = (detail: Detail) => {
     normalized.ppn_type = String(rawType);
   }
 
-  // normalisasi ppn:
-  // - if null/undefined/""/"null" -> default 10
-  // - if numeric string -> Number(parsed)
-  // - if 0 -> keep 0
   const rawPpn = detail?.ppn;
   if (rawPpn === null || rawPpn === undefined || rawPpn === "" || rawPpn === "null") {
     normalized.ppn = 0;
@@ -987,7 +1026,7 @@ const normalizeDetail = (detail: Detail) => {
 
   const rawAdminFee = detail?.admin_fee;
   if (rawAdminFee === null || rawAdminFee === undefined || rawAdminFee === "" || rawAdminFee === "null") {
-    normalized.admin_fee = 7000; // default admin fee PER TICKET
+    normalized.admin_fee = 7000;
   } else {
     const af = Number(rawAdminFee);
     normalized.admin_fee = Number.isNaN(af) ? 7000 : af;
@@ -996,7 +1035,6 @@ const normalizeDetail = (detail: Detail) => {
   return normalized;
 };
 
-// Fungsi validasi KTP
 const validateNIK = (nik: string): { isValid: boolean; errorMessage?: string } => {
   const cleanedNIK = nik.replace(/\D/g, "");
 
@@ -1017,12 +1055,9 @@ const validateNIK = (nik: string): { isValid: boolean; errorMessage?: string } =
   return { isValid: true };
 };
 
-// Fungsi validasi nomor telepon
 const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: string } => {
-  // Hapus semua karakter non-digit
   const cleanedPhone = phone.replace(/\D/g, "");
 
-  // Validasi: tidak boleh dimulai dengan 62 atau 0
   if (cleanedPhone.startsWith("62")) {
     return {
       isValid: false,
@@ -1037,23 +1072,20 @@ const validatePhoneNumber = (phone: string): { isValid: boolean; errorMessage?: 
     };
   }
 
-  // Validasi panjang maksimal 11 digit (tidak termasuk kode negara)
-  if (cleanedPhone.length > 11) {
+  if (cleanedPhone.length > 13) {
     return {
       isValid: false,
-      errorMessage: "Maksimal 11 digit (tidak termasuk kode negara)",
+      errorMessage: "Maksimal 13 digit",
     };
   }
 
-  // Validasi panjang minimal (biasanya 9-11 digit untuk Indonesia)
   if (cleanedPhone.length < 9) {
     return {
       isValid: false,
-      errorMessage: "Nomor telepon terlalu pendek",
+      errorMessage: "Nomor telepon terlalu pendek (minimal 9 digit)",
     };
   }
 
-  // Validasi format nomor (harus angka semua)
   if (!/^\d+$/.test(cleanedPhone)) {
     return {
       isValid: false,
@@ -1068,7 +1100,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
   const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>([]);
   const [voucherFields, setVoucherFields] = useState([""]);
-  // const totalTicketFee = ticket.reduce((sum, item) => sum + (item.ticket_fee || 0) * item.qty_ticket, 0);
   const [vouchers, setVouchers] = useState<{ name: string; amount: number }[]>([]);
   const { width } = useWindowSize();
   const userData = useLoggedUser();
@@ -1078,18 +1109,24 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     [key: number]: {
       nik?: string;
       phone?: string;
+      email?: string;
+      [key: string]: string | undefined;
     };
   }>({});
 
   const [insuranceChecked, setInsuranceChecked] = useState(false);
   const [insuranceModalOpen, setInsuranceModalOpen] = useState(false);
-  // Cek apakah ada data insurance
+
+  // State untuk merchandise
+  const [merchProducts, setMerchProducts] = useState<any[]>([]);
+  const [selectedMerchImages, setSelectedMerchImages] = useState<{ [key: number]: string }>({});
+  const [loadingMerch, setLoadingMerch] = useState<boolean>(false);
+  const [selectedProductForPreview, setSelectedProductForPreview] = useState<any>(null);
+  const [selectedProductImage, setSelectedProductImage] = useState<string>("");
+  const [productPreviewModalOpen, setProductPreviewModalOpen] = useState(false);
+
   const hasInsuranceData = detail?.has_insurances && detail.has_insurances.length > 0;
-
-  // Ambil insurance pertama jika ada
   const firstInsurance = hasInsuranceData ? detail.has_insurances?.[0] : null;
-
-  // Data insurance dengan fallback
   const insuranceInfo = {
     title: firstInsurance?.title ?? "Tidak ada asuransi",
     description: firstInsurance?.description ?? "Tidak ada Deskripsi",
@@ -1098,64 +1135,141 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     hasInsurance: hasInsuranceData,
   };
 
+  // Fungsi untuk mendapatkan informasi tiket untuk pemilik tiket tertentu
+  const getTicketInfoForOwner = (index: number) => {
+    if (index === 0) return { isBundlingMerch: false, ticketName: "", seatNumber: "", ticketPrice: 0, eventTicketId: 0 };
+
+    let currentIndex = 0;
+    for (const ticketItem of ticket) {
+      const seatNumbers = Array.isArray(ticketItem.seat_number)
+        ? ticketItem.seat_number
+        : typeof ticketItem.seat_number === "string" && ticketItem.seat_number.trim() !== ""
+          ? JSON.parse(ticketItem.seat_number)
+          : Array.from({ length: ticketItem.qty_ticket }, (_, i) => undefined);
+
+      for (let i = 0; i < seatNumbers.length; i++) {
+        if (currentIndex === index - 1) {
+          const ticketDetail = detail.has_event_ticket?.find((t) => t.id === ticketItem.event_ticket_id);
+          const isBundlingMerch = ticketDetail ? ticketDetail.is_bundling_merch === 1 : false;
+
+          return {
+            isBundlingMerch,
+            ticketName: ticketItem.name,
+            seatNumber: seatNumbers[i] || undefined,
+            ticketPrice: ticketItem.price,
+            eventTicketId: ticketItem.event_ticket_id,
+          };
+        }
+        currentIndex++;
+      }
+    }
+    return { isBundlingMerch: false, ticketName: "", seatNumber: "", ticketPrice: 0, eventTicketId: 0 };
+  };
+
+  // Fungsi untuk membuka modal preview produk
+  const openProductImageModal = (product: any) => {
+    if (product) {
+      setSelectedProductForPreview(product);
+      if (product.product_image && product.product_image.length > 0 && product.product_image[0]?.image_url) {
+        setSelectedProductImage(product.product_image[0].image_url);
+      } else {
+        setSelectedProductImage("");
+      }
+      setProductPreviewModalOpen(true);
+    }
+  };
+
+  const closeProductImageModal = () => {
+    setSelectedProductForPreview(null);
+    setSelectedProductImage("");
+    setProductPreviewModalOpen(false);
+  };
+
+  // Fungsi untuk mengambil produk merchandise dari event
+  const fetchMerchProductsFromEvent = () => {
+    try {
+      setLoadingMerch(true);
+
+      if (detail?.has_merches && Array.isArray(detail.has_merches)) {
+        const filteredMerches = detail.has_merches.filter((merch: EventMerchandise) => merch.is_active === 1 && merch.stock_qty > 0);
+
+        const convertedProducts: any[] = filteredMerches.map((merch: EventMerchandise) => ({
+          id: merch.product_id,
+          product_name: merch.product.product_name,
+          price: merch.price.toString(),
+          qty: merch.stock_qty,
+          product_status_id: 2,
+          product_image: merch.product.product_image || [],
+          slug: merch.product.slug,
+          average_star: merch.product.average_star,
+          total_review: merch.product.total_review,
+          total_sold: merch.product.total_sold,
+          event_merch_data: {
+            event_merch_id: merch.id,
+            title: merch.title,
+            max_per_ticket: merch.max_per_ticket,
+            is_required: merch.is_required,
+            varians: merch.varians,
+          },
+        }));
+
+        setMerchProducts(convertedProducts);
+
+        const initialImages: { [key: number]: string } = {};
+        convertedProducts.forEach((product: any) => {
+          if (product.product_image && product.product_image.length > 0 && product.product_image[0]?.image_url) {
+            initialImages[product.id] = product.product_image[0].image_url;
+          }
+        });
+        setSelectedMerchImages(initialImages);
+      } else {
+        setMerchProducts([]);
+      }
+    } catch (error: any) {
+      console.error("Error processing merch products from event:", error);
+      notifications.show({
+        color: "red",
+        position: "top-right",
+        message: "Gagal memuat data merchandise",
+      });
+      setMerchProducts([]);
+    } finally {
+      setLoadingMerch(false);
+    }
+  };
+
+  // Fungsi untuk mendapatkan variant merchandise berdasarkan productId
+  const getMerchVariants = (productId: number) => {
+    const product = merchProducts.find((p) => p.id === productId);
+    if (!product || !product.event_merch_data?.varians) return [];
+
+    return product.event_merch_data.varians;
+  };
+
   useEffect(() => {
     if (detail?.insurance_required === 1) {
-      setInsuranceChecked(true); // Wajib = auto checked
+      setInsuranceChecked(true);
     } else {
-      setInsuranceChecked(false); // Opsional = unchecked
+      setInsuranceChecked(false);
     }
   }, [detail?.insurance_required]);
 
+  // Cek apakah ada tiket yang memiliki bundling merchandise
+  useEffect(() => {
+    const hasBundlingMerchTickets = ticket.some((ticketItem) => {
+      const ticketDetail = detail.has_event_ticket?.find((t) => t.id === ticketItem.event_ticket_id);
+      return ticketDetail?.is_bundling_merch === 1;
+    });
+
+    if (hasBundlingMerchTickets) {
+      fetchMerchProductsFromEvent();
+    }
+  }, [detail?.has_event_ticket, ticket]);
+
   const calculateInsuranceTotal = () => {
-    if (!insuranceChecked || !detail?.insurance_amount || totalCount === 0) return 0;
-
-    // insurance_amount biasanya per tiket
-    return detail.insurance_amount * totalCount;
+    if (!insuranceChecked || !detail?.insurance_amount || displayTotalCount === 0) return 0;
+    return detail.insurance_amount * displayTotalCount;
   };
-
-  const calculateGrandTotal = () => {
-    const subtotalTiket = displayTotalSubtotalPrice;
-    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
-    const insuranceTotal = calculateInsuranceTotal();
-    const tax = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-
-    return subtotalAfterVoucher + adminFee + tax + insuranceTotal;
-  };
-
-  // const adminFee = totalTicketFee;
-
-  const firstTicket = detail.has_event_ticket && detail.has_event_ticket[0];
-  const isBundlingGlobal = firstTicket ? firstTicket.is_bundling === 1 : false;
-  const bundlingQtyGlobal = firstTicket ? firstTicket.bundling_qty : 0;
-
-  console.log("Bundling data from detail:", {
-    hasFirstTicket: !!firstTicket,
-    isBundlingGlobal,
-    bundlingQtyGlobal,
-    firstTicket,
-  });
-
-  // const computeTax = (detail: any, subtotalAfterVoucher: number) => {
-  //   // const ppnType = detail?.ppn_type || "percentage";
-  //   // const raw = detail?.ppn != null ? Number(detail?.ppn) || 10 : 10; //perubahan default ppn 10%
-
-  //   const ppnType = detail?.ppn_type ?? "percentage";
-  //   const raw = detail?.ppn ?? 10; // default 10%
-
-  //   if (ppnType === "percentage") {
-  //     const taxBase = subtotalAfterVoucher;
-  //     const tax = Math.round(taxBase * (raw / 100));
-  //     return { tax, label: `${raw}%` };
-  //   }
-
-  //   if (ppnType === "nominal") {
-  //     const tax = Math.round(raw);
-  //     return { tax, label: `Rp ${tax.toLocaleString("id-ID")}` };
-  //   }
-
-  //   return { tax: 0, label: "Free" };
-  // };
 
   const computeTax = (detail: any, subtotalAfterVoucher: number) => {
     const d = normalizeDetail(detail);
@@ -1179,7 +1293,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       userData.name && handleInput(0, "full_name", userData.name);
       userData.email && handleInput(0, "email", userData.email);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData]);
 
   const formValidation = (data: Form) => {
@@ -1191,21 +1304,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       (detail.is_phone_number == 1 ? Boolean(data.no_telp) : true)
     );
   };
-
-  // const handleInput = (index: number, field: keyof Form, value: string) => {
-  //   let newForm = [...form];
-  //   if (field == "no_telp") {
-  //     var phone = value.replaceAll(/\D/g, "");
-  //     phone = phone.replace(/^(?!0|6)(\d+)/, "628$1");
-  //     phone = phone.replace(/^0/, "62");
-  //     newForm[index] = { ...newForm[index], [field]: phone };
-  //   } else {
-  //     newForm[index] = { ...newForm[index], [field]: value };
-  //   }
-  //   setForm(newForm);
-  //   const isFormValid = newForm.every(formValidation);
-  //   setFormValid(isFormValid);
-  // };
 
   const toggleCollapse = (index: number) => {
     setCollapse((prev) => {
@@ -1219,43 +1317,93 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     let newForm = [...form];
 
     if (field === "no_telp") {
-      // Update display value (hanya angka)
       const displayVal = value.replaceAll(/\D/g, "");
       setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
 
-      // Format untuk backend
-      let phone = value.replaceAll(/\D/g, "");
-      phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
-      phone = phone.replace(/^0/, "62");
+      const phoneForBackend = "62" + displayVal;
+      newForm[index] = { ...newForm[index], [field]: phoneForBackend };
 
-      newForm[index] = { ...newForm[index], [field]: phone };
-
-      // Validasi real-time untuk nomor telepon
       if (detail.is_phone_number == 1) {
-        const validation = validatePhoneNumber(phone);
-        setFieldErrors((prev) => ({
-          ...prev,
-          [index]: {
-            ...prev[index],
-            phone: validation.isValid ? undefined : validation.errorMessage,
-          },
-        }));
+        const validation = validatePhoneNumber(displayVal);
+
+        if (!validation.isValid) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              phone: validation.errorMessage,
+            },
+          }));
+        } else {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              phone: undefined,
+            },
+          }));
+        }
       }
     } else if (field === "nik") {
-      // Hanya menerima angka dan batasi panjang
       const numericValue = value.replace(/\D/g, "").slice(0, 16);
       newForm[index] = { ...newForm[index], [field]: numericValue };
 
-      // Validasi real-time untuk NIK
       if (detail.is_noidentity == 1) {
         const validation = validateNIK(numericValue);
-        setFieldErrors((prev) => ({
-          ...prev,
-          [index]: {
-            ...prev[index],
-            nik: validation.isValid ? undefined : validation.errorMessage,
-          },
-        }));
+
+        if (!validation.isValid) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              nik: validation.errorMessage,
+            },
+          }));
+        } else {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              nik: undefined,
+            },
+          }));
+        }
+      }
+    } else if (field === "merch_product_name") {
+      const selectedProduct = merchProducts.find((product) => product.product_name === value);
+      if (selectedProduct) {
+        newForm[index] = {
+          ...newForm[index],
+          [field]: value,
+          merch_product_id: selectedProduct.id,
+          event_merch_id: selectedProduct.event_merch_data.event_merch_id,
+          merch_price: parseFloat(selectedProduct.price) || 0,
+          merch_variant_id: undefined,
+          merch_variant_name: "",
+        };
+      }
+    } else if (field === "email") {
+      newForm[index] = { ...newForm[index], [field]: value };
+
+      if (detail.is_email == 1 && value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              email: "Format email tidak valid",
+            },
+          }));
+        } else {
+          setFieldErrors((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              email: undefined,
+            },
+          }));
+        }
       }
     } else {
       newForm[index] = { ...newForm[index], [field]: value };
@@ -1266,36 +1414,12 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     setFormValid(isFormValid);
   };
 
-  // const handleInput = (index: number, field: keyof Form, value: string) => {
-  //   let newForm = [...form];
-
-  //   if (field === "no_telp") {
-  //     // Update display value
-  //     const displayVal = value.replaceAll(/\D/g, "");
-  //     setDisplayValues((prev) => ({ ...prev, [index]: displayVal }));
-
-  //     // Format untuk backend (SAMA PERSIS dengan kode lama)
-  //     let phone = value.replaceAll(/\D/g, "");
-  //     phone = phone.replace(/^(?!0|6)(\d+)/, "62$1");
-  //     phone = phone.replace(/^0/, "62");
-
-  //     newForm[index] = { ...newForm[index], [field]: phone };
-  //   } else {
-  //     newForm[index] = { ...newForm[index], [field]: value };
-  //   }
-
-  //   setForm(newForm);
-  //   const isFormValid = newForm.every(formValidation);
-  //   setFormValid(isFormValid);
-  // };
-
   const copyOrderer = (targetIndex: number) => {
     if (form.length > 0 && targetIndex > 0 && targetIndex < form.length) {
       let newForm = [...form];
       newForm[targetIndex] = { ...newForm[0], is_pemesan: 0 };
       setForm(newForm);
 
-      // COPY JUGA displayValues untuk no_telp
       if (displayValues[0]) {
         setDisplayValues((prev) => ({
           ...prev,
@@ -1303,7 +1427,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
         }));
       }
 
-      // Reset error untuk form yang dicopy
       setFieldErrors((prev) => ({
         ...prev,
         [targetIndex]: {},
@@ -1328,20 +1451,26 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
         is_company: "",
         identity_type_id: 1,
         event_ticket_id: 1,
-        is_gender: "",
+        gender: "",
         birthdate: "",
-        is_kelas: "",
-        is_assistant: "",
+        kelas: "",
+        assistant: "",
+        merch_size: "",
+        merch_product_name: "",
+        merch_product_id: undefined,
+        event_merch_id: undefined,
+        merch_image_url: "",
+        merch_price: 0,
+        merch_variant_id: undefined,
+        merch_variant_name: "",
       };
       setForm(newForm);
 
-      // RESET displayValues
       setDisplayValues((prev) => ({
         ...prev,
         [targetIndex]: "",
       }));
 
-      // Reset error
       setFieldErrors((prev) => ({
         ...prev,
         [targetIndex]: {},
@@ -1399,14 +1528,14 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
         const isDateValid = moment(voucher.date_start).isBefore(new Date()) && moment(voucher.date_end).isAfter(new Date());
         const isStockValid = voucher.stock > 0;
         const isStatusValid = voucher.status == 1;
-        const isMinTransactionValid = totalSubtotalPrice >= voucher.min_transaction;
+        const isMinTransactionValid = displayTotalSubtotalPrice >= voucher.min_transaction;
 
         let discount = 0;
 
         if (voucher.is_multiply) {
-          discount = voucher.type == "persentase" ? ((totalSubtotalPrice * voucher.discount) / 100) * totalCount : voucher.discount * totalCount;
+          discount = voucher.type == "persentase" ? ((displayTotalSubtotalPrice * voucher.discount) / 100) * displayTotalCount : voucher.discount * displayTotalCount;
         } else {
-          discount = voucher.type == "persentase" ? (totalSubtotalPrice * voucher.discount) / 100 : voucher.discount;
+          discount = voucher.type == "persentase" ? (displayTotalSubtotalPrice * voucher.discount) / 100 : voucher.discount;
         }
 
         if (isDateValid && isStockValid && isStatusValid && isMinTransactionValid) {
@@ -1484,16 +1613,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     setVouchers(newVouchers.filter(Boolean));
   };
 
-  const allBundlingInfo = detail.has_event_ticket
-    ? detail.has_event_ticket.map((ticket) => ({
-        id: ticket.id,
-        isBundling: ticket.is_bundling === 1,
-        bundlingQty: ticket.bundling_qty,
-      }))
-    : [];
-
-  // Fungsi untuk mendapatkan bundling info berdasarkan event_ticket_id
-  // Atau jika mau cari berdasarkan ID nanti:
   const getBundlingInfo = (event_ticket_id: number) => {
     if (!detail.has_event_ticket) return { isBundling: false, bundlingQty: 0 };
 
@@ -1504,8 +1623,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
     };
   };
 
-  console.log("is_bundling", allBundlingInfo);
-
   const displayTotalCount = useMemo(() => {
     if (!ticket || ticket.length === 0) return 0;
 
@@ -1515,29 +1632,15 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 HITUNG JUMLAH PAKET: qty_ticket (fisik) / bundling_qty
-        // Contoh: bundling_qty = 2, qty_ticket = 4 → 4/2 = 2 paket
-        // Contoh: bundling_qty = 2, qty_ticket = 2 → 2/2 = 1 paket
-        // Contoh: bundling_qty = 3, qty_ticket = 6 → 6/3 = 2 paket
-
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         count += packageCount;
-
-        console.log(`Bundling ${item.name}:`, {
-          physicalTickets: item.qty_ticket,
-          bundlingQty,
-          packageCount,
-          addedToCount: packageCount,
-        });
       } else {
-        // Non-bundling: jumlah tiket fisik
         count += item.qty_ticket;
       }
     });
 
     return count;
-  }, [ticket, allBundlingInfo]);
-  // Lalu gunakan displayTotalCount di semua tempat
+  }, [ticket]);
 
   const displayTotalSubtotalPrice = useMemo(() => {
     if (!ticket || ticket.length === 0) return 0;
@@ -1548,23 +1651,15 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 Harga per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         total += item.price * packageCount;
-
-        console.log(`Bundling ${item.name} price:`, {
-          pricePerPackage: item.price,
-          packageCount,
-          subtotal: item.price * packageCount,
-        });
       } else {
-        // Non-bundling: harga normal
         total += item.price * item.qty_ticket;
       }
     });
 
     return total;
-  }, [ticket, allBundlingInfo]);
+  }, [ticket]);
 
   const totalTicketFee = useMemo(() => {
     if (!ticket || ticket.length === 0) return 0;
@@ -1576,44 +1671,55 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
       const fee = item.ticket_fee || 0;
 
       if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
-        // 💡 Admin fee per paket × jumlah paket
         const packageCount = Math.floor(item.qty_ticket / bundlingQty);
         totalFee += fee * packageCount;
-
-        console.log(`Bundling ${item.name} admin fee:`, {
-          feePerPackage: fee,
-          packageCount,
-          subtotalFee: fee * packageCount,
-          qty_ticket: item.qty_ticket,
-          bundlingQty,
-        });
       } else {
-        // Non-bundling: admin fee normal (per tiket)
         totalFee += fee * item.qty_ticket;
       }
     });
 
     return totalFee;
-  }, [ticket, allBundlingInfo]);
+  }, [ticket]);
 
-  const adminFee = totalTicketFee; // atau langsung pakai totalTicketFee
+  const adminFee = totalTicketFee;
 
-  // --- Return layout (mobile / desktop) aligned with FirstStepUnlogged design ---
+  const calculateGrandTotal = () => {
+    const subtotalTiket = displayTotalSubtotalPrice;
+    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+    const insuranceTotal = calculateInsuranceTotal();
+    const { tax } = computeTax(detail, subtotalAfterVoucher);
+
+    return subtotalAfterVoucher + adminFee + tax + insuranceTotal;
+  };
+
+  const eventHasInsurance = detail?.is_insurance === 1;
+  const insuranceRequired = detail?.insurance_required === 1;
+
+  useEffect(() => {
+    if (insuranceRequired) {
+      setInsuranceChecked(true);
+    }
+  }, [insuranceRequired]);
+
   return (
     width &&
     (width < 768 ? (
-      // MOBILE layout (responsive)
-      // IMPORTANT: adjusted padding-bottom and spacer so content won't be hidden by fixed bottom bar
-      <div className="bg-primary-light pt-2 sm:pt-3 px-1.5 sm:px-2" style={{ paddingBottom: 160 /* explicit large bottom padding for mobile */ }}>
+      // MOBILE LAYOUT
+      <div className="bg-primary-light pt-2 sm:pt-3 px-1.5 sm:px-2" style={{ paddingBottom: 160 }}>
         <div className="border-b p-1.5 sm:p-2 border-primary-light flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
           <div className="px-1 sm:px-1.5 py-0.5 sm:py-1 border rounded-md border-primary-light shrink-0">
             {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-6 sm:w-8 h-6 sm:h-8 object-cover rounded-sm" />}
           </div>
           <div className="min-w-0">
             <p className="text-xs sm:text-sm font-semibold truncate">{detail?.name}</p>
-            <p className="text-xs text-grey">{totalCount} Tiket</p>
+            <p className="text-xs text-grey">
+              {displayTotalCount} {ticket.some((item) => getBundlingInfo(item.event_ticket_id).isBundling) ? "Paket" : "Tiket"}
+            </p>
           </div>
         </div>
+
+        {/* Voucher Section */}
         <Card withBorder radius={8} p="xs" className="mb-2 sm:mb-3">
           <Stack gap="xs">
             <Flex gap={4} align="center">
@@ -1654,6 +1760,8 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </Button>
           </Stack>
         </Card>
+
+        {/* Order Summary */}
         <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm mb-2 sm:mb-3">
           <div className="border-b border-b-primary-light-200 p-1.5 sm:p-2">
             <p className="font-semibold text-xs sm:text-sm">Ringkasan</p>
@@ -1662,22 +1770,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
           {ticket.map((item: FormTicket) => {
             const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-            // Tentukan display quantity (jumlah paket)
             let displayQty = item.qty_ticket;
             let packageCount = 1;
 
             if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
               packageCount = Math.floor(item.qty_ticket / bundlingQty);
-              displayQty = packageCount; // Tampilkan jumlah paket
+              displayQty = packageCount;
             }
 
             const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
-
-            // Display subtotal
-            const displaySubtotal =
-              isBundling && bundlingQty >= 2 && bundlingQty <= 99
-                ? item.price * packageCount // Harga per paket × jumlah paket
-                : item.price * item.qty_ticket;
+            const displaySubtotal = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? item.price * packageCount : item.price * item.qty_ticket;
 
             return (
               <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
@@ -1698,16 +1800,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             );
           })}
 
+          {/* Order Summary Details */}
           <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs border-t border-primary-light-200">
             <p>
               {`Jumlah (${displayTotalCount} ${
-                // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                 ticket.some((item) => {
                   const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
                   return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                 })
-                  ? "Paket" // Jika ADA bundling → "Paket"
-                  : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                  ? "Paket"
+                  : "Tiket"
               })`}
             </p>
             <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
@@ -1717,8 +1819,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm">
               <p>Total Voucher</p>
               <p className="font-semibold">
-                -
-                <NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
+                -<NumberFormatter value={vouchers.reduce((sum, voucher) => sum + (voucher.amount || 0), 0)} />
               </p>
             </div>
           )}
@@ -1736,6 +1837,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             );
           })()}
 
+          {/* Insurance Section */}
           {detail?.is_insurance === 1 && (
             <>
               <div className="border-b p-3 border-primary-light-200 flex gap-3 items-center justify-between" key="asuransi">
@@ -1747,8 +1849,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                     <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
                       Pakai Asuransi
                     </button>
-                    {/* Ambil harga dari insurance_amount */}
-                    {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
                     <p className="text-xs text-grey">
                       Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
                       {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
@@ -1756,23 +1856,13 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                   </div>
                 </div>
 
-                {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
                 {detail?.insurance_required === 0 ? (
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
-                    onChange={(e) => {
-                      setInsuranceChecked(e.target.checked);
-                      console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
-                    }}
-                  />
+                  <input type="checkbox" className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2" checked={insuranceChecked} onChange={(e) => setInsuranceChecked(e.target.checked)} />
                 ) : (
-                  // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
                   <div className="text-xs text-primary font-semibold">Wajib</div>
                 )}
               </div>
 
-              {/* Modal Asuransi */}
               <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
                 <div className="flex flex-col sm:flex-row gap-4 p-4">
                   <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
@@ -1793,7 +1883,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         <p className="text-xs text-gray-500">
                           Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                         </p>
-                        {/* Tampilkan status wajib/opsional */}
                         {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                       </div>
                     </div>
@@ -1809,17 +1898,14 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </>
           )}
 
-          {detail?.ppn !== undefined
-            ? (() => {
-                const subtotalTiket = totalSubtotalPrice;
-                const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+          {/* Tax */}
+          {detail?.ppn !== undefined &&
+            (() => {
+              const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+              const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
+              const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
-
-                if (tax <= 0) return null;
-
+              if (tax > 0) {
                 return (
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
@@ -1828,29 +1914,23 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                     </p>
                   </div>
                 );
-              })()
-            : null}
+              }
+              return null;
+            })()}
 
+          {/* Admin Fee */}
           {adminFee > 0 && (
             <div className="py-3 px-4 flex justify-between items-center">
-              <p>{t("adminFee")}</p>
+              <p>Biaya Admin</p>
               <p className="font-semibold">
                 <NumberFormatter value={adminFee} />
               </p>
             </div>
           )}
 
+          {/* Grand Total */}
           <div className="py-2 sm:py-3 px-2 sm:px-4 flex justify-between items-center text-xs sm:text-sm border-t border-primary-light-200">
-            <p>{t("totalPayment")}</p>
-            {/* <p className="font-semibold">
-              {(() => {
-                const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
-                const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-                const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
-                return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
-              })()}
-            </p> */}
+            <p>Total Pembayaran</p>
             <p className="font-semibold">
               {(() => {
                 const grandTotal = calculateGrandTotal();
@@ -1859,72 +1939,21 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </p>
           </div>
         </div>
-        {/* {form.map((item, index) => {
-          let ticketForOwner = null;
-          let currentIndex = 0;
 
-          for (const ticketItem of ticket) {
-            for (let i = 0; i < (Array.isArray(ticketItem?.seat_number) ? ticketItem?.seat_number.length : ticketItem?.seat_number ? JSON.parse(String(ticketItem.seat_number)).length : ticketItem.qty_ticket); i++) {
-              if (currentIndex === index - 1) {
-                ticketForOwner = {
-                  ...ticketItem,
-                  seat_number: Array.isArray(ticketItem?.seat_number) ? ticketItem?.seat_number[i] : ticketItem?.seat_number ? JSON.parse(String(ticketItem.seat_number))[i] : undefined,
-                } as FormTicket;
-                break;
-              }
-              currentIndex++;
-            }
-            if (ticketForOwner) break;
-          } */}
+        {/* Form Section */}
         {form.map((item, index) => {
-          let ticketForOwner: FormTicket | null = null;
-          let currentIndex = 0;
-
-          // Cari tiket yang sesuai dengan form[index]
-          // form[0] = pemesan → skip
-          // form[1] = tiket pertama, form[2] = tiket kedua, dst.
-          if (index === 0) {
-            // pemesan tidak punya tiket sendiri
-          } else {
-            for (const ticketItem of ticket) {
-              const seats = Array.isArray(ticketItem.seat_number)
-                ? ticketItem.seat_number
-                : typeof ticketItem.seat_number === "string" && ticketItem.seat_number.trim() !== ""
-                ? JSON.parse(ticketItem.seat_number)
-                : Array.from({ length: ticketItem.qty_ticket }, (_, i) => undefined);
-
-              for (let i = 0; i < seats.length; i++) {
-                if (currentIndex === index - 1) {
-                  // index - 1 karena form[0] = pemesan
-                  ticketForOwner = {
-                    ...ticketItem,
-                    seat_number: seats[i] || undefined,
-                  };
-
-                  // INI YANG PALING PENTING: simpan seat_number ke form!
-                  if (seats[i] && item.seat_number !== seats[i]) {
-                    handleInput(index, "seat_number", seats[i] as string);
-                  }
-                  break;
-                }
-                currentIndex++;
-              }
-              if (ticketForOwner) break;
-            }
-          }
-
-          if (!ticketForOwner?.seat_number && !!item.seat_number) {
-            handleInput(index, "seat_number", item.seat_number ?? "");
-          }
+          const ticketInfo = getTicketInfoForOwner(index);
+          const selectedProduct = item.merch_product_id ? merchProducts.find((p) => p.id === item.merch_product_id) : null;
+          const availableVariants = selectedProduct ? getMerchVariants(item.merch_product_id!) : [];
 
           return (
             <div className="bg-white mt-1 sm:mt-1.5" key={index}>
               <div className="border-b py-1.5 sm:py-2 px-1.5 sm:px-3 border-primary-light flex items-start justify-between cursor-pointer gap-1 sm:gap-2" onClick={() => toggleCollapse(index)}>
                 {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mt-0.5 sm:mt-1 text-xs sm:text-sm" />}
                 <Stack gap={0} className={`flex-grow min-w-0`}>
-                  <p className="font-semibold text-xs sm:text-sm leading-tight">{index > 0 ? `${index}. ${t("ticketOwner")} ${ticketForOwner?.name}` : t("registrantData")}</p>
-                  {index > 0 && ticketForOwner?.seat_number && <p className="text-xs text-grey leading-tight">Seat {ticketForOwner?.seat_number}</p>}
-                  {index > 0 && <p className="text-xs text-grey leading-tight">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketForOwner?.price ?? 0)}</p>}
+                  <p className="font-semibold text-xs sm:text-sm leading-tight">{index > 0 ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}` : "Data Pemesan"}</p>
+                  {index > 0 && ticketInfo.seatNumber && <p className="text-xs text-grey leading-tight">Seat {ticketInfo.seatNumber}</p>}
+                  {index > 0 && <p className="text-xs text-grey leading-tight">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketInfo.ticketPrice ?? 0)}</p>}
                 </Stack>
                 <button className="text-grey shrink-0 mt-0.5 sm:mt-1">
                   <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform text-xs sm:text-sm`} />
@@ -1933,7 +1962,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
 
               {index > 0 && (
                 <div className="flex items-center justify-end gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-grey flex-wrap sm:flex-nowrap">
-                  <p className="text-xs text-end">{t("useRegistrantData")}</p>
+                  <p className="text-xs text-end">Gunakan Data Pemesan</p>
                   <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                 </div>
               )}
@@ -1941,7 +1970,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               <div className={`border-b p-2 sm:p-3 border-primary-light ${collapse[index] ? "max-h-[26rem]" : "max-h-0"} transition-max-height delay-100 duration-150 ease-in-out`}>
                 <div className={`${collapse[index] ? "opacity-100" : "opacity-0"} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                   <div className={`${collapse[index] ? "visible delay-300 duration-300" : "invisible"} transition-transform space-y-1.5 sm:space-y-2`}>
-                    {detail.is_noidentity ? (
+                    {detail.is_noidentity && (
                       <Field className="mb-1.5 sm:mb-2">
                         <div>
                           <InputSelect
@@ -1966,19 +1995,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           placeholder="3277*************"
                           value={item.nik}
                           onChange={(e) => {
-                            const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16); // Ganti 17 jadi 16
+                            const numericValue = e.target.value.replace(/\D/g, "").slice(0, 16);
                             handleInput(index, "nik", numericValue);
                           }}
-                          maxLength={16} // Ganti 17 jadi 16
+                          maxLength={16}
                         />
-                        {/* TAMPILKAN ERROR DARI VALIDASI BARU */}
                         {fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.nik}</p>}
-                        {/* ATAU ERROR LAMA JIKA MASIH ADA */}
-                        {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">Minimal NIK adalah 16 Digit</p>}
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_name ? (
+                    {detail.is_name && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Nama Lengkap</Label>
                         <Input
@@ -1988,52 +2014,38 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           onChange={(e) => handleInput(index, "full_name", e.target.value)}
                         />
                       </Field>
-                    ) : null}
+                    )}
 
-                    {/* ADDED assistant input - same design as other inputs */}
-                    {detail.is_assistant ? (
+                    {detail.is_assistant == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Assistant</Label>
                         <Input
                           type="text"
-                          value={item.is_assistant || ""}
-                          onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
+                          value={item.assistant || ""}
+                          onChange={(e) => handleInput(index, "assistant", e.target.value)}
                           placeholder="Nama Assistant"
                           className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
                         />
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_kelas ? (
-                      <Field className="mb-1.5 sm:mb-2">
-                        <Label className="text-xs sm:text-sm font-base text-grey">Kelas</Label>
-                        <Input
-                          type="text"
-                          value={item.is_kelas || ""}
-                          onChange={(e) => handleInput(index, "is_kelas", e.target.value)}
-                          placeholder="Masukan kelas (angka)"
-                          className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark"
-                        />
-                      </Field>
-                    ) : null}
-
-                    {detail.is_gender ? (
+                    {detail.is_gender == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Jenis Kelamin</Label>
                         <select
-                          value={item.is_gender || ""}
-                          onChange={(e) => handleInput(index, "is_gender", e.target.value)}
+                          value={item.gender || ""}
+                          onChange={(e) => handleInput(index, "gender", e.target.value)}
                           className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark"
                         >
                           <option value="">Pilih Jenis Kelamin</option>
-                          <option value="1">Pria</option>
-                          <option value="2">Wanita</option>
-                          <option value="3">Tidak Memberitahu</option>
+                          <option value="Pria">Pria</option>
+                          <option value="Wanita">Wanita</option>
+                          <option value="Tidak Memberitahu">Tidak Memberitahu</option>
                         </select>
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_birthdate ? (
+                    {detail.is_birthdate == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Tanggal Lahir</Label>
                         <Input
@@ -2043,9 +2055,22 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark"
                         />
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_profession ? (
+                    {detail.is_kelas == 1 && (
+                      <Field className="mb-1.5 sm:mb-2">
+                        <Label className="text-xs sm:text-sm font-base text-grey">Kelas</Label>
+                        <Input
+                          type="text"
+                          value={item.kelas || ""}
+                          onChange={(e) => handleInput(index, "kelas", e.target.value)}
+                          placeholder="Masukan kelas (angka)"
+                          className="mt-0.5 sm:mt-1 block w-full rounded-lg border border-primary-light bg-white/5 py-1 px-2 text-xs sm:text-sm text-dark"
+                        />
+                      </Field>
+                    )}
+
+                    {detail.is_profession == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Profesi / Pekerjaan</Label>
                         <Input
@@ -2055,9 +2080,9 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           onChange={(e) => handleInput(index, "is_profession", e.target.value)}
                         />
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_company ? (
+                    {detail.is_company == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Perusahaan / Organisasi</Label>
                         <Input
@@ -2067,9 +2092,9 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           onChange={(e) => handleInput(index, "is_company", e.target.value)}
                         />
                       </Field>
-                    ) : null}
+                    )}
 
-                    {detail.is_email ? (
+                    {detail.is_email == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">Email</Label>
                         <Input
@@ -2079,11 +2104,11 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                           value={item.email}
                           onChange={(e) => handleInput(index, "email", e.target.value)}
                         />
+                        {fieldErrors[index]?.email && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.email}</p>}
                       </Field>
-                    ) : null}
+                    )}
 
-                    {/* {detail.is_phone_number == 1 && <InputField fullWidth type="number" label="No Telepon" placeholder="Contoh: 81233334444" onChange={(e) => handleInput(index, "no_telp", e.target.value)} value={item.no_telp} />} */}
-                    {detail.is_phone_number ? (
+                    {detail.is_phone_number == 1 && (
                       <Field className="mb-1.5 sm:mb-2">
                         <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
                         <div className="flex gap-1 sm:gap-2 items-center">
@@ -2106,99 +2131,251 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                             onChange={(e) => {
                               const value = e.target.value;
                               const numericValue = value.replace(/\D/g, "");
-
-                              // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
-                              if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
-                                // Tampilkan error
-                                setFieldErrors((prev) => ({
-                                  ...prev,
-                                  [index]: {
-                                    ...prev[index],
-                                    phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
-                                  },
-                                }));
-                                // Jangan update nilai
-                                return;
-                              }
-
-                              // BLOKIR JIKA LEBIH DARI 11 DIGIT
-                              if (numericValue.length > 11) {
-                                setFieldErrors((prev) => ({
-                                  ...prev,
-                                  [index]: {
-                                    ...prev[index],
-                                    phone: "Maksimal 11 digit",
-                                  },
-                                }));
-                                // Potong jadi 11 digit
-                                const trimmedValue = numericValue.slice(0, 11);
-                                handleInput(index, "no_telp", trimmedValue);
-                                return;
-                              }
-
-                              // Jika valid, reset error
-                              setFieldErrors((prev) => ({
-                                ...prev,
-                                [index]: {
-                                  ...prev[index],
-                                  phone: undefined,
-                                },
-                              }));
-
                               handleInput(index, "no_telp", numericValue);
                             }}
                             type="tel"
+                            maxLength={13}
                           />
                         </div>
-                        {/* Tambahkan pesan error validasi */}
                         {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                       </Field>
-                    ) : null}
+                    )}
+
+                    {/* Merchandise Bundling Section */}
+                    {index > 0 && ticketInfo.isBundlingMerch && (
+                      <div className="border-t pt-3 mt-3">
+                        <p className="font-semibold text-sm mb-2">Bundling Merchandise</p>
+
+                        <div className="space-y-2">
+                          {merchProducts.length > 0 && (
+                            <div className="flex items-start gap-2">
+                              <Field className="mb-2 flex-1">
+                                <Label className="text-xs font-base text-grey">Nama Produk</Label>
+                                <div className="flex gap-2 items-center">
+                                  <select
+                                    className="mt-1 flex-1 rounded-lg border border-primary-light-200 bg-white/5 py-1 px-2 text-xs text-dark focus:outline-none"
+                                    value={item.merch_product_name || ""}
+                                    onChange={(e) => handleInput(index, "merch_product_name", e.target.value)}
+                                  >
+                                    <option value="">Pilih Produk</option>
+                                    {merchProducts.map((product) => (
+                                      <option key={product.id} value={product.product_name}>
+                                        {product.product_name}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  {item.merch_product_name && selectedProduct && (
+                                    <div
+                                      className="w-8 h-8 mt-1 rounded overflow-hidden border border-gray-300 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                                      onClick={() => openProductImageModal(selectedProduct)}
+                                      title="Klik untuk preview"
+                                    >
+                                      {selectedProduct.product_image && selectedProduct.product_image.length > 0 && selectedProduct.product_image[0]?.image_url ? (
+                                        <Image src={selectedProduct.product_image[0].image_url} alt={selectedProduct.product_name} width={32} height={32} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-xs" />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </Field>
+                            </div>
+                          )}
+
+                          {item.merch_product_name && availableVariants.length > 0 && (
+                            <Field className="mb-2">
+                              <Label className="text-xs font-base text-grey">Variant</Label>
+                              <select
+                                className="mt-1 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1 px-2 text-xs text-dark focus:outline-none"
+                                value={item.merch_variant_id?.toString() || ""}
+                                onChange={(e) => {
+                                  const variantId = parseInt(e.target.value);
+                                  const selectedVariant = availableVariants.find((v: any) => v.id === variantId);
+                                  if (selectedVariant) {
+                                    const newForm = [...form];
+                                    newForm[index] = {
+                                      ...newForm[index],
+                                      merch_variant_id: variantId,
+                                      merch_variant_name: selectedVariant.varian_name,
+                                      merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0"),
+                                    };
+                                    setForm(newForm);
+                                  }
+                                }}
+                              >
+                                <option value="">Pilih Variant</option>
+                                {availableVariants.map((variant: any) => (
+                                  <option key={variant.id} value={variant.id}>
+                                    {variant.varian_name}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                          )}
+
+                          {item.merch_product_name && selectedProduct && (
+                            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                              <div className="flex-1 min-w-0">
+                                <div className="space-y-0.5">
+                                  <p className="font-medium text-[10px] truncate">{item.merch_product_name}</p>
+                                  {item.merch_price && item.merch_price > 0 && (
+                                    <p className="text-[9px] text-grey">
+                                      Harga: <span className="font-semibold">Rp {item.merch_price.toLocaleString("id-ID")}</span>
+                                    </p>
+                                  )}
+                                  {item.merch_variant_name && (
+                                    <p className="text-[9px] text-grey truncate">
+                                      Variant: <span className="font-medium">{item.merch_variant_name}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           );
         })}
-        {/* BIG spacer supaya konten mobile tidak tertutup fixed bottom bar.
-            Kalau fixed footer tingginya berbeda, ubah nilai height di bawah. */}
+
+        {/* Product Preview Modal */}
+        <Modal
+          opened={productPreviewModalOpen}
+          onClose={closeProductImageModal}
+          size="lg"
+          centered
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="mdi:image-search" className="text-primary" />
+              <span>Detail Produk</span>
+            </div>
+          }
+          padding="lg"
+        >
+          {selectedProductForPreview && (
+            <div className="space-y-6">
+              <div className="relative">
+                {selectedProductImage && selectedProductImage !== "" ? (
+                  <div className="w-full h-64 md:h-80 overflow-hidden rounded-lg bg-gray-100">
+                    <Image src={selectedProductImage} alt={selectedProductForPreview.product_name} width={800} height={600} className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                    <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-8xl mb-4" />
+                    <p className="text-gray-500">Tidak ada gambar tersedia</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedProductForPreview.product_name}</h3>
+                  <div className="flex items-center gap-4 mb-3">
+                    <Badge color="blue" variant="light" size="lg">
+                      Bundling
+                    </Badge>
+                    {selectedProductForPreview.average_star && (
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:star" className="text-yellow-500" />
+                        <span className="text-sm font-medium">{selectedProductForPreview.average_star}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Divider />
+
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Harga</h4>
+                  {selectedProductForPreview.event_merch_data?.varians?.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-gray-900 line-through">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                        <span className="text-sm text-gray-500">(Harga akan menyesuaikan variant)</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-primary">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedProductForPreview.event_merch_data?.varians?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Variant Tersedia</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedProductForPreview.event_merch_data.varians.map((variant: any) => (
+                        <div key={variant.id} className={`border rounded-lg p-3 ${variant.stock_qty > 0 ? "border-gray-200" : "border-red-200 bg-red-50"}`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{variant.varian_name}</p>
+                              <p className="text-sm font-bold text-primary mt-1 line-through">Rp {parseFloat(variant.price).toLocaleString("id-ID")}</p>
+                            </div>
+                            {variant.stock_qty > 0 ? (
+                              <Badge color="green" variant="light" size="sm">
+                                Stok: {variant.stock_qty}
+                              </Badge>
+                            ) : (
+                              <Badge color="red" variant="light" size="sm">
+                                Habis
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="text-center">
+                    <Icon icon="mdi:sale" className="text-2xl text-green-500 mx-auto mb-1" />
+                    <p className="text-xs font-medium text-gray-700">Terjual</p>
+                    <p className="text-sm font-bold">{selectedProductForPreview.total_sold || 0}</p>
+                  </div>
+                  <div className="text-center">
+                    <Icon icon="mdi:star-circle" className="text-2xl text-yellow-500 mx-auto mb-1" />
+                    <p className="text-xs font-medium text-gray-700">Rating</p>
+                    <p className="text-sm font-bold">{selectedProductForPreview.average_star || "-"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 pt-4 border-t">
+            <Button fullWidth onClick={closeProductImageModal} variant="light" color="gray">
+              Tutup Preview
+            </Button>
+          </div>
+        </Modal>
+
         <div className="h-40 md:hidden" />
       </div>
     ) : (
-      // DESKTOP layout (tidak diubah)
+      // DESKTOP LAYOUT
       <div className="bg-primary-light min-h-screen pb-28">
-        <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20 ">
+        <div className="max-w-5xl mx-auto grid grid-cols-5 mt-8 gap-x-7 pt-20">
           <h2 className="col-span-5 mb-4">Personal Informasi</h2>
           <div className="col-span-3 flex flex-col gap-3">
             {form.map((item, index) => {
-              let ticketForOwner = null;
-              let currentIndex = 0;
-
-              for (const ticketItem of ticket) {
-                for (let i = 0; i < (Array.isArray(ticketItem?.seat_number) ? ticketItem?.seat_number.length : ticketItem?.seat_number ? JSON.parse(String(ticketItem.seat_number)).length : ticketItem.qty_ticket); i++) {
-                  if (currentIndex === index - 1) {
-                    ticketForOwner = {
-                      ...ticketItem,
-                      seat_number: Array.isArray(ticketItem?.seat_number) ? ticketItem?.seat_number[i] : ticketItem?.seat_number ? JSON.parse(String(ticketItem.seat_number))[i] : undefined,
-                    } as FormTicket;
-                    break;
-                  }
-                  currentIndex++;
-                }
-                if (ticketForOwner) break;
-              }
-
-              if (!ticketForOwner?.seat_number && !!item.seat_number) {
-                handleInput(index, "seat_number", item.seat_number ?? "");
-              }
+              const ticketInfo = getTicketInfoForOwner(index);
+              const selectedProduct = item.merch_product_id ? merchProducts.find((p) => p.id === item.merch_product_id) : null;
+              const availableVariants = selectedProduct ? getMerchVariants(item.merch_product_id!) : [];
 
               return (
                 <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm" key={index}>
                   <div className="border-b border-b-primary-light-200 px-5 py-3 flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(index)}>
                     {index > 0 && <FontAwesomeIcon icon={faTicket} className="text-primary shrink-0 mr-[10px]" />}
                     <Stack gap={0} className={`flex-grow`}>
-                      <p className="font-semibold">{index > 0 ? `${index}. ${t("ticketOwner")} ${ticketForOwner?.name} ${ticketForOwner?.seat_number ? `(Seat ${ticketForOwner?.seat_number})` : ""}` : t("registrantData")}</p>
-                      {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketForOwner?.price ?? 0)}</p>}
+                      <p className="font-semibold">{index > 0 ? `${index}. Pemilik Tiket ${ticketInfo.ticketName} ${ticketInfo.seatNumber ? `(Seat ${ticketInfo.seatNumber})` : ""}` : "Data Pemesan"}</p>
+                      {index > 0 && <p className="text-xs text-grey">1 Tiket x {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(ticketInfo.ticketPrice ?? 0)}</p>}
                     </Stack>
                     <button className="text-grey">
                       <FontAwesomeIcon icon={faChevronUp} className={`${collapse[index] ? "rotate-0" : "rotate-180"} transition-transform`} />
@@ -2207,7 +2384,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
 
                   {index > 0 && (
                     <div className="flex items-center justify-end gap-[8px] px-4 py-2 rounded-lg text-grey">
-                      <p className="text-xs md:text-sm text-end">{t("useRegistrantData")}</p>
+                      <p className="text-xs md:text-sm text-end">Gunakan Data Pemesan</p>
                       <Switch size="sm" onChange={(e: any) => (e.target.checked ? copyOrderer(index) : clearForm(index))} />
                     </div>
                   )}
@@ -2215,30 +2392,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                   <div className={`px-5 pt-3 pb-5 ${collapse[index] ? "" : "max-h-0"} transition-max-height delay-100 duration-150 ease-in-out`}>
                     <div className={`${collapse[index] ? "opacity-100" : "opacity-0"} transition-transform-opacity duration-300 delay-300 ease-in-out`}>
                       <div className={`${collapse[index] ? "visible" : "invisible"} flex flex-col gap-3`}>
-                        {/* {detail.is_noidentity ? (
-                          <div className="grid grid-cols-4 gap-3">
-                            <div>
-                              <InputSelect
-                                label="Identitas"
-                                required
-                                onChange={(e) => handleInput(index, "identity_type_id", e.target.value)}
-                                options={[
-                                  { key: "1", label: "KTP" },
-                                  { key: "2", label: "SIM" },
-                                  { key: "3", label: "Kartu Pelajar" },
-                                  { key: "4", label: "Passport" },
-                                  { key: "5", label: "KTM" },
-                                ]}
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <InputField fullWidth type="number" label="Nomor Identitas" placeholder={`${t("example")}: 123456789012345`} value={item.nik} onChange={(e) => handleInput(index, "nik", e.target.value)} />
-                              {error.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
-                            </div>
-                          </div>
-                        ) : null} */}
-
-                        {detail.is_noidentity ? (
+                        {detail.is_noidentity == 1 && (
                           <div className="grid grid-cols-4 gap-3">
                             <div>
                               <InputSelect
@@ -2260,55 +2414,47 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                                   fullWidth
                                   type="number"
                                   label="Nomor Identitas"
-                                  placeholder={`${t("example")}: 3277************`}
+                                  placeholder="Contoh: 3277************"
                                   value={item.nik}
                                   onChange={(e) => {
-                                    // Hanya ambil 16 digit pertama
                                     const value = e.target.value.replace(/\D/g, "").slice(0, 16);
                                     handleInput(index, "nik", value);
                                   }}
                                 />
-                                {/* ERROR DARI VALIDASI BARU */}
                                 {fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">{fieldErrors[index]?.nik}</p>}
-                                {/* ERROR LAMA */}
-                                {error.nik && item.nik.length < 16 && !fieldErrors[index]?.nik && <p className="text-[10px] mt-1 text-danger">Minimal NIK adalah 16 Digit</p>}
                               </div>
                             </div>
                           </div>
-                        ) : null}
-                        {detail.is_name ? <InputField fullWidth type="text" label={t("fullName")} placeholder={t("fullName")} value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} /> : null}
+                        )}
 
-                        {/* Assistant for desktop */}
-                        {detail.is_assistant ? (
+                        {detail.is_name == 1 && <InputField fullWidth type="text" label="Nama Lengkap" placeholder="Nama Lengkap" value={item.full_name} onChange={(e) => handleInput(index, "full_name", e.target.value)} />}
+
+                        {detail.is_assistant == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Assistant</Label>
                             <Input
                               type="text"
-                              value={item.is_assistant || ""}
-                              onChange={(e) => handleInput(index, "is_assistant", e.target.value)}
+                              value={item.assistant || ""}
+                              onChange={(e) => handleInput(index, "assistant", e.target.value)}
                               placeholder="Nama Assistant"
                               className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
                             />
                           </Field>
-                        ) : null}
+                        )}
 
-                        {detail.is_gender ? (
+                        {detail.is_gender == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Jenis Kelamin</Label>
-                            <select
-                              value={item.is_gender || ""}
-                              onChange={(e) => handleInput(index, "is_gender", e.target.value)}
-                              className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark"
-                            >
+                            <select value={item.gender || ""} onChange={(e) => handleInput(index, "gender", e.target.value)} className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark">
                               <option value="">Pilih Jenis Kelamin</option>
-                              <option value="1">Pria</option>
-                              <option value="2">Wanita</option>
-                              <option value="3">Tidak Memberitahu</option>
+                              <option value="Pria">Pria</option>
+                              <option value="Wanita">Wanita</option>
+                              <option value="Tidak Memberitahu">Tidak Memberitahu</option>
                             </select>
                           </Field>
-                        ) : null}
+                        )}
 
-                        {detail.is_birthdate ? (
+                        {detail.is_birthdate == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Tanggal Lahir</Label>
                             <Input
@@ -2318,51 +2464,27 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                               className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark"
                             />
                           </Field>
-                        ) : null}
+                        )}
 
-                        {detail.is_kelas ? (
+                        {detail.is_kelas == 1 && (
                           <Field className="mb-2">
                             <Label className="text-sm font-base text-grey">Kelas</Label>
                             <Input
                               type="text"
-                              value={item.is_kelas || ""}
-                              onChange={(e) => handleInput(index, "is_kelas", e.target.value)}
+                              value={item.kelas || ""}
+                              onChange={(e) => handleInput(index, "kelas", e.target.value)}
                               placeholder="Masukan kelas (angka)"
                               className="mt-2 block w-full rounded-lg border border-primary-light bg-white/5 py-1.5 px-3 text-sm text-dark"
                             />
                           </Field>
-                        ) : null}
+                        )}
 
-                        {detail.is_profession ? (
-                          <InputField fullWidth type="text" label={t("profession")} placeholder={t("profession")} value={item.is_profession} onChange={(e) => handleInput(index, "is_profession", e.target.value)} />
-                        ) : null}
-                        {detail.is_company ? <InputField fullWidth type="text" label={t("company")} placeholder={t("company")} value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} /> : null}
-                        {detail.is_email ? <InputField fullWidth type="text" label="Email" placeholder={`${t("example")}: example@example.com`} value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} /> : null}
-                        {/* {detail.is_phone_number ? (
-                          <Field className="mb-1.5 sm:mb-2">
-                            <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
-                            <div className="flex gap-1 sm:gap-2 items-center">
-                              <form className="max-w-sm block mt-0.5 sm:mt-1">
-                                <select
-                                  id="countries"
-                                  className="bg-gray-50 border border-primary-light text-dark text-xs sm:text-sm rounded-lg focus:ring-primary-base focus:border-primary-light block w-full py-1 sm:py-1.5 px-1.5 sm:px-2"
-                                  value={item.countryCode}
-                                  onChange={(e) => handleInput(index, "countryCode", e.target.value)}
-                                >
-                                  <option value="+62">+62</option>
-                                </select>
-                              </form>
-                              <Input
-                                className="mt-0.5 sm:mt-1 w-4/5 block rounded-lg border border-primary-light bg-white/5 py-1 sm:py-1.5 px-1.5 sm:px-2 text-xs sm:text-sm/6 text-dark focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-primary-200"
-                                placeholder="Contoh: 81234567890"
-                                value={displayValues[index] || ""} // Tampilkan tanpa 628
-                                onChange={(e) => handleInput(index, "no_telp", e.target.value)}
-                                type="tel"
-                              />
-                            </div>
-                          </Field>
-                        ) : null} */}
-                        {detail.is_phone_number ? (
+                        {detail.is_profession == 1 && <InputField fullWidth type="text" label="Profesi" placeholder="Profesi" value={item.is_profession} onChange={(e) => handleInput(index, "is_profession", e.target.value)} />}
+                        {detail.is_company == 1 && <InputField fullWidth type="text" label="Perusahaan" placeholder="Perusahaan" value={item.is_company} onChange={(e) => handleInput(index, "is_company", e.target.value)} />}
+
+                        {detail.is_email == 1 && <InputField fullWidth type="text" label="Email" placeholder="Contoh: example@example.com" value={item.email} onChange={(e) => handleInput(index, "email", e.target.value)} />}
+
+                        {detail.is_phone_number == 1 && (
                           <Field className="mb-1.5 sm:mb-2">
                             <Label className="text-xs sm:text-sm font-base text-grey">No Telepon</Label>
                             <div className="flex gap-1 sm:gap-2 items-center">
@@ -2385,54 +2507,111 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   const numericValue = value.replace(/\D/g, "");
-
-                                  // BLOKIR JIKA INPUT DIMULAI DENGAN 62 ATAU 0
-                                  if (numericValue.startsWith("62") || numericValue.startsWith("0")) {
-                                    // Tampilkan error
-                                    setFieldErrors((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        phone: "Nomor tidak boleh dimulai dengan 62 atau 0",
-                                      },
-                                    }));
-                                    // Jangan update nilai
-                                    return;
-                                  }
-
-                                  // BLOKIR JIKA LEBIH DARI 11 DIGIT
-                                  if (numericValue.length > 11) {
-                                    setFieldErrors((prev) => ({
-                                      ...prev,
-                                      [index]: {
-                                        ...prev[index],
-                                        phone: "Maksimal 11 digit",
-                                      },
-                                    }));
-                                    // Potong jadi 11 digit
-                                    const trimmedValue = numericValue.slice(0, 11);
-                                    handleInput(index, "no_telp", trimmedValue);
-                                    return;
-                                  }
-
-                                  // Jika valid, reset error
-                                  setFieldErrors((prev) => ({
-                                    ...prev,
-                                    [index]: {
-                                      ...prev[index],
-                                      phone: undefined,
-                                    },
-                                  }));
-
                                   handleInput(index, "no_telp", numericValue);
                                 }}
                                 type="tel"
+                                maxLength={13}
                               />
                             </div>
-                            {/* Tambahkan pesan error validasi */}
                             {fieldErrors[index]?.phone && <p className="text-[8px] sm:text-[9px] mt-0.5 text-danger">{fieldErrors[index]?.phone}</p>}
                           </Field>
-                        ) : null}
+                        )}
+
+                        {/* Merchandise Bundling Section for Desktop */}
+                        {index > 0 && ticketInfo.isBundlingMerch && (
+                          <div className="border-t pt-3 mt-3">
+                            <p className="font-semibold text-sm mb-2">Bundling Merchandise</p>
+
+                            <div className="space-y-2">
+                              {merchProducts.length > 0 && (
+                                <div className="flex items-start gap-3">
+                                  <Field className="mb-2 flex-1">
+                                    <Label className="text-sm font-base text-grey">Nama Produk</Label>
+                                    <div className="flex gap-2 items-center">
+                                      <select
+                                        className="mt-1 flex-1 rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                        value={item.merch_product_name || ""}
+                                        onChange={(e) => handleInput(index, "merch_product_name", e.target.value)}
+                                      >
+                                        <option value="">Pilih Produk</option>
+                                        {merchProducts.map((product) => (
+                                          <option key={product.id} value={product.product_name}>
+                                            {product.product_name}
+                                          </option>
+                                        ))}
+                                      </select>
+
+                                      {item.merch_product_name && selectedProduct && (
+                                        <div
+                                          className="w-10 h-10 mt-1 rounded overflow-hidden border border-gray-300 bg-white flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                                          onClick={() => openProductImageModal(selectedProduct)}
+                                          title="Klik untuk preview"
+                                        >
+                                          {selectedProduct.product_image && selectedProduct.product_image.length > 0 && selectedProduct.product_image[0]?.image_url ? (
+                                            <Image src={selectedProduct.product_image[0].image_url} alt={selectedProduct.product_name} width={40} height={40} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-sm" />
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Field>
+                                </div>
+                              )}
+
+                              {item.merch_product_name && availableVariants.length > 0 && (
+                                <Field className="mb-2">
+                                  <Label className="text-sm font-base text-grey">Variant</Label>
+                                  <select
+                                    className="mt-1 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-1.5 px-3 text-sm text-dark focus:outline-none"
+                                    value={item.merch_variant_id?.toString() || ""}
+                                    onChange={(e) => {
+                                      const variantId = parseInt(e.target.value);
+                                      const selectedVariant = availableVariants.find((v: any) => v.id === variantId);
+                                      if (selectedVariant) {
+                                        const newForm = [...form];
+                                        newForm[index] = {
+                                          ...newForm[index],
+                                          merch_variant_id: variantId,
+                                          merch_variant_name: selectedVariant.varian_name,
+                                          merch_price: parseFloat(selectedVariant.price) || parseFloat(selectedProduct?.price || "0"),
+                                        };
+                                        setForm(newForm);
+                                      }
+                                    }}
+                                  >
+                                    <option value="">Pilih Variant</option>
+                                    {availableVariants.map((variant: any) => (
+                                      <option key={variant.id} value={variant.id}>
+                                        {variant.varian_name} - Rp {parseFloat(variant.price).toLocaleString("id-ID")}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </Field>
+                              )}
+
+                              {item.merch_product_name && selectedProduct && (
+                                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="space-y-1">
+                                      <p className="font-medium text-xs">{item.merch_product_name}</p>
+                                      {item.merch_price && item.merch_price > 0 && (
+                                        <p className="text-xs text-grey">
+                                          Harga: <span className="font-semibold">Rp {item.merch_price.toLocaleString("id-ID")}</span>
+                                        </p>
+                                      )}
+                                      {item.merch_variant_name && (
+                                        <p className="text-xs text-grey truncate">
+                                          Variant: <span className="font-medium">{item.merch_variant_name}</span>
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2451,6 +2630,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 </div>
               </div>
             </div>
+
             <Card withBorder radius={10} p={20}>
               <Stack gap={20}>
                 <Flex gap={10} align="center">
@@ -2497,22 +2677,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               {ticket.map((item: FormTicket) => {
                 const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
 
-                // Tentukan display quantity (jumlah paket)
                 let displayQty = item.qty_ticket;
                 let packageCount = 1;
 
                 if (isBundling && bundlingQty >= 2 && bundlingQty <= 99) {
                   packageCount = Math.floor(item.qty_ticket / bundlingQty);
-                  displayQty = packageCount; // Tampilkan jumlah paket
+                  displayQty = packageCount;
                 }
 
                 const bundlingInfo = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? ` (paket ${bundlingQty} orang)` : "";
-
-                // Display subtotal
-                const displaySubtotal =
-                  isBundling && bundlingQty >= 2 && bundlingQty <= 99
-                    ? item.price * packageCount // Harga per paket × jumlah paket
-                    : item.price * item.qty_ticket;
+                const displaySubtotal = isBundling && bundlingQty >= 2 && bundlingQty <= 99 ? item.price * packageCount : item.price * item.qty_ticket;
 
                 return (
                   <div className="border-b p-3 border-primary-light-200 flex gap-3" key={item.event_ticket_id}>
@@ -2536,21 +2710,16 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               <div className="py-3 px-4 flex justify-between items-center">
                 <p>
                   {`Jumlah (${displayTotalCount} ${
-                    // 💡 KONDISI: Cek apakah ADA ticket yang bundling
                     ticket.some((item) => {
                       const { isBundling, bundlingQty } = getBundlingInfo(item.event_ticket_id);
                       return isBundling && bundlingQty >= 2 && bundlingQty <= 99;
                     })
-                      ? "Paket" // Jika ADA bundling → "Paket"
-                      : "Tiket" // Jika TIDAK ADA bundling → "Tiket"
+                      ? "Paket"
+                      : "Tiket"
                   })`}
                 </p>
                 <p className="font-semibold">{displayTotalSubtotalPrice > 0 ? <NumberFormatter value={displayTotalSubtotalPrice} /> : <Text>Free</Text>}</p>
               </div>
-              {/* <div className="py-3 px-4 flex justify-between items-center">
-                <p>{`${t("jumlah")} (${totalCount} ${t("ticket")})`}</p>
-                <p className="font-semibold">{totalSubtotalPrice > 0 ? <NumberFormatter value={totalSubtotalPrice} /> : <Text>Free</Text>}</p>
-              </div> */}
 
               {vouchers.length > 0 && (
                 <div className="py-3 px-4 flex justify-between items-center">
@@ -2562,10 +2731,8 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               )}
 
               {(() => {
-                const subtotalTiket = displayTotalSubtotalPrice;
                 const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
-
+                const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
                 return (
                   <div className="py-3 px-4 flex justify-between items-center">
                     <p>Subtotal</p>
@@ -2587,8 +2754,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         <button onClick={() => setInsuranceModalOpen(true)} className="text-sm mb-1 font-semibold hover:text-primary transition-colors text-left">
                           Pakai Asuransi
                         </button>
-                        {/* Ambil harga dari insurance_amount */}
-                        {/* <p className="text-xs text-grey">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "Kosong"}</p> */}
                         <p className="text-xs text-grey">
                           Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "0"} per tiket
                           {insuranceChecked && <span className="block text-xs text-blue-600">+Rp {calculateInsuranceTotal().toLocaleString("id-ID")}</span>}
@@ -2596,23 +2761,13 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                       </div>
                     </div>
 
-                    {/* Tampilkan checkbox hanya jika insurance_require = 0 */}
                     {detail?.insurance_required === 0 ? (
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
-                        onChange={(e) => {
-                          setInsuranceChecked(e.target.checked);
-                          console.log("Asuransi checked:", e.target.checked, "Total asuransi:", calculateInsuranceTotal());
-                        }}
-                      />
+                      <input type="checkbox" className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2" checked={insuranceChecked} onChange={(e) => setInsuranceChecked(e.target.checked)} />
                     ) : (
-                      // Jika insurance_require = 1, checkbox hidden dan asuransi wajib
                       <div className="text-xs text-primary font-semibold">Wajib</div>
                     )}
                   </div>
 
-                  {/* Modal Asuransi */}
                   <Modal opened={insuranceModalOpen} onClose={() => setInsuranceModalOpen(false)} title="Ketentuan Asuransi" size="lg" centered>
                     <div className="flex flex-col sm:flex-row gap-4 p-4">
                       <div className="w-full sm:w-1/4 flex flex-col items-center justify-center">
@@ -2633,7 +2788,6 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                             <p className="text-xs text-gray-500">
                               Biaya asuransi: <span className="font-semibold">Rp {detail?.insurance_amount?.toLocaleString("id-ID") || "2.000"} per tiket</span>
                             </p>
-                            {/* Tampilkan status wajib/opsional */}
                             {detail?.insurance_required === 1 && <p className="text-xs text-red-500 mt-1">*Asuransi wajib untuk event ini</p>}
                           </div>
                         </div>
@@ -2649,18 +2803,13 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                 </>
               )}
 
-              {/* TAX */}
-              {detail?.ppn !== undefined
-                ? (() => {
-                    const subtotalTiket = totalSubtotalPrice;
-                    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(subtotalTiket - totalVoucher, 0);
+              {detail?.ppn !== undefined &&
+                (() => {
+                  const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
+                  const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
+                  const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
 
-                    // gunakan helper untuk menghitung tax & label (percentage / nominal)
-                    const { tax, label, ppnType } = computeTax(detail, subtotalAfterVoucher);
-
-                    if (tax <= 0) return null;
-
+                  if (tax > 0) {
                     return (
                       <div className="py-3 px-4 flex justify-between items-center">
                         <p>{ppnType === "nominal" ? `Tax ${label}` : `Tax (${label})`}</p>
@@ -2669,12 +2818,13 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
                         </p>
                       </div>
                     );
-                  })()
-                : null}
+                  }
+                  return null;
+                })()}
 
               {adminFee > 0 && (
                 <div className="py-3 px-4 flex justify-between items-center">
-                  <p>{t("adminFee")}</p>
+                  <p>Biaya Admin</p>
                   <p className="font-semibold">
                     <NumberFormatter value={adminFee} />
                   </p>
@@ -2682,16 +2832,7 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
               )}
 
               <div className="py-3 px-4 flex justify-between items-center">
-                <p>{t("totalPayment")}</p>
-                {/* <p className="font-semibold">
-                  {(() => {
-                    const totalVoucher = vouchers.reduce((sum, v) => sum + (v?.amount || 0), 0);
-                    const subtotalAfterVoucher = Math.max(displayTotalSubtotalPrice - totalVoucher, 0);
-                    const tax = detail.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
-                    const grandtotal = subtotalAfterVoucher + totalTicketFee + tax;
-                    return grandtotal > 0 ? <NumberFormatter value={grandtotal} /> : <Text>Free</Text>;
-                  })()}
-                </p> */}
+                <p>Total Pembayaran</p>
                 <p className="font-semibold">
                   {(() => {
                     const grandTotal = calculateGrandTotal();
@@ -2702,6 +2843,119 @@ const FirstStep = ({ onSubmitVoucher, onCancelVoucher, detail, haveVoucher, tick
             </div>
           </div>
         </div>
+
+        {/* Product Preview Modal for Desktop */}
+        <Modal
+          opened={productPreviewModalOpen}
+          onClose={closeProductImageModal}
+          size="lg"
+          centered
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="mdi:image-search" className="text-primary" />
+              <span>Detail Produk</span>
+            </div>
+          }
+          padding="lg"
+        >
+          {selectedProductForPreview && (
+            <div className="space-y-6">
+              <div className="relative">
+                {selectedProductImage && selectedProductImage !== "" ? (
+                  <div className="w-full h-64 md:h-80 overflow-hidden rounded-lg bg-gray-100">
+                    <Image src={selectedProductImage} alt={selectedProductForPreview.product_name} width={800} height={600} className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-full h-64 md:h-80 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                    <Icon icon="mdi:tshirt-crew" className="text-gray-400 text-8xl mb-4" />
+                    <p className="text-gray-500">Tidak ada gambar tersedia</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedProductForPreview.product_name}</h3>
+                  <div className="flex items-center gap-4 mb-3">
+                    <Badge color="blue" variant="light" size="lg">
+                      Bundling
+                    </Badge>
+                    {selectedProductForPreview.average_star && (
+                      <div className="flex items-center gap-1">
+                        <Icon icon="mdi:star" className="text-yellow-500" />
+                        <span className="text-sm font-medium">{selectedProductForPreview.average_star}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Divider />
+
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Harga</h4>
+                  {selectedProductForPreview.event_merch_data?.varians?.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-gray-900 line-through">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                        <span className="text-sm text-gray-500">(Harga akan menyesuaikan variant)</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-primary">Rp {parseFloat(selectedProductForPreview.price).toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedProductForPreview.event_merch_data?.varians?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Variant Tersedia</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedProductForPreview.event_merch_data.varians.map((variant: any) => (
+                        <div key={variant.id} className={`border rounded-lg p-3 ${variant.stock_qty > 0 ? "border-gray-200" : "border-red-200 bg-red-50"}`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-gray-900">{variant.varian_name}</p>
+                              <p className="text-sm font-bold text-primary mt-1 line-through">Rp {parseFloat(variant.price).toLocaleString("id-ID")}</p>
+                            </div>
+                            {variant.stock_qty > 0 ? (
+                              <Badge color="green" variant="light" size="sm">
+                                Stok: {variant.stock_qty}
+                              </Badge>
+                            ) : (
+                              <Badge color="red" variant="light" size="sm">
+                                Habis
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="text-center">
+                    <Icon icon="mdi:sale" className="text-2xl text-green-500 mx-auto mb-1" />
+                    <p className="text-xs font-medium text-gray-700">Terjual</p>
+                    <p className="text-sm font-bold">{selectedProductForPreview.total_sold || 0}</p>
+                  </div>
+                  <div className="text-center">
+                    <Icon icon="mdi:star-circle" className="text-2xl text-yellow-500 mx-auto mb-1" />
+                    <p className="text-xs font-medium text-gray-700">Rating</p>
+                    <p className="text-sm font-bold">{selectedProductForPreview.average_star || "-"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 pt-4 border-t">
+            <Button fullWidth onClick={closeProductImageModal} variant="light" color="gray">
+              Tutup Preview
+            </Button>
+          </div>
+        </Modal>
       </div>
     ))
   );
