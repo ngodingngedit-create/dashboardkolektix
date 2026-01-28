@@ -187,6 +187,7 @@ const sidebarData: SidebarData = [
         link: "/dashboard/my-event/report",
         role: "Staff",
       },
+      
     ],
   },
   {
@@ -214,6 +215,13 @@ const sidebarData: SidebarData = [
         name: "Report Event",
         iconify: "carbon:report",
         link: "/dashboard/my-event/report",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Ticket OTS",
+        iconify: "carbon:report",
+        link: "/dashboard/my-event/ticket-ots",
         role: "Creator",
       },
     ],

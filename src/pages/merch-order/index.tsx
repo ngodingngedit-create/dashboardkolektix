@@ -1490,7 +1490,6 @@ export default function Cart() {
                 onChange={(e) => form.setValues({ nama_pemesan: e.target.value })}
                 onBlur={() => form.validateField("nama_pemesan")}
                 value={form.values.nama_pemesan || ""}
-                error={form.errors.nama_pemesan}
               />
 
               <TextInput
@@ -1500,7 +1499,6 @@ export default function Cart() {
                 onChange={(e) => form.setValues({ email_pemesan: e.target.value })}
                 onBlur={() => form.validateField("email_pemesan")}
                 value={form.values.email_pemesan || ""}
-                error={form.errors.email_pemesan}
               />
 
               <TextInput
@@ -1514,7 +1512,6 @@ export default function Cart() {
                 }}
                 onBlur={() => form.validateField("phone_pemesan")}
                 value={form.values.phone_pemesan || ""}
-                error={form.errors.phone_pemesan}
               />
 
               {/* Bagian 1: Lokasi Pengambilan - Card dengan border bottom biru */}
@@ -1955,7 +1952,6 @@ const AddressModal = ({
                 data={_.sortBy(province, "name").map((e) => ({ value: String(e.id), label: e.name }))}
                 value={String(form.values.province)}
                 onChange={(e) => e && form.setFieldValue("province", parseInt(e))}
-                error={form.errors.province}
               />
 
               <Select
@@ -1965,7 +1961,6 @@ const AddressModal = ({
                 data={city.map((e) => ({ value: String(e.id), label: e.name }))}
                 value={String(form.values.city)}
                 onChange={(e) => e && form.setFieldValue("city", parseInt(e))}
-                error={form.errors.city}
               />
             </Flex>
 

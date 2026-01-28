@@ -773,7 +773,7 @@ return (
       )
     )}
   </div>
-  <ModalOfflineSales
+  {/* <ModalOfflineSales
     isOpen={showModal}
     setIsOpen={setShowModal}
     // paymentList={[...(paymentList ?? []), { id: 5, payment_name: 'CASH', icon: 'mingcute:cash-2-line' }].map(e => ({...e, logo: `${config.assetUrl}logo/${e.logo ?? '#'}`}))}
@@ -787,7 +787,7 @@ return (
     subtotal={totalSubtotalPrice}
     reload={list.reload}
     setParentStep={setStep}
-  />
+  /> */}
 </>
 
 );

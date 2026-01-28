@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect, createContext, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, createContext } from "react";
 import EventCardCreator from "@/components/Card/EventCard/creator";
-import { useAsyncList } from "@react-stately/data";
 import config from "@/Config";
 import { useRouter } from "next/router";
 import axios from "axios";
@@ -8,7 +7,7 @@ import DetailModal from "@/components/Dashboard/Modal/ModalInvation";
 import EditEventModal from "@/components/Dashboard/Modal/ModalEditInvation";
 import AddEventModal, { CategoryResponse } from "@/components/Dashboard/Modal/ModalAddInvation";
 import InvitationDetailModal from "@/components/Dashboard/Modal/ModalDetailInvation";
-import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, DropdownTrigger, Dropdown, DropdownMenu, DropdownItem, Pagination, Accordion, AccordionItem, Selection, Modal } from "@nextui-org/react";
+import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Accordion, AccordionItem, Selection } from "@nextui-org/react";
 import { EventProps } from "@/utils/globalInterface";
 import { EventTicket, SeatmapData } from "@/utils/formInterface";
 import { Tabs, Tab } from "@nextui-org/react";
@@ -17,18 +16,14 @@ import Button from "@/components/Button";
 import TicketContainer from "@/components/TicketContainer";
 import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket";
 import ModalEditTicket from "@/components/EventCreator/Modal/ModalEditTicket";
-import DescriptionBlock from "@/components/Detail/DescriptionBlock";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPencil, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faPaperPlane, faPlus } from "@fortawesome/free-solid-svg-icons";
 import * as XLSX from "xlsx";
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Legend } from "chart.js";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
 import { toast } from "react-toastify";
-import { get } from "http";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { ActionIcon, Card, Divider, Flex, NumberFormatter, Stack, Text, Tooltip, Button as ButtonM, Box, Center } from "@mantine/core";
+import { Divider, Flex, Stack, Text, Tooltip, Button as ButtonM, Box, Center } from "@mantine/core";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import useLoggedUser from "@/utils/useLoggedUser";
 import fetch from "@/utils/fetch";
@@ -105,7 +100,20 @@ interface InvitationDataItem {
   invitation_cat_id?: number;
   total_qty?: number;
   created_at?: string;
-  // Add other properties as needed
+}
+
+interface TransactionItem {
+  id: string | number;
+  invoice_no: string;
+  has_user?: {
+    email: string;
+  };
+  event_invitation_status?: {
+    id: number;
+  };
+  type_transaction?: string;
+  created_at?: string;
+  transaction_status_id?: number;
 }
 
 export const Context = createContext<{
@@ -140,7 +148,6 @@ const MyEventDetail = () => {
   const [addTicket, showAddTicket] = useState<boolean>(false);
   const [idxTicket, setIdxTicket] = useState<number>();
   const [loading, setLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [grandTotal, setGrandTotal] = useState(0);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -163,18 +170,102 @@ const MyEventDetail = () => {
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
-  const [transactionList, setTransactionList] = useState<any[]>([]);
-  const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  
+  // State untuk optimasi transaksi
+  const [activeTab, setActiveTab] = useState<string>("Detail");
+  const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionData, setTransactionData] = useState<TransactionItem[]>([]);
   const [sendingEmails, setSendingEmails] = useState<Record<string, boolean>>({});
-  const [lastSentTime, setLastSentTime] = useState<number>(0);
   const [isSendingInvitation, setIsSendingInvitation] = useState(false);
   const params = useParams();
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-const [selectedItemForSend, setSelectedItemForSend] = useState<InvitationDataItem | null>(null);
-const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transaction');
+  const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [transactionRowsPerPage, setTransactionRowsPerPage] = useState(5);
 
   const remainingBalance = (eventData?.total_price_sell || 0) - withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
+
+  // Fungsi untuk fetch semua data transaksi (sekali saja)
+  const fetchAllTransactions = useCallback(async () => {
+    if (!data?.id) return;
+
+    try {
+      setTransactionLoading(true);
+      const response = await axios.get(`${config.wsUrl}list-transaction-by-event`, {
+        params: {
+          event_id: data.id
+        }
+      });
+
+      const result = response.data;
+      setTransactionData(result.data || []);
+      setGrandTotal(result.grand_total || 0);
+      
+    } catch (error) {
+      console.error("Error fetching transaction data:", error);
+      setTransactionData([]);
+    } finally {
+      setTransactionLoading(false);
+    }
+  }, [data?.id]);
+
+  // Load data transaksi ketika tab Transaksi pertama kali dibuka
+  useEffect(() => {
+    if (activeTab === "Transaksi" && data?.id && transactionData.length === 0) {
+      fetchAllTransactions();
+    }
+  }, [activeTab, data?.id, transactionData.length]);
+
+  // Filter data transaksi client-side
+  const filteredTransactionItems = useMemo(() => {
+    if (!Array.isArray(transactionData)) {
+      return [];
+    }
+
+    const lowerFilterValue = filterValue.toLowerCase();
+
+    return transactionData.filter((item) => {
+      const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
+      const matchesEmail = item.has_user?.email?.toLowerCase().includes(lowerFilterValue) || false;
+      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
+
+      return (matchesInvoice || matchesEmail) && matchesType;
+    });
+  }, [transactionData, filterValue, transactionFilter]);
+
+  // Hitung total pages untuk pagination client-side
+  const transactionPages = Math.ceil(filteredTransactionItems.length / transactionRowsPerPage);
+
+  // Ambil items untuk halaman aktif
+  const transactionPageItems = useMemo(() => {
+    const start = (transactionPage - 1) * transactionRowsPerPage;
+    const end = start + transactionRowsPerPage;
+    return filteredTransactionItems.slice(start, end);
+  }, [transactionPage, filteredTransactionItems, transactionRowsPerPage]);
+
+  // Handler untuk perubahan rows per page di transaksi
+  const onTransactionRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRowsPerPage = Number(e.target.value);
+    setTransactionRowsPerPage(newRowsPerPage);
+    setTransactionPage(1);
+  }, []);
+
+  // Handler untuk perubahan halaman transaksi
+  const onTransactionPageChange = useCallback((page: number) => {
+    setTransactionPage(page);
+  }, []);
+
+  // Handler untuk search transaksi
+  const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilterValue(value);
+    setTransactionPage(1);
+  }, []);
+
+  // Handler untuk filter tipe transaksi
+  const handleTransactionFilterChange = useCallback((filter: "all" | "online" | "offline") => {
+    setTransactionFilter(filter);
+    setTransactionPage(1);
+  }, []);
 
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
@@ -191,11 +282,8 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
       const response = await axios.get(`${config.wsUrl}withdraw`);
       const withdrawData = Array.isArray(response.data) ? response.data : response.data.data || [];
 
-      // Filter berdasarkan event_id
       const filteredData = withdrawData.filter((item: WithdrawHistory) => item.event_id === data?.id);
-
       setWithdrawHistoryList(filteredData);
-      console.log("Filtered Withdraw Data for event:", filteredData);
     } catch (error) {
       console.error("Error fetching withdraw data:", error);
     }
@@ -203,7 +291,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
 
   useEffect(() => {
     (window as any).getWithdrawHistory = getWithdrawHistory;
-    (window as any).withdrawList = withdrawHistoryList;
   }, [withdrawHistoryList]);
 
   const openAddModal = () => {
@@ -253,14 +340,10 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
         if (res.data) {
           setData(res.data);
           res?.data?.seatmap && setSeatmap.setState(JSON.parse(res?.data?.seatmap));
-          console.log("masuk", res);
           const eventId = res.data.id;
           setTicket(res.data.has_event_ticket);
           getReportData(eventId);
           getInvitationEventData(eventId);
-          getTransactions();
-        } else {
-          console.warn("Response data is empty or undefined.");
         }
         setLoading(false);
       })
@@ -278,7 +361,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
       if (Array.isArray(result.data)) {
         setInvitationData(result.data);
       } else {
-        console.warn("Fetched data is not an array:", result);
         setInvitationData([]);
       }
     } catch (err) {
@@ -286,24 +368,7 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
     }
   };
 
-  const getTransactions = async () => {
-    try {
-      const response = await axios.get(`${config.wsUrl}transaction`);
-      const payload = Array.isArray(response.data) ? response.data : (response.data.data ?? []);
-
-      setTransactionList(payload);
-    } catch (err) {
-      console.error("Error fetching transactions", err);
-      setTransactionList([]);
-    }
-  };
-
-  const findTransactionStatus = (invoice: string) => {
-    const trx = transactionList.find((t) => t.invoice_no === invoice);
-    return trx?.transaction_status_id ?? null;
-  };
-
-  const sendETicket = async (invoiceNo: string, email: string, itemId: string | number) => {
+  const sendETicket = useCallback(async (invoiceNo: string, email: string, itemId: string | number) => {
     const itemIdStr = String(itemId);
 
     setSendingEmails((prev) => ({
@@ -320,17 +385,14 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
         },
       });
 
-      console.log("E-ticket sent successfully:", response.data);
-
       notifications.show({
         title: "Berhasil!",
         message: `E-ticket berhasil dikirim ke ${email}`,
         color: "green",
         position: "top-right",
       });
-    } catch (error: any) {
-      console.error("Error sending e-ticket:", error);
 
+    } catch (error: any) {
       const errorMessage = error.response?.data?.message || "Gagal mengirim e-ticket. Silakan coba lagi.";
       notifications.show({
         title: "Gagal!",
@@ -346,53 +408,12 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
         }));
       }, 300);
     }
-  };
+  }, [data?.id]);
 
   const handleDownloadTransaction = async () => {
     window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
   };
 
-  // Validasi sebelum mengirim invitation
-  const validateBeforeSending = (item: InvitationDataItem) => {
-    const issues: string[] = [];
-
-    if (!item?.has_user?.email) {
-      issues.push("Email penerima tidak tersedia");
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (item?.has_user?.email && !emailRegex.test(item.has_user.email)) {
-      issues.push("Format email tidak valid");
-    }
-
-    if (item?.event_invitation_status?.id !== 1) {
-      issues.push("Status invitation tidak aktif");
-    }
-
-    return issues;
-  };
-
-  // Logging untuk debugging email
-  const logEmailSending = (item: InvitationDataItem, status: string, error: any = null) => {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      event_id: data?.id,
-      invitation_id: item?.id,
-      email: item?.has_user?.email,
-      status: status,
-      error: error?.message || null,
-      user_id: user?.id,
-    };
-
-    const logs = JSON.parse(localStorage.getItem("email_logs") || "[]");
-    logs.push(logEntry);
-    if (logs.length > 100) logs.shift();
-    localStorage.setItem("email_logs", JSON.stringify(logs));
-
-    console.log("Email sending log:", logEntry);
-  };
-
-  // Fungsi untuk mengirim invitation dengan validasi
   const sendEventETicket = async (invoiceNo: any, email: any) => {
     try {
       const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
@@ -400,8 +421,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
           email: email,
         },
       });
-      console.log("E-ticket sent successfully:", response.data);
-      setLoading(false);
       toast.success(`E-ticket sent successfully to ${email}`);
     } catch (error) {
       console.error("Error sending e-ticket:", error);
@@ -409,28 +428,10 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
     }
   };
 
-  // Handler untuk mengirim invitation dengan konfirmasi
-  const handleSendInvitation = (item: InvitationDataItem) => {
-    const email = invitationData.find((inv) => inv.id === item.id)?.has_user?.email;
-
-    if (!item?.has_user?.email) {
-      notifications.show({
-        title: "Error",
-        message: "Email tidak tersedia untuk pengguna ini.",
-        color: "red",
-        position: "top-right",
-      });
-      return;
-    }
-  };
-
   useEffect(() => {
     if (slug) {
-      console.log("Slug is available:", slug);
       getData();
       getInvitationCategory();
-    } else {
-      console.warn("Slug is undefined or missing.");
     }
   }, [slug]);
 
@@ -439,41 +440,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
       getWithdrawHistory();
     }
   }, [data?.id, user?.id, updateWithdrawHistory]);
-
-  const filteredItems = useMemo(() => {
-    if (!Array.isArray(invitationData)) {
-      return [];
-    }
-
-    const lowerFilterValue = filterValue.toLowerCase();
-
-    return invitationData.filter((item) => {
-      const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
-      const matchesEmail = item.has_user?.email?.toLowerCase().includes(lowerFilterValue) || false;
-      const matchesStatus = item.transaction_status_id === 2;
-      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
-
-      return (matchesInvoice || matchesEmail) && matchesStatus && matchesType;
-    });
-  }, [invitationData, filterValue, transactionFilter]);
-
-  const pages = Math.ceil(filteredItems.length / rowsPerPage);
-
-  const items = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filteredItems.slice(start, end);
-  }, [page, filteredItems, rowsPerPage]);
-
-  const onSearchChange = useCallback((e: { target: { value: React.SetStateAction<string> } }) => {
-    setFilterValue(e.target.value);
-    setPage(1);
-  }, []);
-
-  const onRowsPerPageChange = useCallback((e: { target: { value: any } }) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  }, []);
 
   const getStatusClass = (statusId: any) => {
     switch (statusId) {
@@ -531,7 +497,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
     setLoading(true);
     try {
       const response = await axios.get(`${config.wsUrl}invitations/event/${id}`);
-      console.log("Response from API:", response.data);
       setInvitation(response.data);
     } catch (err) {
       console.error("Error fetching event invitation data:", err);
@@ -572,24 +537,12 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
       const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
       if (response && response.data) {
         setEventData(response.data);
-        console.log(response.data, "tes uhuy");
       }
     } catch (error) {
       console.error("Error fetching event data:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const chartData = {
-    labels: ["Online", "Offline"],
-    datasets: [
-      {
-        label: "Jumlah Transaksi",
-        data: [eventData?.total_online || 0, eventData?.total_offline || 0],
-        backgroundColor: ["rgba(75, 192, 192, 0.6)", "rgba(153, 102, 255, 0.6)"],
-      },
-    ],
   };
 
   useEffect(() => {
@@ -599,66 +552,10 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
   }, [slug]);
 
   const onEditTicket = (data: EventTicket, idx: number) => {
-    console.log("Editing ticket:", data, idx);
     setIdxTicket(idx);
     setEditTicketData(data);
     setIsEditTicketModalOpen(true);
   };
-
-  const onAddTicket = () => {
-    router.replace(`/edit-event/${data?.slug}?addTiket=true`);
-  };
-
-  const deleteTicket = (idx: number) => {
-    let arr = [...ticket];
-    arr.splice(idx, 1);
-    setTicket(arr);
-  };
-
-  let list = useAsyncList({
-    async load({ signal }) {
-      if (data?.id) {
-        try {
-          let res = await axios.get(`${config.wsUrl}list-transaction-by-event?event_id=${data.id}`, {
-            signal,
-          });
-          let json = await res.data;
-          setIsLoading(false);
-
-          return {
-            items: json.data,
-          };
-        } catch (error) {
-          console.error("Error fetching transaction data:", error);
-          setIsLoading(false);
-          return { items: [] };
-        }
-      } else {
-        setIsLoading(false);
-        return { items: [] };
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (data?.id) {
-      setIsLoading(true);
-
-      axios
-        .get(`${config.wsUrl}list-transaction-by-event?event_id=${data.id}`)
-        .then((res) => {
-          setGrandTotal(res.data.grand_total || 0);
-          console.log("Transaction data fetched:", res.data);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error fetching transaction data:", err);
-          setIsLoading(false);
-        });
-    } else {
-      console.log("Menunggu data event tersedia...");
-    }
-  }, [data]);
 
   const downloadLaporan = () => {
     if (!eventData) return;
@@ -683,10 +580,8 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
     const worksheet = XLSX.utils.aoa_to_sheet(dataLaporan);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Penjualan");
-
     XLSX.writeFile(workbook, `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`);
   };
-
 
   return !loading && data ? (
     <>
@@ -861,8 +756,13 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
             </Accordion>
 
             <div className="border border-primary-light-200 rounded-lg shadow-sm">
-              <Tabs className="flex flex-col" variant="underlined">
-                <Tab title="Detail" className="px-2">
+              <Tabs 
+                className="flex flex-col" 
+                variant="underlined"
+                selectedKey={activeTab}
+                onSelectionChange={(key) => setActiveTab(key.toString())}
+              >
+                <Tab key="Detail" title="Detail" className="px-2">
                   <Tabs
                     radius="full"
                     color="secondary"
@@ -885,7 +785,7 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
                     </Tab>
                   </Tabs>
                 </Tab>
-                <Tab title="Tiket">
+                <Tab key="Tiket" title="Tiket">
                   <div className="flex justify-between items-center px-3 py-2">
                     <h6 className="text-lg font-semibold">Tiket</h6>
                   </div>
@@ -907,122 +807,155 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
                       ))}
                   </div>
                 </Tab>
-                <Tab title="Transaksi" className="px-2">
+                <Tab key="Transaksi" title="Transaksi" className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invoice or Email" value={filterValue} onChange={onSearchChange} />
-                          <select onChange={onRowsPerPageChange} value={rowsPerPage} className="border border-light-grey p-2 rounded-md w-full md:w-auto">
+                          <Input 
+                            type="text" 
+                            placeholder="Search by Invoice or Email" 
+                            value={filterValue} 
+                            onChange={onSearchChange} 
+                          />
+                          <select 
+                            onChange={onTransactionRowsPerPageChange} 
+                            value={transactionRowsPerPage} 
+                            className="border border-light-grey p-2 rounded-md w-full md:w-auto"
+                          >
                             <option value={5}>5</option>
                             <option value={10}>10</option>
                             <option value={20}>20</option>
+                            <option value={50}>50</option>
                           </select>
                         </div>
 
                         {/* Transaction Type Buttons */}
                         <div className="flex gap-4 mb-4 items-center">
-                          <Button label="All" onClick={() => setTransactionFilter("all")} color={transactionFilter === "all" ? "primary" : "secondary"} fullWidth />
-                          <Button label="Online" onClick={() => setTransactionFilter("online")} color={transactionFilter === "online" ? "primary" : "secondary"} fullWidth />
-                          <Button label="Offline" onClick={() => setTransactionFilter("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} fullWidth />
-                          <ButtonM className={`shrink-0`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
+                          <Button 
+                            label="All" 
+                            onClick={() => handleTransactionFilterChange("all")} 
+                            color={transactionFilter === "all" ? "primary" : "secondary"} 
+                            fullWidth 
+                          />
+                          <Button 
+                            label="Online" 
+                            onClick={() => handleTransactionFilterChange("online")} 
+                            color={transactionFilter === "online" ? "primary" : "secondary"} 
+                            fullWidth 
+                          />
+                          <Button 
+                            label="Offline" 
+                            onClick={() => handleTransactionFilterChange("offline")} 
+                            color={transactionFilter === "offline" ? "primary" : "secondary"} 
+                            fullWidth 
+                          />
+                          <ButtonM 
+                            className={`shrink-0`} 
+                            leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} 
+                            variant="transparent" 
+                            color="#194e9e" 
+                            onClick={handleDownloadTransaction}
+                          >
                             Download
                           </ButtonM>
                         </div>
 
-                        {/* Single Transaction Table */}
-                        <Table
-                          aria-label="Invitation Table"
-                          isHeaderSticky
-                          bottomContentPlacement="outside"
-                          classNames={{
-                            wrapper: "max-h-[382px]",
-                          }}
-                          topContentPlacement="outside"
-                          bottomContent={<Pagination className="items-center" page={page} total={pages} onChange={setPage} />}
-                        >
-                          <TableHeader>
-                            <TableColumn className="font-bold text-sm">No</TableColumn>
-                            <TableColumn className="font-bold text-sm">Email</TableColumn>
-                            <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-                            <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-                            <TableColumn className="font-bold text-sm">Status</TableColumn>
-                            <TableColumn className="font-bold text-sm">Type</TableColumn>
-                            <TableColumn className="font-bold text-sm">Aksi</TableColumn>
-                          </TableHeader>
-                          <TableBody items={items}>
-                            {(item) => (
-                              <TableRow key={item?.id}>
-                                <TableCell className="border-b-1 text-sm">
-                                  {_.indexOf(
-                                    items.map((e) => e?.id),
-                                    item?.id,
-                                  ) + 1}
-                                </TableCell>
-                                <TableCell className="border-b-1 text-sm">{item?.has_user?.email}</TableCell>
-                                <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
-                                <TableCell className="border-b-1 text-sm">
-                                  {item?.created_at &&
-                                    new Date(item.created_at).toLocaleDateString("en-GB", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
-                                </TableCell>
-                                <TableCell className="border-b-1">
-                                  {(() => {
-                                    const statusId = findTransactionStatus(item.invoice_no);
-
-                                    return <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(statusId)}`}>{getStatusText(statusId)}</span>;
-                                  })()}
-                                </TableCell>
-
-                                <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-                                <TableCell className="border-b-1 flex items-center">
-                                  <Tooltip label="Kirim Ulang">
-                                    <button
-                                      disabled={sendingEmails[String(item?.id)]}
-                                      className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                                      onClick={() => {
-                                        if (item?.has_user && item.has_user.email) {
-                                          sendETicket(item.invoice_no, item.has_user.email, item.id);
-                                        } else {
-                                          notifications.show({
-                                            title: "Error",
-                                            message: "Email tidak tersedia untuk pengguna ini.",
-                                            color: "red",
-                                            position: "top-right",
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {sendingEmails[String(item?.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
-                                    </button>
-                                  </Tooltip>
-                                  <Tooltip label="Lihat Detail">
-                                    <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
-                                      <FontAwesomeIcon
-                                        icon={faEye}
-                                        className="text-white text-sm"
-                                        onClick={() => {
-                                          console.log("row item:", item);
-                                          console.log("local ticket var:", ticket);
-                                          openDetailModal(item, ticket);
-                                        }}
-                                      />
-                                    </button>
-                                  </Tooltip>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
+                        {/* Loading state */}
+                        {transactionLoading ? (
+                          <div className="flex justify-center py-10">
+                            <Spinner size="lg" />
+                          </div>
+                        ) : (
+                          <Table
+                            aria-label="Invitation Table"
+                            isHeaderSticky
+                            bottomContentPlacement="outside"
+                            classNames={{
+                              wrapper: "max-h-[382px]",
+                            }}
+                            topContentPlacement="outside"
+                            bottomContent={
+                              <Pagination 
+                                className="items-center" 
+                                page={transactionPage} 
+                                total={transactionPages} 
+                                onChange={onTransactionPageChange} 
+                              />
+                            }
+                          >
+                            <TableHeader>
+                              <TableColumn className="font-bold text-sm">No</TableColumn>
+                              <TableColumn className="font-bold text-sm">Email</TableColumn>
+                              <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
+                              <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
+                              <TableColumn className="font-bold text-sm">Status</TableColumn>
+                              <TableColumn className="font-bold text-sm">Type</TableColumn>
+                              <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+                            </TableHeader>
+                            <TableBody items={transactionData}>
+  {(item) => (
+    <TableRow key={item?.id}>
+      <TableCell className="border-b-1 text-sm">
+        {(transactionPage - 1) * transactionRowsPerPage + transactionData.indexOf(item) + 1}
+      </TableCell>
+      <TableCell className="border-b-1 text-sm">{item?.has_user?.email}</TableCell>
+      <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
+      <TableCell className="border-b-1 text-sm">
+        {item?.created_at &&
+          new Date(item.created_at).toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+      </TableCell>
+      <TableCell className="border-b-1">
+        <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item?.transaction_status_id)}`}>
+          {getStatusText(item?.transaction_status_id)}
+        </span>
+      </TableCell>
+      <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
+      <TableCell className="border-b-1 flex items-center">
+        <Tooltip label="Kirim Ulang">
+          <button
+            disabled={sendingEmails[String(item?.id)]}
+            className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            onClick={() => {
+              if (item?.has_user && item.has_user.email) {
+                sendETicket(item.invoice_no, item.has_user.email, item.id);
+              } else {
+                notifications.show({
+                  title: "Error",
+                  message: "Email tidak tersedia untuk pengguna ini.",
+                  color: "red",
+                  position: "top-right",
+                });
+              }
+            }}
+          >
+            {sendingEmails[String(item?.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+          </button>
+        </Tooltip>
+        <Tooltip label="Lihat Detail">
+          <button 
+            className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2"
+            onClick={() => openDetailModal(item, ticket)}
+          >
+            <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
+          </button>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  )}
+</TableBody>
+                          </Table>
+                        )}
                       </div>
                     </div>
                   </div>
                 </Tab>
 
-                <Tab title="Invitation" className="px-2">
+                <Tab key="Invitation" title="Invitation" className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="px-5 py-3">
@@ -1100,7 +1033,7 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
                     </div>
                   </div>
                 </Tab>
-                <Tab title="Penjualan" className="px-2">
+                <Tab key="Penjualan" title="Penjualan" className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 pb-3 border-b border-b-primary-light-200">
@@ -1158,7 +1091,6 @@ const [modalType, setModalType] = useState<'transaction' | 'invitation'>('transa
         onSubmit={() => {
           setUpdateWithdrawHistory(updateWithdrawHistory + 1);
           getWithdrawHistory();
-          console.log("withdraw submitted");
         }}
         eventSlug={params.slug}
       />
@@ -1584,7 +1516,7 @@ export default MyEventDetail;
 //   const sendInvitationEmail = async (invitationId: number, emails: string[]) => {
 //     try {
 //       setIsSendingInvitation(true);
-      
+
 //       // Kirim request ke API untuk mengirim invitation
 //       const response = await axios.post(`${config.wsUrl}invitation/send-email`, {
 //         invitation_id: invitationId,
@@ -1601,17 +1533,17 @@ export default MyEventDetail;
 //           color: "green",
 //           position: "top-right",
 //         });
-        
+
 //         // Update status invitation jika perlu
 //         await updateInvitationStatus(invitationId);
-        
+
 //         return { success: true, data: response.data };
 //       } else {
 //         throw new Error(response.data.message || "Gagal mengirim invitation");
 //       }
 //     } catch (error: any) {
 //       console.error("Error sending invitation email:", error);
-      
+
 //       const errorMessage = error.response?.data?.message || "Terjadi kesalahan saat mengirim invitation";
 //       notifications.show({
 //         title: "Gagal!",
@@ -1619,7 +1551,7 @@ export default MyEventDetail;
 //         color: "red",
 //         position: "top-right",
 //       });
-      
+
 //       return { success: false, error: errorMessage };
 //     } finally {
 //       setIsSendingInvitation(false);
@@ -1641,10 +1573,10 @@ export default MyEventDetail;
 //   const sendInvitationToAll = async (invitationId: number) => {
 //     try {
 //       setIsSendingInvitation(true);
-      
+
 //       // Ambil detail invitation terlebih dahulu
 //       const invitationDetail = await getInvitationDetail(invitationId);
-      
+
 //       if (!invitationDetail || !invitationDetail.has_detail_invitation || invitationDetail.has_detail_invitation.length === 0) {
 //         notifications.show({
 //           title: "Peringatan",
@@ -1672,7 +1604,7 @@ export default MyEventDetail;
 
 //       // Kirim invitation ke semua email
 //       const result = await sendInvitationEmail(invitationId, emails);
-      
+
 //       if (result.success) {
 //         // Refresh data invitation
 //         await getInvitationEventData(data?.id || 0);
@@ -1705,21 +1637,21 @@ export default MyEventDetail;
 //   const handleSendInvitation = async (item: InvitationResponse) => {
 //     try {
 //       setIsSendingInvitation(true);
-      
+
 //       // Jika invitation hanya untuk satu penerima (is_one_receiver = 1)
 //       if (item.is_one_receiver === 1 && item.has_detail_invitation && item.has_detail_invitation.length > 0) {
 //         const firstDetail = item.has_detail_invitation[0];
 //         const emails = [firstDetail.email];
-        
+
 //         await sendInvitationEmail(item.id, emails);
-//       } 
+//       }
 //       // Jika invitation untuk banyak penerima
 //       else if (item.has_detail_invitation && item.has_detail_invitation.length > 0) {
 //         // Ekstrak semua email
 //         const emails = item.has_detail_invitation
 //           .map(detail => detail.email)
 //           .filter(email => email && email.trim() !== "");
-        
+
 //         if (emails.length > 0) {
 //           await sendInvitationEmail(item.id, emails);
 //         } else {
@@ -1734,7 +1666,7 @@ export default MyEventDetail;
 //         // Jika belum ada detail invitation, ambil dulu detailnya
 //         await sendInvitationToAll(item.id);
 //       }
-      
+
 //       // Refresh data invitation
 //       await getInvitationEventData(data?.id || 0);
 //     } catch (error) {
@@ -1894,7 +1826,7 @@ export default MyEventDetail;
 //       return [];
 //     }
 
-//     return invitation.filter((item) => 
+//     return invitation.filter((item) =>
 //       item.invitation_title?.toLowerCase().includes(invitationFilter.toLowerCase())
 //     );
 //   }, [invitation, invitationFilter]);
@@ -2507,7 +2439,7 @@ export default MyEventDetail;
 //         eventSlug={params.slug}
 //       />
 //       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
-      
+
 //       {/* Modal Konfirmasi Pengiriman */}
 //       <Modal
 //         isOpen={showConfirmModal}
@@ -2517,19 +2449,19 @@ export default MyEventDetail;
 //       >
 //         <div className="p-4">
 //           <p className="mb-4">
-//             {modalType === 'invitation' 
+//             {modalType === 'invitation'
 //               ? `Apakah Anda yakin ingin mengirim invitation "${selectedItemForSend?.invitation_title}"?`
 //               : 'Apakah Anda yakin ingin mengirim email?'}
 //           </p>
 //           <div className="flex justify-end gap-2">
-//             <Button 
-//               label="Batal" 
-//               color="secondary" 
+//             <Button
+//               label="Batal"
+//               color="secondary"
 //               onClick={() => setShowConfirmModal(false)}
 //             />
-//             <Button 
-//               label="Kirim" 
-//               color="primary" 
+//             <Button
+//               label="Kirim"
+//               color="primary"
 //               onClick={confirmSendInvitation}
 //             />
 //           </div>

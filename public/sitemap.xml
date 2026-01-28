@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://kolektix.com/</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/event</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/merchandise</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+
+<url>
+  <loc>https://kolektix.com/blog</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/register/creator</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/auth</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/privacy</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/terms</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/terms/return-policy</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/terms/refund</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://kolektix.com/wristband</loc>
+  <lastmod>2026-01-28T07:58:40+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+
+
+</urlset>

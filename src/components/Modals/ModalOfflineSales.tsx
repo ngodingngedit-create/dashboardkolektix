@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Images from "../Images";
 import { Post } from "@/utils/REST";
 import { EventProps } from "@/utils/globalInterface";
-import { AsyncListData } from "@react-stately/data";
 import { useRouter } from "next/router";
 import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -23,6 +22,7 @@ interface FormTicket {
   price: number;
   subtotal_price: number;
   qty_ticket: number;
+  ticket_fee?: number;
 }
 
 export type IdentityProps = {
@@ -43,11 +43,26 @@ interface ModalProps {
   ticket: FormTicket[];
   eventData: EventProps | null;
   subtotal: number;
+  ticketFee: number;
+  grandTotal: number;
   reload: () => void;
   setParentStep: (parentStep: number) => void;
+  onSuccess?: () => void; // <-- TAMBAH INI
 }
 
-export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, ticket, subtotal, eventData, reload, setParentStep }: ModalProps) {
+export default function ModalOfflineSales({ 
+  isOpen, 
+  setIsOpen, 
+  paymentList, 
+  ticket, 
+  eventData, 
+  subtotal, 
+  ticketFee, 
+  grandTotal, 
+  reload, 
+  setParentStep,
+  onSuccess // <-- TAMBAH INI
+}: ModalProps) {
   const [payment, setPayment] = useState<string>("");
   const [errorPayment, setErrorPayment] = useState<string>();
   const [transactionData, setTransactionData] = useState<any>();
@@ -127,7 +142,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
       Post("transaction-offline", {
         event_id: eventData?.id,
         payment_method: payment,
-        admin_fee: eventData?.admin_fee,
+        admin_fee: ticketFee,
         tickets: ticket,
         identities: fv.data.map((e, i) => ({
           nik: e.identity,
@@ -142,6 +157,12 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
         .then((res: any) => {
           console.log(res);
           setTransactionData(res);
+          
+          // Panggil onSuccess callback jika ada
+          if (onSuccess) {
+            onSuccess();
+          }
+          
           if (res?.xendit_invoice?.invoice_url) {
             console.log(res);
             router.push(res.xendit_invoice.invoice_url);
@@ -312,7 +333,6 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                                         <Image
                                           fit="contain"
                                           src={`${config.assetUrl}logo/${el.logo}`}
-                                          // alt={el.payment_name}
                                           w={48}
                                           h={48}
                                           radius={7}
@@ -346,8 +366,8 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                           <p className="text-dark-grey">{`Rp${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
                         </div>
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-dark-grey ">{`Biaya Admin`}</p>
-                          <p className="text-dark-grey">{`Rp${eventData && eventData?.admin_fee ? eventData?.admin_fee.toLocaleString("id-ID") : 0}`}</p>
+                          <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
+                          <p className="text-dark-grey">{`Rp${ticketFee.toLocaleString("id-ID")}`}</p>
                         </div>
                       </div>
                     </div>
@@ -515,8 +535,8 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                           <p className="text-dark-grey">{`Rp${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
                         </div>
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-dark-grey ">{`Biaya Admin`}</p>
-                          <p className="text-dark-grey">{`Rp${eventData && eventData?.admin_fee ? eventData?.admin_fee.toLocaleString("id-ID") : 0}`}</p>
+                          <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
+                          <p className="text-dark-grey">{`Rp${ticketFee.toLocaleString("id-ID")}`}</p>
                         </div>
                       </div>
                     </div>
@@ -605,22 +625,22 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                               </Table.Td>
                             </Table.Tr>
                             <Table.Tr>
-                              <Table.Td>Admin</Table.Td>
+                              <Table.Td>Admin (Tiket)</Table.Td>
                               <Table.Td>
-                                <NumberFormatter value={eventData?.admin_fee ?? 0} />
+                                <NumberFormatter value={ticketFee ?? 0} />
                               </Table.Td>
                             </Table.Tr>
                             <Table.Tr className={`[&_*]:font-[600] border-t [&_*]:pt-[7px] [&_*]:mt-[7px]`}>
                               <Table.Td>Jumlah Dibayar</Table.Td>
                               <Table.Td>
-                                <NumberFormatter value={eventData ? subtotal + eventData?.ppn + eventData?.admin_fee : subtotal} />
+                                <NumberFormatter value={grandTotal} />
                               </Table.Td>
                             </Table.Tr>
                             {selectedPayment?.payment_name && (
                               <Table.Tr>
                                 <Table.Td>Metode</Table.Td>
                                 <Table.Td>{selectedPayment?.payment_name ?? "-"}</Table.Td>
-                              </Table.Tr>
+                            </Table.Tr>
                             )}
                           </Table.Tbody>
                         </Table>
@@ -648,15 +668,14 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                           <p className="text-dark-grey">{`Rp ${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
                         </div>
                         <div className="flex justify-between items-center  mb-2">
-                          <p className="text-dark-grey ">{`Biaya Admin`}</p>
-                          <p className="text-dark-grey">{`Rp ${eventData && eventData?.admin_fee ? eventData?.admin_fee.toLocaleString("id-ID") : 0}`}</p>
+                          <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
+                          <p className="text-dark-grey">{`Rp ${ticketFee.toLocaleString("id-ID")}`}</p>
                         </div>
                       </div>
                       <div className="flex justify-between py-2">
                         <h6>Total Pembayaran</h6>
                         <h6>
-                          Rp
-                          {(eventData ? subtotal + eventData?.ppn + eventData?.admin_fee : subtotal).toLocaleString("id-ID")}
+                          Rp{grandTotal.toLocaleString("id-ID")}
                         </h6>
                       </div>
                     </div>
@@ -669,8 +688,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                     <div className="flex justify-between">
                       <h6>Total Pembayaran</h6>
                       <h6>
-                        Rp
-                        {(eventData ? subtotal + eventData?.ppn + eventData?.admin_fee : subtotal).toLocaleString("id-ID")}
+                        Rp{grandTotal.toLocaleString("id-ID")}
                       </h6>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-[#fdf3e6] my-4">
@@ -694,8 +712,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                     <div className="flex justify-between">
                       <h6>Total Pembayaran</h6>
                       <h6>
-                        Rp
-                        {(eventData ? subtotal + eventData?.ppn + eventData?.admin_fee : subtotal).toLocaleString("id-ID")}
+                        Rp{grandTotal.toLocaleString("id-ID")}
                       </h6>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-[#fdf3e6] my-4">
