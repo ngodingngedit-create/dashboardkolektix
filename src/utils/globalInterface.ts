@@ -44,6 +44,7 @@ export interface TicketProps {
   has_ordered_seatnumber?: {
     seatnumber_ticket?: string;
   }[];
+  is_bundling_merch: number;
 }
 
 export type TicketPropsInputRequest = Pick<TicketProps, "event_id" | "name" | "qty" | "price" | "description" | "ticket_date" | "ticket_end">;
@@ -208,6 +209,7 @@ export interface TransactionProps {
   is_insurance: number;
   insurance_required: number;
   transaction_merches?: TransactionMerch[];
+  merches?: TransactionMerch[];
 }
 
 export interface TransactionMerch {

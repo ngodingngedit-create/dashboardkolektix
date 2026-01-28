@@ -101,31 +101,184 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
     });
   };
 
+  // const handleSubmit = async () => {
+  //   const valid = form.validate();
+  //   if (valid.hasErrors) {
+  //     notifications.show({
+  //       position: "top-right",
+  //       color: "red",
+  //       message: "Lengkapi Terlebih dahulu Form Invitation",
+  //     });
+  //     return;
+  //   }
+
+  //   await fetch<InvitationStore<string>, any>({
+  //     url: "invitations",
+  //     method: "POST",
+  //     data: {
+  //       ...form.values,
+  //       details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details),
+  //     },
+  //     before: () => setLoading.append("submit"),
+  //     success: () => {
+  //       onClose();
+  //     },
+  //     complete: () => setLoading.filter((e) => e != "submit"),
+  //   });
+  // };
+
   const handleSubmit = async () => {
-    const valid = form.validate();
-    if (valid.hasErrors) {
+  // 1. Validasi form dengan Mantine form
+  const valid = form.validate();
+  if (valid.hasErrors) {
+    notifications.show({
+      position: "top-right",
+      color: "red",
+      message: "Lengkapi Terlebih dahulu Form Invitation",
+    });
+    return; // INI YANG HARUS DITAMBAHKIN!
+  }
+
+  // 2. Validasi tambahan untuk anti-spam
+  const validationErrors: string[] = [];
+  
+  // Validasi email format untuk semua details
+  form.values.details.forEach((detail, index) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(detail.email)) {
+      validationErrors.push(`Email ${index + 1} tidak valid: ${detail.email}`);
+    }
+    
+    // Validasi nomor telepon minimal 10 digit
+    if (detail.phone.replace(/\D/g, '').length < 10) {
+      validationErrors.push(`Nomor telepon ${index + 1} tidak valid`);
+    }
+  });
+
+  // Validasi jumlah invitation
+  if (form.values.total_qty > 50) {
+    validationErrors.push("Maksimal 50 invitation per kali input");
+  }
+
+  // Validasi duplikasi email
+  const emails = form.values.details.map(d => d.email.toLowerCase());
+  const duplicateEmails = emails.filter((email, index) => emails.indexOf(email) !== index);
+  if (duplicateEmails.length > 0) {
+    validationErrors.push("Terdapat email yang duplikat");
+  }
+
+  // 3. Jika ada validasi tambahan yang gagal
+  if (validationErrors.length > 0) {
+    notifications.show({
+      position: "top-right",
+      color: "red",
+      title: "Validasi Gagal",
+      message: validationErrors.join("\n"),
+    });
+    return; // STOP di sini juga!
+  }
+
+  // 4. Rate limiting - cek waktu submit terakhir
+  const lastSubmitKey = `last_submit_time_${eventId}`;
+  const lastSubmitTime = localStorage.getItem(lastSubmitKey);
+  const now = Date.now();
+  
+  if (lastSubmitTime) {
+    const timeDiff = now - parseInt(lastSubmitTime);
+    if (timeDiff < 10000) { // Minimal 10 detik antar submit
+      notifications.show({
+        position: "top-right",
+        color: "yellow",
+        title: "Mohon Tunggu",
+        message: "Silakan tunggu 10 detik sebelum menambah invitation baru",
+      });
+      return; // STOP!
+    }
+  }
+
+  // 5. Set waktu submit terakhir
+  localStorage.setItem(lastSubmitKey, now.toString());
+
+  // 6. Log untuk debugging
+  console.log('Submitting invitation:', {
+    eventId: form.values.event_id,
+    totalQty: form.values.total_qty,
+    detailsCount: form.values.details.length,
+    timestamp: new Date().toISOString()
+  });
+
+  // 7. Siapkan data dengan metadata anti-spam
+  const submissionData = {
+    ...form.values,
+    details: JSON.stringify(
+      form.values.is_one_receiver 
+        ? Array(form.values.total_qty).fill(form.values.details[0]) 
+        : form.values.details
+    ),
+    metadata: {
+      source: 'dashboard_add_modal',
+      user_agent: typeof window !== 'undefined' ? navigator.userAgent : '',
+      timestamp: new Date().toISOString(),
+      ip_hash: typeof window !== 'undefined' 
+        ? btoa(navigator.userAgent + new Date().getTime()).substring(0, 32)
+        : '',
+      event_id: eventId
+    }
+  };
+
+  // 8. Kirim ke API
+  await fetch<InvitationStore<string>, any>({
+    url: "invitations",
+    method: "POST",
+    data: submissionData,
+    before: () => setLoading.append("submit"),
+    success: (response) => {
+      // Cek jika response ada message spam
+      if (response.message?.includes('spam')) {
+        notifications.show({
+          position: "top-right",
+          color: "red",
+          title: "Gagal",
+          message: "Sistem mendeteksi aktivitas mencurigakan. Silakan coba lagi nanti.",
+        });
+        return;
+      }
+      
+      // Jika sukses
+      notifications.show({
+        position: "top-right",
+        color: "green",
+        message: "Invitation berhasil ditambahkan",
+      });
+      onClose();
+      
+      // Reset form
+      form.reset();
+    },
+    complete: () => setLoading.filter((e) => e != "submit"),
+    error: (error) => {
+      console.error('Error adding invitation:', error);
+      
+      let errorMessage = "Gagal menambahkan invitation";
+      
+      // Handle berbagai error
+      if (error.response?.status === 429) {
+        errorMessage = "Terlalu banyak permintaan. Silakan coba lagi nanti.";
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Data tidak valid";
+      } else if (error.response?.data?.message?.toLowerCase().includes('spam')) {
+        errorMessage = "Email terdeteksi sebagai spam. Silakan gunakan email yang berbeda.";
+      }
+      
       notifications.show({
         position: "top-right",
         color: "red",
-        message: "Lengkapi Terlebih dahulu Form Invitation",
+        title: "Gagal",
+        message: errorMessage,
       });
-      return;
-    }
-
-    await fetch<InvitationStore<string>, any>({
-      url: "invitations",
-      method: "POST",
-      data: {
-        ...form.values,
-        details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details),
-      },
-      before: () => setLoading.append("submit"),
-      success: () => {
-        onClose();
-      },
-      complete: () => setLoading.filter((e) => e != "submit"),
-    });
-  };
+    },
+  });
+};
 
   useEffect(() => {
     if (form.values.total_qty > 0) {

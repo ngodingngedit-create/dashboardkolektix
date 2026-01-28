@@ -9,7 +9,7 @@ import ModalTransaction from "@/components/ModalTransaction";
 import Cookies from "js-cookie";
 import { Spinner } from "@nextui-org/react";
 import { TransactionProps } from "@/utils/globalInterface";
-import ThirdStep from "@/components/Payment/ThirdStep";
+// import ThirdStep from "@/components/Payment/ThirdStep";
 import { Get } from "@/utils/REST";
 import Countdown, { CountdownRendererFn } from "react-countdown";
 import useWindowSize from "@/utils/useWindowSize";
@@ -162,7 +162,7 @@ const Payment = () => {
       {!loading ? (
         transactionData ? (
           <div className="text-dark">
-            {step === 0 && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} loading={loading}/>}
+            {/* {step === 0 && <ThirdStep scrollToTop={scrollToTop} setLoading={setLoading} setStep={setStep} transactionData={transactionData} loading={loading}/>} */}
             {step === 2 && (
               <div className="bg-primary-light text-dark">
                 <Image src={Foto} alt="Banner" className="w-full" />

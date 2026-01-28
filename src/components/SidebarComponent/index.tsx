@@ -26,7 +26,7 @@ import {
   faSquareArrowUpRight,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
-import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition } from "@fortawesome/free-regular-svg-icons";
+import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
 import { UserProps } from "@/utils/globalInterface";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
@@ -120,9 +120,46 @@ const sidebarData: SidebarData = [
   { id: 6, name: "Venue", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/venue" },
   { id: 6, name: "Lowongan", icon: faBriefcase, role: "Admin", link: "/dashboard/admin/vacancy" },
   { id: 6, name: "Talenta", icon: faStar, role: "Admin", link: "/dashboard/admin/talenta" },
+  {
+    id: 6,
+    name: "Kelola Role",
+    icon: faUser,
+    role: "Admin",
+    submenu: [
+      {
+        id: 1,
+        name: "User",
+        icon: faUser,
+        link: "/dashboard/admin/user",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "Creator",
+        icon: faUser,
+        link: "/dashboard/admin/creator",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "Permission",
+        icon: faUser,
+        link: "/dashboard/admin/permission",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "Role",
+        icon: faUser,
+        link: "/dashboard/admin/role",
+        role: "Admin",
+      },
+    ],
+  },
 
   { id: 1, name: "Bookmark", link: "/dashboard/bookmark", role: "Pembeli", iconify: "material-symbols:bookmark" },
   { id: 2, name: "Tiket Saya", icon: faTicket, link: "/dashboard/my-ticket", role: "Pembeli" },
+  { id: 3, name: "Merchandise Saya", icon: faGift, link: "/dashboard/my-merchandise", role: "Pembeli" },
   {
     id: 3,
     name: "Event",

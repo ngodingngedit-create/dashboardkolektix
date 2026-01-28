@@ -661,7 +661,7 @@ import { z } from "zod";
 import _ from "lodash";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
-import { DateInput } from "@mantine/dates";
+import { DatePickerInput, DatesRangeValue } from "@mantine/dates";
 
 type ComponentProps = {};
 
@@ -732,8 +732,7 @@ export default function Index({}: Readonly<ComponentProps>) {
   const [transactionPage, setTransactionPage] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [transactionSearch, setTransactionSearch] = useState("");
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
   const [transactionStatus, setTransactionStatus] = useState<string>("all");
   const [printBillLoading, setPrintBillLoading] = useState(false);
 
@@ -842,6 +841,7 @@ export default function Index({}: Readonly<ComponentProps>) {
       url += `&status=${transactionStatus}`;
     }
 
+    const [startDate, endDate] = dateRange;
     if (startDate) {
       const startDateStr = startDate.toISOString().split('T')[0];
       url += `&start_date=${startDateStr}`;
@@ -912,8 +912,7 @@ export default function Index({}: Readonly<ComponentProps>) {
 
   const handleResetFilters = () => {
     setTransactionSearch("");
-    setStartDate(null);
-    setEndDate(null);
+    setDateRange([null, null]);
     setTransactionStatus("all");
     setTransactionPage(1);
     getTransactions(1);
@@ -1098,10 +1097,8 @@ export default function Index({}: Readonly<ComponentProps>) {
 
     setPrintBillLoading(true);
 
-    // Generate bill content
     const billContent = generateBillContent();
 
-    // Open print dialog
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -1348,7 +1345,6 @@ export default function Index({}: Readonly<ComponentProps>) {
     };
 
     try {
-      // Jika pembayaran CASH, langsung simpan ke database tanpa ke Xendit
       if (paymentMethod === "CASH") {
         await fetch<any, any>({
           url: "order-product",
@@ -1363,13 +1359,12 @@ export default function Index({}: Readonly<ComponentProps>) {
             payment_method: paymentMethod,
             courier: courierPayload,
             address: addressPayload,
-            status: "completed", // Langsung completed untuk cash
+            status: "completed",
           },
           before: () => setLoading.append("checkout"),
           success: async ({ data }) => {
             console.log("Cash payment success:", data);
             
-            // Simpan data untuk invoice
             await handleSave();
             
             notifications.show({
@@ -1377,7 +1372,6 @@ export default function Index({}: Readonly<ComponentProps>) {
               color: "green",
             });
             
-            // Print bill otomatis setelah checkout cash
             handlePrintBill();
           },
           complete: () => setLoading.filter((e) => e != "checkout"),
@@ -1400,7 +1394,6 @@ export default function Index({}: Readonly<ComponentProps>) {
           },
         });
       } 
-      // Jika pembayaran QRIS, arahkan ke Xendit
       else if (paymentMethod === "Qris") {
         await fetch<any, { invoice_url: string }>({
           url: "order-product",
@@ -2124,22 +2117,15 @@ export default function Index({}: Readonly<ComponentProps>) {
                           size="sm"
                         />
                         
-                        <DateInput
-                          placeholder="Tanggal Mulai"
-                          value={startDate}
-                          onChange={setStartDate}
-                          className="w-[150px]"
+                        <DatePickerInput
+                          type="range"
+                          placeholder="Pilih rentang tanggal"
+                          value={dateRange}
+                          onChange={setDateRange}
+                          className="w-[250px]"
                           size="sm"
                           clearable
-                        />
-                        
-                        <DateInput
-                          placeholder="Tanggal Akhir"
-                          value={endDate}
-                          onChange={setEndDate}
-                          className="w-[150px]"
-                          size="sm"
-                          clearable
+                          valueFormat="DD/MM/YYYY"
                         />
                         
                         <Menu shadow="md" width={200}>
@@ -2231,6 +2217,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                         >
                           <Table.Thead>
                             <Table.Tr>
+                              <Table.Th style={{ width: '60px' }}>No</Table.Th>
                               <Table.Th style={{ minWidth: '150px' }}>Invoice No</Table.Th>
                               <Table.Th style={{ minWidth: '150px' }}>Pelanggan</Table.Th>
                               <Table.Th style={{ minWidth: '120px' }}>Total</Table.Th>
@@ -2240,8 +2227,13 @@ export default function Index({}: Readonly<ComponentProps>) {
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
-                            {transactions.map((transaction) => (
+                            {transactions.map((transaction, index) => (
                               <Table.Tr key={transaction.id}>
+                                <Table.Td>
+                                  <Text size="sm" c="gray.7">
+                                    {(transactionPage - 1) * 10 + index + 1}
+                                  </Text>
+                                </Table.Td>
                                 <Table.Td>
                                   <Text fw={500} size="sm">
                                     {transaction.invoice_no || transaction.invoice_number}
