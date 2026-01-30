@@ -397,22 +397,7 @@ export default function TableData<T extends DataType, V extends DataType>({
           </Card>
 
           <Flex gap={20} wrap="wrap" align="center">
-            <Pagination
-              disabled={loading}
-              total={value?.last_page ?? page?.length ?? 1}
-              radius="md"
-              size="sm"
-              display={(value?.last_page ?? page?.length) <= 1 ? "none" : undefined}
-              value={value?.current_page ?? pageNum + 1}
-              onChange={(e) => setPageNum(e - 1)}
-            />
             <Divider orientation="vertical" className={`shrink-0`} display={(value?.last_page ?? page?.length) <= 1 ? "none" : undefined} />
-            <Flex gap={10} align="center">
-              <Text size="sm" c="gray">
-                Jumlah per Halaman
-              </Text>
-              <Select disabled={loading} size="xs" radius="md" w={70} data={[5, 10, 20, 40, 50, 100].map(String)} value={String(value?.per_page ?? perPage)} onChange={(e) => e && setPerPage(parseInt(e))} />
-            </Flex>
           </Flex>
         </>
       )}

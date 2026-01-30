@@ -105,15 +105,38 @@ interface InvitationDataItem {
 interface TransactionItem {
   id: string | number;
   invoice_no: string;
+  type_transaction: string;
+  created_at: string;
+  transaction_status_id: number;
   has_user?: {
-    email: string;
-  };
-  event_invitation_status?: {
     id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+    email_verified_at: string | null;
+    created_at: string;
+    updated_at: string;
+    verified_status_id: number | null;
+    is_creator: number;
   };
-  type_transaction?: string;
-  created_at?: string;
-  transaction_status_id?: number;
+  identities?: Array<{
+    id: number;
+    email: string;
+    full_name: string;
+  }>;
+}
+
+interface PaginationData {
+  current_page: number;
+  last_page: number;
+  total: number;
+  per_page: number;
+}
+
+interface TransactionResponse {
+  data: any[];
+  grand_total: number;
+  pagination: PaginationData;
 }
 
 export const Context = createContext<{
@@ -170,102 +193,339 @@ const MyEventDetail = () => {
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
-  
-  // State untuk optimasi transaksi
+
   const [activeTab, setActiveTab] = useState<string>("Detail");
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [transactionData, setTransactionData] = useState<TransactionItem[]>([]);
   const [sendingEmails, setSendingEmails] = useState<Record<string, boolean>>({});
   const [isSendingInvitation, setIsSendingInvitation] = useState(false);
+  const [sendingInvitations, setSendingInvitations] = useState<Record<string, boolean>>({});
   const params = useParams();
   const [withdrawHistoryList, setWithdrawHistoryList] = useState<WithdrawHistory[]>([]);
   const [transactionPage, setTransactionPage] = useState(1);
-  const [transactionRowsPerPage, setTransactionRowsPerPage] = useState(5);
+  const [transactionRowsPerPage, setTransactionRowsPerPage] = useState(20);
+  const [transactionPagination, setTransactionPagination] = useState<PaginationData>({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 20,
+  });
 
   const remainingBalance = (eventData?.total_price_sell || 0) - withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0);
 
-  // Fungsi untuk fetch semua data transaksi (sekali saja)
-  const fetchAllTransactions = useCallback(async () => {
-    if (!data?.id) return;
+  // Fetch transactions with pagination - FIXED VERSION
+  const fetchTransactions = useCallback(async (pageNumber: number = 1, searchValue: string = filterValue) => {
+    if (!data?.id) {
+      console.log("No event ID, skipping fetch");
+      return;
+    }
 
     try {
       setTransactionLoading(true);
-      const response = await axios.get(`${config.wsUrl}list-transaction-by-event`, {
-        params: {
-          event_id: data.id
-        }
+      console.log("Fetching transactions for event_id:", data.id);
+      console.log("Page:", pageNumber);
+      console.log("Filter:", transactionFilter);
+      console.log("Search value:", searchValue);
+      
+      const params = new URLSearchParams({
+        event_id: data.id.toString(),
+        page: pageNumber.toString(),
+        limit: transactionRowsPerPage.toString(),
       });
 
-      const result = response.data;
-      setTransactionData(result.data || []);
-      setGrandTotal(result.grand_total || 0);
+      if (searchValue) {
+        params.append('search', searchValue);
+      }
+
+      if (transactionFilter !== 'all') {
+        params.append('type', transactionFilter);
+      }
+
+      const url = `list-transaction-by-event?${params.toString()}`;
+      console.log("Fetch URL:", `${config.wsUrl}${url}`);
+
+      const response = await axios.get(`${config.wsUrl}${url}`, {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = response.data as TransactionResponse;
+      console.log("API Response:", result);
+      console.log("Response data:", result?.data);
+      console.log("Response pagination:", result?.pagination);
       
+      if (result?.data && Array.isArray(result.data)) {
+        // Map data ke format yang sesuai dengan interface
+        const mappedData: TransactionItem[] = result.data.map((item: any) => ({
+          id: item.id,
+          invoice_no: item.invoice_no,
+          type_transaction: item.type_transaction,
+          created_at: item.created_at,
+          transaction_status_id: item.transaction_status_id,
+          has_user: item.has_user,
+          identities: item.identities
+        }));
+        
+        setTransactionData(mappedData);
+        setGrandTotal(result.grand_total || 0);
+        setTransactionPagination(result.pagination || {
+          current_page: pageNumber,
+          last_page: 1,
+          total: 0,
+          per_page: transactionRowsPerPage,
+        });
+        setTransactionPage(pageNumber);
+        console.log(`Loaded ${mappedData.length} transactions for page ${pageNumber}`);
+      } else {
+        console.warn("No data or invalid data format");
+        setTransactionData([]);
+        setGrandTotal(0);
+        setTransactionPagination({
+          current_page: pageNumber,
+          last_page: 1,
+          total: 0,
+          per_page: transactionRowsPerPage,
+        });
+      }
     } catch (error) {
       console.error("Error fetching transaction data:", error);
       setTransactionData([]);
+      setGrandTotal(0);
+      setTransactionPagination({
+        current_page: pageNumber,
+        last_page: 1,
+        total: 0,
+        per_page: transactionRowsPerPage,
+      });
     } finally {
       setTransactionLoading(false);
     }
-  }, [data?.id]);
+  }, [data?.id, transactionFilter, transactionRowsPerPage, filterValue]);
 
-  // Load data transaksi ketika tab Transaksi pertama kali dibuka
   useEffect(() => {
-    if (activeTab === "Transaksi" && data?.id && transactionData.length === 0) {
-      fetchAllTransactions();
+    if (activeTab === "Transaksi" && data?.id) {
+      console.log("Fetching transactions for tab Transaksi");
+      fetchTransactions(1, filterValue);
     }
-  }, [activeTab, data?.id, transactionData.length]);
+  }, [activeTab, data?.id, transactionFilter]);
 
-  // Filter data transaksi client-side
+  // Filter items locally for immediate response while waiting for server
   const filteredTransactionItems = useMemo(() => {
     if (!Array.isArray(transactionData)) {
+      console.log("transactionData is not array:", transactionData);
       return [];
     }
 
     const lowerFilterValue = filterValue.toLowerCase();
 
-    return transactionData.filter((item) => {
+    const filtered = transactionData.filter((item) => {
       const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
-      const matchesEmail = item.has_user?.email?.toLowerCase().includes(lowerFilterValue) || false;
-      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
+      
+      // Cek email dari has_user atau identities
+      const userEmail = item.has_user?.email?.toLowerCase() || "";
+      const identityEmail = item.identities?.[0]?.email?.toLowerCase() || "";
+      const matchesEmail = userEmail.includes(lowerFilterValue) || identityEmail.includes(lowerFilterValue);
 
-      return (matchesInvoice || matchesEmail) && matchesType;
+      return matchesInvoice || matchesEmail;
     });
-  }, [transactionData, filterValue, transactionFilter]);
 
-  // Hitung total pages untuk pagination client-side
-  const transactionPages = Math.ceil(filteredTransactionItems.length / transactionRowsPerPage);
+    console.log("Filtered items result:", filtered.length, "items");
+    return filtered;
+  }, [transactionData, filterValue]);
 
-  // Ambil items untuk halaman aktif
-  const transactionPageItems = useMemo(() => {
-    const start = (transactionPage - 1) * transactionRowsPerPage;
-    const end = start + transactionRowsPerPage;
-    return filteredTransactionItems.slice(start, end);
-  }, [transactionPage, filteredTransactionItems, transactionRowsPerPage]);
-
-  // Handler untuk perubahan rows per page di transaksi
   const onTransactionRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRowsPerPage = Number(e.target.value);
     setTransactionRowsPerPage(newRowsPerPage);
-    setTransactionPage(1);
-  }, []);
+    // Reset ke page 1 saat mengubah rows per page
+    fetchTransactions(1, filterValue);
+  }, [fetchTransactions, filterValue]);
 
-  // Handler untuk perubahan halaman transaksi
   const onTransactionPageChange = useCallback((page: number) => {
-    setTransactionPage(page);
-  }, []);
+    console.log("Changing to page:", page);
+    fetchTransactions(page, filterValue);
+  }, [fetchTransactions, filterValue]);
 
-  // Handler untuk search transaksi
   const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFilterValue(value);
-    setTransactionPage(1);
-  }, []);
+    // Reset ke page 1 saat search
+    fetchTransactions(1, value);
+  }, [fetchTransactions]);
 
-  // Handler untuk filter tipe transaksi
   const handleTransactionFilterChange = useCallback((filter: "all" | "online" | "offline") => {
     setTransactionFilter(filter);
-    setTransactionPage(1);
-  }, []);
+    // Reset ke page 1 saat mengganti filter
+    fetchTransactions(1, filterValue);
+  }, [fetchTransactions, filterValue]);
+
+  const sendInvitationEmail = useCallback(
+    async (invitationItem: any) => {
+      const invitationIdStr = String(invitationItem?.id);
+
+      setSendingInvitations((prev) => ({
+        ...prev,
+        [invitationIdStr]: true,
+      }));
+
+      try {
+        const payload = {
+          event_id: data?.id,
+          invitation_title: invitationItem?.invitation_title || "Undangan Event",
+          invitation_description: invitationItem?.invitation_description || "",
+          total_qty: invitationItem?.total_qty || 0,
+          details:
+            invitationItem?.event_invitation_detail?.map((detail: any) => ({
+              fullname: detail?.fullname || "",
+              email: detail?.email || "",
+              phone: detail?.phone || "",
+            })) || [],
+          is_one_receiver: invitationItem?.is_one_receiver === 1,
+          is_banner_image: invitationItem?.is_banner_event === 1,
+          invitation_cat_id: invitationItem?.invitation_cat_id || 17,
+        };
+
+        console.log("📤 Sending invitation payload:", payload);
+
+        await fetch({
+          url: "invitations",
+          method: "POST",
+          data: payload,
+          success: (res) => {
+            console.log("✅ Invitation response:", res);
+
+            const isSuccess = res.success === true || res.success === "true" || res.message?.includes("success") || res.message?.includes("berhasil") || res.id !== undefined || res.data?.id !== undefined;
+
+            if (isSuccess) {
+              notifications.show({
+                title: "Berhasil!",
+                message: `Invitation berhasil dikirim ke ${payload.details.length} penerima`,
+                color: "green",
+                position: "top-right",
+              });
+
+              setTimeout(() => {
+                getInvitationEventData(data?.id || 0);
+              }, 1000);
+            } else {
+              throw new Error("Tunggu beberapa menit dan coba refresh page.");
+            }
+          },
+          error: (error) => {
+            console.error("❌ Error in fetch:", error);
+            throw error;
+          },
+        });
+      } catch (error: any) {
+        console.error("❌ Error sending invitation:", error);
+
+        let errorMessage = "Gagal mengirim invitation. Silakan coba lagi.";
+
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        } else if (error.data?.message) {
+          errorMessage = error.data.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+
+        notifications.show({
+          title: "Gagal!",
+          message: errorMessage,
+          color: "red",
+          position: "top-right",
+        });
+      } finally {
+        setSendingInvitations((prev) => ({
+          ...prev,
+          [invitationIdStr]: false,
+        }));
+      }
+    },
+    [data?.id],
+  );
+
+  const sendAllInvitations = async () => {
+    if (!data?.id || !Array.isArray(invitation) || invitation.length === 0) {
+      notifications.show({
+        title: "Peringatan",
+        message: "Tidak ada invitation yang bisa dikirim",
+        color: "yellow",
+        position: "top-right",
+      });
+      return;
+    }
+
+    setIsSendingInvitation(true);
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const invitationItem of invitation) {
+        if (!invitationItem?.id || !invitationItem?.event_invitation_detail) continue;
+
+        try {
+          const payload = {
+            event_id: data.id,
+            invitation_title: invitationItem.invitation_title || `Invitation ${invitationItem.id}`,
+            invitation_description: invitationItem.invitation_description || "",
+            total_qty: invitationItem.total_qty || 0,
+            details: invitationItem.event_invitation_detail
+              .map((detail: any) => ({
+                fullname: detail?.fullname || "",
+                email: detail?.email || "",
+                phone: detail?.phone || "",
+              }))
+              .filter((detail: any) => detail.email),
+            is_one_receiver: invitationItem.is_one_receiver === 1,
+            is_banner_image: invitationItem.is_banner_event === 1,
+            invitation_cat_id: invitationItem.invitation_cat_id || 17,
+          };
+
+          if (payload.details.length === 0) {
+            console.warn(`No email found for invitation ${invitationItem.id}`);
+            continue;
+          }
+
+          await fetch({
+            url: "invitations",
+            method: "POST",
+            data: payload,
+          });
+
+          successCount++;
+
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`Error sending invitation ${invitationItem.id}:`, error);
+          errorCount++;
+        }
+      }
+
+      notifications.show({
+        title: "Selesai!",
+        message: `Berhasil mengirim ${successCount} invitation. Gagal: ${errorCount}`,
+        color: successCount > 0 ? "green" : "red",
+        position: "top-right",
+      });
+
+      getInvitationEventData(data.id);
+    } catch (error) {
+      console.error("Error in sendAllInvitations:", error);
+      notifications.show({
+        title: "Error",
+        message: "Terjadi kesalahan saat mengirim invitation",
+        color: "red",
+        position: "top-right",
+      });
+    } finally {
+      setIsSendingInvitation(false);
+    }
+  };
 
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
@@ -368,50 +628,57 @@ const MyEventDetail = () => {
     }
   };
 
-  const sendETicket = useCallback(async (invoiceNo: string, email: string, itemId: string | number) => {
-    const itemIdStr = String(itemId);
+  const sendETicket = useCallback(
+    async (invoiceNo: string, email: string, itemId: string | number) => {
+      const itemIdStr = String(itemId);
 
-    setSendingEmails((prev) => ({
-      ...prev,
-      [itemIdStr]: true,
-    }));
+      setSendingEmails((prev) => ({
+        ...prev,
+        [itemIdStr]: true,
+      }));
 
-    try {
-      const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
-        params: { email },
-        headers: {
-          "X-Email-Type": "transaction",
-          "X-Event-Id": data?.id,
-        },
-      });
+      try {
+        const response = await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, {
+          params: { email },
+          headers: {
+            "X-Email-Type": "transaction",
+            "X-Event-Id": data?.id,
+          },
+        });
 
-      notifications.show({
-        title: "Berhasil!",
-        message: `E-ticket berhasil dikirim ke ${email}`,
-        color: "green",
-        position: "top-right",
-      });
-
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Gagal mengirim e-ticket. Silakan coba lagi.";
-      notifications.show({
-        title: "Gagal!",
-        message: errorMessage,
-        color: "red",
-        position: "top-right",
-      });
-    } finally {
-      setTimeout(() => {
-        setSendingEmails((prev) => ({
-          ...prev,
-          [itemIdStr]: false,
-        }));
-      }, 300);
-    }
-  }, [data?.id]);
+        notifications.show({
+          title: "Berhasil!",
+          message: `E-ticket berhasil dikirim ke ${email}`,
+          color: "green",
+          position: "top-right",
+        });
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "Gagal mengirim e-ticket. Silakan coba lagi.";
+        notifications.show({
+          title: "Gagal!",
+          message: errorMessage,
+          color: "red",
+          position: "top-right",
+        });
+      } finally {
+        setTimeout(() => {
+          setSendingEmails((prev) => ({
+            ...prev,
+            [itemIdStr]: false,
+          }));
+        }, 300);
+      }
+    },
+    [data?.id],
+  );
 
   const handleDownloadTransaction = async () => {
-    window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
+    const params = new URLSearchParams({
+      event_id: data?.id?.toString() || '',
+      download: 'true'
+    });
+    
+    window.open(`${config.wsUrl}list-transaction-by-event?${params.toString()}`);
   };
 
   const sendEventETicket = async (invoiceNo: any, email: any) => {
@@ -496,10 +763,18 @@ const MyEventDetail = () => {
   const getInvitationEventData = async (id: string | number) => {
     setLoading(true);
     try {
-      const response = await axios.get(`${config.wsUrl}invitations/event/${id}`);
-      setInvitation(response.data);
+      const response = await axios.get(`${config.wsUrl}invitations/event/${id}`, {
+        params: {
+          with_details: true,
+        },
+      });
+
+      const invitationData = Array.isArray(response.data) ? response.data : response.data.data || [];
+
+      setInvitation(invitationData);
     } catch (err) {
       console.error("Error fetching event invitation data:", err);
+      setInvitation([]);
     } finally {
       setLoading(false);
     }
@@ -756,12 +1031,7 @@ const MyEventDetail = () => {
             </Accordion>
 
             <div className="border border-primary-light-200 rounded-lg shadow-sm">
-              <Tabs 
-                className="flex flex-col" 
-                variant="underlined"
-                selectedKey={activeTab}
-                onSelectionChange={(key) => setActiveTab(key.toString())}
-              >
+              <Tabs className="flex flex-col" variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key.toString())}>
                 <Tab key="Detail" title="Detail" className="px-2">
                   <Tabs
                     radius="full"
@@ -812,144 +1082,131 @@ const MyEventDetail = () => {
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input 
-                            type="text" 
-                            placeholder="Search by Invoice or Email" 
-                            value={filterValue} 
-                            onChange={onSearchChange} 
-                          />
+                          <Input type="text" placeholder="Search by Invoice or Email" value={filterValue} onChange={onSearchChange} />
                           <select 
                             onChange={onTransactionRowsPerPageChange} 
                             value={transactionRowsPerPage} 
                             className="border border-light-grey p-2 rounded-md w-full md:w-auto"
                           >
-                            <option value={5}>5</option>
+                            <option value={2}>2</option>
                             <option value={10}>10</option>
                             <option value={20}>20</option>
-                            <option value={50}>50</option>
                           </select>
                         </div>
 
-                        {/* Transaction Type Buttons */}
                         <div className="flex gap-4 mb-4 items-center">
-                          <Button 
-                            label="All" 
-                            onClick={() => handleTransactionFilterChange("all")} 
-                            color={transactionFilter === "all" ? "primary" : "secondary"} 
-                            fullWidth 
-                          />
-                          <Button 
-                            label="Online" 
-                            onClick={() => handleTransactionFilterChange("online")} 
-                            color={transactionFilter === "online" ? "primary" : "secondary"} 
-                            fullWidth 
-                          />
-                          <Button 
-                            label="Offline" 
-                            onClick={() => handleTransactionFilterChange("offline")} 
-                            color={transactionFilter === "offline" ? "primary" : "secondary"} 
-                            fullWidth 
-                          />
-                          <ButtonM 
-                            className={`shrink-0`} 
-                            leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} 
-                            variant="transparent" 
-                            color="#194e9e" 
-                            onClick={handleDownloadTransaction}
-                          >
+                          <Button label="All" onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
+                          <Button label="Online" onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
+                          <Button label="Offline" onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />
+                          <ButtonM className={`shrink-0`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
                             Download
                           </ButtonM>
                         </div>
 
-                        {/* Loading state */}
                         {transactionLoading ? (
-                          <div className="flex justify-center py-10">
-                            <Spinner size="lg" />
-                          </div>
-                        ) : (
-                          <Table
-                            aria-label="Invitation Table"
-                            isHeaderSticky
-                            bottomContentPlacement="outside"
-                            classNames={{
-                              wrapper: "max-h-[382px]",
-                            }}
-                            topContentPlacement="outside"
-                            bottomContent={
-                              <Pagination 
-                                className="items-center" 
-                                page={transactionPage} 
-                                total={transactionPages} 
-                                onChange={onTransactionPageChange} 
-                              />
-                            }
-                          >
-                            <TableHeader>
-                              <TableColumn className="font-bold text-sm">No</TableColumn>
-                              <TableColumn className="font-bold text-sm">Email</TableColumn>
-                              <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-                              <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-                              <TableColumn className="font-bold text-sm">Status</TableColumn>
-                              <TableColumn className="font-bold text-sm">Type</TableColumn>
-                              <TableColumn className="font-bold text-sm">Aksi</TableColumn>
-                            </TableHeader>
-                            <TableBody items={transactionData}>
-  {(item) => (
-    <TableRow key={item?.id}>
-      <TableCell className="border-b-1 text-sm">
-        {(transactionPage - 1) * transactionRowsPerPage + transactionData.indexOf(item) + 1}
-      </TableCell>
-      <TableCell className="border-b-1 text-sm">{item?.has_user?.email}</TableCell>
-      <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
-      <TableCell className="border-b-1 text-sm">
-        {item?.created_at &&
-          new Date(item.created_at).toLocaleDateString("en-GB", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-      </TableCell>
-      <TableCell className="border-b-1">
-        <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item?.transaction_status_id)}`}>
-          {getStatusText(item?.transaction_status_id)}
-        </span>
-      </TableCell>
-      <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-      <TableCell className="border-b-1 flex items-center">
-        <Tooltip label="Kirim Ulang">
-          <button
-            disabled={sendingEmails[String(item?.id)]}
-            className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            onClick={() => {
-              if (item?.has_user && item.has_user.email) {
-                sendETicket(item.invoice_no, item.has_user.email, item.id);
-              } else {
-                notifications.show({
-                  title: "Error",
-                  message: "Email tidak tersedia untuk pengguna ini.",
-                  color: "red",
-                  position: "top-right",
-                });
-              }
-            }}
-          >
-            {sendingEmails[String(item?.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
-          </button>
-        </Tooltip>
-        <Tooltip label="Lihat Detail">
-          <button 
-            className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2"
-            onClick={() => openDetailModal(item, ticket)}
-          >
-            <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
-          </button>
-        </Tooltip>
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
-                          </Table>
-                        )}
+  <div className="flex justify-center py-10">
+    <Spinner size="lg" />
+  </div>
+) : filteredTransactionItems.length === 0 ? (
+  <div className="text-center py-10">
+    <p className="text-gray-500">No transactions found</p>
+  </div>
+) : (
+  <Table
+    aria-label="Transaction Table"
+    isHeaderSticky
+    bottomContentPlacement="outside"
+    classNames={{
+      wrapper: "max-h-[382px]",
+    }}
+    topContentPlacement="outside"
+    bottomContent={
+      transactionPagination.total > 0 ? (
+        <Pagination
+          className="items-center"
+          page={transactionPagination.current_page}
+          total={transactionPagination.last_page}
+          onChange={onTransactionPageChange}
+          showControls
+          showShadow
+        />
+      ) : null
+    }
+  >
+    <TableHeader>
+      <TableColumn className="font-bold text-sm">No</TableColumn>
+      <TableColumn className="font-bold text-sm">Email</TableColumn>
+      <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
+      <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
+      <TableColumn className="font-bold text-sm">Status</TableColumn>
+      <TableColumn className="font-bold text-sm">Type</TableColumn>
+      <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+    </TableHeader>
+    <TableBody 
+      items={filteredTransactionItems}
+      emptyContent="No transactions found"
+    >
+      {filteredTransactionItems.map((item: TransactionItem, index: number) => {
+        const userEmail = item?.has_user?.email;
+        const identityEmail = item?.identities?.[0]?.email;
+        const email = userEmail || identityEmail || "-";
+        
+        // Hitung nomor urut berdasarkan page dan index di page
+        const itemNumber = (transactionPagination.current_page - 1) * transactionPagination.per_page + index + 1;
+        
+        return (
+          <TableRow key={item.id}>
+            <TableCell className="border-b-1 text-sm">
+              {itemNumber}
+            </TableCell>
+            <TableCell className="border-b-1 text-sm">{email}</TableCell>
+            <TableCell className="border-b-1 text-sm">{item.invoice_no}</TableCell>
+            <TableCell className="border-b-1 text-sm">
+              {item.created_at ? new Date(item.created_at).toLocaleDateString("en-GB", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }) : "-"}
+            </TableCell>
+            <TableCell className="border-b-1">
+              <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item.transaction_status_id)}`}>
+                {getStatusText(item.transaction_status_id)}
+              </span>
+            </TableCell>
+            <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
+            <TableCell className="border-b-1 flex items-center">
+              <Tooltip label="Kirim Ulang">
+                <button
+                  disabled={sendingEmails[String(item.id)]}
+                  className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    if (email && email !== "-") {
+                      sendETicket(item.invoice_no, email, item.id);
+                    } else {
+                      notifications.show({
+                        title: "Error",
+                        message: "Email tidak tersedia untuk pengguna ini.",
+                        color: "red",
+                        position: "top-right",
+                      });
+                    }
+                  }}
+                >
+                  {sendingEmails[String(item.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+                </button>
+              </Tooltip>
+              <Tooltip label="Lihat Detail">
+                <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={() => openDetailModal(item, ticket)}>
+                  <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
+                </button>
+              </Tooltip>
+            </TableCell>
+          </TableRow>
+        );
+      })}
+    </TableBody>
+  </Table>
+)}
                       </div>
                     </div>
                   </div>
@@ -966,11 +1223,22 @@ const MyEventDetail = () => {
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
-                          <Tooltip label="Tambah Invitation Baru">
-                            <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2">
-                              <FontAwesomeIcon icon={faPlus} className="text-white text-sm" onClick={openAddModal} />
-                            </button>
-                          </Tooltip>
+                          <div className="flex gap-2">
+                            <Tooltip label="Tambah Invitation Baru">
+                              <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={openAddModal}>
+                                <FontAwesomeIcon icon={faPlus} className="text-white text-sm" />
+                              </button>
+                            </Tooltip>
+                            <Tooltip label="Kirim Semua Invitation">
+                              <button
+                                disabled={isSendingInvitation}
+                                className="w-10 h-10 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={sendAllInvitations}
+                              >
+                                {isSendingInvitation ? <Spinner size="sm" color="white" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+                              </button>
+                            </Tooltip>
+                          </div>
                         </div>
                         {loading ? (
                           <p>Loading...</p>
@@ -985,47 +1253,40 @@ const MyEventDetail = () => {
                               <TableColumn className="font-bold text-md">Aksi</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
-                              {(item) => (
-                                <TableRow key={item?.id}>
-                                  <TableCell className="border-b-1">
-                                    {_.indexOf(
-                                      eventItems.map((e) => e?.id),
-                                      item?.id,
-                                    ) + 1}
-                                  </TableCell>
-                                  <TableCell className="border-b-1">{item?.invitation_title}</TableCell>
-                                  <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
-                                  <TableCell className="border-b-1">{item?.total_qty}</TableCell>
-                                  <TableCell className="border-b-1">
-                                    {(() => {
-                                      const statusId = item?.event_invitation_status?.id ?? null;
-                                      return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
-                                    })()}
-                                  </TableCell>
-                                  <TableCell className="border-b-1 flex items-center gap-2">
-                                    <Tooltip label="Kirim Invitation">
-                                      <button
-                                        disabled={isSendingInvitation}
-                                        className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={() => {
-                                            if (item?.has_user && item.has_user.email) {
-                                              sendEventETicket(item.invoice_no, item.has_user.email);
-                                            } else {
-                                              toast.error("Email tidak tersedia untuk pengguna ini.");
-                                            }
-                                          }}
-                                      >
-                                        {isSendingInvitation ? <Spinner size="sm" color="white" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
-                                      </button>
-                                    </Tooltip>
-                                    <Tooltip label="Lihat Detail">
-                                      <button className="w-10 h-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-md p-2" onClick={() => openInvitationModal(item)}>
-                                        <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
-                                      </button>
-                                    </Tooltip>
-                                  </TableCell>
-                                </TableRow>
-                              )}
+                              {(item) => {
+                                const emailCount = item?.event_invitation_detail?.filter((detail: any) => detail?.email)?.length || 0;
+
+                                return (
+                                  <TableRow key={item?.id}>
+                                    <TableCell className="border-b-1">{(page - 1) * rowsPerPage + filteredEventItems.indexOf(item) + 1}</TableCell>
+                                    <TableCell className="border-b-1">{item?.invitation_title}</TableCell>
+                                    <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
+                                    <TableCell className="border-b-1">{item?.total_qty}</TableCell>
+                                    <TableCell className="border-b-1">
+                                      {(() => {
+                                        const statusId = item?.event_invitation_status?.id ?? null;
+                                        return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
+                                      })()}
+                                    </TableCell>
+                                    <TableCell className="border-b-1 flex items-center gap-2">
+                                      <Tooltip label="Kirim Invitation">
+                                        <button
+                                          disabled={sendingInvitations[String(item?.id)] || emailCount === 0}
+                                          className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          onClick={() => sendInvitationEmail(item)}
+                                        >
+                                          {sendingInvitations[String(item?.id)] ? <Spinner size="sm" color="white" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+                                        </button>
+                                      </Tooltip>
+                                      <Tooltip label="Lihat Detail">
+                                        <button className="w-10 h-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-md p-2" onClick={() => openInvitationModal(item)}>
+                                          <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
+                                        </button>
+                                      </Tooltip>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              }}
                             </TableBody>
                           </Table>
                         )}

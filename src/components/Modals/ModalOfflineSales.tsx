@@ -1,12 +1,12 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Accordion, AccordionItem, RadioGroup, Radio } from "@nextui-org/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTicket, faChevronCircleDown, faTriangleExclamation, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faTicket, faChevronCircleDown, faTriangleExclamation, faCheckCircle, faUserSecret, faShuffle } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Images from "../Images";
 import { Post } from "@/utils/REST";
 import { EventProps } from "@/utils/globalInterface";
 import { useRouter } from "next/router";
-import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box } from "@mantine/core";
+import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box, Group } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import config from "@/Config";
 import { useReactToPrint } from "react-to-print";
 import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
+import { Badge } from "@mantine/core";
 
 interface FormTicket {
   event_id: number;
@@ -47,22 +48,10 @@ interface ModalProps {
   grandTotal: number;
   reload: () => void;
   setParentStep: (parentStep: number) => void;
-  onSuccess?: () => void; // <-- TAMBAH INI
+  onSuccess?: () => void;
 }
 
-export default function ModalOfflineSales({ 
-  isOpen, 
-  setIsOpen, 
-  paymentList, 
-  ticket, 
-  eventData, 
-  subtotal, 
-  ticketFee, 
-  grandTotal, 
-  reload, 
-  setParentStep,
-  onSuccess // <-- TAMBAH INI
-}: ModalProps) {
+export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, ticket, eventData, subtotal, ticketFee, grandTotal, reload, setParentStep, onSuccess }: ModalProps) {
   const [payment, setPayment] = useState<string>("");
   const [errorPayment, setErrorPayment] = useState<string>();
   const [transactionData, setTransactionData] = useState<any>();
@@ -73,6 +62,99 @@ export default function ModalOfflineSales({
   const contentRef = useRef(null);
   const printContent = useReactToPrint({ contentRef });
   const user = useLoggedUser();
+
+  // Fungsi untuk generate data customer random
+  const generateRandomCustomer = (index: number = 0) => {
+    // Daftar nama depan dan belakang Indonesia
+    const firstNames = ["Guest"];
+
+    const lastNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+
+    // Daftar domain email
+    const emailDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"];
+
+    // Generate nama random
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const fullName = `${firstName} ${lastName}`;
+
+    // Generate email random
+    const emailDomain = emailDomains[Math.floor(Math.random() * emailDomains.length)];
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 99)}@${emailDomain}`;
+
+    // Generate nomor telepon random (format 628xxxxxxxxxx)
+    const phonePrefix = "628";
+    const phoneSuffix = Math.floor(100000000 + Math.random() * 900000000)
+      .toString()
+      .slice(0, 9);
+    const phone = `${phonePrefix}${phoneSuffix}`;
+
+    // Generate NIK random (16 digit)
+    const nik = Math.floor(1000000000000000 + Math.random() * 9000000000000000)
+      .toString()
+      .slice(0, 16);
+
+    // Generate tanggal lahir random (usia 18-60 tahun)
+    const currentYear = new Date().getFullYear();
+    const birthYear = currentYear - (18 + Math.floor(Math.random() * 43));
+    const birthMonth = Math.floor(Math.random() * 12) + 1;
+    const birthDay = Math.floor(Math.random() * 28) + 1;
+    const birthdate = `${birthYear}-${birthMonth.toString().padStart(2, "0")}-${birthDay.toString().padStart(2, "0")}`;
+
+    // Generate gender random
+    const genders = ["Laki-laki", "Perempuan"];
+    const gender = genders[Math.floor(Math.random() * genders.length)];
+
+    return {
+      name: fullName,
+      identity: nik,
+      email: email,
+      phone: phone,
+      gender: gender,
+      birthdate: birthdate,
+    };
+  };
+
+  // Fungsi untuk generate data guest (minimal)
+  const generateGuestData = (index: number = 0) => {
+    return {
+      name: `Guest ${index + 1}`,
+      identity: "",
+      email: "",
+      phone: "",
+      gender: "",
+      birthdate: "",
+    };
+  };
+
+  // Fungsi untuk auto-fill semua data customer
+  const autoFillAllCustomerData = () => {
+    const newData = splittedTicket.map((_, index) => {
+      // Jika index 0, gunakan data lengkap, sisanya gunakan data guest
+      if (index === 0) {
+        return generateRandomCustomer(index);
+      } else {
+        return generateGuestData(index);
+      }
+    });
+
+    setValues({ data: newData });
+  };
+
+  // Fungsi untuk auto-fill data customer pertama saja
+  const autoFillFirstCustomerOnly = () => {
+    if (fv.data.length > 0) {
+      const newData = [...fv.data];
+      newData[0] = generateRandomCustomer(0);
+      setValues({ data: newData });
+    }
+  };
+
+  // Fungsi untuk reset semua data menjadi kosong
+  const resetAllCustomerData = () => {
+    const newData = splittedTicket.map(() => ({}));
+    setValues({ data: newData });
+  };
 
   const identity = useForm<IdentityProps>({
     validate: zodResolver(
@@ -85,9 +167,9 @@ export default function ModalOfflineSales({
             phone: eventData?.is_phone_number ? z.string({ message: "Wajib Diisi" }).min(8, { message: "Format tidak valid" }) : z.string().nullable().optional(),
             gender: eventData?.is_gender ? z.string({ message: "Wajib Diisi" }) : z.string().nullable().optional(),
             birthdate: eventData?.is_birthdate ? z.string({ message: "Wajib Diisi" }) : z.string().nullable().optional(),
-          })
+          }),
         ),
-      })
+      }),
     ),
     onValuesChange: (val) => ({
       data: val?.data?.map((e) => {
@@ -149,7 +231,7 @@ export default function ModalOfflineSales({
           full_name: e.name,
           email: e.email,
           no_telp: e.phone,
-          is_pemesan: 0,
+          is_pemesan: i === 0 ? 1 : 0,
           identity_type_id: 1,
           event_ticket_id: splittedTicket[i].event_ticket_id,
         })),
@@ -157,12 +239,11 @@ export default function ModalOfflineSales({
         .then((res: any) => {
           console.log(res);
           setTransactionData(res);
-          
-          // Panggil onSuccess callback jika ada
+
           if (onSuccess) {
             onSuccess();
           }
-          
+
           if (res?.xendit_invoice?.invoice_url) {
             console.log(res);
             router.push(res.xendit_invoice.invoice_url);
@@ -206,7 +287,12 @@ export default function ModalOfflineSales({
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 border-b px-4 border-b-primary-light-200">Pembayaran</ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 border-b px-4 border-b-primary-light-200">
+                <div className="flex justify-between items-center">
+                  <span>Pembayaran</span>
+                  {step === 0 && openForm && <Group gap="xs"></Group>}
+                </div>
+              </ModalHeader>
               <ModalBody className="bg-primary-light p-0">
                 {step === 0 ? (
                   <div className="flex flex-col w-full gap-2">
@@ -245,7 +331,16 @@ export default function ModalOfflineSales({
                     </div>
                     <div className="bg-white">
                       <div className="py-4 px-4 border-b border-b-primary-light-200">
-                        <h6>Data Pemilik</h6>
+                        <div className="flex justify-between items-center">
+                          <h6>Data Pemilik</h6>
+                          {openForm && (
+                            <Group gap="xs">
+                              <Button size="xs" variant="light" color="green" leftSection={<FontAwesomeIcon icon={faShuffle} />} onClick={autoFillFirstCustomerOnly}>
+                                Auto-fill Pemesan
+                              </Button>
+                            </Group>
+                          )}
+                        </div>
                       </div>
                       <div className={`${openForm ? "" : "hidden"}`}>
                         <Card mah={500} className={`!overflow-y-auto`} p={0}>
@@ -258,6 +353,11 @@ export default function ModalOfflineSales({
                                     <Stack gap={2}>
                                       <Text fw={600} size="sm">
                                         {i + 1}. Pemilik Tiket {e.name}
+                                        {i === 0 && (
+                                          <Badge color="blue" variant="light" size="xs" ml={5}>
+                                            Pemesan Utama
+                                          </Badge>
+                                        )}
                                       </Text>
                                       <Text size="xs" c="gray">
                                         1x Tiket <NumberFormatter value={e.price} />
@@ -271,19 +371,95 @@ export default function ModalOfflineSales({
                                     <Stack>
                                       <Flex gap={15} className={`[&>*]:flex-grow flex-wrap`}>
                                         {Boolean(eventData?.is_name) && (
-                                          <TextInput label="Nama" placeholder="Isi Nama" value={fv.data[i] ? fv.data[i].name : ""} onChange={(e) => sv(`data.${i}.name`, e.target.value)} error={fe[`data.${i}.name`]} />
+                                          <TextInput
+                                            label="Nama"
+                                            placeholder="Isi Nama"
+                                            value={fv.data[i] ? fv.data[i].name : ""}
+                                            onChange={(e) => sv(`data.${i}.name`, e.target.value)}
+                                            error={fe[`data.${i}.name`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.name`, randomData.name);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
+                                          />
                                         )}
 
                                         {Boolean(eventData?.is_noidentity) && (
-                                          <TextInput label="No KTP" placeholder="Isi No KTP" value={fv.data[i] ? fv.data[i].identity : ""} onChange={(e) => sv(`data.${i}.identity`, e.target.value)} error={fe[`data.${i}.identity`]} />
+                                          <TextInput
+                                            label="No KTP"
+                                            placeholder="Isi No KTP"
+                                            value={fv.data[i] ? fv.data[i].identity : ""}
+                                            onChange={(e) => sv(`data.${i}.identity`, e.target.value)}
+                                            error={fe[`data.${i}.identity`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.identity`, randomData.identity);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
+                                          />
                                         )}
 
                                         {Boolean(eventData?.is_email) && (
-                                          <TextInput label="Email" placeholder="Isi Email" value={fv.data[i] ? fv.data[i].email : ""} onChange={(e) => sv(`data.${i}.email`, e.target.value)} error={fe[`data.${i}.email`]} />
+                                          <TextInput
+                                            label="Email"
+                                            placeholder="Isi Email"
+                                            value={fv.data[i] ? fv.data[i].email : ""}
+                                            onChange={(e) => sv(`data.${i}.email`, e.target.value)}
+                                            error={fe[`data.${i}.email`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.email`, randomData.email);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
+                                          />
                                         )}
 
                                         {Boolean(eventData?.is_phone_number) && (
-                                          <TextInput label="No. Telp" placeholder="Isi No. Telp" value={fv.data[i] ? fv.data[i].phone : ""} onChange={(e) => sv(`data.${i}.phone`, e.target.value)} error={fe[`data.${i}.phone`]} />
+                                          <TextInput
+                                            label="No. Telp"
+                                            placeholder="Isi No. Telp"
+                                            value={fv.data[i] ? fv.data[i].phone : ""}
+                                            onChange={(e) => sv(`data.${i}.phone`, e.target.value)}
+                                            error={fe[`data.${i}.phone`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.phone`, randomData.phone);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
+                                          />
                                         )}
 
                                         {Boolean(eventData?.is_birthdate) && (
@@ -293,11 +469,43 @@ export default function ModalOfflineSales({
                                             value={fv.data[i] ? fv.data[i].birthdate : ""}
                                             onChange={(e) => sv(`data.${i}.birthdate`, e.target.value)}
                                             error={fe[`data.${i}.birthdate`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.birthdate`, randomData.birthdate);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
                                           />
                                         )}
 
                                         {Boolean(eventData?.is_gender) && (
-                                          <TextInput label="Gender" placeholder="Isi Gender" value={fv.data[i] ? fv.data[i].gender : ""} onChange={(e) => sv(`data.${i}.gender`, e.target.value)} error={fe[`data.${i}.gender`]} />
+                                          <TextInput
+                                            label="Gender"
+                                            placeholder="Isi Gender"
+                                            value={fv.data[i] ? fv.data[i].gender : ""}
+                                            onChange={(e) => sv(`data.${i}.gender`, e.target.value)}
+                                            error={fe[`data.${i}.gender`]}
+                                            rightSection={
+                                              i === 0 && (
+                                                <ActionIcon
+                                                  variant="subtle"
+                                                  onClick={() => {
+                                                    const randomData = generateRandomCustomer(i);
+                                                    sv(`data.${i}.gender`, randomData.gender);
+                                                  }}
+                                                >
+                                                  <FontAwesomeIcon icon={faShuffle} size="xs" />
+                                                </ActionIcon>
+                                              )
+                                            }
+                                          />
                                         )}
                                       </Flex>
                                     </Stack>
@@ -327,17 +535,7 @@ export default function ModalOfflineSales({
                                 <RadioGroup color="primary" name="payment-method" onChange={(e) => setPayment(e.target.value)}>
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                      {el.icon ? (
-                                        <Icon icon={el.icon} className={`text-[36px] text-primary-base`} />
-                                      ) : (
-                                        <Image
-                                          fit="contain"
-                                          src={`${config.assetUrl}logo/${el.logo}`}
-                                          w={48}
-                                          h={48}
-                                          radius={7}
-                                        />
-                                      )}
+                                      {el.icon ? <Icon icon={el.icon} className={`text-[36px] text-primary-base`} /> : <Image fit="contain" src={`${config.assetUrl}logo/${el.logo}`} w={48} h={48} radius={7} />}
                                       <p className="text-sm">{el.payment_name}</p>
                                     </div>
                                     <Radio value={el.id}></Radio>
@@ -640,7 +838,7 @@ export default function ModalOfflineSales({
                               <Table.Tr>
                                 <Table.Td>Metode</Table.Td>
                                 <Table.Td>{selectedPayment?.payment_name ?? "-"}</Table.Td>
-                            </Table.Tr>
+                              </Table.Tr>
                             )}
                           </Table.Tbody>
                         </Table>
@@ -674,9 +872,7 @@ export default function ModalOfflineSales({
                       </div>
                       <div className="flex justify-between py-2">
                         <h6>Total Pembayaran</h6>
-                        <h6>
-                          Rp{grandTotal.toLocaleString("id-ID")}
-                        </h6>
+                        <h6>Rp{grandTotal.toLocaleString("id-ID")}</h6>
                       </div>
                     </div>
                   </div>
@@ -687,9 +883,7 @@ export default function ModalOfflineSales({
                   <div className="flex flex-col w-full">
                     <div className="flex justify-between">
                       <h6>Total Pembayaran</h6>
-                      <h6>
-                        Rp{grandTotal.toLocaleString("id-ID")}
-                      </h6>
+                      <h6>Rp{grandTotal.toLocaleString("id-ID")}</h6>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-[#fdf3e6] my-4">
                       <FontAwesomeIcon icon={faTriangleExclamation} className="text-[#FF9B05]" size="lg" />
@@ -711,9 +905,7 @@ export default function ModalOfflineSales({
                   <div className="flex flex-col w-full">
                     <div className="flex justify-between">
                       <h6>Total Pembayaran</h6>
-                      <h6>
-                        Rp{grandTotal.toLocaleString("id-ID")}
-                      </h6>
+                      <h6>Rp{grandTotal.toLocaleString("id-ID")}</h6>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-[#fdf3e6] my-4">
                       <FontAwesomeIcon icon={faTriangleExclamation} className="text-[#FF9B05]" size="lg" />

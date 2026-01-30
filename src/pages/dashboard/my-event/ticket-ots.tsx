@@ -300,12 +300,12 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
                 </div>
 
                 {/* Biaya Layanan Tiket */}
-                {totalTicketFee > 0 && (
+                {/* {totalTicketFee > 0 && (
                   <div className="flex justify-between">
                     <Text>Biaya Layanan Tiket</Text>
                     <Text>Rp{totalTicketFee.toLocaleString("id-ID")}</Text>
                   </div>
-                )}
+                )} */}
 
                 {/* Admin Fee */}
                 {adminFee > 0 && (
