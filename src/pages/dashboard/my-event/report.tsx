@@ -1259,7 +1259,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPencil, faPlus, faSearch, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch } from "@fortawesome/free-solid-svg-icons";
 
 const Merch = () => {
   const [isr, setIsr] = useState(false);
@@ -1282,24 +1282,6 @@ const Merch = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionListResponse | null>(null);
-
-  // State untuk CRUD Voucher
-  const [vouchers, setVouchers] = useState([
-    { id: 1, kode: "DISKON50", namaPemesan: "John Doe", email: "john@example.com", status: "Terpakai", tanggalPakai: "2024-01-15" },
-    { id: 2, kode: "SALE30", namaPemesan: "Jane Smith", email: "jane@example.com", status: "Aktif", tanggalPakai: "-" },
-  ]);
-  const [voucherModalOpen, setVoucherModalOpen] = useState(false);
-  const [voucherForm, setVoucherForm] = useState({
-    id: null as number | null,
-    kode: "",
-    namaPemesan: "",
-    email: "",
-    status: "Aktif",
-    tanggalPakai: "",
-  });
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [voucherToDelete, setVoucherToDelete] = useState<number | null>(null);
-  const [searchVoucher, setSearchVoucher] = useState<string>("");
 
   // State untuk pagination SERVER SIDE
   const [currentPage, setCurrentPage] = useState(1);
@@ -1368,12 +1350,6 @@ const Merch = () => {
     }
   }, [slug]);
 
-  useEffect(() => {
-    if (selectedEvent) {
-      loadEventData(1);
-    }
-  }, [selectedEvent]);
-
   const getEvent = async () => {
     await fetch<any, EventListResponse[]>({
       url: "event",
@@ -1417,14 +1393,16 @@ const Merch = () => {
     setAllDataList([]);
 
     try {
-      // Build query parameters
+      // Build query parameters dengan parameter yang benar untuk backend
       const params = new URLSearchParams({
         event_id: selectedEvent.toString(),
         page: page.toString(),
+        per_page: "20"
       });
 
+      // PARAMETER YANG BENAR: name
       if (selectedTicket !== "all") {
-        params.append("ticket_name", selectedTicket);
+        params.append("name", selectedTicket);
       }
 
       if (selectedStatus !== "all") {
@@ -1439,6 +1417,8 @@ const Merch = () => {
         params.append("search", searchValue);
       }
 
+      console.log("API Params untuk halaman", page, ":", params.toString());
+
       const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
 
       const response = await axios.get(apiUrl);
@@ -1447,7 +1427,7 @@ const Merch = () => {
         // SET DATA KE STATE
         setAllDataList(response.data.data);
 
-        // Set pagination - PERBAIKAN: Gunakan response.data.pagination yang benar
+        // Set pagination dari response API
         if (response.data.pagination) {
           setPaginationInfo({
             current_page: response.data.pagination.current_page || page,
@@ -1468,7 +1448,7 @@ const Merch = () => {
         // Update current page state
         setCurrentPage(response.data.pagination?.current_page || page);
 
-        // Set grand total
+        // Set info dari API
         setApiPaginationInfo({
           totalRecords: response.data.pagination?.total || response.data.data.length,
           grandTotal: response.data.grand_total || 0,
@@ -1505,7 +1485,7 @@ const Merch = () => {
   // Reset ke halaman 1 saat filter berubah dan reload data dengan filter
   useDidUpdate(() => {
     setCurrentPage(1);
-    loadEventData(1); // Load page 1 dengan filter baru
+    loadEventData(1);
   }, [selectedTicket, selectedStatus, transactionSegment]);
 
   // Handle search with debounce
@@ -1514,7 +1494,7 @@ const Merch = () => {
       const timer = setTimeout(() => {
         setCurrentPage(1);
         loadEventData(1);
-      }, 500); // Debounce 500ms
+      }, 500);
 
       return () => clearTimeout(timer);
     }
@@ -1536,9 +1516,7 @@ const Merch = () => {
       // Cari identity pemesan (is_pemesan = 1) - cek semua identities
       let pemesanIdentity = null;
       if (transaction.identities && transaction.identities.length > 0) {
-        // Cari yang is_pemesan == 1
         pemesanIdentity = transaction.identities.find((id) => id.is_pemesan == 1);
-        // Jika tidak ada, ambil yang pertama
         if (!pemesanIdentity && transaction.identities.length > 0) {
           pemesanIdentity = transaction.identities[0];
         }
@@ -1550,7 +1528,6 @@ const Merch = () => {
 
       if (transaction.tickets && transaction.tickets.length > 0) {
         const ticketNames = transaction.tickets.map((ticket) => {
-          // Cek apakah has_event_ticket ada dan memiliki name
           if (ticket.has_event_ticket && ticket.has_event_ticket.name) {
             return ticket.has_event_ticket.name;
           }
@@ -1560,7 +1537,7 @@ const Merch = () => {
 
         // Hitung total harga tiket
         ticketPrice = transaction.tickets.reduce((sum, ticket) => {
-          return sum + (ticket.price || 0) * (ticket.qty_ticket || 0);
+          return sum + (ticket.price || 0) * (ticket.qty_ticket || 1);
         }, 0);
       }
 
@@ -1599,7 +1576,7 @@ const Merch = () => {
   const salesStatistics = useMemo(() => {
     const totalTickets = allDataList.reduce((sum, transaction) => {
       if (transaction.payment_status === "Verified" && transaction.tickets) {
-        return sum + transaction.tickets.reduce((ticketSum, ticket) => ticketSum + (ticket.qty_ticket || 0), 0);
+        return sum + transaction.tickets.reduce((ticketSum, ticket) => ticketSum + (ticket.qty_ticket || 1), 0);
       }
       return sum;
     }, 0);
@@ -1610,12 +1587,13 @@ const Merch = () => {
     return {
       pendingTransactions,
       totalTickets,
-      totalTransactions: paginationInfo.total, // Use total from pagination
+      totalTransactions: paginationInfo.total,
       totalCheckin,
     };
   }, [allDataList, eventData, dataListEticket, paginationInfo]);
 
   const exportToExcel = () => {
+    // Export hanya data di halaman saat ini (sesuai dengan pagination)
     if (!allDataList || allDataList.length === 0) {
       alert("Tidak ada data untuk diexport");
       return;
@@ -1635,10 +1613,12 @@ const Merch = () => {
           let ticketPrice = 0;
 
           if (item.tickets && item.tickets.length > 0) {
-            const ticketNames = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-");
+            const ticketNames = item.tickets.map((ticket) => {
+              return ticket.has_event_ticket?.name || "-";
+            });
             ticketName = ticketNames.join(", ");
             ticketPrice = item.tickets.reduce((sum: number, ticket: any) => {
-              return sum + (ticket.price || 0) * (ticket.qty_ticket || 0);
+              return sum + (ticket.price || 0) * (ticket.qty_ticket || 1);
             }, 0);
           }
 
@@ -1655,9 +1635,11 @@ const Merch = () => {
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().split("T")[0];
       const eventName = eventList?.find((e) => e.id === selectedEvent)?.name || "event";
+      const ticketFilterText = selectedTicket !== "all" ? `-${selectedTicket.replace(/\s+/g, '-')}` : "";
+      const pageText = paginationInfo.last_page > 1 ? `-page-${paginationInfo.current_page}` : "";
 
       link.href = url;
-      link.download = `report-${eventName}-${timestamp}-page-${paginationInfo.current_page}.csv`;
+      link.download = `report-${eventName}${ticketFilterText}${pageText}-${timestamp}.csv`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -1697,85 +1679,6 @@ const Merch = () => {
         "Waktu Checkin": moment(e.checkin_date).format("HH:mm:ss DD MMM YYYY"),
       }));
   }, [dataListEticket]);
-
-  const filteredVouchers = useMemo(() => {
-    if (!searchVoucher) return vouchers;
-
-    const searchTerm = searchVoucher.toLowerCase();
-    return vouchers.filter(
-      (voucher) => voucher.kode.toLowerCase().includes(searchTerm) || voucher.namaPemesan.toLowerCase().includes(searchTerm) || voucher.email.toLowerCase().includes(searchTerm) || voucher.status.toLowerCase().includes(searchTerm),
-    );
-  }, [vouchers, searchVoucher]);
-
-  const listVoucher = useMemo(() => {
-    return filteredVouchers.map((voucher, index) => ({
-      ...voucher,
-      No: index + 1,
-      "Kode Voucher": voucher.kode,
-      "Nama Pemesan": voucher.namaPemesan,
-      Email: voucher.email,
-      Status: <Badge color={voucher.status === "Aktif" ? "green" : "orange"}>{voucher.status}</Badge>,
-      "Tanggal Pakai": voucher.tanggalPakai,
-      Action: (
-        <Group gap="xs">
-          <ActionIcon color="blue" variant="subtle" onClick={() => handleEditVoucher(voucher)}>
-            <FontAwesomeIcon icon={faPencil} size="sm" />
-          </ActionIcon>
-          <ActionIcon color="red" variant="subtle" onClick={() => handleDeleteClick(voucher.id)}>
-            <FontAwesomeIcon icon={faTrash} size="sm" />
-          </ActionIcon>
-        </Group>
-      ),
-    }));
-  }, [filteredVouchers]);
-
-  // Fungsi CRUD Voucher
-  const handleAddVoucher = () => {
-    setVoucherForm({
-      id: null,
-      kode: "",
-      namaPemesan: "",
-      email: "",
-      status: "Aktif",
-      tanggalPakai: "",
-    });
-    setVoucherModalOpen(true);
-  };
-
-  const handleEditVoucher = (voucher: any) => {
-    setVoucherForm({
-      id: voucher.id,
-      kode: voucher.kode,
-      namaPemesan: voucher.namaPemesan,
-      email: voucher.email,
-      status: voucher.status,
-      tanggalPakai: voucher.tanggalPakai,
-    });
-    setVoucherModalOpen(true);
-  };
-
-  const handleSaveVoucher = () => {
-    if (voucherForm.id) {
-      setVouchers(vouchers.map((v) => (v.id === voucherForm.id ? ({ ...voucherForm, id: voucherForm.id } as any) : v)));
-    } else {
-      const newId = Math.max(...vouchers.map((v) => v.id)) + 1;
-      setVouchers([...vouchers, { ...voucherForm, id: newId }]);
-    }
-    setVoucherModalOpen(false);
-  };
-
-  const handleDeleteClick = (id: number) => {
-    setVoucherToDelete(id);
-    setDeleteModalOpen(true);
-  };
-
-  const handleDeleteVoucher = () => {
-    if (voucherToDelete) {
-      setVouchers(vouchers.filter((v) => v.id !== voucherToDelete));
-      setDeleteModalOpen(false);
-      setVoucherToDelete(null);
-    }
-  };
 
   if (!isr) return <></>;
 
@@ -1893,14 +1796,6 @@ const Merch = () => {
             >
               Data Checkin
             </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                selectedTab === "voucher" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-              onClick={() => setSelectedTab("voucher")}
-            >
-              Data Voucher
-            </button>
           </div>
         </div>
 
@@ -1941,6 +1836,14 @@ const Merch = () => {
                   style={{ width: 200 }}
                   leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
                 />
+
+                <Input
+                  placeholder="Cari nama atau invoice..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  style={{ width: 250 }}
+                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                />
               </Flex>
             </Flex>
 
@@ -1973,7 +1876,14 @@ const Merch = () => {
 
                 <Flex gap="md" align="center">
                   {/* PAGINATION SERVER SIDE */}
-                  <Pagination value={currentPage} onChange={handlePageChange} total={paginationInfo.last_page} radius="md" size="sm" withEdges />
+                  <Pagination 
+                    value={currentPage} 
+                    onChange={handlePageChange} 
+                    total={paginationInfo.last_page} 
+                    radius="md" 
+                    size="sm" 
+                    withEdges 
+                  />
                 </Flex>
               </Flex>
             )}
@@ -2037,76 +1947,7 @@ const Merch = () => {
             </Box>
           </div>
         )}
-
-        {/* Tab Content - Data Voucher */}
-        {selectedTab === "voucher" && (
-          <div className="pt-4">
-            <Flex justify="space-between" align="center" mb="md">
-              <Input placeholder="Cari Voucher" value={searchVoucher} onChange={(e) => setSearchVoucher(e.target.value)} style={{ width: 300 }} leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />} />
-              <Button onClick={handleAddVoucher} leftSection={<FontAwesomeIcon icon={faPlus} />}>
-                Tambah Voucher
-              </Button>
-            </Flex>
-            <Box mt={20}>
-              <TableData
-                loading={loading.includes("getdata")}
-                tablekey="voucher"
-                withRowIndex
-                data={listVoucher}
-                mapData={(e) => ({
-                  No: e.No,
-                  "Kode Voucher": e["Kode Voucher"],
-                  "Nama Pemesan": e["Nama Pemesan"],
-                  Email: e["Email"],
-                  Status: e["Status"],
-                  "Tanggal Pakai": e["Tanggal Pakai"],
-                  Action: e["Action"],
-                })}
-              />
-            </Box>
-          </div>
-        )}
       </Card>
-
-      {/* Modal untuk Tambah/Edit Voucher */}
-      <Modal opened={voucherModalOpen} onClose={() => setVoucherModalOpen(false)} title={voucherForm.id ? "Edit Voucher" : "Tambah Voucher"} size="md">
-        <Stack gap="md">
-          <TextInput label="Kode Voucher" placeholder="Masukkan kode voucher" value={voucherForm.kode} onChange={(e) => setVoucherForm({ ...voucherForm, kode: e.target.value })} required />
-          <TextInput label="Nama Pemesan" placeholder="Masukkan nama pemesan" value={voucherForm.namaPemesan} onChange={(e) => setVoucherForm({ ...voucherForm, namaPemesan: e.target.value })} required />
-          <TextInput label="Email" placeholder="Masukkan email" value={voucherForm.email} onChange={(e) => setVoucherForm({ ...voucherForm, email: e.target.value })} required />
-          <Select
-            label="Status"
-            value={voucherForm.status}
-            onChange={(value) => setVoucherForm({ ...voucherForm, status: value || "Aktif" })}
-            data={[
-              { value: "Aktif", label: "Aktif" },
-              { value: "Terpakai", label: "Terpakai" },
-            ]}
-          />
-          <TextInput label="Tanggal Pakai" placeholder="YYYY-MM-DD" value={voucherForm.tanggalPakai} onChange={(e) => setVoucherForm({ ...voucherForm, tanggalPakai: e.target.value })} />
-          <Flex justify="flex-end" gap="md">
-            <Button variant="outline" onClick={() => setVoucherModalOpen(false)}>
-              Batal
-            </Button>
-            <Button onClick={handleSaveVoucher}>{voucherForm.id ? "Update" : "Simpan"}</Button>
-          </Flex>
-        </Stack>
-      </Modal>
-
-      {/* Modal Konfirmasi Hapus */}
-      <Modal opened={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Konfirmasi Hapus" size="sm">
-        <Stack gap="md">
-          <Text>Apakah Anda yakin ingin menghapus voucher ini?</Text>
-          <Flex justify="flex-end" gap="md">
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              Batal
-            </Button>
-            <Button color="red" onClick={handleDeleteVoucher}>
-              Hapus
-            </Button>
-          </Flex>
-        </Stack>
-      </Modal>
 
       {/* Modal View Detail Transaksi */}
       <Modal
@@ -2277,7 +2118,7 @@ const Merch = () => {
                               Subtotal
                             </Text>
                             <Text fw={600} size="sm">
-                              Rp {((ticket.price || 0) * (ticket.qty_ticket || 0)).toLocaleString("id-ID")}
+                              Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}
                             </Text>
                           </Flex>
                         </Card>
@@ -2362,7 +2203,7 @@ const Merch = () => {
                       Subtotal Tiket
                     </Text>
                     <Text fw={600} size="sm">
-                      Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + (ticket.price || 0) * (ticket.qty_ticket || 0), 0).toLocaleString("id-ID")}
+                      Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0).toLocaleString("id-ID")}
                     </Text>
                   </Flex>
                 )}

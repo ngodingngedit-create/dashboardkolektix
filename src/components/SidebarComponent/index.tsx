@@ -220,8 +220,22 @@ const sidebarData: SidebarData = [
       {
         id: 1,
         name: "Ticket OTS",
-        iconify: "carbon:report",
+        icon: faTicket,
         link: "/dashboard/my-event/ticket-ots",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Crew Event",
+        icon: faUser,
+        link: "/dashboard/my-event/crew",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Voucher",
+        icon: faTicket,
+        link: "/dashboard/my-event/voucher",
         role: "Creator",
       },
     ],

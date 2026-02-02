@@ -51,6 +51,31 @@ interface CreatorProps {
   };
 }
 
+// Fungsi untuk mengkonversi file ke base64 murni (tanpa data URL prefix)
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      // Hapus bagian "data:image/...;base64," untuk mendapatkan base64 murni
+      const pureBase64 = base64String.split(',')[1];
+      resolve(pureBase64 || base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+// Fungsi untuk mengkonversi file ke base64 dengan format lengkap (data URL) untuk preview
+const convertFileToBase64DataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function KelolaCreator() {
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CreatorProps[]>([]);
@@ -61,7 +86,11 @@ export default function KelolaCreator() {
   const [selectedCreator, setSelectedCreator] = useState<CreatorProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Form state
+  // State untuk preview gambar dan base64
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+
+  // Form state - SESUAI dengan payload
   const form = useForm({
     initialValues: {
       name_event_organizer: "",
@@ -69,9 +98,8 @@ export default function KelolaCreator() {
       location: "",
       phone_number: "",
       email: "",
-      user_id: "",
+      user_id: "", // Akan diubah ke number saat submit
       status: "active",
-      image: null as File | null,
       description: "",
       website: "",
     },
@@ -99,31 +127,23 @@ export default function KelolaCreator() {
           success: (response) => {
             console.log("API Response:", response);
             
-            // Handle berbagai kemungkinan struktur response
             if (response && response.data) {
-              // Jika response memiliki data dan pagination
               if (Array.isArray(response.data.data)) {
-                // Format: { data: { data: [...], ...pagination } }
                 setData(response.data.data);
                 setPagination(response.data);
               } else if (Array.isArray(response.data)) {
-                // Format: { data: [...] }
                 setData(response.data);
                 setPagination(response);
               } else if (response.data.items) {
-                // Format: { data: { items: [...] } }
                 setData(response.data.items);
                 setPagination(response.data);
               } else {
-                // Format lain
                 setData(response.data);
                 setPagination(response);
               }
             } else if (Array.isArray(response)) {
-              // Jika response langsung array
               setData(response);
             } else if (response && response.items) {
-              // Jika response memiliki items
               setData(response.items);
               setPagination(response);
             }
@@ -148,6 +168,8 @@ export default function KelolaCreator() {
     setSelectedCreator(null);
     setIsEditMode(false);
     form.reset();
+    setImagePreview(null);
+    setImageBase64(null);
     openFormModal();
   };
 
@@ -155,6 +177,14 @@ export default function KelolaCreator() {
     const creatorData = creator as CreatorProps;
     setSelectedCreator(creatorData);
     setIsEditMode(true);
+    
+    // Set preview gambar jika ada
+    if (creatorData.image_url) {
+      setImagePreview(creatorData.image_url);
+    }
+    
+    // Reset base64
+    setImageBase64(null);
     
     // Isi form dengan data yang dipilih
     form.setValues({
@@ -165,7 +195,6 @@ export default function KelolaCreator() {
       email: creatorData.email || "",
       user_id: creatorData.user_id || "",
       status: creatorData.status || "active",
-      image: null,
       description: creatorData.description || "",
       website: creatorData.website || "",
     });
@@ -203,20 +232,71 @@ export default function KelolaCreator() {
     });
   };
 
-  const handleFormSubmit = async (values: typeof form.values) => {
-    const formData = new FormData();
-    
-    // Tambahkan semua field ke FormData
-    Object.keys(values).forEach((key) => {
-      const value = values[key as keyof typeof values];
-      if (key === "image") {
-        if (value) {
-          formData.append(key, value);
-        }
-      } else if (value !== null && value !== undefined && value !== "") {
-        formData.append(key, String(value));
+  // Handler untuk perubahan file input
+  const handleFileChange = async (file: File | null) => {
+    if (file) {
+      try {
+        // Konversi file ke base64 murni untuk dikirim ke server
+        const base64String = await convertFileToBase64(file);
+        setImageBase64(base64String);
+        
+        // Konversi ke data URL untuk preview
+        const base64DataURL = await convertFileToBase64DataURL(file);
+        setImagePreview(base64DataURL);
+        
+        // Notifikasi sukses
+        notifications.show({
+          title: "Gambar berhasil diproses",
+          message: "Gambar telah dikonversi ke base64",
+          color: "green",
+          autoClose: 2000,
+        });
+      } catch (error) {
+        console.error("Error converting image to base64:", error);
+        notifications.show({
+          title: "Gagal",
+          message: "Gagal memproses gambar",
+          color: "red",
+        });
       }
-    });
+    } else {
+      // Reset jika file dihapus
+      setImageBase64(null);
+      setImagePreview(null);
+    }
+  };
+
+  const handleFormSubmit = async (values: typeof form.values) => {
+    // Siapkan payload sesuai dengan format yang Anda berikan
+    const payload: any = {
+      name_event_organizer: values.name_event_organizer || "",
+      name: values.name,
+      location: values.location || "",
+      phone_number: values.phone_number,
+      email: values.email,
+      user_id: parseInt(values.user_id) || 0, // KONVERSI ke number
+      status: values.status,
+    };
+
+    // Tambahkan description dan website jika ada (opsional)
+    if (values.description) {
+      payload.description = values.description;
+    }
+    
+    if (values.website) {
+      payload.website = values.website;
+    }
+
+    // Jika ada base64 image, tambahkan ke payload
+    if (imageBase64) {
+      payload.image = imageBase64;
+    } else if (!isEditMode) {
+      // Jika mode tambah dan tidak ada gambar, kirim null
+      payload.image = null;
+    }
+    // Jika mode edit dan tidak ada gambar baru, JANGAN kirim field image sama sekali
+
+    console.log("Payload yang akan dikirim:", payload);
 
     const url = isEditMode ? `creator/${selectedCreator?.id}` : "creator";
     const method = isEditMode ? "PUT" : "POST";
@@ -224,10 +304,7 @@ export default function KelolaCreator() {
     await fetch({
       url,
       method,
-      data: formData,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      data: payload,
       before: () => setLoading.append("submit"),
       success: () => {
         notifications.show({
@@ -238,8 +315,11 @@ export default function KelolaCreator() {
         getData();
         closeFormModal();
         form.reset();
+        setImagePreview(null);
+        setImageBase64(null);
       },
       error: (error) => {
+        console.error("Error submitting form:", error);
         notifications.show({
           title: "Gagal",
           message: error.message || `Gagal ${isEditMode ? "memperbarui" : "menambahkan"} creator`,
@@ -366,6 +446,8 @@ export default function KelolaCreator() {
         onClose={() => {
           closeFormModal();
           form.reset();
+          setImagePreview(null);
+          setImageBase64(null);
         }}
         title={isEditMode ? "Edit Creator" : "Tambah Creator Baru"}
         size="lg"
@@ -412,13 +494,8 @@ export default function KelolaCreator() {
               label="User ID"
               placeholder="Masukkan ID user yang terkait"
               required
+              type="number" // Tambahkan type number
               {...form.getInputProps("user_id")}
-            />
-
-            <TextInput
-              label="Website"
-              placeholder="Contoh: https://example.com"
-              {...form.getInputProps("website")}
             />
 
             <Select
@@ -432,21 +509,64 @@ export default function KelolaCreator() {
             />
 
             <Textarea
-              label="Deskripsi"
+              label="Deskripsi (Opsional)"
               placeholder="Masukkan deskripsi tentang creator"
               autosize
               minRows={2}
               {...form.getInputProps("description")}
             />
 
+            <TextInput
+              label="Website (Opsional)"
+              placeholder="Contoh: https://example.com"
+              {...form.getInputProps("website")}
+            />
+
+            {/* Preview gambar */}
+            {imagePreview && (
+              <Stack gap={5}>
+                <Text size="sm" fw={500}>Preview Gambar</Text>
+                <Image 
+                  src={imagePreview} 
+                  w={100} 
+                  h={100} 
+                  radius="sm" 
+                  fit="cover"
+                  alt="Preview"
+                />
+              </Stack>
+            )}
+
+            {!imagePreview && isEditMode && selectedCreator?.image_url && (
+              <Stack gap={5}>
+                <Text size="sm" fw={500}>Gambar Saat Ini</Text>
+                <Image 
+                  src={selectedCreator.image_url} 
+                  w={100} 
+                  h={100} 
+                  radius="sm" 
+                  fit="cover"
+                  alt="Current"
+                />
+              </Stack>
+            )}
+
             <FileInput
-              label="Logo/Gambar"
+              label="Logo/Gambar (Opsional)"
               placeholder="Pilih file gambar"
               accept="image/*"
-              onChange={(file) => form.setFieldValue("image", file)}
+              onChange={handleFileChange}
               clearable
-              description={isEditMode && selectedCreator?.image_url ? "Biarkan kosong untuk tetap menggunakan gambar saat ini" : ""}
+              description={isEditMode && selectedCreator?.image_url ? 
+                "Pilih gambar baru untuk mengubah, atau biarkan kosong untuk tetap menggunakan gambar saat ini" : 
+                "Opsional, dapat diupload nanti"}
             />
+
+            {imageBase64 && (
+              <Text size="xs" c="dimmed">
+                Gambar berhasil dikonversi ke base64 ({Math.round(imageBase64.length / 1024)} KB)
+              </Text>
+            )}
 
             <Group justify="flex-end" mt="md">
               <Button 
@@ -454,6 +574,8 @@ export default function KelolaCreator() {
                 onClick={() => {
                   closeFormModal();
                   form.reset();
+                  setImagePreview(null);
+                  setImageBase64(null);
                 }}
               >
                 Batal
