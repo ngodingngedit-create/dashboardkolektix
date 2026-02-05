@@ -393,6 +393,7 @@ const Merchandise = () => {
                     isBookmarked={bookmarkedIds.has(item.id)}
                     onBookmarkToggle={toggleBookmark}
                     showBookmark={isLoggedIn}
+                    productVariants={item.product_varian as any[]}
                   />
                 ))}
               </div>
