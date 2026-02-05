@@ -728,7 +728,7 @@ const MerchandiseCard = ({
             {/* Bagian Kanan: Harga */}
             <div className="text-right ml-2 flex-shrink-0">
               <div className="text-dark font-bold text-sm">
-                {hasVariants ? "Mulai dari" : ""} {formatPrice(finalPrice)}
+                {formatPrice(finalPrice)}
               </div>
               {originalPrice && (
                 <div className="text-gray-400 text-[10px] line-through">

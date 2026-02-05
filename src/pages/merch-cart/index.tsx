@@ -1,3 +1,298 @@
+// // pages/cart.tsx
+// import { useContext, useEffect, useMemo, useState } from 'react';
+// import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio } from '@mantine/core';
+// import { useListState } from '@mantine/hooks';
+// import { MerchListResponse } from '../dashboard/merch/type';
+// import { Delete, Get } from '@/utils/REST';
+// import useLoggedUser from '@/utils/useLoggedUser';
+// import _ from 'lodash';
+// import { Icon } from '@iconify/react/dist/iconify.js';
+// import { modals } from '@mantine/modals';
+// import merchIcon from '../../assets/svg/merch.svg';
+// import { faCirclePlus } from '@fortawesome/free-solid-svg-icons';
+// import { useRouter } from 'next/router';
+// import ButtonB from '@/components/Button';
+// import ImageB from 'next/image';
+// import fetch from '@/utils/fetch';
+// import Cookies from 'js-cookie';
+// import { AppMainContext } from '../_app';
+
+// interface CartItem {
+//     id: number;
+//     storeName: string;
+//     productName: string;
+//     price: number;
+//     variant?: string;
+//     imageUrl: string;
+// }
+
+// export type CartListResponse<T = number> = {
+//     id?: T;
+//     user_id: number;
+//     product_id: number;
+//     variant_id: number;
+//     qty: number;
+//     price: number;
+// };
+
+// export default function Cart() {
+//     const [isr, setIsr] = useState(false);
+//     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+//     const [productList, setProductList] = useListState<MerchListResponse>();
+//     const [cartList, setCartList] = useListState<CartListResponse>();
+//     const [loading, setLoading] = useListState<string>();
+//     const user = useLoggedUser();
+//     const router = useRouter();
+//     const { cartCount, setCartCount } = useContext(AppMainContext);
+
+//     useEffect(() => {
+//         setIsr(true);
+//     }, []);
+
+//     useEffect(() => {
+//         getCart();
+//         getProduct();
+//     }, [isr]);
+
+//     const getCart = async () => {
+//         // if (user?.id) {
+//         //     await fetch<any, CartListResponse[]>({
+//         //         url: 'cart',
+//         //         method: 'GET',
+//         //         data: {},
+//         //         before: () => setLoading.append('getcart'),
+//         //         success: (res) => {
+//         //             const data = res as CartListResponse[];
+//         //             const list = _.filter(data, ['user_id', user?.id]);
+//         //             setCartList.setState(list);
+//         //         },
+//         //         complete: () => setLoading.filter(e => e != 'getcart'),
+//         //     });
+//         // } else {
+//             const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
+//             setCartList.setState(cartData.map((e, i) => ({...e, id: i + 1})));
+//             if (cartData.length == 1) setSelectedItems([0]);
+//         // }
+//     };
+
+//     const getProduct = () => {
+//         Get('product', {})
+//             .then((res: any) => {
+//                 setProductList.setState(res.data);
+//                 console.log(res.data);
+//             })
+//             .catch((err) => {
+//                 console.log(err);
+//             });
+//     };
+
+//     const cartListFiltered = useMemo(() => {
+//         return cartList.reduce((acc, curr) => {
+//             var result = acc;
+//             var valid = result.find(e => e.product_id === curr.product_id && e.variant_id === curr.variant_id);
+        
+//             if (valid) {
+//                 result.forEach((e, index) => {
+//                     if (e.product_id === curr.product_id && e.variant_id === curr.variant_id) {
+//                         result[index] = { ...e, qty: e.qty + curr.qty };
+//                     }
+//                 });
+//             } else {
+//                 result.push({ ...curr, id: [curr.id ?? 0] });
+//             }
+        
+//             return result;
+//         }, [] as CartListResponse<number[]>[]).map((e) => {
+//             const product = _.find(productList, ['id', e.product_id]);
+//             const variant = e.variant_id ? _.find(product?.product_varian, ['id', e.variant_id]) : null;
+//             const price = (e.variant_id ? parseInt(variant?.price ?? '0') : parseInt(product?.price ?? '0')) * e.qty;
+//             const subprice = (e.variant_id ? parseInt(variant?.price ?? '0') : parseInt(product?.price ?? '0'));
+
+//             return { ...e, product, variant, price, subprice };
+//         })
+//     }, [cartList, productList]);
+
+//     const deleteCart = (idx: number) => {
+//         modals.openConfirmModal({
+//             centered: true,
+//             title: 'Hapus Produk?',
+//             children: 'Apakah anda yakin ingin menghapus produk ini dari keranjang?',
+//             labels: { confirm: 'Hapus', cancel: 'Batal' },
+//             onConfirm: () => {
+//                 const deleteList = cartListFiltered[idx].id
+//                 // if (user?.id) {
+//                 //     for (const d of (deleteList ?? [])) {
+//                 //         Delete(`cart/${d}`, {})
+//                 //         .then(() => {
+//                 //             setCartList.filter((e) => e.id != d);
+//                 //         })
+//                 //         .catch((err) => {
+//                 //             console.log(err);
+//                 //         });
+//                 //     }
+//                 // } else {
+//                     const cart = cartList.filter((e) => (deleteList ? !deleteList?.includes(e?.id ?? 0) : false));
+//                     setCartList.setState(cart);
+//                     setCartCount && setCartCount(cart.reduce((q, n) => q + n.qty, 0));
+//                     Cookies.set('_cart', JSON.stringify(cart));
+//                 // }
+//             }
+//         })
+//     };
+
+//     const handleSelect = (id: number) => {
+//         setSelectedItems((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
+//     };
+
+//     const totalPrice = cartListFiltered.filter((item, i) => selectedItems.includes(i)).reduce((sum, item) => sum + item.price, 0);
+
+//     const handleCheckout = () => {
+//         Cookies.set('order_data', JSON.stringify(cartListFiltered.filter((item, i) => selectedItems.includes(i)).map(e => ({
+//             product_id: e.product_id,
+//             qty: e.qty,
+//             variant_id: e.variant_id
+//         }))));
+//         router.push('/merch-order');
+//     };
+
+//     return (
+//         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px] min-h-[100vh]`}>
+//             <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[80px]`}>
+//                 <Title order={1} size="h2">
+//                     Keranjang Saya
+//                 </Title>
+//                 <Text size="md" c="gray">
+//                     Cek produkmu sebelum melanjutkan!
+//                 </Text>{' '}
+//                 {/* You can choose any subheading from the array */}
+//                 <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
+//                     <Stack gap="md" w="100%">
+//                         {cartListFiltered.map((item, i) => (
+//                             <Paper key={i} p="md" withBorder>
+//                                 <Flex gap={15} align="center" justify="space-between" wrap="wrap">
+//                                     <Flex gap={15} align="center">
+//                                         <Checkbox checked={selectedItems.includes(i)} onChange={() => handleSelect(i)} />
+//                                         <Stack gap={8}>
+//                                             <Flex gap={5} align="center">
+//                                                 <Icon icon="mynaui:store" className={`text-primary-base`} />
+//                                                 <Text size="sm" c="gray">{item.product?.creator.name}</Text>
+//                                             </Flex>
+//                                             <Flex gap={10}>
+//                                                 <AspectRatio className={`shrink-0`}>
+//                                                     {(item.product?.product_image.length ?? 0) > 0 && (
+//                                                         <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+//                                                     )}
+//                                                     {(item.product?.product_image.length ?? 0) == 0 && (
+//                                                         <AspectRatio ratio={1}>
+//                                                             <Card bg="gray.1" radius={10}>
+//                                                                 <Center h="100%" c="gray.3">
+//                                                                     <Icon icon="bi:image" style={{ fontSize: 36 }} />
+//                                                                 </Center>
+//                                                             </Card>
+//                                                         </AspectRatio>
+//                                                     )}
+//                                                 </AspectRatio>
+//                                                 <div className={`w-full`}>
+//                                                     <Text fw={500}>{item.product?.product_name}</Text>
+//                                                     <Text size="sm" c="gray">Varian: {item.variant?.varian_name}</Text>
+//                                                     <Text size="sm" c="gray"><NumberFormatter value={item.subprice} /></Text>
+//                                                 </div>
+//                                             </Flex>
+//                                         </Stack>
+//                                     </Flex>
+
+//                                     <Flex gap={10} align="center" justify="end" className={`flex-grow md:flex-grow-0`}>
+//                                         <ActionIcon
+//                                             radius="xl"
+//                                             className={`shrink-0`}
+//                                             disabled={item.qty <= 0}
+//                                             onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty - 1}))}
+//                                             color="#194E9E">
+//                                             <Icon icon="uiw:minus" />
+//                                         </ActionIcon>
+//                                         <NumberInput value={item.qty} hideControls w={50} className='[&_*]:!text-center'/>
+//                                         <ActionIcon
+//                                             radius="xl"
+//                                             className={`shrink-0`}
+//                                             disabled={item.qty >= (item.variant_id ? item.variant?.stock_qty ?? 0 : item.product?.qty ?? 0)}
+//                                             onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty + 1}))}
+//                                             color="#194E9E">
+//                                             <Icon icon="uiw:plus" />
+//                                         </ActionIcon>
+//                                         <ActionIcon
+//                                             className={`shrink-0`}
+//                                             onClick={() => deleteCart(i)}
+//                                             color="red"
+//                                             variant='transparent'>
+//                                             <Icon icon="uiw:delete" />
+//                                         </ActionIcon>
+//                                     </Flex>
+//                                 </Flex>
+//                             </Paper>
+//                         ))}
+//                         {cartListFiltered?.length == 0 && (
+//                             <Center mih={200} w="100%">
+//                                 <div className='py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full'>
+//                                     <div className='border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2'>
+//                                         <ImageB src={merchIcon} alt='bank' className='w-7' />
+//                                     </div>
+//                                     <div className='text-center'>
+//                                     <p className='font-semibold text-lg'>Belum ada produk di keranjang</p>
+//                                     <p className='text-grey max-w-72 mt-[10px]'>
+//                                         Cari Produk dan tambahkan ke keranjang.
+//                                     </p>
+//                                     </div>
+//                                     <ButtonB
+//                                         label='Cari Produk'
+//                                         color='primary'
+//                                         className='mt-4'
+//                                         onClick={() => router.push('/merchandise')}
+//                                         startIcon={faCirclePlus}
+//                                     />
+//                                 </div>
+//                             </Center>
+//                         )}
+//                     </Stack>
+
+//                     {/* <Card withBorder w="100%" className={`md:max-w-[300px]`} h="fit-content">
+//                         <Stack gap="md">
+//                             <Title order={3}>Checkout</Title>
+//                             <Flex justify="space-between">
+//                                 <Text>Total Harga</Text>
+//                                 <Text><NumberFormatter value={totalPrice} /></Text>
+//                             </Flex>
+//                             <Button onClick={handleCheckout} fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0} radius="xl">
+//                                 Checkout
+//                             </Button>
+//                         </Stack>
+//                     </Card> */}
+
+//                 <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
+//                     <Container size="lg" w="100%">
+//                         <Flex justify="space-between" w="100%" wrap="wrap" gap={10}>
+//                             <Flex align="center" gap={10} className={`[&_*]:!whitespace-nowrap`}>
+//                                 <Text>Total Harga :</Text>
+//                                 <Text fw={600}><NumberFormatter value={totalPrice} /></Text>
+//                             </Flex>
+//                             <Button
+//                                 disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0}
+//                                 loading={loading.includes('checkout')}
+//                                 onClick={handleCheckout}
+//                                 className={`uppercase`}
+//                                 color="#194E9E"
+//                                 rightSection={<Icon icon="uiw:right" />}
+//                                 radius="xl">
+//                                 Checkout Sekarang
+//                             </Button>
+//                         </Flex>
+//                     </Container>
+//                 </Card>
+//                 </Flex>
+//             </Container>
+//         </div>
+//     );
+// }
+
 // pages/cart.tsx
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio } from '@mantine/core';
@@ -35,12 +330,111 @@ export type CartListResponse<T = number> = {
     price: number;
 };
 
+// Interface untuk response dari API berdasarkan struktur yang diberikan
+interface ApiResponse {
+    message: string;
+    data: MerchListResponse[];
+    last_page: number;
+    current_page?: number;
+    total?: number;
+    [key: string]: any; // Untuk properti lain yang mungkin ada
+}
+
+// Fungsi untuk fetch semua produk dari semua halaman
+const fetchAllProducts = async (): Promise<MerchListResponse[]> => {
+    let allProducts: MerchListResponse[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    try {
+        // Fetch halaman pertama untuk mendapatkan total halaman
+        const firstResponse = await Get('product', { page: 1 });
+        const firstPageData = firstResponse as ApiResponse;
+        
+        if (firstPageData.data && Array.isArray(firstPageData.data)) {
+            allProducts = [...allProducts, ...firstPageData.data];
+            totalPages = firstPageData.last_page || 1;
+            
+            console.log(`Total pages: ${totalPages}, First page loaded: ${firstPageData.data.length} products`);
+            
+            // Fetch sisa halaman jika ada lebih dari 1 halaman
+            if (totalPages > 1) {
+                const pagePromises = [];
+                
+                for (let page = 2; page <= totalPages; page++) {
+                    pagePromises.push(
+                        Get('product', { page })
+                            .then(response => {
+                                const pageData = response as ApiResponse;
+                                return pageData.data || [];
+                            })
+                            .catch(error => {
+                                console.error(`Error fetching page ${page}:`, error);
+                                return [];
+                            })
+                    );
+                }
+                
+                // Tunggu semua halaman selesai di-fetch
+                const remainingPagesData = await Promise.all(pagePromises);
+                
+                // Gabungkan semua data
+                remainingPagesData.forEach(pageData => {
+                    if (Array.isArray(pageData)) {
+                        allProducts = [...allProducts, ...pageData];
+                    }
+                });
+                
+                console.log(`All pages loaded. Total products: ${allProducts.length}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error in fetchAllProducts:', error);
+    }
+
+    return allProducts;
+};
+
+// Versi alternatif: Sequential fetch (lebih lambat tapi lebih stabil)
+const fetchAllProductsSequential = async (): Promise<MerchListResponse[]> => {
+    let allProducts: MerchListResponse[] = [];
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+        try {
+            const response = await Get('product', { page: currentPage });
+            const pageData = response as ApiResponse;
+            
+            if (pageData.data && Array.isArray(pageData.data)) {
+                allProducts = [...allProducts, ...pageData.data];
+                
+                // Cek apakah masih ada halaman berikutnya
+                const lastPage = pageData.last_page || 1;
+                if (currentPage >= lastPage) {
+                    hasMore = false;
+                } else {
+                    currentPage++;
+                }
+            } else {
+                hasMore = false;
+            }
+        } catch (error) {
+            console.error(`Error fetching page ${currentPage}:`, error);
+            hasMore = false;
+        }
+    }
+
+    return allProducts;
+};
+
 export default function Cart() {
     const [isr, setIsr] = useState(false);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [productList, setProductList] = useListState<MerchListResponse>();
     const [cartList, setCartList] = useListState<CartListResponse>();
     const [loading, setLoading] = useListState<string>();
+    const [isLoadingProducts, setIsLoadingProducts] = useState(false);
     const user = useLoggedUser();
     const router = useRouter();
     const { cartCount, setCartCount } = useContext(AppMainContext);
@@ -50,43 +444,61 @@ export default function Cart() {
     }, []);
 
     useEffect(() => {
-        getCart();
-        getProduct();
+        if (isr) {
+            getCart();
+            getProduct();
+        }
     }, [isr]);
 
     const getCart = async () => {
-        // if (user?.id) {
-        //     await fetch<any, CartListResponse[]>({
-        //         url: 'cart',
-        //         method: 'GET',
-        //         data: {},
-        //         before: () => setLoading.append('getcart'),
-        //         success: (res) => {
-        //             const data = res as CartListResponse[];
-        //             const list = _.filter(data, ['user_id', user?.id]);
-        //             setCartList.setState(list);
-        //         },
-        //         complete: () => setLoading.filter(e => e != 'getcart'),
-        //     });
-        // } else {
-            const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
-            setCartList.setState(cartData.map((e, i) => ({...e, id: i + 1})));
-            if (cartData.length == 1) setSelectedItems([0]);
-        // }
+        const cartData = JSON.parse(Cookies.get('_cart') ?? '[]') as any[];
+        setCartList.setState(cartData.map((e, i) => ({...e, id: i + 1})));
+        if (cartData.length > 0) {
+            // Pilih semua item secara default
+            setSelectedItems(cartData.map((_, index) => index));
+        }
     };
 
-    const getProduct = () => {
-        Get('product', {})
-            .then((res: any) => {
-                setProductList.setState(res.data);
-                console.log(res.data);
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+    const getProduct = async () => {
+        setIsLoadingProducts(true);
+        try {
+            console.log('Loading all products...');
+            // Gunakan fetchAllProducts untuk mendapatkan semua produk
+            const allProducts = await fetchAllProducts();
+            setProductList.setState(allProducts);
+            console.log(`All products loaded: ${allProducts.length} products`);
+        } catch (err) {
+            console.log('Error fetching all products:', err);
+            
+            // Fallback: coba ambil produk dengan sequential method
+            try {
+                console.log('Trying sequential fetch...');
+                const allProducts = await fetchAllProductsSequential();
+                setProductList.setState(allProducts);
+                console.log(`Products loaded (sequential): ${allProducts.length} products`);
+            } catch (fallbackError) {
+                console.log('Fallback error:', fallbackError);
+                
+                // Last resort: coba ambil hanya halaman pertama
+                try {
+                    const response = await Get('product', { page: 1 });
+                    const apiResponse = response as ApiResponse;
+                    if (apiResponse.data && Array.isArray(apiResponse.data)) {
+                        setProductList.setState(apiResponse.data);
+                        console.log('Products loaded (first page only):', apiResponse.data.length);
+                    }
+                } catch (lastError) {
+                    console.log('Last resort error:', lastError);
+                }
+            }
+        } finally {
+            setIsLoadingProducts(false);
+        }
     };
 
     const cartListFiltered = useMemo(() => {
+        if (isLoadingProducts) return [];
+        
         return cartList.reduce((acc, curr) => {
             var result = acc;
             var valid = result.find(e => e.product_id === curr.product_id && e.variant_id === curr.variant_id);
@@ -110,7 +522,7 @@ export default function Cart() {
 
             return { ...e, product, variant, price, subprice };
         })
-    }, [cartList, productList]);
+    }, [cartList, productList, isLoadingProducts]);
 
     const deleteCart = (idx: number) => {
         modals.openConfirmModal({
@@ -119,23 +531,16 @@ export default function Cart() {
             children: 'Apakah anda yakin ingin menghapus produk ini dari keranjang?',
             labels: { confirm: 'Hapus', cancel: 'Batal' },
             onConfirm: () => {
-                const deleteList = cartListFiltered[idx].id
-                // if (user?.id) {
-                //     for (const d of (deleteList ?? [])) {
-                //         Delete(`cart/${d}`, {})
-                //         .then(() => {
-                //             setCartList.filter((e) => e.id != d);
-                //         })
-                //         .catch((err) => {
-                //             console.log(err);
-                //         });
-                //     }
-                // } else {
-                    const cart = cartList.filter((e) => (deleteList ? !deleteList?.includes(e?.id ?? 0) : false));
-                    setCartList.setState(cart);
-                    setCartCount && setCartCount(cart.reduce((q, n) => q + n.qty, 0));
-                    Cookies.set('_cart', JSON.stringify(cart));
-                // }
+                const deleteList = cartListFiltered[idx].id;
+                const cart = cartList.filter((e) => (deleteList ? !deleteList?.includes(e?.id ?? 0) : false));
+                setCartList.setState(cart);
+                setCartCount && setCartCount(cart.reduce((q, n) => q + n.qty, 0));
+                Cookies.set('_cart', JSON.stringify(cart));
+                
+                // Update selectedItems setelah hapus
+                setSelectedItems(prev => prev.filter(item => item !== idx).map(item => 
+                    item > idx ? item - 1 : item
+                ));
             }
         })
     };
@@ -144,30 +549,83 @@ export default function Cart() {
         setSelectedItems((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
     };
 
-    const totalPrice = cartListFiltered.filter((item, i) => selectedItems.includes(i)).reduce((sum, item) => sum + item.price, 0);
+    const handleSelectAll = () => {
+        if (selectedItems.length === cartListFiltered.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems(cartListFiltered.map((_, index) => index));
+        }
+    };
+
+    const totalPrice = cartListFiltered
+        .filter((item, i) => selectedItems.includes(i))
+        .reduce((sum, item) => sum + item.price, 0);
 
     const handleCheckout = () => {
-        Cookies.set('order_data', JSON.stringify(cartListFiltered.filter((item, i) => selectedItems.includes(i)).map(e => ({
-            product_id: e.product_id,
-            qty: e.qty,
-            variant_id: e.variant_id
-        }))));
+        const checkoutData = cartListFiltered
+            .filter((item, i) => selectedItems.includes(i))
+            .map(e => ({
+                product_id: e.product_id,
+                qty: e.qty,
+                variant_id: e.variant_id,
+                price: e.subprice,
+                total_price: e.price
+            }));
+        
+        Cookies.set('order_data', JSON.stringify(checkoutData));
         router.push('/merch-order');
     };
 
+    // Fungsi update quantity
+    const updateQuantity = (index: number, newQty: number) => {
+        setCartList.setState(prev => {
+            const newCart = [...prev];
+            newCart[index] = { ...newCart[index], qty: newQty };
+            return newCart;
+        });
+        
+        // Update cookie
+        const cart = JSON.parse(Cookies.get('_cart') ?? '[]');
+        if (cart[index]) {
+            cart[index].qty = newQty;
+            Cookies.set('_cart', JSON.stringify(cart));
+            setCartCount && setCartCount(cart.reduce((q: number, n: any) => q + n.qty, 0));
+        }
+    };
+
     return (
-        <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px] min-h-[100vh]`}>
+        <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[100px] mb-[-20px] min-h-[100vh]`}>
             <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[80px]`}>
                 <Title order={1} size="h2">
                     Keranjang Saya
                 </Title>
                 <Text size="md" c="gray">
                     Cek produkmu sebelum melanjutkan!
-                </Text>{' '}
-                {/* You can choose any subheading from the array */}
+                </Text>
+                
+                {isLoadingProducts && (
+                    <Paper p="md" withBorder mt="md">
+                        <Center>
+                            <Text>Memuat data produk...</Text>
+                        </Center>
+                    </Paper>
+                )}
+                
                 <Flex mt="xl" gap="md" className={`flex-col md:flex-row w-full`}>
                     <Stack gap="md" w="100%">
-                        {cartListFiltered.map((item, i) => (
+                        {!isLoadingProducts && cartListFiltered.length > 0 && (
+                            <Paper p="md" withBorder>
+                                <Flex gap={15} align="center">
+                                    <Checkbox 
+                                        checked={selectedItems.length === cartListFiltered.length && cartListFiltered.length > 0}
+                                        onChange={handleSelectAll}
+                                    />
+                                    <Text size="sm">Pilih Semua ({cartListFiltered.length} produk)</Text>
+                                </Flex>
+                            </Paper>
+                        )}
+                        
+                        {!isLoadingProducts && cartListFiltered.map((item, i) => (
                             <Paper key={i} p="md" withBorder>
                                 <Flex gap={15} align="center" justify="space-between" wrap="wrap">
                                     <Flex gap={15} align="center">
@@ -180,7 +638,14 @@ export default function Cart() {
                                             <Flex gap={10}>
                                                 <AspectRatio className={`shrink-0`}>
                                                     {(item.product?.product_image.length ?? 0) > 0 && (
-                                                        <Image src={item.product?.product_image[0].image_url} alt={'cart-img'} w={64} h={64} className={`!shrink-0 bg-grey/20`} radius={5} />
+                                                        <Image 
+                                                            src={item.product?.product_image[0].image_url} 
+                                                            alt={'cart-img'} 
+                                                            w={64} 
+                                                            h={64} 
+                                                            className={`!shrink-0 bg-grey/20`} 
+                                                            radius={5} 
+                                                        />
                                                     )}
                                                     {(item.product?.product_image.length ?? 0) == 0 && (
                                                         <AspectRatio ratio={1}>
@@ -194,8 +659,15 @@ export default function Cart() {
                                                 </AspectRatio>
                                                 <div className={`w-full`}>
                                                     <Text fw={500}>{item.product?.product_name}</Text>
-                                                    <Text size="sm" c="gray">Varian: {item.variant?.varian_name}</Text>
-                                                    <Text size="sm" c="gray"><NumberFormatter value={item.subprice} /></Text>
+                                                    <Text size="sm" c="gray">Varian: {item.variant?.varian_name || 'Standard'}</Text>
+                                                    <Text size="sm" c="gray">
+                                                        <NumberFormatter 
+                                                            value={item.subprice} 
+                                                            prefix="Rp " 
+                                                            thousandSeparator="."
+                                                            decimalSeparator=","
+                                                        />
+                                                    </Text>
                                                 </div>
                                             </Flex>
                                         </Stack>
@@ -205,17 +677,28 @@ export default function Cart() {
                                         <ActionIcon
                                             radius="xl"
                                             className={`shrink-0`}
-                                            disabled={item.qty <= 0}
-                                            onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty - 1}))}
+                                            disabled={item.qty <= 1}
+                                            onClick={() => updateQuantity(i, item.qty - 1)}
                                             color="#194E9E">
                                             <Icon icon="uiw:minus" />
                                         </ActionIcon>
-                                        <NumberInput value={item.qty} hideControls w={50} className='[&_*]:!text-center'/>
+                                        <NumberInput 
+                                            value={item.qty} 
+                                            hideControls 
+                                            w={50} 
+                                            className='[&_*]:!text-center'
+                                            onChange={(value) => {
+                                                const numValue = Number(value);
+                                                if (!isNaN(numValue) && numValue >= 1) {
+                                                    updateQuantity(i, numValue);
+                                                }
+                                            }}
+                                        />
                                         <ActionIcon
                                             radius="xl"
                                             className={`shrink-0`}
                                             disabled={item.qty >= (item.variant_id ? item.variant?.stock_qty ?? 0 : item.product?.qty ?? 0)}
-                                            onClick={() => setCartList.applyWhere((_, x) => x == i, (e) => ({...e, qty: e.qty + 1}))}
+                                            onClick={() => updateQuantity(i, item.qty + 1)}
                                             color="#194E9E">
                                             <Icon icon="uiw:plus" />
                                         </ActionIcon>
@@ -230,17 +713,18 @@ export default function Cart() {
                                 </Flex>
                             </Paper>
                         ))}
-                        {cartListFiltered?.length == 0 && (
+                        
+                        {!isLoadingProducts && cartListFiltered?.length == 0 && (
                             <Center mih={200} w="100%">
                                 <div className='py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full'>
                                     <div className='border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2'>
                                         <ImageB src={merchIcon} alt='bank' className='w-7' />
                                     </div>
                                     <div className='text-center'>
-                                    <p className='font-semibold text-lg'>Belum ada produk di keranjang</p>
-                                    <p className='text-grey max-w-72 mt-[10px]'>
-                                        Cari Produk dan tambahkan ke keranjang.
-                                    </p>
+                                        <p className='font-semibold text-lg'>Belum ada produk di keranjang</p>
+                                        <p className='text-grey max-w-72 mt-[10px]'>
+                                            Cari Produk dan tambahkan ke keranjang.
+                                        </p>
                                     </div>
                                     <ButtonB
                                         label='Cari Produk'
@@ -253,41 +737,43 @@ export default function Cart() {
                             </Center>
                         )}
                     </Stack>
-
-                    {/* <Card withBorder w="100%" className={`md:max-w-[300px]`} h="fit-content">
-                        <Stack gap="md">
-                            <Title order={3}>Checkout</Title>
-                            <Flex justify="space-between">
-                                <Text>Total Harga</Text>
-                                <Text><NumberFormatter value={totalPrice} /></Text>
-                            </Flex>
-                            <Button onClick={handleCheckout} fullWidth color="#194E9E" disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0} radius="xl">
-                                Checkout
-                            </Button>
-                        </Stack>
-                    </Card> */}
-
-                <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
-                    <Container size="lg" w="100%">
-                        <Flex justify="space-between" w="100%" wrap="wrap" gap={10}>
-                            <Flex align="center" gap={10} className={`[&_*]:!whitespace-nowrap`}>
-                                <Text>Total Harga :</Text>
-                                <Text fw={600}><NumberFormatter value={totalPrice} /></Text>
-                            </Flex>
-                            <Button
-                                disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0}
-                                loading={loading.includes('checkout')}
-                                onClick={handleCheckout}
-                                className={`uppercase`}
-                                color="#194E9E"
-                                rightSection={<Icon icon="uiw:right" />}
-                                radius="xl">
-                                Checkout Sekarang
-                            </Button>
-                        </Flex>
-                    </Container>
-                </Card>
                 </Flex>
+
+                {!isLoadingProducts && cartListFiltered.length > 0 && (
+                    <Card 
+                        pos="fixed" 
+                        className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light z-10`} 
+                        py={10} 
+                        withBorder
+                    >
+                        <Container size="lg" w="100%">
+                            <Flex justify="space-between" w="100%" wrap="wrap" gap={10}>
+                                <Flex align="center" gap={10} className={`[&_*]:!whitespace-nowrap`}>
+                                    <Text>Total Harga ({selectedItems.length} produk):</Text>
+                                    <Text fw={600}>
+                                        <NumberFormatter 
+                                            value={totalPrice} 
+                                            prefix="Rp " 
+                                            thousandSeparator="."
+                                            decimalSeparator=","
+                                        />
+                                    </Text>
+                                </Flex>
+                                <Button
+                                    disabled={selectedItems.length === 0 || cartListFiltered.length == 0 || totalPrice <= 0}
+                                    loading={loading.includes('checkout')}
+                                    onClick={handleCheckout}
+                                    className={`uppercase`}
+                                    color="#194E9E"
+                                    rightSection={<Icon icon="uiw:right" />}
+                                    radius="xl"
+                                >
+                                    Checkout Sekarang
+                                </Button>
+                            </Flex>
+                        </Container>
+                    </Card>
+                )}
             </Container>
         </div>
     );
