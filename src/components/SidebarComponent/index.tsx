@@ -270,6 +270,13 @@ const sidebarData: SidebarData = [
         link: "/dashboard/merch-pos",
         role: "Creator",
       },
+      {
+        id: 4,
+        name: "Pengambilan Merchandise",
+        iconify: "hugeicons:cashier",
+        link: "/dashboard/merch-pickup",
+        role: "Creator",
+      },
     ],
   },
   // {

@@ -1,17 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { BreadcrumbItem, Breadcrumbs, Select, SelectItem, Tabs, Tab } from "@nextui-org/react";
 import Button from "@/components/Button";
-import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
+import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input } from "@nextui-org/react";
 import { Get } from "@/utils/REST";
-import { EventProps, TicketProps, TransactionProps } from "@/utils/globalInterface";
+import { EventProps, TicketProps } from "@/utils/globalInterface";
 import { useRouter } from "next/router";
 import TicketPicker from "@/components/TicketPicker";
 import ModalOfflineSales from "@/components/Modals/ModalOfflineSales";
-import { Flex, Stack, Text, Badge, Card } from "@mantine/core";
+import { Text, Badge, Card } from "@mantine/core";
 import moment from "moment";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMoneyBillWave, faStore, faTicketAlt, faShoppingCart, faDownload, faArrowLeft, faDesktop, faCreditCard, faReceipt, faEye, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faStore, faTicketAlt, faShoppingCart, faDownload, faArrowLeft, faDesktop, faReceipt, faEye } from "@fortawesome/free-solid-svg-icons";
 import config from "@/Config";
 import axios from "axios";
 
@@ -60,9 +60,7 @@ const parseNumber = (value: any): number => {
   if (value === null || value === undefined || value === "") return 0;
   if (typeof value === "number") return value;
 
-  // Hapus karakter non-numeric kecuali titik dan koma
   const cleaned = String(value).replace(/[^0-9.,]/g, "");
-  // Ganti koma dengan titik untuk parsing
   const normalized = cleaned.replace(",", ".");
   const parsed = parseFloat(normalized);
 
@@ -70,18 +68,14 @@ const parseNumber = (value: any): number => {
 };
 
 // Komponen Modal Detail Transaksi
-// Komponen Modal Detail Transaksi
 const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eventData }: TransactionDetailModalProps) => {
   if (!transaction) return null;
 
-  // Fungsi untuk mendapatkan nama metode pembayaran dari data transaction
   const getPaymentMethodName = () => {
-    // Coba dari payment_method object terlebih dahulu
     if (transaction.payment_method?.payment_name) {
       return transaction.payment_method.payment_name;
     }
     
-    // Jika tidak ada, cari dari paymentList berdasarkan ID
     if (transaction.payment_method_id) {
       const method = paymentList.find((m) => m.id === transaction.payment_method_id);
       return method ? method.payment_name : "Unknown";
@@ -91,7 +85,6 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
   };
 
   const getStatusText = () => {
-    // Gunakan payment_status dari transaction jika ada
     if (transaction.payment_status) {
       switch (transaction.payment_status.toLowerCase()) {
         case "verified":
@@ -106,7 +99,6 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
       }
     }
     
-    // Fallback ke transaction_status_id
     switch (transaction.transaction_status_id) {
       case 1:
         return { text: "Pending", color: "yellow" };
@@ -122,138 +114,74 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
   };
 
   const status = getStatusText();
-
-  // Parse semua nilai yang diperlukan sesuai dengan struktur data yang ada
   const totalPrice = parseNumber(transaction.total_price);
   const adminFee = parseNumber(transaction.admin_fee);
   const ppn = parseNumber(transaction.ppn);
   const grandTotal = parseNumber(transaction.grandtotal);
   
-  // Hitung total fee tiket dari data tickets
   const totalTicketFee = transaction.tickets?.reduce((sum: number, ticket: any) => {
     return sum + parseNumber(ticket.has_event_ticket?.ticket_fee || 0) * parseNumber(ticket.qty_ticket || 1);
   }, 0) || 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon={faReceipt} />
-            <span>Detail Transaksi</span>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 z-10">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faReceipt} />
+              <h3 className="text-lg font-semibold">Detail Transaksi</h3>
+            </div>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <p className="text-sm text-gray-500 font-normal">{transaction.invoice_no}</p>
-        </ModalHeader>
-        <ModalBody>
+          <p className="text-sm text-gray-500 mt-1">{transaction.invoice_no}</p>
+        </div>
+        
+        <div className="overflow-y-auto p-6 max-h-[calc(90vh-80px)]">
           <div className="space-y-4">
             {/* Info Transaksi */}
             <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">
-                Informasi Transaksi
-              </Text>
+              <Text fw={600} size="lg" className="mb-3">Informasi Transaksi</Text>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Invoice
-                  </Text>
-                  <Text fw={500}>{transaction.invoice_no}</Text>
-                </div>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Tanggal
-                  </Text>
-                  <Text fw={500}>{moment(transaction.created_at).format("DD MMMM YYYY HH:mm")}</Text>
-                </div>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Status
-                  </Text>
-                  <Badge color={status.color as any} variant="light">
-                    {status.text}
-                  </Badge>
-                </div>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Metode Pembayaran
-                  </Text>
-                  <Text fw={500}>{getPaymentMethodName()}</Text>
-                </div>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Tipe Transaksi
-                  </Text>
-                  <Text fw={500}>
-                    <Badge color={transaction.type_transaction === "offline" ? "blue" : "green"} variant="light">
-                      {transaction.type_transaction === "offline" ? "Offline" : "Online"}
-                    </Badge>
-                  </Text>
-                </div>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    Event
-                  </Text>
-                  <Text fw={500}>{transaction.has_event?.name || "Unknown Event"}</Text>
-                </div>
+                <div><Text size="sm" c="dimmed">Invoice</Text><Text fw={500}>{transaction.invoice_no}</Text></div>
+                <div><Text size="sm" c="dimmed">Tanggal</Text><Text fw={500}>{moment(transaction.created_at).format("DD MMMM YYYY HH:mm")}</Text></div>
+                <div><Text size="sm" c="dimmed">Status</Text><Badge color={status.color as any} variant="light">{status.text}</Badge></div>
+                <div><Text size="sm" c="dimmed">Metode Pembayaran</Text><Text fw={500}>{getPaymentMethodName()}</Text></div>
+                <div><Text size="sm" c="dimmed">Tipe Transaksi</Text><Badge color={transaction.type_transaction === "offline" ? "blue" : "green"} variant="light">{transaction.type_transaction === "offline" ? "Offline" : "Online"}</Badge></div>
+                <div><Text size="sm" c="dimmed">Event</Text><Text fw={500}>{transaction.has_event?.name || "Unknown Event"}</Text></div>
               </div>
             </Card>
 
             {/* Info Customer */}
             <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">
-                Informasi Customer
-              </Text>
+              <Text fw={600} size="lg" className="mb-3">Informasi Customer</Text>
               {transaction.identities && transaction.identities.length > 0 ? (
                 <div className="space-y-3">
                   {transaction.identities.map((identity: any, index: number) => (
                     <div key={index} className="p-3 border rounded-md bg-gray-50">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <Text size="sm" c="dimmed">
-                            Nama Lengkap
-                          </Text>
-                          <Text fw={500}>{identity.full_name || "-"}</Text>
-                        </div>
-                        <div>
-                          <Text size="sm" c="dimmed">
-                            Email
-                          </Text>
-                          <Text fw={500}>{identity.email || "-"}</Text>
-                        </div>
-                        <div>
-                          <Text size="sm" c="dimmed">
-                            No. Telepon
-                          </Text>
-                          <Text fw={500}>{identity.no_telp || "-"}</Text>
-                        </div>
-                        <div>
-                          <Text size="sm" c="dimmed">
-                            NIK
-                          </Text>
-                          <Text fw={500}>{identity.nik || "-"}</Text>
-                        </div>
-                        {identity.is_pemesan === 1 && (
-                          <div className="col-span-2">
-                            <Badge color="blue" variant="light">
-                              Pemesan Utama
-                            </Badge>
-                          </div>
-                        )}
+                        <div><Text size="sm" c="dimmed">Nama Lengkap</Text><Text fw={500}>{identity.full_name || "-"}</Text></div>
+                        <div><Text size="sm" c="dimmed">Email</Text><Text fw={500}>{identity.email || "-"}</Text></div>
+                        <div><Text size="sm" c="dimmed">No. Telepon</Text><Text fw={500}>{identity.no_telp || "-"}</Text></div>
+                        <div><Text size="sm" c="dimmed">NIK</Text><Text fw={500}>{identity.nik || "-"}</Text></div>
+                        {identity.is_pemesan === 1 && <div className="col-span-2"><Badge color="blue" variant="light">Pemesan Utama</Badge></div>}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <Text c="dimmed">Tidak ada informasi customer</Text>
-                </div>
+                <div className="text-center py-4"><Text c="dimmed">Tidak ada informasi customer</Text></div>
               )}
             </Card>
 
             {/* Detail Tiket */}
             <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">
-                Detail Tiket
-              </Text>
+              <Text fw={600} size="lg" className="mb-3">Detail Tiket</Text>
               {transaction.tickets && transaction.tickets.length > 0 ? (
                 <div className="space-y-2">
                   {transaction.tickets.map((ticket: any, index: number) => (
@@ -261,84 +189,43 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
                       <div className="flex-1">
                         <Text fw={500}>{ticket.has_event_ticket?.name || "Ticket OTS"}</Text>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          <Text size="sm" c="dimmed">
-                            Qty: {ticket.qty_ticket || 1}
-                          </Text>
-                          {ticket.code && (
-                            <Text size="sm" c="dimmed">
-                              Kode: {ticket.code}
-                            </Text>
-                          )}
+                          <Text size="sm" c="dimmed">Qty: {ticket.qty_ticket || 1}</Text>
+                          {ticket.code && <Text size="sm" c="dimmed">Kode: {ticket.code}</Text>}
                         </div>
                       </div>
                       <div className="text-right min-w-[120px]">
                         <Text fw={500}>Rp{parseNumber(ticket.price).toLocaleString("id-ID")}</Text>
-                        <Text size="sm" c="dimmed">
-                          Subtotal: Rp{parseNumber(ticket.subtotal_price).toLocaleString("id-ID")}
-                        </Text>
+                        <Text size="sm" c="dimmed">Subtotal: Rp{parseNumber(ticket.subtotal_price).toLocaleString("id-ID")}</Text>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <Text c="dimmed">Tidak ada data tiket</Text>
-                </div>
+                <div className="text-center py-4"><Text c="dimmed">Tidak ada data tiket</Text></div>
               )}
             </Card>
 
             {/* Ringkasan Pembayaran */}
             <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">
-                Ringkasan Pembayaran
-              </Text>
+              <Text fw={600} size="lg" className="mb-3">Ringkasan Pembayaran</Text>
               <div className="space-y-3">
-                {/* Subtotal Tiket */}
-                <div className="flex justify-between">
-                  <Text>Subtotal Tiket ({transaction.total_qty || 0} tiket)</Text>
-                  <Text>Rp{totalPrice.toLocaleString("id-ID")}</Text>
-                </div>
-
-                {/* Biaya Layanan Tiket */}
-                {/* {totalTicketFee > 0 && (
-                  <div className="flex justify-between">
-                    <Text>Biaya Layanan Tiket</Text>
-                    <Text>Rp{totalTicketFee.toLocaleString("id-ID")}</Text>
-                  </div>
-                )} */}
-
-                {/* Admin Fee */}
-                {adminFee > 0 && (
-                  <div className="flex justify-between">
-                    <Text>Biaya Admin</Text>
-                    <Text>Rp{adminFee.toLocaleString("id-ID")}</Text>
-                  </div>
-                )}
-
-                {/* PPN */}
-                {ppn > 0 && (
-                  <div className="flex justify-between">
-                    <Text>PPN</Text>
-                    <Text>Rp{ppn.toLocaleString("id-ID")}</Text>
-                  </div>
-                )}
-
-                {/* Total Pembayaran */}
+                <div className="flex justify-between"><Text>Subtotal Tiket ({transaction.total_qty || 0} tiket)</Text><Text>Rp{totalPrice.toLocaleString("id-ID")}</Text></div>
+                {adminFee > 0 && <div className="flex justify-between"><Text>Biaya Admin</Text><Text>Rp{adminFee.toLocaleString("id-ID")}</Text></div>}
+                {ppn > 0 && <div className="flex justify-between"><Text>PPN</Text><Text>Rp{ppn.toLocaleString("id-ID")}</Text></div>}
                 <div className="flex justify-between border-t pt-3 mt-2">
                   <Text fw={600}>Total Pembayaran</Text>
-                  <Text fw={600} size="lg">
-                    Rp{grandTotal.toLocaleString("id-ID")}
-                  </Text>
+                  <Text fw={600} size="lg">Rp{grandTotal.toLocaleString("id-ID")}</Text>
                 </div>
               </div>
             </Card>
           </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button label="Tutup" color="secondary" onClick={onClose} className="w-full sm:w-auto" />
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </div>
+        
+        <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4">
+          <Button label="Tutup" color="secondary" onClick={onClose} className="w-full" />
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -383,11 +270,9 @@ const TicketOTS = () => {
   const grandTotal = useMemo(() => {
     const baseAmount = subtotalPrice + totalTicketFee;
     const ppnAmount = eventData?.ppn_type === "percentage" ? baseAmount * 0.11 : eventData?.ppn || 0;
-
     return baseAmount + ppnAmount;
   }, [subtotalPrice, totalTicketFee, eventData]);
 
-  // Helper function untuk mendapatkan user data
   const getUserData = () => {
     try {
       const userData = Cookies.get("user_data");
@@ -398,16 +283,13 @@ const TicketOTS = () => {
     }
   };
 
-  // Helper function untuk mendapatkan creator_id
   const getCreatorId = () => {
     const user = getUserData();
     return user?.has_creator?.id || user?.creator_id || user?.id;
   };
 
-  // Auto-refresh ketika modal ditutup
   useEffect(() => {
     if (!showModal && eventData) {
-      // Refresh data transaksi ketika modal offline sales ditutup
       refreshTransactionData();
     }
   }, [showModal, eventData]);
@@ -415,7 +297,6 @@ const TicketOTS = () => {
   const refreshTransactionData = async () => {
     if (!eventData) return;
     
-    console.log("🔄 Refreshing transaction data...");
     try {
       await getOfflineTransactions(eventData.id);
       await getOnlineTransactions(eventData.id);
@@ -444,8 +325,6 @@ const TicketOTS = () => {
         response = await Get("event", {
           include_tickets: true,
         });
-
-        console.log("📋 Response dari API:", response);
       } catch (err) {
         console.error("❌ Gagal mengambil data event:", err);
         throw new Error("Tidak dapat mengambil data event");
@@ -466,12 +345,6 @@ const TicketOTS = () => {
       const creatorEvents = eventsData.filter((event: EventProps) => {
         const eventCreatorId = event.has_creator?.id || event.creator_id;
         return eventCreatorId == creatorId;
-      });
-
-      console.log("✅ Events loaded:", {
-        totalEvents: eventsData.length,
-        creatorEvents: creatorEvents.length,
-        creatorId,
       });
 
       setEvents(creatorEvents);
@@ -558,7 +431,6 @@ const TicketOTS = () => {
 
   const handleEventSelect = (eventId: string) => {
     setSelectedEventId(eventId);
-
     const selectedEvent = events.find((event) => event.id.toString() === eventId);
     if (selectedEvent) {
       loadEventData(selectedEvent);
@@ -832,7 +704,7 @@ const TicketOTS = () => {
 
   return (
     <>
-      <div className="py-5 px-4 sm:px-5">
+      <div className="py-5 px-4 sm:px-5 pb-24">
         <Breadcrumbs className="mb-5">
           <BreadcrumbItem href="/dashboard/my-event">Event Saya</BreadcrumbItem>
           <BreadcrumbItem>Tiket OTS</BreadcrumbItem>
@@ -977,88 +849,7 @@ const TicketOTS = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Ticket Picker */}
-              <div className="flex flex-col h-full">
-                <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full flex flex-col">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <h5 className="font-semibold text-lg">Pilih Tiket OTS</h5>
-                    <div className="flex items-center gap-2">
-                      {data.length > 0 ? (
-                        <Badge color="green" variant="light">
-                          {data.length} tiket tersedia
-                        </Badge>
-                      ) : (
-                        <Badge color="yellow" variant="light">
-                          Belum ada tiket OTS
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {isLoading ? (
-                    <div className="flex justify-center items-center min-h-[300px]">
-                      <Spinner color="primary" />
-                      <p className="ml-3">Memuat data tiket...</p>
-                    </div>
-                  ) : data.length > 0 ? (
-                    <>
-                      <div className="flex-grow overflow-y-auto pr-2 mb-4 max-h-[400px]">
-                        <TicketPicker eventData={eventData} counts={counts} setCounts={setCounts} data={data} isLogin={true} selected={selected} setSelected={setSelected} />
-                      </div>
-
-                      <div className="border-t pt-4 mt-auto">
-                        <div className="mb-4 space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Subtotal Tiket:</span>
-                            <span className="font-medium">Rp{subtotalPrice.toLocaleString("id-ID")}</span>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Biaya Layanan Tiket ({totalCount} tiket):</span>
-                            <span className="font-medium text-red-600">+ Rp{totalTicketFee.toLocaleString("id-ID")}</span>
-                          </div>
-
-                          {eventData?.ppn && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">PPN {eventData?.ppn_type === "percentage" ? "(11%)" : ""}:</span>
-                              <span className="font-medium text-red-600">+ Rp{(eventData?.ppn_type === "percentage" ? (subtotalPrice + totalTicketFee) * 0.11 : eventData?.ppn || 0).toLocaleString("id-ID")}</span>
-                            </div>
-                          )}
-
-                          <div className="pt-2 border-t">
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-semibold">Total Pembayaran:</span>
-                              <span className="text-2xl font-bold text-primary">Rp{grandTotal.toLocaleString("id-ID")}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {totalCount} tiket dipilih • Inkl. biaya layanan tiket
-                              {eventData?.ppn ? " + PPN" : ""}
-                            </p>
-                          </div>
-                        </div>
-
-                        <Button label="Proses Pembayaran" color="primary" onClick={() => setShowModal(true)} disabled={totalCount < 1} className="w-full" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-10 flex-grow flex flex-col justify-center">
-                      <div className="text-gray-400 mb-3">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                      </div>
-                      <h5 className="font-semibold text-lg mb-1">Belum ada tiket OTS</h5>
-                      <p className="text-sm text-gray-500 mb-4">Event ini belum memiliki tiket yang diaktifkan untuk penjualan OTS. Tambahkan tiket OTS terlebih dahulu untuk mulai penjualan.</p>
-                      <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                        <Button label="Tambah Tiket OTS" color="secondary" onClick={() => router.push(`/dashboard/my-event/${eventData.id}/ticket`)} className="w-full sm:w-auto" />
-                        <Button label="Refresh Data" color="primary" onClick={() => loadEventData(eventData)} className="w-full sm:w-auto" />
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              </div>
-
-              {/* Right Column - Recent Transactions */}
+              {/* KOLOM KIRI - Tabel Transaksi */}
               <div className="flex flex-col h-full">
                 <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full flex flex-col">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -1108,7 +899,7 @@ const TicketOTS = () => {
                     </div>
                   </div>
 
-                  <div className="flex-grow overflow-auto">
+                  <div className="flex-grow overflow-auto mb-4">
                     <div className="overflow-x-auto">
                       <Table aria-label="Transactions Table" className="min-w-full">
                         <TableHeader>
@@ -1166,7 +957,7 @@ const TicketOTS = () => {
                   </div>
 
                   {pages > 1 && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mb-4">
                       <Pagination page={page} total={pages} onChange={setPage} showControls />
                     </div>
                   )}
@@ -1187,6 +978,53 @@ const TicketOTS = () => {
                       />
                     </div>
                   </div>
+                </Card>
+              </div>
+
+              {/* KOLOM KANAN - TicketPicker */}
+              <div className="flex flex-col h-full">
+                <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full flex flex-col">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h5 className="font-semibold text-lg">Pilih Tiket OTS</h5>
+                    <div className="flex items-center gap-2">
+                      {data.length > 0 ? (
+                        <Badge color="green" variant="light">
+                          {data.length} tiket tersedia
+                        </Badge>
+                      ) : (
+                        <Badge color="yellow" variant="light">
+                          Belum ada tiket OTS
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {isLoading ? (
+                    <div className="flex justify-center items-center min-h-[300px]">
+                      <Spinner color="primary" />
+                      <p className="ml-3">Memuat data tiket...</p>
+                    </div>
+                  ) : data.length > 0 ? (
+                    <>
+                      <div className="flex-grow overflow-y-auto pr-2 mb-4">
+                        <TicketPicker eventData={eventData} counts={counts} setCounts={setCounts} data={data} isLogin={true} selected={selected} setSelected={setSelected} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-10 flex-grow flex flex-col justify-center">
+                      <div className="text-gray-400 mb-3">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                        </svg>
+                      </div>
+                      <h5 className="font-semibold text-lg mb-1">Belum ada tiket OTS</h5>
+                      <p className="text-sm text-gray-500 mb-4">Event ini belum memiliki tiket yang diaktifkan untuk penjualan OTS. Tambahkan tiket OTS terlebih dahulu untuk mulai penjualan.</p>
+                      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                        <Button label="Tambah Tiket OTS" color="secondary" onClick={() => router.push(`/dashboard/my-event/${eventData.id}/ticket`)} className="w-full sm:w-auto" />
+                        <Button label="Refresh Data" color="primary" onClick={() => loadEventData(eventData)} className="w-full sm:w-auto" />
+                      </div>
+                    </div>
+                  )}
                 </Card>
               </div>
             </div>
@@ -1211,6 +1049,69 @@ const TicketOTS = () => {
         )}
       </div>
 
+      {/* FOOTER - POSISI ABSOLUTE DALAM PAGE TAPI IKUT SCROLL */}
+      {eventData && data.length > 0 && (
+        <div className="fixed bottom-0 left-[280px] right-[200px] z-40 transition-all duration-300">
+          <div className="bg-white border-t border-gray-200 shadow-lg rounded-t-2xl mx-2 mb-0 overflow-hidden">
+            <div className="max-w-full mx-auto px-4 py-3">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                {/* Bagian Kiri - Info Tiket */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center">
+                      <span className="font-bold">{totalCount}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Tiket Dipilih</p>
+                      <p className="text-sm font-medium">{totalCount} tiket</p>
+                    </div>
+                  </div>
+                  
+                  <div className="hidden md:flex items-center gap-4">
+                    <div className="text-sm">
+                      <span className="text-gray-500">Subtotal: </span>
+                      <span className="font-medium">Rp{subtotalPrice.toLocaleString("id-ID")}</span>
+                    </div>
+                    
+                    {totalTicketFee > 0 && (
+                      <div className="text-sm">
+                        <span className="text-gray-500">+ Biaya: </span>
+                        <span className="font-medium text-red-600">Rp{totalTicketFee.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+                    
+                    {eventData?.ppn && (
+                      <div className="text-sm">
+                        <span className="text-gray-500">+ PPN: </span>
+                        <span className="font-medium text-red-600">
+                          Rp{(eventData?.ppn_type === "percentage" ? (subtotalPrice + totalTicketFee) * 0.11 : eventData?.ppn || 0).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bagian Kanan - Total & Tombol */}
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-none text-right sm:text-center">
+                    <p className="text-xs text-gray-500">Total Pembayaran</p>
+                    <p className="text-lg font-bold text-primary">Rp{grandTotal.toLocaleString("id-ID")}</p>
+                  </div>
+                  
+                  <Button 
+                    label="Proses Pembayaran" 
+                    color="primary" 
+                    onClick={() => setShowModal(true)} 
+                    disabled={totalCount < 1} 
+                    className="flex-1 sm:flex-none min-w-[160px]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {eventData && (
         <ModalOfflineSales
           isOpen={showModal}
@@ -1222,21 +1123,25 @@ const TicketOTS = () => {
           ticketFee={totalTicketFee}
           grandTotal={grandTotal}
           reload={() => {
-            // Refresh data transaksi setelah berhasil
             if (eventData) {
               refreshTransactionData();
             }
           }}
           setParentStep={() => {}}
           onSuccess={() => {
-            // Reset form setelah transaksi berhasil
             resetTicketForm();
           }}
         />
       )}
 
-      {/* Modal Detail Transaksi */}
-      <TransactionDetailModal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} transaction={selectedTransaction} paymentList={paymentList} eventData={eventData} />
+      {/* Modal Detail Transaksi Custom */}
+      <TransactionDetailModal 
+        isOpen={showDetailModal} 
+        onClose={() => setShowDetailModal(false)} 
+        transaction={selectedTransaction} 
+        paymentList={paymentList} 
+        eventData={eventData} 
+      />
     </>
   );
 };

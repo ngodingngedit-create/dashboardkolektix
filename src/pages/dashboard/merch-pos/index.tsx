@@ -649,7 +649,30 @@
 // }
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, ActionIcon, Alert, Badge, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Table, Tabs, Text, Textarea, TextInput, UnstyledButton, TextInputProps } from "@mantine/core";
+import {
+  Accordion,
+  ActionIcon,
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Image,
+  LoadingOverlay,
+  Menu,
+  Modal,
+  NumberFormatter,
+  NumberInput,
+  ScrollArea,
+  Stack,
+  Table,
+  Tabs,
+  Text,
+  Textarea,
+  TextInput,
+  UnstyledButton,
+} from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
 import { useListState } from "@mantine/hooks";
@@ -726,9 +749,9 @@ export default function Index({}: Readonly<ComponentProps>) {
     }[]
   >([]);
   const router = useRouter();
-  
+
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
-  const [activeTab, setActiveTab] = useState<string | null>('order');
+  const [activeTab, setActiveTab] = useState<string | null>("order");
   const [transactionPage, setTransactionPage] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [transactionSearch, setTransactionSearch] = useState("");
@@ -752,7 +775,7 @@ export default function Index({}: Readonly<ComponentProps>) {
         email: z.string().email().optional().nullable(),
         phone: z.string().optional().nullable(),
         address: z.string().optional().nullable(),
-      })
+      }),
     ),
   });
 
@@ -802,7 +825,7 @@ export default function Index({}: Readonly<ComponentProps>) {
           return;
         }
 
-        const items: MerchListResponse[] = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : data.items ?? [];
+        const items: MerchListResponse[] = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : (data.items ?? []);
 
         console.log("Resolved items length:", items.length);
 
@@ -843,12 +866,12 @@ export default function Index({}: Readonly<ComponentProps>) {
 
     const [startDate, endDate] = dateRange;
     if (startDate) {
-      const startDateStr = startDate.toISOString().split('T')[0];
+      const startDateStr = startDate.toISOString().split("T")[0];
       url += `&start_date=${startDateStr}`;
     }
 
     if (endDate) {
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split("T")[0];
       url += `&end_date=${endDateStr}`;
     }
 
@@ -858,41 +881,39 @@ export default function Index({}: Readonly<ComponentProps>) {
       before: () => setLoading.append("get-transactions"),
       success: ({ data }) => {
         console.log("Transactions data:", data);
-        
+
         let formattedTransactions: TransactionItem[] = [];
         let total = 0;
 
         if (data?.data) {
           formattedTransactions = data.data.map((item: any) => ({
             id: item.id,
-            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
-            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
-            items: item.items || item.products || []
+            items: item.items || item.products || [],
           }));
           total = data.total || data.meta?.total || formattedTransactions.length;
         } else if (Array.isArray(data)) {
           formattedTransactions = data.map((item: any) => ({
             id: item.id,
-            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
-            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, '0'),
+            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
-            items: item.items || item.products || []
+            items: item.items || item.products || [],
           }));
           total = formattedTransactions.length;
         }
 
-        formattedTransactions.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+        formattedTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         setTransactions(formattedTransactions);
         setTotalTransactions(total);
@@ -901,7 +922,7 @@ export default function Index({}: Readonly<ComponentProps>) {
       error: (err) => {
         console.error("Error fetching transactions:", err);
         notifications.show({ message: "Gagal memuat riwayat transaksi", color: "red" });
-      }
+      },
     });
   };
 
@@ -950,7 +971,7 @@ export default function Index({}: Readonly<ComponentProps>) {
           price: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.map((v) => parseInt(v.price ?? "0")).reduce((acc, price) => [Math.min(acc[0], price), Math.max(acc[1], price)], [Infinity, -Infinity]) : [parseInt(e.price ?? "0")],
           image: (e.product_image?.length ?? 0) > 0 ? e.product_image[0].image_url : "#",
           raw: e,
-          stock: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0) : e.qty ?? 0,
+          stock: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0) : (e.qty ?? 0),
         })) ?? []
     );
   }, [merch, searchQuery]);
@@ -963,7 +984,7 @@ export default function Index({}: Readonly<ComponentProps>) {
       const image = (product?.product_image?.length ?? 0) > 0 ? product?.product_image[0].image_url : "#";
       const price = !e.variant_id ? parseInt(product?.price ?? "999999") : parseInt(product?.product_varian?.find((z) => z.id == e.variant_id)?.price ?? "999999");
       const subtotal = price * e.count;
-      const stock = !e.variant_id ? product?.qty ?? 0 : product?.product_varian?.find((z) => z.id == e.variant_id)?.stock_qty ?? 0;
+      const stock = !e.variant_id ? (product?.qty ?? 0) : (product?.product_varian?.find((z) => z.id == e.variant_id)?.stock_qty ?? 0);
 
       return { id: e.id, variant_id: e.variant_id, name, variant_name, price, image, count: e.count, stock, subtotal };
     });
@@ -1099,7 +1120,7 @@ export default function Index({}: Readonly<ComponentProps>) {
 
     const billContent = generateBillContent();
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -1202,35 +1223,35 @@ export default function Index({}: Readonly<ComponentProps>) {
 
   const generateBillContent = () => {
     const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const dateStr = now.toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    const timeStr = now.toLocaleTimeString('id-ID');
+    const timeStr = now.toLocaleTimeString("id-ID");
     const invoiceNumber = `POS-${Date.now().toString().slice(-6)}`;
 
-    let itemsHTML = '';
+    let itemsHTML = "";
     selectedList.forEach((item, index) => {
       itemsHTML += `
         <tr>
-          <td>${item.name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
+          <td>${item.name}${item.variant_name ? ` (${item.variant_name})` : ""}</td>
           <td align="center">${item.count}</td>
-          <td align="right">${item.price.toLocaleString('id-ID')}</td>
-          <td align="right">${item.subtotal.toLocaleString('id-ID')}</td>
+          <td align="right">${item.price.toLocaleString("id-ID")}</td>
+          <td align="right">${item.subtotal.toLocaleString("id-ID")}</td>
         </tr>
       `;
     });
 
     return `
       <div class="header">
-        <div class="store-name">TOKO ${user?.has_creator?.name?.toUpperCase() || 'MERCH'}</div>
+        <div class="store-name">TOKO ${user?.has_creator?.name?.toUpperCase() || "MERCH"}</div>
         <div>Jl. Example No. 123</div>
         <div>Telp: 021-12345678</div>
         <div class="date">${dateStr} ${timeStr}</div>
         <div>Invoice: ${invoiceNumber}</div>
-        ${custValue.name ? `<div>Pelanggan: ${custValue.name}</div>` : ''}
+        ${custValue.name ? `<div>Pelanggan: ${custValue.name}</div>` : ""}
       </div>
 
       <table class="items-table">
@@ -1250,16 +1271,19 @@ export default function Index({}: Readonly<ComponentProps>) {
       <div class="total-section">
         ${handleSummary.detail
           .filter(([label, value]) => value !== 0)
-          .map(([label, value]) => `
+          .map(
+            ([label, value]) => `
             <div class="total-row">
               <span>${label}:</span>
-              <span>Rp ${Math.abs(value).toLocaleString('id-ID')}</span>
+              <span>Rp ${Math.abs(value).toLocaleString("id-ID")}</span>
             </div>
-          `).join('')}
+          `,
+          )
+          .join("")}
         
         <div class="total-row grand-total">
           <span>TOTAL:</span>
-          <span>Rp ${handleSummary.total.toLocaleString('id-ID')}</span>
+          <span>Rp ${handleSummary.total.toLocaleString("id-ID")}</span>
         </div>
         
         <div class="total-row">
@@ -1364,20 +1388,20 @@ export default function Index({}: Readonly<ComponentProps>) {
           before: () => setLoading.append("checkout"),
           success: async ({ data }) => {
             console.log("Cash payment success:", data);
-            
+
             await handleSave();
-            
+
             notifications.show({
               message: "Pembayaran Cash berhasil diproses",
               color: "green",
             });
-            
+
             handlePrintBill();
           },
           complete: () => setLoading.filter((e) => e != "checkout"),
           error: (err) => {
             console.error("Cash payment error:", err);
-            
+
             if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
               notifications.show({
                 color: "red",
@@ -1385,7 +1409,7 @@ export default function Index({}: Readonly<ComponentProps>) {
               });
               return;
             }
-            
+
             const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
             notifications.show({ message: msg, color: "red" });
           },
@@ -1393,8 +1417,7 @@ export default function Index({}: Readonly<ComponentProps>) {
             "Content-Type": "application/json",
           },
         });
-      } 
-      else if (paymentMethod === "Qris") {
+      } else if (paymentMethod === "Qris") {
         await fetch<any, { invoice_url: string }>({
           url: "order-product",
           method: "POST",
@@ -1499,17 +1522,17 @@ export default function Index({}: Readonly<ComponentProps>) {
 
   const renderStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; label: string }> = {
-      completed: { color: 'green', label: 'Selesai' },
-      pending: { color: 'yellow', label: 'Pending' },
-      cancelled: { color: 'red', label: 'Dibatalkan' },
-      processing: { color: 'blue', label: 'Diproses' },
-      paid: { color: 'green', label: 'Dibayar' },
-      unpaid: { color: 'orange', label: 'Belum Dibayar' },
-      success: { color: 'green', label: 'Sukses' },
-      failed: { color: 'red', label: 'Gagal' },
+      completed: { color: "green", label: "Selesai" },
+      pending: { color: "yellow", label: "Pending" },
+      cancelled: { color: "red", label: "Dibatalkan" },
+      processing: { color: "blue", label: "Diproses" },
+      paid: { color: "green", label: "Dibayar" },
+      unpaid: { color: "orange", label: "Belum Dibayar" },
+      success: { color: "green", label: "Sukses" },
+      failed: { color: "red", label: "Gagal" },
     };
 
-    const config = statusConfig[status.toLowerCase()] || { color: 'gray', label: status };
+    const config = statusConfig[status.toLowerCase()] || { color: "gray", label: status };
 
     return (
       <Badge color={config.color} variant="light" size="sm">
@@ -1580,40 +1603,98 @@ export default function Index({}: Readonly<ComponentProps>) {
               <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" mt={10} />
             </div>
 
-            <Stack gap={10} className={`overflow-y-auto flex-grow`}>
-              {merchList?.map((e, i) => (
-                <UnstyledButton disabled={(e.stock ?? 0) <= 0} className={`${(e.stock ?? 0) <= 0 ? "opacity-75" : ""}`} key={i} onClick={() => e.raw && handleAddProduct(e.raw)}>
-                  <Card p={10} withBorder radius={8} className={`relative ${(e.stock ?? 0) <= 0 ? "!bg-[#f5f5f5]" : "hover:!bg-[#fafafa]"}`}>
-                    <Flex gap={10}>
-                      <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
-                      <Stack gap={0}>
-                        <Text className={`capitalize`}>{e.name}</Text>
-                        <Text size="sm" fw={600} className={`whitespace-nowrap`}>
-                          {(e?.price ?? [])?.map((z, i) => (
-                            <Box key={i} component="span">
-                              {i != 0 && <> - </>}
-                              <NumberFormatter value={z} key={i} />
-                            </Box>
-                          ))}
-                        </Text>
-                        {(e.stock ?? 0) <= 0 && (
-                          <Text size="xs" c="gray" mt={5} className={`capitalize`}>
-                            Stock Habis
-                          </Text>
-                        )}
-                      </Stack>
-                    </Flex>
-
-                    <Icon icon="uiw:right" className={`!absolute top-2/4 -translate-y-2/4 right-5 z-20 text-[#d0d0d0]`} />
-                  </Card>
-                </UnstyledButton>
-              ))}
-              {merchList?.length == 0 && (
-                <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
+            <div className="overflow-y-auto flex-grow">
+              {merchList?.length === 0 ? (
+                <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />} mt={20}>
                   Tidak ada produk yang ditemukan
                 </Alert>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
+                  {merchList?.map((e, i) => (
+                    <UnstyledButton
+                      disabled={(e.stock ?? 0) <= 0}
+                      className={`${(e.stock ?? 0) <= 0 ? 'opacity-75 cursor-not-allowed' : 'hover:scale-[1.02] transition-transform duration-200'}`}
+                      key={i}
+                      onClick={() => e.raw && handleAddProduct(e.raw)}
+                    >
+                      <Card
+                        withBorder
+                        radius={8}
+                        className={`h-full ${(e.stock ?? 0) <= 0 ? "!bg-[#f5f5f5]" : "hover:!bg-[#fafafa] hover:shadow-md transition-all duration-200"}`}
+                        p={12}
+                      >
+                        <Stack gap={8} className="h-full">
+                          <div className="relative aspect-square overflow-hidden rounded-md bg-gray-100">
+                            <Image
+                              src={e.image}
+                              width="100%"
+                              height="100%"
+                              fit="cover"
+                              fallbackSrc="https://placehold.co/300x300/EBF4FF/0B387C?text=Produk"
+                              className="object-cover"
+                            />
+                            {e.stock <= 0 && (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <Text c="white" size="xs" fw={600}>
+                                  STOK HABIS
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1">
+                            <Text size="sm" fw={500} lineClamp={2} className="text-gray-800 min-h-[40px]">
+                              {e.name}
+                            </Text>
+                            
+                            <Text size="sm" fw={600} c="primary" className="mt-2">
+                              {(e?.price ?? []).map((z, i) => (
+                                <Box key={i} component="span">
+                                  {i !== 0 && <> - </>}
+                                  <NumberFormatter value={z} />
+                                </Box>
+                              ))}
+                            </Text>
+                            
+                            <div className="mt-2">
+                              {e.stock > 0 ? (
+                                <Text size="xs" c="green" className="flex items-center gap-1">
+                                  <Icon icon="uiw:check" className="text-xs" />
+                                  Stok: {e.stock}
+                                </Text>
+                              ) : (
+                                <Text size="xs" c="red" className="flex items-center gap-1">
+                                  <Icon icon="uiw:close" className="text-xs" />
+                                  Stok Habis
+                                </Text>
+                              )}
+                            </div>
+                          </div>
+
+                          {(e.stock ?? 0) > 0 && (
+                            <Button
+                              variant="light"
+                              color="primary"
+                              size="xs"
+                              fullWidth
+                              className="mt-2"
+                              leftSection={<Icon icon="uiw:plus" />}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                e.raw && handleAddProduct(e.raw);
+                              }}
+                            >
+                              Tambah
+                            </Button>
+                          )}
+                        </Stack>
+                      </Card>
+                    </UnstyledButton>
+                  ))}
+                </div>
               )}
-            </Stack>
+            </div>
 
             <Stack gap={10} mt="auto">
               <Flex gap={10} mt={10}>
@@ -1645,26 +1726,20 @@ export default function Index({}: Readonly<ComponentProps>) {
 
         <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden">
           <div className="flex-grow overflow-y-auto">
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onChange={setActiveTab}
               classNames={{
                 root: "sticky top-0 z-10 bg-white",
                 tab: "data-[active=true]:bg-primary-base/10 data-[active=true]:text-primary-base py-3",
-                list: "border-b border-gray-200 px-4"
+                list: "border-b border-gray-200 px-4",
               }}
             >
               <Tabs.List grow>
-                <Tabs.Tab 
-                  value="order" 
-                  leftSection={<Icon icon="uiw:shopping-cart" />}
-                >
+                <Tabs.Tab value="order" leftSection={<Icon icon="uiw:shopping-cart" />}>
                   Rincian Pesanan
                 </Tabs.Tab>
-                <Tabs.Tab 
-                  value="transactions" 
-                  leftSection={<Icon icon="uiw:file-text" />}
-                >
+                <Tabs.Tab value="transactions" leftSection={<Icon icon="uiw:file-text" />}>
                   Riwayat Transaksi
                 </Tabs.Tab>
               </Tabs.List>
@@ -1686,12 +1761,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                   </Flex>
 
                   {selectedList.length === 0 ? (
-                    <Card 
-                      withBorder 
-                      radius={12} 
-                      p={30} 
-                      className="text-center bg-gray-50/50 border-dashed border-2"
-                    >
+                    <Card withBorder radius={12} p={30} className="text-center bg-gray-50/50 border-dashed border-2">
                       <div className="mb-4">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
                           <Icon icon="uiw:shopping-cart" className="text-3xl text-gray-400" />
@@ -1700,16 +1770,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                           Belum ada produk yang dipilih
                         </Text>
                       </div>
-                      <Button 
-                        size="md" 
-                        className="md:!hidden" 
-                        onClick={() => setOpenSelect(!openSelect)}
-                        leftSection={<Icon icon="uiw:plus" />}
-                        variant="filled"
-                        color="primary"
-                        radius="md"
-                        fullWidth
-                      >
+                      <Button size="md" className="md:!hidden" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="filled" color="primary" radius="md" fullWidth>
                         Tambah Produk
                       </Button>
                     </Card>
@@ -1717,28 +1778,11 @@ export default function Index({}: Readonly<ComponentProps>) {
                     <ScrollArea h={300} scrollbarSize={6}>
                       <Stack gap={10}>
                         {selectedList.map((e, i) => (
-                          <Card 
-                            key={i} 
-                            p={12} 
-                            withBorder 
-                            radius={10}
-                            className="hover:bg-gray-50/50 transition-all duration-200 group"
-                          >
+                          <Card key={i} p={12} withBorder radius={10} className="hover:bg-gray-50/50 transition-all duration-200 group">
                             <Flex gap={12} align="center">
                               <div className="relative flex-shrink-0">
-                                <Image 
-                                  src={e.image} 
-                                  h={60} 
-                                  w={60} 
-                                  radius={8}
-                                  className="border border-gray-200"
-                                  fallbackSrc="https://placehold.co/60x60/EBF4FF/0B387C?text=Produk"
-                                />
-                                {e.count > 1 && (
-                                  <div className="absolute -top-2 -right-2 bg-primary-base text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                                    {e.count}
-                                  </div>
-                                )}
+                                <Image src={e.image} h={60} w={60} radius={8} className="border border-gray-200" fallbackSrc="https://placehold.co/60x60/EBF4FF/0B387C?text=Produk" />
+                                {e.count > 1 && <div className="absolute -top-2 -right-2 bg-primary-base text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">{e.count}</div>}
                               </div>
 
                               <div className="flex-1 min-w-0">
@@ -1784,30 +1828,22 @@ export default function Index({}: Readonly<ComponentProps>) {
                                       max={e.stock}
                                       value={e.count}
                                       onChange={(value) => {
-                                        const numValue = typeof value === 'string' ? parseInt(value) || 1 : value;
-                                        setSelected(selected.map((item, idx) => 
-                                          idx === i ? { ...item, count: numValue } : item
-                                        ));
+                                        const numValue = typeof value === "string" ? parseInt(value) || 1 : value;
+                                        setSelected(selected.map((item, idx) => (idx === i ? { ...item, count: numValue } : item)));
                                       }}
                                       size="xs"
                                       w={80}
                                       className="[&_input]:text-center [&_input]:font-semibold"
                                       styles={{
                                         input: {
-                                          borderColor: '#CBD5E0',
-                                          '&:focus': {
-                                            borderColor: '#0B387C'
-                                          }
-                                        }
+                                          borderColor: "#CBD5E0",
+                                          "&:focus": {
+                                            borderColor: "#0B387C",
+                                          },
+                                        },
                                       }}
                                     />
-                                    <ActionIcon 
-                                      onClick={() => handleDeleteItem(i)}
-                                      color="red.5" 
-                                      variant="subtle"
-                                      size="sm"
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
+                                    <ActionIcon onClick={() => handleDeleteItem(i)} color="red.5" variant="subtle" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                                       <Icon icon="uiw:delete" className="text-base" />
                                     </ActionIcon>
                                   </Flex>
@@ -1822,12 +1858,7 @@ export default function Index({}: Readonly<ComponentProps>) {
 
                   {selectedList.length > 0 && (
                     <div className="mt-4">
-                      <Card 
-                        withBorder 
-                        radius={10} 
-                        p={12}
-                        className="bg-gray-50/50"
-                      >
+                      <Card withBorder radius={10} p={12} className="bg-gray-50/50">
                         <Flex justify="space-between" align="center">
                           <div>
                             <Text size="sm" c="gray.7" fw={500}>
@@ -1838,10 +1869,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                             </Text>
                           </div>
                           <Text size="md" fw={700} c="gray.8">
-                            <NumberFormatter 
-                              prefix="Rp " 
-                              value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} 
-                            />
+                            <NumberFormatter prefix="Rp " value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} />
                           </Text>
                         </Flex>
                       </Card>
@@ -1849,16 +1877,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                   )}
 
                   {selectedList.length > 0 && (
-                    <Button 
-                      size="md" 
-                      className="md:!hidden mt-4"
-                      onClick={() => setOpenSelect(!openSelect)}
-                      leftSection={<Icon icon="uiw:plus" />}
-                      variant="light"
-                      color="primary"
-                      radius="md"
-                      fullWidth
-                    >
+                    <Button size="md" className="md:!hidden mt-4" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light" color="primary" radius="md" fullWidth>
                       Tambah Produk Lain
                     </Button>
                   )}
@@ -2025,9 +2044,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                               </div>
 
                               {discount !== 0 && (
-                                <div className="mt-1 text-[10px] text-gray-500 text-right">
-                                  {discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}
-                                </div>
+                                <div className="mt-1 text-[10px] text-gray-500 text-right">{discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}</div>
                               )}
                             </div>
                           </div>
@@ -2105,8 +2122,10 @@ export default function Index({}: Readonly<ComponentProps>) {
 
                   <Card withBorder p="md" radius="md" mb="md" className="bg-gray-50/50">
                     <Stack gap="md">
-                      <Text fw={600} size="sm">Filter Transaksi</Text>
-                      
+                      <Text fw={600} size="sm">
+                        Filter Transaksi
+                      </Text>
+
                       <Flex gap="md" wrap="wrap">
                         <TextInput
                           placeholder="Cari berdasarkan invoice..."
@@ -2116,64 +2135,31 @@ export default function Index({}: Readonly<ComponentProps>) {
                           className="flex-1 min-w-[200px]"
                           size="sm"
                         />
-                        
-                        <DatePickerInput
-                          type="range"
-                          placeholder="Pilih rentang tanggal"
-                          value={dateRange}
-                          onChange={setDateRange}
-                          className="w-[250px]"
-                          size="sm"
-                          clearable
-                          valueFormat="DD/MM/YYYY"
-                        />
-                        
+
+                        <DatePickerInput type="range" placeholder="Pilih rentang tanggal" value={dateRange} onChange={setDateRange} className="w-[250px]" size="sm" clearable valueFormat="DD/MM/YYYY" />
+
                         <Menu shadow="md" width={200}>
                           <Menu.Target>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              rightSection={<Icon icon="uiw:down" />}
-                            >
+                            <Button variant="outline" size="sm" rightSection={<Icon icon="uiw:down" />}>
                               Status: {transactionStatus === "all" ? "Semua" : transactionStatus}
                             </Button>
                           </Menu.Target>
                           <Menu.Dropdown>
-                            <Menu.Item onClick={() => setTransactionStatus("all")}>
-                              Semua Status
-                            </Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("all")}>Semua Status</Menu.Item>
                             <Menu.Divider />
-                            <Menu.Item onClick={() => setTransactionStatus("paid")}>
-                              Dibayar
-                            </Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("unpaid")}>
-                              Belum Dibayar
-                            </Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("completed")}>
-                              Selesai
-                            </Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("pending")}>
-                              Pending
-                            </Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("paid")}>Dibayar</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("unpaid")}>Belum Dibayar</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("completed")}>Selesai</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("pending")}>Pending</Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
                       </Flex>
 
                       <Flex gap="sm" justify="flex-end">
-                        <Button 
-                          variant="light" 
-                          size="sm"
-                          onClick={handleResetFilters}
-                          leftSection={<Icon icon="uiw:reload" />}
-                        >
+                        <Button variant="light" size="sm" onClick={handleResetFilters} leftSection={<Icon icon="uiw:reload" />}>
                           Reset
                         </Button>
-                        <Button 
-                          size="sm"
-                          onClick={handleSearchTransactions}
-                          loading={loading.includes("get-transactions")}
-                          leftSection={<Icon icon="uiw:search" />}
-                        >
+                        <Button size="sm" onClick={handleSearchTransactions} loading={loading.includes("get-transactions")} leftSection={<Icon icon="uiw:search" />}>
                           Cari
                         </Button>
                       </Flex>
@@ -2181,14 +2167,9 @@ export default function Index({}: Readonly<ComponentProps>) {
                   </Card>
 
                   <LoadingOverlay visible={loading.includes("get-transactions")} />
-                  
+
                   {transactions.length === 0 ? (
-                    <Card 
-                      withBorder 
-                      radius={12} 
-                      p={30} 
-                      className="text-center bg-gray-50/50 border-dashed border-2"
-                    >
+                    <Card withBorder radius={12} p={30} className="text-center bg-gray-50/50 border-dashed border-2">
                       <div className="mb-4">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
                           <Icon icon="uiw:file-text" className="text-3xl text-gray-400" />
@@ -2196,12 +2177,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                         <Text c="gray.6" size="sm" mb={10}>
                           Tidak ada transaksi ditemukan
                         </Text>
-                        <Button 
-                          onClick={() => getTransactions()}
-                          variant="light"
-                          size="sm"
-                          leftSection={<Icon icon="uiw:reload" />}
-                        >
+                        <Button onClick={() => getTransactions()} variant="light" size="sm" leftSection={<Icon icon="uiw:reload" />}>
                           Refresh
                         </Button>
                       </div>
@@ -2209,21 +2185,16 @@ export default function Index({}: Readonly<ComponentProps>) {
                   ) : (
                     <>
                       <div className="overflow-x-auto">
-                        <Table 
-                          striped 
-                          highlightOnHover
-                          verticalSpacing="sm"
-                          style={{ minWidth: '800px' }}
-                        >
+                        <Table striped highlightOnHover verticalSpacing="sm" style={{ minWidth: "800px" }}>
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th style={{ width: '60px' }}>No</Table.Th>
-                              <Table.Th style={{ minWidth: '150px' }}>Invoice No</Table.Th>
-                              <Table.Th style={{ minWidth: '150px' }}>Pelanggan</Table.Th>
-                              <Table.Th style={{ minWidth: '120px' }}>Total</Table.Th>
-                              <Table.Th style={{ minWidth: '120px' }}>Status</Table.Th>
-                              <Table.Th style={{ minWidth: '120px' }}>Pembayaran</Table.Th>
-                              <Table.Th style={{ minWidth: '120px' }}>Tanggal</Table.Th>
+                              <Table.Th style={{ width: "60px" }}>No</Table.Th>
+                              <Table.Th style={{ minWidth: "150px" }}>Invoice No</Table.Th>
+                              <Table.Th style={{ minWidth: "150px" }}>Pelanggan</Table.Th>
+                              <Table.Th style={{ minWidth: "120px" }}>Total</Table.Th>
+                              <Table.Th style={{ minWidth: "120px" }}>Status</Table.Th>
+                              <Table.Th style={{ minWidth: "120px" }}>Pembayaran</Table.Th>
+                              <Table.Th style={{ minWidth: "120px" }}>Tanggal</Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -2244,18 +2215,11 @@ export default function Index({}: Readonly<ComponentProps>) {
                                 </Table.Td>
                                 <Table.Td>
                                   <Text fw={600} size="sm">
-                                    <NumberFormatter 
-                                      prefix="Rp " 
-                                      value={transaction.total_amount} 
-                                      thousandSeparator="."
-                                      decimalSeparator=","
-                                    />
+                                    <NumberFormatter prefix="Rp " value={transaction.total_amount} thousandSeparator="." decimalSeparator="," />
                                   </Text>
                                 </Table.Td>
                                 <Table.Td>
-                                  <div style={{ minWidth: '100px' }}>
-                                    {renderStatusBadge(transaction.status)}
-                                  </div>
+                                  <div style={{ minWidth: "100px" }}>{renderStatusBadge(transaction.status)}</div>
                                 </Table.Td>
                                 <Table.Td>
                                   <Badge variant="outline" size="sm">
@@ -2264,10 +2228,10 @@ export default function Index({}: Readonly<ComponentProps>) {
                                 </Table.Td>
                                 <Table.Td>
                                   <Text size="sm">
-                                    {new Date(transaction.created_at).toLocaleDateString('id-ID', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric'
+                                    {new Date(transaction.created_at).toLocaleDateString("id-ID", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
                                     })}
                                   </Text>
                                 </Table.Td>
@@ -2276,12 +2240,12 @@ export default function Index({}: Readonly<ComponentProps>) {
                           </Table.Tbody>
                         </Table>
                       </div>
-                      
+
                       <Flex justify="space-between" align="center" mt="md">
                         <Text size="sm" c="gray.6">
                           Halaman {transactionPage} - Menampilkan {transactions.length} dari {totalTransactions} transaksi
                         </Text>
-                        
+
                         <Flex gap={10}>
                           <Button
                             size="sm"
@@ -2320,26 +2284,18 @@ export default function Index({}: Readonly<ComponentProps>) {
         </Card>
       </Flex>
 
-      {activeTab === 'order' && (
+      {activeTab === "order" && (
         <div
           className="fixed bottom-0 z-50"
           style={{
-            left: "calc(45px + 20px)",
-            right: "20px",
+            left: "300px",
+            right: "280px",
           }}
         >
           <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <Button
-                  variant="light"
-                  color="gray"
-                  onClick={handlePrintBill}
-                  loading={printBillLoading}
-                  disabled={selectedList.length === 0}
-                  leftSection={<Icon icon="uiw:printer" />}
-                  size="md"
-                >
+                <Button variant="light" color="gray" onClick={handlePrintBill} loading={printBillLoading} disabled={selectedList.length === 0} leftSection={<Icon icon="uiw:printer" />} size="md">
                   Print Bill
                 </Button>
                 <div className="h-6 border-l border-gray-300"></div>
@@ -2350,14 +2306,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                   </span>
                 </div>
               </div>
-              <Button 
-                loading={loading.includes("submit") || loading.includes("checkout")} 
-                onClick={handleCheckout} 
-                disabled={handleSummary.total <= 0 || !paymentMethod} 
-                size="md" 
-                radius="xl" 
-                className="min-w-[120px]"
-              >
+              <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} size="md" radius="xl" className="min-w-[120px]">
                 Bayar
               </Button>
             </div>

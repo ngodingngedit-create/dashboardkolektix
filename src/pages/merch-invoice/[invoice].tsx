@@ -173,15 +173,18 @@ export default function Invoice() {
                       <Text size="xs" fw={300}>
                         Nama Pemesan
                       </Text>
+                      {/* Menggunakan nama penerima untuk nama pemesan */}
                       <Text size="sm" fw={600}>
-                        {data?.user?.name || "-"}
+                        {data?.address?.nama_penerima || "-"}
                       </Text>
                     </Stack>
                     <Stack gap={0}>
                       <Text size="xs" fw={300}>
-                        Email Pemesan
+                        Kurir yang Dipilih
                       </Text>
-                      <Text size="sm">{data?.user?.email || "-"}</Text>
+                      <Text size="sm" className="capitalize">
+                        {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
+                      </Text>
                     </Stack>
                     <Stack gap={0}>
                       <Text size="xs" fw={300}>
@@ -231,13 +234,6 @@ export default function Invoice() {
                 </Text>
                 <Card withBorder>
                   <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Dikirim Dari
-                      </Text>
-                      <Text size="sm">JAWA BARAT, BANDUNG</Text>
-                    </Stack>
-                    <Box />
                     <Stack gap={0}>
                       <Text size="xs" fw={300}>
                         Nama Penerima
@@ -310,18 +306,6 @@ export default function Invoice() {
                       ))}
 
                       {/* Summary rows */}
-                      {/* <Table.Tr className={`border-t border-primary-base`}>
-                        <Table.Td colSpan={3}></Table.Td>
-                        <Table.Td>
-                          <Text className={`!pt-[10px]`}>Biaya Pengiriman</Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text className={`!pt-[10px]`}>
-                            <NumberFormatter value={summaryPrice.courier} />
-                          </Text>
-                        </Table.Td>
-                      </Table.Tr>
-                       */}
                       <Table.Tr>
                         <Table.Td colSpan={3}></Table.Td>
                         <Table.Td>

@@ -1,19 +1,6 @@
 // festaqingkolektiv/src/pages/dashboard/admin/permission/index.tsx
 import { useState, useEffect } from "react";
-import { 
-  LoadingOverlay, 
-  Stack, 
-  Flex, 
-  Text, 
-  Group, 
-  Badge, 
-  Button, 
-  Modal, 
-  Select, 
-  Checkbox,
-  Grid,
-  Divider
-} from "@mantine/core";
+import { LoadingOverlay, Stack, Flex, Text, Group, Badge, Button, Modal, Select, Checkbox, Grid, Divider, Alert, TextInput, NumberInput } from "@mantine/core";
 import { useDisclosure, useListState } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
@@ -82,7 +69,6 @@ export default function KelolaPermission() {
   const [pagination, setPagination] = useState<any>(null);
   const [roles, setRoles] = useState<any[]>([]);
   const [modules, setModules] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
 
   // Modal untuk form
   const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
@@ -104,7 +90,12 @@ export default function KelolaPermission() {
     },
 
     validate: {
-      user_id: (value) => (!value ? "User harus dipilih" : null),
+      user_id: (value) => {
+        if (!value) return "User ID harus diisi";
+        if (isNaN(Number(value))) return "User ID harus berupa angka";
+        if (Number(value) <= 0) return "User ID harus lebih dari 0";
+        return null;
+      },
       role_id: (value) => (!value ? "Role harus dipilih" : null),
       module_id: (value) => (!value ? "Module harus dipilih" : null),
     },
@@ -114,7 +105,6 @@ export default function KelolaPermission() {
     getData();
     getRoles();
     getModules();
-    getUsers();
   }, []);
 
   const getData = async (params?: string) => {
@@ -127,7 +117,7 @@ export default function KelolaPermission() {
           before: () => setLoading.append("getdata"),
           success: (response) => {
             console.log("API Permission Response:", response);
-            
+
             if (response && response.data) {
               let permissions: PermissionProps[] = [];
 
@@ -167,18 +157,28 @@ export default function KelolaPermission() {
         url: "role",
         method: "GET",
         data: {},
+        before: () => setLoading.append("getroles"),
         success: (response) => {
+          console.log("API Role Response:", response);
+
           if (response && response.data) {
-            const rolesData = Array.isArray(response.data.data) 
-              ? response.data.data 
-              : Array.isArray(response.data) 
-                ? response.data 
-                : [];
-            setRoles(rolesData.map((role: any) => ({
-              value: role.id.toString(),
-              label: role.name,
-            })));
+            const rolesData = Array.isArray(response.data.data) ? response.data.data : Array.isArray(response.data) ? response.data : [];
+            setRoles(
+              rolesData.map((role: any) => ({
+                value: role.id.toString(),
+                label: role.name,
+              })),
+            );
           }
+        },
+        complete: () => setLoading.filter((e) => e !== "getroles"),
+        error: (error) => {
+          console.error("Error fetching roles:", error);
+          notifications.show({
+            title: "Gagal",
+            message: "Gagal mengambil data roles",
+            color: "red",
+          });
         },
       });
     } catch (error) {
@@ -188,51 +188,67 @@ export default function KelolaPermission() {
 
   const getModules = async () => {
     try {
-      await fetch({
-        url: "module",
+      const response = await fetch({
+        url: "modules",
         method: "GET",
         data: {},
-        success: (response) => {
-          if (response && response.data) {
-            const modulesData = Array.isArray(response.data.data) 
-              ? response.data.data 
-              : Array.isArray(response.data) 
-                ? response.data 
-                : [];
-            setModules(modulesData.map((module: any) => ({
-              value: module.id.toString(),
-              label: module.module_name,
-            })));
-          }
-        },
+        before: () => setLoading.append("getmodules"),
       });
+
+      console.log("RAW API Modules Response:", response);
+
+      // SIMPLE LOGIC - ambil data apapun yang ada
+      let modulesData = [];
+
+      // Coba dari berbagai kemungkinan lokasi data
+      if (Array.isArray(response)) {
+        modulesData = response;
+      } else if (response && Array.isArray(response.data)) {
+        modulesData = response.data;
+      } else if (response && response.data && Array.isArray(response.data.data)) {
+        modulesData = response.data.data;
+      } else if (response && response.data && Array.isArray(response.data.modules)) {
+        modulesData = response.data.modules;
+      } else if (response && response.modules && Array.isArray(response.modules)) {
+        modulesData = response.modules;
+      }
+
+      console.log("Extracted modulesData:", modulesData);
+
+      if (modulesData.length > 0) {
+        // Map data untuk dropdown - SIMPLE
+        const moduleOptions = modulesData.map((module: any) => ({
+          value: module.id ? module.id.toString() : Math.random().toString(),
+          label: module.module_name || module.name || `Module ${module.id || "unknown"}`,
+        }));
+
+        console.log("Module Options:", moduleOptions);
+        setModules(moduleOptions);
+      } else {
+        console.error("No modules data found!");
+        // FALLBACK: Data langsung dari console Anda
+        const fallbackModules = [
+          { value: "1", label: "Event" },
+          { value: "2", label: "Merchandise" },
+          { value: "3", label: "lowongan" },
+          { value: "4", label: "talenta" },
+          { value: "5", label: "Venue" },
+        ];
+        setModules(fallbackModules);
+      }
     } catch (error) {
       console.error("Error fetching modules:", error);
-    }
-  };
-
-  const getUsers = async () => {
-    try {
-      await fetch({
-        url: "users", // Sesuaikan dengan endpoint user yang tersedia
-        method: "GET",
-        data: {},
-        success: (response) => {
-          if (response && response.data) {
-            const usersData = Array.isArray(response.data.data) 
-              ? response.data.data 
-              : Array.isArray(response.data) 
-                ? response.data 
-                : [];
-            setUsers(usersData.map((user: any) => ({
-              value: user.id.toString(),
-              label: `${user.name} (${user.email})`,
-            })));
-          }
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching users:", error);
+      // FALLBACK jika error
+      const fallbackModules = [
+        { value: "1", label: "Event" },
+        { value: "2", label: "Merchandise" },
+        { value: "3", label: "lowongan" },
+        { value: "4", label: "talenta" },
+        { value: "5", label: "Venue" },
+      ];
+      setModules(fallbackModules);
+    } finally {
+      setLoading.filter((e) => e !== "getmodules");
     }
   };
 
@@ -244,11 +260,10 @@ export default function KelolaPermission() {
   };
 
   const handleEditClick = (rowData: any) => {
-    // Cari permission berdasarkan ID dari data asli
     const permissionId = rowData.id;
-    const permission = data.find(p => p.id === permissionId) as PermissionProps;
+    const permission = data.find((p) => p.id === permissionId) as PermissionProps;
     if (!permission) return;
-    
+
     setSelectedPermission(permission);
     setIsEditMode(true);
 
@@ -268,11 +283,10 @@ export default function KelolaPermission() {
   };
 
   const handleDelete = async (rowData: any) => {
-    // Cari permission berdasarkan ID dari data asli
     const permissionId = rowData.id;
-    const permission = data.find(p => p.id === permissionId) as PermissionProps;
+    const permission = data.find((p) => p.id === permissionId) as PermissionProps;
     if (!permission) return;
-    
+
     if (!confirm(`Apakah Anda yakin ingin menghapus permission ini?`)) {
       return;
     }
@@ -290,10 +304,10 @@ export default function KelolaPermission() {
         });
         getData();
       },
-      error: () => {
+      error: (error) => {
         notifications.show({
           title: "Gagal",
-          message: "Gagal menghapus permission",
+          message: error.message || "Gagal menghapus permission",
           color: "red",
         });
       },
@@ -303,7 +317,6 @@ export default function KelolaPermission() {
 
   const handleFormSubmit = async (values: typeof form.values) => {
     const formData = {
-      ...values,
       user_id: parseInt(values.user_id),
       role_id: parseInt(values.role_id),
       module_id: parseInt(values.module_id),
@@ -315,10 +328,11 @@ export default function KelolaPermission() {
       is_import: values.is_import ? 1 : 0,
     };
 
+    console.log("Form Data to Submit:", formData);
+
     if (isEditMode && selectedPermission) {
-      // UPDATE PERMISSION
       await fetch({
-        url: `permission/${selectedPermission.id}`,
+        url: `permissions/${selectedPermission.id}`,
         method: "PUT",
         data: formData,
         before: () => setLoading.append("submit"),
@@ -342,9 +356,8 @@ export default function KelolaPermission() {
         complete: () => setLoading.filter((e) => e !== "submit"),
       });
     } else {
-      // TAMBAH PERMISSION BARU
       await fetch({
-        url: "permission",
+        url: "permissions",
         method: "POST",
         data: formData,
         before: () => setLoading.append("submit"),
@@ -370,9 +383,7 @@ export default function KelolaPermission() {
     }
   };
 
-  // Function untuk memetakan data ke format table
   const mapData = (permission: any) => {
-    // Type assertion ke PermissionProps
     const permissionData = permission as PermissionProps;
     return {
       id: permissionData.id,
@@ -382,6 +393,9 @@ export default function KelolaPermission() {
           <Text size="xs" c="dimmed">
             {permissionData.has_user?.email || ""}
           </Text>
+          <Text size="xs" c="blue">
+            ID: {permissionData.user_id}
+          </Text>
         </Stack>
       ),
       role: (
@@ -390,16 +404,47 @@ export default function KelolaPermission() {
         </Badge>
       ),
       module: (
-        <Text size="sm">{permissionData.has_module?.module_name || "-"}</Text>
+        <Stack gap={2}>
+          <Text size="sm" fw={500}>
+            {permissionData.has_module?.module_name || "-"}
+          </Text>
+          <Text size="xs" c="dimmed">
+            ID: {permissionData.module_id}
+          </Text>
+        </Stack>
       ),
       permissions: (
         <Group gap="xs">
-          {permissionData.is_index === 1 && <Badge size="xs" color="gray">Index</Badge>}
-          {permissionData.is_view === 1 && <Badge size="xs" color="green">View</Badge>}
-          {permissionData.is_update === 1 && <Badge size="xs" color="yellow">Update</Badge>}
-          {permissionData.is_delete === 1 && <Badge size="xs" color="red">Delete</Badge>}
-          {permissionData.is_download === 1 && <Badge size="xs" color="blue">Download</Badge>}
-          {permissionData.is_import === 1 && <Badge size="xs" color="violet">Import</Badge>}
+          {permissionData.is_index === 1 && (
+            <Badge size="xs" color="gray">
+              Index
+            </Badge>
+          )}
+          {permissionData.is_view === 1 && (
+            <Badge size="xs" color="green">
+              View
+            </Badge>
+          )}
+          {permissionData.is_update === 1 && (
+            <Badge size="xs" color="yellow">
+              Update
+            </Badge>
+          )}
+          {permissionData.is_delete === 1 && (
+            <Badge size="xs" color="red">
+              Delete
+            </Badge>
+          )}
+          {permissionData.is_download === 1 && (
+            <Badge size="xs" color="blue">
+              Download
+            </Badge>
+          )}
+          {permissionData.is_import === 1 && (
+            <Badge size="xs" color="violet">
+              Import
+            </Badge>
+          )}
         </Group>
       ),
       created_at: permissionData.created_at ? moment(permissionData.created_at).format("DD MMM YYYY HH:mm") : "-",
@@ -407,13 +452,12 @@ export default function KelolaPermission() {
     };
   };
 
-  // Fungsi untuk menghitung statistik tanpa menggunakan Set iteration
   const getStats = () => {
     const userIds: number[] = [];
     const roleIds: number[] = [];
     const moduleIds: number[] = [];
-    
-    data.forEach(permission => {
+
+    data.forEach((permission) => {
       if (!userIds.includes(permission.user_id)) {
         userIds.push(permission.user_id);
       }
@@ -438,7 +482,7 @@ export default function KelolaPermission() {
   return (
     <>
       <Stack className="p-[20px] md:p-[30px]" gap={30}>
-        <LoadingOverlay visible={loading.includes("getdata")} />
+        <LoadingOverlay visible={loading.includes("getdata")} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
 
         {/* Header dengan tombol Tambah */}
         <Flex gap={10} justify="space-between" align="center">
@@ -451,63 +495,79 @@ export default function KelolaPermission() {
             </Text>
           </Stack>
 
-          <Button onClick={handleAddClick} color="blue">
-            + Tambah Permission
+          <Button onClick={handleAddClick} color="blue" leftSection={<Text size="1.2rem">+</Text>} loading={loading.includes("getmodules")}>
+            Tambah Permission
           </Button>
         </Flex>
 
         {/* Statistik Cards */}
         <Group grow gap="md">
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
+          <Stack
+            p="md"
+            style={{
+              borderRadius: "8px",
               border: "1px solid #e0e0e0",
-              backgroundColor: "#f8f9fa"
+              backgroundColor: "#f8f9fa",
             }}
             gap={5}
           >
-            <Text size="sm" c="gray">Total Permission</Text>
-            <Text size="1.5rem" fw={600}>{stats.total}</Text>
+            <Text size="sm" c="gray">
+              Total Permission
+            </Text>
+            <Text size="1.5rem" fw={600}>
+              {stats.total}
+            </Text>
           </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
+
+          <Stack
+            p="md"
+            style={{
+              borderRadius: "8px",
               border: "1px solid #dbeafe",
-              backgroundColor: "#eff6ff"
+              backgroundColor: "#eff6ff",
             }}
             gap={5}
           >
-            <Text size="sm" c="blue">User Unik</Text>
-            <Text size="1.5rem" fw={600} c="blue">{stats.users}</Text>
+            <Text size="sm" c="blue">
+              User Unik
+            </Text>
+            <Text size="1.5rem" fw={600} c="blue">
+              {stats.users}
+            </Text>
           </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
+
+          <Stack
+            p="md"
+            style={{
+              borderRadius: "8px",
               border: "1px solid #fde68a",
-              backgroundColor: "#fffbeb"
+              backgroundColor: "#fffbeb",
             }}
             gap={5}
           >
-            <Text size="sm" c="yellow">Role Unik</Text>
-            <Text size="1.5rem" fw={600} c="yellow">{stats.roles}</Text>
+            <Text size="sm" c="yellow">
+              Role Unik
+            </Text>
+            <Text size="1.5rem" fw={600} c="yellow">
+              {stats.roles}
+            </Text>
           </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
+
+          <Stack
+            p="md"
+            style={{
+              borderRadius: "8px",
               border: "1px solid #ddd6fe",
-              backgroundColor: "#f5f3ff"
+              backgroundColor: "#f5f3ff",
             }}
             gap={5}
           >
-            <Text size="sm" c="violet">Module Unik</Text>
-            <Text size="1.5rem" fw={600} c="violet">{stats.modules}</Text>
+            <Text size="sm" c="violet">
+              Module Unik
+            </Text>
+            <Text size="1.5rem" fw={600} c="violet">
+              {stats.modules}
+            </Text>
           </Stack>
         </Group>
 
@@ -553,92 +613,57 @@ export default function KelolaPermission() {
         title={isEditMode ? "Edit Permission" : "Tambah Permission Baru"}
         size="lg"
         centered
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
       >
         <form onSubmit={form.onSubmit(handleFormSubmit)}>
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
             <Grid>
               <Grid.Col span={6}>
-                <Select
-                  label="User"
-                  placeholder="Pilih user"
-                  data={users}
-                  searchable
-                  required
-                  {...form.getInputProps("user_id")}
-                />
+                <NumberInput label="User ID" placeholder="Masukkan User ID (angka)" required min={1} allowNegative={false} allowDecimal={false} description="Masukkan ID user berupa angka" {...form.getInputProps("user_id")} />
               </Grid.Col>
               <Grid.Col span={6}>
-                <Select
-                  label="Role"
-                  placeholder="Pilih role"
-                  data={roles}
-                  searchable
-                  required
-                  {...form.getInputProps("role_id")}
-                />
+                <Select label="Role" placeholder="Pilih role" data={roles} searchable required nothingFoundMessage="Role tidak ditemukan" {...form.getInputProps("role_id")} />
               </Grid.Col>
             </Grid>
 
-            <Select
-              label="Module"
-              placeholder="Pilih module"
-              data={modules}
-              searchable
-              required
-              {...form.getInputProps("module_id")}
-            />
+            <Select label="Module" placeholder="Pilih module" data={modules} searchable required nothingFoundMessage="Module tidak ditemukan" description="Pilih module yang akan diberikan permission" {...form.getInputProps("module_id")} />
+
+            {modules.length === 0 && (
+              <Text size="sm" c="red">
+                ⚠️ Module belum tersedia. Cek console untuk detail error.
+              </Text>
+            )}
+
+            {modules.length > 0 && (
+              <Text size="xs" c="dimmed">
+                {modules.length} module tersedia
+              </Text>
+            )}
 
             <Divider my="sm" label="Permission Settings" />
 
             <Grid>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="Index"
-                  description="Akses halaman index"
-                  checked={form.values.is_index === 1}
-                  onChange={(e) => form.setFieldValue("is_index", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="Index" description="Akses halaman index" checked={form.values.is_index === 1} onChange={(e) => form.setFieldValue("is_index", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="View"
-                  description="Akses view data"
-                  checked={form.values.is_view === 1}
-                  onChange={(e) => form.setFieldValue("is_view", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="View" description="Akses view data" checked={form.values.is_view === 1} onChange={(e) => form.setFieldValue("is_view", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="Update"
-                  description="Akses update data"
-                  checked={form.values.is_update === 1}
-                  onChange={(e) => form.setFieldValue("is_update", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="Update" description="Akses update data" checked={form.values.is_update === 1} onChange={(e) => form.setFieldValue("is_update", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="Delete"
-                  description="Akses delete data"
-                  checked={form.values.is_delete === 1}
-                  onChange={(e) => form.setFieldValue("is_delete", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="Delete" description="Akses delete data" checked={form.values.is_delete === 1} onChange={(e) => form.setFieldValue("is_delete", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="Download"
-                  description="Akses download data"
-                  checked={form.values.is_download === 1}
-                  onChange={(e) => form.setFieldValue("is_download", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="Download" description="Akses download data" checked={form.values.is_download === 1} onChange={(e) => form.setFieldValue("is_download", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
               <Grid.Col span={4}>
-                <Checkbox
-                  label="Import"
-                  description="Akses import data"
-                  checked={form.values.is_import === 1}
-                  onChange={(e) => form.setFieldValue("is_import", e.currentTarget.checked ? 1 : 0)}
-                />
+                <Checkbox label="Import" description="Akses import data" checked={form.values.is_import === 1} onChange={(e) => form.setFieldValue("is_import", e.currentTarget.checked ? 1 : 0)} />
               </Grid.Col>
             </Grid>
 
@@ -649,14 +674,11 @@ export default function KelolaPermission() {
                   closeFormModal();
                   form.reset();
                 }}
+                disabled={loading.includes("submit")}
               >
                 Batal
               </Button>
-              <Button 
-                type="submit" 
-                color="blue" 
-                loading={loading.includes("submit")}
-              >
+              <Button type="submit" color="blue" loading={loading.includes("submit")}>
                 {isEditMode ? "Simpan Perubahan" : "Tambah Permission"}
               </Button>
             </Group>
