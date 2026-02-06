@@ -1052,7 +1052,7 @@ const TicketOTS = () => {
       {/* FOOTER - POSISI ABSOLUTE DALAM PAGE TAPI IKUT SCROLL */}
       {eventData && data.length > 0 && (
         <div className="fixed bottom-0 left-[280px] right-[200px] z-40 transition-all duration-300">
-          <div className="bg-white border-t border-gray-200 shadow-lg rounded-t-2xl mx-2 mb-0 overflow-hidden">
+          <div className="bg-white border-t border-primary-light-200 shadow-lg rounded-t-2xl mx-2 mb-0 overflow-hidden">
             <div className="max-w-full mx-auto px-4 py-3">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                 {/* Bagian Kiri - Info Tiket */}

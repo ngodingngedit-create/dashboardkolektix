@@ -30,7 +30,6 @@ import { NavbarItem } from "@nextui-org/react";
 export default function NavbarComponent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const users = useLoggedUser();
-  // const { route } = router;
   const { asPath, route } = router;
   const { width } = useWindowSize();
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
@@ -63,7 +62,60 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
   };
 
   const handleFilter = () => {
+    const wasClosed = !showFilter;
     setShowFilter(!showFilter);
+    
+    // Jika FilterMenu dibuka, fokus ke input
+    if (wasClosed) {
+      setTimeout(() => {
+        // Cari input dengan ID khusus
+        const searchInput = document.getElementById('search-filter-input') as HTMLInputElement;
+        
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+          return;
+        }
+        
+        // Fallback 1: cari input di modal Mantine
+        const modalElements = document.querySelectorAll('.mantine-Modal-inner, .mantine-Modal-content, [role="dialog"]');
+        
+        for (let i = 0; i < modalElements.length; i++) {
+          const modal = modalElements[i];
+          const input = modal.querySelector('input[type="text"], input[type="search"]') as HTMLInputElement;
+          if (input) {
+            input.focus();
+            input.select();
+            return;
+          }
+        }
+        
+        // Fallback 2: cari semua input text/search
+        const allInputs = document.querySelectorAll('input[type="text"], input[type="search"]');
+        
+        for (let i = 0; i < allInputs.length; i++) {
+          const input = allInputs[i] as HTMLInputElement;
+          // Cek jika input terlihat dan placeholder mengandung kata search
+          if (input.offsetParent !== null && 
+              (input.placeholder?.toLowerCase().includes('cari') || 
+               input.placeholder?.toLowerCase().includes('search'))) {
+            input.focus();
+            input.select();
+            return;
+          }
+        }
+        
+        // Fallback 3: cari input pertama yang terlihat
+        for (let i = 0; i < allInputs.length; i++) {
+          const input = allInputs[i] as HTMLInputElement;
+          if (input.offsetParent !== null) {
+            input.focus();
+            input.select();
+            return;
+          }
+        }
+      }, 200);
+    }
   };
 
   useEffect(() => {
@@ -132,12 +184,22 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
     setBgNav(active);
   };
 
-  useHotkeys([["ctrl+F", () => setShowFilter(!showFilter)]]);
-
-  // const cartCount = (JSON.parse(Cookies.get('_cart') ?? '[]') as { qty: number }[]).reduce((q, n) => q + n.qty, 0);
+  useHotkeys([["ctrl+F", () => {
+    const wasClosed = !showFilter;
+    setShowFilter(!showFilter);
+    
+    if (wasClosed) {
+      setTimeout(() => {
+        const searchInput = document.getElementById('search-filter-input') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }, 200);
+    }
+  }]]);
 
   return (
-    //
     <div>
       <nav className="bg-primary-dark transition-colors duration-300 sticky top-0 w-full z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -173,24 +235,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       Event
                     </Link>
 
-                    {/* <Link
-                      href="/talent"
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        route === "/talent" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
-                      }`}
-                    >
-                      Talenta
-                    </Link>
-
-                    <Link
-                      href="/lowongan"
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        route === "/lowongan" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
-                      }`}
-                    >
-                      Lowongan
-                    </Link> */}
-
                     <Link
                       href="/merchandise"
                       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
@@ -200,17 +244,13 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       Merchandise
                     </Link>
 
-                    {/* <Link
-                      href="/venue"
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        route === "/venue" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
-                      }`}
-                    >
-                      Venue
-                    </Link> */}
-
                     <div className="w-10">
-                      <button className="bg-white rounded-full w-8 h-8" onClick={handleFilter}>
+                      <button 
+                        className="bg-white rounded-full w-8 h-8 hover:bg-gray-100 transition-colors" 
+                        onClick={handleFilter}
+                        aria-label="Search"
+                        title="Cari (Ctrl+F)"
+                      >
                         <FontAwesomeIcon icon={faSearch} className="text-primary" />
                       </button>
                     </div>
@@ -238,16 +278,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                     </Indicator>
                   )}
 
-                  {/* {users?.id && (
-                    <button
-                      type='button'
-                      className='relative rounded-full bg-gray-800 p-1 text-white hover:text-white mt-1'
-                      onClick={handleNotification}
-                    >
-                      <FontAwesomeIcon icon={showNotifications ? Bell : faBell} className={`text-[24px]`} />
-                    </button>
-                  )} */}
-
                   <div className="relative ml-3">
                     {isLogin ? (
                       <div className="bg-white hidden rounded-full md:px-3 px-10 py-0.5 md:py-1.5 md:w-20 w-16">
@@ -264,27 +294,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         </button>
                       </div>
                     ) : (
-                      <>
-                        {/* <Button
-                          size="compact-lg"
-                          radius="xl"
-                          bg="white"
-                          className={`!text-primary-base`}
-                          onClick={() => router.push('/auth')}
-                        >
-                          Login
-                        </Button> */}
-                        {/* <button
-                          type='button'
-                          className='w-full relative flex items-center rounded-full justify-around text-[20px] text-primary-base font-semibold hover:text-primary-dark'
-                          id='user-menu-button'
-                          aria-expanded='false'
-                          aria-haspopup='true'
-                          
-                        >
-                          Login
-                        </button> */}
-                      </>
+                      <></>
                     )}
 
                     <Flex gap={15} align="center">
@@ -330,17 +340,12 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </UnstyledButton>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          {/* <Menu.Label className={`md:!hidden`}>Event</Menu.Label>
-                          <Menu.Item className={`md:!hidden`} leftSection={<Icon icon="uiw:plus"/>} color="#0B387C" component={Link} href={Boolean(userData?.has_creator) ? "/create-event" : "/register/creator"}>Buat Event</Menu.Item>
-                          <Menu.Divider className={`md:!hidden`}/> */}
                           <Menu.Label>Akun</Menu.Label>
                           {!isLogin ? (
                             <>
                               <Menu.Item leftSection={<Icon icon="solar:login-2-broken" />} color="#0B387C" component={Link} href="/auth">
                                 Login / Daftar
                               </Menu.Item>
-                              {/* <Menu.Item leftSection={<Icon icon="hugeicons:account-setting-03" className={`text-[18px]`}/>} color="#0B387C" component={Link} href="/auth-creator">Login Creator</Menu.Item> */}
-                              {/* <Menu.Item leftSection={<Icon icon="uiw:user-add"/>}component={Link} href="/register">Daftar</Menu.Item> */}
                             </>
                           ) : (
                             <>
@@ -358,23 +363,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                               </Menu.Item>
                             </>
                           )}
-                          {/* <Menu.Divider className={`md:!hidden`} />
-                          <Menu.Label className={`md:!hidden`}>Halaman</Menu.Label>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/event">
-                            Event
-                          </Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/talent">
-                            Talenta
-                          </Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/lowongan">
-                            Lowongan
-                          </Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/merchandise">
-                            Merchandise
-                          </Menu.Item>
-                          <Menu.Item className={`md:!hidden`} rightSection={<Icon icon="uiw:right" className={`!text-grey`} />} component={Link} href="/venue">
-                            Venue
-                          </Menu.Item> */}
                         </Menu.Dropdown>
                       </Menu>
                     </Flex>
@@ -427,16 +415,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                             Bookmark
                           </Link>
                         )}
-                        {/* <a
-                          href='#'
-                          className='block px-4 py-2 text-xs text-dark hover:bg-primary-light'
-                          role='menuitem'
-                          tabIndex={-1}
-                          id='user-menu-item-2'
-                        >
-                          <FontAwesomeIcon icon={faEnvelope} className='mr-2' />
-                          Inbox
-                        </a> */}
                         <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                           <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
                           Keluar
@@ -525,8 +503,6 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 </div>
               </div>
               <Stack mt={20} gap={10} className={`hover:[&>*]:!text-black`}>
-                {/* <NavLink c="gray.1" label="Trending" leftSection={<Icon icon="fluent:data-trending-16-filled" className={`text-[24px]`} />} />
-                <NavLink c="gray.1" label="Blog" leftSection={<Icon icon="si:article-line" className={`text-[24px]`} />} /> */}
                 <NavLink
                   c="gray.1"
                   label="Search"
@@ -550,7 +526,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
             </div>
             <div
               className={`fixed inset-0 bg-black bg-opacity-30 transition-opacity duration-700 ease-in-out ${showSideBar ? "opacity-100" : "opacity-0"}`}
-              style={{ zIndex: 20 }} // Adjust zIndex as needed
+              style={{ zIndex: 20 }}
               onClick={handleSideBar}
             />
           </div>

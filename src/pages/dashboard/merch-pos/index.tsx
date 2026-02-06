@@ -647,6 +647,7 @@
 //     </Stack>
 //   );
 // }
+
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
@@ -2292,7 +2293,7 @@ export default function Index({}: Readonly<ComponentProps>) {
             right: "280px",
           }}
         >
-          <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg px-4 py-3">
+          <div className="bg-white border border-primary-light-200 rounded-t-lg shadow-lg px-4 py-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Button variant="light" color="gray" onClick={handlePrintBill} loading={printBillLoading} disabled={selectedList.length === 0} leftSection={<Icon icon="uiw:printer" />} size="md">

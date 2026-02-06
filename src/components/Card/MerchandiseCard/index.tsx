@@ -741,95 +741,133 @@ const MerchandiseCard = ({
       </Link>
 
       {/* Modal untuk pilihan varian */}
-      <Modal
-        opened={isVariantModalOpen}
-        onClose={() => setIsVariantModalOpen(false)}
-        title="Pilih Varian"
-        centered
-        size="sm"
-        overlayProps={{
-          backgroundOpacity: 0.55,
-          blur: 3,
-        }}
-      >
-        <div className="space-y-4">
-          {/* Preview produk */}
-          <div className="flex items-center space-x-4">
-            {image && (
-              <Image
-                src={getImageUrl(image)}
-                alt={name}
-                width={80}
-                height={80}
-                className="rounded-md object-cover"
-              />
-            )}
-            <div>
-              <Text fw={600} size="lg">{name}</Text>
-              <Text size="sm" c="dimmed">{creator}</Text>
-            </div>
-          </div>
-
-          {/* Pilih varian */}
-          {hasVariants && (
-            <div className="space-y-3">
-              <Text fw={500}>Pilih Varian:</Text>
-              <Select
-                value={selectedVariant?.id?.toString()}
-                onChange={handleVariantChange}
-                data={variantOptions}
-                placeholder="Pilih varian"
-                nothingFoundMessage="Tidak ada varian"
-                searchable
-                clearable={false}
-              />
-              
-              {/* Detail varian yang dipilih */}
-              {selectedVariant && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <Text fw={600}>Varian:</Text>
-                    <Text fw={600} c="blue">{selectedVariant.varian_name}</Text>
-                  </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <Text>Harga:</Text>
-                    <Text fw={600} c="green">
-                      Rp {parseInt(selectedVariant.price || "0").toLocaleString('id-ID')}
-                    </Text>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <Text>Stok:</Text>
-                    <Text fw={600} c={selectedVariant.stock_qty > 0 ? "green" : "red"}>
-                      {selectedVariant.stock_qty > 0 ? 
-                        `${selectedVariant.stock_qty} pcs tersedia` : 
-                        "Stok habis"}
-                    </Text>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Tombol aksi */}
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setIsVariantModalOpen(false)}
-              disabled={isAddingToCart}
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={addToCartWithVariant}
-              loading={isAddingToCart}
-              disabled={!selectedVariant || selectedVariant.stock_qty <= 0}
-              color="blue"
-            >
-              {isAddingToCart ? "Menambahkan..." : "Tambahkan ke Keranjang"}
-            </Button>
-          </div>
+      {/* Modal untuk pilihan varian */}
+<Modal
+  opened={isVariantModalOpen}
+  onClose={() => setIsVariantModalOpen(false)}
+  title="Pilih Varian"
+  centered
+  size="sm"
+  overlayProps={{
+    backgroundOpacity: 0.55,
+    blur: 3,
+  }}
+>
+  <div className="space-y-4">
+    {/* Preview produk */}
+    <div className="flex items-start space-x-4">
+      {image && (
+        <Image
+          src={getImageUrl(image)}
+          alt={name}
+          width={80}
+          height={80}
+          className="rounded-md object-cover flex-shrink-0"
+        />
+      )}
+      <div className="flex-1 min-w-0">
+        {/* Nama produk */}
+        <Text fw={600} size="lg" lineClamp={2} mb={2}>
+          {name}
+        </Text>
+        
+        
+        
+        {/* Creator info - ditempatkan di bawah badge */}
+        <div className="flex items-center gap-2 mt-1">
+          <Image 
+            src={creatorImage ? getCreatorImageUrl(creatorImage) : "/default-avatar.png"} 
+            alt={`${creator} logo`} 
+            className="h-5 w-5 rounded-full object-cover flex-shrink-0" 
+            height={20} 
+            width={20} 
+          />
+          <Text size="xs" c="dimmed" lineClamp={1} className="truncate">
+            by <span className="font-medium text-dark">{creator}</span>
+          </Text>
         </div>
-      </Modal>
+      </div>
+    </div>
+
+    {/* Badge harga dan stok mini - di atas creator */}
+<div className="flex flex-wrap gap-2 mb-3">
+  {/* Badge Harga */}
+  <div className="inline-flex items-center bg-gray-50 text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-medium">
+    <span className="mr-2">Harga :</span>
+    <span>
+      {hasVariants && selectedVariant 
+        ? `Rp ${parseInt(selectedVariant.price || "0").toLocaleString('id-ID')}`
+        : formatPrice(price)}
+    </span>
+  </div>
+  
+  {/* Badge Stok */}
+  <div className={`
+    inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium border
+    ${hasVariants && selectedVariant
+      ? (selectedVariant.stock_qty > 0 
+          ? "bg-gray-50 text-gray-800 border-gray-200" 
+          : "bg-gray-50 text-gray-500 border-gray-200")
+      : (stock > 0 
+          ? "bg-gray-50 text-gray-800 border-gray-200" 
+          : "bg-gray-50 text-gray-500 border-gray-200")}
+  `}>
+    <span className="mr-2">Stock :</span>
+    <span>
+      {hasVariants && selectedVariant
+        ? (selectedVariant.stock_qty > 0 
+            ? `${selectedVariant.stock_qty} pcs` 
+            : "Stok habis")
+        : (stock > 0 
+            ? `${stock} pcs` 
+            : "Stok habis")}
+    </span>
+  </div>
+</div>
+
+    {/* Pilih varian - hanya tampil jika ada varian */}
+    {hasVariants && (
+      <div className="space-y-1 pt-1">
+        <Text fw={500} size="sm">Pilih Varian:</Text>
+        <Select
+          value={selectedVariant?.id?.toString()}
+          onChange={handleVariantChange}
+          data={variantOptions}
+          placeholder="Pilih varian"
+          nothingFoundMessage="Tidak ada varian"
+          searchable
+          clearable={false}
+          size="sm"
+        />
+      </div>
+    )}
+
+    {/* Tombol aksi */}
+    <div className="flex justify-end space-x-1 pt-1">
+      <Button
+        variant="outline"
+        onClick={() => setIsVariantModalOpen(false)}
+        disabled={isAddingToCart}
+        size="sm"
+      >
+        Batal
+      </Button>
+      <Button
+        onClick={hasVariants ? addToCartWithVariant : addToCartDirect}
+        loading={isAddingToCart}
+        disabled={
+          hasVariants 
+            ? (!selectedVariant || selectedVariant.stock_qty <= 0)
+            : stock <= 0
+        }
+        color="blue"
+        size="sm"
+      >
+        {isAddingToCart ? "Menambahkan..." : "Tambahkan ke Keranjang"}
+      </Button>
+    </div>
+  </div>
+</Modal>
     </>
   );
 };

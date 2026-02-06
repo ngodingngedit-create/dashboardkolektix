@@ -956,27 +956,27 @@ const MerchPickupPage: React.FC = () => {
       case 1:
         return {
           text: "Pending",
-          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          color: "bg-yellow-100 text-yellow-800 border-primary-light-200",
         };
       case 2:
         return {
           text: "Success",
-          color: "bg-green-100 text-green-800 border-green-200",
+          color: "bg-green-100 text-green-800 border-primary-light-200",
         };
       case 3:
         return {
           text: "Failed",
-          color: "bg-red-100 text-red-800 border-red-200",
+          color: "bg-red-100 text-red-800 border-primary-light-200",
         };
       case 4:
         return {
           text: "Expired",
-          color: "bg-gray-100 text-gray-800 border-gray-200",
+          color: "bg-gray-100 text-gray-800 border-primary-light-200",
         };
       default:
         return {
           text: "Unknown",
-          color: "bg-gray-100 text-gray-800 border-gray-200",
+          color: "bg-gray-100 text-gray-800 border-primary-light-200",
         };
     }
   };
@@ -1238,11 +1238,13 @@ const MerchPickupPage: React.FC = () => {
   };
 
   const handleScanWithCamera = () => {
-    window.open(`/dashboard/merch-pickup/scan-camera`, '_self');
+    // Navigasi ke halaman scan dengan tab camera aktif
+    window.open(`/dashboard/merch-pickup/scan-camera?tab=camera`, '_self');
   };
 
   const handleScanWithBarcode = () => {
-    window.open(`/dashboard/merch-pickup/scan-barcode`, '_self');
+    // Navigasi ke halaman scan yang sama, tapi dengan tab scanner/input aktif
+    window.open(`/dashboard/merch-pickup/scan-camera?tab=scanner`, '_self');
   };
 
   const handleViewDetail = (transaction: MerchandiseTransactionData) => {
@@ -1351,7 +1353,7 @@ const MerchPickupPage: React.FC = () => {
     <div className="p-4 md:p-6">
       {/* Error Warning */}
       {error && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="mb-6 p-4 bg-yellow-50 border border-primary-light-200 rounded-lg">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-yellow-100 rounded-full">
               <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-600" />
@@ -1376,7 +1378,7 @@ const MerchPickupPage: React.FC = () => {
                 </button>
                 <button 
                   onClick={getData}
-                  className="px-4 py-2 border border-yellow-600 text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors text-sm"
+                  className="px-4 py-2 border border-primary-light-200 text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors text-sm"
                 >
                   Refresh Data
                 </button>
@@ -1405,7 +1407,7 @@ const MerchPickupPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-primary-light-200 rounded-lg p-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-blue-800">
@@ -1424,12 +1426,13 @@ const MerchPickupPage: React.FC = () => {
       {/* Search and Action Section */}
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center mb-6 gap-4">
         <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+          {/* Tombol Scan QR/Barcode yang lebih kecil */}
           <Button
             color="primary"
-            startContent={<Icon icon="mdi:qrcode-scan" width={20} height={20} />}
+            startContent={<Icon icon="mdi:qrcode-scan" width={16} height={16} />}
             onClick={handleOpenScanModal}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm hover:shadow-md transition-shadow"
-            size="lg"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm hover:shadow-md transition-shadow px-4 py-2.5 h-auto"
+            size="md"
           >
             Scan QR/Barcode
           </Button>
@@ -1443,7 +1446,7 @@ const MerchPickupPage: React.FC = () => {
               startContent={<FontAwesomeIcon icon={faSearch} className="text-gray-400" />}
               classNames={{
                 input: "pl-10",
-                inputWrapper: "h-12 bg-white border-gray-300 hover:border-blue-400"
+                inputWrapper: "h-12 bg-white border-primary-light-200 hover:border-blue-400"
               }}
               size="lg"
             />
@@ -1459,16 +1462,17 @@ const MerchPickupPage: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+          {/* Tombol Export yang lebih kecil */}
           <button
             onClick={() => exportToCSV(filtered.filter(item => item.isAvailable))}
             disabled={filtered.filter(item => item.isAvailable).length === 0}
-            className={`px-4 py-3 rounded-lg flex items-center justify-center gap-2 transition-all ${
+            className={`px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all text-sm ${
               filtered.filter(item => item.isAvailable).length === 0 
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
                 : "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-sm hover:shadow-md"
             }`}
           >
-            <FontAwesomeIcon icon={faDownload} className="h-4 w-4" />
+            <FontAwesomeIcon icon={faDownload} className="h-3.5 w-3.5" />
             <span>Export ({filtered.filter(item => item.isAvailable).length})</span>
           </button>
           
@@ -1480,7 +1484,7 @@ const MerchPickupPage: React.FC = () => {
                 setRowsPerPage(Number(e.target.value));
                 setPage(1);
               }}
-              className="border border-gray-300 rounded-lg p-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="border border-primary-light-200 rounded-lg p-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value={10}>10 rows</option>
               <option value={25}>25 rows</option>
@@ -1492,7 +1496,7 @@ const MerchPickupPage: React.FC = () => {
       </div>
 
       {/* Table Section */}
-      <Card className="p-0 shadow-sm border border-gray-200 overflow-hidden">
+      <Card className="p-0 shadow-sm border border-primary-light-200 overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
@@ -1522,8 +1526,8 @@ const MerchPickupPage: React.FC = () => {
                 aria-label="Merchandise Pickup Table"
                 classNames={{
                   base: "min-w-full",
-                  th: "bg-gray-50 text-gray-700 font-semibold text-sm uppercase border-b border-gray-200 py-4 px-4",
-                  td: "border-b border-gray-100 py-4 px-4",
+                  th: "bg-gray-50 text-gray-700 font-semibold text-sm uppercase border-b border-primary-light-200 py-4 px-4",
+                  td: "border-b border-primary-light-200 py-4 px-4",
                   tr: "hover:bg-gray-50 transition-colors"
                 }}
                 removeWrapper
@@ -1556,7 +1560,7 @@ const MerchPickupPage: React.FC = () => {
                           <div className="font-medium text-gray-800 flex items-center gap-2">
                             {item.invoice_no}
                             {!isAvailable && (
-                              <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full flex items-center gap-1">
+                              <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full flex items-center gap-1 border border-primary-light-200">
                                 <FontAwesomeIcon icon={faExclamationTriangle} className="h-3 w-3" />
                                 Tidak tersedia
                               </span>
@@ -1604,7 +1608,7 @@ const MerchPickupPage: React.FC = () => {
                               {statusInfo.text}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-primary-light-200">
                               Data Error
                             </span>
                           )}
@@ -1624,7 +1628,7 @@ const MerchPickupPage: React.FC = () => {
                               <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
                             </button>
                           ) : (
-                            <span className="text-gray-400 text-xs px-2 py-1 bg-gray-100 rounded" title="Data tidak tersedia">
+                            <span className="text-gray-400 text-xs px-2 py-1 bg-gray-100 rounded border border-primary-light-200" title="Data tidak tersedia">
                               Tidak tersedia
                             </span>
                           )}
@@ -1637,7 +1641,7 @@ const MerchPickupPage: React.FC = () => {
             </div>
             
             {/* Table Footer with Pagination */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <div className="p-4 border-t border-primary-light-200 bg-gray-50">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-600">
                   Showing <span className="font-semibold">{Math.min(filtered.length, (page - 1) * rowsPerPage + 1)}</span> to{" "}
@@ -1692,7 +1696,7 @@ const MerchPickupPage: React.FC = () => {
               <ModalHeader className="flex flex-col gap-1 pt-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                    <Icon icon="mdi:qrcode-scan" width={24} height={24} className="text-white" />
+                    <Icon icon="mdi:qrcode-scan" width={20} height={20} className="text-white" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-800">Proses Pengambilan Merchandise</h2>
@@ -1706,38 +1710,38 @@ const MerchPickupPage: React.FC = () => {
                 <div className="space-y-4">
                   {/* Scan with Camera */}
                   <div 
-                    className="p-5 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer group active:scale-[0.98]"
+                    className="p-5 border-2 border-primary-light-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer group active:scale-[0.98]"
                     onClick={handleScanWithCamera}
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg group-hover:from-blue-200 group-hover:to-blue-300 transition-colors">
-                        <Icon icon="mdi:camera" width={28} height={28} className="text-blue-600" />
+                        <Icon icon="mdi:camera" width={24} height={24} className="text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-800 group-hover:text-blue-700">Scan dengan Kamera</h3>
                         <p className="text-sm text-gray-600 mt-1">Scan kode QR menggunakan kamera perangkat Anda</p>
                       </div>
                       <div className="p-2">
-                        <Icon icon="mdi:chevron-right" width={20} height={20} className="text-gray-400 group-hover:text-blue-500" />
+                        <Icon icon="mdi:chevron-right" width={16} height={16} className="text-gray-400 group-hover:text-blue-500" />
                       </div>
                     </div>
                   </div>
 
                   {/* Scan with Scanner Device */}
                   <div 
-                    className="p-5 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer group active:scale-[0.98]"
+                    className="p-5 border-2 border-primary-light-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer group active:scale-[0.98]"
                     onClick={handleScanWithBarcode}
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-lg group-hover:from-green-200 group-hover:to-green-300 transition-colors">
-                        <Icon icon="mdi:barcode-scan" width={28} height={28} className="text-green-600" />
+                        <Icon icon="mdi:barcode-scan" width={24} height={24} className="text-green-600" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 group-hover:text-green-700">Scan dengan Scanner</h3>
-                        <p className="text-sm text-gray-600 mt-1">Scan kode QR menggunakan perangkat scanner barcode</p>
+                        <h3 className="font-semibold text-gray-800 group-hover:text-green-700">Scan dengan Scanner/Input</h3>
+                        <p className="text-sm text-gray-600 mt-1">Gunakan scanner barcode atau input manual kode merchandise</p>
                       </div>
                       <div className="p-2">
-                        <Icon icon="mdi:chevron-right" width={20} height={20} className="text-gray-400 group-hover:text-green-500" />
+                        <Icon icon="mdi:chevron-right" width={16} height={16} className="text-gray-400 group-hover:text-green-500" />
                       </div>
                     </div>
                   </div>
@@ -1792,7 +1796,7 @@ const MerchPickupPage: React.FC = () => {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       selectedTransaction.isAvailable !== false 
                         ? getStatusInfo(selectedTransaction.transaction_status_id).color
-                        : "bg-red-100 text-red-700 border border-red-200"
+                        : "bg-red-100 text-red-700 border border-primary-light-200"
                     }`}>
                       {selectedTransaction.isAvailable !== false 
                         ? getStatusInfo(selectedTransaction.transaction_status_id).text
@@ -1807,7 +1811,7 @@ const MerchPickupPage: React.FC = () => {
                   <div className="space-y-6">
                     {/* Warning if data not available */}
                     {selectedTransaction.isAvailable === false && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="bg-red-50 border border-primary-light-200 rounded-lg p-4">
                         <div className="flex items-center gap-3">
                           <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-500" />
                           <div>
@@ -1823,26 +1827,26 @@ const MerchPickupPage: React.FC = () => {
 
                     {/* Basic Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-4">
                         <p className="text-sm text-gray-500 mb-1">Invoice Number</p>
                         <p className="font-medium text-lg text-gray-800">{selectedTransaction.invoice_no}</p>
                       </div>
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-4">
                         <p className="text-sm text-gray-500 mb-1">Tanggal Order</p>
                         <p className="font-medium text-gray-800">{formatDate(selectedTransaction.order_date)}</p>
                       </div>
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-4">
                         <p className="text-sm text-gray-500 mb-1">Customer Name</p>
                         <p className="font-medium text-gray-800">{selectedTransaction.customer_name}</p>
                       </div>
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-4">
                         <p className="text-sm text-gray-500 mb-1">Customer Email</p>
                         <p className="font-medium text-gray-800 truncate">{selectedTransaction.customer_email}</p>
                       </div>
                     </div>
 
                     {/* Product Info */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                    <div className="bg-white border border-primary-light-200 rounded-lg p-5">
                       <h3 className="font-semibold text-gray-800 mb-4">Informasi Produk</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -1872,7 +1876,7 @@ const MerchPickupPage: React.FC = () => {
                         </div>
                       </div>
                       {selectedTransaction.isAvailable !== false && (
-                        <div className="mt-4 pt-4 border-t">
+                        <div className="mt-4 pt-4 border-t border-primary-light-200">
                           <p className="text-sm text-gray-500 mb-1">Total Harga</p>
                           <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedTransaction.total_price)}</p>
                         </div>
@@ -1881,17 +1885,17 @@ const MerchPickupPage: React.FC = () => {
 
                     {/* Detail Items */}
                     {selectedTransaction.detail && selectedTransaction.detail.length > 0 && selectedTransaction.isAvailable !== false && (
-                      <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-5">
                         <h3 className="font-semibold text-gray-800 mb-4">Detail Items ({selectedTransaction.detail.length})</h3>
                         <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                           {selectedTransaction.detail.map((item: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg hover:border-blue-200 transition-colors">
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-primary-light-200 rounded-lg hover:border-blue-200 transition-colors">
                               <div className="flex-1">
                                 <p className="font-medium text-gray-800">
                                   {item.product?.product_name || item.product_name || item.product?.name || `Item ${index + 1}`}
                                 </p>
                                 <div className="flex items-center gap-4 mt-2">
-                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-primary-light-200">
                                     SKU: {item.product?.sku || item.sku || "-"}
                                   </span>
                                   <span className="text-xs text-gray-500">Qty: {item.quantity || item.qty || 0}</span>
@@ -1914,7 +1918,7 @@ const MerchPickupPage: React.FC = () => {
 
                     {/* Payment Info */}
                     {selectedTransaction.isAvailable !== false && (
-                      <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="bg-white border border-primary-light-200 rounded-lg p-5">
                         <h3 className="font-semibold text-gray-800 mb-4">Informasi Pembayaran</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1952,8 +1956,8 @@ const MerchPickupPage: React.FC = () => {
                           handleCloseDetailModal();
                           handleOpenScanModal();
                         }}
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white"
-                        startContent={<Icon icon="mdi:qrcode-scan" width={16} height={16} />}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5"
+                        startContent={<Icon icon="mdi:qrcode-scan" width={14} height={14} />}
                       >
                         Proses Pengambilan
                       </Button>
