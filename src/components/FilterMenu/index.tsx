@@ -269,12 +269,10 @@
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Get } from "@/utils/REST"; // gunakan util Get yang sudah ada di proyek
+import { Get } from "@/utils/REST";
 
-// jika kamu punya Data static untuk dropdown kategori/lokasi dsb,
-// kamu bisa import / definisikan kembali di sini. Saya hanya fokus search event.
 const pages = [
   { name: "Event", path: "/event" },
   { name: "Merchandise", path: "/merchandise" },
@@ -286,34 +284,37 @@ const FilterMenu = () => {
 
   const [query, setQuery] = useState("");
   const [showSuggest, setShowSuggest] = useState(false);
-  const [events, setEvents] = useState<any[]>([]); // struktur event minimal: { id, name, slug }
+  const [events, setEvents] = useState<any[]>([]);
+  const [merchandise, setMerchandise] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [loadingMerch, setLoadingMerch] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(-1); // keyboard nav on suggestions
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
 
-  // 1) placeholder logic: kalau di home, /event atau /merchandise (atau subpath), pakai "Cari Event..."
+  // 1) placeholder logic dengan merchandise
   const placeholder = useMemo(() => {
     if (!pathname) return "Cari sesuatu...";
     const p = pathname.toLowerCase();
-    if (p === "/" || p.startsWith("/event") || p.startsWith("/merchandise")) return "Cari Event...";
+    if (p === "/") return "Cari Event...";
+    if (p.startsWith("/event")) return "Cari Event...";
+    if (p.startsWith("/merchandise")) return "Cari Merchandise...";
     return "Cari sesuatu...";
   }, [pathname]);
 
-  // 2) fetch events sekali (you may adjust to fetch a limited list or server-side search)
+  // 2) fetch events sekali
   useEffect(() => {
     setLoadingEvents(true);
     Get("event", {})
       .then((res: any) => {
-        // sesuaikan jika API membungkus data di res.data
         const list = Array.isArray(res) ? res : res?.data ?? res?.data?.data ?? [];
-        // normalize minimal object: { id, name, slug }
         const normalized = (list || []).map((e: any) => ({
           id: e.id,
           name: e.name,
           slug: e.slug,
+          type: "event",
         }));
         setEvents(normalized);
       })
@@ -326,12 +327,141 @@ const FilterMenu = () => {
       });
   }, []);
 
-  // 3) suggestions: combine event matches + page matches
+  // 3) fetch SEMUA merchandise data dengan looping semua pages
+  const fetchAllMerchandise = useCallback(async () => {
+    if (merchandise.length > 0 || loadingMerch) return;
+    
+    setLoadingMerch(true);
+    try {
+      let allProducts: any[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+      
+      while (currentPage <= totalPages) {
+        try {
+          const res = (await Get("product", {
+            page: currentPage,
+            limit: 100,
+          })) as any;
+
+          let pageData: any[] = [];
+          let pageTotal = 0;
+          let pageLastPage = 1;
+          
+          if (Array.isArray(res)) {
+            pageData = res;
+          } else if (Array.isArray(res.data)) {
+            pageData = res.data;
+            pageTotal = res.total || res.data.length;
+            pageLastPage = res.last_page || Math.ceil(pageTotal / 100);
+          } else if (res.data && Array.isArray(res.data.data)) {
+            pageData = res.data.data;
+            pageTotal = res.data.total || res.data.data.length;
+            pageLastPage = res.data.last_page || Math.ceil(pageTotal / 100);
+          } else if (res.meta && Array.isArray(res.data)) {
+            pageData = res.data;
+            pageTotal = res.meta.total || res.data.length;
+            pageLastPage = res.meta.last_page || Math.ceil(pageTotal / 100);
+          }
+
+          if (currentPage === 1 && pageLastPage > 1) {
+            totalPages = pageLastPage;
+          }
+
+          const availableProducts = pageData.filter((item: any) => {
+            const statusId = item.product_status_id || item.status_id;
+            return statusId == 2 || statusId === "2";
+          });
+
+          allProducts = [...allProducts, ...availableProducts];
+
+          if (pageData.length === 0) {
+            break;
+          }
+
+          currentPage++;
+
+          if (currentPage <= totalPages) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+
+        } catch (pageError) {
+          console.error(`Error fetching page ${currentPage}:`, pageError);
+          break;
+        }
+      }
+
+      const normalized = allProducts.map((item: any) => ({
+        id: item.id,
+        name: item.product_name || item.name || item.title || "Untitled Product",
+        slug: item.slug || `product-${item.id}`,
+        type: "merchandise",
+      }));
+
+      setMerchandise(normalized);
+
+    } catch (err) {
+      console.error("Error in main fetch process:", err);
+      
+      try {
+        const fallbackRes = (await Get("product", {
+          limit: 1000,
+          page: 1
+        })) as any;
+
+        let fallbackData: any[] = [];
+        
+        if (Array.isArray(fallbackRes)) {
+          fallbackData = fallbackRes;
+        } else if (Array.isArray(fallbackRes.data)) {
+          fallbackData = fallbackRes.data;
+        } else if (fallbackRes.data && Array.isArray(fallbackRes.data.data)) {
+          fallbackData = fallbackRes.data.data;
+        }
+
+        const availableData = fallbackData.filter((item: any) => {
+          const statusId = item.product_status_id || item.status_id;
+          return statusId == 2 || statusId === "2";
+        });
+
+        const normalized = availableData.map((item: any) => ({
+          id: item.id,
+          name: item.product_name || item.name || item.title,
+          slug: item.slug || `product-${item.id}`,
+          type: "merchandise",
+        }));
+
+        setMerchandise(normalized);
+        
+      } catch (fallbackErr) {
+        console.error("Fallback also failed:", fallbackErr);
+        setMerchandise([]);
+      }
+    } finally {
+      setLoadingMerch(false);
+    }
+  }, [loadingMerch, merchandise.length]);
+
+  useEffect(() => {
+    fetchAllMerchandise();
+  }, [fetchAllMerchandise]);
+
+  // 4) suggestions berdasarkan halaman aktif
   const eventMatches = useMemo(() => {
-    if (!query) return [];
+    if (!query || pathname?.toLowerCase().startsWith("/merchandise")) return [];
     const q = query.toLowerCase().trim();
     return events.filter((e) => e.name?.toLowerCase().includes(q));
-  }, [events, query]);
+  }, [events, query, pathname]);
+
+  const merchandiseMatches = useMemo(() => {
+    if (!query || !pathname?.toLowerCase().startsWith("/merchandise")) return [];
+    const q = query.toLowerCase().trim();
+    
+    return merchandise.filter((m) => {
+      const productName = m.name?.toLowerCase() || "";
+      return productName.includes(q);
+    });
+  }, [merchandise, query, pathname]);
 
   const pageMatches = useMemo(() => {
     if (!query) return [];
@@ -339,20 +469,31 @@ const FilterMenu = () => {
     return pages.filter((p) => p.name.toLowerCase().includes(q));
   }, [query]);
 
-  // final suggestion list: events first, then pages (you can reorder)
+  // 5) final suggestion list sesuai halaman
   const suggestions = useMemo(() => {
-    // limit suggestions length if needed
-    return [...eventMatches.slice(0, 6), ...pageMatches.slice(0, 4)];
-  }, [eventMatches, pageMatches]);
+    const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
+    
+    if (isMerchandisePage) {
+      return [
+        ...merchandiseMatches.slice(0, 10),
+        ...pageMatches.slice(0, 2)
+      ];
+    } else {
+      return [
+        ...eventMatches.slice(0, 10),
+        ...pageMatches.slice(0, 2)
+      ];
+    }
+  }, [eventMatches, merchandiseMatches, pageMatches, pathname]);
 
-  // 4) close suggestions on route change (helpful for persisted layouts)
+  // 6) close suggestions on route change
   useEffect(() => {
     setShowSuggest(false);
     setQuery("");
     inputRef.current?.blur();
   }, [pathname]);
 
-  // 5) click outside to close suggestions
+  // 7) click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -365,11 +506,10 @@ const FilterMenu = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 6) keyboard navigation for suggestions (ArrowUp/Down, Enter, Escape)
+  // 8) keyboard navigation for suggestions
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggest || suggestions.length === 0) {
       if (e.key === "Enter") {
-        // fallback: submit input (navigate to first page match or event match if exact)
         handleSubmit();
       }
       return;
@@ -378,18 +518,11 @@ const FilterMenu = () => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-      listRef.current?.querySelectorAll("li")[Math.min(activeIndex + 1, suggestions.length - 1)]?.scrollIntoView({
-        block: "nearest",
-      });
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
-      listRef.current?.querySelectorAll("li")[Math.max(activeIndex - 1, 0)]?.scrollIntoView({
-        block: "nearest",
-      });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      // choose activeIndex if available, otherwise fallback to first suggestion
       const idx = activeIndex >= 0 ? activeIndex : 0;
       const chosen = suggestions[idx];
       if (chosen) {
@@ -404,78 +537,109 @@ const FilterMenu = () => {
     }
   };
 
-  // choose suggestion handler
+  // 9) choose suggestion handler
   const onChooseSuggestion = (item: any) => {
     setShowSuggest(false);
     setActiveIndex(-1);
     inputRef.current?.blur();
 
-    // if the suggestion is an event (has slug), navigate to event detail
     if (item.slug) {
-      router.push(`/event/${encodeURIComponent(item.slug)}`);
+      if (item.type === "merchandise") {
+        router.push(`/merchandise/${encodeURIComponent(item.slug)}`);
+      } else {
+        router.push(`/event/${encodeURIComponent(item.slug)}`);
+      }
       return;
     }
 
-    // if it's a page suggestion
     if (item.path) {
       router.push(item.path);
       return;
     }
   };
 
-  // submit handler: if exact event title matched -> goto that event
+  // 10) submit handler
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const q = query.trim();
     if (!q) return;
 
-    // try find exact event match first
-    const exactEvent = events.find((ev) => ev.name.toLowerCase() === q.toLowerCase());
-    if (exactEvent) {
-      router.push(`/event/${encodeURIComponent(exactEvent.slug)}`);
-      setShowSuggest(false);
-      return;
+    const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
+
+    if (isMerchandisePage) {
+      const exactMerch = merchandise.find((m) => 
+        m.name.toLowerCase() === q.toLowerCase()
+      );
+      
+      if (exactMerch) {
+        router.push(`/merchandise/${encodeURIComponent(exactMerch.slug)}`);
+        setShowSuggest(false);
+        return;
+      }
+
+      if (merchandiseMatches.length > 0) {
+        router.push(`/merchandise/${encodeURIComponent(merchandiseMatches[0].slug)}`);
+        setShowSuggest(false);
+        return;
+      }
+
+      router.push(`/merchandise?search=${encodeURIComponent(q)}`);
+    } else {
+      const exactEvent = events.find((ev) => 
+        ev.name.toLowerCase() === q.toLowerCase()
+      );
+      
+      if (exactEvent) {
+        router.push(`/event/${encodeURIComponent(exactEvent.slug)}`);
+        setShowSuggest(false);
+        return;
+      }
+
+      const exactPage = pages.find((p) => 
+        p.name.toLowerCase() === q.toLowerCase()
+      );
+      
+      if (exactPage) {
+        router.push(exactPage.path);
+        setShowSuggest(false);
+        return;
+      }
+
+      if (eventMatches.length > 0) {
+        router.push(`/event/${encodeURIComponent(eventMatches[0].slug)}`);
+        setShowSuggest(false);
+        return;
+      }
+
+      router.push(`/event?tag=${encodeURIComponent(q)}`);
     }
 
-    // else if pages match exactly
-    const exactPage = pages.find((p) => p.name.toLowerCase() === q.toLowerCase());
-    if (exactPage) {
-      router.push(exactPage.path);
-      setShowSuggest(false);
-      return;
-    }
-
-    // else fallback: if there are eventMatches, go to the first event detail
-    if (eventMatches.length > 0) {
-      router.push(`/event/${encodeURIComponent(eventMatches[0].slug)}`);
-      setShowSuggest(false);
-      return;
-    }
-
-    // otherwise go to /event with tag=query (or /search route if ada)
-    router.push({
-      pathname: "/event",
-      query: { tag: encodeURIComponent(q) } as any,
-    } as any);
     setShowSuggest(false);
   };
 
   return (
     <div className="fixed w-full bg-gradient-to-b from-primary-dark to-primary-darker drop-shadow-2xl z-50">
-      <div className="flex justify-center items-center py-3 px-4">
-        <div ref={containerRef} className="bg-[#02255A] rounded-full w-full max-w-screen-lg px-4 py-2 flex items-center gap-3 relative">
+      <div className="flex justify-center items-center py-2 md:py-3 px-3 md:px-4">
+        <div ref={containerRef} className="bg-[#02255A] rounded-full w-full max-w-screen-lg px-3 md:px-4 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 relative">
           {/* Search form */}
           <form onSubmit={handleSubmit} className="flex-1 relative">
-            <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-4 py-2 flex-1">
-              <FontAwesomeIcon icon={faSearch} className="text-white opacity-80" />
+            <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-3 md:px-4 py-1.5 md:py-2 flex-1">
+              <FontAwesomeIcon 
+                icon={faSearch} 
+                className="text-white opacity-80 text-sm md:text-base" 
+              />
               <input
-              id="search-filter-input"
+                id="search-filter-input"
                 ref={inputRef}
                 type="text"
                 placeholder={placeholder}
                 value={query}
                 tabIndex={0}
-                onFocus={() => setShowSuggest(query.length > 0)}
+                onFocus={() => {
+                  if (query.length > 0) {
+                    setShowSuggest(true);
+                  }
+                }}
                 onChange={(e) => {
                   setQuery(e.target.value);
                   setShowSuggest(e.target.value.length > 0);
@@ -483,39 +647,152 @@ const FilterMenu = () => {
                 }}
                 onKeyDown={handleKeyDown}
                 aria-label="Search"
-                className="bg-primary-800 outline-none text-white placeholder-white/60 w-full rounded-full"
+                className="bg-primary-800 outline-none text-white placeholder-white/60 w-full rounded-full text-sm md:text-base"
+                style={{ fontSize: '16px' }}
               />
             </div>
 
+            {/* Loading indicator */}
+            {(loadingMerch || loadingEvents) && showSuggest && (
+              <div className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg p-3 md:p-4">
+                <div className="flex items-center justify-center text-gray-600 text-sm md:text-base">
+                  <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-primary-base mr-2"></div>
+                  <span>Memuat...</span>
+                </div>
+              </div>
+            )}
+
             {/* suggestions dropdown */}
-            {showSuggest && suggestions.length > 0 && (
-              <ul ref={listRef} className="absolute z-50 mt-2 w-full bg-white rounded-xl shadow-lg overflow-hidden max-h-64 overflow-auto">
-                {suggestions.map((item, idx) => {
-                  const isEvent = !!item.slug;
-                  const isActive = idx === activeIndex;
-                  return (
-                    <li
-                      key={isEvent ? `ev-${item.id}` : `pg-${item.path}`}
-                      onMouseDown={(ev) => {
-                        // use onMouseDown so it fires before input blur
-                        ev.preventDefault();
-                        onChooseSuggestion(item);
-                      }}
-                      className={`px-4 py-2 text-gray-800 hover:bg-primary-base hover:text-white cursor-pointer flex justify-between items-center ${isActive ? "bg-primary-base text-white" : ""}`}
-                    >
-                      <span className="truncate">{isEvent ? item.name : item.name}</span>
-                      <small className="opacity-60 text-xs">{isEvent ? "Event" : "Page"}</small>
-                    </li>
-                  );
-                })}
-              </ul>
+            {showSuggest && !loadingMerch && !loadingEvents && suggestions.length > 0 && (
+              <>
+                {/* Backdrop for mobile */}
+                <div 
+                  className="fixed inset-0 bg-black/30 z-40 md:hidden"
+                  onClick={() => {
+                    setShowSuggest(false);
+                    setActiveIndex(-1);
+                  }}
+                />
+                
+                <ul 
+                  ref={listRef} 
+                  className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg overflow-hidden max-h-[60vh] md:max-h-80 overflow-y-auto"
+                  style={{
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    maxHeight: 'calc(100vh - 120px)'
+                  }}
+                >
+                  {suggestions.map((item, idx) => {
+                    const isActive = idx === activeIndex;
+                    let itemType = "Page";
+                    let displayName = item.name;
+                    let badgeColor = "bg-gray-100 text-gray-800";
+
+                    if (item.type === "event") {
+                      itemType = "Event";
+                      badgeColor = "bg-blue-100 text-blue-800";
+                    } else if (item.type === "merchandise") {
+                      itemType = "Merchandise";
+                      badgeColor = "bg-green-100 text-green-800";
+                    }
+
+                    return (
+                      <li
+                        key={`${item.type}-${item.id || item.path}-${idx}`}
+                        onMouseDown={(ev) => {
+                          ev.preventDefault();
+                          onChooseSuggestion(item);
+                        }}
+                        className={`px-3 md:px-4 py-2.5 md:py-3 text-gray-800 hover:bg-primary-base hover:text-white cursor-pointer flex justify-between items-center transition-colors ${isActive ? "bg-primary-base text-white" : ""}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate text-sm md:text-base">{displayName}</div>
+                          {item.type === "merchandise" && (
+                            <div className="text-xs text-gray-500 truncate mt-0.5 hidden md:block">
+                              Merchandise
+                            </div>
+                          )}
+                        </div>
+                        <small className={`opacity-90 text-xs px-2 py-0.5 md:py-1 rounded whitespace-nowrap ml-2 ${isActive ? "bg-white/20 text-white" : badgeColor}`}>
+                          {itemType}
+                        </small>
+                      </li>
+                    );
+                  })}
+                  
+                  {/* Info jumlah data - mobile friendly */}
+                  <li className="px-3 md:px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
+                    <div className="flex justify-between items-center">
+                      <span>
+                        {pathname?.toLowerCase().startsWith("/merchandise") 
+                          ? `${merchandise.length} produk` 
+                          : `${events.length} event`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSuggest(false);
+                          handleSubmit();
+                        }}
+                        className="text-primary-base font-medium hover:text-primary-dark"
+                      >
+                        Cari &quot;{query}&quot;
+                      </button>
+                    </div>
+                  </li>
+                </ul>
+              </>
+            )}
+
+            {/* No results found */}
+            {showSuggest && !loadingMerch && !loadingEvents && query.trim() && suggestions.length === 0 && (
+              <>
+                {/* Backdrop for mobile */}
+                <div 
+                  className="fixed inset-0 bg-black/30 z-40 md:hidden"
+                  onClick={() => {
+                    setShowSuggest(false);
+                    setActiveIndex(-1);
+                  }}
+                />
+                
+                <div className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg p-3 md:p-4 text-center text-gray-500">
+                  <div className="mb-1 md:mb-2 text-sm md:text-base">Tidak ditemukan hasil untuk</div>
+                  <div className="font-medium text-gray-700 mb-2 md:mb-3">&quot;{query}&quot;</div>
+                  <div className="text-xs md:text-sm">
+                    {pathname?.toLowerCase().startsWith("/merchandise") 
+                      ? `Mencari di ${merchandise.length} produk` 
+                      : `Mencari di ${events.length} event`}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSuggest(false);
+                      handleSubmit();
+                    }}
+                    className="mt-3 md:mt-4 w-full py-2 bg-primary-base text-white rounded-lg hover:bg-primary-dark transition-colors text-sm md:text-base"
+                  >
+                    Cari di Halaman
+                  </button>
+                </div>
+              </>
             )}
           </form>
 
           {/* Search button */}
-          <div>
-            <button onClick={() => handleSubmit()} type="button" className="bg-primary-base rounded-full w-16 h-16 flex items-center justify-center">
-              <FontAwesomeIcon icon={faSearch} className="text-white" />
+          <div className="flex-shrink-0">
+            <button 
+              onClick={() => handleSubmit()} 
+              type="button" 
+              className="bg-primary-base rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center hover:bg-primary-dark transition-colors shadow-md active:scale-95 transition-transform"
+              aria-label="Search"
+            >
+              <FontAwesomeIcon 
+                icon={faSearch} 
+                className="text-white text-sm md:text-lg" 
+              />
             </button>
           </div>
         </div>

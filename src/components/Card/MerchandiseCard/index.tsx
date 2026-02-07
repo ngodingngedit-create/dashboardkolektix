@@ -237,7 +237,8 @@ import {
   faLocationDot, 
   faShoppingCart,
   faTimes,
-  faChevronDown
+  faChevronDown,
+  faCheckCircle
 } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { NumberFormatter, Modal, Button, Select, Text } from "@mantine/core";
@@ -278,6 +279,10 @@ interface MerchCardProps {
       varian_name: string;
     };
   }>;
+  // Prop untuk deskripsi produk
+  description?: string;
+  // Prop untuk nama store
+  storeName?: string;
 }
 
 interface CartStorage {
@@ -310,6 +315,8 @@ const MerchandiseCard = ({
   variantName = "",
   categoryName = "",
   productVariants = [],
+  description = "Deskripsi produk tidak tersedia",
+  storeName = "Warehouse Kita",
 }: MerchCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(isBookmarked);
   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
@@ -592,13 +599,27 @@ const MerchandiseCard = ({
       >
         {/* Bagian Gambar dengan Bookmark Button */}
         <div className="relative overflow-hidden rounded-t-lg">
-          <Image 
-            className={`${styles.cardImg} w-full h-48 object-cover transition-transform duration-300 ${showBuyButton ? "scale-105" : ""}`} 
-            src={image ?? Foto} 
-            width={500} 
-            height={500} 
-            alt={name} 
-          />
+          {/* Mobile: aspect ratio 1:1 */}
+          <div className="block md:hidden relative w-full pb-[100%]">
+            <Image 
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+              src={image ?? Foto} 
+              fill
+              sizes="(max-width: 768px) 50vw, 100vw"
+              alt={name}
+            />
+          </div>
+
+          {/* Desktop: aspect ratio yang konsisten dengan grid */}
+          <div className="hidden md:block relative w-full pb-[100%]">
+            <Image 
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+              src={image ?? Foto} 
+              fill
+              sizes="(min-width: 768px) 25vw, 100vw"
+              alt={name}
+            />
+          </div>
 
           {/* Bookmark Button */}
           {showBookmark && (
@@ -741,133 +762,140 @@ const MerchandiseCard = ({
       </Link>
 
       {/* Modal untuk pilihan varian */}
-      {/* Modal untuk pilihan varian */}
-<Modal
-  opened={isVariantModalOpen}
-  onClose={() => setIsVariantModalOpen(false)}
-  title="Pilih Varian"
-  centered
-  size="sm"
-  overlayProps={{
-    backgroundOpacity: 0.55,
-    blur: 3,
-  }}
->
-  <div className="space-y-4">
-    {/* Preview produk */}
-    <div className="flex items-start space-x-4">
-      {image && (
-        <Image
-          src={getImageUrl(image)}
-          alt={name}
-          width={80}
-          height={80}
-          className="rounded-md object-cover flex-shrink-0"
-        />
-      )}
-      <div className="flex-1 min-w-0">
-        {/* Nama produk */}
-        <Text fw={600} size="lg" lineClamp={2} mb={2}>
-          {name}
-        </Text>
-        
-        
-        
-        {/* Creator info - ditempatkan di bawah badge */}
-        <div className="flex items-center gap-2 mt-1">
-          <Image 
-            src={creatorImage ? getCreatorImageUrl(creatorImage) : "/default-avatar.png"} 
-            alt={`${creator} logo`} 
-            className="h-5 w-5 rounded-full object-cover flex-shrink-0" 
-            height={20} 
-            width={20} 
-          />
-          <Text size="xs" c="dimmed" lineClamp={1} className="truncate">
-            by <span className="font-medium text-dark">{creator}</span>
-          </Text>
+      <Modal
+        opened={isVariantModalOpen}
+        onClose={() => setIsVariantModalOpen(false)}
+        title="Pilih Varian"
+        centered
+        size="lg"
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
+      >
+        <div className="space-y-4">
+          {/* Preview produk */}
+          <div className="flex items-start space-x-10"> {/* Gap lebih rapat */}
+            {/* Gambar produk */}
+            {image && (
+              <div className="flex-shrink-0">
+                <Image
+                  src={getImageUrl(image)}
+                  alt={name}
+                  width={180}
+                  height={180}
+                  className="rounded-md object-cover border border-gray-200"
+                />
+              </div>
+            )}
+            
+            {/* Info produk */}
+            <div className="flex-1 min-w-0">
+              {/* Creator info dengan logo */}
+              <div className="flex items-center mb-2">
+                {creatorImage && (
+                  <Image 
+                    src={getCreatorImageUrl(creatorImage)} 
+                    alt={`${creator} logo`} 
+                    className="h-6 w-6 rounded-full object-cover mr-2 flex-shrink-0" 
+                    height={24} 
+                    width={24} 
+                  />
+                )}
+                <Text size="sm" c="dimmed">
+                  by{" "}
+                  <span className="font-semibold text-dark ml-1">
+                    {creator}
+                  </span>
+                </Text>
+              </div>
+              
+              {/* Nama produk - DIKECILKAN SEDIKIT */}
+              <Text fw={700} size="xl" lineClamp={2} mb={10}>
+                {name}
+              </Text>
+              
+              {/* Deskripsi Produk - static dengan centang */}
+              <div className="space-y-2">
+                {/* Authentic Art */}
+                <div className="flex items-center">
+                  <FontAwesomeIcon 
+                    icon={faCheckCircle} 
+                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
+                  />
+                  <Text size="sm" c="dark" fw={500}>
+                    Authentic Art
+                  </Text>
+                </div>
+                
+                {/* Dikirim dari store */}
+                <div className="flex items-center">
+                  <FontAwesomeIcon 
+                    icon={faCheckCircle} 
+                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
+                  />
+                  <Text size="sm" c="dark" fw={500}>
+                    Dikirim dari {storeName}
+                  </Text>
+                </div>
+                
+                {/* Ambil di Pasar Bareng Bareng */}
+                <div className="flex items-center">
+                  <FontAwesomeIcon 
+                    icon={faCheckCircle} 
+                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
+                  />
+                  <Text size="sm" c="dark" fw={500}>
+                    Ambil di Pasar Bareng Bareng
+                  </Text>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pilih varian */}
+          {hasVariants && (
+            <div className="space-y-2 pt-3">
+              <Text fw={600} size="sm">Pilih varian:</Text>
+              <Select
+                value={selectedVariant?.id?.toString()}
+                onChange={handleVariantChange}
+                data={variantOptions}
+                placeholder="Pilih varian"
+                nothingFoundMessage="Tidak ada varian"
+                searchable
+                clearable={false}
+                size="md"
+              />
+            </div>
+          )}
+
+          {/* Tombol aksi */}
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsVariantModalOpen(false)}
+              disabled={isAddingToCart}
+              size="md"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={hasVariants ? addToCartWithVariant : addToCartDirect}
+              loading={isAddingToCart}
+              disabled={
+                hasVariants 
+                  ? (!selectedVariant || selectedVariant.stock_qty <= 0)
+                  : stock <= 0
+              }
+              color="blue"
+              size="md"
+            >
+              {isAddingToCart ? "Menambahkan..." : "Tambahkan ke Keranjang"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
-
-    {/* Badge harga dan stok mini - di atas creator */}
-<div className="flex flex-wrap gap-2 mb-3">
-  {/* Badge Harga */}
-  <div className="inline-flex items-center bg-gray-50 text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-medium">
-    <span className="mr-2">Harga :</span>
-    <span>
-      {hasVariants && selectedVariant 
-        ? `Rp ${parseInt(selectedVariant.price || "0").toLocaleString('id-ID')}`
-        : formatPrice(price)}
-    </span>
-  </div>
-  
-  {/* Badge Stok */}
-  <div className={`
-    inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium border
-    ${hasVariants && selectedVariant
-      ? (selectedVariant.stock_qty > 0 
-          ? "bg-gray-50 text-gray-800 border-gray-200" 
-          : "bg-gray-50 text-gray-500 border-gray-200")
-      : (stock > 0 
-          ? "bg-gray-50 text-gray-800 border-gray-200" 
-          : "bg-gray-50 text-gray-500 border-gray-200")}
-  `}>
-    <span className="mr-2">Stock :</span>
-    <span>
-      {hasVariants && selectedVariant
-        ? (selectedVariant.stock_qty > 0 
-            ? `${selectedVariant.stock_qty} pcs` 
-            : "Stok habis")
-        : (stock > 0 
-            ? `${stock} pcs` 
-            : "Stok habis")}
-    </span>
-  </div>
-</div>
-
-    {/* Pilih varian - hanya tampil jika ada varian */}
-    {hasVariants && (
-      <div className="space-y-1 pt-1">
-        <Text fw={500} size="sm">Pilih Varian:</Text>
-        <Select
-          value={selectedVariant?.id?.toString()}
-          onChange={handleVariantChange}
-          data={variantOptions}
-          placeholder="Pilih varian"
-          nothingFoundMessage="Tidak ada varian"
-          searchable
-          clearable={false}
-          size="sm"
-        />
-      </div>
-    )}
-
-    {/* Tombol aksi */}
-    <div className="flex justify-end space-x-1 pt-1">
-      <Button
-        variant="outline"
-        onClick={() => setIsVariantModalOpen(false)}
-        disabled={isAddingToCart}
-        size="sm"
-      >
-        Batal
-      </Button>
-      <Button
-        onClick={hasVariants ? addToCartWithVariant : addToCartDirect}
-        loading={isAddingToCart}
-        disabled={
-          hasVariants 
-            ? (!selectedVariant || selectedVariant.stock_qty <= 0)
-            : stock <= 0
-        }
-        color="blue"
-        size="sm"
-      >
-        {isAddingToCart ? "Menambahkan..." : "Tambahkan ke Keranjang"}
-      </Button>
-    </div>
-  </div>
-</Modal>
+      </Modal>
     </>
   );
 };

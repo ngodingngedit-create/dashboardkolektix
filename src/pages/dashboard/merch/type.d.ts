@@ -2,6 +2,7 @@ export type MerchListResponse = {
   id: number;
   creator_id: number;
   admin_fee: string;
+  sku: string;
   average_star: string;
   total_sold: number;
   total_review: number;

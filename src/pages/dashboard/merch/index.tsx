@@ -898,9 +898,8 @@
 // export default Merch;
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Image as MImage, Flex, ActionIcon, Switch, Group } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
-import NextImage from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
 import { modals } from "@mantine/modals";
@@ -911,7 +910,6 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
-import Cookies from "js-cookie";
 import { Get } from "@/utils/REST";
 
 const PER_PAGE = 10;
@@ -922,7 +920,6 @@ const Merch: React.FC = () => {
   const [merchList, setMerchList] = useState<MerchListResponse[]>([]);
   const [loading, setLoading] = useState<string[]>([]);
   const [loading2, setLoading2] = useState<boolean>(false);
-  const [excelFile, setExcelFile] = useState<File | null>(null);
 
   // pagination
   const [page, setPage] = useState<number>(1);
@@ -1051,62 +1048,47 @@ const Merch: React.FC = () => {
     setModalCreate(slug);
   };
 
-  const handleExcelImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validasi apakah file Excel
-      if (
-        file.type.includes("excel") ||
-        file.type.includes("spreadsheet") ||
-        file.name.endsWith(".xlsx") ||
-        file.name.endsWith(".xls") ||
-        file.name.endsWith(".csv")
-      ) {
-        setExcelFile(file);
-        // Proses file Excel di sini
-        console.log("File Excel yang dipilih:", file.name);
-
-        // Bisa tambahkan modal konfirmasi atau langsung upload
-        modals.openConfirmModal({
-          centered: true,
-          title: "Import Excel",
-          children: `Apakah anda yakin ingin mengimport data dari file "${file.name}"?`,
-          labels: { confirm: "Import", cancel: "Batal" },
-          onConfirm: () => {
-            // Upload ke API
-            const formData = new FormData();
-            formData.append("excel_file", file);
-            // Contoh: Post('import-merchandise', formData, {
-            //   headers: { 'Content-Type': 'multipart/form-data' }
-            // }).then(...).catch(...);
-            alert(`File "${file.name}" siap diimport.`);
-          },
-        });
-      } else {
-        alert("Silakan pilih file Excel (.xlsx, .xls, atau .csv)");
-      }
-    }
-    // Reset input file
-    event.target.value = "";
-  };
-
   /**
    * FILTER & SEARCH STATE
    */
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
-  const [method, setMethod] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [locationFilter, setLocationFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+
+  // Fungsi untuk mendapatkan SKU produk
+  const getProductSku = (item: MerchListResponse): string => {
+    // 1. Cek SKU di level produk (jika ada)
+    if (item.sku) return item.sku;
+    
+    // 2. Cek SKU dari varian pertama (jika ada varian)
+    if (item.product_varian?.[0]?.sku) return item.product_varian[0].sku;
+    
+    // 3. Cek semua varian untuk SKU
+    if (item.product_varian?.length > 0) {
+      const sku = item.product_varian.find(v => v.sku)?.sku;
+      if (sku) return sku;
+    }
+    
+    // 4. Default
+    return "-";
+  };
 
   const itemSearchText = (item: MerchListResponse) => {
     const parts: string[] = [];
     if (item.product_name) parts.push(String(item.product_name));
     if (item.slug) parts.push(String(item.slug));
-    if (item.product_varian?.[0]?.sku) parts.push(String(item.product_varian[0].sku));
-    if (item.product_varian?.length) parts.push(item.product_varian.map((v: any) => String(v?.sku ?? "")).join(" "));
+    
+    // Tambahkan SKU produk ke search
+    const sku = getProductSku(item);
+    if (sku && sku !== "-") parts.push(String(sku));
+    
+    if (item.product_varian?.length) {
+      parts.push(...item.product_varian
+        .filter(v => v?.sku)
+        .map(v => String(v.sku))
+      );
+    }
+    
     if (item.product_varian?.[0]?.price) parts.push(String(item.product_varian[0].price));
     if (item.price) parts.push(String(item.price));
     if (item.qty !== undefined) parts.push(String(item.qty));
@@ -1138,28 +1120,6 @@ const Merch: React.FC = () => {
           }
         }
 
-        if (category) {
-          const catField = (item as any).category || (item as any).category_id || "";
-          if (!String(catField).toLowerCase().includes(category.toLowerCase())) return false;
-        }
-
-        if (method) {
-          const m = (item as any).payment_method || (item as any).method || "";
-          if (!String(m).toLowerCase().includes(method.toLowerCase())) return false;
-        }
-
-        if (statusFilter) {
-          if (statusFilter === "active" && item.product_status_id !== 2) return false;
-          if (statusFilter === "inactive" && item.product_status_id === 2) return false;
-        }
-
-        if (locationFilter) {
-          const itemLocation = item.has_store_location?.store_name || "";
-          if (!String(itemLocation).toLowerCase().includes(locationFilter.toLowerCase())) {
-            return false;
-          }
-        }
-
         if (search) {
           const needle = search.toLowerCase().trim();
           if (!itemSearchText(item).includes(needle)) return false;
@@ -1171,7 +1131,7 @@ const Merch: React.FC = () => {
       map.set(status, filtered);
     }
     return map;
-  }, [splittedByStatus, startDate, endDate, category, method, statusFilter, locationFilter, search, tabStatus]);
+  }, [splittedByStatus, startDate, endDate, search, tabStatus]);
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
@@ -1184,9 +1144,6 @@ const Merch: React.FC = () => {
           }}
         />
       )}
-
-      {/* Input file tersembunyi untuk import Excel */}
-      <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} style={{ display: "none" }} />
 
       <div className="flex flex-wrap items-center justify-between gap-[20px]">
         <Title order={1} size="h2">
@@ -1264,20 +1221,6 @@ const Merch: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Tombol Import Excel */}
-                        <ButtonM
-                          size="sm"
-                          variant="filled"
-                          color="#0B387C"
-                          onClick={() => {
-                            document.getElementById("excel-import-input")?.click();
-                          }}
-                          leftSection={<Icon icon="ph:upload-simple" className="text-base" />}
-                          radius="xl"
-                        >
-                          Import Excel
-                        </ButtonM>
-
                         {/* Tombol Reset Filter */}
                         <ButtonM
                           size="sm"
@@ -1287,10 +1230,6 @@ const Merch: React.FC = () => {
                             setSearch("");
                             setStartDate("");
                             setEndDate("");
-                            setCategory("");
-                            setMethod("");
-                            setStatusFilter("");
-                            setLocationFilter("");
                           }}
                           leftSection={<Icon icon="ph:arrow-counter-clockwise" className="text-base" />}
                           radius="xl"
@@ -1329,7 +1268,10 @@ const Merch: React.FC = () => {
                         filtered.map((item, i) => {
                           const safeId = String(item.id ?? i);
                           const safeSlug = String(item.slug ?? "");
-                          const safeSku = String(item.product_varian?.[0]?.sku ?? "-");
+                          
+                          // Gunakan fungsi getProductSku untuk mendapatkan SKU
+                          const safeSku = getProductSku(item);
+                          
                           const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
                           const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
                           const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
@@ -1345,7 +1287,9 @@ const Merch: React.FC = () => {
                                 </div>
                               </TableCell>
 
-                              <TableCell className="whitespace-nowrap">{safeSku || "-"}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {safeSku !== "-" ? safeSku : "-"}
+                              </TableCell>
 
                               <TableCell className="whitespace-nowrap">
                                 <NumberFormatter value={safePrice} prefix="Rp " />
@@ -1381,7 +1325,8 @@ const Merch: React.FC = () => {
                   <Center mih={200} w="100%">
                     <div className="py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full">
                       <div className="border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2">
-                        <NextImage src={merchIcon} alt="merch" className="w-7" />
+                        {/* <NextImage src={merchIcon} alt="merch" className="w-7" /> */}
+                        <div className="w-7 h-7 bg-gray-300 rounded"></div>
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg">Belum ada merchandise yang dibuat</p>

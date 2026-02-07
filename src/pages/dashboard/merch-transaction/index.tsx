@@ -981,6 +981,7 @@ import {
   faInfoCircle,
   faSearch,
   faReceipt,
+  faCalendarAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
 
@@ -1039,6 +1040,7 @@ const MerchandiseTransaction: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<string>("transaksi");
   const [selectedCreator, setSelectedCreator] = useState<string>("all");
   const [loadingCreators, setLoadingCreators] = useState<boolean>(false);
+  const [dateFilter, setDateFilter] = useState<string>("");
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] =
@@ -1051,6 +1053,16 @@ const MerchandiseTransaction: React.FC = () => {
 
   const onProductFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setProductFilter(e.target.value);
+    setPage(1);
+  }, []);
+
+  const onDateFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateFilter(e.target.value);
+    setPage(1);
+  }, []);
+
+  const clearDateFilter = useCallback(() => {
+    setDateFilter("");
     setPage(1);
   }, []);
 
@@ -1163,7 +1175,7 @@ const MerchandiseTransaction: React.FC = () => {
 
   const getData = async () => {
     setLoading(true);
-    setError(null); // Reset error setiap kali fetch data
+    setError(null);
     try {
       const res: any = await Get("order-bycreator", {});
       const creatorId = user?.has_creator?.id;
@@ -1249,7 +1261,6 @@ const MerchandiseTransaction: React.FC = () => {
       setData(sortedData);
     } catch (err: any) {
       console.error("Error fetching data:", err);
-      // Tetap set data kosong dan error state
       setData([]);
       setError("Gagal mengambil data dari server");
     } finally {
@@ -1286,6 +1297,7 @@ const MerchandiseTransaction: React.FC = () => {
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
 
+    // Filter berdasarkan invoice
     if (filterValue) {
       result = result.filter((item) =>
         (item.invoice_no ?? "")
@@ -1295,6 +1307,7 @@ const MerchandiseTransaction: React.FC = () => {
       );
     }
 
+    // Filter berdasarkan product name
     if (productFilter) {
       result = result.filter((item) =>
         (item.product_name ?? "")
@@ -1304,27 +1317,49 @@ const MerchandiseTransaction: React.FC = () => {
       );
     }
 
+    // Filter berdasarkan tanggal
+    if (dateFilter) {
+      const selectedDate = new Date(dateFilter);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      result = result.filter((item) => {
+        const orderDate = parseDate(item.order_date);
+        
+        // Jika tidak ada tanggal order, skip
+        if (orderDate.getTime() === 0) return false;
+
+        // Set ke awal hari untuk perbandingan
+        orderDate.setHours(0, 0, 0, 0);
+        
+        return orderDate.getTime() === selectedDate.getTime();
+      });
+    }
+
     return result;
-  }, [dataWithCreatorNames, filterValue, productFilter]);
+  }, [dataWithCreatorNames, filterValue, productFilter, dateFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
-  const totalMerchandiseInPage = useMemo(
-    () => paginatedItems.length,
-    [paginatedItems]
-  );
-  const totalPriceInPage = useMemo(
-    () => paginatedItems.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0),
-    [paginatedItems]
-  );
   const totalPriceAllFiltered = useMemo(
-    () => filtered.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0),
+    () => filtered.reduce((sum, item) => {
+      if (item.transaction_status_id === 2) {
+        return sum + (Number(item.total_price) || 0);
+      }
+      return sum;
+    }, 0),
+    [filtered]
+  );
+
+  const totalSuccessfulTransactions = useMemo(
+    () => filtered.filter(item => item.transaction_status_id === 2).length,
     [filtered]
   );
 
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
-    if (!rows || rows.length === 0) {
+    const successfulRows = rows.filter(item => item.transaction_status_id === 2);
+    
+    if (!successfulRows || successfulRows.length === 0) {
       const headers = [
         "Invoice Number",
         "Nama Produk",
@@ -1358,7 +1393,7 @@ const MerchandiseTransaction: React.FC = () => {
       return needsQuotes ? `"${escaped}"` : escaped;
     };
 
-    const lines = rows.map((r) =>
+    const lines = successfulRows.map((r) =>
       [
         escapeCell(r.invoice_no),
         escapeCell(r.product_name),
@@ -1410,7 +1445,8 @@ const MerchandiseTransaction: React.FC = () => {
   const formatDate = (dateString?: string) => {
     if (!dateString || dateString === "-") return "-";
     try {
-      const date = new Date(dateString);
+      const date = parseDate(dateString);
+      if (date.getTime() === 0) return dateString;
       return date.toLocaleDateString("id-ID", {
         day: "2-digit",
         month: "short",
@@ -1444,9 +1480,6 @@ const MerchandiseTransaction: React.FC = () => {
       </div>
     );
   }
-
-  // HAPUS KONDISI ERROR YANG MENAMPILKAN RED BOX
-  // JIKA TERJADI ERROR, TETAP TAMPILKAN UI DENGAN DATA KOSONG
 
   const InfoCard = ({
     title,
@@ -1517,7 +1550,6 @@ const MerchandiseTransaction: React.FC = () => {
 
   return (
     <Card className={`!overflow-auto`} p={20} m={10} withBorder>
-      {/* Banner error (jika ada) tapi tidak mengganggu tampilan tabel */}
       {error && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex items-center justify-between">
@@ -1548,6 +1580,18 @@ const MerchandiseTransaction: React.FC = () => {
               </span>{" "}
               of <span className="font-semibold">{filtered.length}</span> entries
             </div>
+            {dateFilter && (
+              <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full flex items-center gap-2">
+                <FontAwesomeIcon icon={faCalendarAlt} />
+                Filter tanggal: {new Date(dateFilter).toLocaleDateString('id-ID')}
+                <button
+                  onClick={clearDateFilter}
+                  className="ml-2 text-blue-800 hover:text-blue-900"
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right">
@@ -1560,7 +1604,15 @@ const MerchandiseTransaction: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Price
+                Transaksi Sukses
+              </div>
+              <div className="text-lg font-semibold text-green-600">
+                {totalSuccessfulTransactions}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Price (Sukses)
               </div>
               <div className="text-lg font-semibold text-gray-800">
                 Rp {totalPriceAllFiltered.toLocaleString("id-ID")}
@@ -1606,6 +1658,28 @@ const MerchandiseTransaction: React.FC = () => {
                     }
                   />
                 </div>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <Input
+                    type="date"
+                    placeholder="Filter by Date"
+                    value={dateFilter}
+                    onChange={onDateFilterChange}
+                    className="w-full md:w-48"
+                    size="sm"
+                    startContent={
+                      <FontAwesomeIcon icon={faCalendarAlt} className="h-3.5 w-3.5 text-gray-400" />
+                    }
+                  />
+                  {dateFilter && (
+                    <button
+                      onClick={clearDateFilter}
+                      className="px-2 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                      title="Clear date filter"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => exportToCSV(filtered)}
@@ -1614,7 +1688,7 @@ const MerchandiseTransaction: React.FC = () => {
                   disabled={filtered.length === 0}
                 >
                   <FontAwesomeIcon icon={faDownload} className="h-4 w-4 text-green-600" />
-                  <span>Export ({filtered.length})</span>
+                  <span>Export ({totalSuccessfulTransactions})</span>
                 </button>
               </div>
             </div>
@@ -1630,7 +1704,6 @@ const MerchandiseTransaction: React.FC = () => {
             </select>
           </div>
 
-          {/* TABLE - SELALU DITAMPILKAN, MESKIPUN ERROR */}
           <Table
             aria-label="Merchandise Transaction Table"
             style={{
@@ -1667,10 +1740,14 @@ const MerchandiseTransaction: React.FC = () => {
                     <div>
                       <p className="text-gray-500 font-medium text-lg">Data invoice tidak ada</p>
                       <p className="text-gray-400 text-sm mt-1">
-                        {filterValue || productFilter
+                        {filterValue || productFilter || dateFilter
                           ? `Tidak ditemukan invoice${
                               filterValue ? ` dengan kode "${filterValue}"` : ""
-                            }${productFilter ? ` untuk produk "${productFilter}"` : ""}`
+                            }${productFilter ? ` untuk produk "${productFilter}"` : ""}${
+                              dateFilter 
+                                ? ` pada tanggal ${new Date(dateFilter).toLocaleDateString('id-ID')}`
+                                : ""
+                            }`
                           : error
                           ? "Gagal mengambil data dari server"
                           : "Belum ada data transaksi merchandise"}

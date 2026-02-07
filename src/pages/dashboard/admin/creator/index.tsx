@@ -582,7 +582,7 @@
 import TableData from "@/components/TableData";
 import { Pagination } from "@/types/model";
 import fetch from "@/utils/fetch";
-import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, Modal, TextInput, Select, FileInput, Textarea } from "@mantine/core";
+import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, Modal, TextInput, Select, FileInput } from "@mantine/core";
 import { useDisclosure, useListState } from "@mantine/hooks";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -632,21 +632,7 @@ interface CreatorProps {
   };
 }
 
-// Fungsi untuk mengkonversi file ke base64 murni (tanpa data URL prefix)
-const convertFileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = reader.result as string;
-      const pureBase64 = base64String.split(',')[1];
-      resolve(pureBase64 || base64String);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
-
-// Fungsi untuk mengkonversi file ke base64 dengan format lengkap (data URL) untuk preview
+// Fungsi untuk mengkonversi file ke base64 dengan format Data URL lengkap
 const convertFileToBase64DataURL = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -670,7 +656,7 @@ export default function KelolaCreator() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
 
-  // Form state
+  // Form state - HAPUS user_id dari form values
   const form = useForm({
     initialValues: {
       name_event_organizer: "",
@@ -678,7 +664,6 @@ export default function KelolaCreator() {
       location: "",
       phone_number: "",
       email: "",
-      user_id: "",
       status: "active",
     },
 
@@ -686,7 +671,6 @@ export default function KelolaCreator() {
       name: (value) => (!value ? "Nama creator harus diisi" : null),
       phone_number: (value) => (!value ? "Nomor telepon harus diisi" : null),
       email: (value) => (!value ? "Email harus diisi" : null),
-      user_id: (value) => (!value ? "User ID harus diisi" : null),
     },
   });
 
@@ -762,13 +746,13 @@ export default function KelolaCreator() {
     
     setImageBase64(null);
     
+    // Untuk edit, kita tetap pakai email creator (tidak perlu user_id)
     form.setValues({
       name_event_organizer: creatorData.name_event_organizer || "",
       name: creatorData.name || "",
       location: creatorData.location || "",
       phone_number: creatorData.phone_number || "",
       email: creatorData.email || "",
-      user_id: creatorData.user_id || "",
       status: creatorData.status || "active",
     });
     
@@ -808,15 +792,13 @@ export default function KelolaCreator() {
   const handleFileChange = async (file: File | null) => {
     if (file) {
       try {
-        const base64String = await convertFileToBase64(file);
-        setImageBase64(base64String);
-        
         const base64DataURL = await convertFileToBase64DataURL(file);
+        setImageBase64(base64DataURL);
         setImagePreview(base64DataURL);
         
         notifications.show({
           title: "Gambar berhasil diproses",
-          message: "Gambar telah dikonversi ke base64",
+          message: "Gambar siap diupload",
           color: "green",
           autoClose: 2000,
         });
@@ -835,29 +817,44 @@ export default function KelolaCreator() {
   };
 
   const handleFormSubmit = async (values: typeof form.values) => {
-    // Buat payload dengan field image di posisi pertama
     const payload: any = {};
 
-    // Tambahkan image di posisi pertama jika ada
+    // Gunakan Data URL lengkap untuk image
     if (imageBase64) {
       payload.image = imageBase64;
     } else if (!isEditMode) {
       // Untuk tambah data tanpa gambar
       payload.image = null;
     }
-    // Jika edit mode dan tidak ada gambar baru, jangan tambahkan field image
     
-    // Tambahkan field lainnya
+    // ============ KUNCI UTAMA: TANPA USER_ID ============
+    // Semua field kecuali user_id
     payload.name_event_organizer = values.name_event_organizer || "";
     payload.name = values.name;
     payload.location = values.location || "";
     payload.phone_number = values.phone_number;
     payload.email = values.email;
-    payload.user_id = parseInt(values.user_id) || 0;
     payload.status = values.status;
+    
+    // TIDAK ADA user_id di payload!
+    // Backend harus handle ini dengan salah satu cara:
+    // 1. Membuat user baru otomatis berdasarkan email
+    // 2. Membiarkan creator.user_id = null
+    // 3. Auto-generate user dengan data minimal
+    
+    // Jika backend membutuhkan user_id tapi kita tidak punya,
+    // kita bisa menambahkan fallback logic:
+    if (isEditMode && selectedCreator?.user_id) {
+      // Untuk edit, tetap pakai user_id yang sudah ada jika ada
+      payload.user_id = selectedCreator.user_id;
+    }
+    // ====================================================
 
-    console.log("Payload yang akan dikirim:", JSON.stringify(payload, null, 2));
-    console.log("Field pertama:", Object.keys(payload)[0]);
+    console.log("Payload creator (TANPA user_id):", {
+      ...payload,
+      image: imageBase64 ? `${imageBase64.substring(0, 50)}...` : null,
+      has_user_id: !!payload.user_id
+    });
 
     const url = isEditMode ? `creator/${selectedCreator?.id}` : "creator";
     const method = isEditMode ? "PUT" : "POST";
@@ -882,12 +879,30 @@ export default function KelolaCreator() {
       },
       error: (error) => {
         console.error("Error submitting form:", error);
-        console.error("Error details:", error.response || error.message);
-        notifications.show({
-          title: "Gagal",
-          message: error.message || `Gagal ${isEditMode ? "memperbarui" : "menambahkan"} creator`,
-          color: "red",
-        });
+        
+        // Jika error karena user_id required
+        if (error.response?.status === 422) {
+          const errors = error.response.data.errors || {};
+          if (errors.user_id) {
+            notifications.show({
+              title: "Perhatian",
+              message: "Backend membutuhkan user_id. Mungkin perlu menyesuaikan endpoint atau hubungi developer backend.",
+              color: "yellow",
+            });
+          } else {
+            notifications.show({
+              title: "Gagal",
+              message: error.response.data.message || `Gagal ${isEditMode ? "memperbarui" : "menambahkan"} creator`,
+              color: "red",
+            });
+          }
+        } else {
+          notifications.show({
+            title: "Gagal",
+            message: error.message || `Gagal ${isEditMode ? "memperbarui" : "menambahkan"} creator`,
+            color: "red",
+          });
+        }
       },
       complete: () => setLoading.filter((e) => e !== "submit"),
     });
@@ -952,7 +967,7 @@ export default function KelolaCreator() {
               ),
               user: (
                 <Stack gap={2}>
-                  <Text size="sm" fw={500}>{creator.has_user?.name || creator.has_user?.email || "Tidak ada"}</Text>
+                  <Text size="sm" fw={500}>{creator.has_user?.name || creator.has_user?.email || "Tidak ada user"}</Text>
                   <Text size="xs" c="dimmed">{creator.has_user?.email || ""}</Text>
                 </Stack>
               ),
@@ -1016,7 +1031,7 @@ export default function KelolaCreator() {
         <form onSubmit={form.onSubmit(handleFormSubmit)}>
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
-            {/* File Input dipindah ke atas */}
+            {/* Preview gambar */}
             {imagePreview && (
               <Stack gap={5}>
                 <Text size="sm" fw={500}>Preview Gambar</Text>
@@ -1058,7 +1073,7 @@ export default function KelolaCreator() {
 
             {imageBase64 && (
               <Text size="xs" c="dimmed">
-                Gambar berhasil dikonversi ke base64 ({Math.round(imageBase64.length / 1024)} KB)
+                Gambar siap diupload ({Math.round(imageBase64.length / 1024)} KB)
               </Text>
             )}
 
@@ -1094,14 +1109,6 @@ export default function KelolaCreator() {
               required
               type="email"
               {...form.getInputProps("email")}
-            />
-
-            <TextInput
-              label="User ID"
-              placeholder="Masukkan ID user yang terkait"
-              required
-              type="number"
-              {...form.getInputProps("user_id")}
             />
 
             <Select

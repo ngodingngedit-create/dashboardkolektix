@@ -1554,99 +1554,93 @@ export default function MerchScanPage() {
   };
 
   const setDataWrapper = (scanData: any) => {
-  if (scanData && scanData.type === 'merchandise') {
-    // Panggil fungsi handleMerchScan dengan data yang diterima dari QR Scanner
-    if (scanData.success) {
-      // Data berhasil dari scanner
-      const merchData: SuccessMerchData = {
-        invoice_no: scanData.data?.invoice_no || 'N/A',
-        product_name: scanData.data?.products?.[0]?.product_name || 'Produk Merchandise',
-        quantity: scanData.data?.products?.[0]?.qty?.toString() || '1',
-        variant_name: scanData.data?.products?.[0]?.variant || 'Standard',
-        buyer_name: scanData.data?.user?.name || scanData.data?.picked_up_by || 'Customer',
-        total_price: scanData.data?.products?.[0]?.price || '0',
-        status: scanData.data?.is_pickup === 1 ? 'redeemed' : 'validated',
-        scan_date: new Date().toISOString()
-      };
-      
-      // Set current scan data untuk modal
-      setCurrentScanData({
-        ...merchData,
-        message: scanData.message,
-        pickup_status: scanData.pickup_status
-      });
-      
-      setShowSuccessModal(true);
-      
-      // Proses ke history seperti sebelumnya
-      const quantity = parseInt(merchData.quantity) || 1;
-      const isPickup = scanData.data?.is_pickup === 1;
-      
-      const newScan: ScanItem = {
-        id: Date.now(),
-        invoice_no: merchData.invoice_no,
-        buyer_name: merchData.buyer_name,
-        product_name: merchData.product_name,
-        variant_name: merchData.variant_name,
-        quantity: merchData.quantity,
-        total_price: merchData.total_price,
-        scan_date: new Date().toISOString(),
-        status: 'success',
-        type: isPickup ? 'redeem' : 'validation',
-        pickedItems: isPickup ? Array(quantity).fill(true) : Array(quantity).fill(false),
-        completed: isPickup,
-        itemDetails: Array.from({ length: quantity }, (_, i) => ({
-          id: i + 1,
-          name: merchData.product_name,
-          variant: merchData.variant_name
-        })),
-        message: scanData.message,
-        pickup_status: scanData.pickup_status
-      };
-      
-      setScanHistory(prev => [newScan, ...prev]);
-      fetchScanHistory();
-      
-    } else {
-      // Data gagal dari scanner
-      setCurrentScanData({
-        invoice_no: 'N/A',
-        product_name: 'Validasi Gagal',
-        quantity: '0',
-        variant_name: `Kode: ${scanData.rawResponse?.invoice_no || 'N/A'}`,
-        buyer_name: 'N/A',
-        total_price: '0',
-        status: 'failed',
-        scan_date: new Date().toISOString(),
-        message: scanData.message || 'Scan gagal'
-      });
-      
-      setShowSuccessModal(true);
-      
-      const newScan: ScanItem = {
-        id: Date.now(),
-        invoice_no: 'N/A',
-        buyer_name: 'N/A',
-        product_name: 'Validasi Gagal',
-        variant_name: 'Validasi Gagal',
-        quantity: '0',
-        total_price: '0',
-        scan_date: new Date().toISOString(),
-        status: 'failed',
-        type: 'validation',
-        pickedItems: [],
-        completed: false,
-        itemDetails: [],
-        message: scanData.message || 'Scan gagal'
-      };
-      
-      setScanHistory(prev => [newScan, ...prev]);
+    if (scanData && scanData.type === 'merchandise') {
+      if (scanData.success) {
+        const merchData: SuccessMerchData = {
+          invoice_no: scanData.data?.invoice_no || 'N/A',
+          product_name: scanData.data?.products?.[0]?.product_name || 'Produk Merchandise',
+          quantity: scanData.data?.products?.[0]?.qty?.toString() || '1',
+          variant_name: scanData.data?.products?.[0]?.variant || 'Standard',
+          buyer_name: scanData.data?.user?.name || scanData.data?.picked_up_by || 'Customer',
+          total_price: scanData.data?.products?.[0]?.price || '0',
+          status: scanData.data?.is_pickup === 1 ? 'redeemed' : 'validated',
+          scan_date: new Date().toISOString()
+        };
+        
+        setCurrentScanData({
+          ...merchData,
+          message: scanData.message,
+          pickup_status: scanData.pickup_status
+        });
+        
+        setShowSuccessModal(true);
+        
+        const quantity = parseInt(merchData.quantity) || 1;
+        const isPickup = scanData.data?.is_pickup === 1;
+        
+        const newScan: ScanItem = {
+          id: Date.now(),
+          invoice_no: merchData.invoice_no,
+          buyer_name: merchData.buyer_name,
+          product_name: merchData.product_name,
+          variant_name: merchData.variant_name,
+          quantity: merchData.quantity,
+          total_price: merchData.total_price,
+          scan_date: new Date().toISOString(),
+          status: 'success',
+          type: isPickup ? 'redeem' : 'validation',
+          pickedItems: isPickup ? Array(quantity).fill(true) : Array(quantity).fill(false),
+          completed: isPickup,
+          itemDetails: Array.from({ length: quantity }, (_, i) => ({
+            id: i + 1,
+            name: merchData.product_name,
+            variant: merchData.variant_name
+          })),
+          message: scanData.message,
+          pickup_status: scanData.pickup_status
+        };
+        
+        setScanHistory(prev => [newScan, ...prev]);
+        fetchScanHistory();
+        
+      } else {
+        setCurrentScanData({
+          invoice_no: 'N/A',
+          product_name: 'Validasi Gagal',
+          quantity: '0',
+          variant_name: `Kode: ${scanData.rawResponse?.invoice_no || 'N/A'}`,
+          buyer_name: 'N/A',
+          total_price: '0',
+          status: 'failed',
+          scan_date: new Date().toISOString(),
+          message: scanData.message || 'Scan gagal'
+        });
+        
+        setShowSuccessModal(true);
+        
+        const newScan: ScanItem = {
+          id: Date.now(),
+          invoice_no: 'N/A',
+          buyer_name: 'N/A',
+          product_name: 'Validasi Gagal',
+          variant_name: 'Validasi Gagal',
+          quantity: '0',
+          total_price: '0',
+          scan_date: new Date().toISOString(),
+          status: 'failed',
+          type: 'validation',
+          pickedItems: [],
+          completed: false,
+          itemDetails: [],
+          message: scanData.message || 'Scan gagal'
+        };
+        
+        setScanHistory(prev => [newScan, ...prev]);
+      }
+    } else if (scanData && typeof scanData === 'string') {
+      handleMerchScan(scanData);
     }
-  } else if (scanData && typeof scanData === 'string') {
-    // Fallback untuk kompatibilitas
-    handleMerchScan(scanData);
-  }
-};
+  };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -1747,6 +1741,7 @@ export default function MerchScanPage() {
 
       <div className="w-full relative">
         <div className="flex flex-col lg:flex-row lg:gap-4">
+          {/* Bagian Scanner */}
           <div className="lg:w-1/2 lg:pl-4">
             <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 h-full min-h-[calc(100vh-120px)] mx-4 lg:mx-0">
               <div className="flex items-center gap-3 mb-6">
@@ -1792,74 +1787,6 @@ export default function MerchScanPage() {
                 {selected === 'qr' && step === 0 && (
                   <div className="mb-4">
                     <div className="rounded-lg overflow-hidden border-2 border-dashed border-primary-light-200 bg-gray-50 p-2 h-[400px] relative">
-                      {showSuccessModal && currentScanData && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 z-20 flex items-center justify-center p-4">
-                          <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn">
-                            <FontAwesomeIcon 
-                              icon={currentScanData.pickup_status?.includes('Sudah diambil') ? faInfoCircle : faCheckCircle} 
-                              className={`text-4xl mb-3 ${
-                                currentScanData.pickup_status?.includes('Sudah diambil') 
-                                  ? 'text-yellow-500' 
-                                  : 'text-green-500'
-                              }`} 
-                            />
-                            <p className={`font-semibold mb-2 text-lg ${
-                              currentScanData.pickup_status?.includes('Sudah diambil') 
-                                ? 'text-yellow-700' 
-                                : 'text-green-700'
-                            }`}>
-                              Scan Berhasil!
-                            </p>
-                            
-                            <div className="text-left mb-4 bg-gray-50 p-3 rounded-lg">
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div className="text-gray-600">Invoice:</div>
-                                <div className="font-medium">{currentScanData.invoice_no}</div>
-                                
-                                <div className="text-gray-600">Produk:</div>
-                                <div className="font-medium">{currentScanData.product_name}</div>
-                                
-                                <div className="text-gray-600">Variant:</div>
-                                <div className="font-medium">{currentScanData.variant_name}</div>
-                                
-                                <div className="text-gray-600">Pembeli:</div>
-                                <div className="font-medium">{currentScanData.buyer_name}</div>
-                                
-                                <div className="text-gray-600">Status:</div>
-                                <div className={`font-medium ${
-                                  currentScanData.pickup_status?.includes('Sudah diambil') 
-                                    ? 'text-yellow-600' 
-                                    : 'text-green-600'
-                                }`}>
-                                  {currentScanData.pickup_status || 'Valid'}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <p className="text-sm text-gray-600 mb-4">
-                              {currentScanData.pickup_status?.includes('Sudah diambil') 
-                                ? 'Merchandise ini sudah pernah diambil sebelumnya.'
-                                : 'Lihat detail di riwayat scan'}
-                            </p>
-                            
-                            <div className="flex gap-3">
-                              <Button
-                                label="Tutup"
-                                onClick={handleCloseSuccessModal}
-                                color="primary"
-                                fullWidth
-                              />
-                              <Button
-                                label="Scan Ulang"
-                                onClick={handleScanAgain}
-                                color="primary"
-                                fullWidth
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
                       {!isScanning && !data && !showSuccessModal && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 z-10 flex items-center justify-center p-4">
                           <div className="bg-white p-6 rounded-xl text-center max-w-md w-full">
@@ -1933,32 +1860,6 @@ export default function MerchScanPage() {
                 
                 {selected === 'manual' && step === 0 && (
                   <div className="px-2">
-                    {lastScanMessage && (
-                      <div className={`mb-4 p-3 rounded-lg ${
-                        lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil')
-                          ? 'bg-green-50 border border-green-200 text-green-800'
-                          : lastScanMessage.includes('Sudah diambil')
-                          ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                          : 'bg-red-50 border border-red-200 text-red-800'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <FontAwesomeIcon 
-                            icon={
-                              lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil') 
-                                ? (lastScanMessage.includes('Sudah diambil') ? faInfoCircle : faCheckCircle) 
-                                : faExclamationTriangle
-                            } 
-                            className={
-                              lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil') 
-                                ? (lastScanMessage.includes('Sudah diambil') ? 'text-yellow-600' : 'text-green-600')
-                                : 'text-red-600'
-                            }
-                          />
-                          <span className="text-sm font-medium">{lastScanMessage}</span>
-                        </div>
-                      </div>
-                    )}
-                    
                     <div className="mb-4">
                       <label className="block text-gray-700 text-sm font-medium mb-2">
                         Kode Merchandise
@@ -1991,8 +1892,9 @@ export default function MerchScanPage() {
             </div>
           </div>
 
+          {/* Bagian Riwayat Scan dengan Modal */}
           <div className="lg:w-1/2 lg:pr-4 mt-6 lg:mt-0">
-            <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 h-full min-h-[calc(100vh-120px)] mx-4 lg:mx-0">
+            <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 h-full min-h-[calc(100vh-120px)] mx-4 lg:mx-0 relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <FontAwesomeIcon icon={faHistory} className="text-primary text-xl" />
@@ -2008,6 +1910,75 @@ export default function MerchScanPage() {
                 )}
               </div>
 
+              {/* Modal Success */}
+              {showSuccessModal && currentScanData && selected === 'qr' && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 z-20 flex items-center justify-center p-4">
+                  <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn">
+                    <FontAwesomeIcon 
+                      icon={currentScanData.pickup_status?.includes('Sudah diambil') ? faInfoCircle : faCheckCircle} 
+                      className={`text-4xl mb-3 ${
+                        currentScanData.pickup_status?.includes('Sudah diambil') 
+                          ? 'text-yellow-500' 
+                          : 'text-green-500'
+                      }`} 
+                    />
+                    <p className={`font-semibold mb-2 text-lg ${
+                      currentScanData.pickup_status?.includes('Sudah diambil') 
+                        ? 'text-yellow-700' 
+                        : 'text-green-700'
+                    }`}>
+                      Scan Berhasil!
+                    </p>
+                    
+                    <div className="text-left mb-4 bg-gray-50 p-3 rounded-lg">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-gray-600">Invoice:</div>
+                        <div className="font-medium">{currentScanData.invoice_no}</div>
+                        
+                        <div className="text-gray-600">Produk:</div>
+                        <div className="font-medium">{currentScanData.product_name}</div>
+                        
+                        <div className="text-gray-600">Variant:</div>
+                        <div className="font-medium">{currentScanData.variant_name}</div>
+                        
+                        <div className="text-gray-600">Pembeli:</div>
+                        <div className="font-medium">{currentScanData.buyer_name}</div>
+                        
+                        <div className="text-gray-600">Status:</div>
+                        <div className={`font-medium ${
+                          currentScanData.pickup_status?.includes('Sudah diambil') 
+                            ? 'text-yellow-600' 
+                            : 'text-green-600'
+                        }`}>
+                          {currentScanData.pickup_status || 'Valid'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-4">
+                      {currentScanData.pickup_status?.includes('Sudah diambil') 
+                        ? 'Merchandise ini sudah pernah diambil sebelumnya.'
+                        : 'Lihat detail di riwayat scan'}
+                    </p>
+                    
+                    <div className="flex gap-3">
+                      <Button
+                        label="Tutup"
+                        onClick={handleCloseSuccessModal}
+                        color="primary"
+                        fullWidth
+                      />
+                      <Button
+                        label="Scan Ulang"
+                        onClick={handleScanAgain}
+                        color="primary"
+                        fullWidth
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isLoadingHistory ? (
                 <div className="text-center py-12">
                   <FontAwesomeIcon 
@@ -2018,7 +1989,33 @@ export default function MerchScanPage() {
                 </div>
               ) : (
                 <div className="overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-                  {lastScanMessage && selected === 'qr' && (
+                  {lastScanMessage && selected === 'qr' && !showSuccessModal && (
+                    <div className={`mb-4 p-3 rounded-lg ${
+                      lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil')
+                        ? 'bg-green-50 border border-green-200 text-green-800'
+                        : lastScanMessage.includes('Sudah diambil')
+                        ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                        : 'bg-red-50 border border-red-200 text-red-800'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <FontAwesomeIcon 
+                          icon={
+                            lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil') 
+                              ? (lastScanMessage.includes('Sudah diambil') ? faInfoCircle : faCheckCircle) 
+                              : faExclamationTriangle
+                          } 
+                          className={
+                            lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil') 
+                              ? (lastScanMessage.includes('Sudah diambil') ? 'text-yellow-600' : 'text-green-600')
+                              : 'text-red-600'
+                          }
+                        />
+                        <span className="text-sm font-medium">{lastScanMessage}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {lastScanMessage && selected === 'manual' && (
                     <div className={`mb-4 p-3 rounded-lg ${
                       lastScanMessage.includes('berhasil') || lastScanMessage.includes('Scan berhasil')
                         ? 'bg-green-50 border border-green-200 text-green-800'
