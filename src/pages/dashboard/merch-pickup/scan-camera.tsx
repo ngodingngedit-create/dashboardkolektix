@@ -1199,6 +1199,7 @@ export default function MerchScanPage() {
   const [lastScanMessage, setLastScanMessage] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentScanData, setCurrentScanData] = useState<SuccessMerchData | null>(null);
+  const [showModalFooter, setShowModalFooter] = useState(false);
 
   useEffect(() => {
     fetchScanHistory();
@@ -1275,6 +1276,7 @@ export default function MerchScanPage() {
       setIsScanning(false);
       setLastScanMessage(null);
       setShowSuccessModal(false);
+      setShowModalFooter(false);
       
       const response = await Post('order-product/scan/', { invoice_no: code }) as {
         status: boolean;
@@ -1322,6 +1324,7 @@ export default function MerchScanPage() {
         
         if (selected === 'qr') {
           setShowSuccessModal(true);
+          setShowModalFooter(true);
         }
         
         if (selected === 'manual') {
@@ -1574,6 +1577,7 @@ export default function MerchScanPage() {
         });
         
         setShowSuccessModal(true);
+        setShowModalFooter(true);
         
         const quantity = parseInt(merchData.quantity) || 1;
         const isPickup = scanData.data?.is_pickup === 1;
@@ -1617,6 +1621,7 @@ export default function MerchScanPage() {
         });
         
         setShowSuccessModal(true);
+        setShowModalFooter(true);
         
         const newScan: ScanItem = {
           id: Date.now(),
@@ -1665,10 +1670,23 @@ export default function MerchScanPage() {
     setLastScanMessage(null);
     setShowSuccessModal(false);
     setCurrentScanData(null);
+    setShowModalFooter(false);
   };
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
+    setShowModalFooter(false);
+    setCurrentScanData(null);
+  };
+
+  const handleScanAgainFromModal = () => {
+    setShowSuccessModal(false);
+    setShowModalFooter(false);
+    setStep(0);
+    setData(null);
+    setQrCode('');
+    setIsScanning(true);
+    setLastScanMessage(null);
     setCurrentScanData(null);
   };
 
@@ -1761,6 +1779,7 @@ export default function MerchScanPage() {
                     setCurrentScanData(null);
                     setIsScanning(true);
                     setShowSuccessModal(false);
+                    setShowModalFooter(false);
                   }}
                 >
                   <FontAwesomeIcon icon={faCamera} />
@@ -1776,6 +1795,7 @@ export default function MerchScanPage() {
                     setData(null);
                     setCurrentScanData(null);
                     setShowSuccessModal(false);
+                    setShowModalFooter(false);
                   }}
                 >
                   <FontAwesomeIcon icon={faKeyboard} />
@@ -1960,21 +1980,6 @@ export default function MerchScanPage() {
                         ? 'Merchandise ini sudah pernah diambil sebelumnya.'
                         : 'Lihat detail di riwayat scan'}
                     </p>
-                    
-                    <div className="flex gap-3">
-                      <Button
-                        label="Tutup"
-                        onClick={handleCloseSuccessModal}
-                        color="primary"
-                        fullWidth
-                      />
-                      <Button
-                        label="Scan Ulang"
-                        onClick={handleScanAgain}
-                        color="primary"
-                        fullWidth
-                      />
-                    </div>
                   </div>
                 </div>
               )}
@@ -2292,32 +2297,50 @@ export default function MerchScanPage() {
           </div>
         </div>
 
+        {/* Sticky Footer */}
         {scanHistory.length > 0 && (
           <div className="fixed bottom-6 z-50" style={{ 
             left: 'calc(50% + 16px)',
             width: 'calc(50% - 32px)'
           }}>
             <div className="bg-white rounded-xl shadow-lg border border-primary-light-200 p-4 mx-4 lg:mx-0 lg:mr-4">
-              <div className="flex gap-2">
-                <Button
-                  label="Clear History"
-                  onClick={() => setScanHistory([])}
-                  fullWidth
-                  color="primary"
-                />
-                <Button
-                  label="Scan Ulang"
-                  onClick={handleCheckAllItems}
-                  fullWidth
-                  color="primary"
-                />
-                <Button
-                  label="Pickup Semua"
-                  onClick={handleScanAgain}
-                  fullWidth
-                  color="primary"
-                />
-              </div>
+              {showModalFooter && showSuccessModal && selected === 'qr' ? (
+                <div className="flex gap-2">
+                  <Button
+                    label="Tutup"
+                    onClick={handleCloseSuccessModal}
+                    fullWidth
+                    color="primary"
+                  />
+                  <Button
+                    label="Scan Ulang"
+                    onClick={handleScanAgainFromModal}
+                    fullWidth
+                    color="primary"
+                  />
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    label="Clear History"
+                    onClick={() => setScanHistory([])}
+                    fullWidth
+                    color="primary"
+                  />
+                  <Button
+                    label="Scan Ulang"
+                    onClick={handleCheckAllItems}
+                    fullWidth
+                    color="primary"
+                  />
+                  <Button
+                    label="Pickup Semua"
+                    onClick={handleScanAgain}
+                    fullWidth
+                    color="primary"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

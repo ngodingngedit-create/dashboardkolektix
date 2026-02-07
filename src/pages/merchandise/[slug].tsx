@@ -352,10 +352,25 @@ interface ReviewData {
   };
 }
 
+// Update interface untuk creator
+interface CreatorWithVerification {
+  id: number;
+  name: string;
+  image_url: string;
+  has_creator?: {
+    is_verified?: number;
+  };
+}
+
+// Update interface untuk MerchListResponse
+interface MerchListResponseWithCreator extends Omit<MerchListResponse, 'creator'> {
+  creator: CreatorWithVerification;
+}
+
 const MerchandiseDetail = () => {
   const [activeTab, setActiveTab] = useState<"description" | "reviews">("description");
   const [isr, setIsr] = useState(false);
-  const [mainData, setMainData] = useState<MerchListResponse>();
+  const [mainData, setMainData] = useState<MerchListResponseWithCreator>();
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [count, setCount] = useState<number>(0);
@@ -532,38 +547,42 @@ const MerchandiseDetail = () => {
           </div>
 
           {/* Mobile thumbnail */}
-          <div className="col-span-2 md:hidden w-full overflow-x-auto mt-1">
-            <div className="flex gap-2 flex-nowrap">
-              {mainData.product_image.map((e, i) => (
-                <div key={i} className="flex-shrink-0">
-                  <AspectRatio>
-                    <Image
-                      src={e.image_url}
-                      width={500}
-                      height={500}
-                      alt="thumb"
-                      className={`w-20 h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
-                      onClick={() => setImage(i)}
-                    />
-                  </AspectRatio>
-                </div>
-              ))}
+          {mainData.product_image.length > 1 && (
+            <div className="col-span-2 md:hidden w-full overflow-x-auto mt-1">
+              <div className="flex gap-2 flex-nowrap">
+                {mainData.product_image.map((e, i) => (
+                  <div key={i} className="flex-shrink-0">
+                    <AspectRatio>
+                      <Image
+                        src={e.image_url}
+                        width={500}
+                        height={500}
+                        alt="thumb"
+                        className={`w-20 h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
+                        onClick={() => setImage(i)}
+                      />
+                    </AspectRatio>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Desktop thumbnail */}
-          <div className="hidden md:block col-span-2 w-full overflow-x-auto mt-1">
-            <div className="flex gap-2 flex-nowrap pb-1">
-              {mainData.product_image.map((e, i) => (
-                <div key={i} className="flex-shrink-0">
-                  <div className="relative w-16 h-16 rounded-md overflow-hidden cursor-pointer">
-                    <Image src={e.image_url} fill alt="thumb" className={`object-cover transition-opacity ${i === imageActive ? "opacity-100" : "opacity-80 hover:opacity-100"}`} onClick={() => setImage(i)} />
-                    {i === imageActive && <div className="absolute inset-0 border-2 border-primary-dark rounded-md" />}
+          {mainData.product_image.length > 1 && (
+            <div className="hidden md:block col-span-2 w-full overflow-x-auto mt-1">
+              <div className="flex gap-2 flex-nowrap pb-1">
+                {mainData.product_image.map((e, i) => (
+                  <div key={i} className="flex-shrink-0">
+                    <div className="relative w-16 h-16 rounded-md overflow-hidden cursor-pointer">
+                      <Image src={e.image_url} fill alt="thumb" className={`object-cover transition-opacity ${i === imageActive ? "opacity-100" : "opacity-80 hover:opacity-100"}`} onClick={() => setImage(i)} />
+                      {i === imageActive && <div className="absolute inset-0 border-2 border-primary-dark rounded-md" />}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Detail produk */}
@@ -592,7 +611,22 @@ const MerchandiseDetail = () => {
             </Flex>
           </div>
           <div className="flex flex-row justify-start items-center pt-3 pb-2">
-            <CreatorTitle image={mainData.creator.image_url} creator={mainData.creator.name} location="Jakarta" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full overflow-hidden relative">
+                <Image src={mainData.creator.image_url} alt={mainData.creator.name} fill className="object-cover" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1">
+                  <p className="font-medium">{mainData.creator.name}</p>
+                  {mainData.creator.has_creator?.is_verified === 1 && (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
+                      <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                    </svg>
+                  )}
+                </div>
+                <p className="text-xs text-grey">Jakarta</p>
+              </div>
+            </div>
           </div>
           {mainData?.product_varian?.length > 0 && (
             <div className="pt-3 pb-1">

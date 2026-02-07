@@ -743,12 +743,12 @@ const Merchandise = () => {
 
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0">
-      <div className="pl-7">
+      {/* <div className="pl-7">
         <Breadcrumbs>
           <BreadcrumbItem>Beranda</BreadcrumbItem>
           <BreadcrumbItem>List Merchandise</BreadcrumbItem>
         </Breadcrumbs>
-      </div>
+      </div> */}
 
       {loading && !loadingMore ? (
         <Center className="min-h-[50vh]">

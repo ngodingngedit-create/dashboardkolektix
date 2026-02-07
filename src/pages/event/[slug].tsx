@@ -2708,18 +2708,21 @@ const EventDetails = () => {
                     </p>
                   </Link>
                 </div>
+                {/* PERBAIKAN BAGIAN MOBILE - Centang verifikasi di samping nama creator */}
                 <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
                   <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
-                  <div className={`w-full flex items-center gap-2`}>
-                    <div>
-                      <p>{t("organizedBy")}</p>
-                      <p className="font-semibold">{detail?.has_creator?.name}</p>
+                  <div className={`w-full flex flex-col`}>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-600">{t("organizedBy")}</p>
                     </div>
-                    {detail?.has_creator?.is_verified === 1 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
-                        <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
-                      </svg>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <p className="font-semibold">{detail?.has_creator?.name}</p>
+                      {detail?.has_creator?.is_verified === 1 && (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
+                          <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                        </svg>
+                      )}
+                    </div>
                   </div>
                   <ActionIcon color="#0B387C" variant="transparent" size="lg">
                     <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)} />

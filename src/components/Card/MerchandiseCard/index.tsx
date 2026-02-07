@@ -283,6 +283,8 @@ interface MerchCardProps {
   description?: string;
   // Prop untuk nama store
   storeName?: string;
+  // Prop untuk verified status creator
+  isVerified?: boolean;
 }
 
 interface CartStorage {
@@ -317,6 +319,7 @@ const MerchandiseCard = ({
   productVariants = [],
   description = "Deskripsi produk tidak tersedia",
   storeName = "Warehouse Kita",
+  isVerified = false,
 }: MerchCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(isBookmarked);
   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
@@ -694,8 +697,8 @@ const MerchandiseCard = ({
 
         {/* Bagian Konten */}
         <div className="p-3">
-          {/* Nama Merchandise */}
-          <h3 className="text-dark font-bold text-sm mb-2 line-clamp-2">{name}</h3>
+          {/* Nama Merchandise - PERUBAHAN DI SINI */}
+          <h3 className="text-dark font-bold text-lg md:text-[15px] mb-2 line-clamp-2">{name}</h3>
 
           {/* Info Varian jika ada */}
           {variantName && (
@@ -742,13 +745,26 @@ const MerchandiseCard = ({
               />
               <div className="min-w-0">
                 <p className="text-gray-500 text-[8px] leading-tight">Disediakan oleh</p>
-                <p className="text-dark font-semibold text-xs truncate">{creator}</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-dark font-semibold text-xs truncate">{creator}</p>
+                  {/* Logo Verified jika isVerified = true */}
+                  {isVerified && (
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 24 24" 
+                      fill="#1DA1F2" 
+                      className="w-3 h-3 flex-shrink-0"
+                    >
+                      <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                    </svg>
+                  )}
+                </div>
               </div>
             </Link>
 
             {/* Bagian Kanan: Harga */}
             <div className="text-right ml-2 flex-shrink-0">
-              <div className="text-dark font-bold text-sm">
+              <div className="text-dark font-bold text-sm md:text-sm">
                 {formatPrice(finalPrice)}
               </div>
               {originalPrice && (
@@ -774,17 +790,17 @@ const MerchandiseCard = ({
         }}
       >
         <div className="space-y-4">
-          {/* Preview produk */}
-          <div className="flex items-start space-x-10"> {/* Gap lebih rapat */}
+          {/* Preview produk - susun vertikal untuk mobile */}
+          <div className="flex flex-col md:flex-row md:items-start md:space-x-10 space-y-4 md:space-y-0">
             {/* Gambar produk */}
             {image && (
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 mx-auto md:mx-0">
                 <Image
                   src={getImageUrl(image)}
                   alt={name}
                   width={180}
                   height={180}
-                  className="rounded-md object-cover border border-gray-200"
+                  className="rounded-md object-cover border border-gray-200 w-full max-w-[180px] md:max-w-none"
                 />
               </div>
             )}
@@ -802,37 +818,39 @@ const MerchandiseCard = ({
                     width={24} 
                   />
                 )}
-                <Text size="sm" c="dimmed">
-                  by{" "}
-                  <span className="font-semibold text-dark ml-1">
-                    {creator}
-                  </span>
-                </Text>
+                <div className="flex items-center gap-1">
+                  <Text size="sm" c="dimmed">
+                    by{" "}
+                    <span className="font-semibold text-dark ml-1">
+                      {creator}
+                    </span>
+                  </Text>
+                  {/* Logo Verified di modal juga */}
+                  {isVerified && (
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 24 24" 
+                      fill="#1DA1F2" 
+                      className="w-3 h-3 ml-1 flex-shrink-0"
+                    >
+                      <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                    </svg>
+                  )}
+                </div>
               </div>
               
-              {/* Nama produk - DIKECILKAN SEDIKIT */}
-              <Text fw={700} size="xl" lineClamp={2} mb={10}>
+              {/* Nama produk - Juga tambahkan perbedaan ukuran untuk modal */}
+              <Text fw={700} size="lg" lineClamp={2} mb={10}>
                 {name}
               </Text>
               
               {/* Deskripsi Produk - static dengan centang */}
               <div className="space-y-2">
-                {/* Authentic Art */}
-                <div className="flex items-center">
-                  <FontAwesomeIcon 
-                    icon={faCheckCircle} 
-                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
-                  />
-                  <Text size="sm" c="dark" fw={500}>
-                    Authentic Art
-                  </Text>
-                </div>
-                
                 {/* Dikirim dari store */}
-                <div className="flex items-center">
+                <div className="flex items-start">
                   <FontAwesomeIcon 
                     icon={faCheckCircle} 
-                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
+                    className="text-green-500 text-sm mr-2 mt-0.5 flex-shrink-0" 
                   />
                   <Text size="sm" c="dark" fw={500}>
                     Dikirim dari {storeName}
@@ -840,10 +858,10 @@ const MerchandiseCard = ({
                 </div>
                 
                 {/* Ambil di Pasar Bareng Bareng */}
-                <div className="flex items-center">
+                <div className="flex items-start">
                   <FontAwesomeIcon 
                     icon={faCheckCircle} 
-                    className="text-green-500 text-sm mr-2 flex-shrink-0" 
+                    className="text-green-500 text-sm mr-2 mt-0.5 flex-shrink-0" 
                   />
                   <Text size="sm" c="dark" fw={500}>
                     Ambil di Pasar Bareng Bareng
@@ -867,16 +885,19 @@ const MerchandiseCard = ({
                 clearable={false}
                 size="md"
               />
+              
             </div>
           )}
 
-          {/* Tombol aksi */}
-          <div className="flex justify-end space-x-2 pt-4">
+          {/* Tombol aksi - susun vertikal untuk mobile */}
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
             <Button
               variant="outline"
               onClick={() => setIsVariantModalOpen(false)}
               disabled={isAddingToCart}
               size="md"
+              fullWidth
+              className="sm:w-auto"
             >
               Batal
             </Button>
@@ -890,6 +911,8 @@ const MerchandiseCard = ({
               }
               color="blue"
               size="md"
+              fullWidth
+              className="sm:w-auto"
             >
               {isAddingToCart ? "Menambahkan..." : "Tambahkan ke Keranjang"}
             </Button>
