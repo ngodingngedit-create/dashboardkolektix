@@ -352,14 +352,19 @@ interface ReviewData {
   };
 }
 
+// Interface untuk data creator dari API creator
+interface CreatorVerificationData {
+  id: number;
+  is_verified?: number;
+  // tambahkan field lain jika diperlukan
+}
+
 // Update interface untuk creator
 interface CreatorWithVerification {
   id: number;
   name: string;
   image_url: string;
-  has_creator?: {
-    is_verified?: number;
-  };
+  has_creator?: CreatorVerificationData;
 }
 
 // Update interface untuk MerchListResponse
@@ -371,6 +376,7 @@ const MerchandiseDetail = () => {
   const [activeTab, setActiveTab] = useState<"description" | "reviews">("description");
   const [isr, setIsr] = useState(false);
   const [mainData, setMainData] = useState<MerchListResponseWithCreator>();
+  const [creatorVerification, setCreatorVerification] = useState<CreatorVerificationData | null>(null);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [count, setCount] = useState<number>(0);
@@ -399,6 +405,12 @@ const MerchandiseDetail = () => {
   }, [slug, activeTab]);
 
   useEffect(() => {
+    if (mainData?.creator?.id) {
+      getCreatorVerification(mainData.creator.id);
+    }
+  }, [mainData?.creator?.id]);
+
+  useEffect(() => {
     const stock = _.find(mainData?.product_varian, ["id", selectedVariant])?.stock_qty;
     setCount((stock ?? 0) > 1 ? 1 : 0);
   }, [selectedVariant]);
@@ -416,6 +428,23 @@ const MerchandiseDetail = () => {
         setLoading.filter((e) => e != "getdata");
       })
       .catch(() => setLoading.filter((e) => e != "getdata"));
+  };
+
+  const getCreatorVerification = (creatorId: number) => {
+    // Ambil data verifikasi creator dari API creator
+    Get(`creator/${creatorId}`, {})
+      .then((res: any) => {
+        if (res.data) {
+          setCreatorVerification(res.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching creator verification:", err);
+        // Jika gagal, coba ambil dari data yang sudah ada
+        if (mainData?.creator?.has_creator) {
+          setCreatorVerification(mainData.creator.has_creator);
+        }
+      });
   };
 
   const getReviews = () => {
@@ -522,10 +551,17 @@ const MerchandiseDetail = () => {
 
   if (!mainData) return <></>;
 
+  // Cek apakah creator sudah terverifikasi
+  const isCreatorVerified = creatorVerification?.is_verified === 1 || mainData.creator.has_creator?.is_verified === 1;
+
   return (
     <>
       <div ref={clickOutsideChat} className={`${openChat ? "" : "hidden"}`}>
-        <ChatBox toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={mainData.creator_id} />
+        <ChatBox 
+          toggleOpenTab={() => setOpenChat(!openChat)} 
+          openTab={openChat} 
+          creatorIdOpen={mainData.creator_id} 
+        />
         <AuthModal visible={openChat && !user?.id} onClose={() => setOpenChat(false)} />
       </div>
 
@@ -633,7 +669,7 @@ const MerchandiseDetail = () => {
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
                   <p className="font-medium">{mainData.creator.name}</p>
-                  {mainData.creator.has_creator?.is_verified === 1 && (
+                  {isCreatorVerified && (
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
                       <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
                     </svg>
