@@ -283,8 +283,10 @@ interface MerchCardProps {
   description?: string;
   // Prop untuk nama store
   storeName?: string;
-  // Prop untuk verified status creator
+  // Prop untuk verified status creator - diisi dari API creator
   isVerified?: boolean;
+  // Prop baru untuk memicu fetching data creator
+  fetchCreatorVerifiedStatus?: (creatorId: number) => Promise<boolean>;
 }
 
 interface CartStorage {
@@ -320,6 +322,7 @@ const MerchandiseCard = ({
   description = "Deskripsi produk tidak tersedia",
   storeName = "Warehouse Kita",
   isVerified = false,
+  fetchCreatorVerifiedStatus,
 }: MerchCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(isBookmarked);
   const [showBuyButton, setShowBuyButton] = useState<boolean>(false);
@@ -331,6 +334,9 @@ const MerchandiseCard = ({
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [variantOptions, setVariantOptions] = useState<Array<{value: string, label: string}>>([]);
   
+  // State untuk verified status (dari API)
+  const [creatorVerified, setCreatorVerified] = useState<boolean>(isVerified);
+  
   const router = useRouter();
   const { setCartCount } = useContext(AppMainContext);
 
@@ -338,6 +344,32 @@ const MerchandiseCard = ({
   useEffect(() => {
     setBookmark(isBookmarked);
   }, [isBookmarked]);
+
+  // Sync verified status dengan prop
+  useEffect(() => {
+    setCreatorVerified(isVerified);
+  }, [isVerified]);
+
+  // Fetch creator verified status jika creatorid ada dan fetch function tersedia
+  useEffect(() => {
+    const fetchVerifiedStatus = async () => {
+      if (creatorid && fetchCreatorVerifiedStatus && !creatorVerified) {
+        try {
+          const verified = await fetchCreatorVerifiedStatus(creatorid);
+          setCreatorVerified(verified);
+        } catch (error) {
+          console.error("Error fetching creator verified status:", error);
+          // Tetap false jika ada error
+          setCreatorVerified(false);
+        }
+      }
+    };
+
+    // Hanya fetch jika belum memiliki verified status dan creatorid tersedia
+    if (creatorid && !creatorVerified && fetchCreatorVerifiedStatus) {
+      fetchVerifiedStatus();
+    }
+  }, [creatorid, fetchCreatorVerifiedStatus, creatorVerified]);
 
   // Setup variant options saat productVariants berubah
   useEffect(() => {
@@ -697,7 +729,7 @@ const MerchandiseCard = ({
 
         {/* Bagian Konten */}
         <div className="p-3">
-          {/* Nama Merchandise - PERUBAHAN DI SINI */}
+          {/* Nama Merchandise */}
           <h3 className="text-dark font-bold text-lg md:text-[15px] mb-2 line-clamp-2">{name}</h3>
 
           {/* Info Varian jika ada */}
@@ -728,7 +760,7 @@ const MerchandiseCard = ({
             )}
           </div>
 
-          {/* Creator dan Harga */}
+          {/* Creator dan Harga - PERUBAHAN DI SINI */}
           <div className="pt-2 border-t border-blue-100 border-dashed flex items-center justify-between">
             {/* Bagian Kiri: Creator Info */}
             <Link 
@@ -736,24 +768,25 @@ const MerchandiseCard = ({
               className="flex items-center gap-2 flex-1 min-w-0" 
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Image creator - diperbesar untuk mobile */}
               <Image 
                 src={creatorImage ? getCreatorImageUrl(creatorImage) : "/default-avatar.png"} 
                 alt={`${creator} logo`} 
-                className="h-7 w-7 rounded-full object-cover flex-shrink-0" 
-                height={28} 
-                width={28} 
+                className="h-10 w-10 md:h-8 md:w-8 rounded-full object-cover flex-shrink-0" 
+                height={40} 
+                width={40} 
               />
               <div className="min-w-0">
-                <p className="text-gray-500 text-[8px] leading-tight">Disediakan oleh</p>
+                <p className="text-gray-500 text-[10px] md:text-[8px] leading-tight">Disediakan oleh</p>
                 <div className="flex items-center gap-1">
-                  <p className="text-dark font-semibold text-xs truncate">{creator}</p>
-                  {/* Logo Verified jika isVerified = true */}
-                  {isVerified && (
+                  <p className="text-dark font-semibold text-[15px] md:text-xs truncate">{creator}</p>
+                  {/* Logo Verified jika creatorVerified = true */}
+                  {creatorVerified && (
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       viewBox="0 0 24 24" 
                       fill="#1DA1F2" 
-                      className="w-3 h-3 flex-shrink-0"
+                      className="w-4 h-4 ml-1 md:ml-2 cursor-pointer"
                     >
                       <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
                     </svg>
@@ -813,25 +846,25 @@ const MerchandiseCard = ({
                   <Image 
                     src={getCreatorImageUrl(creatorImage)} 
                     alt={`${creator} logo`} 
-                    className="h-6 w-6 rounded-full object-cover mr-2 flex-shrink-0" 
-                    height={24} 
-                    width={24} 
+                    className="h-8 w-8 md:h-6 md:w-6 rounded-full object-cover mr-2 flex-shrink-0" 
+                    height={32} 
+                    width={32} 
                   />
                 )}
                 <div className="flex items-center gap-1">
                   <Text size="sm" c="dimmed">
                     by{" "}
-                    <span className="font-semibold text-dark ml-1">
+                    <span className="font-semibold text-dark ml-1 text-base md:text-sm">
                       {creator}
                     </span>
                   </Text>
-                  {/* Logo Verified di modal juga */}
-                  {isVerified && (
+                  {/* Logo Verified di modal juga - menggunakan creatorVerified state */}
+                  {creatorVerified && (
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       viewBox="0 0 24 24" 
                       fill="#1DA1F2" 
-                      className="w-3 h-3 ml-1 flex-shrink-0"
+                      className="w-4 h-4 ml-2 cursor-pointer"
                     >
                       <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
                     </svg>
@@ -839,12 +872,12 @@ const MerchandiseCard = ({
                 </div>
               </div>
               
-              {/* Nama produk - Juga tambahkan perbedaan ukuran untuk modal */}
+              {/* Nama produk */}
               <Text fw={700} size="lg" lineClamp={2} mb={10}>
                 {name}
               </Text>
               
-              {/* Deskripsi Produk - static dengan centang */}
+              {/* Deskripsi Produk */}
               <div className="space-y-2">
                 {/* Dikirim dari store */}
                 <div className="flex items-start">
@@ -889,7 +922,7 @@ const MerchandiseCard = ({
             </div>
           )}
 
-          {/* Tombol aksi - susun vertikal untuk mobile */}
+          {/* Tombol aksi */}
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
             <Button
               variant="outline"

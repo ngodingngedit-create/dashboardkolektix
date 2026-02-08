@@ -472,21 +472,138 @@ interface ApiResponse {
   };
 }
 
+// Tambahkan interface untuk Creator
+interface Creator {
+  id: number;
+  name: string;
+  image_url: string;
+  is_verified?: boolean | number;
+}
+
+// Update tipe MerchListResponse untuk include Creator dengan is_verified
+type MerchListResponseWithVerified = MerchListResponse & {
+  creator: (MerchListResponse['creator'] & { is_verified?: boolean | number });
+};
+
 const Merchandise = () => {
   const [categoryActive, setCategoryActive] = useState<string>();
-  const [data, setData] = useState<MerchListResponse[]>([]);
+  const [data, setData] = useState<MerchListResponseWithVerified[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [total, setTotal] = useState<number>(0);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set());
+  
+  // Tambahkan state untuk cache creator verified status
+  const [creatorVerifiedCache, setCreatorVerifiedCache] = useState<Map<number, boolean>>(new Map());
 
   const users = useLoggedUser();
   const isLoggedIn = !!users?.name;
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Fungsi untuk fetch verified status dari API creator - DENGAN CACHE
+  const fetchCreatorVerifiedStatus = useCallback(async (creatorId: number): Promise<boolean> => {
+    try {
+      // Cek cache dulu
+      if (creatorVerifiedCache.has(creatorId)) {
+        console.log(`Using cached verified status for creator ${creatorId}`);
+        return creatorVerifiedCache.get(creatorId)!;
+      }
+
+      // Gunakan API base URL dari environment variable
+      const apiBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
+      
+      console.log(`Fetching creator verified status from: ${apiBaseUrl}creator/${creatorId}`);
+      
+      const response = await window.fetch(`${apiBaseUrl}creator/${creatorId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn(`Failed to fetch creator data: ${response.status} ${response.statusText}`);
+        // Cache false untuk menghindari request berulang
+        setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
+        return false;
+      }
+      
+      const result = await response.json();
+      
+      // Handle response structure: data mungkin ada di result.data atau langsung di result
+      const data = result.data || result;
+      
+      // is_verified bisa berupa number (1/0) atau boolean
+      let isVerified = false;
+      if (typeof data.is_verified === 'number') {
+        isVerified = data.is_verified === 1;
+      } else {
+        isVerified = data.is_verified || false;
+      }
+      
+      // Simpan ke cache
+      setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, isVerified));
+      
+      return isVerified;
+    } catch (error) {
+      console.error('Error fetching creator verified status:', error);
+      // Cache false untuk menghindari request berulang
+      setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
+      return false;
+    }
+  }, [creatorVerifiedCache]);
+
+  // Fungsi untuk mengupdate is_verified pada data yang sudah ada
+  const updateDataWithVerifiedStatus = useCallback(async () => {
+    // Cari semua creator ID yang belum memiliki is_verified di data
+    const creatorIdsToUpdate = new Set<number>();
+    
+    data.forEach(item => {
+      if (item.creator?.id && 
+          item.creator?.is_verified === undefined && 
+          !creatorIdsToUpdate.has(item.creator.id)) {
+        creatorIdsToUpdate.add(item.creator.id);
+      }
+    });
+    
+    if (creatorIdsToUpdate.size === 0) return;
+    
+    console.log(`Updating verified status for ${creatorIdsToUpdate.size} creators`);
+    
+    // Fetch verified status untuk semua creator yang belum ada
+    const updatePromises = Array.from(creatorIdsToUpdate).map(async (creatorId) => {
+      const isVerified = await fetchCreatorVerifiedStatus(creatorId);
+      return { creatorId, isVerified };
+    });
+    
+    const results = await Promise.allSettled(updatePromises);
+    
+    // Update data dengan verified status yang baru
+    setData(prev => prev.map(item => {
+      if (!item.creator?.id) return item;
+      
+      // Cari hasil untuk creator ini
+      const result = results.find(r => 
+        r.status === 'fulfilled' && 
+        r.value.creatorId === item.creator.id
+      );
+      
+      if (result && result.status === 'fulfilled') {
+        return {
+          ...item,
+          creator: {
+            ...item.creator,
+            is_verified: result.value.isVerified ? 1 : 0
+          }
+        };
+      }
+      
+      return item;
+    }));
+  }, [data, fetchCreatorVerifiedStatus]);
 
   const getData = useCallback(
     async (pageNum: number = 1, isLoadMore: boolean = false) => {
@@ -506,31 +623,23 @@ const Merchandise = () => {
 
         console.log("API Response:", res);
 
-        console.log("Response structure:", {
-          data: res.data,
-          hasDataProperty: res.hasOwnProperty("data"),
-          isArray: Array.isArray(res.data),
-          keys: Object.keys(res),
-          meta: res.meta,
-        });
-
         let apiData: ApiResponse;
-        let filteredData: MerchListResponse[];
+        let filteredData: MerchListResponseWithVerified[];
         let totalItems: number;
         let lastPage: number;
 
         if (Array.isArray(res.data)) {
-          filteredData = res.data.filter((e: MerchListResponse) => e.product_status_id == 2);
+          filteredData = res.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
           apiData = { data: res.data };
           totalItems = res.total || res.data.length;
           lastPage = res.last_page || Math.ceil(totalItems / 10);
         } else if (res.data && Array.isArray(res.data.data)) {
-          filteredData = res.data.data.filter((e: MerchListResponse) => e.product_status_id == 2);
+          filteredData = res.data.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
           apiData = res.data;
           totalItems = res.data.total || res.data.data.length;
           lastPage = res.data.last_page || Math.ceil(totalItems / 10);
         } else if (Array.isArray(res)) {
-          filteredData = res.filter((e: MerchListResponse) => e.product_status_id == 2);
+          filteredData = res.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
           apiData = { data: res };
           totalItems = res.length;
           lastPage = Math.ceil(totalItems / 10);
@@ -573,14 +682,14 @@ const Merchandise = () => {
           try {
             console.log("Trying fallback fetch without pagination...");
             const fallbackRes = (await Get("product", {})) as any;
-            let fallbackData: MerchListResponse[] = [];
+            let fallbackData: MerchListResponseWithVerified[] = [];
 
             if (Array.isArray(fallbackRes.data)) {
-              fallbackData = fallbackRes.data.filter((e: MerchListResponse) => e.product_status_id == 2);
+              fallbackData = fallbackRes.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
             } else if (fallbackRes.data && Array.isArray(fallbackRes.data.data)) {
-              fallbackData = fallbackRes.data.data.filter((e: MerchListResponse) => e.product_status_id == 2);
+              fallbackData = fallbackRes.data.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
             } else if (Array.isArray(fallbackRes)) {
-              fallbackData = fallbackRes.filter((e: MerchListResponse) => e.product_status_id == 2);
+              fallbackData = fallbackRes.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
             }
 
             setData(fallbackData);
@@ -630,6 +739,13 @@ const Merchandise = () => {
       }
     };
   }, [hasMore, loading, loadingMore, page, getData]);
+
+  // Update verified status saat data berubah (setelah loading selesai)
+  useEffect(() => {
+    if (data.length > 0 && !loading && !loadingMore) {
+      updateDataWithVerifiedStatus();
+    }
+  }, [data, loading, loadingMore, updateDataWithVerifiedStatus]);
 
   useEffect(() => {
     if (users?.bookmarked) {
@@ -779,6 +895,8 @@ const Merchandise = () => {
                     isBookmarked={bookmarkedIds.has(item.id)}
                     onBookmarkToggle={toggleBookmark}
                     showBookmark={isLoggedIn}
+                    fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
+                    isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
                   />
                 ))}
               </div>
@@ -809,6 +927,8 @@ const Merchandise = () => {
                     onBookmarkToggle={toggleBookmark}
                     showBookmark={isLoggedIn}
                     productVariants={item.product_varian as any[]}
+                    fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
+                    isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
                   />
                 ))}
               </div>

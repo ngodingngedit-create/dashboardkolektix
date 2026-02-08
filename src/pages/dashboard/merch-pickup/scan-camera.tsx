@@ -1200,6 +1200,8 @@ export default function MerchScanPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentScanData, setCurrentScanData] = useState<SuccessMerchData | null>(null);
   const [showModalFooter, setShowModalFooter] = useState(false);
+  const [manualInputValue, setManualInputValue] = useState<string>('');
+  const [isAutoInputActive, setIsAutoInputActive] = useState<boolean>(false);
 
   useEffect(() => {
     fetchScanHistory();
@@ -1210,6 +1212,18 @@ export default function MerchScanPage() {
       setIsScanning(false);
     }
   }, [step, data]);
+
+  // Handle auto-input dari scanner dengan delay 3 detik
+  useEffect(() => {
+    if (isAutoInputActive) {
+      const timer = setTimeout(() => {
+        setManualInputValue('');
+        setIsAutoInputActive(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAutoInputActive]);
 
   const fetchScanHistory = async () => {
     try {
@@ -1643,6 +1657,11 @@ export default function MerchScanPage() {
         setScanHistory(prev => [newScan, ...prev]);
       }
     } else if (scanData && typeof scanData === 'string') {
+      // Handle auto-input dari scanner ke input manual
+      if (selected === 'manual') {
+        setManualInputValue(scanData);
+        setIsAutoInputActive(true);
+      }
       handleMerchScan(scanData);
     }
   };
@@ -1666,11 +1685,13 @@ export default function MerchScanPage() {
     setStep(0);
     setData(null);
     setQrCode('');
+    setManualInputValue('');
     setIsScanning(true);
     setLastScanMessage(null);
     setShowSuccessModal(false);
     setCurrentScanData(null);
     setShowModalFooter(false);
+    setIsAutoInputActive(false);
   };
 
   const handleCloseSuccessModal = () => {
@@ -1685,9 +1706,11 @@ export default function MerchScanPage() {
     setStep(0);
     setData(null);
     setQrCode('');
+    setManualInputValue('');
     setIsScanning(true);
     setLastScanMessage(null);
     setCurrentScanData(null);
+    setIsAutoInputActive(false);
   };
 
   const getStatusIcon = (status: string, type: string) => {
@@ -1780,6 +1803,8 @@ export default function MerchScanPage() {
                     setIsScanning(true);
                     setShowSuccessModal(false);
                     setShowModalFooter(false);
+                    setManualInputValue('');
+                    setIsAutoInputActive(false);
                   }}
                 >
                   <FontAwesomeIcon icon={faCamera} />
@@ -1796,6 +1821,7 @@ export default function MerchScanPage() {
                     setCurrentScanData(null);
                     setShowSuccessModal(false);
                     setShowModalFooter(false);
+                    setIsAutoInputActive(false);
                   }}
                 >
                   <FontAwesomeIcon icon={faKeyboard} />
@@ -1888,21 +1914,24 @@ export default function MerchScanPage() {
                         type="text"
                         className="border-2 border-primary-light-200 rounded-lg w-full py-3 px-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
                         placeholder="Masukkan invoice number"
-                        value={qrCode}
+                        value={isAutoInputActive ? manualInputValue : qrCode}
                         onChange={(e) => setQrCode(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
                         autoFocus
+                        readOnly={isAutoInputActive}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Masukkan nomor invoice untuk validasi merchandise
+                        {isAutoInputActive 
+                          ? 'Input akan otomatis direset dalam beberapa detik...'
+                          : 'Masukkan nomor invoice untuk validasi merchandise'}
                       </p>
                     </div>
                     <div className="flex justify-end">
                       <Button
-                        label="Validasi Kode"
+                        label={isAutoInputActive ? "Sedang diproses..." : "Validasi Kode"}
                         onClick={handleManualSubmit}
                         color="primary"
-                        disabled={!qrCode.trim()}
+                        disabled={!qrCode.trim() || isAutoInputActive}
                         fullWidth
                       />
                     </div>

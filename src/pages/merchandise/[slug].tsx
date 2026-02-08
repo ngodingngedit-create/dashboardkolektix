@@ -530,7 +530,7 @@ const MerchandiseDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 text-dark min-h-screen pt-20 mx-auto gap-8 px-3 md:px-4 sm:px-8 lg:px-0 max-w-5xl mb-4 mt-4">
-        {/* Gambar produk */}
+        {/* Gambar produk - DESKTOP TETAP, MOBILE DIPERBAIKI */}
         <div className="grid grid-cols-2 gap-2 auto-rows-min">
           <div className="col-span-2 md:col-span-4">
             {mainData.product_image.length === 0 ? (
@@ -542,33 +542,48 @@ const MerchandiseDetail = () => {
                 </Card>
               </AspectRatio>
             ) : (
-              <Image src={mainData.product_image[imageActive].image_url} width={500} height={500} alt="merch" className="w-full h-64 sm:h-72 md:h-80 object-cover rounded-md" />
+              <div className="relative w-full aspect-square">
+                <Image 
+                  src={mainData.product_image[imageActive].image_url} 
+                  fill 
+                  alt="merch" 
+                  className="w-full h-auto object-cover rounded-md"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
             )}
           </div>
 
-          {/* Mobile thumbnail */}
+          {/* Mobile thumbnail - FIX KHUSUS UNTUK IPHONE */}
           {mainData.product_image.length > 1 && (
-            <div className="col-span-2 md:hidden w-full overflow-x-auto mt-1">
-              <div className="flex gap-2 flex-nowrap">
-                {mainData.product_image.map((e, i) => (
-                  <div key={i} className="flex-shrink-0">
-                    <AspectRatio>
-                      <Image
-                        src={e.image_url}
-                        width={500}
-                        height={500}
-                        alt="thumb"
-                        className={`w-20 h-20 object-cover rounded-md cursor-pointer ${i === imageActive ? "border-2 border-primary-dark" : "border-2 border-primary-light-200"}`}
-                        onClick={() => setImage(i)}
-                      />
-                    </AspectRatio>
-                  </div>
-                ))}
+            <div className="col-span-2 md:hidden w-full mt-1">
+              <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                <div className="flex gap-2 flex-nowrap py-1 min-w-max">
+                  {mainData.product_image.map((e, i) => (
+                    <div key={i} className="flex-shrink-0">
+                      <div className="relative w-20 h-20 rounded-md overflow-hidden">
+                        <Image
+                          src={e.image_url}
+                          fill
+                          alt="thumb"
+                          className={`object-cover cursor-pointer transition-all duration-200 ${
+                            i === imageActive 
+                              ? "opacity-100 ring-2 ring-primary-dark ring-offset-1 scale-105" 
+                              : "opacity-80 hover:opacity-100"
+                          }`}
+                          onClick={() => setImage(i)}
+                          sizes="80px"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Desktop thumbnail */}
+          {/* Desktop thumbnail - TETAP SEPERTI SEBELUMNYA */}
           {mainData.product_image.length > 1 && (
             <div className="hidden md:block col-span-2 w-full overflow-x-auto mt-1">
               <div className="flex gap-2 flex-nowrap pb-1">
