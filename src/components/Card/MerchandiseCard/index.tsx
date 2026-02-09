@@ -760,7 +760,7 @@ const MerchandiseCard = ({
             )}
           </div>
 
-          {/* Creator dan Harga - PERUBAHAN DI SINI */}
+          {/* Creator dan Harga */}
           <div className="pt-2 border-t border-blue-100 border-dashed flex items-center justify-between">
             {/* Bagian Kiri: Creator Info */}
             <Link 
@@ -786,7 +786,7 @@ const MerchandiseCard = ({
                       xmlns="http://www.w3.org/2000/svg" 
                       viewBox="0 0 24 24" 
                       fill="#1DA1F2" 
-                      className="w-4 h-4 ml-1 md:ml-2 cursor-pointer"
+                      className="w-3 h-3 md:w-3 md:h-3 ml-0.5 cursor-pointer"
                     >
                       <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
                     </svg>
@@ -840,31 +840,31 @@ const MerchandiseCard = ({
             
             {/* Info produk */}
             <div className="flex-1 min-w-0">
-              {/* Creator info dengan logo */}
-              <div className="flex items-center mb-2">
+              {/* Creator info dengan logo - TANPA "by" */}
+              <div className="flex items-center mb-2 gap-1.5">
                 {creatorImage && (
                   <Image 
                     src={getCreatorImageUrl(creatorImage)} 
                     alt={`${creator} logo`} 
-                    className="h-8 w-8 md:h-6 md:w-6 rounded-full object-cover mr-2 flex-shrink-0" 
+                    className="h-8 w-8 md:h-6 md:w-6 rounded-full object-cover flex-shrink-0" 
                     height={32} 
                     width={32} 
                   />
                 )}
                 <div className="flex items-center gap-1">
-                  <Text size="sm" c="dimmed">
-                    by{" "}
-                    <span className="font-semibold text-dark ml-1 text-base md:text-sm">
-                      {creator}
-                    </span>
+                   <Text size="sm" c="dimmed">
+                    Dibuat oleh :{" "}
                   </Text>
+                  <span className="font-semibold text-dark text-base md:text-sm">
+                    {creator}
+                  </span>
                   {/* Logo Verified di modal juga - menggunakan creatorVerified state */}
                   {creatorVerified && (
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       viewBox="0 0 24 24" 
                       fill="#1DA1F2" 
-                      className="w-4 h-4 ml-2 cursor-pointer"
+                      className="w-3 h-3 md:w-3 md:h-3 ml-0.5 cursor-pointer"
                     >
                       <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
                     </svg>
