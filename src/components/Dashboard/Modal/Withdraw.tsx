@@ -412,7 +412,6 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
   };
 
   const authToken = Cookies.get("token") || process.env.NEXT_PUBLIC_API_TOKEN || "";
-  console.log("auth token :", authToken);
 
   const handleSubmit = async (close?: () => void) => {
     const parsedAmount = Number(amount.replace(/\D/g, ""));

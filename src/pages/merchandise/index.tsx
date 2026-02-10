@@ -494,6 +494,7 @@ const Merchandise = () => {
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [total, setTotal] = useState<number>(0);
+  const [lastPage, setLastPage] = useState<number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set());
   
   // Tambahkan state untuk cache creator verified status
@@ -511,20 +512,22 @@ const Merchandise = () => {
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const isFetching = useRef(false);
+  const lastLoadTimeRef = useRef<number>(0); // Tambahkan ref untuk tracking waktu terakhir load
+
+  // Fungsi untuk delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   // Fungsi untuk fetch verified status dari API creator - DENGAN CACHE
   const fetchCreatorVerifiedStatus = useCallback(async (creatorId: number): Promise<boolean> => {
     try {
       // Cek cache dulu
       if (creatorVerifiedCache.has(creatorId)) {
-        console.log(`Using cached verified status for creator ${creatorId}`);
         return creatorVerifiedCache.get(creatorId)!;
       }
 
       // Gunakan API base URL dari environment variable
       const apiBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
-      
-      console.log(`Fetching creator verified status from: ${apiBaseUrl}creator/${creatorId}`);
       
       const response = await window.fetch(`${apiBaseUrl}creator/${creatorId}`, {
         headers: {
@@ -533,7 +536,6 @@ const Merchandise = () => {
       });
       
       if (!response.ok) {
-        console.warn(`Failed to fetch creator data: ${response.status} ${response.statusText}`);
         // Cache false untuk menghindari request berulang
         setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
         return false;
@@ -579,8 +581,6 @@ const Merchandise = () => {
     
     if (creatorIdsToUpdate.size === 0) return;
     
-    console.log(`Updating verified status for ${creatorIdsToUpdate.size} creators`);
-    
     // Fetch verified status untuk semua creator yang belum ada
     const updatePromises = Array.from(creatorIdsToUpdate).map(async (creatorId) => {
       const isVerified = await fetchCreatorVerifiedStatus(creatorId);
@@ -615,60 +615,94 @@ const Merchandise = () => {
 
   const getData = useCallback(
     async (pageNum: number = 1, isLoadMore: boolean = false) => {
+      // Cegah multiple fetch secara bersamaan
+      if (isFetching.current) {
+        console.log('Already fetching, skipping request');
+        return;
+      }
+      
+      // Tambahkan minimum delay antara requests (500ms)
+      const now = Date.now();
+      const timeSinceLastLoad = now - lastLoadTimeRef.current;
+      const MIN_LOAD_DELAY = 500; // 500ms minimum delay
+      
+      if (timeSinceLastLoad < MIN_LOAD_DELAY && isLoadMore) {
+        console.log(`Waiting ${MIN_LOAD_DELAY - timeSinceLastLoad}ms before next load`);
+        await delay(MIN_LOAD_DELAY - timeSinceLastLoad);
+      }
+      
       if (isLoadMore) {
         setLoadingMore(true);
       } else {
         setLoading(true);
       }
 
-      try {
-        console.log(`Fetching page ${pageNum} with limit 10...`);
+      isFetching.current = true;
+      lastLoadTimeRef.current = Date.now();
 
+      try {
         const res = (await Get("product", {
           page: pageNum,
           limit: 10,
         })) as any;
 
-        console.log("API Response:", res);
+        let filteredData: MerchListResponseWithVerified[] = [];
+        let totalItems = 0;
+        let currentLastPage = 1;
 
-        let apiData: ApiResponse;
-        let filteredData: MerchListResponseWithVerified[];
-        let totalItems: number;
-        let lastPage: number;
-
-        if (Array.isArray(res.data)) {
-          filteredData = res.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          apiData = { data: res.data };
-          totalItems = res.total || res.data.length;
-          lastPage = res.last_page || Math.ceil(totalItems / 10);
-        } else if (res.data && Array.isArray(res.data.data)) {
-          filteredData = res.data.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          apiData = res.data;
-          totalItems = res.data.total || res.data.data.length;
-          lastPage = res.data.last_page || Math.ceil(totalItems / 10);
-        } else if (Array.isArray(res)) {
-          filteredData = res.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          apiData = { data: res };
-          totalItems = res.length;
-          lastPage = Math.ceil(totalItems / 10);
+        // Handle struktur response yang paling umum terlebih dahulu
+        if (res.data && res.data.last_page !== undefined) {
+          // Format: { data: { data: [...], last_page: X, total: Y, current_page: Z } }
+          filteredData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+          totalItems = res.data.total || 0;
+          currentLastPage = Math.max(1, res.data.last_page || 1);
+        } else if (res.meta && res.meta.last_page !== undefined) {
+          // Format: { data: [...], meta: { last_page: X, total: Y, current_page: Z } }
+          filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+          totalItems = res.meta.total || 0;
+          currentLastPage = Math.max(1, res.meta.last_page || 1);
+        } else if (res.last_page !== undefined) {
+          // Format: { data: [...], last_page: X, total: Y, current_page: Z }
+          filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+          totalItems = res.total || 0;
+          currentLastPage = Math.max(1, res.last_page || 1);
         } else {
-          console.error("Unexpected API response structure:", res);
-          filteredData = [];
-          totalItems = 0;
-          lastPage = 1;
+          // Fallback untuk response tanpa pagination
+          filteredData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
+            .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+          totalItems = filteredData.length;
+          currentLastPage = 1;
+          setHasMore(false);
         }
 
+        // Validasi: pageNum tidak boleh lebih besar dari currentLastPage
+        if (pageNum > currentLastPage) {
+          console.warn(`Page ${pageNum} requested but last_page is ${currentLastPage}. Stopping.`);
+          setHasMore(false);
+          return;
+        }
+
+        // Update data
         if (isLoadMore) {
           setData((prev) => [...prev, ...filteredData]);
         } else {
           setData(filteredData);
         }
 
+        // Update pagination state
         setTotal(totalItems);
-        setHasMore(pageNum < lastPage);
+        setLastPage(currentLastPage);
+        
+        // Pastikan hasMore di-update dengan benar
+        const hasMoreData = pageNum < currentLastPage;
+        setHasMore(hasMoreData);
+        
+        // Update page state
+        setPage(pageNum);
 
-        console.log(`Loaded ${filteredData.length} items, total: ${totalItems}, hasMore: ${pageNum < lastPage}`);
+        console.log(`Updated state: Page ${pageNum}/${currentLastPage}, HasMore: ${hasMoreData}, Total: ${totalItems}`);
 
+        // Update bookmarks
         if (users?.bookmarked) {
           const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
           const bookmarkedProductIds = merchandiseBookmarks.map((item) => item.product_id || item.event_id || item.id);
@@ -676,19 +710,12 @@ const Merchandise = () => {
         }
       } catch (err: any) {
         console.error("Error fetching merchandise:", err);
-
-        if (err.response) {
-          console.error("Error response:", err.response.data);
-          console.error("Error status:", err.response.status);
-        } else if (err.request) {
-          console.error("No response received:", err.request);
-        } else {
-          console.error("Error message:", err.message);
-        }
-
+        
+        // Reset hasMore jika error
+        setHasMore(false);
+        
         if (!isLoadMore) {
           try {
-            console.log("Trying fallback fetch without pagination...");
             const fallbackRes = (await Get("product", {})) as any;
             let fallbackData: MerchListResponseWithVerified[] = [];
 
@@ -702,7 +729,7 @@ const Merchandise = () => {
 
             setData(fallbackData);
             setHasMore(false);
-            console.log(`Fallback loaded ${fallbackData.length} items`);
+            setLastPage(1);
           } catch (fallbackErr) {
             console.error("Fallback also failed:", fallbackErr);
           }
@@ -710,6 +737,7 @@ const Merchandise = () => {
       } finally {
         setLoading(false);
         setLoadingMore(false);
+        isFetching.current = false;
       }
     },
     [users?.bookmarked],
@@ -720,20 +748,48 @@ const Merchandise = () => {
   }, [getData]);
 
   useEffect(() => {
-    if (!hasMore || loading || loadingMore) return;
+    // Jika tidak ada data lebih atau sedang loading, jangan setup observer
+    if (!hasMore || loading || loadingMore) {
+      // Cleanup observer jika ada
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      return;
+    }
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      // Safety check: pastikan observer masih valid
+      if (!observerRef.current) return;
+      
+      if (entries[0].isIntersecting && hasMore && !loadingMore && !isFetching.current) {
+        const nextPage = page + 1;
+        
+        // Validasi: nextPage tidak boleh melebihi lastPage
+        if (nextPage > lastPage) {
+          console.warn(`Attempted to load page ${nextPage} but last_page is ${lastPage}`);
+          setHasMore(false);
+          return;
+        }
+        
+        console.log(`Loading next page: ${nextPage}`);
+        
+        // Gunakan setTimeout untuk memberikan delay kecil sebelum load
+        setTimeout(() => {
+          if (hasMore && !loadingMore && !isFetching.current) {
+            setPage(nextPage);
+            getData(nextPage, true);
+          }
+        }, 300); // Tambahkan delay 300ms
+      }
+    };
 
     observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          getData(nextPage, true);
-        }
-      },
+      observerCallback,
       {
         root: null,
-        rootMargin: "100px",
-        threshold: 0.1,
+        rootMargin: "150px", // Tambah margin agar tidak terlalu ketat
+        threshold: 0.05, // Threshold lebih kecil untuk trigger lebih awal
       },
     );
 
@@ -744,11 +800,12 @@ const Merchandise = () => {
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
+        observerRef.current = null;
       }
     };
-  }, [hasMore, loading, loadingMore, page, getData]);
+  }, [hasMore, loading, loadingMore, page, getData, lastPage]);
 
-  // Update verified status saat data berubah (setelah loading selesai)
+  // Update verified status saat data berubah
   useEffect(() => {
     if (data.length > 0 && !loading && !loadingMore) {
       updateDataWithVerifiedStatus();
@@ -764,6 +821,16 @@ const Merchandise = () => {
       setBookmarkedIds(new Set());
     }
   }, [users]);
+
+  // Reset pagination saat filter creator berubah
+  useEffect(() => {
+    if (selectedCreator !== null) {
+      setPage(1);
+      setHasMore(true);
+      // Reset tracking waktu
+      lastLoadTimeRef.current = 0;
+    }
+  }, [selectedCreator]);
 
   const flashSaleProduct = useMemo(() => {
     return data.filter((e) => e.add_to_flash_sale);
@@ -807,7 +874,7 @@ const Merchandise = () => {
   const handleSelectCreator = (creatorId: string | null) => {
     setSelectedCreator(creatorId);
     close();
-    setSearchQuery(""); // Reset search query saat modal ditutup
+    setSearchQuery("");
   };
 
   const toggleBookmark = async (productId: number) => {
@@ -899,12 +966,23 @@ const Merchandise = () => {
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       const nextPage = page + 1;
-      setPage(nextPage);
-      getData(nextPage, true);
+      
+      // Safety check: pastikan tidak melebihi lastPage
+      if (nextPage > lastPage) {
+        console.warn(`Cannot load page ${nextPage}, last_page is ${lastPage}`);
+        setHasMore(false);
+        return;
+      }
+      
+      // Tambahkan delay kecil sebelum load
+      setTimeout(() => {
+        if (!loadingMore && hasMore) {
+          setPage(nextPage);
+          getData(nextPage, true);
+        }
+      }, 300);
     }
   };
-
-  const category = ["Merchandise", "Merchandise 2", "Merchandise 3", "Merchandise 4"];
 
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0">
@@ -992,14 +1070,6 @@ const Merchandise = () => {
             title={
               <div className="flex items-center justify-between">
                 <Text fw={600}>Filter Creator</Text>
-                {/* <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  onClick={close}
-                  aria-label="Tutup modal"
-                >
-                  <FontAwesomeIcon icon={faTimes} />
-                </ActionIcon> */}
               </div>
             }
             centered
@@ -1079,7 +1149,6 @@ const Merchandise = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
-              
                 <Button
                   fullWidth
                   onClick={close}
@@ -1125,6 +1194,20 @@ const Merchandise = () => {
                 ))}
               </div>
 
+              {/* Pagination Info */}
+              {/* <div className="px-[20px] text-center text-sm text-gray-500 mb-2">
+                {lastPage > 0 ? (
+                  <>
+                    Halaman {Math.min(page, lastPage)} dari {lastPage} | Total {total} merchandise
+                    {hasMore && page < lastPage && (
+                      <span className="block mt-1">Menunggu scroll untuk halaman {page + 1}</span>
+                    )}
+                  </>
+                ) : (
+                  <>Total {total} merchandise</>
+                )}
+              </div> */}
+
               <div ref={loadMoreRef} className="py-6 text-center">
                 {loadingMore && (
                   <Center>
@@ -1135,10 +1218,22 @@ const Merchandise = () => {
 
                 {!loadingMore && hasMore && data.length > 0 && (
                   <div className="space-y-4">
-                    <button onClick={handleLoadMore} className="mt-4 px-6 py-2 bg-primary-base text-white rounded-lg hover:bg-primary-dark transition-colors">
-                      Muat Lebih Banyak
+                    <button 
+                      onClick={handleLoadMore} 
+                      className="mt-4 px-6 py-2 bg-primary-base text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? 'Memuat...' : 'Muat Lebih Banyak'}
                     </button>
                     <p className="text-sm text-gray-500">Scroll ke bawah untuk memuat otomatis</p>
+                  </div>
+                )}
+
+                {!hasMore && total > 0 && (
+                  <div className="py-4">
+                    <Text c="dimmed" size="sm">
+                      ✓ Semua merchandise sudah dimuat ({total} item)
+                    </Text>
                   </div>
                 )}
               </div>
