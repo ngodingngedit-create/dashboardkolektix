@@ -341,3 +341,14 @@ h5 {
     text-wrap: balance;
   }
 }
+
+/* styles/globals.css */
+@supports (padding: max(0px)) {
+  .h-safe-bottom {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+  
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

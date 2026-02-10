@@ -2144,6 +2144,7 @@ type FormState = {
     detail: string;
   };
   payment_method?: string;
+  payment_method_id?: number;
   courier?: {
     name: string;
     type?: GetCourierRes;
@@ -2191,6 +2192,7 @@ type Checkout = {
     price: number;
   }>;
   payment_method: string;
+  payment_method_id: number;
   courier?: {
     main: string;
     type: string;
@@ -2244,6 +2246,7 @@ export const formStateSchema = z.object({
     detail: z.string().nonempty("Detail alamat tidak boleh kosong."),
   }),
   payment_method: z.string().nonempty("Metode Pembayaran tidak boleh kosong."),
+  payment_method_id: z.number().int().positive("Payment method ID harus dipilih."),
   courier: z.object({
     name: z.string().nonempty("Kurir tidak boleh kosong."),
     type: z.any().optional(),
@@ -2288,6 +2291,7 @@ export default function Cart() {
       phone_pemesan: "",
       is_pickup_instore: 0,
       is_delivery: 0,
+      payment_method_id: 4, // Default payment method ID
     },
     validate: zodResolver(formStateSchema),
   });
@@ -2299,6 +2303,7 @@ export default function Cart() {
         nama_pemesan: user.name || "",
         email_pemesan: user.email || "",
         phone_pemesan: "",
+        payment_method_id: 4,
       });
     } else {
       // Jika tidak login, reset ke empty string agar user bisa mengisi manual
@@ -2306,6 +2311,7 @@ export default function Cart() {
         nama_pemesan: "",
         email_pemesan: "",
         phone_pemesan: "",
+        payment_method_id: 4,
       });
     }
   }, [user]);
@@ -2436,6 +2442,7 @@ export default function Cart() {
           form.setValues({
             is_pickup_instore: hasPickupInstore,
             is_delivery: hasDelivery,
+            payment_method_id: 4,
           });
 
           // Set default pickup location jika produk memiliki store location
@@ -2660,6 +2667,12 @@ export default function Cart() {
       }
     }
 
+    // Validasi payment_method_id
+    if (!values.payment_method_id) {
+      form.setFieldError("payment_method_id", "Payment method ID harus diisi");
+      return;
+    }
+
     // Validasi orderedProduct
     if (!orderedProduct || orderedProduct.length === 0) {
       console.error("Tidak ada produk dalam order");
@@ -2671,6 +2684,9 @@ export default function Cart() {
 
     // Default user_id = 6 jika null
     const userId = user?.id ?? 6;
+
+    // Default payment_method_id = 4
+    const paymentMethodId = values.payment_method_id || 4;
 
     // Prepare checkout data sesuai dengan payload yang berhasil
     const checkoutData: Checkout = {
@@ -2687,6 +2703,7 @@ export default function Cart() {
         price: e.subprice,
       })),
       payment_method: "xendit",
+      payment_method_id: paymentMethodId,
       is_pickup_instore: pickupDeliveryInfo.is_pickup_instore,
       is_delivery: pickupDeliveryInfo.is_delivery,
     };
@@ -2752,17 +2769,21 @@ export default function Cart() {
     console.log("Data checkout yang dikirim:", checkoutData);
 
     try {
-      await fetch<any, { invoice_url: string }>({
+      await fetch<any, any>({
         url: "order-product",
         method: "POST",
         data: checkoutData,
         before: () => setLoading.append("checkout"),
         success: ({ data, status, message, error }) => {
           console.log("Response checkout:", { data, status, message, error });
-          if (data && data.invoice_url) {
+          if (data?.xendit_invoice) {
             // Clear cookies setelah checkout berhasil
             Cookies.remove("order_data");
-            router.push(data.invoice_url);
+            router.push(data.xendit_invoice);
+          } else if (data?.xendit?.invoice_url) {
+            // Fallback ke data.xendit.invoice_url jika ada
+            Cookies.remove("order_data");
+            router.push(data.xendit.invoice_url);
           } else {
             console.error("Gagal membuat transaksi:", { message, error });
             // Coba parse error message jika berupa string JSON

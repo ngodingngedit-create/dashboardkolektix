@@ -647,7 +647,7 @@
 //     </Stack>
 //   );
 // }
-
+  
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
@@ -696,6 +696,19 @@ type CustomerData = {
   address: string;
 };
 
+type PaymentMethod = {
+  id: number;
+  payment_type_id: number;
+  payment_name: string;
+  account_no: string | null;
+  account_name: string;
+  account_branch: string;
+  description: string | null;
+  status: string;
+  image: string | null;
+  logo: string | null;
+};
+
 export type MerchCheckoutOffline = {
   product: {
     id: number;
@@ -723,6 +736,7 @@ type TransactionItem = {
   customer_name: string;
   total_amount: number;
   status: string;
+  transaction_status_id?: number;
   payment_method: string;
   created_at: string;
   items?: {
@@ -732,16 +746,25 @@ type TransactionItem = {
   }[];
 };
 
+type ProductApiResponse = {
+  data: MerchListResponse[];
+  last_page: number;
+  current_page: number;
+  total: number;
+  per_page: number;
+};
+
 export default function Index({}: Readonly<ComponentProps>) {
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [merch, setMerch] = useState<MerchListResponse[]>();
+  const [merch, setMerch] = useState<MerchListResponse[]>([]);
   const [productCache, setProductCache] = useState<Record<number, MerchListResponse>>({});
   const [discount, setDiscount] = useState(0);
   const [openSelect, setOpenSelect] = useState(false);
   const [openCustForm, setOpenCustForm] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("Qris");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selected, setSelected] = useState<
     {
       id: number;
@@ -760,6 +783,12 @@ export default function Index({}: Readonly<ComponentProps>) {
   const [transactionStatus, setTransactionStatus] = useState<string>("all");
   const [printBillLoading, setPrintBillLoading] = useState(false);
 
+  // State untuk pagination produk
+  const [productPage, setProductPage] = useState(1);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const [productTotal, setProductTotal] = useState(0);
+  const [productPerPage, setProductPerPage] = useState(10);
+
   const {
     values: custValue,
     getInputProps: custProps,
@@ -776,39 +805,129 @@ export default function Index({}: Readonly<ComponentProps>) {
         email: z.string().email().optional().nullable(),
         phone: z.string().optional().nullable(),
         address: z.string().optional().nullable(),
-      }),
+      })
     ),
   });
 
   useEffect(() => {
     if (user) {
-      getMerchList();
+      getMerchList(productPage);
       getTransactions();
+      getPaymentMethods();
     }
   }, [user]);
 
-  const getMerchList = async (pageNum: number = 1) => {
-    const creatorId = user?.has_creator?.id;
-    if (!creatorId) {
-      console.warn("getMerchList aborted: no creator id on user", user);
-      return;
+  useEffect(() => {
+    // Reset ke halaman 1 ketika search berubah
+    if (searchQuery) {
+      setProductPage(1);
+      getMerchList(1);
     }
+  }, [searchQuery]);
 
+  // Fungsi untuk mendapatkan status dari transaction_status_id
+  const getStatusFromId = (statusId: number): { text: string; color: string } => {
+    const statusMap: Record<number, { text: string; color: string }> = {
+      1: { text: "Pending", color: "yellow" },
+      2: { text: "Success", color: "green" },
+      3: { text: "Expired", color: "red" },
+      4: { text: "Failed", color: "red" },
+      5: { text: "Cancelled", color: "gray" },
+    };
+
+    return statusMap[statusId] || { text: "Unknown", color: "gray" };
+  };
+
+  const getPaymentMethods = async () => {
+    try {
+      await fetch<any, any>({
+        url: "payment-method",
+        method: "GET",
+        before: () => setLoading.append("get-payment-methods"),
+        success: (response) => {
+          let data = response.data || response;
+          
+          if (data && Array.isArray(data)) {
+            const filteredMethods = data.filter((method: any) => 
+              method.id === 4 || method.id === 5
+            );
+            
+            if (filteredMethods.length > 0) {
+              setPaymentMethods(filteredMethods);
+              const cashMethod = filteredMethods.find((method: any) => method.id === 5);
+              if (cashMethod) {
+                setPaymentMethod(cashMethod.payment_name);
+              } else if (filteredMethods.length > 0) {
+                setPaymentMethod(filteredMethods[0].payment_name);
+              }
+            } else {
+              setPaymentMethods(data.slice(0, 2));
+              if (data.length > 0) {
+                setPaymentMethod(data[0].payment_name);
+              }
+            }
+          } else {
+            setDefaultPaymentMethods();
+          }
+        },
+        complete: () => setLoading.filter((e) => e != "get-payment-methods"),
+        error: (err) => {
+          console.error("Error fetching payment methods:", err);
+          setDefaultPaymentMethods();
+        },
+      });
+    } catch (error) {
+      console.error("Unexpected error in getPaymentMethods:", error);
+      setDefaultPaymentMethods();
+    }
+  };
+
+  const setDefaultPaymentMethods = () => {
+    const defaultMethods = [
+      {
+        id: 5,
+        payment_type_id: 1,
+        payment_name: "Cash",
+        account_no: null,
+        account_name: "cash",
+        account_branch: "cash",
+        description: null,
+        status: "active",
+        image: null,
+        logo: "cash.png",
+      },
+      {
+        id: 4,
+        payment_type_id: 1,
+        payment_name: "QRIS",
+        account_no: "3190267317",
+        account_name: "Direct Xendit",
+        account_branch: "Direct Xendit",
+        description: "Others",
+        status: "active",
+        image: null,
+        logo: "xendit.png",
+      },
+    ];
+    setPaymentMethods(defaultMethods);
+    setPaymentMethod("Cash");
+  };
+
+  const getMerchList = async (pageNum: number = 1) => {
     const qs = new URLSearchParams({
-      per_page: String(PER_PAGE),
+      per_page: String(productPerPage),
       page: String(pageNum),
-      creator_id: String(creatorId),
     }).toString();
 
-    const url = `product-bymerchant?${qs}`;
+    const url = `product?${qs}`;
 
     const envToken = (process?.env?.NEXT_PUBLIC_API_TOKEN as string) || "";
     const cookieToken = Cookies.get("token") || localStorage.getItem("token") || "";
     const token = envToken || cookieToken || "";
 
-    console.log("Fetching:", url, { creatorId, pageNum, tokenPresent: !!token });
+    console.log("Fetching products page", pageNum, "from:", url);
 
-    await fetch<any, any>({
+    await fetch<any, ProductApiResponse>({
       url,
       method: "GET",
       headers: token
@@ -817,22 +936,34 @@ export default function Index({}: Readonly<ComponentProps>) {
           }
         : undefined,
       before: () => setLoading.append("getdata"),
-      success: ({ data }) => {
-        console.log("Raw API response (data):", data);
+      success: (response) => {
+        console.log("Product API response:", response);
 
-        if (!data) {
-          console.warn("getMerchList: no data in response");
-          setMerch([]);
-          return;
+        let products: MerchListResponse[] = [];
+        let total = 0;
+        let totalPages = 1;
+        let currentPage = pageNum;
+
+        if (response.data && Array.isArray(response.data)) {
+          products = response.data;
+          total = response.total || products.length;
+          totalPages = response.last_page || Math.ceil(total / productPerPage);
+          currentPage = response.current_page || pageNum;
+          setProductPerPage(response.per_page || productPerPage);
+        } else if (Array.isArray(response)) {
+          products = response;
+          total = products.length;
+          totalPages = Math.ceil(total / productPerPage);
         }
 
-        const items: MerchListResponse[] = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : (data.items ?? []);
+        const filtered = products.filter((e) => e.product_status_id == 2);
+        console.log("Page", currentPage, "- Total products fetched:", products.length, "Active:", filtered.length);
+        console.log("Pagination - Total:", total, "Pages:", totalPages, "Current:", currentPage);
 
-        console.log("Resolved items length:", items.length);
-
-        const filtered = items.filter((e) => e.product_status_id == 2);
-        console.log("Filtered items (status==2) count:", filtered.length);
         setMerch(filtered);
+        setProductTotal(total);
+        setProductTotalPages(totalPages);
+        setProductPage(currentPage);
 
         setProductCache((prev) => {
           const next = { ...prev };
@@ -847,6 +978,8 @@ export default function Index({}: Readonly<ComponentProps>) {
         console.error("getMerchList error:", err);
         notifications.show({ message: "Gagal memuat produk. Cek console.", color: "red" });
         setMerch([]);
+        setProductTotal(0);
+        setProductTotalPages(1);
       },
     });
   };
@@ -857,8 +990,8 @@ export default function Index({}: Readonly<ComponentProps>) {
 
     let url = `order-bycreator?creator_id=${creatorId}&page=${page}&limit=10&order_by=created_at&order_direction=desc`;
 
-    if (transactionSearch) {
-      url += `&search=${encodeURIComponent(transactionSearch)}`;
+    if (transactionSearch.trim()) {
+      url += `&search=${encodeURIComponent(transactionSearch.trim())}`;
     }
 
     if (transactionStatus !== "all") {
@@ -881,8 +1014,6 @@ export default function Index({}: Readonly<ComponentProps>) {
       method: "GET",
       before: () => setLoading.append("get-transactions"),
       success: ({ data }) => {
-        console.log("Transactions data:", data);
-
         let formattedTransactions: TransactionItem[] = [];
         let total = 0;
 
@@ -894,6 +1025,11 @@ export default function Index({}: Readonly<ComponentProps>) {
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
+            transaction_status_id: item.transaction_status_id || 
+              (item.status === "pending" ? 1 : 
+               item.status === "completed" ? 2 : 
+               item.status === "expired" ? 3 : 
+               item.status === "failed" ? 4 : 1),
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
             items: item.items || item.products || [],
@@ -907,6 +1043,11 @@ export default function Index({}: Readonly<ComponentProps>) {
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
+            transaction_status_id: item.transaction_status_id || 
+              (item.status === "pending" ? 1 : 
+               item.status === "completed" ? 2 : 
+               item.status === "expired" ? 3 : 
+               item.status === "failed" ? 4 : 1),
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
             items: item.items || item.products || [],
@@ -1074,29 +1215,35 @@ export default function Index({}: Readonly<ComponentProps>) {
   }, [selectedList, discount]);
 
   const openSelectPayment = () => {
-    const payment = [
-      { icon: "ph:money-wavy", text: "CASH" },
-      { icon: "ph:money-wavy", text: "Qris" },
-    ];
+    if (paymentMethods.length === 0) {
+      notifications.show({ 
+        message: "Metode pembayaran belum tersedia. Silakan refresh halaman.", 
+        color: "yellow" 
+      });
+      return;
+    }
 
     modals.open({
       centered: true,
       title: "Pilih Metode Pembayaran",
       children: (
         <Stack gap={15}>
-          {payment.map((e, i) => (
+          {paymentMethods.map((method, i) => (
             <Button
               key={i}
-              leftSection={<Icon icon={e.icon} className={`text-[24px]`} />}
-              variant="light"
-              color="gray"
-              c="gray.8"
+              leftSection={method.id === 5 ? <Icon icon="ph:money-wavy" className={`text-[24px]`} /> : <Icon icon="ph:qrcode" className={`text-[24px]`} />}
+              variant={paymentMethod === method.payment_name ? "filled" : "light"}
+              color={paymentMethod === method.payment_name ? "blue" : "gray"}
+              c={paymentMethod === method.payment_name ? "white" : "gray.8"}
               onClick={() => {
-                setPaymentMethod(e.text);
+                setPaymentMethod(method.payment_name);
                 modals.closeAll();
               }}
+              fullWidth
+              justify="start"
             >
-              {e.text}
+              {method.payment_name}
+              {method.id === 4 && " (QRIS)"}
             </Button>
           ))}
         </Stack>
@@ -1278,7 +1425,7 @@ export default function Index({}: Readonly<ComponentProps>) {
               <span>${label}:</span>
               <span>Rp ${Math.abs(value).toLocaleString("id-ID")}</span>
             </div>
-          `,
+          `
           )
           .join("")}
         
@@ -1370,22 +1517,34 @@ export default function Index({}: Readonly<ComponentProps>) {
     };
 
     try {
-      if (paymentMethod === "CASH") {
+      let paymentMethodId = 5;
+      if (paymentMethod.includes("QRIS") || paymentMethod === "Pilih Metode Pembayaran") {
+        paymentMethodId = 4;
+      }
+
+      const payload = {
+        user_id: user?.id ?? null,
+        nama_pemesan: payloadName,
+        email_pemesan: payloadEmail,
+        creator_id: creatorId,
+        grandtotal: handleSummary.total,
+        product: productsPayload,
+        payment_method: paymentMethod,
+        payment_method_id: paymentMethodId,
+        courier: courierPayload,
+        address: addressPayload,
+      };
+
+      if (paymentMethod.includes("Cash") || paymentMethod === "Cash") {
+        const cashPayload = {
+          ...payload,
+          status: "completed",
+        };
+
         await fetch<any, any>({
           url: "order-product",
           method: "POST",
-          data: {
-            user_id: user?.id ?? null,
-            nama_pemesan: payloadName,
-            email_pemesan: payloadEmail,
-            creator_id: creatorId,
-            grandtotal: handleSummary.total,
-            product: productsPayload,
-            payment_method: paymentMethod,
-            courier: courierPayload,
-            address: addressPayload,
-            status: "completed",
-          },
+          data: cashPayload,
           before: () => setLoading.append("checkout"),
           success: async ({ data }) => {
             console.log("Cash payment success:", data);
@@ -1418,21 +1577,16 @@ export default function Index({}: Readonly<ComponentProps>) {
             "Content-Type": "application/json",
           },
         });
-      } else if (paymentMethod === "Qris") {
+      } else {
+        const qrisPayload = {
+          ...payload,
+          status: "pending",
+        };
+
         await fetch<any, { invoice_url: string }>({
           url: "order-product",
           method: "POST",
-          data: {
-            user_id: user?.id ?? null,
-            nama_pemesan: payloadName,
-            email_pemesan: payloadEmail,
-            creator_id: creatorId,
-            grandtotal: handleSummary.total,
-            product: productsPayload,
-            payment_method: paymentMethod,
-            courier: courierPayload,
-            address: addressPayload,
-          },
+          data: qrisPayload,
           before: () => setLoading.append("checkout"),
           success: async ({ data }) => {
             console.log("Xendit response:", data);
@@ -1521,7 +1675,18 @@ export default function Index({}: Readonly<ComponentProps>) {
     });
   };
 
-  const renderStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: string | number) => {
+    // Jika status adalah number (transaction_status_id)
+    if (typeof status === "number") {
+      const statusInfo = getStatusFromId(status);
+      return (
+        <Badge color={statusInfo.color as any} variant="light" size="sm">
+          {statusInfo.text}
+        </Badge>
+      );
+    }
+
+    // Jika status adalah string (backward compatibility)
     const statusConfig: Record<string, { color: string; label: string }> = {
       completed: { color: "green", label: "Selesai" },
       pending: { color: "yellow", label: "Pending" },
@@ -1529,21 +1694,43 @@ export default function Index({}: Readonly<ComponentProps>) {
       processing: { color: "blue", label: "Diproses" },
       paid: { color: "green", label: "Dibayar" },
       unpaid: { color: "orange", label: "Belum Dibayar" },
-      success: { color: "green", label: "Sukses" },
-      failed: { color: "red", label: "Gagal" },
+      success: { color: "green", label: "Success" },
+      failed: { color: "red", label: "Failed" },
+      expired: { color: "red", label: "Expired" },
     };
 
     const config = statusConfig[status.toLowerCase()] || { color: "gray", label: status };
 
     return (
-      <Badge color={config.color} variant="light" size="sm">
+      <Badge color={config.color as any} variant="light" size="sm">
         {config.label}
       </Badge>
     );
   };
 
-  const PER_PAGE = 10;
-  const [pageNum, setPageNum] = useState(1);
+  const handlePrevPage = () => {
+    if (productPage > 1) {
+      const newPage = productPage - 1;
+      setProductPage(newPage);
+      getMerchList(newPage);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (productPage < productTotalPages) {
+      const newPage = productPage + 1;
+      setProductPage(newPage);
+      getMerchList(newPage);
+    }
+  };
+
+  const handlePageClick = (page: number) => {
+    if (page !== productPage) {
+      setProductPage(page);
+      getMerchList(page);
+    }
+  };
+
   const isGuest = custValue.name?.startsWith("Guest ") && custValue.email?.includes("guest_");
 
   return (
@@ -1602,12 +1789,15 @@ export default function Index({}: Readonly<ComponentProps>) {
                 Pilih Produk
               </Text>
               <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" mt={10} />
+              <Text size="xs" c="gray.6" mt={5}>
+                Menampilkan produk 
+              </Text>
             </div>
 
             <div className="overflow-y-auto flex-grow">
               {merchList?.length === 0 ? (
                 <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />} mt={20}>
-                  Tidak ada produk yang ditemukan
+                  {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan"}
                 </Alert>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
@@ -1698,27 +1888,126 @@ export default function Index({}: Readonly<ComponentProps>) {
             </div>
 
             <Stack gap={10} mt="auto">
-              <Flex gap={10} mt={10}>
-                <Button
-                  onClick={() => {
-                    setPageNum(pageNum - 1);
-                    getMerchList(pageNum - 1);
-                  }}
-                  disabled={pageNum <= 1}
-                >
-                  Prev
-                </Button>
-                <Button
-                  onClick={() => {
-                    setPageNum(pageNum + 1);
-                    getMerchList(pageNum + 1);
-                  }}
-                >
-                  Next
-                </Button>
-              </Flex>
+              {/* Pagination Controls */}
+              {productTotal > 0 && (
+                <Card withBorder p={10} radius={8} className="bg-gray-50">
+                  <Flex justify="space-between" align="center">
+                    <Text size="sm" c="gray.7">
+                      Halaman {productPage} dari {productTotalPages}
+                    </Text>
+                    <Text size="sm" c="gray.7">
+                      Total: {productTotal} produk
+                    </Text>
+                  </Flex>
+                  
+                  <Flex gap={10} mt={10} justify="center" align="center" wrap="wrap">
+                    <Button
+                      onClick={handlePrevPage}
+                      disabled={productPage <= 1 || loading.includes("getdata")}
+                      variant="light"
+                      size="sm"
+                      leftSection={<Icon icon="uiw:left" />}
+                      loading={loading.includes("getdata")}
+                    >
+                      Prev
+                    </Button>
+                    
+                    {/* Page Numbers */}
+                    <Flex gap={5} align="center">
+                      {(() => {
+                        const pages = [];
+                        const maxVisible = 5;
+                        
+                        let startPage = Math.max(1, productPage - Math.floor(maxVisible / 2));
+                        let endPage = Math.min(productTotalPages, startPage + maxVisible - 1);
+                        
+                        if (endPage - startPage + 1 < maxVisible) {
+                          startPage = Math.max(1, endPage - maxVisible + 1);
+                        }
+                        
+                        if (startPage > 1) {
+                          pages.push(
+                            <Button
+                              key={1}
+                              onClick={() => handlePageClick(1)}
+                              variant="light"
+                              size="sm"
+                              px={10}
+                            >
+                              1
+                            </Button>
+                          );
+                          if (startPage > 2) {
+                            pages.push(
+                              <Text key="ellipsis1" size="sm" c="gray.5" mx={2}>
+                                ...
+                              </Text>
+                            );
+                          }
+                        }
+                        
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(
+                            <Button
+                              key={i}
+                              onClick={() => handlePageClick(i)}
+                              variant={productPage === i ? "filled" : "light"}
+                              color={productPage === i ? "blue" : "gray"}
+                              size="sm"
+                              px={10}
+                            >
+                              {i}
+                            </Button>
+                          );
+                        }
+                        
+                        if (endPage < productTotalPages) {
+                          if (endPage < productTotalPages - 1) {
+                            pages.push(
+                              <Text key="ellipsis2" size="sm" c="gray.5" mx={2}>
+                                ...
+                              </Text>
+                            );
+                          }
+                          pages.push(
+                            <Button
+                              key={productTotalPages}
+                              onClick={() => handlePageClick(productTotalPages)}
+                              variant="light"
+                              size="sm"
+                              px={10}
+                            >
+                              {productTotalPages}
+                            </Button>
+                          );
+                        }
+                        
+                        return pages;
+                      })()}
+                    </Flex>
+                    
+                    <Button
+                      onClick={handleNextPage}
+                      disabled={productPage >= productTotalPages || loading.includes("getdata")}
+                      variant="light"
+                      size="sm"
+                      rightSection={<Icon icon="uiw:right" />}
+                      loading={loading.includes("getdata")}
+                    >
+                      Next
+                    </Button>
+                  </Flex>
+                </Card>
+              )}
 
-              <Button size="md" onClick={() => setOpenSelect(!openSelect)} rightSection={<Icon icon="uiw:right" />} className={`shrink-0 md:!hidden`} c="gray" variant="light">
+              <Button 
+                size="md" 
+                onClick={() => setOpenSelect(!openSelect)} 
+                rightSection={<Icon icon="uiw:right" />} 
+                className={`shrink-0 md:!hidden`} 
+                c="gray" 
+                variant="light"
+              >
                 Tutup
               </Button>
             </Stack>
@@ -1789,12 +2078,12 @@ export default function Index({}: Readonly<ComponentProps>) {
                               <div className="flex-1 min-w-0">
                                 <Flex justify="space-between" align="flex-start" gap={8}>
                                   <div>
-                                    <Text size="sm" fw={600} lineClamp={1} className="text-gray-800">
+                                    <Text size="sm" fw={600} lineClamp={1} className="text-gray.800">
                                       {e.name}
                                     </Text>
                                     {e.variant_name && (
                                       <Flex align="center" gap={4} mt={2}>
-                                        <Icon icon="uiw:tag" className="text-xs text-gray-500" />
+                                        <Icon icon="uiw:tag" className="text-xs text-gray.500" />
                                         <Text size="xs" c="gray.6" className="capitalize">
                                           {e.variant_name}
                                         </Text>
@@ -2021,7 +2310,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                               .filter((e) => Boolean(e[1]) || e[1] < 0)
                               .map((e, i) => (
                                 <div key={i} className="flex items-center justify-between py-1">
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap=1.5">
                                     {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-xs text-gray-400" />}
                                     {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-xs text-gray-400" />}
                                     {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-xs text-gray-400" />}
@@ -2035,7 +2324,7 @@ export default function Index({}: Readonly<ComponentProps>) {
 
                             <div className="pt-2 mt-2 border-t border-gray-200">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap=1.5">
                                   <Icon icon="mdi:cash-multiple" className="text-sm text-primary-base" />
                                   <span className="text-xs font-semibold text-primary-base">Total</span>
                                 </div>
@@ -2129,29 +2418,49 @@ export default function Index({}: Readonly<ComponentProps>) {
 
                       <Flex gap="md" wrap="wrap">
                         <TextInput
-                          placeholder="Cari berdasarkan invoice..."
+                          placeholder="Cari berdasarkan invoice atau nama..."
                           value={transactionSearch}
                           onChange={(e) => setTransactionSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleSearchTransactions();
+                            }
+                          }}
                           leftSection={<Icon icon="uiw:search" />}
                           className="flex-1 min-w-[200px]"
                           size="sm"
                         />
 
-                        <DatePickerInput type="range" placeholder="Pilih rentang tanggal" value={dateRange} onChange={setDateRange} className="w-[250px]" size="sm" clearable valueFormat="DD/MM/YYYY" />
+                        <DatePickerInput 
+                          type="range" 
+                          placeholder="Pilih rentang tanggal" 
+                          value={dateRange} 
+                          onChange={setDateRange} 
+                          className="w-[250px]" 
+                          size="sm" 
+                          clearable 
+                          valueFormat="DD/MM/YYYY"
+                        />
 
                         <Menu shadow="md" width={200}>
                           <Menu.Target>
                             <Button variant="outline" size="sm" rightSection={<Icon icon="uiw:down" />}>
-                              Status: {transactionStatus === "all" ? "Semua" : transactionStatus}
+                              Status: {transactionStatus === "all" ? "Semua" : 
+                                transactionStatus === "1" ? "Pending" :
+                                transactionStatus === "2" ? "Success" :
+                                transactionStatus === "3" ? "Expired" :
+                                transactionStatus === "4" ? "Failed" :
+                                transactionStatus === "5" ? "Cancelled" : transactionStatus}
                             </Button>
                           </Menu.Target>
                           <Menu.Dropdown>
                             <Menu.Item onClick={() => setTransactionStatus("all")}>Semua Status</Menu.Item>
                             <Menu.Divider />
-                            <Menu.Item onClick={() => setTransactionStatus("paid")}>Dibayar</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("unpaid")}>Belum Dibayar</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("completed")}>Selesai</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("pending")}>Pending</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("1")}>Pending</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("2")}>Success</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("3")}>Expired</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("4")}>Failed</Menu.Item>
+                            <Menu.Item onClick={() => setTransactionStatus("5")}>Cancelled</Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
                       </Flex>
@@ -2220,7 +2529,9 @@ export default function Index({}: Readonly<ComponentProps>) {
                                   </Text>
                                 </Table.Td>
                                 <Table.Td>
-                                  <div style={{ minWidth: "100px" }}>{renderStatusBadge(transaction.status)}</div>
+                                  <div style={{ minWidth: "100px" }}>
+                                    {renderStatusBadge(transaction.transaction_status_id || transaction.status)}
+                                  </div>
                                 </Table.Td>
                                 <Table.Td>
                                   <Badge variant="outline" size="sm">
@@ -2233,6 +2544,8 @@ export default function Index({}: Readonly<ComponentProps>) {
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
                                     })}
                                   </Text>
                                 </Table.Td>
@@ -2295,7 +2608,7 @@ export default function Index({}: Readonly<ComponentProps>) {
         >
           <div className="bg-white border border-primary-light-200 rounded-t-lg shadow-lg px-4 py-3">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap=3">
                 <Button variant="light" color="gray" onClick={handlePrintBill} loading={printBillLoading} disabled={selectedList.length === 0} leftSection={<Icon icon="uiw:printer" />} size="md">
                   Print Bill
                 </Button>

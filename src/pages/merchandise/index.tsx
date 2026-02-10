@@ -447,9 +447,10 @@ import MerchandiseCard from "@/components/Card/MerchandiseCard";
 import { Breadcrumbs, BreadcrumbItem } from "@nextui-org/react";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCartShopping, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCartShopping, faSpinner, faFilter, faSearch, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { MerchListResponse } from "../dashboard/merch/type";
-import { Text, Loader, Center } from "@mantine/core";
+import { Text, Loader, Center, Button, Menu, Group, ActionIcon, Box, Modal, TextInput, ScrollArea, Badge, Divider } from "@mantine/core";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { BookmarkListResponse } from "@/types/bookmark";
 import Cookies from "js-cookie";
@@ -497,6 +498,13 @@ const Merchandise = () => {
   
   // Tambahkan state untuk cache creator verified status
   const [creatorVerifiedCache, setCreatorVerifiedCache] = useState<Map<number, boolean>>(new Map());
+  
+  // Tambahkan state untuk filter creator
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Modal state
+  const [opened, { open, close }] = useDisclosure(false);
 
   const users = useLoggedUser();
   const isLoggedIn = !!users?.name;
@@ -761,6 +769,47 @@ const Merchandise = () => {
     return data.filter((e) => e.add_to_flash_sale);
   }, [data]);
 
+  // Tambahkan fungsi untuk mendapatkan daftar creator unik dari data
+  const uniqueCreators = useMemo(() => {
+    const creators = new Map<number, { id: number; name: string }>();
+    data.forEach(item => {
+      if (item.creator?.id && item.creator?.name) {
+        if (!creators.has(item.creator.id)) {
+          creators.set(item.creator.id, {
+            id: item.creator.id,
+            name: item.creator.name
+          });
+        }
+      }
+    });
+    return Array.from(creators.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  // Filter creator berdasarkan search query
+  const filteredCreators = useMemo(() => {
+    if (!searchQuery.trim()) return uniqueCreators;
+    
+    const query = searchQuery.toLowerCase();
+    return uniqueCreators.filter(creator => 
+      creator.name.toLowerCase().includes(query)
+    );
+  }, [uniqueCreators, searchQuery]);
+
+  // Filter data berdasarkan creator yang dipilih
+  const filteredData = useMemo(() => {
+    if (!selectedCreator) return data;
+    
+    const creatorId = parseInt(selectedCreator);
+    return data.filter(item => item.creator?.id === creatorId);
+  }, [data, selectedCreator]);
+
+  // Handler untuk memilih creator dari modal
+  const handleSelectCreator = (creatorId: string | null) => {
+    setSelectedCreator(creatorId);
+    close();
+    setSearchQuery(""); // Reset search query saat modal ditutup
+  };
+
   const toggleBookmark = async (productId: number) => {
     if (!isLoggedIn) {
       toast.error("Silakan login untuk menyimpan bookmark");
@@ -859,13 +908,6 @@ const Merchandise = () => {
 
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0">
-      {/* <div className="pl-7">
-        <Breadcrumbs>
-          <BreadcrumbItem>Beranda</BreadcrumbItem>
-          <BreadcrumbItem>List Merchandise</BreadcrumbItem>
-        </Breadcrumbs>
-      </div> */}
-
       {loading && !loadingMore ? (
         <Center className="min-h-[50vh]">
           <Loader size="lg" />
@@ -903,14 +945,164 @@ const Merchandise = () => {
             </>
           )}
 
-          <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
-            Semua Merchandise
-          </Text>
+          {/* Tambahkan Filter Creator Button untuk Mobile */}
+          <div className="px-[20px] mb-3 md:hidden">
+            <Box className="flex items-center justify-between">
+              <Text size="xl" fw={600}>
+                Semua Merchandise
+              </Text>
+              {uniqueCreators.length > 0 && (
+                <ActionIcon 
+                  variant="light" 
+                  color="blue" 
+                  size="lg"
+                  aria-label="Filter creator"
+                  onClick={open}
+                >
+                  <FontAwesomeIcon icon={faFilter} />
+                </ActionIcon>
+              )}
+            </Box>
+            {selectedCreator && (
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge color="blue" variant="light">
+                    {uniqueCreators.find(c => c.id.toString() === selectedCreator)?.name}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    ({filteredData.length} merchandise)
+                  </Text>
+                </div>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  onClick={() => setSelectedCreator(null)}
+                  color="red"
+                >
+                  Hapus Filter
+                </Button>
+              </div>
+            )}
+          </div>
 
-          {data.length > 0 ? (
+          {/* Modal Filter Creator untuk Mobile */}
+          <Modal
+            opened={opened}
+            onClose={close}
+            title={
+              <div className="flex items-center justify-between">
+                <Text fw={600}>Filter Creator</Text>
+                {/* <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={close}
+                  aria-label="Tutup modal"
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </ActionIcon> */}
+              </div>
+            }
+            centered
+            size="sm"
+            className="md:hidden"
+            overlayProps={{
+              backgroundOpacity: 0.55,
+              blur: 3,
+            }}
+            radius="md"
+          >
+            <div className="space-y-4">
+              {/* Search Input */}
+              <TextInput
+                placeholder="Cari creator..."
+                leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                size="md"
+                radius="md"
+              />
+
+              <Divider />
+
+              {/* Creator List */}
+              <div className="max-h-[60vh] overflow-y-auto">
+                <div className="space-y-1">
+                  <Button
+                    fullWidth
+                    variant={!selectedCreator ? "filled" : "light"}
+                    color={!selectedCreator ? "blue" : "gray"}
+                    justify="start"
+                    onClick={() => handleSelectCreator(null)}
+                    className="justify-start py-2"
+                    size="md"
+                    radius="md"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>Semua Creator</span>
+                      <Badge color="gray" variant="light" size="sm">
+                        {data.length}
+                      </Badge>
+                    </div>
+                  </Button>
+                  
+                  {filteredCreators.length > 0 ? (
+                    filteredCreators.map((creator) => {
+                      const creatorItemCount = data.filter(item => item.creator?.id === creator.id).length;
+                      return (
+                        <Button
+                          key={creator.id}
+                          fullWidth
+                          variant={selectedCreator === creator.id.toString() ? "filled" : "light"}
+                          color={selectedCreator === creator.id.toString() ? "blue" : "gray"}
+                          justify="start"
+                          onClick={() => handleSelectCreator(creator.id.toString())}
+                          className="justify-start py-2"
+                          size="md"
+                          radius="md"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">{creator.name}</span>
+                            <Badge color="gray" variant="light" size="sm">
+                              {creatorItemCount}
+                            </Badge>
+                          </div>
+                        </Button>
+                      );
+                    })
+                  ) : (
+                    <Center py={10}>
+                      <Text c="dimmed" size="sm">Tidak ada creator yang cocok</Text>
+                    </Center>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+              
+                <Button
+                  fullWidth
+                  onClick={close}
+                  size="md"
+                  radius="md"
+                >
+                  Tutup
+                </Button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Untuk Desktop */}
+          <div className="hidden md:block">
+            <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
+              Semua Merchandise
+            </Text>
+          </div>
+
+          {filteredData.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]">
-                {data.map((item, index) => (
+                {filteredData.map((item, index) => (
                   <MerchandiseCard
                     key={`merch-${item.id}-${index}`}
                     id={item.id}
@@ -955,6 +1147,24 @@ const Merchandise = () => {
             <div className="min-h-[80vh] flex flex-col gap-3 items-center justify-center">
               <FontAwesomeIcon icon={faCartShopping} size="2x" className="text-primary-base" />
               <h3 className="text-grey">Belum ada merchandise</h3>
+              {selectedCreator && (
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-2">
+                    Tidak ada merchandise untuk creator{" "}
+                    <span className="font-semibold">
+                      {uniqueCreators.find(c => c.id.toString() === selectedCreator)?.name}
+                    </span>
+                  </p>
+                  <Button
+                    variant="light"
+                    color="red"
+                    size="sm"
+                    onClick={() => setSelectedCreator(null)}
+                  >
+                    Hapus Filter
+                  </Button>
+                </div>
+              )}
               <button onClick={() => getData(1, false)} className="mt-4 px-4 py-2 bg-primary-base text-white rounded hover:bg-primary-dark transition-colors">
                 Coba Muat Ulang
               </button>

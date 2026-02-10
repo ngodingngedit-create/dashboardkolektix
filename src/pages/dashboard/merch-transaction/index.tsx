@@ -1596,7 +1596,7 @@ const MerchandiseTransaction: React.FC = () => {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Merchandise
+                Total Transaksi
               </div>
               <div className="text-lg font-semibold text-gray-800">
                 {filtered.length} item{filtered.length !== 1 ? "s" : ""}
@@ -1604,7 +1604,7 @@ const MerchandiseTransaction: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Transaksi Sukses
+                Transaksi Berhasil
               </div>
               <div className="text-lg font-semibold text-green-600">
                 {totalSuccessfulTransactions}
@@ -1612,7 +1612,7 @@ const MerchandiseTransaction: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Price (Sukses)
+                Total Price (Berhasil)
               </div>
               <div className="text-lg font-semibold text-gray-800">
                 Rp {totalPriceAllFiltered.toLocaleString("id-ID")}

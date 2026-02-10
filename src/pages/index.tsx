@@ -588,7 +588,7 @@ export default function Home() {
       <PromoMerchandiseList data={promoData} loading={promoLoading} />
 
       <PromoBlock />
-      <ChatBox />
+      {/* <ChatBox /> */}
     </main>
   );
 }

@@ -753,16 +753,7 @@ export default function MerchDetail() {
     const [imageList, setImageList] = useState<any[]>([]);
     const [loading, setLoading] = useListState<string>();
     const [statistics, setStatistics] = useState<StatisticsData[]>([
-        {
-            text: 'Visitor',
-            value: 0,
-            icon: 'famicons:people-outline',
-        },
-        {
-            text: 'Total Bookmarks',
-            value: 0,
-            icon: 'akar-icons:bookmark',
-        },
+        // Hanya menampilkan Total Terjual dan Total Pendapatan
         {
             text: 'Total Terjual',
             value: 0,
@@ -777,6 +768,7 @@ export default function MerchDetail() {
     ]);
     const [transactions, setTransactions] = useState<MerchandiseTransactionData[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<MerchandiseTransactionData[]>([]);
+    const [allTransactions, setAllTransactions] = useState<MerchandiseTransactionData[]>([]); // Semua transaksi termasuk pending
     const router = useRouter();
     const { slug } = router.query;
 
@@ -826,8 +818,9 @@ export default function MerchDetail() {
             // Filter data berdasarkan product_id yang sedang dilihat
             let filteredData = res?.data || [];
             let transactionsData: MerchandiseTransactionData[] = [];
+            let allTransactionsData: MerchandiseTransactionData[] = []; // Semua transaksi
 
-            // Hitung total penjualan (qty) dan total pendapatan
+            // Hitung total penjualan (qty) dan total pendapatan HANYA untuk transaksi sukses
             let totalQty = 0;
             let totalRevenue = 0;
 
@@ -862,10 +855,6 @@ export default function MerchDetail() {
                             // Hitung price untuk product ini (gunakan parsePrice untuk konversi)
                             const price = parsePrice(detail.price_total || detail.price || detail.total_price || 0);
                             productPrice += price;
-
-                            // Tambahkan ke total keseluruhan
-                            totalQty += qty;
-                            totalRevenue += price;
                         }
                     });
                 } else {
@@ -881,13 +870,10 @@ export default function MerchDetail() {
 
                         const price = parsePrice(item.total_price || item.price || item.price_total || 0);
                         productPrice = price;
-
-                        totalQty += qty;
-                        totalRevenue += price;
                     }
                 }
 
-                // Jika transaksi mengandung product ini, tambahkan ke transactionsData
+                // Jika transaksi mengandung product ini, buat data transaksi
                 if (hasProduct) {
                     // Get status info
                     const statusInfo = getStatusInfo(item.transaction_status_id);
@@ -914,17 +900,29 @@ export default function MerchDetail() {
                         product_id: productId,
                     };
 
-                    transactionsData.push(transaction);
+                    // Tambahkan ke semua transaksi
+                    allTransactionsData.push(transaction);
+
+                    // Hanya hitung dan tambahkan ke statistics jika transaksi SUCCESS (status_id = 2)
+                    if (item.transaction_status_id === 2) {
+                        // Tambahkan ke total keseluruhan untuk statistik
+                        totalQty += productQty;
+                        totalRevenue += productPrice;
+
+                        // Tambahkan ke daftar transaksi yang ditampilkan
+                        transactionsData.push(transaction);
+                    }
                 }
             });
 
-            console.log('Final calculations:', {
+            console.log('Final calculations (SUCCESS only):', {
                 totalQty,
                 totalRevenue,
-                transactionCount: transactionsData.length
+                successTransactionCount: transactionsData.length,
+                allTransactionCount: allTransactionsData.length
             });
 
-            // Update statistik
+            // Update statistik (hanya dari transaksi sukses)
             setStatistics(prev => prev.map(stat => {
                 if (stat.text === 'Total Terjual') {
                     return { ...stat, value: totalQty };
@@ -935,27 +933,35 @@ export default function MerchDetail() {
                 return stat;
             }));
 
-            // Set data transaksi
+            // Set data transaksi (hanya yang sukses untuk ditampilkan)
             setTransactions(transactionsData);
             setFilteredTransactions(transactionsData);
+            
+            // Simpan semua transaksi untuk filter/search
+            setAllTransactions(allTransactionsData);
 
         } catch (error) {
             console.error("Error fetching statistics:", error);
         }
     };
 
-    // Handler untuk pencarian
+    // Handler untuk pencarian (cari di semua transaksi, tapi tetap filter hanya yang success)
     const handleSearch = (value: string) => {
         if (!value.trim()) {
-            setFilteredTransactions(transactions);
+            // Tampilkan semua transaksi success
+            const successTransactions = allTransactions.filter(item => item.transaction_status_id === 2);
+            setFilteredTransactions(successTransactions);
             return;
         }
 
         const searchLower = value.toLowerCase();
-        const filtered = transactions.filter(item =>
-            item.invoice_no.toLowerCase().includes(searchLower) ||
-            item.customer_name.toLowerCase().includes(searchLower) ||
-            item.product_name.toLowerCase().includes(searchLower)
+        const filtered = allTransactions.filter(item =>
+            // Filter hanya transaksi success
+            item.transaction_status_id === 2 && (
+                item.invoice_no.toLowerCase().includes(searchLower) ||
+                item.customer_name.toLowerCase().includes(searchLower) ||
+                item.product_name.toLowerCase().includes(searchLower)
+            )
         );
         setFilteredTransactions(filtered);
     };
@@ -1070,7 +1076,7 @@ export default function MerchDetail() {
                             </Flex>
                         </Accordion.Control>
                         <Accordion.Panel>
-                            <SimpleGrid cols={4}>
+                            <SimpleGrid cols={2}> {/* Ubah menjadi 2 kolom untuk 2 card */}
                                 {statistics.map((statistic, index) => (
                                     <Card key={index} radius={10} withBorder pos='relative' className={`hover:!bg-grey/10`}>
                                         <Stack key={index} gap={0}>
@@ -1099,7 +1105,7 @@ export default function MerchDetail() {
                 <Tabs defaultValue="transaction">
                     <Tabs.List>
                         <Tabs.Tab value="transaction" leftSection={<Icon icon="fluent:money-16-regular" />}>
-                            Transaksi ({filteredTransactions.length})
+                            Transaksi Success ({filteredTransactions.length})
                         </Tabs.Tab>
                     </Tabs.List>
 
@@ -1107,7 +1113,7 @@ export default function MerchDetail() {
                         <Box mt={10}>
                             <div>
                                 <Text size="sm" c="gray" mb="md">
-                                    Menampilkan {filteredTransactions.length} transaksi
+                                    Menampilkan {filteredTransactions.length} transaksi berhasil
                                 </Text>
 
                                 {/* Tabel dengan ScrollArea */}
@@ -1156,7 +1162,7 @@ export default function MerchDetail() {
 
                                 {filteredTransactions.length === 0 && (
                                     <Text ta="center" c="gray" mt="xl">
-                                        Tidak ada data transaksi
+                                        Tidak ada data transaksi berhasil
                                     </Text>
                                 )}
 
