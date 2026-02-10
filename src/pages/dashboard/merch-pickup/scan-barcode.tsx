@@ -153,7 +153,7 @@ const ScanBarcodePage: React.FC = () => {
           {/* Right: Result Display */}
           <div>
             <Card className="p-6 h-full">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Hasil Scan Barcode</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Hasil Scan Barcode Produk</h3>
               
               <div className="space-y-6">
                 {scannedData ? (
