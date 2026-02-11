@@ -496,37 +496,25 @@ const Merchandise = () => {
   const [total, setTotal] = useState<number>(0);
   const [lastPage, setLastPage] = useState<number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set());
+  const [progress, setProgress] = useState<number>(0); // Progress loading
+  const [isLoadingAll, setIsLoadingAll] = useState<boolean>(false); // Status lagi load semua
   
-  // Tambahkan state untuk cache creator verified status
   const [creatorVerifiedCache, setCreatorVerifiedCache] = useState<Map<number, boolean>>(new Map());
-  
-  // Tambahkan state untuk filter creator
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Modal state
   const [opened, { open, close }] = useDisclosure(false);
 
   const users = useLoggedUser();
   const isLoggedIn = !!users?.name;
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const isFetching = useRef(false);
-  const lastLoadTimeRef = useRef<number>(0); // Tambahkan ref untuk tracking waktu terakhir load
-
-  // Fungsi untuk delay
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  // Fungsi untuk fetch verified status dari API creator - DENGAN CACHE
+  // ============ FUNGSI FETCH CREATOR ============
   const fetchCreatorVerifiedStatus = useCallback(async (creatorId: number): Promise<boolean> => {
     try {
-      // Cek cache dulu
       if (creatorVerifiedCache.has(creatorId)) {
         return creatorVerifiedCache.get(creatorId)!;
       }
 
-      // Gunakan API base URL dari environment variable
       const apiBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
       
       const response = await window.fetch(`${apiBaseUrl}creator/${creatorId}`, {
@@ -536,17 +524,13 @@ const Merchandise = () => {
       });
       
       if (!response.ok) {
-        // Cache false untuk menghindari request berulang
         setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
         return false;
       }
       
       const result = await response.json();
-      
-      // Handle response structure: data mungkin ada di result.data atau langsung di result
       const data = result.data || result;
       
-      // is_verified bisa berupa number (1/0) atau boolean
       let isVerified = false;
       if (typeof data.is_verified === 'number') {
         isVerified = data.is_verified === 1;
@@ -554,21 +538,17 @@ const Merchandise = () => {
         isVerified = data.is_verified || false;
       }
       
-      // Simpan ke cache
       setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, isVerified));
-      
       return isVerified;
     } catch (error) {
       console.error('Error fetching creator verified status:', error);
-      // Cache false untuk menghindari request berulang
       setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
       return false;
     }
   }, [creatorVerifiedCache]);
 
-  // Fungsi untuk mengupdate is_verified pada data yang sudah ada
+  // ============ FUNGSI UPDATE VERIFIED ============
   const updateDataWithVerifiedStatus = useCallback(async () => {
-    // Cari semua creator ID yang belum memiliki is_verified di data
     const creatorIdsToUpdate = new Set<number>();
     
     data.forEach(item => {
@@ -581,7 +561,6 @@ const Merchandise = () => {
     
     if (creatorIdsToUpdate.size === 0) return;
     
-    // Fetch verified status untuk semua creator yang belum ada
     const updatePromises = Array.from(creatorIdsToUpdate).map(async (creatorId) => {
       const isVerified = await fetchCreatorVerifiedStatus(creatorId);
       return { creatorId, isVerified };
@@ -589,11 +568,9 @@ const Merchandise = () => {
     
     const results = await Promise.allSettled(updatePromises);
     
-    // Update data dengan verified status yang baru
     setData(prev => prev.map(item => {
       if (!item.creator?.id) return item;
       
-      // Cari hasil untuk creator ini
       const result = results.find(r => 
         r.status === 'fulfilled' && 
         r.value.creatorId === item.creator.id
@@ -613,205 +590,151 @@ const Merchandise = () => {
     }));
   }, [data, fetchCreatorVerifiedStatus]);
 
-  const getData = useCallback(
-    async (pageNum: number = 1, isLoadMore: boolean = false) => {
-      // Cegah multiple fetch secara bersamaan
-      if (isFetching.current) {
-        console.log('Already fetching, skipping request');
+  // ============ FUNGSI GET SINGLE PAGE ============
+  const fetchPage = useCallback(async (pageNum: number): Promise<MerchListResponseWithVerified[]> => {
+    try {
+      console.log(`📦 Fetching page ${pageNum}...`);
+      
+      const res = (await Get("product", {
+        page: pageNum,
+        limit: 10,
+      })) as any;
+
+      let filteredData: MerchListResponseWithVerified[] = [];
+
+      // Parse response
+      if (res.data && res.data.last_page !== undefined) {
+        filteredData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+      } else if (res.meta && res.meta.last_page !== undefined) {
+        filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+      } else if (res.last_page !== undefined) {
+        filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+      } else {
+        filteredData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
+          .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+      }
+
+      return filteredData;
+    } catch (error) {
+      console.error(`❌ Error fetching page ${pageNum}:`, error);
+      return [];
+    }
+  }, []);
+
+  // ============ FUNGSI GET FIRST PAGE + GET TOTAL PAGES ============
+  const getFirstPage = useCallback(async () => {
+    setLoading(true);
+    setProgress(0);
+    
+    try {
+      console.log('📦 Fetching first page...');
+      
+      const res = (await Get("product", {
+        page: 1,
+        limit: 10,
+      })) as any;
+
+      let firstPageData: MerchListResponseWithVerified[] = [];
+      let totalItems = 0;
+      let totalPages = 1;
+
+      // Parse response untuk dapat first page data dan total pages
+      if (res.data && res.data.last_page !== undefined) {
+        firstPageData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+        totalItems = res.data.total || 0;
+        totalPages = Math.max(1, res.data.last_page || 1);
+      } else if (res.meta && res.meta.last_page !== undefined) {
+        firstPageData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+        totalItems = res.meta.total || 0;
+        totalPages = Math.max(1, res.meta.last_page || 1);
+      } else if (res.last_page !== undefined) {
+        firstPageData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+        totalItems = res.total || 0;
+        totalPages = Math.max(1, res.last_page || 1);
+      } else {
+        firstPageData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
+          .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
+        totalItems = firstPageData.length;
+        totalPages = 1;
+      }
+
+      // Set data awal dari page 1
+      setData(firstPageData);
+      setTotal(totalItems);
+      setLastPage(totalPages);
+      
+      console.log(`✅ First page loaded | Total pages: ${totalPages} | Total items: ${totalItems}`);
+
+      // Update bookmarks
+      if (users?.bookmarked) {
+        const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
+        const bookmarkedProductIds = merchandiseBookmarks.map((item) => item.product_id || item.event_id || item.id);
+        setBookmarkedIds(new Set(bookmarkedProductIds));
+      }
+
+      // KALO CUMA 1 PAGE, SELESAI
+      if (totalPages <= 1) {
+        setHasMore(false);
+        setLoading(false);
         return;
       }
+
+      // ============ LOAD SEMUA PAGE SISANYA SECARA PARALEL ============
+      setIsLoadingAll(true);
       
-      // Tambahkan minimum delay antara requests (500ms)
-      const now = Date.now();
-      const timeSinceLastLoad = now - lastLoadTimeRef.current;
-      const MIN_LOAD_DELAY = 500; // 500ms minimum delay
+      // Buat array halaman 2 sampai totalPages
+      const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
       
-      if (timeSinceLastLoad < MIN_LOAD_DELAY && isLoadMore) {
-        console.log(`Waiting ${MIN_LOAD_DELAY - timeSinceLastLoad}ms before next load`);
-        await delay(MIN_LOAD_DELAY - timeSinceLastLoad);
-      }
+      console.log(`🚀 Fetching ${remainingPages.length} remaining pages in parallel...`);
       
-      if (isLoadMore) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-
-      isFetching.current = true;
-      lastLoadTimeRef.current = Date.now();
-
-      try {
-        const res = (await Get("product", {
-          page: pageNum,
-          limit: 10,
-        })) as any;
-
-        let filteredData: MerchListResponseWithVerified[] = [];
-        let totalItems = 0;
-        let currentLastPage = 1;
-
-        // Handle struktur response yang paling umum terlebih dahulu
-        if (res.data && res.data.last_page !== undefined) {
-          // Format: { data: { data: [...], last_page: X, total: Y, current_page: Z } }
-          filteredData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          totalItems = res.data.total || 0;
-          currentLastPage = Math.max(1, res.data.last_page || 1);
-        } else if (res.meta && res.meta.last_page !== undefined) {
-          // Format: { data: [...], meta: { last_page: X, total: Y, current_page: Z } }
-          filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          totalItems = res.meta.total || 0;
-          currentLastPage = Math.max(1, res.meta.last_page || 1);
-        } else if (res.last_page !== undefined) {
-          // Format: { data: [...], last_page: X, total: Y, current_page: Z }
-          filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          totalItems = res.total || 0;
-          currentLastPage = Math.max(1, res.last_page || 1);
-        } else {
-          // Fallback untuk response tanpa pagination
-          filteredData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
-            .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-          totalItems = filteredData.length;
-          currentLastPage = 1;
-          setHasMore(false);
+      // Fetch semua page secara paralel
+      const pagePromises = remainingPages.map(pageNum => fetchPage(pageNum));
+      
+      // Tunggu semua promise selesai
+      const results = await Promise.allSettled(pagePromises);
+      
+      // Kumpulkan semua data dari page 2 - lastPage
+      let allRemainingData: MerchListResponseWithVerified[] = [];
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          allRemainingData = [...allRemainingData, ...result.value];
+          console.log(`✅ Page ${remainingPages[index]} loaded | Items: ${result.value.length}`);
         }
-
-        // Validasi: pageNum tidak boleh lebih besar dari currentLastPage
-        if (pageNum > currentLastPage) {
-          console.warn(`Page ${pageNum} requested but last_page is ${currentLastPage}. Stopping.`);
-          setHasMore(false);
-          return;
-        }
-
-        // Update data
-        if (isLoadMore) {
-          setData((prev) => [...prev, ...filteredData]);
-        } else {
-          setData(filteredData);
-        }
-
-        // Update pagination state
-        setTotal(totalItems);
-        setLastPage(currentLastPage);
         
-        // Pastikan hasMore di-update dengan benar
-        const hasMoreData = pageNum < currentLastPage;
-        setHasMore(hasMoreData);
-        
-        // Update page state
-        setPage(pageNum);
-
-        console.log(`Updated state: Page ${pageNum}/${currentLastPage}, HasMore: ${hasMoreData}, Total: ${totalItems}`);
-
-        // Update bookmarks
-        if (users?.bookmarked) {
-          const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
-          const bookmarkedProductIds = merchandiseBookmarks.map((item) => item.product_id || item.event_id || item.id);
-          setBookmarkedIds(new Set(bookmarkedProductIds));
-        }
-      } catch (err: any) {
-        console.error("Error fetching merchandise:", err);
-        
-        // Reset hasMore jika error
-        setHasMore(false);
-        
-        if (!isLoadMore) {
-          try {
-            const fallbackRes = (await Get("product", {})) as any;
-            let fallbackData: MerchListResponseWithVerified[] = [];
-
-            if (Array.isArray(fallbackRes.data)) {
-              fallbackData = fallbackRes.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-            } else if (fallbackRes.data && Array.isArray(fallbackRes.data.data)) {
-              fallbackData = fallbackRes.data.data.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-            } else if (Array.isArray(fallbackRes)) {
-              fallbackData = fallbackRes.filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-            }
-
-            setData(fallbackData);
-            setHasMore(false);
-            setLastPage(1);
-          } catch (fallbackErr) {
-            console.error("Fallback also failed:", fallbackErr);
-          }
-        }
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-        isFetching.current = false;
-      }
-    },
-    [users?.bookmarked],
-  );
-
-  useEffect(() => {
-    getData(1, false);
-  }, [getData]);
-
-  useEffect(() => {
-    // Jika tidak ada data lebih atau sedang loading, jangan setup observer
-    if (!hasMore || loading || loadingMore) {
-      // Cleanup observer jika ada
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      return;
+        // Update progress
+        setProgress(Math.round(((index + 1) / remainingPages.length) * 100));
+      });
+      
+      // Gabungkan data page 1 + semua page sisanya
+      setData(prev => [...prev, ...allRemainingData]);
+      
+      console.log(`🎉 ALL PAGES LOADED! Total items: ${firstPageData.length + allRemainingData.length}`);
+      
+      setHasMore(false);
+      setIsLoadingAll(false);
+      
+    } catch (error) {
+      console.error('❌ Error in getFirstPage:', error);
+    } finally {
+      setLoading(false);
+      setProgress(100);
     }
+  }, [users?.bookmarked, fetchPage]);
 
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      // Safety check: pastikan observer masih valid
-      if (!observerRef.current) return;
-      
-      if (entries[0].isIntersecting && hasMore && !loadingMore && !isFetching.current) {
-        const nextPage = page + 1;
-        
-        // Validasi: nextPage tidak boleh melebihi lastPage
-        if (nextPage > lastPage) {
-          console.warn(`Attempted to load page ${nextPage} but last_page is ${lastPage}`);
-          setHasMore(false);
-          return;
-        }
-        
-        console.log(`Loading next page: ${nextPage}`);
-        
-        // Gunakan setTimeout untuk memberikan delay kecil sebelum load
-        setTimeout(() => {
-          if (hasMore && !loadingMore && !isFetching.current) {
-            setPage(nextPage);
-            getData(nextPage, true);
-          }
-        }, 300); // Tambahkan delay 300ms
-      }
-    };
-
-    observerRef.current = new IntersectionObserver(
-      observerCallback,
-      {
-        root: null,
-        rootMargin: "150px", // Tambah margin agar tidak terlalu ketat
-        threshold: 0.05, // Threshold lebih kecil untuk trigger lebih awal
-      },
-    );
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-    };
-  }, [hasMore, loading, loadingMore, page, getData, lastPage]);
-
-  // Update verified status saat data berubah
+  // ============ INITIAL LOAD - LANGSUNG AMBIL SEMUA ============
   useEffect(() => {
-    if (data.length > 0 && !loading && !loadingMore) {
+    getFirstPage();
+  }, [getFirstPage]);
+
+  // ============ UPDATE VERIFIED STATUS ============
+  useEffect(() => {
+    if (data.length > 0 && !loading && !isLoadingAll) {
       updateDataWithVerifiedStatus();
     }
-  }, [data, loading, loadingMore, updateDataWithVerifiedStatus]);
+  }, [data, loading, isLoadingAll, updateDataWithVerifiedStatus]);
 
+  // ============ UPDATE BOOKMARKS ============
   useEffect(() => {
     if (users?.bookmarked) {
       const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
@@ -822,21 +745,19 @@ const Merchandise = () => {
     }
   }, [users]);
 
-  // Reset pagination saat filter creator berubah
+  // ============ RESET FILTER ============
   useEffect(() => {
     if (selectedCreator !== null) {
-      setPage(1);
-      setHasMore(true);
-      // Reset tracking waktu
-      lastLoadTimeRef.current = 0;
+      // Reset dan load ulang semua data
+      getFirstPage();
     }
-  }, [selectedCreator]);
+  }, [selectedCreator, getFirstPage]);
 
+  // ============ MEMOIZED VALUES ============
   const flashSaleProduct = useMemo(() => {
     return data.filter((e) => e.add_to_flash_sale);
   }, [data]);
 
-  // Tambahkan fungsi untuk mendapatkan daftar creator unik dari data
   const uniqueCreators = useMemo(() => {
     const creators = new Map<number, { id: number; name: string }>();
     data.forEach(item => {
@@ -852,31 +773,28 @@ const Merchandise = () => {
     return Array.from(creators.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [data]);
 
-  // Filter creator berdasarkan search query
   const filteredCreators = useMemo(() => {
     if (!searchQuery.trim()) return uniqueCreators;
-    
     const query = searchQuery.toLowerCase();
     return uniqueCreators.filter(creator => 
       creator.name.toLowerCase().includes(query)
     );
   }, [uniqueCreators, searchQuery]);
 
-  // Filter data berdasarkan creator yang dipilih
   const filteredData = useMemo(() => {
     if (!selectedCreator) return data;
-    
     const creatorId = parseInt(selectedCreator);
     return data.filter(item => item.creator?.id === creatorId);
   }, [data, selectedCreator]);
 
-  // Handler untuk memilih creator dari modal
+  // ============ HANDLER SELECT CREATOR ============
   const handleSelectCreator = (creatorId: string | null) => {
     setSelectedCreator(creatorId);
     close();
     setSearchQuery("");
   };
 
+  // ============ BOOKMARK HANDLERS ============
   const toggleBookmark = async (productId: number) => {
     if (!isLoggedIn) {
       toast.error("Silakan login untuk menyimpan bookmark");
@@ -963,36 +881,41 @@ const Merchandise = () => {
     }
   };
 
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      const nextPage = page + 1;
-      
-      // Safety check: pastikan tidak melebihi lastPage
-      if (nextPage > lastPage) {
-        console.warn(`Cannot load page ${nextPage}, last_page is ${lastPage}`);
-        setHasMore(false);
-        return;
-      }
-      
-      // Tambahkan delay kecil sebelum load
-      setTimeout(() => {
-        if (!loadingMore && hasMore) {
-          setPage(nextPage);
-          getData(nextPage, true);
-        }
-      }, 300);
-    }
-  };
-
+  // ============ RENDER ============
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0">
-      {loading && !loadingMore ? (
-        <Center className="min-h-[50vh]">
+      {/* LOADING SEMUA DATA */}
+      {loading && (
+        <Center className="min-h-[50vh] flex-col gap-4">
           <Loader size="lg" />
-          <span className="ml-2">Memuat merchandise...</span>
+          <div className="text-center">
+            <span className="text-lg font-medium">Memuat semua merchandise...</span>
+            {lastPage > 1 && (
+              <>
+                <div className="mt-4 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  {progress}% • Halaman 1 dari {lastPage}
+                </p>
+                {isLoadingAll && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    ⚡ Mengambil {lastPage - 1} halaman sisanya secara paralel...
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </Center>
-      ) : (
+      )}
+
+      {/* DATA SUDAH LENGKAP */}
+      {!loading && (
         <>
+          {/* FLASH SALE SECTION */}
           {flashSaleProduct.length > 0 && (
             <>
               <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
@@ -1023,7 +946,7 @@ const Merchandise = () => {
             </>
           )}
 
-          {/* Tambahkan Filter Creator Button untuk Mobile */}
+          {/* MOBILE FILTER */}
           <div className="px-[20px] mb-3 md:hidden">
             <Box className="flex items-center justify-between">
               <Text size="xl" fw={600}>
@@ -1063,7 +986,7 @@ const Merchandise = () => {
             )}
           </div>
 
-          {/* Modal Filter Creator untuk Mobile */}
+          {/* MOBILE FILTER MODAL */}
           <Modal
             opened={opened}
             onClose={close}
@@ -1082,7 +1005,6 @@ const Merchandise = () => {
             radius="md"
           >
             <div className="space-y-4">
-              {/* Search Input */}
               <TextInput
                 placeholder="Cari creator..."
                 leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
@@ -1094,7 +1016,6 @@ const Merchandise = () => {
 
               <Divider />
 
-              {/* Creator List */}
               <div className="max-h-[60vh] overflow-y-auto">
                 <div className="space-y-1">
                   <Button
@@ -1147,7 +1068,6 @@ const Merchandise = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-2 pt-2">
                 <Button
                   fullWidth
@@ -1161,83 +1081,57 @@ const Merchandise = () => {
             </div>
           </Modal>
 
-          {/* Untuk Desktop */}
+          {/* DESKTOP TITLE */}
           <div className="hidden md:block">
             <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
               Semua Merchandise
+              {selectedCreator && (
+                <span className="ml-2 text-base font-normal">
+                  - {uniqueCreators.find(c => c.id.toString() === selectedCreator)?.name}
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setSelectedCreator(null)}
+                    color="red"
+                    className="ml-2"
+                  >
+                    Hapus
+                  </Button>
+                </span>
+              )}
+              {!selectedCreator && total > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({total} item)
+                </span>
+              )}
             </Text>
           </div>
 
+          {/* MAIN GRID - SEMUA DATA LANGSUNG TAMPIL */}
           {filteredData.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]">
-                {filteredData.map((item, index) => (
-                  <MerchandiseCard
-                    key={`merch-${item.id}-${index}`}
-                    id={item.id}
-                    name={item.product_name}
-                    price={parseInt((item?.product_varian?.length ?? 0) > 0 ? (item.product_varian[0].price ?? 0) : (item.price ?? 0))}
-                    sale={0}
-                    creator={item.creator?.name ?? "Unknown Creator"}
-                    creatorid={item.creator?.id}
-                    creatorImage={item.creator?.image_url}
-                    redirect={`/merchandise/${item.slug}`}
-                    image={item.product_image?.length > 0 ? item.product_image[0].image_url : undefined}
-                    location={item.has_store_location?.store_name}
-                    isBookmarked={bookmarkedIds.has(item.id)}
-                    onBookmarkToggle={toggleBookmark}
-                    showBookmark={isLoggedIn}
-                    productVariants={item.product_varian as any[]}
-                    fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
-                    isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
-                  />
-                ))}
-              </div>
-
-              {/* Pagination Info */}
-              {/* <div className="px-[20px] text-center text-sm text-gray-500 mb-2">
-                {lastPage > 0 ? (
-                  <>
-                    Halaman {Math.min(page, lastPage)} dari {lastPage} | Total {total} merchandise
-                    {hasMore && page < lastPage && (
-                      <span className="block mt-1">Menunggu scroll untuk halaman {page + 1}</span>
-                    )}
-                  </>
-                ) : (
-                  <>Total {total} merchandise</>
-                )}
-              </div> */}
-
-              <div ref={loadMoreRef} className="py-6 text-center">
-                {loadingMore && (
-                  <Center>
-                    <Loader size="sm" />
-                    <span className="ml-2">Memuat merchandise...</span>
-                  </Center>
-                )}
-
-                {!loadingMore && hasMore && data.length > 0 && (
-                  <div className="space-y-4">
-                    <button 
-                      onClick={handleLoadMore} 
-                      className="mt-4 px-6 py-2 bg-primary-base text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={loadingMore}
-                    >
-                      {loadingMore ? 'Memuat...' : 'Muat Lebih Banyak'}
-                    </button>
-                    <p className="text-sm text-gray-500">Scroll ke bawah untuk memuat otomatis</p>
-                  </div>
-                )}
-
-                {!hasMore && total > 0 && (
-                  <div className="py-4">
-                    <Text c="dimmed" size="sm">
-                      ✓ Semua merchandise sudah dimuat ({total} item)
-                    </Text>
-                  </div>
-                )}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]">
+              {filteredData.map((item, index) => (
+                <MerchandiseCard
+                  key={`merch-${item.id}-${index}`}
+                  id={item.id}
+                  name={item.product_name}
+                  price={parseInt((item?.product_varian?.length ?? 0) > 0 ? (item.product_varian[0].price ?? 0) : (item.price ?? 0))}
+                  sale={0}
+                  creator={item.creator?.name ?? "Unknown Creator"}
+                  creatorid={item.creator?.id}
+                  creatorImage={item.creator?.image_url}
+                  redirect={`/merchandise/${item.slug}`}
+                  image={item.product_image?.length > 0 ? item.product_image[0].image_url : undefined}
+                  location={item.has_store_location?.store_name}
+                  isBookmarked={bookmarkedIds.has(item.id)}
+                  onBookmarkToggle={toggleBookmark}
+                  showBookmark={isLoggedIn}
+                  productVariants={item.product_varian as any[]}
+                  fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
+                  isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
+                />
+              ))}
+            </div>
           ) : (
             <div className="min-h-[80vh] flex flex-col gap-3 items-center justify-center">
               <FontAwesomeIcon icon={faCartShopping} size="2x" className="text-primary-base" />
@@ -1260,9 +1154,21 @@ const Merchandise = () => {
                   </Button>
                 </div>
               )}
-              <button onClick={() => getData(1, false)} className="mt-4 px-4 py-2 bg-primary-base text-white rounded hover:bg-primary-dark transition-colors">
+              <button onClick={() => getFirstPage()} className="mt-4 px-4 py-2 bg-primary-base text-white rounded hover:bg-primary-dark transition-colors">
                 Coba Muat Ulang
               </button>
+            </div>
+          )}
+
+          {/* INFO SEMUA DATA SUDAH DIMUAT */}
+          {!loading && !isLoadingAll && data.length > 0 && (
+            <div className="py-6 text-center">
+              <Badge size="lg" variant="light" color="green">
+                ✓ Semua {total} merchandise sudah dimuat ({lastPage} halaman)
+              </Badge>
+              <p className="text-xs text-gray-400 mt-2">
+                Loaded {lastPage} pages in parallel • No infinite scroll needed
+              </p>
             </div>
           )}
         </>

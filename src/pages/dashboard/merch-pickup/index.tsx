@@ -1351,43 +1351,6 @@ const MerchPickupPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6">
-      {/* Error Warning */}
-      {error && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-primary-light-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-yellow-100 rounded-full">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-600" />
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-yellow-700">Peringatan</h3>
-                <button
-                  onClick={() => setError(null)}
-                  className="text-yellow-500 hover:text-yellow-700"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-yellow-600 mt-1">{error}</p>
-              <div className="flex gap-3 mt-3">
-                <button 
-                  onClick={handleRetry}
-                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
-                >
-                  Coba Muat Ulang
-                </button>
-                <button 
-                  onClick={getData}
-                  className="px-4 py-2 border border-primary-light-200 text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors text-sm"
-                >
-                  Refresh Data
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header Section */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1398,12 +1361,6 @@ const MerchPickupPage: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Merchandise Pickup</h1>
               <p className="text-gray-600 mt-1">Manajemen pengambilan merchandise oleh customer</p>
-              {data.some(item => !item.isAvailable) && (
-                <p className="text-sm text-yellow-600 mt-1 flex items-center gap-1">
-                  <FontAwesomeIcon icon={faExclamationTriangle} className="h-3 w-3" />
-                  Beberapa data invoice tidak tersedia
-                </p>
-              )}
             </div>
           </div>
           
@@ -1414,7 +1371,7 @@ const MerchPickupPage: React.FC = () => {
                 Total Transaksi: {filtered.length}
                 {data.some(item => !item.isAvailable) && (
                   <span className="text-yellow-600 ml-2">
-                    ({data.filter(item => !item.isAvailable).length} tidak tersedia)
+                    ({data.filter(item => !item.isAvailable).length} Tidak ada Invoice)
                   </span>
                 )}
               </span>
