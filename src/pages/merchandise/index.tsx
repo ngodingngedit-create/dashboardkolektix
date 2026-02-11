@@ -1159,18 +1159,6 @@ const Merchandise = () => {
               </button>
             </div>
           )}
-
-          {/* INFO SEMUA DATA SUDAH DIMUAT */}
-          {!loading && !isLoadingAll && data.length > 0 && (
-            <div className="py-6 text-center">
-              <Badge size="lg" variant="light" color="green">
-                ✓ Semua {total} merchandise sudah dimuat ({lastPage} halaman)
-              </Badge>
-              <p className="text-xs text-gray-400 mt-2">
-                Loaded {lastPage} pages in parallel • No infinite scroll needed
-              </p>
-            </div>
-          )}
         </>
       )}
     </div>
