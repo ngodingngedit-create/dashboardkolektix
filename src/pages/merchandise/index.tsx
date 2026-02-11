@@ -459,21 +459,7 @@ import { modals } from "@mantine/modals";
 import fetch from "@/utils/fetch";
 import { BookmarkRequest } from "@/types/bookmark";
 
-interface ApiResponse {
-  data: MerchListResponse[];
-  total?: number;
-  current_page?: number;
-  last_page?: number;
-  per_page?: number;
-  meta?: {
-    total: number;
-    current_page: number;
-    last_page: number;
-    per_page: number;
-  };
-}
-
-// Tambahkan interface untuk Creator
+// ============ TYPE DEFINITIONS ============
 interface Creator {
   id: number;
   name: string;
@@ -481,258 +467,153 @@ interface Creator {
   is_verified?: boolean | number;
 }
 
-// Update tipe MerchListResponse untuk include Creator dengan is_verified
 type MerchListResponseWithVerified = MerchListResponse & {
   creator: (MerchListResponse['creator'] & { is_verified?: boolean | number });
 };
 
 const Merchandise = () => {
-  const [categoryActive, setCategoryActive] = useState<string>();
+  // ============ STATE ============
   const [data, setData] = useState<MerchListResponseWithVerified[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [total, setTotal] = useState<number>(0);
-  const [lastPage, setLastPage] = useState<number>(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set());
-  const [progress, setProgress] = useState<number>(0); // Progress loading
-  const [isLoadingAll, setIsLoadingAll] = useState<boolean>(false); // Status lagi load semua
-  
-  const [creatorVerifiedCache, setCreatorVerifiedCache] = useState<Map<number, boolean>>(new Map());
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-
   const [opened, { open, close }] = useDisclosure(false);
 
   const users = useLoggedUser();
   const isLoggedIn = !!users?.name;
 
-  // ============ FUNGSI FETCH CREATOR ============
-  const fetchCreatorVerifiedStatus = useCallback(async (creatorId: number): Promise<boolean> => {
-    try {
-      if (creatorVerifiedCache.has(creatorId)) {
-        return creatorVerifiedCache.get(creatorId)!;
-      }
+  // ============ CACHE SEDERHANA ============
+  const [creatorCache, setCreatorCache] = useState<Record<number, boolean>>({});
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
-      
-      const response = await window.fetch(`${apiBaseUrl}creator/${creatorId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
-        return false;
-      }
-      
-      const result = await response.json();
-      const data = result.data || result;
-      
-      let isVerified = false;
-      if (typeof data.is_verified === 'number') {
-        isVerified = data.is_verified === 1;
-      } else {
-        isVerified = data.is_verified || false;
-      }
-      
-      setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, isVerified));
-      return isVerified;
-    } catch (error) {
-      console.error('Error fetching creator verified status:', error);
-      setCreatorVerifiedCache(prev => new Map(prev).set(creatorId, false));
-      return false;
-    }
-  }, [creatorVerifiedCache]);
-
-  // ============ FUNGSI UPDATE VERIFIED ============
-  const updateDataWithVerifiedStatus = useCallback(async () => {
-    const creatorIdsToUpdate = new Set<number>();
-    
-    data.forEach(item => {
-      if (item.creator?.id && 
-          item.creator?.is_verified === undefined && 
-          !creatorIdsToUpdate.has(item.creator.id)) {
-        creatorIdsToUpdate.add(item.creator.id);
-      }
-    });
-    
-    if (creatorIdsToUpdate.size === 0) return;
-    
-    const updatePromises = Array.from(creatorIdsToUpdate).map(async (creatorId) => {
-      const isVerified = await fetchCreatorVerifiedStatus(creatorId);
-      return { creatorId, isVerified };
-    });
-    
-    const results = await Promise.allSettled(updatePromises);
-    
-    setData(prev => prev.map(item => {
-      if (!item.creator?.id) return item;
-      
-      const result = results.find(r => 
-        r.status === 'fulfilled' && 
-        r.value.creatorId === item.creator.id
-      );
-      
-      if (result && result.status === 'fulfilled') {
-        return {
-          ...item,
-          creator: {
-            ...item.creator,
-            is_verified: result.value.isVerified ? 1 : 0
-          }
-        };
-      }
-      
-      return item;
-    }));
-  }, [data, fetchCreatorVerifiedStatus]);
-
-  // ============ FUNGSI GET SINGLE PAGE ============
-  const fetchPage = useCallback(async (pageNum: number): Promise<MerchListResponseWithVerified[]> => {
-    try {
-      console.log(`📦 Fetching page ${pageNum}...`);
-      
-      const res = (await Get("product", {
-        page: pageNum,
-        limit: 10,
-      })) as any;
-
-      let filteredData: MerchListResponseWithVerified[] = [];
-
-      // Parse response
-      if (res.data && res.data.last_page !== undefined) {
-        filteredData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-      } else if (res.meta && res.meta.last_page !== undefined) {
-        filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-      } else if (res.last_page !== undefined) {
-        filteredData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-      } else {
-        filteredData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
-          .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-      }
-
-      return filteredData;
-    } catch (error) {
-      console.error(`❌ Error fetching page ${pageNum}:`, error);
-      return [];
-    }
-  }, []);
-
-  // ============ FUNGSI GET FIRST PAGE + GET TOTAL PAGES ============
-  const getFirstPage = useCallback(async () => {
+  // ============ FUNGSI AMBIL SEMUA DATA SEKALIGUS ============
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
-    setProgress(0);
     
     try {
-      console.log('📦 Fetching first page...');
+      console.log('📦 Fetching all merchandise...');
       
-      const res = (await Get("product", {
-        page: 1,
-        limit: 10,
-      })) as any;
-
-      let firstPageData: MerchListResponseWithVerified[] = [];
-      let totalItems = 0;
+      // Ambil page 1 dulu buat tau total pages
+      const firstRes = await Get("product", { page: 1, limit: 10 }) as any;
+      
+      // Parse response buat dapetin total pages
       let totalPages = 1;
-
-      // Parse response untuk dapat first page data dan total pages
-      if (res.data && res.data.last_page !== undefined) {
-        firstPageData = (res.data.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-        totalItems = res.data.total || 0;
-        totalPages = Math.max(1, res.data.last_page || 1);
-      } else if (res.meta && res.meta.last_page !== undefined) {
-        firstPageData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-        totalItems = res.meta.total || 0;
-        totalPages = Math.max(1, res.meta.last_page || 1);
-      } else if (res.last_page !== undefined) {
-        firstPageData = (res.data || []).filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-        totalItems = res.total || 0;
-        totalPages = Math.max(1, res.last_page || 1);
-      } else {
-        firstPageData = (Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [])
-          .filter((e: MerchListResponse) => e.product_status_id == 2) as MerchListResponseWithVerified[];
-        totalItems = firstPageData.length;
-        totalPages = 1;
-      }
-
-      // Set data awal dari page 1
-      setData(firstPageData);
-      setTotal(totalItems);
-      setLastPage(totalPages);
+      let allProducts: MerchListResponseWithVerified[] = [];
       
-      console.log(`✅ First page loaded | Total pages: ${totalPages} | Total items: ${totalItems}`);
-
-      // Update bookmarks
-      if (users?.bookmarked) {
-        const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
-        const bookmarkedProductIds = merchandiseBookmarks.map((item) => item.product_id || item.event_id || item.id);
-        setBookmarkedIds(new Set(bookmarkedProductIds));
+      if (firstRes.data?.last_page) {
+        totalPages = firstRes.data.last_page;
+        // Filter product_status_id == 2
+        const firstPageData = (firstRes.data.data || []).filter((e: any) => e.product_status_id == 2);
+        allProducts = [...firstPageData];
+      } else if (firstRes.meta?.last_page) {
+        totalPages = firstRes.meta.last_page;
+        const firstPageData = (firstRes.data || []).filter((e: any) => e.product_status_id == 2);
+        allProducts = [...firstPageData];
+      } else if (firstRes.last_page) {
+        totalPages = firstRes.last_page;
+        const firstPageData = (firstRes.data || []).filter((e: any) => e.product_status_id == 2);
+        allProducts = [...firstPageData];
       }
-
-      // KALO CUMA 1 PAGE, SELESAI
+      
+      console.log(`📊 Total pages: ${totalPages}`);
+      
+      // Kalau cuma 1 page, langsung set data
       if (totalPages <= 1) {
-        setHasMore(false);
+        setData(allProducts);
+        setTotal(allProducts.length);
         setLoading(false);
         return;
       }
-
-      // ============ LOAD SEMUA PAGE SISANYA SECARA PARALEL ============
-      setIsLoadingAll(true);
       
-      // Buat array halaman 2 sampai totalPages
-      const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+      // Ambil semua page sisanya secara paralel
+      const pagePromises = [];
+      for (let i = 2; i <= totalPages; i++) {
+        pagePromises.push(Get("product", { page: i, limit: 10 }));
+      }
       
-      console.log(`🚀 Fetching ${remainingPages.length} remaining pages in parallel...`);
+      const results = await Promise.all(pagePromises);
       
-      // Fetch semua page secara paralel
-      const pagePromises = remainingPages.map(pageNum => fetchPage(pageNum));
-      
-      // Tunggu semua promise selesai
-      const results = await Promise.allSettled(pagePromises);
-      
-      // Kumpulkan semua data dari page 2 - lastPage
-      let allRemainingData: MerchListResponseWithVerified[] = [];
-      
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          allRemainingData = [...allRemainingData, ...result.value];
-          console.log(`✅ Page ${remainingPages[index]} loaded | Items: ${result.value.length}`);
+      // Gabungin semua data
+      results.forEach((res: any) => {
+        let pageData = [];
+        
+        if (res.data?.data) {
+          pageData = res.data.data.filter((e: any) => e.product_status_id == 2);
+        } else if (res.data) {
+          pageData = (Array.isArray(res.data) ? res.data : []).filter((e: any) => e.product_status_id == 2);
         }
         
-        // Update progress
-        setProgress(Math.round(((index + 1) / remainingPages.length) * 100));
+        allProducts = [...allProducts, ...pageData];
       });
       
-      // Gabungkan data page 1 + semua page sisanya
-      setData(prev => [...prev, ...allRemainingData]);
+      console.log(`✅ Total products loaded: ${allProducts.length}`);
       
-      console.log(`🎉 ALL PAGES LOADED! Total items: ${firstPageData.length + allRemainingData.length}`);
+      setData(allProducts);
+      setTotal(allProducts.length);
       
-      setHasMore(false);
-      setIsLoadingAll(false);
+      // ============ BATCH FETCH CREATOR VERIFIED ============
+      // Kumpulin semua creator ID unik
+      const creatorIds = new Set<number>();
+      allProducts.forEach(item => {
+        if (item.creator?.id) {
+          creatorIds.add(item.creator.id);
+        }
+      });
+      
+      console.log(`👤 Fetching ${creatorIds.size} unique creators...`);
+      
+      // Fetch semua creator paralel
+      const creatorPromises = Array.from(creatorIds).map(async (id) => {
+        try {
+          const res = await window.fetch(`${process.env.NEXT_PUBLIC_WS_URL}creator/${id}`);
+          if (res.ok) {
+            const result = await res.json();
+            const data = result.data || result;
+            const isVerified = data.is_verified == 1 || data.is_verified == true;
+            return { id, isVerified };
+          }
+        } catch (e) {
+          console.error(`Error fetch creator ${id}:`, e);
+        }
+        return { id, isVerified: false };
+      });
+      
+      const creatorResults = await Promise.all(creatorPromises);
+      
+      // Update cache
+      const newCache: Record<number, boolean> = {};
+      creatorResults.forEach(({ id, isVerified }) => {
+        newCache[id] = isVerified;
+      });
+      setCreatorCache(newCache);
+      
+      // Update data dengan verified status
+      setData(prev => prev.map(item => {
+        if (item.creator?.id && newCache[item.creator.id] !== undefined) {
+          return {
+            ...item,
+            creator: {
+              ...item.creator,
+              is_verified: newCache[item.creator.id] ? 1 : 0
+            }
+          };
+        }
+        return item;
+      }));
       
     } catch (error) {
-      console.error('❌ Error in getFirstPage:', error);
+      console.error('❌ Error:', error);
+      toast.error('Gagal memuat data');
     } finally {
       setLoading(false);
-      setProgress(100);
     }
-  }, [users?.bookmarked, fetchPage]);
+  }, []);
 
-  // ============ INITIAL LOAD - LANGSUNG AMBIL SEMUA ============
+  // ============ INITIAL LOAD ============
   useEffect(() => {
-    getFirstPage();
-  }, [getFirstPage]);
-
-  // ============ UPDATE VERIFIED STATUS ============
-  useEffect(() => {
-    if (data.length > 0 && !loading && !isLoadingAll) {
-      updateDataWithVerifiedStatus();
-    }
-  }, [data, loading, isLoadingAll, updateDataWithVerifiedStatus]);
+    fetchAllData();
+  }, [fetchAllData]);
 
   // ============ UPDATE BOOKMARKS ============
   useEffect(() => {
@@ -740,20 +621,17 @@ const Merchandise = () => {
       const merchandiseBookmarks = users.bookmarked.filter((e: any) => e.type === "Merchandise" || e.module_id === 2);
       const bookmarkedProductIds = merchandiseBookmarks.map((item) => item.product_id || item.event_id || item.id);
       setBookmarkedIds(new Set(bookmarkedProductIds));
-    } else {
-      setBookmarkedIds(new Set());
     }
   }, [users]);
 
   // ============ RESET FILTER ============
   useEffect(() => {
     if (selectedCreator !== null) {
-      // Reset dan load ulang semua data
-      getFirstPage();
+      fetchAllData();
     }
-  }, [selectedCreator, getFirstPage]);
+  }, [selectedCreator, fetchAllData]);
 
-  // ============ MEMOIZED VALUES ============
+  // ============ MEMOIZED ============
   const flashSaleProduct = useMemo(() => {
     return data.filter((e) => e.add_to_flash_sale);
   }, [data]);
@@ -762,12 +640,10 @@ const Merchandise = () => {
     const creators = new Map<number, { id: number; name: string }>();
     data.forEach(item => {
       if (item.creator?.id && item.creator?.name) {
-        if (!creators.has(item.creator.id)) {
-          creators.set(item.creator.id, {
-            id: item.creator.id,
-            name: item.creator.name
-          });
-        }
+        creators.set(item.creator.id, {
+          id: item.creator.id,
+          name: item.creator.name
+        });
       }
     });
     return Array.from(creators.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -787,14 +663,13 @@ const Merchandise = () => {
     return data.filter(item => item.creator?.id === creatorId);
   }, [data, selectedCreator]);
 
-  // ============ HANDLER SELECT CREATOR ============
+  // ============ HANDLERS ============
   const handleSelectCreator = (creatorId: string | null) => {
     setSelectedCreator(creatorId);
     close();
     setSearchQuery("");
   };
 
-  // ============ BOOKMARK HANDLERS ============
   const toggleBookmark = async (productId: number) => {
     if (!isLoggedIn) {
       toast.error("Silakan login untuk menyimpan bookmark");
@@ -802,7 +677,10 @@ const Merchandise = () => {
     }
 
     const isBookmarked = bookmarkedIds.has(productId);
-    const existingBookmark = users?.bookmarked?.find((e: any) => (e.product_id === productId || e.event_id === productId) && (e.type === "Merchandise" || e.module_id === 2));
+    const existingBookmark = users?.bookmarked?.find((e: any) => 
+      (e.product_id === productId || e.event_id === productId) && 
+      (e.type === "Merchandise" || e.module_id === 2)
+    );
 
     if (isBookmarked || existingBookmark) {
       modals.openConfirmModal({
@@ -831,7 +709,7 @@ const Merchandise = () => {
         } as BookmarkRequest,
         success: (response) => {
           setBookmarkedIds((prev) => new Set(prev).add(productId));
-          const data = JSON.parse(Cookies.get("bookmarked") ?? "[]") as BookmarkListResponse[];
+          const data = JSON.parse(Cookies.get("bookmarked") ?? "[]");
           Cookies.set("bookmarked", JSON.stringify([...data, response.data]));
           toast.success("Berhasil menambahkan ke bookmark");
         },
@@ -849,7 +727,10 @@ const Merchandise = () => {
     try {
       let idToDelete = bookmarkId;
       if (!idToDelete) {
-        const existingBookmark = users?.bookmarked?.find((e: any) => (e.product_id === productId || e.event_id === productId) && (e.type === "Merchandise" || e.module_id === 2));
+        const existingBookmark = users?.bookmarked?.find((e: any) => 
+          (e.product_id === productId || e.event_id === productId) && 
+          (e.type === "Merchandise" || e.module_id === 2)
+        );
         idToDelete = existingBookmark?.id;
       }
 
@@ -867,8 +748,10 @@ const Merchandise = () => {
             newSet.delete(productId);
             return newSet;
           });
-          const data = JSON.parse(Cookies.get("bookmarked") ?? "[]") as BookmarkListResponse[];
-          Cookies.set("bookmarked", JSON.stringify(data.filter((e: any) => e.id !== idToDelete && !(e.product_id === productId && (e.type === "Merchandise" || e.module_id === 2)))));
+          const data = JSON.parse(Cookies.get("bookmarked") ?? "[]");
+          Cookies.set("bookmarked", JSON.stringify(data.filter((e: any) => 
+            e.id !== idToDelete && !(e.product_id === productId && (e.type === "Merchandise" || e.module_id === 2))
+          )));
           toast.success("Berhasil menghapus dari bookmark");
         },
         error: () => {
@@ -884,44 +767,21 @@ const Merchandise = () => {
   // ============ RENDER ============
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark !mt-[0px] md:mt-0">
-      {/* LOADING SEMUA DATA */}
-      {loading && (
-        <Center className="min-h-[50vh] flex-col gap-4">
+      {/* LOADING */}
+      {loading ? (
+        <Center className="min-h-[50vh]">
           <Loader size="lg" />
-          <div className="text-center">
-            <span className="text-lg font-medium">Memuat semua merchandise...</span>
-            {lastPage > 1 && (
-              <>
-                <div className="mt-4 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  {progress}% • Halaman 1 dari {lastPage}
-                </p>
-                {isLoadingAll && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    ⚡ Mengambil {lastPage - 1} halaman sisanya secara paralel...
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+          <span className="ml-2">Memuat semua merchandise...</span>
         </Center>
-      )}
-
-      {/* DATA SUDAH LENGKAP */}
-      {!loading && (
+      ) : (
         <>
-          {/* FLASH SALE SECTION */}
+          {/* FLASH SALE */}
           {flashSaleProduct.length > 0 && (
             <>
               <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
                 Flash Sale
               </Text>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[10px] md:gap-[15px] my-5 px-[20px]">
                 {flashSaleProduct.map((item) => (
                   <MerchandiseCard
                     key={`flash-${item.id}`}
@@ -933,37 +793,31 @@ const Merchandise = () => {
                     creatorid={item.creator.id}
                     creatorImage={item.creator.image_url}
                     redirect={`/merchandise/${item.slug}`}
-                    image={item.product_image.length > 0 ? item.product_image[0].image_url : undefined}
+                    image={item.product_image?.length > 0 ? item.product_image[0].image_url : undefined}
                     location={item.has_store_location?.store_name}
                     isBookmarked={bookmarkedIds.has(item.id)}
                     onBookmarkToggle={toggleBookmark}
                     showBookmark={isLoggedIn}
-                    fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
-                    isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
+                    // PAKAI CACHE, TIDAK FETCH!
+                    isVerified={creatorCache[item.creator?.id] || item.creator?.is_verified === 1 || item.creator?.is_verified === true}
                   />
                 ))}
               </div>
             </>
           )}
 
-          {/* MOBILE FILTER */}
+          {/* FILTER MOBILE */}
           <div className="px-[20px] mb-3 md:hidden">
-            <Box className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <Text size="xl" fw={600}>
                 Semua Merchandise
               </Text>
               {uniqueCreators.length > 0 && (
-                <ActionIcon 
-                  variant="light" 
-                  color="blue" 
-                  size="lg"
-                  aria-label="Filter creator"
-                  onClick={open}
-                >
+                <ActionIcon variant="light" color="blue" size="lg" onClick={open}>
                   <FontAwesomeIcon icon={faFilter} />
                 </ActionIcon>
               )}
-            </Box>
+            </div>
             {selectedCreator && (
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -974,34 +828,21 @@ const Merchandise = () => {
                     ({filteredData.length} merchandise)
                   </Text>
                 </div>
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  onClick={() => setSelectedCreator(null)}
-                  color="red"
-                >
+                <Button variant="subtle" size="xs" onClick={() => setSelectedCreator(null)} color="red">
                   Hapus Filter
                 </Button>
               </div>
             )}
           </div>
 
-          {/* MOBILE FILTER MODAL */}
+          {/* MODAL FILTER */}
           <Modal
             opened={opened}
             onClose={close}
-            title={
-              <div className="flex items-center justify-between">
-                <Text fw={600}>Filter Creator</Text>
-              </div>
-            }
+            title={<Text fw={600}>Filter Creator</Text>}
             centered
             size="sm"
             className="md:hidden"
-            overlayProps={{
-              backgroundOpacity: 0.55,
-              blur: 3,
-            }}
             radius="md"
           >
             <div className="space-y-4">
@@ -1010,23 +851,16 @@ const Merchandise = () => {
                 leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                size="md"
-                radius="md"
               />
-
               <Divider />
-
               <div className="max-h-[60vh] overflow-y-auto">
                 <div className="space-y-1">
                   <Button
                     fullWidth
                     variant={!selectedCreator ? "filled" : "light"}
                     color={!selectedCreator ? "blue" : "gray"}
-                    justify="start"
                     onClick={() => handleSelectCreator(null)}
                     className="justify-start py-2"
-                    size="md"
-                    radius="md"
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>Semua Creator</span>
@@ -1036,65 +870,42 @@ const Merchandise = () => {
                     </div>
                   </Button>
                   
-                  {filteredCreators.length > 0 ? (
-                    filteredCreators.map((creator) => {
-                      const creatorItemCount = data.filter(item => item.creator?.id === creator.id).length;
-                      return (
-                        <Button
-                          key={creator.id}
-                          fullWidth
-                          variant={selectedCreator === creator.id.toString() ? "filled" : "light"}
-                          color={selectedCreator === creator.id.toString() ? "blue" : "gray"}
-                          justify="start"
-                          onClick={() => handleSelectCreator(creator.id.toString())}
-                          className="justify-start py-2"
-                          size="md"
-                          radius="md"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="truncate">{creator.name}</span>
-                            <Badge color="gray" variant="light" size="sm">
-                              {creatorItemCount}
-                            </Badge>
-                          </div>
-                        </Button>
-                      );
-                    })
-                  ) : (
-                    <Center py={10}>
-                      <Text c="dimmed" size="sm">Tidak ada creator yang cocok</Text>
-                    </Center>
-                  )}
+                  {filteredCreators.map((creator) => {
+                    const count = data.filter(item => item.creator?.id === creator.id).length;
+                    return (
+                      <Button
+                        key={creator.id}
+                        fullWidth
+                        variant={selectedCreator === creator.id.toString() ? "filled" : "light"}
+                        color={selectedCreator === creator.id.toString() ? "blue" : "gray"}
+                        onClick={() => handleSelectCreator(creator.id.toString())}
+                        className="justify-start py-2"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="truncate">{creator.name}</span>
+                          <Badge color="gray" variant="light" size="sm">
+                            {count}
+                          </Badge>
+                        </div>
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  fullWidth
-                  onClick={close}
-                  size="md"
-                  radius="md"
-                >
-                  Tutup
-                </Button>
-              </div>
+              <Button fullWidth onClick={close}>
+                Tutup
+              </Button>
             </div>
           </Modal>
 
-          {/* DESKTOP TITLE */}
-          <div className="hidden md:block">
-            <Text px={20} mt={15} size="xl" mb={-10} fw={600}>
+          {/* TITLE DESKTOP */}
+          <div className="hidden md:block px-[20px] mt-5">
+            <Text size="xl" fw={600}>
               Semua Merchandise
               {selectedCreator && (
                 <span className="ml-2 text-base font-normal">
                   - {uniqueCreators.find(c => c.id.toString() === selectedCreator)?.name}
-                  <Button
-                    variant="subtle"
-                    size="xs"
-                    onClick={() => setSelectedCreator(null)}
-                    color="red"
-                    className="ml-2"
-                  >
+                  <Button variant="subtle" size="xs" onClick={() => setSelectedCreator(null)} color="red" className="ml-2">
                     Hapus
                   </Button>
                 </span>
@@ -1107,9 +918,9 @@ const Merchandise = () => {
             </Text>
           </div>
 
-          {/* MAIN GRID - SEMUA DATA LANGSUNG TAMPIL */}
+          {/* GRID PRODUCT */}
           {filteredData.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-[10px] md:gap-[15px] my-5 px-[20px]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-[10px] md:gap-[15px] my-5 px-[20px]">
               {filteredData.map((item, index) => (
                 <MerchandiseCard
                   key={`merch-${item.id}-${index}`}
@@ -1127,8 +938,8 @@ const Merchandise = () => {
                   onBookmarkToggle={toggleBookmark}
                   showBookmark={isLoggedIn}
                   productVariants={item.product_varian as any[]}
-                  fetchCreatorVerifiedStatus={fetchCreatorVerifiedStatus}
-                  isVerified={item.creator?.is_verified === 1 || item.creator?.is_verified === true}
+                  // TIDAK ADA FUNGSI FETCH!
+                  isVerified={creatorCache[item.creator?.id] || item.creator?.is_verified === 1 || item.creator?.is_verified === true}
                 />
               ))}
             </div>
@@ -1137,26 +948,10 @@ const Merchandise = () => {
               <FontAwesomeIcon icon={faCartShopping} size="2x" className="text-primary-base" />
               <h3 className="text-grey">Belum ada merchandise</h3>
               {selectedCreator && (
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-2">
-                    Tidak ada merchandise untuk creator{" "}
-                    <span className="font-semibold">
-                      {uniqueCreators.find(c => c.id.toString() === selectedCreator)?.name}
-                    </span>
-                  </p>
-                  <Button
-                    variant="light"
-                    color="red"
-                    size="sm"
-                    onClick={() => setSelectedCreator(null)}
-                  >
-                    Hapus Filter
-                  </Button>
-                </div>
+                <Button variant="light" color="red" size="sm" onClick={() => setSelectedCreator(null)}>
+                  Hapus Filter
+                </Button>
               )}
-              <button onClick={() => getFirstPage()} className="mt-4 px-4 py-2 bg-primary-base text-white rounded hover:bg-primary-dark transition-colors">
-                Coba Muat Ulang
-              </button>
             </div>
           )}
         </>
