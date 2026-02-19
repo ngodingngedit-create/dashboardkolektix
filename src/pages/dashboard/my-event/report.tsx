@@ -1248,18 +1248,25 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, TextInput } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
-import TableData from "@/components/TableData";
 import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse, EventData } from "./type";
 import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode } from "@fortawesome/free-solid-svg-icons";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+
+// Definisikan tipe untuk metode pembayaran
+type PaymentMethodInfo = {
+  label: string;
+  icon: IconDefinition | null;
+  color: string;
+} | null;
 
 const Merch = () => {
   const [isr, setIsr] = useState(false);
@@ -1308,9 +1315,7 @@ const Merch = () => {
 
   useDidUpdate(() => {
     if (selectedEvent) {
-      // Reset ke halaman 1 saat event berubah
       setCurrentPage(1);
-      // Load data saat event berubah
       loadEventData(1);
     }
   }, [selectedEvent]);
@@ -1383,7 +1388,64 @@ const Merch = () => {
     });
   };
 
-  // Fungsi untuk load data event dengan pagination SERVER SIDE dan filtering
+  // Fungsi untuk mendapatkan metode pembayaran berdasarkan ID
+  const getPaymentMethod = (paymentMethod: any): PaymentMethodInfo => {
+    if (!paymentMethod) {
+      return null;
+    }
+    
+    // Mapping berdasarkan ID
+    const paymentId = paymentMethod.id;
+    
+    // Mapping ID ke metode pembayaran
+    if (paymentId === 4) {
+      return {
+        label: "QRIS",
+        icon: faQrcode,
+        color: "blue"
+      };
+    }
+    
+    if (paymentId === 5) {
+      return {
+        label: "Cash",
+        icon: faMoneyBillWave,
+        color: "green"
+      };
+    }
+    
+    // Untuk metode pembayaran lainnya berdasarkan payment_name
+    const paymentName = paymentMethod.payment_name?.toLowerCase() || '';
+    
+    if (paymentName.includes('qris')) {
+      return {
+        label: "QRIS",
+        icon: faQrcode,
+        color: "blue"
+      };
+    }
+    
+    if (paymentName.includes('cash') || paymentName.includes('tunai')) {
+      return {
+        label: "Cash",
+        icon: faMoneyBillWave,
+        color: "green"
+      };
+    }
+    
+    let displayLabel = paymentMethod.payment_name || paymentMethod.name || "Unknown";
+    displayLabel = displayLabel
+      .split(' ')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    return {
+      label: displayLabel,
+      icon: null,
+      color: "gray"
+    };
+  };
+
   const loadEventData = async (page: number = 1) => {
     if (!selectedEvent) {
       return;
@@ -1393,14 +1455,12 @@ const Merch = () => {
     setAllDataList([]);
 
     try {
-      // Build query parameters dengan parameter yang benar untuk backend
       const params = new URLSearchParams({
         event_id: selectedEvent.toString(),
         page: page.toString(),
         per_page: "20"
       });
 
-      // PARAMETER YANG BENAR: name
       if (selectedTicket !== "all") {
         params.append("name", selectedTicket);
       }
@@ -1417,17 +1477,13 @@ const Merch = () => {
         params.append("search", searchValue);
       }
 
-      console.log("API Params untuk halaman", page, ":", params.toString());
-
       const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
-
       const response = await axios.get(apiUrl);
-
+      
       if (response.data?.data && Array.isArray(response.data.data)) {
-        // SET DATA KE STATE
-        setAllDataList(response.data.data);
+        // Set data dengan spread operator
+        setAllDataList([...response.data.data]);
 
-        // Set pagination dari response API
         if (response.data.pagination) {
           setPaginationInfo({
             current_page: response.data.pagination.current_page || page,
@@ -1436,7 +1492,6 @@ const Merch = () => {
             per_page: response.data.pagination.per_page || 20,
           });
         } else {
-          // Fallback jika pagination tidak ada di response
           setPaginationInfo({
             current_page: page,
             last_page: 1,
@@ -1445,134 +1500,139 @@ const Merch = () => {
           });
         }
 
-        // Update current page state
         setCurrentPage(response.data.pagination?.current_page || page);
-
-        // Set info dari API
         setApiPaginationInfo({
           totalRecords: response.data.pagination?.total || response.data.data.length,
           grandTotal: response.data.grand_total || 0,
         });
       } else {
         setAllDataList([]);
-        setPaginationInfo({
-          current_page: page,
-          last_page: 1,
-          total: 0,
-          per_page: 20,
-        });
       }
     } catch (error: any) {
       console.error("API Error:", error);
       setAllDataList([]);
-      setPaginationInfo({
-        current_page: page,
-        last_page: 1,
-        total: 0,
-        per_page: 20,
-      });
     } finally {
       setLoading.filter((e) => e != "loadData");
     }
   };
 
-  // Handle page change - SERVER SIDE
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     loadEventData(page);
   };
 
-  // Reset ke halaman 1 saat filter berubah dan reload data dengan filter
   useDidUpdate(() => {
     setCurrentPage(1);
     loadEventData(1);
   }, [selectedTicket, selectedStatus, transactionSegment]);
 
-  // Handle search with debounce
   useDidUpdate(() => {
     if (selectedTab === "transaksi") {
       const timer = setTimeout(() => {
         setCurrentPage(1);
         loadEventData(1);
       }, 500);
-
       return () => clearTimeout(timer);
     }
   }, [searchValue, selectedTab]);
 
-  const listTransaksi = useMemo(() => {
-    if (!Array.isArray(allDataList)) {
-      return [];
-    }
-
-    if (allDataList.length === 0) {
-      return [];
-    }
-
+  // Proses data untuk tabel transaksi
+  const processedTransactionData = useMemo(() => {
+    if (!allDataList.length) return [];
+    
     return allDataList.map((transaction, index) => {
-      // Hitung nomor urut BERDASARKAN PAGINATION SERVER SIDE
       const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
 
-      // Cari identity pemesan (is_pemesan = 1) - cek semua identities
       let pemesanIdentity = null;
-      if (transaction.identities && transaction.identities.length > 0) {
-        pemesanIdentity = transaction.identities.find((id) => id.is_pemesan == 1);
-        if (!pemesanIdentity && transaction.identities.length > 0) {
-          pemesanIdentity = transaction.identities[0];
-        }
+      if (transaction.identities?.length) {
+        pemesanIdentity = transaction.identities.find((id) => id.is_pemesan == 1) || transaction.identities[0];
       }
 
-      // Ambil data tiket
       let ticketName = "-";
       let ticketPrice = 0;
 
-      if (transaction.tickets && transaction.tickets.length > 0) {
-        const ticketNames = transaction.tickets.map((ticket) => {
-          if (ticket.has_event_ticket && ticket.has_event_ticket.name) {
-            return ticket.has_event_ticket.name;
-          }
-          return "-";
-        });
-        ticketName = ticketNames.join(", ");
-
-        // Hitung total harga tiket
-        ticketPrice = transaction.tickets.reduce((sum, ticket) => {
-          return sum + (ticket.price || 0) * (ticket.qty_ticket || 1);
-        }, 0);
+      if (transaction.tickets?.length) {
+        ticketName = transaction.tickets
+          .map((ticket) => ticket.has_event_ticket?.name || "-")
+          .join(", ");
+        ticketPrice = transaction.tickets.reduce((sum, ticket) => 
+          sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
       }
 
+      const paymentMethodInfo = getPaymentMethod(transaction.payment_method);
+      
       return {
-        ...transaction,
-        No: globalIndex,
-        Nama: pemesanIdentity?.full_name || "-",
-        Email: pemesanIdentity?.email || "-",
-        "No. Invoice": transaction.invoice_no || "-",
-        "Nama Tiket": ticketName,
-        "Harga Tiket": `Rp ${ticketPrice.toLocaleString("id-ID")}`,
-        Status: (
-          <Badge className={`[&_*]:!text-[12px] [&_*]:!font-[600]`} size="sm" color={transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.bgcolor}>
+        no: globalIndex,
+        nama: pemesanIdentity?.full_name || "-",
+        email: pemesanIdentity?.email || "-",
+        invoice: transaction.invoice_no || "-",
+        tiket: ticketName,
+        harga: `Rp ${ticketPrice.toLocaleString("id-ID")}`,
+        payment: paymentMethodInfo ? (
+          <Badge 
+            color={paymentMethodInfo.color} 
+            variant="light"
+            leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}
+          >
+            {paymentMethodInfo.label}
+          </Badge>
+        ) : (
+          <Badge color="gray" variant="light">
+            {transaction.payment_method?.payment_name || "-"}
+          </Badge>
+        ),
+        status: (
+          <Badge color={transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.bgcolor || "gray"}>
             {transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.name || "Unknown"}
           </Badge>
         ),
-        Action: (
-          <Group gap="xs">
-            <ActionIcon
-              color="blue"
-              variant="subtle"
-              onClick={() => {
-                setSelectedTransaction(transaction);
-                setViewModalOpen(true);
-              }}
-            >
-              <FontAwesomeIcon icon={faEye} size="sm" />
-            </ActionIcon>
-          </Group>
+        action: (
+          <ActionIcon
+            color="blue"
+            variant="subtle"
+            onClick={() => {
+              setSelectedTransaction(transaction);
+              setViewModalOpen(true);
+            }}
+          >
+            <FontAwesomeIcon icon={faEye} size="sm" />
+          </ActionIcon>
         ),
       };
     });
   }, [allDataList, transactionStatus, paginationInfo]);
 
-  // Statistik
+  // Proses data untuk tabel pemesan
+  const processedPemesanData = useMemo(() => {
+    if (!Array.isArray(allDataList)) return [];
+
+    return allDataList
+      ?.filter((e) => e.payment_status == "Verified")
+      .flatMap((e) => e.identities || [])
+      .filter((id) => id.is_pemesan == 1)
+      .map((e, index) => ({
+        no: index + 1,
+        nik: e.nik || "-",
+        nama: e.full_name || "-",
+        email: e.email || "-",
+        telepon: e.no_telp || "-",
+        tanggal: moment(e.created_at).format("HH:mm:ss DD MMM YYYY"),
+      }));
+  }, [allDataList]);
+
+  // Proses data untuk tabel checkin
+  const processedCheckinData = useMemo(() => {
+    if (!Array.isArray(dataListEticket)) return [];
+
+    return dataListEticket
+      ?.filter((e) => Boolean(e.is_checkin))
+      .map((e, index) => ({
+        no: index + 1,
+        eticket: e.eticket_number || "-",
+        waktu: moment(e.checkin_date).format("HH:mm:ss DD MMM YYYY"),
+      }));
+  }, [dataListEticket]);
+
   const salesStatistics = useMemo(() => {
     const totalTickets = allDataList.reduce((sum, transaction) => {
       if (transaction.payment_status === "Verified" && transaction.tickets) {
@@ -1593,14 +1653,13 @@ const Merch = () => {
   }, [allDataList, eventData, dataListEticket, paginationInfo]);
 
   const exportToExcel = () => {
-    // Export hanya data di halaman saat ini (sesuai dengan pagination)
     if (!allDataList || allDataList.length === 0) {
       alert("Tidak ada data untuk diexport");
       return;
     }
 
     try {
-      const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Status"];
+      const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Metode Pembayaran", "Status"];
       const csvRows = [
         headers.join(","),
         ...allDataList.map((item, index) => {
@@ -1623,9 +1682,20 @@ const Merch = () => {
           }
 
           const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
+          const paymentMethodInfo = getPaymentMethod(item.payment_method);
+          const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
           const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
 
-          return [globalIndex, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ticketPrice, `"${statusText}"`].join(",");
+          return [
+            globalIndex, 
+            `"${pemesanIdentity?.full_name || "-"}"`, 
+            `"${pemesanIdentity?.email || "-"}"`, 
+            `"${item.invoice_no}"`, 
+            `"${ticketName}"`, 
+            ticketPrice,
+            `"${paymentMethodText}"`,
+            `"${statusText}"`
+          ].join(",");
         }),
       ];
 
@@ -1635,11 +1705,9 @@ const Merch = () => {
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().split("T")[0];
       const eventName = eventList?.find((e) => e.id === selectedEvent)?.name || "event";
-      const ticketFilterText = selectedTicket !== "all" ? `-${selectedTicket.replace(/\s+/g, '-')}` : "";
-      const pageText = paginationInfo.last_page > 1 ? `-page-${paginationInfo.current_page}` : "";
 
       link.href = url;
-      link.download = `report-${eventName}${ticketFilterText}${pageText}-${timestamp}.csv`;
+      link.download = `report-${eventName}-${timestamp}.csv`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -1650,35 +1718,6 @@ const Merch = () => {
       alert("Terjadi kesalahan saat mengeksport data");
     }
   };
-
-  const listPemesan = useMemo(() => {
-    if (!Array.isArray(allDataList)) return [];
-
-    return allDataList
-      ?.filter((e) => e.payment_status == "Verified")
-      .flatMap((e) => e.identities || [])
-      .filter((id) => id.is_pemesan == 1)
-      .map((e, index) => ({
-        No: index + 1,
-        "No. Identitas": e.nik,
-        "Nama Pemesan": e.full_name,
-        Email: e.email,
-        "No. Telepon": e.no_telp,
-        "Tanggal Dibuat": moment(e.created_at).format("HH:mm:ss DD MMM YYYY"),
-      }));
-  }, [allDataList]);
-
-  const listCheckin = useMemo(() => {
-    if (!Array.isArray(dataListEticket)) return [];
-
-    return dataListEticket
-      ?.filter((e) => Boolean(e.is_checkin))
-      .map((e, index) => ({
-        No: index + 1,
-        Eticket: e.eticket_number,
-        "Waktu Checkin": moment(e.checkin_date).format("HH:mm:ss DD MMM YYYY"),
-      }));
-  }, [dataListEticket]);
 
   if (!isr) return <></>;
 
@@ -1806,9 +1845,7 @@ const Merch = () => {
               <Flex gap="md" align="center" wrap="wrap">
                 <SegmentedControl
                   value={transactionSegment}
-                  onChange={(e) => {
-                    setTransactionSegment(e);
-                  }}
+                  onChange={(e) => setTransactionSegment(e)}
                   data={[
                     { label: "All", value: "all" },
                     { label: "Online", value: "online" },
@@ -1821,11 +1858,7 @@ const Merch = () => {
                 <Select
                   placeholder="Filter Status"
                   value={selectedStatus}
-                  onChange={(value) => {
-                    if (value) {
-                      setSelectedStatus(value);
-                    }
-                  }}
+                  onChange={(value) => value && setSelectedStatus(value)}
                   data={[
                     { value: "all", label: "Semua Status" },
                     ...(transactionStatus?.map((status) => ({
@@ -1847,27 +1880,66 @@ const Merch = () => {
               </Flex>
             </Flex>
 
-            <TableData
-              loading={loading.includes("loadData")}
-              tablekey="transaksi"
-              withRowIndex={false}
-              data={listTransaksi}
-              mapData={(e) => ({
-                No: e.No,
-                Nama: e.Nama,
-                Email: e.Email,
-                "No. Invoice": e["No. Invoice"],
-                "Nama Tiket": e["Nama Tiket"],
-                "Harga Tiket": e["Harga Tiket"],
-                Status: e.Status,
-                Action: e.Action,
-              })}
-            />
+            {/* TABLE TRANSAKSI DENGAN SCROLL */}
+            <Box 
+              style={{ 
+                overflowX: 'auto',
+                maxHeight: '500px',
+                overflowY: 'auto',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px'
+              }}
+            >
+              <Table striped highlightOnHover withTableBorder stickyHeader>
+                <Table.Thead style={{ backgroundColor: '#f8f9fa', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <Table.Tr>
+                    <Table.Th>No</Table.Th>
+                    <Table.Th>Nama</Table.Th>
+                    <Table.Th>Email</Table.Th>
+                    <Table.Th>No. Invoice</Table.Th>
+                    <Table.Th>Nama Tiket</Table.Th>
+                    <Table.Th>Harga Tiket</Table.Th>
+                    <Table.Th>Metode Pembayaran</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th>Action</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {loading.includes("loadData") ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={9} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Text>Loading...</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : processedTransactionData.length > 0 ? (
+                    processedTransactionData.map((item, idx) => (
+                      <Table.Tr key={idx}>
+                        <Table.Td>{item.no}</Table.Td>
+                        <Table.Td>{item.nama}</Table.Td>
+                        <Table.Td>{item.email}</Table.Td>
+                        <Table.Td>{item.invoice}</Table.Td>
+                        <Table.Td>{item.tiket}</Table.Td>
+                        <Table.Td>{item.harga}</Table.Td>
+                        <Table.Td>{item.payment}</Table.Td>
+                        <Table.Td>{item.status}</Table.Td>
+                        <Table.Td>{item.action}</Table.Td>
+                      </Table.Tr>
+                    ))
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={9} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Text>Tidak ada data</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
+            </Box>
 
             {allDataList.length > 0 && (
               <Flex justify="space-between" align="center" mt="md">
                 <Text size="sm" c="dimmed">
-                  Menampilkan {listTransaksi[0]?.No || 1} sampai {listTransaksi[listTransaksi.length - 1]?.No || listTransaksi.length} dari <strong>{paginationInfo.total}</strong> transaksi
+                  Menampilkan {((paginationInfo.current_page - 1) * paginationInfo.per_page) + 1} sampai {Math.min(paginationInfo.current_page * paginationInfo.per_page, paginationInfo.total)} dari <strong>{paginationInfo.total}</strong> transaksi
                   <br />
                   <small>
                     Halaman {paginationInfo.current_page} dari {paginationInfo.last_page} | Total Nilai: Rp {apiPaginationInfo.grandTotal.toLocaleString("id-ID")}
@@ -1875,7 +1947,6 @@ const Merch = () => {
                 </Text>
 
                 <Flex gap="md" align="center">
-                  {/* PAGINATION SERVER SIDE */}
                   <Pagination 
                     value={currentPage} 
                     onChange={handlePageChange} 
@@ -1887,51 +1958,54 @@ const Merch = () => {
                 </Flex>
               </Flex>
             )}
-
-            {allDataList.length === 0 && !loading.includes("loadData") && selectedEvent && (
-              <Card withBorder mt="md" p="xl">
-                <Flex direction="column" align="center" gap="md">
-                  <FontAwesomeIcon icon={faTicketAlt} size="2x" color="#adb5bd" />
-                  <Text size="lg" c="dimmed" fw={500}>
-                    Tidak ada data transaksi
-                  </Text>
-                  <Text size="sm" c="dimmed" ta="center">
-                    {selectedTicket !== "all"
-                      ? `Tidak ditemukan transaksi dengan tiket "${selectedTicket}"`
-                      : selectedStatus !== "all"
-                        ? `Tidak ditemukan transaksi dengan status yang dipilih`
-                        : transactionSegment !== "all"
-                          ? `Tidak ditemukan transaksi ${transactionSegment}`
-                          : searchValue
-                            ? `Tidak ditemukan transaksi dengan kata kunci "${searchValue}"`
-                            : "Tidak ada data transaksi untuk event ini"}
-                  </Text>
-                  <Button
-                    variant="light"
-                    onClick={() => {
-                      setSelectedTicket("all");
-                      setSelectedStatus("all");
-                      setTransactionSegment("all");
-                      setSearchValue("");
-                      loadEventData(1);
-                    }}
-                  >
-                    Reset Filter
-                  </Button>
-                </Flex>
-              </Card>
-            )}
           </div>
         )}
 
         {/* Tab Content - Data Pemesan */}
         {selectedTab === "pemesan" && (
           <div className="pt-4">
-            <Flex justify="space-between" align="center" mb="md">
-              {/* Input search bisa ditambahkan di sini jika diperlukan */}
-            </Flex>
-            <Box mt={20}>
-              <TableData loading={loading.includes("getdata")} tablekey="pemesan" withRowIndex data={listPemesan} mapData={(e) => ({ ...e })} />
+            {/* TABLE PEMESAN DENGAN SCROLL */}
+            <Box 
+              style={{ 
+                overflowX: 'auto',
+                maxHeight: '500px',
+                overflowY: 'auto',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px'
+              }}
+            >
+              <Table striped highlightOnHover withTableBorder stickyHeader>
+                <Table.Thead style={{ backgroundColor: '#f8f9fa', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <Table.Tr>
+                    <Table.Th>No</Table.Th>
+                    <Table.Th>No. Identitas</Table.Th>
+                    <Table.Th>Nama Pemesan</Table.Th>
+                    <Table.Th>Email</Table.Th>
+                    <Table.Th>No. Telepon</Table.Th>
+                    <Table.Th>Tanggal Dibuat</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {processedPemesanData.length > 0 ? (
+                    processedPemesanData.map((item, idx) => (
+                      <Table.Tr key={idx}>
+                        <Table.Td>{item.no}</Table.Td>
+                        <Table.Td>{item.nik}</Table.Td>
+                        <Table.Td>{item.nama}</Table.Td>
+                        <Table.Td>{item.email}</Table.Td>
+                        <Table.Td>{item.telepon}</Table.Td>
+                        <Table.Td>{item.tanggal}</Table.Td>
+                      </Table.Tr>
+                    ))
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Text>Tidak ada data pemesan</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
             </Box>
           </div>
         )}
@@ -1939,11 +2013,42 @@ const Merch = () => {
         {/* Tab Content - Data Checkin */}
         {selectedTab === "checkin" && (
           <div className="pt-4">
-            <Flex justify="space-between" align="center" mb="md">
-              {/* Input search bisa ditambahkan di sini jika diperlukan */}
-            </Flex>
-            <Box mt={20}>
-              <TableData loading={loading.includes("getdata")} tablekey="checkin" withRowIndex data={listCheckin} mapData={(e) => ({ ...e })} />
+            {/* TABLE CHECKIN DENGAN SCROLL */}
+            <Box 
+              style={{ 
+                overflowX: 'auto',
+                maxHeight: '500px',
+                overflowY: 'auto',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px'
+              }}
+            >
+              <Table striped highlightOnHover withTableBorder stickyHeader>
+                <Table.Thead style={{ backgroundColor: '#f8f9fa', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <Table.Tr>
+                    <Table.Th>No</Table.Th>
+                    <Table.Th>Eticket</Table.Th>
+                    <Table.Th>Waktu Checkin</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {processedCheckinData.length > 0 ? (
+                    processedCheckinData.map((item, idx) => (
+                      <Table.Tr key={idx}>
+                        <Table.Td>{item.no}</Table.Td>
+                        <Table.Td>{item.eticket}</Table.Td>
+                        <Table.Td>{item.waktu}</Table.Td>
+                      </Table.Tr>
+                    ))
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={3} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Text>Tidak ada data checkin</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
             </Box>
           </div>
         )}
@@ -1956,63 +2061,30 @@ const Merch = () => {
         title={
           <Flex align="center" gap="sm">
             <FontAwesomeIcon icon={faReceipt} color="white" />
-            <Text fw={600} c="white">
-              Detail Transaksi
-            </Text>
+            <Text fw={600} c="white">Detail Transaksi</Text>
           </Flex>
         }
         size="lg"
         radius="md"
         styles={{
-          header: {
-            backgroundColor: "#0b387c",
-            color: "white",
-            margin: 0,
-            borderTopLeftRadius: "8px",
-            borderTopRightRadius: "8px",
-            padding: "16px 20px",
-          },
-          content: {
-            padding: 0,
-          },
-          title: {
-            fontSize: "16px",
-            fontWeight: 600,
-            color: "white",
-            flex: 1,
-          },
-          close: {
-            color: "white",
-            marginRight: "4px",
-          },
-          body: {
-            padding: "20px",
-          },
+          header: { backgroundColor: "#0b387c", color: "white", margin: 0, borderTopLeftRadius: "8px", borderTopRightRadius: "8px", padding: "16px 20px" },
+          content: { padding: 0 },
+          title: { fontSize: "16px", fontWeight: 600, color: "white", flex: 1 },
+          close: { color: "white", marginRight: "4px" },
+          body: { padding: "20px" },
         }}
-        closeButtonProps={{
-          "aria-label": "Close modal",
-          style: {
-            backgroundColor: "transparent",
-          },
-        }}
+        closeButtonProps={{ "aria-label": "Close modal", style: { backgroundColor: "transparent" } }}
       >
         {selectedTransaction && (
           <Stack gap="lg">
-            {/* Header Info Transaksi */}
             <Card withBorder shadow="sm" radius="md" p="lg">
               <Stack gap="xs">
                 <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    No. Invoice
-                  </Text>
-                  <Text fw={600} size="lg" className="font-mono">
-                    {selectedTransaction.invoice_no}
-                  </Text>
+                  <Text fw={600} size="sm" c="dimmed">No. Invoice</Text>
+                  <Text fw={600} size="lg" className="font-mono">{selectedTransaction.invoice_no}</Text>
                 </Flex>
                 <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    Status
-                  </Text>
+                  <Text fw={600} size="sm" c="dimmed">Status</Text>
                   <Badge size="lg" color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor} radius="sm">
                     {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
                   </Badge>
@@ -2020,80 +2092,62 @@ const Merch = () => {
               </Stack>
             </Card>
 
-            {/* Info Pembeli */}
             <Card withBorder shadow="sm" radius="md" p="lg">
-              <Text fw={600} size="md" mb="md">
-                Informasi Pembeli
-              </Text>
+              <Text fw={600} size="md" mb="md">Informasi Pembeli</Text>
               <Stack gap="sm">
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Nama
-                  </Text>
+                  <Text fw={500} size="sm">Nama</Text>
                   <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Email
-                  </Text>
+                  <Text fw={500} size="sm">Email</Text>
                   <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Tipe Transaksi
-                  </Text>
+                  <Text fw={500} size="sm">Tipe Transaksi</Text>
                   <Badge color={selectedTransaction.type_transaction === "online" ? "blue" : "orange"} variant="light">
                     {selectedTransaction.type_transaction?.toUpperCase()}
                   </Badge>
                 </Flex>
+                <Flex justify="space-between">
+                  <Text fw={500} size="sm">Metode Pembayaran</Text>
+                  {selectedTransaction.payment_method ? (
+                    (() => {
+                      const paymentMethodInfo = getPaymentMethod(selectedTransaction.payment_method);
+                      return paymentMethodInfo ? (
+                        <Badge color={paymentMethodInfo.color} variant="light" leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}>
+                          {paymentMethodInfo.label}
+                        </Badge>
+                      ) : (
+                        <Badge color="gray" variant="light">{selectedTransaction.payment_method.payment_name || "Tidak Ada"}</Badge>
+                      );
+                    })()
+                  ) : <Text>-</Text>}
+                </Flex>
               </Stack>
             </Card>
 
-            {/* Detail Harga */}
             <Card withBorder shadow="sm" radius="md" p="lg">
-              <Text fw={600} size="md" mb="md">
-                Ringkasan Pembayaran
-              </Text>
+              <Text fw={600} size="md" mb="md">Ringkasan Pembayaran</Text>
               <Stack gap="sm">
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Tanggal Transaksi
-                  </Text>
+                  <Text fw={500} size="sm">Tanggal Transaksi</Text>
                   <Text>{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY HH:mm:ss") : "-"}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Total Pembayaran
-                  </Text>
-                  <Text fw={700} size="lg" c="blue">
-                    Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
-                  </Text>
+                  <Text fw={500} size="sm">Total Pembayaran</Text>
+                  <Text fw={700} size="lg" c="blue">Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
                 </Flex>
               </Stack>
             </Card>
 
-            {/* Accordion untuk Detail Tiket dan Merch */}
-            <Accordion
-              variant="separated"
-              radius="md"
-              chevron={<FontAwesomeIcon icon={faChevronDown} />}
-              styles={{
-                chevron: {
-                  "&[data-rotate]": {
-                    transform: "rotate(-180deg)",
-                  },
-                },
-              }}
-            >
-              {/* Detail Tiket */}
+            <Accordion variant="separated" radius="md" chevron={<FontAwesomeIcon icon={faChevronDown} />}>
               {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
                 <Accordion.Item value="tickets">
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} />}>
                     <Flex align="center" gap="sm">
                       <Text fw={600}>Detail Tiket</Text>
-                      <Badge size="sm" color="blue" variant="light">
-                        {selectedTransaction.tickets.length} item
-                      </Badge>
+                      <Badge size="sm" color="blue" variant="light">{selectedTransaction.tickets.length} item</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
@@ -2102,24 +2156,14 @@ const Merch = () => {
                         <Card key={index} withBorder radius="sm" p="md" style={{ borderLeft: "4px solid #228be6" }}>
                           <Flex justify="space-between" align="start" mb="xs">
                             <div>
-                              <Text fw={600} size="sm">
-                                {ticket.has_event_ticket?.name || "Tiket"}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                Qty: {ticket.qty_ticket} tiket
-                              </Text>
+                              <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                              <Text size="xs" c="dimmed">Qty: {ticket.qty_ticket} tiket</Text>
                             </div>
-                            <Badge color="blue" variant="light">
-                              Rp {(ticket.price || 0).toLocaleString("id-ID")}
-                            </Badge>
+                            <Badge color="blue" variant="light">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Badge>
                           </Flex>
                           <Flex justify="space-between" align="center">
-                            <Text size="sm" c="dimmed">
-                              Subtotal
-                            </Text>
-                            <Text fw={600} size="sm">
-                              Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}
-                            </Text>
+                            <Text size="sm" c="dimmed">Subtotal</Text>
+                            <Text fw={600} size="sm">Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
                           </Flex>
                         </Card>
                       ))}
@@ -2128,15 +2172,12 @@ const Merch = () => {
                 </Accordion.Item>
               )}
 
-              {/* Detail Merch */}
               {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
                 <Accordion.Item value="merch">
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} />}>
                     <Flex align="center" gap="sm">
                       <Text fw={600}>Detail Merchandise</Text>
-                      <Badge size="sm" color="green" variant="light">
-                        {selectedTransaction.transaction_merches.length} item
-                      </Badge>
+                      <Badge size="sm" color="green" variant="light">{selectedTransaction.transaction_merches.length} item</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
@@ -2145,45 +2186,20 @@ const Merch = () => {
                         <Card key={index} withBorder radius="sm" p="md" style={{ borderLeft: "4px solid #40c057" }}>
                           <Flex justify="space-between" align="start" mb="xs">
                             <div>
-                              <Text fw={600} size="sm">
-                                Merch {index + 1}
-                                {merch.product_variant?.varian_name && (
-                                  <Badge size="xs" color="gray" ml="sm">
-                                    {merch.product_variant.varian_name}
-                                  </Badge>
-                                )}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                Qty: {merch.qty} pcs
-                              </Text>
+                              <Text fw={600} size="sm">Merch {index + 1}</Text>
+                              {merch.product_variant?.varian_name && (
+                                <Badge size="xs" color="gray" ml="sm">{merch.product_variant.varian_name}</Badge>
+                              )}
+                              <Text size="xs" c="dimmed">Qty: {merch.qty} pcs</Text>
                             </div>
-                            <Badge color="green" variant="light">
-                              Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}
-                            </Badge>
+                            <Badge color="green" variant="light">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Badge>
                           </Flex>
-
-                          {merch.product_variant && (
-                            <Flex gap="md" mb="xs">
-                              <Badge size="xs" color="gray" variant="outline">
-                                SKU: {merch.product_variant.sku || "-"}
-                              </Badge>
-                            </Flex>
-                          )}
-
                           <Flex justify="space-between" align="center">
                             <div>
-                              <Text size="sm" c="dimmed">
-                                Subtotal
-                              </Text>
-                              {merch.noted && (
-                                <Text size="xs" c="dimmed" mt={4}>
-                                  Catatan: {merch.noted}
-                                </Text>
-                              )}
+                              <Text size="sm" c="dimmed">Subtotal</Text>
+                              {merch.noted && <Text size="xs" c="dimmed" mt={4}>Catatan: {merch.noted}</Text>}
                             </div>
-                            <Text fw={600} size="sm">
-                              Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}
-                            </Text>
+                            <Text fw={600} size="sm">Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
                           </Flex>
                         </Card>
                       ))}
@@ -2193,41 +2209,23 @@ const Merch = () => {
               )}
             </Accordion>
 
-            {/* Ringkasan Total */}
             <Card withBorder shadow="sm" radius="md" p="lg" bg="blue.0">
               <Stack gap="xs">
-                {/* Subtotal Tiket */}
                 {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
                   <Flex justify="space-between">
-                    <Text fw={500} size="sm">
-                      Subtotal Tiket
-                    </Text>
-                    <Text fw={600} size="sm">
-                      Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0).toLocaleString("id-ID")}
-                    </Text>
+                    <Text fw={500} size="sm">Subtotal Tiket</Text>
+                    <Text fw={600} size="sm">Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0).toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
-
-                {/* Subtotal Merch */}
                 {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
                   <Flex justify="space-between">
-                    <Text fw={500} size="sm">
-                      Subtotal Merch
-                    </Text>
-                    <Text fw={600} size="sm">
-                      Rp {selectedTransaction.transaction_merches.reduce((sum, merch) => sum + parseFloat(merch.price || "0") * (merch.qty || 0), 0).toLocaleString("id-ID")}
-                    </Text>
+                    <Text fw={500} size="sm">Subtotal Merch</Text>
+                    <Text fw={600} size="sm">Rp {selectedTransaction.transaction_merches.reduce((sum, merch) => sum + parseFloat(merch.price || "0") * (merch.qty || 0), 0).toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
-
-                {/* Total Keseluruhan */}
                 <Flex justify="space-between" align="center" pt="xs" style={{ borderTop: "1px solid #dee2e6" }}>
-                  <Text fw={700} size="lg">
-                    Total Transaksi
-                  </Text>
-                  <Text fw={800} size="xl" c="blue">
-                    Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
-                  </Text>
+                  <Text fw={700} size="lg">Total Transaksi</Text>
+                  <Text fw={800} size="xl" c="blue">Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
                 </Flex>
               </Stack>
             </Card>
