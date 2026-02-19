@@ -170,67 +170,97 @@ interface TopicProps {
   deleted_at: string | null;
 }
 
+interface PaginationProps {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  next_page_url: string | null;
+}
+
 const Event = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [data, setData] = useState<EventProps[]>([]);
   const [topic, setTopic] = useState<TopicProps[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [pagination, setPagination] = useState<PaginationProps>({
+    current_page: 1,
+    last_page: 1,
+    per_page: 12,
+    total: 0,
+    next_page_url: null
+  });
   
   const ITEMS_PER_PAGE = 12;
 
   const observerTarget = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
   const router = useRouter();
   const { tag } = router.query;
 
   const normalize = (v?: any) => (v ? String(v).trim() : "");
 
-  // Function to get all data (without pagination from backend)
-  const getAllData = (tagParam?: string) => {
-    setLoading(true);
+  // Function to fetch data with pagination
+  const fetchEvents = async (page: number = 1, tagParam?: string, append: boolean = false) => {
+    // Prevent multiple simultaneous requests
+    if (isFetchingRef.current) return;
     
-    const endpoint = tagParam ? `event?tag=${encodeURIComponent(tagParam)}` : "event";
+    try {
+      isFetchingRef.current = true;
+      
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
 
-    Get(endpoint, {})
-      .then((res: any) => {
-        const allEvents = res?.data || res || [];
-        // Sort by date (newest first)
-        const sortedEvents = allEvents.sort((b: any, a: any) => {
-          return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-        });
-        setData(sortedEvents);
-        setCurrentPage(1);
-        setHasMore(sortedEvents.length > ITEMS_PER_PAGE);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setLoading(false);
+      let endpoint = `event?page=${page}&per_page=${ITEMS_PER_PAGE}`;
+      if (tagParam) {
+        endpoint += `&tag=${encodeURIComponent(tagParam)}`;
+      }
+
+      const res: any = await Get(endpoint, {});
+      
+      // Handle different response structures
+      const newEvents = res?.data || [];
+      const paginationData = res?.pagination || {
+        current_page: page,
+        last_page: 1,
+        per_page: ITEMS_PER_PAGE,
+        total: newEvents.length,
+        next_page_url: null
+      };
+
+      // Sort by date (newest first) - only for first page or if needed
+      const sortedEvents = page === 1 
+        ? newEvents.sort((a: any, b: any) => 
+            new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+          )
+        : newEvents;
+
+      setData(prev => {
+        if (append) {
+          // Prevent duplicates when appending
+          const existingIds = new Set(prev.map(item => item.id));
+          const uniqueNewEvents = sortedEvents.filter((item: EventProps) => !existingIds.has(item.id));
+          return [...prev, ...uniqueNewEvents];
+        } else {
+          return sortedEvents;
+        }
       });
-  };
 
-  // Get paginated data from the already loaded data
-  const getPaginatedData = () => {
-    const startIndex = 0;
-    const endIndex = currentPage * ITEMS_PER_PAGE;
-    return data.slice(startIndex, endIndex);
-  };
-
-  // Load more items
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      setLoadingMore(true);
-      // Simulate loading delay
-      setTimeout(() => {
-        setCurrentPage(prev => prev + 1);
-        const totalLoaded = (currentPage + 1) * ITEMS_PER_PAGE;
-        setHasMore(totalLoaded < data.length);
-        setLoadingMore(false);
-      }, 300);
+      setPagination(paginationData);
+      
+    } catch (err) {
+      console.log("Error fetching events:", err);
+    } finally {
+      isFetchingRef.current = false;
+      setLoading(false);
+      setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, currentPage, data.length]);
+  };
 
   const getEventTopic = () => {
     Get("event-topic", {})
@@ -242,28 +272,49 @@ const Event = () => {
       });
   };
 
-  // Intersection Observer for infinite scroll
+  // Load more items when scrolling
+  const loadMore = useCallback(() => {
+    if (
+      !loadingMore && 
+      !loading && 
+      pagination.next_page_url && 
+      !isFetchingRef.current
+    ) {
+      const nextPage = pagination.current_page + 1;
+      fetchEvents(nextPage, activeCategory || undefined, true);
+    }
+  }, [loadingMore, loading, pagination, activeCategory]);
+
+  // Setup intersection observer
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    // Cleanup previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+        if (entries[0].isIntersecting && pagination.next_page_url) {
           loadMore();
         }
       },
-      { threshold: 0.5, rootMargin: "50px" }
+      { 
+        threshold: 0.1,
+        rootMargin: "100px" // Start loading when 100px from bottom
+      }
     );
 
     const currentTarget = observerTarget.current;
     if (currentTarget) {
-      observer.observe(currentTarget);
+      observerRef.current.observe(currentTarget);
     }
 
     return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
-  }, [observerTarget, hasMore, loadingMore, loadMore]);
+  }, [pagination.next_page_url, loadMore]);
 
   // Initialize data when router is ready / tag changes
   useEffect(() => {
@@ -272,47 +323,93 @@ const Event = () => {
     const rawTag = Array.isArray(tag) ? tag[0] : tag;
     const decodedTag = rawTag ? decodeURIComponent(String(rawTag)) : "";
 
+    // Reset state when category changes
+    setData([]);
+    setPagination({
+      current_page: 1,
+      last_page: 1,
+      per_page: ITEMS_PER_PAGE,
+      total: 0,
+      next_page_url: null
+    });
+
     if (decodedTag) {
       setActiveCategory(decodedTag);
+      fetchEvents(1, decodedTag, false);
     } else {
       setActiveCategory("");
+      fetchEvents(1, undefined, false);
     }
 
     getEventTopic();
-    getAllData(decodedTag);
-    // Reset to page 1 when category changes
-    setCurrentPage(1);
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, tag]);
 
-  // Get current page data
-  const currentData = useMemo(() => {
-    return getPaginatedData();
-  }, [data, currentPage]);
-
-  // Filter data by category if needed
+  // Filter data by category if needed (for safety, though backend should already filter)
   const filteredData = useMemo(() => {
-    if (!activeCategory) return currentData;
+    if (!activeCategory) return data;
     
-    return currentData.filter((event) => 
+    // Only filter if backend doesn't support filtering by tag
+    // If backend already filters, just return data
+    return data;
+    
+    // Uncomment below if backend doesn't filter by tag
+    /*
+    return data.filter((event) => 
       event.has_event_topic && 
       normalize(event.has_event_topic.name).toLowerCase() === normalize(activeCategory).toLowerCase()
     );
-  }, [currentData, activeCategory]);
+    */
+  }, [data, activeCategory]);
 
-  // orderedTopics: place activeCategory first (if exists) but keep original order otherwise
+  // orderedTopics: place activeCategory first
   const orderedTopics = useMemo(() => {
     if (!topic || topic.length === 0) return [];
     if (!activeCategory) return topic;
 
-    const activeIdx = topic.findIndex((t) => normalize(t.name).toLowerCase() === normalize(activeCategory).toLowerCase());
+    const activeIdx = topic.findIndex((t) => 
+      normalize(t.name).toLowerCase() === normalize(activeCategory).toLowerCase()
+    );
 
-    if (activeIdx <= 0) return topic; // already first or not found
+    if (activeIdx <= 0) return topic;
 
     const copy = [...topic];
-    const [activeItem] = copy.splice(activeIdx, 1); // remove the matched item
+    const [activeItem] = copy.splice(activeIdx, 1);
     return [activeItem, ...copy];
   }, [topic, activeCategory]);
+
+  // Handle category change
+  const handleCategoryChange = (categoryName: string) => {
+    setActiveCategory(categoryName);
+    setData([]); // Clear existing data
+    
+    const encoded = encodeURIComponent(categoryName);
+    router.replace(
+      {
+        pathname: "/event",
+        query: { tag: encoded },
+      },
+      undefined,
+      { shallow: true }
+    );
+    
+    fetchEvents(1, categoryName, false);
+  };
+
+  // Clear filter
+  const handleClearFilter = () => {
+    setActiveCategory("");
+    setData([]);
+    router.replace(
+      {
+        pathname: "/event",
+      },
+      undefined,
+      { shallow: true }
+    );
+    fetchEvents(1, undefined, false);
+  };
 
   return (
     <>
@@ -324,27 +421,26 @@ const Event = () => {
               {orderedTopics.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => {
-                    setActiveCategory(item.name);
-                    const encoded = encodeURIComponent(item.name);
-                    router.replace(
-                      {
-                        pathname: "/event",
-                        query: { tag: encoded },
-                      },
-                      undefined,
-                      { shallow: true }
-                    );
-                    getAllData(item.name);
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => handleCategoryChange(item.name)}
                   className={`cursor-pointer flex rounded-2xl items-center justify-center py-1 px-3 border ${
-                    normalize(activeCategory).toLowerCase() !== normalize(item.name).toLowerCase() ? "text-dark-grey border-primary-light-200" : "text-primary-dark border-primary-dark"
+                    normalize(activeCategory).toLowerCase() !== normalize(item.name).toLowerCase() 
+                      ? "text-dark-grey border-primary-light-200" 
+                      : "text-primary-dark border-primary-dark"
                   }`}
                 >
                   <p className="whitespace-nowrap">{item.name}</p>
                 </div>
               ))}
+              
+              {/* Optional: Clear filter button */}
+              {activeCategory && (
+                <div
+                  onClick={handleClearFilter}
+                  className="cursor-pointer flex rounded-2xl items-center justify-center py-1 px-3 border text-red-500 border-red-300 hover:bg-red-50"
+                >
+                  <p className="whitespace-nowrap">Clear Filter ✕</p>
+                </div>
+              )}
             </ScrollShadow>
 
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 px-[20px] content-center justify-items-center gap-y-10 gap-x-5 my-5">
@@ -372,7 +468,7 @@ const Event = () => {
                     />
                   ))}
                   
-                  {/* Loading indicator at the bottom */}
+                  {/* Loading skeletons when loading more */}
                   {loadingMore && (
                     <>
                       <EventCardLoading />
@@ -383,8 +479,11 @@ const Event = () => {
                   )}
                   
                   {/* Observer target for infinite scroll */}
-                  {hasMore && (
-                    <div ref={observerTarget} className="col-span-full h-20 flex items-center justify-center">
+                  {pagination.next_page_url && (
+                    <div 
+                      ref={observerTarget} 
+                      className="col-span-full h-20 flex items-center justify-center"
+                    >
                       {loadingMore ? (
                         <div className="flex flex-col items-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-dark"></div>
@@ -393,13 +492,6 @@ const Event = () => {
                       ) : (
                         <p className="text-gray-500">Scroll untuk melihat lebih banyak</p>
                       )}
-                    </div>
-                  )}
-                  
-                  {/* Show message when no more data */}
-                  {!hasMore && filteredData.length > 0 && (
-                    <div className="col-span-full h-10 flex items-center justify-center">
-                      <p className="text-gray-500">Tidak ada event lainnya</p>
                     </div>
                   )}
                 </>

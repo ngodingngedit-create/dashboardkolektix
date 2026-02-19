@@ -1499,7 +1499,6 @@ import ImagesWithModal from "@/components/Images/ImagesWithModal";
 import AuthModal from "@/components/AuthModal";
 import React from "react";
 import ChatBox from "@/components/chat";
-import { validateHeaderName } from "node:http";
 import { Flex, Stack, Text, Image as ImageM, ActionIcon, Box, Card, AspectRatio } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { randomId, useClickOutside, useInterval, useListState, useTimeout } from "@mantine/hooks";
@@ -1663,7 +1662,7 @@ const EventDetails = () => {
   const [voucher, setVoucher] = useState<{ id: number; name: string; amount: number }[]>([]);
   const firstStepRef = useRef<any>(null);
   
-  // PERBAIKAN: Tambahkan state untuk menyimpan data dari step 1
+  // State untuk menyimpan data dari step 1
   const [step1FormData, setStep1FormData] = useState<Form[]>([]);
   const [step1TicketData, setStep1TicketData] = useState<FormTicket[]>([]);
   const [step1MerchData, setStep1MerchData] = useState<MerchPayload[]>([]);
@@ -1941,12 +1940,12 @@ const EventDetails = () => {
     userData !== undefined ? setIsLogin(true) : setIsLogin(false);
   }, []);
 
-  // PERBAIKAN: Fungsi submitData yang diperbaiki
+  // Fungsi submitData yang diperbaiki
   const submitData = (merchPayload?: MerchPayload[]) => {
     console.log("submitData - called from StepPayment");
     console.log("Merch payload received:", merchPayload);
     
-    // PERBAIKAN: Simpan data dari step 1 untuk step 3
+    // Simpan data dari step 1 untuk step 3
     setStep1FormData([...form]);
     setStep1TicketData([...ticket]);
     setStep1MerchData(merchPayload || []);
@@ -1962,18 +1961,12 @@ const EventDetails = () => {
     now.setTime(now.getTime() + 24 * 60 * 60 * 1000);
     const isoString = now.toISOString();
 
-    // Harga sudah benar dari form (StepPayment sudah handle bundling logic)
     const subtotalBeforeVoucher = totalSubtotalPrice;
     const voucherDiscount = voucher.reduce((sum, v) => sum + v.amount, 0);
     const subtotalAfterVoucher = Math.max(subtotalBeforeVoucher - voucherDiscount, 0);
     
-    // Biaya admin akan diambil dari response API (backend yang hitung)
-    // Jangan hitung di frontend
-    
-    // Tax hanya dari subtotalAfterVoucher (sesuai backend)
     const taxAmount = detail?.ppn ? Math.round(subtotalAfterVoucher * (detail.ppn / 100)) : 0;
     
-    // Grandtotal sementara (akan disesuaikan dengan response backend)
     const grandtotal = subtotalAfterVoucher + taxAmount;
 
     console.log("=== PAYMENT CALCULATION (Frontend) ===");
@@ -1982,9 +1975,8 @@ const EventDetails = () => {
     console.log("3. Subtotal after voucher:", subtotalAfterVoucher);
     console.log("4. Tax amount:", taxAmount);
     console.log("5. Grandtotal (temporary):", grandtotal);
-    console.log("Note: Admin fee will be calculated by backend");
 
-    // PERBAIKAN: Membersihkan data merchandise dari identities
+    // Membersihkan data merchandise dari identities
     const cleanedIdentities = form.map((item) => {
       const { 
         merch_product_id, event_merch_id, merch_variant_id, 
@@ -1997,7 +1989,7 @@ const EventDetails = () => {
 
     console.log("Cleaned identities:", cleanedIdentities);
 
-    // PERBAIKAN: Siapkan tickets data dengan bundling info
+    // Siapkan tickets data dengan bundling info
     const ticketsWithBundling = ticket.map((e) => {
       const ticketDetail = detail?.has_event_ticket?.find(t => t.id === e.event_ticket_id);
       const isBundling = ticketDetail?.is_bundling === 1;
@@ -2005,13 +1997,10 @@ const EventDetails = () => {
       return {
         ...e,
         seatnumber_ticket: JSON.stringify(e.seat_number),
-        // PERBAIKAN: Ticket fee dikosongkan, biar backend yang hitung
         ticket_fee: 0,
         is_bundling: ticketDetail?.is_bundling || 0,
         bundling_qty: ticketDetail?.bundling_qty || 0,
         is_bundling_merch: ticketDetail?.is_bundling_merch || 0,
-        // PERBAIKAN: Pastikan qty_ticket sesuai dengan bundling logic
-        // Jika bundling, qty_ticket = 1 (1 paket)
         qty_ticket: isBundling ? 1 : e.qty_ticket
       };
     });
@@ -2022,7 +2011,7 @@ const EventDetails = () => {
     var payload: { [key: string]: any } = {
       user_id: userId,
       event_id: detail?.id,
-      admin_fee: 0, // Kosongkan, backend akan hitung
+      admin_fee: 0,
       payment_status: "pending",
       vouchers: voucher.length > 0 ? voucher.map((v) => ({
         voucher_id: v.id,
@@ -2031,15 +2020,14 @@ const EventDetails = () => {
       })) : [],
       identities: cleanedIdentities,
       tickets: ticketsWithBundling,
-      grandtotal: grandtotal, // Temporary, akan diupdate oleh backend
+      grandtotal: grandtotal,
       bank_code: bank ?? "xendit",
       expiration_date: isoString,
       payment_method: payment || "0",
       ppn: taxAmount,
-      total_ticket_fee: 0, // Kosongkan, backend akan hitung
+      total_ticket_fee: 0,
     };
 
-    // TAMBAHKAN MERCHANDISE PAYLOAD JIKA ADA
     if (merchPayload && merchPayload.length > 0) {
       payload.is_merch = 1;
       payload.merches = merchPayload;
@@ -2053,7 +2041,6 @@ const EventDetails = () => {
       }
     }
 
-    // PERBAIKAN: Simpan payload yang dikirim untuk step 3
     setSubmittedPayload(payload);
     console.log("💾 Saved submitted payload:", payload);
 
@@ -2068,11 +2055,10 @@ const EventDetails = () => {
           return;
         }
 
-        // PERBAIKAN: Tambahkan data merchandise ke transactionData jika ada
         const transactionWithMerch = {
           ...res.data,
           merches: res.merches || [],
-          submittedPayload: payload // Simpan juga payload aslinya
+          submittedPayload: payload
         };
         
         setTransactionData(transactionWithMerch);
@@ -2081,7 +2067,6 @@ const EventDetails = () => {
           setXenditInvoice(res.xendit_invoice.va_number[0]);
         }
 
-        // PERBAIKAN: Debug data dari backend
         console.log("=== RESPONSE FROM BACKEND ===");
         console.log("Backend data:", res.data);
         console.log("Total price from backend:", res.data.total_price);
@@ -2149,6 +2134,7 @@ const EventDetails = () => {
 
     setTicket(newData);
   };
+  
   const triggerCounter = (id: string) => {
     if (data) {
       setFirstLoad(true);
@@ -2179,6 +2165,7 @@ const EventDetails = () => {
   ticket.forEach((item) => {
     totalSubtotalPrice += item.subtotal_price;
   });
+  
   useEffect(() => {
     if (slug) {
       getData();
@@ -2206,7 +2193,7 @@ const EventDetails = () => {
       if (isOnePayment) {
         console.log("isOnePayment");
         setPayment((paymentList?.find((e) => e?.id === 4) ?? { id: 0 }).id.toString());
-        submitData([]); // Kirim array kosong untuk merch karena belum ada dari StepPayment
+        submitData([]);
       } else {
         setStep(66);
       }
@@ -2348,6 +2335,12 @@ const EventDetails = () => {
     setVoucher((prevVouchers) => prevVouchers.filter((_, i) => i !== index));
   };
 
+  // Tentukan step yang aktif
+  const activeStep = stepParams ? parseInt(stepParams) : step;
+
+  // Cek apakah sedang dalam proses payment step
+  const isInPaymentFlow = activeStep === 33 || activeStep === 66 || activeStep === 100;
+
   return !firstLoad && detail ? (
     detail && (
       <Context.Provider
@@ -2375,7 +2368,9 @@ const EventDetails = () => {
             <meta name="googlebot" content="index, follow" />
             <title>Kolektix.com | {detail?.name}</title>
           </Head>
-          {menu === 1 && (
+          
+          {/* PERBAIKAN: Render berdasarkan activeStep dengan kondisi eksklusif */}
+          {!isInPaymentFlow && menu === 1 && (
             <>
               <div className="fixed bottom-0 opacity-90 w-full bg-white border-2 border-t-primary-light border-x-0 border-b-0 drop-shadow-md z-30">
                 <div className="flex justify-between items-center py-3 px-5">
@@ -2394,78 +2389,31 @@ const EventDetails = () => {
               </div>
             </>
           )}
-          {step !== 0 &&
-            step !== 2 &&
-            stepParams !== null &&
-            width &&
-            (width < 768 ? (
-              <>
-                <div className="w-full sticky top-0 bg-primary-base z-50">
-                  <div className="flex items-center justify-between px-5 py-3">
-                    <div className="flex items-center">
-                      <button onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))}>
-                        <FontAwesomeIcon icon={faArrowLeft} className="mr-3 text-white" />
-                      </button>
-                      <div>
-                        <p className="text-white text-xs mb-1">{step === 33 ? "1 " : step === 66 ? "2 " : "3 "}dari 3</p>
-                        <p className="text-white text-sm font-semibold">{step === 33 ? "Informasi Pribadi" : step === 66 ? "Konfirmasi" : "Pembayaran"}</p>
-                      </div>
-                    </div>
-                    <div className="">
-                      <button disabled={loading} className="text-white text-xs mb-1">
-                        {t("next")}
-                      </button>
-                      <p className="text-white text-sm">{step === 33 ? "Konfirmasi" : "Pembayaran"}</p>
+          
+          {/* Progress bar hanya muncul saat dalam payment flow */}
+          {isInPaymentFlow && step !== 2 && stepParams !== null && width && width < 768 && (
+            <>
+              <div className="w-full sticky top-0 bg-primary-base z-50">
+                <div className="flex items-center justify-between px-5 py-3">
+                  <div className="flex items-center">
+                    <button onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))}>
+                      <FontAwesomeIcon icon={faArrowLeft} className="mr-3 text-white" />
+                    </button>
+                    <div>
+                      <p className="text-white text-xs mb-1">{step === 33 ? "1 " : step === 66 ? "2 " : "3 "}dari 3</p>
+                      <p className="text-white text-sm font-semibold">{step === 33 ? "Informasi Pribadi" : step === 66 ? "Konfirmasi" : "Pembayaran"}</p>
                     </div>
                   </div>
+                  <div className="">
+                    <button disabled={loading} className="text-white text-xs mb-1">
+                      {t("next")}
+                    </button>
+                    <p className="text-white text-sm">{step === 33 ? "Konfirmasi" : "Pembayaran"}</p>
+                  </div>
+                </div>
 
-                  <Progress size="sm" color="success" aria-label="Loading..." value={step} />
-                </div>
-                <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
-                  <div className="hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
-                    <Countdown date={countdownTime} renderer={renderer} />
-                    <div className="w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200"></div>
-                    <p className="text-xs">{t("completeYourOrder")}</p>
-                  </div>
-                  <Flex align="center" gap={10}>
-                    <Button color="secondary" label={t("previous")} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
-                    {step === 66 ? (
-                      <Button color="primary" label={t("next")} loading={loading} disabled={loading || payment === ""} onClick={() => submitData([])} />
-                    ) : step === 100 && transactionData ? (
-                      <Button
-                        color="primary"
-                        label="Bayar Sekarang"
-                        disabled={loading || payment === ""}
-                        onClick={
-                          payment === "4" && transactionData.xendit_url
-                            ? () => {
-                                setLoading(true);
-                                router.push(transactionData.xendit_url);
-                              }
-                            : payment === "3"
-                              ? () => {
-                                  setStep(3);
-                                  scrollToTop();
-                                }
-                              : () => {
-                                  setStep(2);
-                                  scrollToTop();
-                                }
-                        }
-                      />
-                    ) : (
-                      <Button
-                        color="primary"
-                        label={t("next")}
-                        loading={loading}
-                        disabled={!isFormValid || loading}
-                        onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData([]) : setStep(66)) : setStep(100))}
-                      />
-                    )}
-                  </Flex>
-                </div>
-              </>
-            ) : (
+                <Progress size="sm" color="success" aria-label="Loading..." value={step} />
+              </div>
               <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
                 <div className="hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
                   <Countdown date={countdownTime} renderer={renderer} />
@@ -2500,49 +2448,216 @@ const EventDetails = () => {
                     />
                   ) : (
                     <Button
-                      disabled={!isFormValid || loading}
                       color="primary"
-                      loading={loading}
                       label={t("next")}
+                      loading={loading}
+                      disabled={!isFormValid || loading}
                       onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData([]) : setStep(66)) : setStep(100))}
                     />
                   )}
                 </Flex>
               </div>
-            ))}
+            </>
+          )}
+          
+          {isInPaymentFlow && step !== 2 && stepParams !== null && width && width >= 768 && (
+            <div className="w-full fixed flex justify-between gap-3 bottom-0 bg-white border-t-2 border-t-primary-light-200 z-50 p-5">
+              <div className="hidden lg:flex items-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
+                <Countdown date={countdownTime} renderer={renderer} />
+                <div className="w-[1px] mx-1 md:mx-0 h-5 bg-primary-light-200"></div>
+                <p className="text-xs">{t("completeYourOrder")}</p>
+              </div>
+              <Flex align="center" gap={10}>
+                <Button color="secondary" label={t("previous")} onClick={() => (step === 100 ? setStep(66) : step === 33 ? (ticketCount ? window.location.reload() : setStep(0)) : setStep(33))} />
+                {step === 66 ? (
+                  <Button color="primary" label={t("next")} loading={loading} disabled={loading || payment === ""} onClick={() => submitData([])} />
+                ) : step === 100 && transactionData ? (
+                  <Button
+                    color="primary"
+                    label="Bayar Sekarang"
+                    disabled={loading || payment === ""}
+                    onClick={
+                      payment === "4" && transactionData.xendit_url
+                        ? () => {
+                            setLoading(true);
+                            router.push(transactionData.xendit_url);
+                          }
+                        : payment === "3"
+                          ? () => {
+                              setStep(3);
+                              scrollToTop();
+                            }
+                          : () => {
+                              setStep(2);
+                              scrollToTop();
+                            }
+                    }
+                  />
+                ) : (
+                  <Button
+                    disabled={!isFormValid || loading}
+                    color="primary"
+                    loading={loading}
+                    label={t("next")}
+                    onClick={() => (step === 33 ? (isOnePayment ? submitForm() : (detail ? totalSubtotalPrice + detail.admin_fee * totalCount + (detail.ppn || 0) : 0) == 0 ? submitData([]) : setStep(66)) : setStep(100))}
+                  />
+                )}
+              </Flex>
+            </div>
+          )}
 
-          {step === 0 &&
-            stepParams === null &&
-            (width && width > 768 ? (
-              <>
-                <div className="bg-primary-dark">
-                  <div className="max-w-7xl mx-auto">
-                    <Flex justify="space-between" align="end" className="px-8 pt-20 pb-3">
-                      <div>
-                        <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
-                        <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
-                      </div>
+          {/* PERBAIKAN: Gunakan switch case untuk render konten utama */}
+          {(() => {
+            switch (activeStep) {
+              case 0:
+              case null:
+              case undefined:
+                // Halaman detail event
+                return (
+                  <>
+                    {width && width > 768 ? (
+                      <>
+                        <div className="bg-primary-dark">
+                          <div className="max-w-7xl mx-auto">
+                            <Flex justify="space-between" align="end" className="px-8 pt-20 pb-3">
+                              <div>
+                                <p className={`text-white/70 mb-[-10px]`}>{detail?.has_category_event?.name}</p>
+                                <h3 className="text-white font-bold my-4 text-2xl">{detail?.name}</h3>
+                              </div>
 
-                      {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
-                        <Stack gap={12} align="end">
-                          <Text size="xs" c="white">
-                            {t("eventStartsIn")}
-                          </Text>
-                          <EventCountdown startdate={detail?.start_date} starttime={detail?.start_time} />
-                        </Stack>
-                      )}
-                    </Flex>
-                    <div className="flex justify-between px-8 gap-5 h-full items-stretch">
-                      <Stack w="100%">
-                        <Box pos="relative">
-                          {detail?.image ? (
-                            <ImagesWithModal type="event" path={detail.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />
-                          ) : (
-                            <div className="w-full h-72 bg-white lg:rounded-3xl md:rounded-2xl rounded-full"></div>
+                              {!isDatePassed(`${detail?.start_date} ${detail?.start_time}:00`) && (
+                                <Stack gap={12} align="end">
+                                  <Text size="xs" c="white">
+                                    {t("eventStartsIn")}
+                                  </Text>
+                                  <EventCountdown startdate={detail?.start_date} starttime={detail?.start_time} />
+                                </Stack>
+                              )}
+                            </Flex>
+                            <div className="flex justify-between px-8 gap-5 h-full items-stretch">
+                              <Stack w="100%">
+                                <Box pos="relative">
+                                  {detail?.image ? (
+                                    <ImagesWithModal type="event" path={detail.image} width={1000} height={1000} alt="banner" className="w-full h-72 object-fill lg:rounded-3xl md:rounded-2xl rounded-full" />
+                                  ) : (
+                                    <div className="w-full h-72 bg-white lg:rounded-3xl md:rounded-2xl rounded-full"></div>
+                                  )}
+
+                                  {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
+                                    <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
+                                      <Flex gap={10} align="center">
+                                        <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
+                                        <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
+                                        <Text fw={600} c="white" size="xs">
+                                          Live Event
+                                        </Text>
+                                      </Flex>
+                                    </Card>
+                                  )}
+                                </Box>
+
+                                <div className="flex justify-between items-center text-white px-5 py-4">
+                                  <div className="flex items-center gap-4">
+                                    {detail.has_event_social_meida?.instagram && (
+                                      <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
+                                        <FontAwesomeIcon icon={faInstagram} className="mr-2 text-lg " />
+                                        <p className=" font-normal text-sm mr-3">{detail.has_event_social_meida.ig_name}</p>
+                                      </Link>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center">
+                                    <div className="relative">
+                                      <button onClick={handleShare} className="flex items-center">
+                                        <FontAwesomeIcon icon={faShareNodes} className="mr-3 text-xl" />
+                                      </button>
+                                      {alert && <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">Copy</div>}
+                                    </div>
+                                    {isLogin && (
+                                      <Box onClick={toggleBookmark}>
+                                        <FontAwesomeIcon icon={bookmark ? bookmarkSolid : faBookmarkOutlined} className="text-xl " />
+                                      </Box>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
+                                  <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
+                                    {t("description")}
+                                  </button>
+                                  <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
+                                    {t("ticket")}
+                                  </button>
+                                  <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
+                                    {t("termAndCondition")}
+                                  </button>
+                                </div>
+                              </Stack>
+
+                              <Stack className={`w-full md:max-w-[300px] pb-[20px]`} gap={10}>
+                                <div className="px-[25px] pt-[15px] pb-[10px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
+                                  <Stack gap={12}>
+                                    <Flex align="center" gap={10}>
+                                      <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
+                                      <Text>{detail && `${formatDate(detail.start_date)} ${detail.start_date !== detail.end_date ? "- " + formatDate(detail.end_date) : ""} ${formatYear(detail.end_date)}`}</Text>
+                                    </Flex>
+                                    <Flex align="center" gap={10}>
+                                      <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
+                                      <Text>
+                                        {detail?.start_time.toString()} - {detail?.end_time.toString()} {getTimeZone()}
+                                      </Text>
+                                    </Flex>
+                                    <Link href={detail?.location_map ?? "#"} target="_blank">
+                                      <Flex align="center" gap={10}>
+                                        <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
+                                        <Text>{detail?.location_name}</Text>
+                                      </Flex>
+                                    </Link>
+                                    <Text size="sm" c="gray">
+                                      {t("organizedBy")}
+                                    </Text>
+                                    <Flex align="center" gap={10}>
+                                      <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
+                                    </Flex>
+                                  </Stack>
+                                </div>
+
+                                <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)} />
+                                <Button onClick={() => setMenu(2)} label={isGratis ? t("registrationTicketTab") : t("buyTicket")} color="secondary" className={`${menu === 2 && "hidden"} !text-[18px] !font-[600]`} />
+                              </Stack>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="px-8 max-w-7xl mx-auto text-dark">
+                          {menu === 1 && <DescriptionBlock data={detail?.description} />}
+                          {menu === 2 && (
+                            <div id="ticket-view">
+                              <TicketViewBlock
+                                venue={venueLayout}
+                                maxOrder={detail.max_buy_ticket}
+                                isGratis={isGratis}
+                                selected={selectedDate}
+                                setSelected={setSelectedDate}
+                                counts={counts}
+                                setCounts={setCounts}
+                                data={data}
+                                isLogin={isLogin}
+                                totalCount={totalCount}
+                                storeLocalStorage={setLocalStorageValue}
+                                totalSubtotalPrice={totalSubtotalPrice}
+                                setStep={setStep}
+                                scrollToTop={scrollToTop}
+                              />
+                            </div>
                           )}
+                          {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Box className={`!relative`}>
+                          {detail && detail.image && <Images type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full rounded-3xl p-4 mt-16 lg:mt-0" />}
 
                           {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
-                            <Card className={`!absolute z-20 top-3 right-3 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
+                            <Card className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
                               <Flex gap={10} align="center">
                                 <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
                                 <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
@@ -2554,300 +2669,194 @@ const EventDetails = () => {
                           )}
                         </Box>
 
-                        <div className="flex justify-between items-center text-white px-5 py-4">
-                          <div className="flex items-center gap-4">
-                            {detail.has_event_social_meida?.instagram && (
-                              <Link href={detail.has_event_social_meida?.instagram} target="_blank" rel="noreferrer" className="flex items-center">
-                                <FontAwesomeIcon icon={faInstagram} className="mr-2 text-lg " />
-                                <p className=" font-normal text-sm mr-3">{detail.has_event_social_meida.ig_name}</p>
+                        <Flex justify="space-between" gap={10} px={20} display="none">
+                          <Box></Box>
+                        </Flex>
+
+                        <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
+                          <Flex gap={10} justify="space-between" mb={5} align="center">
+                            <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
+                            {detail.has_event_social_meida?.ig_name && (
+                              <Link href={detail.has_event_social_meida?.instagram + "/" + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
+                                <Flex gap={8} align="center">
+                                  <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
+                                  <Text size="sm" className={`!text-primary-base`}>
+                                    {detail.has_event_social_meida?.ig_name}
+                                  </Text>
+                                </Flex>
                               </Link>
                             )}
-                          </div>
-                          <div className="flex items-center">
-                            <div className="relative">
-                              <button onClick={handleShare} className="flex items-center">
-                                <FontAwesomeIcon icon={faShareNodes} className="mr-3 text-xl" />
-                              </button>
-                              {alert && <div className="absolute top-0 left-0 mt-2 bg-dark text-white shadow-lg animate-fade-in-out">Copy</div>}
+                          </Flex>
+                          <h3 className="mb-3">{detail?.name}</h3>
+
+                          <p className="mb-3 font-normal text-sm">
+                            <FontAwesomeIcon icon={faCalendar} className="mr-3 text-grey" />
+                            <span className="text-dark">{detail && `${formatDateWithYear(detail?.start_date)}` + (detail.end_date !== detail.start_date ? ` - ${formatDateWithYear(detail?.end_date)}` : "")}</span>
+                          </p>
+
+                          <p className="mb-3 font-normal text-sm">
+                            <FontAwesomeIcon icon={faClock} className="mr-3 text-grey" />
+                            <span className="text-dark">
+                              {formatTimeWithZone(detail?.start_time || "")} - {formatTimeWithZone(detail?.end_time || "")}
+                            </span>
+                          </p>
+
+                          <Link href={detail?.location_map ?? "#"} target="_blank">
+                            <p className="mb-3 font-normal text-sm">
+                              <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
+                              <span className="text-dark">{detail?.location_name}</span>
+                            </p>
+                          </Link>
+                        </div>
+                        
+                        <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
+                          <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
+                          <div className={`w-full flex flex-col`}>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-gray-600">{t("organizedBy")}</p>
                             </div>
-                            {isLogin && (
-                              <Box onClick={toggleBookmark}>
-                                <FontAwesomeIcon icon={bookmark ? bookmarkSolid : faBookmarkOutlined} className="text-xl " />
-                              </Box>
-                            )}
+                            <div className="flex items-center gap-1">
+                              <p className="font-semibold">{detail?.has_creator?.name}</p>
+                              {detail?.has_creator?.is_verified === 1 && (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
+                                  <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <ActionIcon color="#0B387C" variant="transparent" size="lg">
+                            <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)} />
+                          </ActionIcon>
+                        </div>
+                        <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-20">
+                          <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">
+                            <button onClick={() => setMenu(1)} className={` py-2 cursor-pointer ${menu === 1 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
+                              {t("description")}
+                            </button>
+                            <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
+                              {isGratis ? t("ticketRegistration") : t("ticket")}
+                            </button>
+                            <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
+                              {t("termAndCondition")}
+                            </button>
                           </div>
                         </div>
-                        <div className="flex gap-5 max-w-5xl pb-4 flex-grow">
-                          <button onClick={() => setMenu(1)} className={`cursor-pointer ${menu === 1 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
-                            {t("description")}
-                          </button>
-                          <button onClick={() => setMenu(2)} className={`cursor-pointer ${menu === 2 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
-                            {t("ticket")}
-                          </button>
-                          <button onClick={() => setMenu(3)} className={`cursor-pointer ${menu === 3 ? "font-semibold text-[#82b3ff]" : "text-white"}`}>
-                            {t("termAndCondition")}
-                          </button>
+                        <div className="px-5 w-full text-dark">
+                          {menu === 1 && <DescriptionBlock data={detail?.description} />}
+                          {menu === 2 && (
+                            <TicketViewBlock
+                              venue={venueLayout}
+                              maxOrder={detail.max_buy_ticket}
+                              isGratis={isGratis}
+                              selected={selectedDate}
+                              setSelected={setSelectedDate}
+                              counts={counts}
+                              setCounts={setCounts}
+                              data={data}
+                              isLogin={isLogin}
+                              totalCount={totalCount}
+                              storeLocalStorage={setLocalStorageValue}
+                              totalSubtotalPrice={totalSubtotalPrice}
+                              setStep={setStep}
+                              scrollToTop={scrollToTop}
+                            />
+                          )}
+                          {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
                         </div>
-                      </Stack>
-
-                      <Stack className={`w-full md:max-w-[300px] pb-[20px]`} gap={10}>
-                        <div className="px-[25px] pt-[15px] pb-[10px] bg-white rounded-3xl dark:bg-gray-800 dark:border-gray-700 shadow-md h-fit flex flex-col">
-                          <Stack gap={12}>
-                            <Flex align="center" gap={10}>
-                              <Icon icon="solar:calendar-bold" className={`text-primary-base text-[20px]`} />
-                              <Text>{detail && `${formatDate(detail.start_date)} ${detail.start_date !== detail.end_date ? "- " + formatDate(detail.end_date) : ""} ${formatYear(detail.end_date)}`}</Text>
-                            </Flex>
-                            <Flex align="center" gap={10}>
-                              <Icon icon="tabler:clock-filled" className={`text-primary-base text-[20px]`} />
-                              <Text>
-                                {detail?.start_time.toString()} - {detail?.end_time.toString()} {getTimeZone()}
-                              </Text>
-                            </Flex>
-                            <Link href={detail?.location_map ?? "#"} target="_blank">
-                              <Flex align="center" gap={10}>
-                                <Icon icon="tdesign:location-filled" className={`text-primary-base text-[20px]`} />
-                                <Text>{detail?.location_name}</Text>
-                              </Flex>
-                            </Link>
-                            <Text size="sm" c="gray">
-                              {t("organizedBy")}
-                            </Text>
-                            <Flex align="center" gap={10}>
-                              <ImageM src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" radius={8} mt={-5} w="30%" miw={100} mah={300} />
-                            </Flex>
-                          </Stack>
-                        </div>
-
-                        <Button label="Chat" color="secondary" className={`!text-[18px] !font-[600]`} onClick={() => setOpenChat(!openChat)} />
-                        <Button onClick={() => setMenu(2)} label={isGratis ? t("registrationTicketTab") : t("buyTicket")} color="secondary" className={`${menu === 2 && "hidden"} !text-[18px] !font-[600]`} />
-                      </Stack>
-                    </div>
-                  </div>
-                </div>
-                <div className="px-8 max-w-7xl mx-auto text-dark">
-                  {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                  {menu === 2 && (
-                    <div id="ticket-view">
-                      <TicketViewBlock
-                        venue={venueLayout}
-                        maxOrder={detail.max_buy_ticket}
-                        isGratis={isGratis}
-                        selected={selectedDate}
-                        setSelected={setSelectedDate}
-                        counts={counts}
-                        setCounts={setCounts}
-                        data={data}
-                        isLogin={isLogin}
-                        totalCount={totalCount}
-                        storeLocalStorage={setLocalStorageValue}
-                        totalSubtotalPrice={totalSubtotalPrice}
-                        setStep={setStep}
-                        scrollToTop={scrollToTop}
-                      />
-                    </div>
-                  )}
-                  {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
-                </div>
-              </>
-            ) : (
-              <>
-                <Box className={`!relative`}>
-                  {detail && detail.image && <Images type="event" path={detail?.image} width={1000} height={1000} alt="banner" className="w-full rounded-3xl p-4 mt-16 lg:mt-0" />}
-
-                  {isCurrentTimeBetween(`${detail?.start_date} ${detail?.start_time}:00`, `${detail?.end_date} ${detail?.end_time}:00`) && (
-                    <Card className={`!absolute z-20 top-7 right-7 w-fit !rounded-full !border !border-white/50 backdrop-blur-sm`} p="4px 16px 4px 30px" bg="#00000030">
-                      <Flex gap={10} align="center">
-                        <Icon icon="ph:dot-duotone" className={`absolute top-2/4 left-0 -translate-y-2/4 !text-[40px] mr-[-20px] animate-pulse !text-red-500`} />
-                        <Icon icon="mynaui:video" className={`!text-[24px] !text-red-500`} />
-                        <Text fw={600} c="white" size="xs">
-                          Live Event
-                        </Text>
-                      </Flex>
-                    </Card>
-                  )}
-                </Box>
-
-                <Flex justify="space-between" gap={10} px={20} display="none">
-                  <Box></Box>
-                </Flex>
-
-                <div className="p-5 pt-2 border-primary-light-200 border-2 border-x-0 border-t-0 border-dashed">
-                  <Flex gap={10} justify="space-between" mb={5} align="center">
-                    <p className={`opacity-70`}>{detail?.has_category_event?.name}</p>
-                    {detail.has_event_social_meida?.ig_name && (
-                      <Link href={detail.has_event_social_meida?.instagram + "/" + detail.has_event_social_meida?.ig_name} target="_blank" rel="noreferrer" className="flex items-center">
-                        <Flex gap={8} align="center">
-                          <FontAwesomeIcon icon={faInstagram} className="!text-[24px] text-primary-base" />
-                          <Text size="sm" className={`!text-primary-base`}>
-                            {detail.has_event_social_meida?.ig_name}
-                          </Text>
-                        </Flex>
-                      </Link>
+                      </>
                     )}
-                  </Flex>
-                  <h3 className="mb-3">{detail?.name}</h3>
+                  </>
+                );
 
-                  {/* MODIFIKASI DI SINI - Tanggal dengan tahun */}
-                  <p className="mb-3 font-normal text-sm">
-                    <FontAwesomeIcon icon={faCalendar} className="mr-3 text-grey" />
-                    <span className="text-dark">{detail && `${formatDateWithYear(detail?.start_date)}` + (detail.end_date !== detail.start_date ? ` - ${formatDateWithYear(detail?.end_date)}` : "")}</span>
-                  </p>
+              case 33:
+                return (
+                  <FirstStep
+                    ref={firstStepRef}
+                    currentStep={1}
+                    submittedFormData={form}
+                    submittedTicketsData={ticket}
+                    submittedMerchesData={step1MerchData}
+                    onSubmitVoucher={addVoucher}
+                    onCancelVoucher={handleCancelVoucher}
+                    detail={detail}
+                    ticket={ticket}
+                    totalSubtotalPrice={totalSubtotalPrice}
+                    totalCount={totalCount}
+                    form={form}
+                    setForm={setForm}
+                    error={error}
+                    onSubmit={async () => {
+                      let merchPayload = [];
+                      if (firstStepRef.current && firstStepRef.current.getMerchPayload) {
+                        merchPayload = await firstStepRef.current.getMerchPayload();
+                        console.log("🎁 Merch payload from ref:", merchPayload);
+                      }
+                      submitData(merchPayload);
+                    }}
+                    setFormValid={setIsFormValid}
+                    haveVoucher={voucher}
+                    loading={loading}
+                    setLoading={setLoading}
+                    setStep={setStep}
+                    scrollToTop={scrollToTop}
+                    xenditInvoice={xenditInvoice}
+                    transactionData={transactionData}
+                    voucher={voucher}
+                  />
+                );
 
-                  {/* MODIFIKASI DI SINI - Waktu dengan zona waktu */}
-                  <p className="mb-3 font-normal text-sm">
-                    <FontAwesomeIcon icon={faClock} className="mr-3 text-grey" />
-                    <span className="text-dark">
-                      {formatTimeWithZone(detail?.start_time || "")} - {formatTimeWithZone(detail?.end_time || "")}
-                    </span>
-                  </p>
+              case 66:
+                return (
+                  <SecondStep
+                    voucher={voucher}
+                    detail={detail}
+                    ticket={ticket}
+                    totalSubtotalPrice={totalSubtotalPrice}
+                    totalCount={totalCount}
+                    onSubmit={() => submitData([])}
+                    payment={payment}
+                    setPayment={setPayment}
+                    setBank={setBank}
+                    loading={loading}
+                    paymentList={detail.has_event_payment_method.map((e) => e.has_payment_method)}
+                  />
+                );
 
-                  <Link href={detail?.location_map ?? "#"} target="_blank">
-                    <p className="mb-3 font-normal text-sm">
-                      <FontAwesomeIcon icon={faLocationDot} className="mr-3 text-grey" />
-                      <span className="text-dark">{detail?.location_name}</span>
-                    </p>
-                  </Link>
-                </div>
-                {/* PERBAIKAN BAGIAN MOBILE - Centang verifikasi di samping nama creator */}
-                <div className="p-5 border-primary-light-200 border-2 border-t-0 border-x-0 flex items-center gap-3">
-                  <Image src={`${config.assetUrl}creator/${detail?.has_creator?.image}`} alt="image" className="w-10 h-10 border border-grey rounded-full object-contain" width={200} height={200} />
-                  <div className={`w-full flex flex-col`}>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-600">{t("organizedBy")}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <p className="font-semibold">{detail?.has_creator?.name}</p>
-                      {detail?.has_creator?.is_verified === 1 && (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2" className="w-4 h-4">
-                          <path d="M22 12l-2-2 1-3-3-1-1-3-3 1-2-2-2 2-3-1-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3 3-1 2 2 2-2 3 1 1-3 3-1-1-3 2-2zM10 15l-3-3 1.4-1.4L10 12.2l5.6-5.6L17 8l-7 7z" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  <ActionIcon color="#0B387C" variant="transparent" size="lg">
-                    <Icon icon="fluent:chat-12-regular" className={`!text-[30px]`} onClick={() => setOpenChat(!openChat)} />
-                  </ActionIcon>
-                </div>
-                <div className="flex bg-white items-center justify-center sticky mb-5 top-16 text-sm z-20">
-                  <div className="flex gap-5 w-full border-2 text-grey border-primary-light-200 border-x-0 border-t-0 px-8">
-                    <button onClick={() => setMenu(1)} className={` py-2 cursor-pointer ${menu === 1 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
-                      {t("description")}
-                    </button>
-                    <button onClick={() => setMenu(2)} className={`py-2 cursor-pointer ${menu === 2 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
-                      {isGratis ? t("ticketRegistration") : t("ticket")}
-                    </button>
-                    <button onClick={() => setMenu(3)} className={`py-2 cursor-pointer ${menu === 3 && "font-semibold text-dark border-2 border-b-primary-base border-x-0 border-t-0 py-3"}`}>
-                      {t("termAndCondition")}
-                    </button>
-                  </div>
-                </div>
-                <div className="px-5 w-full text-dark">
-                  {menu === 1 && <DescriptionBlock data={detail?.description} />}
-                  {menu === 2 && (
-                    <TicketViewBlock
-                      venue={venueLayout}
-                      maxOrder={detail.max_buy_ticket}
-                      isGratis={isGratis}
-                      selected={selectedDate}
-                      setSelected={setSelectedDate}
-                      counts={counts}
-                      setCounts={setCounts}
-                      data={data}
-                      isLogin={isLogin}
-                      totalCount={totalCount}
-                      storeLocalStorage={setLocalStorageValue}
-                      totalSubtotalPrice={totalSubtotalPrice}
-                      setStep={setStep}
-                      scrollToTop={scrollToTop}
-                    />
-                  )}
-                  {menu === 3 && <TermsConditionBlock data={detail?.term_condition} />}
-                </div>
-              </>
-            ))}
+              case 100:
+                return (
+                  <FirstStep
+                    currentStep={3}
+                    submittedFormData={step1FormData}
+                    submittedTicketsData={step1TicketData}
+                    submittedMerchesData={step1MerchData}
+                    voucher={voucher}
+                    scrollToTop={scrollToTop}
+                    setLoading={setLoading}
+                    setStep={setStep}
+                    transactionData={transactionData}
+                    detail={detail}
+                    xenditInvoice={xenditInvoice}
+                    loading={loading}
+                    ticket={step1TicketData}
+                    totalSubtotalPrice={totalSubtotalPrice}
+                    totalCount={totalCount}
+                    form={step1FormData}
+                    setForm={setForm}
+                    error={error}
+                    onSubmit={submitData}
+                    setFormValid={setIsFormValid}
+                    haveVoucher={voucher}
+                    onSubmitVoucher={addVoucher}
+                    onCancelVoucher={handleCancelVoucher}
+                  />
+                );
 
-          {/* PERBAIKAN: Kirim data dari step 1 ke step 3 */}
-          {stepParams === "33" && (
-            <FirstStep
-              ref={firstStepRef}
-              currentStep={1}
-              // PERBAIKAN: Kirim data dari step 1 ke step 3
-              submittedFormData={form}
-              submittedTicketsData={ticket}
-              submittedMerchesData={step1MerchData}
-              // Props lainnya
-              onSubmitVoucher={addVoucher}
-              onCancelVoucher={handleCancelVoucher}
-              detail={detail}
-              ticket={ticket}
-              totalSubtotalPrice={totalSubtotalPrice}
-              totalCount={totalCount}
-              form={form}
-              setForm={setForm}
-              error={error}
-              onSubmit={async () => {
-                let merchPayload = [];
-                if (firstStepRef.current && firstStepRef.current.getMerchPayload) {
-                  merchPayload = await firstStepRef.current.getMerchPayload();
-                  console.log("🎁 Merch payload from ref:", merchPayload);
-                }
-                submitData(merchPayload);
-              }}
-              setFormValid={setIsFormValid}
-              haveVoucher={voucher}
-              loading={loading}
-              setLoading={setLoading}
-              setStep={setStep}
-              scrollToTop={scrollToTop}
-              xenditInvoice={xenditInvoice}
-              transactionData={transactionData}
-              voucher={voucher}
-            />
-          )}
-          {stepParams === "66" && (
-            <SecondStep
-              voucher={voucher}
-              detail={detail}
-              ticket={ticket}
-              totalSubtotalPrice={totalSubtotalPrice}
-              totalCount={totalCount}
-              onSubmit={() => submitData([])}
-              payment={payment}
-              setPayment={setPayment}
-              setBank={setBank}
-              loading={loading}
-              paymentList={detail.has_event_payment_method.map((e) => e.has_payment_method)}
-            />
-          )}
-          {stepParams === "100" && (
-            <FirstStep
-              currentStep={3}
-              // PERBAIKAN: Kirim data dari step 1 ke step 3
-              submittedFormData={step1FormData}
-              submittedTicketsData={step1TicketData}
-              submittedMerchesData={step1MerchData}
-              // Props lainnya
-              voucher={voucher}
-              scrollToTop={scrollToTop}
-              setLoading={setLoading}
-              setStep={setStep}
-              transactionData={transactionData}
-              detail={detail}
-              xenditInvoice={xenditInvoice}
-              loading={loading}
-              ticket={step1TicketData}
-              totalSubtotalPrice={totalSubtotalPrice}
-              totalCount={totalCount}
-              form={step1FormData}
-              setForm={setForm}
-              error={error}
-              onSubmit={submitData}
-              setFormValid={setIsFormValid}
-              haveVoucher={voucher}
-              onSubmitVoucher={addVoucher}
-              onCancelVoucher={handleCancelVoucher}
-            />
-          )}
+              default:
+                return null;
+            }
+          })()}
+
+          {/* Render untuk step 2 dan 3 (payment confirmation) */}
           {step === 2 && transactionData && (
             <div className="bg-primary-light px-4 sm:px-6 md:px-8 lg:px-8 mt-20 mb-4">
               {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full h-72 object-cover lg:rounded-3xl md:rounded-2xl rounded-medium" />}
@@ -2928,6 +2937,7 @@ const EventDetails = () => {
               </div>
             </div>
           )}
+          
           {step === 3 && transactionData && xenditInvoice && (
             <div className="bg-primary-light max-w-xl pt-16 mx-auto">
               {detail && detail.image_url && <Image src={detail?.image_url} width={1000} height={1000} alt="banner" className="w-full" />}
