@@ -7,12 +7,7 @@ import {
   faCalendarDays, 
   faShirt, 
   faSearch,
-  faUser,
-  faHeart,
-  faShoppingCart,
-  faBell
 } from '@fortawesome/free-solid-svg-icons';
-import { faUser as faUserRegular } from '@fortawesome/free-regular-svg-icons';
 import useWindowSize from '@/utils/useWindowSize';
 import Cookies from 'js-cookie';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -38,6 +33,9 @@ const NavbarBottom: React.FC = () => {
   
   const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+
+  // Cek apakah ini halaman event detail (event/* tapi bukan /event)
+  const isEventDetailPage = pathname.startsWith('/event/') && pathname !== '/event';
 
   // Ambil jumlah cart dari cookies
   useEffect(() => {
@@ -204,6 +202,11 @@ const NavbarBottom: React.FC = () => {
       </Link>
     );
   };
+
+  // Jika halaman event detail, jangan render navbar
+  if (isEventDetailPage) {
+    return null;
+  }
 
   return (
     <>

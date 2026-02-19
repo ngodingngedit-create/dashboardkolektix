@@ -233,19 +233,26 @@ const Event = () => {
         next_page_url: null
       };
 
-      // Sort by date (newest first) - only for first page or if needed
-      const sortedEvents = page === 1 
-        ? newEvents.sort((a: any, b: any) => 
-            new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-          )
-        : newEvents;
+      // Sort events by start_date (newest first) for ALL pages
+      const sortedEvents = [...newEvents].sort((a: any, b: any) => {
+        const dateA = new Date(a.start_date).getTime();
+        const dateB = new Date(b.start_date).getTime();
+        return dateB - dateA; // Descending: newest first
+      });
 
       setData(prev => {
         if (append) {
           // Prevent duplicates when appending
           const existingIds = new Set(prev.map(item => item.id));
           const uniqueNewEvents = sortedEvents.filter((item: EventProps) => !existingIds.has(item.id));
-          return [...prev, ...uniqueNewEvents];
+          
+          // Combine and re-sort all events to maintain newest-first order
+          const combined = [...prev, ...uniqueNewEvents];
+          return combined.sort((a: any, b: any) => {
+            const dateA = new Date(a.start_date).getTime();
+            const dateB = new Date(b.start_date).getTime();
+            return dateB - dateA;
+          });
         } else {
           return sortedEvents;
         }
@@ -350,17 +357,8 @@ const Event = () => {
   const filteredData = useMemo(() => {
     if (!activeCategory) return data;
     
-    // Only filter if backend doesn't support filtering by tag
     // If backend already filters, just return data
     return data;
-    
-    // Uncomment below if backend doesn't filter by tag
-    /*
-    return data.filter((event) => 
-      event.has_event_topic && 
-      normalize(event.has_event_topic.name).toLowerCase() === normalize(activeCategory).toLowerCase()
-    );
-    */
   }, [data, activeCategory]);
 
   // orderedTopics: place activeCategory first

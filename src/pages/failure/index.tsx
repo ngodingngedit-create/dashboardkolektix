@@ -13,7 +13,8 @@ import Config from '@/Config';
 import { Transition } from '@headlessui/react';
 import { TransactionStatusResponse } from '../dashboard/my-event/type';
 import fetch from '@/utils/fetch';
-import { Icon } from '@iconify/react/dist/iconify.js';
+// import { Icon } from '@iconify/react/dist/iconify.js';
+import { Icon } from '@iconify/react';
 
 const SuccessWithInvoice = () => {
   const [isRendered, setIsRendered] = useState(false);
