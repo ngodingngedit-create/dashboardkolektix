@@ -453,7 +453,7 @@ import fetch from "@/utils/fetch";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCartShopping, faFilter, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { Modal, TextInput, Divider, ActionIcon, Box } from "@mantine/core";
+import { Modal, TextInput, Divider, ActionIcon } from "@mantine/core";
 import { MerchListResponse } from "../dashboard/merch/type";
 import { BookmarkListResponse, BookmarkRequest } from "@/types/bookmark";
 
@@ -466,178 +466,75 @@ const Merchandise = () => {
   // ============ STATE ============
   const [data, setData] = useState<MerchListResponseWithVerified[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<number>>(new Set());
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
-  const [loadProgress, setLoadProgress] = useState({ current: 0, total: 0 });
   
   const users = useLoggedUser();
   const isLoggedIn = !!users?.name;
 
+  // ============ REFS ============
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
+  const isFetchingRef = useRef(false);
+  const initialLoadDoneRef = useRef(false);
+  
   // ============ CACHE CREATOR ============
   const [creatorCache, setCreatorCache] = useState<Record<number, boolean>>({});
   const cacheRef = useRef<Record<number, boolean>>({});
   const isFetchingCreators = useRef(false);
-
-  // ============ LOAD ALL PRODUCTS DENGAN DELAY ============
-  const loadAllProducts = useCallback(async () => {
-    setLoading(true);
-    setData([]);
-    setLoadProgress({ current: 0, total: 0 });
-    
-    try {
-      // 1. AMBIL PAGE 1 UNTUK DAPAT TOTAL PAGES
-      console.log('📦 Fetching page 1...');
-      const firstRes = await Get("product", { page: 1, limit: 10 }) as any;
-      
-      // Parse response
-      let totalPages = 1;
-      let allProducts: MerchListResponseWithVerified[] = [];
-      
-      if (firstRes.data?.last_page) {
-        totalPages = firstRes.data.last_page;
-        allProducts = (firstRes.data.data || []).filter((e: any) => e.product_status_id == 2);
-      } else if (firstRes.meta?.last_page) {
-        totalPages = firstRes.meta.last_page;
-        allProducts = (firstRes.data || []).filter((e: any) => e.product_status_id == 2);
-      } else if (firstRes.last_page) {
-        totalPages = firstRes.last_page;
-        allProducts = (firstRes.data || []).filter((e: any) => e.product_status_id == 2);
-      }
-      
-      setLoadProgress({ current: 1, total: totalPages });
-      setData(allProducts);
-      
-      console.log(`📊 Total pages: ${totalPages}`);
-      
-      // 2. KALAU CUMA 1 PAGE, LANGSUNG FETCH CREATOR
-      if (totalPages <= 1) {
-        setLoading(false);
-        setTimeout(() => fetchAllCreators(allProducts), 100);
-        return;
-      }
-      
-      // 3. LOAD SISA PAGES DENGAN DELAY 1.5 DETIK
-      for (let i = 2; i <= totalPages; i++) {
-        console.log(`⏳ Waiting 1.5s before page ${i}...`);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        console.log(`📦 Fetching page ${i}...`);
-        const res = await Get("product", { page: i, limit: 10 }) as any;
-        
-        let pageData = [];
-        if (res.data?.data) {
-          pageData = res.data.data.filter((e: any) => e.product_status_id == 2);
-        } else if (res.data) {
-          pageData = (Array.isArray(res.data) ? res.data : []).filter((e: any) => e.product_status_id == 2);
-        }
-        
-        allProducts = [...allProducts, ...pageData];
-        setData([...allProducts]);
-        setLoadProgress({ current: i, total: totalPages });
-        
-        console.log(`✅ Page ${i}/${totalPages} loaded | Total: ${allProducts.length} items`);
-      }
-      
-      console.log(`🎉 All ${allProducts.length} products loaded!`);
-      setLoading(false);
-      
-      // 4. FETCH CREATOR SETELAH SEMUA PRODUCT LOAD
-      await fetchAllCreators(allProducts);
-      
-    } catch (error) {
-      console.error('❌ Error:', error);
-      setLoading(false);
-    }
-  }, []);
-
-  // ============ FETCH ALL CREATORS DENGAN DELAY 500ms ============
-  const fetchAllCreators = useCallback(async (products: MerchListResponseWithVerified[]) => {
-    if (isFetchingCreators.current) return;
-    isFetchingCreators.current = true;
-    
-    try {
-      // Kumpulin unique creator IDs
-      const creatorIds = Array.from(new Set(
-        products
-          .map(item => item.creator?.id)
-          .filter((id): id is number => id !== undefined && id !== null)
-      ));
-      
-      console.log(`👤 Fetching ${creatorIds.length} unique creators...`);
-      
-      // LIHAT CACHE DULU, HANYA FETCH YANG BELUM ADA
-      const idsToFetch = creatorIds.filter(id => !cacheRef.current.hasOwnProperty(id));
-      console.log(`🆕 New creators to fetch: ${idsToFetch.length}`);
-      
-      if (idsToFetch.length === 0) {
-        console.log('✅ All creators already cached');
-        isFetchingCreators.current = false;
-        return;
-      }
-      
-      // FETCH SATU PER SATU DENGAN DELAY 500ms
-      for (let i = 0; i < idsToFetch.length; i++) {
-        const id = idsToFetch[i];
-        
-        if (i > 0) {
-          console.log(`⏳ Waiting 500ms before creator ${i+1}/${idsToFetch.length}...`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        try {
-          console.log(`👤 Fetching creator ${id} (${i+1}/${idsToFetch.length})...`);
-          const res = await window.fetch(`${process.env.NEXT_PUBLIC_WS_URL}creator/${id}`);
-          
-          if (res.ok) {
-            const result = await res.json();
-            const data = result.data || result;
-            const isVerified = data.is_verified == 1 || data.is_verified == true;
-            
-            // Update cache
-            cacheRef.current[id] = isVerified;
-            setCreatorCache({ ...cacheRef.current });
-            
-            // Update data yang sudah ada dengan verified status
-            setData(prev => prev.map(item => {
-              if (item.creator?.id === id) {
-                return {
-                  ...item,
-                  creator: {
-                    ...item.creator,
-                    is_verified: isVerified ? 1 : 0
-                  }
-                };
-              }
-              return item;
-            }));
-          }
-        } catch (e) {
-          console.error(`Error fetch creator ${id}:`, e);
-          cacheRef.current[id] = false;
-        }
-      }
-      
-      console.log(`✅ All ${idsToFetch.length} creators fetched!`);
-      
-    } catch (error) {
-      console.error('Error fetching creators:', error);
-    } finally {
-      isFetchingCreators.current = false;
-    }
-  }, []);
+  const pendingCreatorFetch = useRef<Set<number>>(new Set());
 
   // ============ INITIAL LOAD ============
   useEffect(() => {
-    loadAllProducts();
+    loadInitialData();
     
     return () => {
-      setData([]);
-      setCreatorCache({});
-      cacheRef.current = {};
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
-  }, [loadAllProducts]);
+  }, []);
+
+  // ============ RESET WHEN FILTER CHANGE ============
+  useEffect(() => {
+    if (selectedCreator !== null) {
+      resetAndLoad();
+    }
+  }, [selectedCreator]);
+
+  // ============ SETUP INTERSECTION OBSERVER ============
+  useEffect(() => {
+    if (loading || !hasMore || loadingMore) return;
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !isFetchingRef.current) {
+          loadMoreData();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    if (loadingRef.current) {
+      observerRef.current.observe(loadingRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore, loadingMore, currentPage]);
 
   // ============ UPDATE BOOKMARKS ============
   useEffect(() => {
@@ -649,12 +546,180 @@ const Merchandise = () => {
     }
   }, [users]);
 
-  // ============ RESET FILTER ============
-  useEffect(() => {
-    if (selectedCreator !== null) {
-      loadAllProducts();
+  // ============ LOAD INITIAL DATA ============
+  const loadInitialData = async () => {
+    if (initialLoadDoneRef.current) return;
+    
+    setLoading(true);
+    setData([]);
+    setCurrentPage(1);
+    isFetchingRef.current = true;
+    
+    try {
+      console.log('📦 Fetching initial page...');
+      const response = await Get("product", { page: 1, limit: 10 }) as any;
+      
+      // Parse response
+      let products: MerchListResponseWithVerified[] = [];
+      let lastPage = 1;
+      
+      if (response.data?.last_page) {
+        lastPage = response.data.last_page;
+        products = (response.data.data || []).filter((e: any) => e.product_status_id == 2);
+      } else if (response.meta?.last_page) {
+        lastPage = response.meta.last_page;
+        products = (response.data || []).filter((e: any) => e.product_status_id == 2);
+      } else if (response.last_page) {
+        lastPage = response.last_page;
+        products = (response.data || []).filter((e: any) => e.product_status_id == 2);
+      }
+      
+      setData(products);
+      setTotalPages(lastPage);
+      setHasMore(lastPage > 1);
+      initialLoadDoneRef.current = true;
+      
+      console.log(`📊 Page 1/${lastPage} | Items: ${products.length}`);
+      
+      // Fetch creators untuk initial data
+      await fetchCreatorsForProducts(products);
+      
+    } catch (error) {
+      console.error('❌ Error loading initial data:', error);
+      toast.error("Gagal memuat data");
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [selectedCreator, loadAllProducts]);
+  };
+
+  // ============ LOAD MORE DATA ============
+  const loadMoreData = async () => {
+    if (isFetchingRef.current || !hasMore || loadingMore || currentPage >= totalPages) return;
+    
+    const nextPage = currentPage + 1;
+    setLoadingMore(true);
+    isFetchingRef.current = true;
+    
+    try {
+      console.log(`⏳ Loading page ${nextPage}...`);
+      
+      // Delay 1.5 detik antar request
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const response = await Get("product", { page: nextPage, limit: 10 }) as any;
+      
+      // Parse response
+      let newProducts: MerchListResponseWithVerified[] = [];
+      
+      if (response.data?.data) {
+        newProducts = response.data.data.filter((e: any) => e.product_status_id == 2);
+      } else if (response.data) {
+        newProducts = (Array.isArray(response.data) ? response.data : [])
+          .filter((e: any) => e.product_status_id == 2);
+      }
+      
+      if (newProducts.length > 0) {
+        setData(prev => [...prev, ...newProducts]);
+        setCurrentPage(nextPage);
+        setHasMore(nextPage < totalPages);
+        
+        console.log(`✅ Page ${nextPage}/${totalPages} loaded | +${newProducts.length} items`);
+        
+        // Fetch creators untuk produk baru
+        await fetchCreatorsForProducts(newProducts);
+      } else {
+        setHasMore(false);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error loading page ${nextPage}:`, error);
+      toast.error("Gagal memuat data tambahan");
+    } finally {
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }
+  };
+
+  // ============ FETCH CREATORS FOR PRODUCTS ============
+  const fetchCreatorsForProducts = async (products: MerchListResponseWithVerified[]) => {
+    // Kumpulin unique creator IDs yang belum di-fetch
+    const creatorIds = Array.from(new Set(
+      products
+        .map(item => item.creator?.id)
+        .filter((id): id is number => 
+          id !== undefined && 
+          id !== null && 
+          !cacheRef.current.hasOwnProperty(id) &&
+          !pendingCreatorFetch.current.has(id)
+        )
+    ));
+    
+    if (creatorIds.length === 0 || isFetchingCreators.current) return;
+    
+    // Tandai sebagai pending
+    creatorIds.forEach(id => pendingCreatorFetch.current.add(id));
+    
+    // Fetch satu per satu dengan delay 500ms
+    for (let i = 0; i < creatorIds.length; i++) {
+      const id = creatorIds[i];
+      
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      try {
+        console.log(`👤 Fetching creator ${id}...`);
+        const res = await window.fetch(`${process.env.NEXT_PUBLIC_WS_URL}creator/${id}`);
+        
+        if (res.ok) {
+          const result = await res.json();
+          const data = result.data || result;
+          const isVerified = data.is_verified == 1 || data.is_verified == true;
+          
+          // Update cache
+          cacheRef.current[id] = isVerified;
+          setCreatorCache({ ...cacheRef.current });
+          
+          // Update data yang sudah ada
+          setData(prev => prev.map(item => {
+            if (item.creator?.id === id) {
+              return {
+                ...item,
+                creator: {
+                  ...item.creator,
+                  is_verified: isVerified ? 1 : 0
+                }
+              };
+            }
+            return item;
+          }));
+        }
+      } catch (e) {
+        console.error(`Error fetch creator ${id}:`, e);
+        cacheRef.current[id] = false;
+      } finally {
+        pendingCreatorFetch.current.delete(id);
+      }
+    }
+  };
+
+  // ============ RESET AND LOAD ============
+  const resetAndLoad = () => {
+    // Reset semua state
+    setData([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setLoading(true);
+    initialLoadDoneRef.current = false;
+    isFetchingRef.current = false;
+    
+    // Cancel pending fetches
+    pendingCreatorFetch.current.clear();
+    
+    // Load ulang
+    loadInitialData();
+  };
 
   // ============ MEMOIZED ============
   const flashSaleProduct = useMemo(() => {
@@ -791,26 +856,11 @@ const Merchandise = () => {
   // ============ RENDER ============
   return (
     <div className="py-10 md:pt-12 max-w-5xl mx-auto text-dark">
-      {/* LOADING PROGRESS */}
+      {/* LOADING INITIAL */}
       {loading && (
         <Center className="min-h-[50vh] flex-col gap-4">
           <Loader size="lg" />
-          <div className="text-center space-y-2">
-            <span className="text-lg font-medium">Memuat merchandise...</span>
-            {loadProgress.total > 0 && (
-              <>
-                <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{ width: `${(loadProgress.current / loadProgress.total) * 100}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-600">
-                  Halaman {loadProgress.current} dari {loadProgress.total}
-                </p>
-              </>
-            )}
-          </div>
+          <span className="text-lg font-medium">Memuat merchandise...</span>
         </Center>
       )}
 
@@ -832,7 +882,7 @@ const Merchandise = () => {
                     price={parseInt(item.product_varian?.[0]?.price || item.price || "0")}
                     sale={0}
                     creator={item.creator?.name || "Unknown"}
-                    creatorid={item.creator?.id} // LANGSUNG PAKAI NUMBER, JANGAN DI-STRING
+                    creatorid={item.creator?.id}
                     creatorImage={item.creator?.image_url}
                     redirect={`/merchandise/${item.slug}`}
                     image={item.product_image?.[0]?.image_url}
@@ -965,7 +1015,7 @@ const Merchandise = () => {
                     price={parseInt(item.product_varian?.[0]?.price || item.price || "0")}
                     sale={0}
                     creator={item.creator?.name || "Unknown"}
-                    creatorid={item.creator?.id} // LANGSUNG PAKAI NUMBER, JANGAN DI-STRING
+                    creatorid={item.creator?.id}
                     creatorImage={item.creator?.image_url}
                     redirect={`/merchandise/${item.slug}`}
                     image={item.product_image?.[0]?.image_url}
@@ -978,6 +1028,22 @@ const Merchandise = () => {
                   />
                 ))}
               </div>
+
+              {/* INFINITE SCROLL TRIGGER */}
+              {hasMore && (
+                <div ref={loadingRef} className="w-full py-8 flex justify-center">
+                  {loadingMore ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader size="sm" />
+                      <span className="text-sm text-gray-500">
+                        Memuat halaman {currentPage + 1} dari {totalPages}...
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">Scroll untuk memuat lebih banyak</span>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <Center className="min-h-[60vh] flex-col gap-4">
