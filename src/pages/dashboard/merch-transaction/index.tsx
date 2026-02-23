@@ -982,6 +982,9 @@ import {
   faSearch,
   faReceipt,
   faCalendarAlt,
+  faTruck,
+  faCheckCircle,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
 
@@ -1027,6 +1030,18 @@ interface MerchandiseTransactionData {
   notes?: string;
 }
 
+// Interface untuk data pengiriman
+interface ShippingData {
+  id: number;
+  invoice_no: string;
+  product_name: string;
+  customer_name: string;
+  shipping_address: string;
+  shipping_status: "sent" | "pending"; // 'sent' untuk terkirim, 'pending' untuk belum terkirim
+  order_date: string;
+  total_qty: number;
+}
+
 const MerchandiseTransaction: React.FC = () => {
   const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
@@ -1041,6 +1056,12 @@ const MerchandiseTransaction: React.FC = () => {
   const [selectedCreator, setSelectedCreator] = useState<string>("all");
   const [loadingCreators, setLoadingCreators] = useState<boolean>(false);
   const [dateFilter, setDateFilter] = useState<string>("");
+
+  // State untuk tabel pengiriman
+  const [shippingPage, setShippingPage] = useState<number>(1);
+  const [shippingFilter, setShippingFilter] = useState<string>("");
+  const [shippingStatusFilter, setShippingStatusFilter] = useState<string>("all");
+  const [shippingRowsPerPage, setShippingRowsPerPage] = useState<number>(5);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTransaction, setSelectedTransaction] =
@@ -1064,6 +1085,17 @@ const MerchandiseTransaction: React.FC = () => {
   const clearDateFilter = useCallback(() => {
     setDateFilter("");
     setPage(1);
+  }, []);
+
+  // Handler untuk filter shipping
+  const onShippingFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setShippingFilter(e.target.value);
+    setShippingPage(1);
+  }, []);
+
+  const onShippingStatusFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setShippingStatusFilter(e.target.value);
+    setShippingPage(1);
   }, []);
 
   const getStatusInfo = (statusId?: number) => {
@@ -1103,6 +1135,27 @@ const MerchandiseTransaction: React.FC = () => {
           bgColor: "bg-gray-100",
           textColor: "text-gray-800",
         };
+    }
+  };
+
+  // Status info untuk pengiriman
+  const getShippingStatusInfo = (status: "sent" | "pending") => {
+    if (status === "sent") {
+      return {
+        text: "Terkirim",
+        color: "bg-green-100 text-green-800 border-green-200",
+        bgColor: "bg-green-100",
+        textColor: "text-green-800",
+        icon: faCheckCircle,
+      };
+    } else {
+      return {
+        text: "Belum Terkirim",
+        color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        bgColor: "bg-yellow-100",
+        textColor: "text-yellow-800",
+        icon: faClock,
+      };
     }
   };
 
@@ -1338,8 +1391,80 @@ const MerchandiseTransaction: React.FC = () => {
     return result;
   }, [dataWithCreatorNames, filterValue, productFilter, dateFilter]);
 
+  // Data untuk tabel pengiriman
+  const shippingData = useMemo(() => {
+    // Hanya ambil transaksi dengan status Success (status_id = 2) yang memiliki alamat pengiriman
+    const shippingItems: ShippingData[] = dataWithCreatorNames
+      .filter(item => 
+        item.transaction_status_id === 2 && 
+        item.shipping_address && 
+        item.shipping_address !== "-"
+      )
+      .map(item => {
+        // Tampilkan semua nama produk tanpa singkatan
+        let productName = item.product_name || "-";
+        
+        // Jika ada multiple products, tetap tampilkan semua
+        if (productName.includes(" | ")) {
+          // Tampilkan semua produk tanpa perubahan
+          // Bisa juga diformat dengan bullet points atau baris baru jika perlu
+          // Tapi untuk tabel, lebih baik tetap menggunakan pipe separator
+        }
+
+        return {
+          id: item.id,
+          invoice_no: item.invoice_no || "-",
+          product_name: productName, // Tampilkan semua produk apa adanya
+          customer_name: item.customer_name || "-",
+          shipping_address: formatShippingAddress(item.shipping_address),
+          shipping_status: "pending" as const, // Default semua belum terkirim
+          order_date: item.order_date || "-",
+          total_qty: item.total_qty || 0,
+        };
+      });
+
+    return shippingItems;
+  }, [dataWithCreatorNames]);
+
+  // Filter untuk tabel pengiriman
+  const filteredShippingData = useMemo(() => {
+    let result = shippingData;
+
+    // Filter berdasarkan pencarian (invoice, product, customer, address)
+    if (shippingFilter) {
+      const searchLower = shippingFilter.toLowerCase();
+      result = result.filter(item => 
+        item.invoice_no.toLowerCase().includes(searchLower) ||
+        item.product_name.toLowerCase().includes(searchLower) ||
+        item.customer_name.toLowerCase().includes(searchLower) ||
+        item.shipping_address.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter berdasarkan status pengiriman
+    if (shippingStatusFilter !== "all") {
+      result = result.filter(item => item.shipping_status === shippingStatusFilter);
+    }
+
+    // Urutkan berdasarkan tanggal terbaru
+    result = [...result].sort((a, b) => {
+      const dateA = parseDate(a.order_date);
+      const dateB = parseDate(b.order_date);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return result;
+  }, [shippingData, shippingFilter, shippingStatusFilter]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+  // Pagination untuk tabel pengiriman
+  const shippingTotalPages = Math.max(1, Math.ceil(filteredShippingData.length / shippingRowsPerPage));
+  const paginatedShippingItems = filteredShippingData.slice(
+    (shippingPage - 1) * shippingRowsPerPage, 
+    shippingPage * shippingRowsPerPage
+  );
 
   const totalPriceAllFiltered = useMemo(
     () => filtered.reduce((sum, item) => {
@@ -1471,6 +1596,11 @@ const MerchandiseTransaction: React.FC = () => {
   function onRowsPerPageChange(event: React.ChangeEvent<HTMLSelectElement>): void {
     setRowsPerPage(Number(event.target.value));
     setPage(1);
+  }
+
+  function onShippingRowsPerPageChange(event: React.ChangeEvent<HTMLSelectElement>): void {
+    setShippingRowsPerPage(Number(event.target.value));
+    setShippingPage(1);
   }
 
   if (loading || loadingCreators) {
@@ -1809,10 +1939,152 @@ const MerchandiseTransaction: React.FC = () => {
         </Tab>
 
         <Tab key="pengiriman" title="Pengiriman">
-          <div className="text-center py-12 text-gray-500">
-            <p>Fitur Pengiriman akan segera hadir</p>
-            <p className="text-sm mt-2">Sedang dalam pengembangan</p>
+          <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0">
+            <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+              <Input
+                type="text"
+                placeholder="Cari invoice, produk, pemesan, atau alamat..."
+                value={shippingFilter}
+                onChange={onShippingFilterChange}
+                className="w-full md:w-80"
+                size="sm"
+                startContent={
+                  <FontAwesomeIcon icon={faSearch} className="h-3.5 w-3.5 text-gray-400" />
+                }
+              />
+              <select
+                onChange={onShippingStatusFilterChange}
+                value={shippingStatusFilter}
+                className="border border-light-grey p-2 rounded-md text-sm w-full md:w-48"
+              >
+                <option value="all">Semua Status</option>
+                <option value="pending">Belum Terkirim</option>
+                <option value="sent">Terkirim</option>
+              </select>
+            </div>
+
+            <select
+              onChange={onShippingRowsPerPageChange}
+              value={shippingRowsPerPage}
+              className="border border-light-grey p-2 rounded-md text-sm w-full md:w-auto"
+            >
+              <option value={5}>5 rows</option>
+              <option value={10}>10 rows</option>
+              <option value={20}>20 rows</option>
+            </select>
           </div>
+
+          <Table
+            aria-label="Shipping Table"
+            style={{
+              height: "auto",
+              minWidth: "100%",
+              backgroundColor: "white",
+              borderRadius: "0px",
+              padding: "0px",
+            }}
+            classNames={{
+              base: "min-h-[300px]",
+            }}
+          >
+            <TableHeader>
+              <TableColumn width={50}>No</TableColumn>
+              <TableColumn>Invoice Number</TableColumn>
+              <TableColumn>Nama Produk</TableColumn>
+              <TableColumn>Nama Pemesan</TableColumn>
+              <TableColumn>Alamat Tujuan</TableColumn>
+              <TableColumn>Status Pengiriman</TableColumn>
+              <TableColumn width={80}>Actions</TableColumn>
+            </TableHeader>
+            <TableBody
+              emptyContent={
+                <div className="py-8 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                      <FontAwesomeIcon icon={faTruck} className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-gray-500 font-medium text-lg">
+                        {shippingFilter || shippingStatusFilter !== "all"
+                          ? "Tidak ditemukan data pengiriman"
+                          : "Belum ada data pengiriman"}
+                      </p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {shippingFilter || shippingStatusFilter !== "all"
+                          ? "Coba ubah filter pencarian Anda"
+                          : "Data pengiriman akan muncul ketika ada transaksi berhasil"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              {paginatedShippingItems.map((item, index) => {
+                const statusInfo = getShippingStatusInfo(item.shipping_status);
+
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell>{(shippingPage - 1) * shippingRowsPerPage + index + 1}</TableCell>
+                    <TableCell>
+                      <span className="font-medium">{item.invoice_no}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs">
+                        <span className="text-sm">{item.product_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <FontAwesomeIcon icon={faUser} className="h-3 w-3 text-gray-400" />
+                        <span>{item.customer_name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-start gap-1 max-w-xs">
+                        <FontAwesomeIcon icon={faMapMarkerAlt} className="h-3 w-3 text-gray-400 mt-1 flex-shrink-0" />
+                        <span className="text-sm">{item.shipping_address}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}
+                      >
+                        <FontAwesomeIcon icon={statusInfo.icon} className="h-3 w-3" />
+                        {statusInfo.text}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => {
+                          const transaction = dataWithCreatorNames.find(d => d.id === item.id);
+                          if (transaction) handleViewDetail(transaction);
+                        }}
+                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                        title={`View details for ${item.invoice_no}`}
+                      >
+                        <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+
+          {filteredShippingData.length > 0 && (
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-gray-700">
+                Menampilkan {filteredShippingData.length} data pengiriman
+              </div>
+              <Pagination
+                page={shippingPage}
+                total={shippingTotalPages}
+                onChange={(p) => setShippingPage(Number(p))}
+                className="items-center"
+                size="sm"
+              />
+            </div>
+          )}
         </Tab>
       </Tabs>
 
