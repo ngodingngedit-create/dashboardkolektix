@@ -17,6 +17,7 @@ export type MerchListResponse = {
   add_to_flash_sale: 0 | 1;
   is_delivery: number;
   is_pickup_instore: number;
+  is_preorder: number;
   product_image: {
     id: number;
     image_url: string;

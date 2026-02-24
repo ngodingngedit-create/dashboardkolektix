@@ -468,6 +468,11 @@ const MerchandiseDetail = () => {
       });
   };
 
+  // Fungsi untuk mendapatkan teks tombol berdasarkan is_preorder
+  const getOrderButtonText = () => {
+    return mainData?.is_preorder === 1 ? "Pre Order" : "Beli Sekarang";
+  };
+
   // Fungsi untuk mendapatkan warna avatar berdasarkan nama
   const getAvatarColor = (name: string) => {
     const colors = ["bg-blue-500", "bg-pink-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-red-500", "bg-indigo-500", "bg-teal-500"];
@@ -826,9 +831,10 @@ const MerchandiseDetail = () => {
             </Button>
           </div>
 
+          {/* Tombol Beli Sekarang / Pre Order untuk Desktop */}
           <div className="hidden md:block mt-3">
             <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
-              Beli Sekarang
+              {getOrderButtonText()}
             </Button>
           </div>
 
@@ -841,6 +847,7 @@ const MerchandiseDetail = () => {
             </div>
           </div>
 
+          {/* Tombol untuk Mobile */}
           <div className="flex md:hidden mt-3 gap-3">
             <div className="w-2/5">
               <Button rightSection={<Icon icon="fluent:chat-12-regular" className="!text-[20px]" />} size="md" color="#0B387C" variant="outline" radius="xl" onClick={() => setOpenChat(true)} style={{ width: "100%" }}>
@@ -849,7 +856,7 @@ const MerchandiseDetail = () => {
             </div>
             <div className="w-3/5">
               <Button onClick={handleDirectOrder} disabled={count <= 0} size="md" radius="xl" color="#0B387C" variant="outline" style={{ width: "100%" }}>
-                Beli Sekarang
+                {getOrderButtonText()}
               </Button>
             </div>
           </div>

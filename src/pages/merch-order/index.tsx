@@ -2151,6 +2151,7 @@ type FormState = {
   };
   is_pickup_instore: 0 | 1;
   is_delivery: 0 | 1;
+  product_notes?: Record<number, string>; // Menyimpan notes per produk berdasarkan index
 };
 
 type GetCourierReq = {
@@ -2176,6 +2177,7 @@ type OrderData = {
   product_id: number;
   variant_id: number;
   qty: number;
+  order_notes?: string; // Tambahkan field notes
 }[];
 
 type Checkout = {
@@ -2190,6 +2192,7 @@ type Checkout = {
     variant_id: null | number;
     qty: number;
     price: number;
+    order_notes?: string; // Tambahkan field notes di sini
   }>;
   payment_method: string;
   payment_method_id: number;
@@ -2253,6 +2256,7 @@ export const formStateSchema = z.object({
   }),
   is_pickup_instore: z.number().int().min(0).max(1),
   is_delivery: z.number().int().min(0).max(1),
+  product_notes: z.record(z.string()).optional(),
 });
 
 export default function Cart() {
@@ -2292,6 +2296,7 @@ export default function Cart() {
       is_pickup_instore: 0,
       is_delivery: 0,
       payment_method_id: 4, // Default payment method ID
+      product_notes: {}, // Inisialisasi object untuk menyimpan notes
     },
     validate: zodResolver(formStateSchema),
   });
@@ -2547,7 +2552,7 @@ export default function Cart() {
   };
 
   const orderedProduct = useMemo(() => {
-    return orderData?.map((e) => {
+    return orderData?.map((e, index) => {
       const product = _.find(productList, ["id", e.product_id]);
       const variant = e.variant_id ? _.find(product?.product_varian, ["id", e.variant_id]) : null;
       const subprice = parseInt((!variant ? product?.price : variant?.price) ?? "0");
@@ -2559,7 +2564,20 @@ export default function Cart() {
       const is_delivery = product?.is_delivery === 1;
       const admin_fee = parseInt(product?.admin_fee || "0");
 
-      return { ...e, product, variant, price, subprice, image, weight, creator_id, is_pickup_instore, is_delivery, admin_fee };
+      return { 
+        ...e, 
+        product, 
+        variant, 
+        price, 
+        subprice, 
+        image, 
+        weight, 
+        creator_id, 
+        is_pickup_instore, 
+        is_delivery, 
+        admin_fee,
+        index // Tambahkan index untuk keperluan notes
+      };
     });
   }, [productList, orderData]);
 
@@ -2636,6 +2654,11 @@ export default function Cart() {
     });
   };
 
+  // Handler untuk mengubah notes produk
+  const handleProductNoteChange = (index: number, note: string) => {
+    form.setFieldValue(`product_notes.${index}`, note);
+  };
+
   const handleCheckout = async () => {
     const { values } = form;
 
@@ -2688,7 +2711,7 @@ export default function Cart() {
     // Default payment_method_id = 4
     const paymentMethodId = values.payment_method_id || 4;
 
-    // Prepare checkout data sesuai dengan payload yang berhasil
+    // Prepare checkout data
     const checkoutData: Checkout = {
       user_id: userId,
       nama_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.nama_pemesan || null : null,
@@ -2696,11 +2719,12 @@ export default function Cart() {
       phone_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? formattedPhone || null : null,
       creator_id: orderedProduct && orderedProduct.length > 0 ? orderedProduct[0].creator_id || null : null,
       grandtotal: orderSummary.grandtotal,
-      product: (orderedProduct ?? []).map((e) => ({
+      product: (orderedProduct ?? []).map((e, index) => ({
         product_id: e.product_id,
         variant_id: e.variant_id || null,
         qty: e.qty,
         price: e.subprice,
+        order_notes: values.product_notes?.[index] || "", // Tambahkan notes di sini
       })),
       payment_method: "xendit",
       payment_method_id: paymentMethodId,
@@ -3141,37 +3165,61 @@ export default function Cart() {
                     <Divider />
 
                     {(orderedProduct ?? []).map((e, i) => (
-                      <Flex key={i} gap={15} align="center">
-                        <AspectRatio ratio={1} w={60}>
-                          <Image alt="image" src={e.image} w="100%" h="100%" bg="gray.1" radius="sm" />
-                        </AspectRatio>
-                        <Stack gap={3} className={`flex-grow`}>
-                          <Text size="sm" fw={500}>
-                            {e.product?.product_name}
-                          </Text>
-                          {e.variant && (
-                            <Text c="gray" size="xs">
-                              Varian: {e.variant?.varian_name}
+                      <Stack key={i} gap={10}>
+                        <Flex gap={15} align="center">
+                          <AspectRatio ratio={1} w={60}>
+                            <Image alt="image" src={e.image} w="100%" h="100%" bg="gray.1" radius="sm" />
+                          </AspectRatio>
+                          <Stack gap={3} className={`flex-grow`}>
+                            <Text size="sm" fw={500}>
+                              {e.product?.product_name}
                             </Text>
-                          )}
-                          <Text size="sm" fw={600}>
-                            <NumberFormatter value={e.subprice} prefix="Rp " thousandSeparator="." decimalSeparator="," />
-                          </Text>
-                          <Flex gap={5}>
-                            {e.is_pickup_instore && (
-                              <Text size="xs" c="blue" fw={500}>
-                                Pickup In-store
+                            {e.variant && (
+                              <Text c="gray" size="xs">
+                                Varian: {e.variant?.varian_name}
                               </Text>
                             )}
-                            {e.is_delivery && (
-                              <Text size="xs" c="green" fw={500}>
-                                Delivery
-                              </Text>
-                            )}
-                          </Flex>
-                        </Stack>
-                        <Text size="sm">x{e.qty}</Text>
-                      </Flex>
+                            <Text size="sm" fw={600}>
+                              <NumberFormatter value={e.subprice} prefix="Rp " thousandSeparator="." decimalSeparator="," />
+                            </Text>
+                            <Flex gap={5}>
+                              {e.is_pickup_instore && (
+                                <Text size="xs" c="blue" fw={500}>
+                                  Pickup In-store
+                                </Text>
+                              )}
+                              {e.is_delivery && (
+                                <Text size="xs" c="green" fw={500}>
+                                  Delivery
+                                </Text>
+                              )}
+                            </Flex>
+                          </Stack>
+                          <Text size="sm">x{e.qty}</Text>
+                        </Flex>
+                        
+                        {/* Input untuk Catatan/Notes per produk */}
+                        <Box pl={75} pr={10}>
+                          <TextInput
+                            size="xs"
+                            placeholder="Tambahkan catatan (contoh: warna, ukuran, dll)"
+                            value={form.values.product_notes?.[i] || ""}
+                            onChange={(event) => handleProductNoteChange(i, event.currentTarget.value)}
+                            rightSection={
+                              form.values.product_notes?.[i] ? (
+                                <ActionIcon 
+                                  size="xs" 
+                                  color="gray" 
+                                  variant="subtle"
+                                  onClick={() => handleProductNoteChange(i, "")}
+                                >
+                                  <Icon icon="mdi:close" fontSize={14} />
+                                </ActionIcon>
+                              ) : null
+                            }
+                          />
+                        </Box>
+                      </Stack>
                     ))}
                   </Stack>
                 </Card>

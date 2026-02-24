@@ -891,6 +891,8 @@ const Merchandise = () => {
                     onBookmarkToggle={toggleBookmark}
                     showBookmark={isLoggedIn}
                     isVerified={cacheRef.current[item.creator?.id] || item.creator?.is_verified === 1 || item.creator?.is_verified === true}
+                    // ✅ TAMBAHKAN INI!
+                    isPreorder={item.is_preorder}
                   />
                 ))}
               </div>
@@ -1025,6 +1027,8 @@ const Merchandise = () => {
                     showBookmark={isLoggedIn}
                     productVariants={item.product_varian as any[]}
                     isVerified={cacheRef.current[item.creator?.id] || item.creator?.is_verified === 1 || item.creator?.is_verified === true}
+                    // ✅ TAMBAHKAN INI!
+                    isPreorder={item.is_preorder}
                   />
                 ))}
               </div>

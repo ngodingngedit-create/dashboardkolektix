@@ -1253,7 +1253,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
 import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse, EventData } from "./type";
-import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
@@ -1272,12 +1271,12 @@ const Merch = () => {
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [dataListEticket, setDataListEticket] = useState<EticketListResponse[]>();
-  const [eventList, setEventList] = useState<EventListResponse[]>();
+  const [eventList, setEventList] = useState<EventListResponse[]>([]);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number>();
   const [selectedTicket, setSelectedTicket] = useState<string>("all");
   const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
-  const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>();
+  const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>([]);
   const [loading, setLoading] = useListState<string>();
   const [loadingEventData, setLoadingEventData] = useState(false);
   const [transactionSegment, setTransactionSegment] = useState<string>("all");
@@ -1321,7 +1320,7 @@ const Merch = () => {
   }, [selectedEvent]);
 
   useDidUpdate(() => {
-    if (selectedEvent && eventList) {
+    if (selectedEvent && eventList.length > 0) {
       const currentEvent = eventList.find((e) => e.id === selectedEvent);
       if (currentEvent?.has_event_ticket?.length) {
         const ticketsArray = currentEvent.has_event_ticket.map((ticket) => ({
@@ -1355,37 +1354,130 @@ const Merch = () => {
     }
   }, [slug]);
 
-  const getEvent = async () => {
-    await fetch<any, EventListResponse[]>({
-      url: "event",
-      method: "GET",
-      before: () => setLoading.append(""),
-      success: ({ data }) => {
-        if (data?.length) {
-          const _data = data.filter((e) => parseInt(e.creator_id) == user?.has_creator?.id);
-          setEventList(_data);
-          if (_data.length > 0) {
-            setSelectedEvent(_data[0].id);
-            const selectedEventSlug = _data[0].slug || "";
+  // Fungsi untuk fetch semua event dengan pagination - menggunakan axios langsung
+  const fetchAllEvents = async () => {
+    setLoading.append("fetchEvents");
+    let allEvents: EventListResponse[] = [];
+    let currentPage = 1;
+    let lastPage = 1;
+
+    try {
+      console.log("Starting to fetch all events...");
+      console.log("Current user creator ID:", user?.has_creator?.id);
+      
+      // Fetch halaman pertama dengan axios
+      const response = await axios.get(`${config.wsUrl}event?page=${currentPage}`);
+      
+      console.log("First page response status:", response.status);
+      console.log("First page response data:", response.data);
+
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        // Response dengan pagination wrapper
+        const firstPageData = response.data.data;
+        allEvents = [...firstPageData];
+        
+        // Dapatkan info pagination
+        if (response.data.pagination) {
+          lastPage = response.data.pagination.last_page || 1;
+          console.log(`Total pages: ${lastPage}`);
+          console.log(`Total events: ${response.data.pagination.total}`);
+          
+          // Fetch halaman berikutnya jika ada
+          if (lastPage > 1) {
+            for (let page = 2; page <= lastPage; page++) {
+              console.log(`Fetching page ${page}...`);
+              const nextResponse = await axios.get(`${config.wsUrl}event?page=${page}`);
+              
+              if (nextResponse.data?.data && Array.isArray(nextResponse.data.data)) {
+                allEvents = [...allEvents, ...nextResponse.data.data];
+                console.log(`Page ${page} added, total events: ${allEvents.length}`);
+              }
+            }
+          }
+        }
+      } else if (Array.isArray(response.data)) {
+        // Response langsung array
+        allEvents = response.data;
+        console.log("Response is direct array, length:", allEvents.length);
+      }
+      
+      console.log("All events before filter:", allEvents.length);
+      
+      // Filter berdasarkan creator_id - handle string dan number
+      if (allEvents.length > 0) {
+        // Jika user memiliki creator ID, filter berdasarkan itu
+        if (user?.has_creator?.id) {
+          const creatorIdNumber = Number(user.has_creator.id);
+          console.log("Filtering by creator_id:", creatorIdNumber);
+          
+          const filteredEvents = allEvents.filter((e) => {
+            // creator_id bisa string atau number, konversi ke number untuk perbandingan
+            const eventCreatorId = e.creator_id ? Number(e.creator_id) : null;
+            return eventCreatorId === creatorIdNumber;
+          });
+          
+          console.log("Filtered events:", filteredEvents.length);
+          
+          if (filteredEvents.length > 0) {
+            setEventList(filteredEvents);
+            setSelectedEvent(filteredEvents[0].id);
+            const selectedEventSlug = filteredEvents[0].slug || "";
+            setSlug(selectedEventSlug);
+            console.log("Selected event:", filteredEvents[0].name);
+          } else {
+            // Jika tidak ada event yang cocok, tampilkan semua event untuk debugging
+            console.log("No events match creator_id, showing all events");
+            console.log("All events creator_ids:", allEvents.map(e => ({id: e.id, name: e.name, creator_id: e.creator_id})));
+            setEventList(allEvents);
+            if (allEvents.length > 0) {
+              setSelectedEvent(allEvents[0].id);
+              const selectedEventSlug = allEvents[0].slug || "";
+              setSlug(selectedEventSlug);
+            }
+          }
+        } else {
+          // Jika user tidak punya creator ID, tampilkan semua event
+          console.log("User has no creator ID, showing all events");
+          setEventList(allEvents);
+          if (allEvents.length > 0) {
+            setSelectedEvent(allEvents[0].id);
+            const selectedEventSlug = allEvents[0].slug || "";
             setSlug(selectedEventSlug);
           }
         }
-      },
-      complete: () => setLoading.filter((e) => e != ""),
-    });
+      } else {
+        console.log("No events found");
+        setEventList([]);
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      setEventList([]);
+    } finally {
+      setLoading.filter((e) => e != "fetchEvents");
+    }
+  };
 
-    await fetch<any, any>({
-      url: "transaction-statuses",
-      method: "GET",
-      before: () => setLoading.append(""),
-      success: (_data) => {
-        const data = _data as TransactionStatusResponse[];
-        if (data?.length) {
-          setTransactionStatus(data);
-        }
-      },
-      complete: () => setLoading.filter((e) => e != ""),
-    });
+  const getEvent = async () => {
+    // Fetch transaction statuses dengan axios
+    setLoading.append("fetchStatuses");
+    try {
+      console.log("Fetching transaction statuses...");
+      const statusResponse = await axios.get(`${config.wsUrl}transaction-statuses`);
+      console.log("Status response:", statusResponse.data);
+      
+      if (statusResponse.data?.length) {
+        setTransactionStatus(statusResponse.data);
+      } else if (statusResponse.data?.data?.length) {
+        setTransactionStatus(statusResponse.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching statuses:", error);
+    } finally {
+      setLoading.filter((e) => e != "fetchStatuses");
+    }
+
+    // Fetch all events
+    await fetchAllEvents();
   };
 
   // Fungsi untuk mendapatkan metode pembayaran berdasarkan ID
@@ -1704,7 +1796,7 @@ const Merch = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().split("T")[0];
-      const eventName = eventList?.find((e) => e.id === selectedEvent)?.name || "event";
+      const eventName = eventList.find((e) => e.id === selectedEvent)?.name || "event";
 
       link.href = url;
       link.download = `report-${eventName}-${timestamp}.csv`;
@@ -1738,8 +1830,8 @@ const Merch = () => {
         <Flex align="center" gap={10}>
           <Text size="sm">Pilih Event</Text>
           <Select
-            value={String(selectedEvent)}
-            data={eventList?.map((e) => ({ value: String(e.id), label: e.name }))}
+            value={selectedEvent ? String(selectedEvent) : null}
+            data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
             onChange={(e) => {
               if (e) {
                 const selectedId = parseInt(e);
@@ -1749,11 +1841,26 @@ const Merch = () => {
                 setTransactionSegment("all");
                 setSearchValue("");
                 setCurrentPage(1);
+                
+                // Update slug berdasarkan event yang dipilih
+                const selectedEventData = eventList.find(event => event.id === selectedId);
+                if (selectedEventData?.slug) {
+                  setSlug(selectedEventData.slug);
+                }
               }
             }}
-            placeholder="Pilih event"
-            style={{ width: 200 }}
+            placeholder={loading.includes("fetchEvents") ? "Loading events..." : "Pilih event"}
+            style={{ width: 250 }}
+            disabled={loading.includes("fetchEvents")}
+            nothingFoundMessage="Tidak ada event"
+            searchable
+            clearable
           />
+          
+          {/* Tampilkan info loading/debug */}
+          {loading.includes("fetchEvents") && (
+            <Text size="xs" c="dimmed">Loading events...</Text>
+          )}
         </Flex>
 
         <Flex align="center" gap={10}>
