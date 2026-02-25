@@ -904,6 +904,12 @@ export default function Invoice() {
                                       Varian: {e.variant?.varian_name || "-"}
                                     </Text>
                                   )}
+                                  {/* Menambahkan order_notes di bawah nama produk */}
+                                  {e.order_notes && (
+                                    <Text size="xs" c="dimmed" fs="italic" mt={4}>
+                                      Catatan: {e.order_notes}
+                                    </Text>
+                                  )}
                                 </Stack>
                               </Flex>
                             </Table.Td>
