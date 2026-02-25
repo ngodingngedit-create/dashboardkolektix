@@ -420,10 +420,40 @@ const Error: NextPage<{ statusCode?: number }> = ({ statusCode }) => {
     );
   }
 
-  // Tampilan Under Maintenance dengan layout 50:50
+  // Tampilan Under Maintenance dengan layout 50:50 - SWAPPED POSITIONS
   return (
-    <div className='min-h-screen bg-white flex'>
-      {/* Left side - Tetris Game (50%) */}
+    <div className='min-h-screen bg-white flex flex-row'>
+      {/* Left side - Under Maintenance (50%) - SEKARANG DI KIRI */}
+      <div className='w-1/2 bg-white flex flex-col items-center justify-center p-8'>
+        <div className='max-w-md text-center space-y-6'>
+          <Image src={Logo} alt='Logo' className='w-24 mx-auto' />
+          
+          <div className='space-y-4'>
+            <h1 className='font-bold text-5xl text-gray-800'>
+              Under Maintenance
+            </h1>
+            
+            <p className='text-gray-500'>
+              Tim kami sedang meng-upgrade sistem. 
+              Sambil nunggu, main Tetris dulu di samping!
+            </p>
+          </div>
+          
+          <Link 
+            href='/' 
+            className='inline-block mt-8 px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium'
+          >
+            ← Back to Home
+          </Link>
+          
+          <div className='text-sm text-gray-400 pt-4'>
+            <span className='inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2'></span>
+            Sistem dalam perbaikan
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Tetris Game (50%) - SEKARANG DI KANAN */}
       <div className='w-1/2 bg-gray-900 flex items-center justify-center p-8'>
         <div className='bg-gray-800 p-6 rounded-xl shadow-2xl'>
           <div className='flex gap-6'>
@@ -517,36 +547,6 @@ const Error: NextPage<{ statusCode?: number }> = ({ statusCode }) => {
               <span>Spasi : Drop</span>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Right side - Under Maintenance (50%) */}
-      <div className='w-1/2 bg-white flex flex-col items-center justify-center p-8'>
-        <div className='max-w-md text-center space-y-6'>
-          <Image src={Logo} alt='Logo' className='w-24 mx-auto' />
-          
-          <div className='space-y-4'>
-            <h1 className='font-bold text-5xl text-gray-800'>
-              Under Maintenance
-            </h1>
-            
-            <p className='text-gray-500'>
-              Tim kami sedang meng-upgrade sistem. 
-              Sambil nunggu, main Tetris dulu di samping!
-            </p>
-          </div>
-          
-          <Link 
-            href='/' 
-            className='inline-block mt-8 px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium'
-          >
-            ← Back to Home
-          </Link>
-          
-          <div className='text-sm text-gray-400 pt-4'>
-            <span className='inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2'></span>
-            Sistem dalam perbaikan
-          </div>
         </div>
       </div>
     </div>

@@ -725,11 +725,6 @@ const FilterMenu = () => {
                   {/* Info jumlah data - mobile friendly */}
                   <li className="px-3 md:px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
                     <div className="flex justify-between items-center">
-                      <span>
-                        {pathname?.toLowerCase().startsWith("/merchandise") 
-                          ? `${merchandise.length} produk` 
-                          : `${events.length} event`}
-                      </span>
                       <button
                         type="button"
                         onClick={() => {
