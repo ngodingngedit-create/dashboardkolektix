@@ -8,6 +8,21 @@ const nextConfig = {
     domains: ["bedev.kolektix.com", "dev.kolektix.store", "api.kolektix.com", "localhost", "api.kolektix.cloud", "kolektix.com"],
     // domains: ['dev.kolektix.store'],
   },
+  async redirects() {
+    return [
+
+      {
+        source: "/event",
+        destination: "/login",
+        permanent: true,
+      },
+      {
+        source: "/merchandise",
+        destination: "/login",
+        permanent: true,
+      },
+    ];
+  },
   // ...nextI18NextConfig,
 };
 

@@ -647,7 +647,7 @@
 //     </Stack>
 //   );
 // }
-  
+
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
@@ -754,7 +754,7 @@ type ProductApiResponse = {
   per_page: number;
 };
 
-export default function Index({}: Readonly<ComponentProps>) {
+export default function Index({ }: Readonly<ComponentProps>) {
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>();
   const [searchQuery, setSearchQuery] = useState("");
@@ -810,7 +810,7 @@ export default function Index({}: Readonly<ComponentProps>) {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user?.has_creator?.id) {
       getMerchList(productPage);
       getTransactions();
       getPaymentMethods();
@@ -819,7 +819,7 @@ export default function Index({}: Readonly<ComponentProps>) {
 
   useEffect(() => {
     // Reset ke halaman 1 ketika search berubah
-    if (searchQuery) {
+    if (searchQuery && user?.has_creator?.id) {
       setProductPage(1);
       getMerchList(1);
     }
@@ -846,12 +846,12 @@ export default function Index({}: Readonly<ComponentProps>) {
         before: () => setLoading.append("get-payment-methods"),
         success: (response) => {
           let data = response.data || response;
-          
+
           if (data && Array.isArray(data)) {
-            const filteredMethods = data.filter((method: any) => 
+            const filteredMethods = data.filter((method: any) =>
               method.id === 4 || method.id === 5
             );
-            
+
             if (filteredMethods.length > 0) {
               setPaymentMethods(filteredMethods);
               const cashMethod = filteredMethods.find((method: any) => method.id === 5);
@@ -914,9 +914,21 @@ export default function Index({}: Readonly<ComponentProps>) {
   };
 
   const getMerchList = async (pageNum: number = 1) => {
+    // Dapatkan creator_id dari user yang sedang login
+    const creatorId = user?.has_creator?.id;
+    if (!creatorId) {
+      console.log("Creator ID tidak ditemukan");
+      setMerch([]);
+      setProductTotal(0);
+      setProductTotalPages(1);
+      return;
+    }
+
     const qs = new URLSearchParams({
       per_page: String(productPerPage),
       page: String(pageNum),
+      // Tambahkan filter creator_id
+      creator_id: String(creatorId)
     }).toString();
 
     const url = `product?${qs}`;
@@ -925,19 +937,19 @@ export default function Index({}: Readonly<ComponentProps>) {
     const cookieToken = Cookies.get("token") || localStorage.getItem("token") || "";
     const token = envToken || cookieToken || "";
 
-    console.log("Fetching products page", pageNum, "from:", url);
+    console.log("Fetching products page", pageNum, "for creator:", creatorId, "from:", url);
 
     await fetch<any, ProductApiResponse>({
       url,
       method: "GET",
       headers: token
         ? {
-            Authorization: `Bearer ${token}`,
-          }
+          Authorization: `Bearer ${token}`,
+        }
         : undefined,
       before: () => setLoading.append("getdata"),
       success: (response) => {
-        console.log("Product API response:", response);
+        console.log("Product API response for creator", creatorId, ":", response);
 
         let products: MerchListResponse[] = [];
         let total = 0;
@@ -956,6 +968,7 @@ export default function Index({}: Readonly<ComponentProps>) {
           totalPages = Math.ceil(total / productPerPage);
         }
 
+        // Filter hanya produk dengan status active (product_status_id == 2)
         const filtered = products.filter((e) => e.product_status_id == 2);
         console.log("Page", currentPage, "- Total products fetched:", products.length, "Active:", filtered.length);
         console.log("Pagination - Total:", total, "Pages:", totalPages, "Current:", currentPage);
@@ -1025,11 +1038,11 @@ export default function Index({}: Readonly<ComponentProps>) {
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
-            transaction_status_id: item.transaction_status_id || 
-              (item.status === "pending" ? 1 : 
-               item.status === "completed" ? 2 : 
-               item.status === "expired" ? 3 : 
-               item.status === "failed" ? 4 : 1),
+            transaction_status_id: item.transaction_status_id ||
+              (item.status === "pending" ? 1 :
+                item.status === "completed" ? 2 :
+                  item.status === "expired" ? 3 :
+                    item.status === "failed" ? 4 : 1),
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
             items: item.items || item.products || [],
@@ -1043,11 +1056,11 @@ export default function Index({}: Readonly<ComponentProps>) {
             customer_name: item.customer_name || item.nama_pemesan || "Guest",
             total_amount: item.grandtotal || item.total_amount || 0,
             status: item.status || "completed",
-            transaction_status_id: item.transaction_status_id || 
-              (item.status === "pending" ? 1 : 
-               item.status === "completed" ? 2 : 
-               item.status === "expired" ? 3 : 
-               item.status === "failed" ? 4 : 1),
+            transaction_status_id: item.transaction_status_id ||
+              (item.status === "pending" ? 1 :
+                item.status === "completed" ? 2 :
+                  item.status === "expired" ? 3 :
+                    item.status === "failed" ? 4 : 1),
             payment_method: item.payment_method || "Cash",
             created_at: item.created_at || new Date().toISOString(),
             items: item.items || item.products || [],
@@ -1216,9 +1229,9 @@ export default function Index({}: Readonly<ComponentProps>) {
 
   const openSelectPayment = () => {
     if (paymentMethods.length === 0) {
-      notifications.show({ 
-        message: "Metode pembayaran belum tersedia. Silakan refresh halaman.", 
-        color: "yellow" 
+      notifications.show({
+        message: "Metode pembayaran belum tersedia. Silakan refresh halaman.",
+        color: "yellow"
       });
       return;
     }
@@ -1418,16 +1431,16 @@ export default function Index({}: Readonly<ComponentProps>) {
 
       <div class="total-section">
         ${handleSummary.detail
-          .filter(([label, value]) => value !== 0)
-          .map(
-            ([label, value]) => `
+        .filter(([label, value]) => value !== 0)
+        .map(
+          ([label, value]) => `
             <div class="total-row">
               <span>${label}:</span>
               <span>Rp ${Math.abs(value).toLocaleString("id-ID")}</span>
             </div>
           `
-          )
-          .join("")}
+        )
+        .join("")}
         
         <div class="total-row grand-total">
           <span>TOTAL:</span>
@@ -1477,7 +1490,7 @@ export default function Index({}: Readonly<ComponentProps>) {
         } catch {
           try {
             p.onChange({ target: { value } });
-          } catch {}
+          } catch { }
         }
       };
 
@@ -1757,7 +1770,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                 } catch (err) {
                   try {
                     p.onChange({ target: { value } });
-                  } catch (err2) {}
+                  } catch (err2) { }
                 }
               };
 
@@ -1790,14 +1803,14 @@ export default function Index({}: Readonly<ComponentProps>) {
               </Text>
               <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" mt={10} />
               <Text size="xs" c="gray.6" mt={5}>
-                Menampilkan produk 
+                Menampilkan produk untuk toko Anda
               </Text>
             </div>
 
             <div className="overflow-y-auto flex-grow">
               {merchList?.length === 0 ? (
                 <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />} mt={20}>
-                  {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan"}
+                  {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan untuk toko Anda"}
                 </Alert>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
@@ -1837,7 +1850,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                             <Text size="sm" fw={500} lineClamp={2} className="text-gray-800 min-h-[40px]">
                               {e.name}
                             </Text>
-                            
+
                             <Text size="sm" fw={600} c="primary" className="mt-2">
                               {(e?.price ?? []).map((z, i) => (
                                 <Box key={i} component="span">
@@ -1846,7 +1859,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                                 </Box>
                               ))}
                             </Text>
-                            
+
                             <div className="mt-2">
                               {e.stock > 0 ? (
                                 <Text size="xs" c="green" className="flex items-center gap-1">
@@ -1899,7 +1912,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                       Total: {productTotal} produk
                     </Text>
                   </Flex>
-                  
+
                   <Flex gap={10} mt={10} justify="center" align="center" wrap="wrap">
                     <Button
                       onClick={handlePrevPage}
@@ -1911,20 +1924,20 @@ export default function Index({}: Readonly<ComponentProps>) {
                     >
                       Prev
                     </Button>
-                    
+
                     {/* Page Numbers */}
                     <Flex gap={5} align="center">
                       {(() => {
                         const pages = [];
                         const maxVisible = 5;
-                        
+
                         let startPage = Math.max(1, productPage - Math.floor(maxVisible / 2));
                         let endPage = Math.min(productTotalPages, startPage + maxVisible - 1);
-                        
+
                         if (endPage - startPage + 1 < maxVisible) {
                           startPage = Math.max(1, endPage - maxVisible + 1);
                         }
-                        
+
                         if (startPage > 1) {
                           pages.push(
                             <Button
@@ -1945,7 +1958,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                             );
                           }
                         }
-                        
+
                         for (let i = startPage; i <= endPage; i++) {
                           pages.push(
                             <Button
@@ -1960,7 +1973,7 @@ export default function Index({}: Readonly<ComponentProps>) {
                             </Button>
                           );
                         }
-                        
+
                         if (endPage < productTotalPages) {
                           if (endPage < productTotalPages - 1) {
                             pages.push(
@@ -1981,11 +1994,11 @@ export default function Index({}: Readonly<ComponentProps>) {
                             </Button>
                           );
                         }
-                        
+
                         return pages;
                       })()}
                     </Flex>
-                    
+
                     <Button
                       onClick={handleNextPage}
                       disabled={productPage >= productTotalPages || loading.includes("getdata")}
@@ -2000,12 +2013,12 @@ export default function Index({}: Readonly<ComponentProps>) {
                 </Card>
               )}
 
-              <Button 
-                size="md" 
-                onClick={() => setOpenSelect(!openSelect)} 
-                rightSection={<Icon icon="uiw:right" />} 
-                className={`shrink-0 md:!hidden`} 
-                c="gray" 
+              <Button
+                size="md"
+                onClick={() => setOpenSelect(!openSelect)}
+                rightSection={<Icon icon="uiw:right" />}
+                className={`shrink-0 md:!hidden`}
+                c="gray"
                 variant="light"
               >
                 Tutup
@@ -2359,10 +2372,10 @@ export default function Index({}: Readonly<ComponentProps>) {
                                 p.onChange(value);
                                 return;
                               }
-                            } catch {}
+                            } catch { }
                             try {
                               if (typeof p.onChange === "function") p.onChange({ target: { value } });
-                            } catch {}
+                            } catch { }
                           };
 
                           if (isGuest) {
@@ -2431,26 +2444,26 @@ export default function Index({}: Readonly<ComponentProps>) {
                           size="sm"
                         />
 
-                        <DatePickerInput 
-                          type="range" 
-                          placeholder="Pilih rentang tanggal" 
-                          value={dateRange} 
-                          onChange={setDateRange} 
-                          className="w-[250px]" 
-                          size="sm" 
-                          clearable 
+                        <DatePickerInput
+                          type="range"
+                          placeholder="Pilih rentang tanggal"
+                          value={dateRange}
+                          onChange={setDateRange}
+                          className="w-[250px]"
+                          size="sm"
+                          clearable
                           valueFormat="DD/MM/YYYY"
                         />
 
                         <Menu shadow="md" width={200}>
                           <Menu.Target>
                             <Button variant="outline" size="sm" rightSection={<Icon icon="uiw:down" />}>
-                              Status: {transactionStatus === "all" ? "Semua" : 
+                              Status: {transactionStatus === "all" ? "Semua" :
                                 transactionStatus === "1" ? "Pending" :
-                                transactionStatus === "2" ? "Success" :
-                                transactionStatus === "3" ? "Expired" :
-                                transactionStatus === "4" ? "Failed" :
-                                transactionStatus === "5" ? "Cancelled" : transactionStatus}
+                                  transactionStatus === "2" ? "Success" :
+                                    transactionStatus === "3" ? "Expired" :
+                                      transactionStatus === "4" ? "Failed" :
+                                        transactionStatus === "5" ? "Cancelled" : transactionStatus}
                             </Button>
                           </Menu.Target>
                           <Menu.Dropdown>
@@ -2495,16 +2508,15 @@ export default function Index({}: Readonly<ComponentProps>) {
                   ) : (
                     <>
                       <div className="overflow-x-auto">
-                        <Table striped highlightOnHover verticalSpacing="sm" style={{ minWidth: "800px" }}>
+                        <Table striped highlightOnHover verticalSpacing="sm" style={{ minWidth: "1000px" }}>
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th style={{ width: "60px" }}>No</Table.Th>
-                              <Table.Th style={{ minWidth: "150px" }}>Invoice No</Table.Th>
+                              <Table.Th style={{ minWidth: "200px" }}>Invoice No / Tanggal</Table.Th>
                               <Table.Th style={{ minWidth: "150px" }}>Pelanggan</Table.Th>
                               <Table.Th style={{ minWidth: "120px" }}>Total</Table.Th>
                               <Table.Th style={{ minWidth: "120px" }}>Status</Table.Th>
                               <Table.Th style={{ minWidth: "120px" }}>Pembayaran</Table.Th>
-                              <Table.Th style={{ minWidth: "120px" }}>Tanggal</Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -2516,9 +2528,20 @@ export default function Index({}: Readonly<ComponentProps>) {
                                   </Text>
                                 </Table.Td>
                                 <Table.Td>
-                                  <Text fw={500} size="sm">
-                                    {transaction.invoice_no || transaction.invoice_number}
-                                  </Text>
+                                  <Flex direction="column" gap={4}>
+                                    <Text fw={500} size="sm">
+                                      {transaction.invoice_no || transaction.invoice_number}
+                                    </Text>
+                                    <Text size="xs" c="gray.6">
+                                      {new Date(transaction.created_at).toLocaleDateString("id-ID", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </Text>
+                                  </Flex>
                                 </Table.Td>
                                 <Table.Td>
                                   <Text size="sm">{transaction.customer_name}</Text>
@@ -2537,17 +2560,6 @@ export default function Index({}: Readonly<ComponentProps>) {
                                   <Badge variant="outline" size="sm">
                                     {transaction.payment_method}
                                   </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm">
-                                    {new Date(transaction.created_at).toLocaleDateString("id-ID", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </Text>
                                 </Table.Td>
                               </Table.Tr>
                             ))}

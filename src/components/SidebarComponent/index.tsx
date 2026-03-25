@@ -187,7 +187,7 @@
 //         link: "/dashboard/my-event/report",
 //         role: "Staff",
 //       },
-      
+
 //     ],
 //   },
 //   {
@@ -1693,6 +1693,7 @@ const sidebarData: SidebarData = [
   { id: 1, name: "Dashboard", icon: faHome, link: "/dashboard/admin", role: "Admin", iconify: undefined },
   { id: 1, name: "Event", iconify: "mdi:event-star", link: "/dashboard/admin/event", role: "Admin" },
   { id: 6, name: "Merchandise", icon: faGift, role: "Admin", link: "/dashboard/admin/merchandise" },
+  { id: 6, name: "Tracking Update", icon: faIdBadge, role: "Admin", link: "/dashboard/admin/trackcheck" },
   { id: 6, name: "Venue", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/venue" },
   { id: 6, name: "Lowongan", icon: faBriefcase, role: "Admin", link: "/dashboard/admin/vacancy" },
   { id: 6, name: "Talenta", icon: faStar, role: "Admin", link: "/dashboard/admin/talenta" },
@@ -1763,7 +1764,7 @@ const sidebarData: SidebarData = [
         link: "/dashboard/my-event/report",
         role: "Staff",
       },
-      
+
     ],
   },
   {
@@ -2085,7 +2086,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     Cookies.remove("prevPath", { path: "/" });
     Cookies.remove("ticketCount", { path: "/" });
     if (route !== "/") {
-      router.push("/").then(() => window.location.reload());
+      router.push("/login").then(() => window.location.reload());
     } else {
       window.location.reload();
     }
@@ -2110,7 +2111,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         >
           <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "" : "overflow-y-hidden"}`}>
             <li className={`${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
-              <Link href="/" className="flex items-center justify-center">
+              <Link href="/dashboard" className="flex items-center justify-center">
                 {collapse ? (
                   <Image src={Logo} alt="Logo" className="w-1/2" />
                 ) : (
@@ -2207,9 +2208,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                           .map((subEl, i) => (
                             <li
                               key={i}
-                              className={`list-none ${openMenu[el.id] && visible ? "visible opacity-100" : "invisible opacity-0"} ${
-                                router.pathname === subEl.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200"
-                              } py-3 transition-transform-colors-opacity`}
+                              className={`list-none ${openMenu[el.id] && visible ? "visible opacity-100" : "invisible opacity-0"} ${router.pathname === subEl.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200"
+                                } py-3 transition-transform-colors-opacity`}
                             >
                               <Link href={subEl.link ?? "#"} onClick={handleItemClick}>
                                 <div className="flex px-5 items-center">
@@ -2293,7 +2293,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                       )}
                     </div>
                   </Fade>
-                  <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/")}>
+                  <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard")}>
                     <FontAwesomeIcon icon={faHome} />
                   </button>
                   <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
@@ -2351,13 +2351,13 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                               role === "Creator" ? Cookies.set("hasCreator", "false") : Cookies.set("hasCreator", "true");
                               role === "Creator"
                                 ? toast.success("Beralih ke dashboard pembeli", {
-                                    autoClose: 2000,
-                                    hideProgressBar: true,
-                                  })
+                                  autoClose: 2000,
+                                  hideProgressBar: true,
+                                })
                                 : toast.success("Beralih ke dashboard creator", {
-                                    autoClose: 2000,
-                                    hideProgressBar: true,
-                                  });
+                                  autoClose: 2000,
+                                  hideProgressBar: true,
+                                });
                             }}
                             tabIndex={-1}
                             id="user-menu-item-0"

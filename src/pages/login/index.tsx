@@ -63,7 +63,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (users?.id) {
-      router.push("/");
+      router.push("/dashboard");
       toast.warning("Anda Sudah Login");
     }
     //eslint-disable-next-line
