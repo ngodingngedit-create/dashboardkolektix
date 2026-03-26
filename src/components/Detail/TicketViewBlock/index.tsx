@@ -5,7 +5,7 @@ import Cookies from "js-cookie";
 import { useRouter } from "next/router";
 import { ActionIcon, Alert, Badge, Button, Card, Divider, Drawer, Flex, NumberFormatter, Stack, Text, Tooltip, UnstyledButton, Image } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Context } from "@/pages/event/[slug]";
+import { Context } from "@/pages/dashboard/my-event/[slug]";
 import { useTranslation } from "react-i18next";
 import config from "@/Config";
 import { Slide } from "react-slideshow-image";
@@ -96,7 +96,7 @@ const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin,
   };
 
   const total = useMemo(() => {
-    return ticket?.reduce((c, n) => c + n.subtotal_price, 0);
+    return ticket?.reduce((c, n) => c + (n.subtotal_price ?? 0), 0);
   }, [ticket]);
 
   const handleDelete = (index: number) => {

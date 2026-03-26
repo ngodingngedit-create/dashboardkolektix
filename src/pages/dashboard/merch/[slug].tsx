@@ -584,7 +584,8 @@ import {
     Tooltip,
     Modal,
     Anchor,
-    Pagination
+    Pagination,
+    Checkbox
 } from "@mantine/core";
 import { useListState, useDisclosure } from "@mantine/hooks";
 import moment from "moment";
@@ -638,12 +639,13 @@ interface ProductVariant {
     price: number;
     stock: number;
     image?: string;
+    soldCount?: number;
 }
 
 // Interface untuk kolom TableData
 interface TableColumn {
     accessor: string;
-    title: string;
+    title: string | React.ReactNode;
     width?: number;
     render?: (item: any, index?: number) => React.ReactNode;
 }
@@ -1320,17 +1322,18 @@ export default function MerchDetail() {
             icon: 'akar-icons:money',
             isCurrency: true,
         },
-        {
-            text: 'Total Varian',
-            value: 0,
-            icon: 'akar-icons:layers',
-        },
     ]);
     const [transactions, setTransactions] = useState<MerchandiseTransactionData[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<MerchandiseTransactionData[]>([]);
     const [allTransactions, setAllTransactions] = useState<MerchandiseTransactionData[]>([]);
     const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<string | null>('all');
+    const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+    const [variantSoldCounts, setVariantSoldCounts] = useState<{ [key: string]: number }>({});
+
+    // State untuk Detail Modal (View Detail Invoice)
+    const [detailOpened, { open: openDetail, close: closeDetail }] = useDisclosure(false);
+    const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<MerchandiseTransactionData | null>(null);
 
     // State untuk cetak resi
     const [showPrintOptions, setShowPrintOptions] = useState(false);
@@ -1415,9 +1418,6 @@ export default function MerchDetail() {
                         }
 
                         setStatistics(prev => prev.map(stat => {
-                            if (stat.text === 'Total Varian') {
-                                return { ...stat, value: variants.length };
-                            }
                             return stat;
                         }));
 
@@ -1445,6 +1445,7 @@ export default function MerchDetail() {
 
             let totalQty = 0;
             let totalRevenue = 0;
+            const variantCounts: { [key: string]: number } = {};
 
             filteredData.forEach((item: any) => {
                 let hasProduct = false;
@@ -1554,9 +1555,16 @@ export default function MerchDetail() {
                         totalQty += productQty;
                         totalRevenue += productPrice;
                         transactionsData.push(transaction);
+
+                        // Update variant counts
+                        if (productVariant && productVariant !== '-') {
+                            variantCounts[productVariant] = (variantCounts[productVariant] || 0) + productQty;
+                        }
                     }
                 }
             });
+
+            setVariantSoldCounts(variantCounts);
 
             setStatistics(prev => prev.map(stat => {
                 if (stat.text === 'Total Terjual') {
@@ -1577,11 +1585,12 @@ export default function MerchDetail() {
                 .sort((a, b) => a.localeCompare(b));
 
             setProductVariants(variantList.map(name => ({
-                id: 0, // ID tidak diperlukan untuk filter
+                id: 0,
                 name: name,
                 sku: '',
                 price: 0,
-                stock: 0
+                stock: 0,
+                soldCount: variantCounts[name] || 0
             })));
 
             applyFilters(searchValue, filterBy, sortBy, selectedVariant, transactionsData);
@@ -1599,51 +1608,48 @@ export default function MerchDetail() {
         variant: string | null,
         transactionList: MerchandiseTransactionData[]
     ) => {
-        let filtered = [...transactionList];
+        let result = [...transactionList];
+
+        // Reset selection when filtering
+        setSelectedInvoiceIds([]);
 
         if (filter && filter !== 'all') {
             if (filter === 'success') {
-                filtered = filtered.filter(item => item.transaction_status_id === 2);
+                result = result.filter(item => item.transaction_status_id === 2);
             } else if (filter === 'pending') {
-                filtered = filtered.filter(item => item.transaction_status_id === 1);
+                result = result.filter(item => item.transaction_status_id === 1);
             } else if (filter === 'failed') {
-                filtered = filtered.filter(item => item.transaction_status_id === 3);
+                result = result.filter(item => item.transaction_status_id === 3);
             }
         }
 
         if (variant && variant !== 'all') {
-            filtered = filtered.filter(item =>
-                item.product_variant?.toLowerCase() === variant.toLowerCase()
-            );
+            result = result.filter(item => item.product_variant === variant);
         }
 
-        if (search.trim()) {
+        if (search) {
             const searchLower = search.toLowerCase();
-            filtered = filtered.filter(item =>
-                (item.invoice_no?.toLowerCase() || '').includes(searchLower) ||
-                (item.customer_name?.toLowerCase() || '').includes(searchLower) ||
-                (item.product_name?.toLowerCase() || '').includes(searchLower) ||
-                (item.product_variant?.toLowerCase() || '').includes(searchLower) ||
-                (formatPaymentMethod(item.payment_method)?.toLowerCase() || '').includes(searchLower)
+            result = result.filter(item =>
+                (item.invoice_no || '').toLowerCase().includes(searchLower) ||
+                (item.customer_name || '').toLowerCase().includes(searchLower) ||
+                (item.product_name || '').toLowerCase().includes(searchLower) ||
+                (item.product_variant || '').toLowerCase().includes(searchLower)
             );
         }
 
         if (sort) {
-            filtered.sort((a, b) => {
-                if (sort === 'newest') {
-                    return new Date(b.order_date).getTime() - new Date(a.order_date).getTime();
-                } else if (sort === 'oldest') {
-                    return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
-                } else if (sort === 'highest') {
-                    return b.total_price - a.total_price;
-                } else if (sort === 'lowest') {
-                    return a.total_price - b.total_price;
-                }
-                return 0;
-            });
+            if (sort === 'newest') {
+                result.sort((a, b) => moment(b.order_date).valueOf() - moment(a.order_date).valueOf());
+            } else if (sort === 'oldest') {
+                result.sort((a, b) => moment(a.order_date).valueOf() - moment(b.order_date).valueOf());
+            } else if (sort === 'highest') {
+                result.sort((a, b) => b.total_price - a.total_price);
+            } else if (sort === 'lowest') {
+                result.sort((a, b) => a.total_price - b.total_price);
+            }
         }
 
-        setFilteredTransactions(filtered);
+        setFilteredTransactions(result);
     };
 
     const handleSearch = (value: string) => {
@@ -1669,6 +1675,41 @@ export default function MerchDetail() {
         applyFilters(searchValue, filterBy, sortBy, value, transactions);
         setCurrentPage(1); // Reset ke halaman pertama
     };
+
+    const handleViewInvoiceDetail = (item: MerchandiseTransactionData) => {
+        setSelectedInvoiceDetail(item);
+        openDetail();
+    };
+
+    // Helper components for Detail Modal
+    const InfoCardDetail = ({ title, icon, children, color = "blue" }: any) => {
+        const colors: any = {
+            blue: "bg-blue-50 border-blue-100",
+            green: "bg-green-50 border-green-100",
+            purple: "bg-purple-50 border-purple-100",
+            orange: "bg-orange-50 border-orange-100",
+        };
+
+        return (
+            <div className={`${colors[color]} rounded-xl border p-4 shadow-sm`}>
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <div className="text-primary-base">{icon}</div>
+                    <Text fw={600} size="sm">{title}</Text>
+                </div>
+                <Stack gap={10}>{children}</Stack>
+            </div>
+        );
+    };
+
+    const InfoItemDetail = ({ label, value, icon }: any) => (
+        <div className="flex items-start gap-2">
+            {icon && <div className="mt-1 text-gray-400">{icon}</div>}
+            <div className="flex-1 min-w-0">
+                <Text size="xs" c="dimmed" mb={2}>{label}</Text>
+                <div className="text-sm font-medium text-gray-800 break-words">{value}</div>
+            </div>
+        </div>
+    );
 
     // Fungsi untuk mengambil data invoice saat icon cetak diklik
     const handlePrintClick = async (invoiceNo: string) => {
@@ -1754,13 +1795,33 @@ export default function MerchDetail() {
             if (document.body.contains(loadingToast)) {
                 document.body.removeChild(loadingToast);
             }
-
             setPrintError(error.message || 'Gagal mengambil data invoice');
             setPrintLoading(false);
 
             // Tampilkan alert error dengan detail
             alert(`Gagal mengambil data invoice: ${error.message || 'Unknown error'}\n\nCek console untuk detail lebih lanjut.`);
         }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedInvoiceIds.length === paginatedTransactions.length) {
+            setSelectedInvoiceIds([]);
+        } else {
+            setSelectedInvoiceIds(paginatedTransactions.map(t => t.invoice_no));
+        }
+    };
+
+    const toggleSelectInvoice = (invoiceNo: string) => {
+        setSelectedInvoiceIds(prev =>
+            prev.includes(invoiceNo)
+                ? prev.filter(id => id !== invoiceNo)
+                : [...prev, invoiceNo]
+        );
+    };
+
+    const handleBulkPrint = () => {
+        if (selectedInvoiceIds.length === 0) return;
+        alert(`Mencetak ${selectedInvoiceIds.length} resi...`);
     };
 
     // Fungsi untuk mencetak resi dengan opsi yang dipilih
@@ -1822,7 +1883,7 @@ export default function MerchDetail() {
         {
             accessor: 'no',
             title: 'No',
-            width: 60,
+            width: 50,
             render: (item: any, index?: number) => {
                 const rowIndex = index !== undefined
                     ? (currentPage - 1) * itemsPerPage + index + 1
@@ -1837,23 +1898,23 @@ export default function MerchDetail() {
             title: 'Invoice No',
             width: 150,
             render: (item: any) => (
-                <Text ta="center">{String(item.invoice_no || '-')}</Text>
+                <Text ta="center" size="sm">{String(item.invoice_no || '-')}</Text>
             )
         },
         {
             accessor: 'order_date',
             title: 'Tanggal',
-            width: 120,
+            width: 110,
             render: (item: any) => (
-                <Text ta="center">{item.order_date ? moment(item.order_date).format('DD/MM/YYYY') : '-'}</Text>
+                <Text ta="center" size="sm">{item.order_date ? moment(item.order_date).format('DD/MM/YY') : '-'}</Text>
             )
         },
         {
             accessor: 'customer_name',
             title: 'Customer',
-            width: 150,
+            width: 140,
             render: (item: any) => (
-                <Text ta="center">{String(item.customer_name || '-')}</Text>
+                <Text ta="center" size="sm" truncate>{String(item.customer_name || '-')}</Text>
             )
         },
         {
@@ -1862,16 +1923,16 @@ export default function MerchDetail() {
             width: 100,
             render: (item: any) => {
                 const variant = item.product_variant;
-                if (!variant || variant === '-') return <Text ta="center">-</Text>;
-                return <Text ta="center">{String(variant)}</Text>;
+                if (!variant || variant === '-') return <Text ta="center" size="sm" c="dimmed">-</Text>;
+                return <Text ta="center" size="sm">{String(variant)}</Text>;
             }
         },
         {
             accessor: 'total_qty',
             title: 'Qty',
-            width: 80,
+            width: 60,
             render: (item: any) => (
-                <Text ta="center">{Number(item.total_qty) || 0}</Text>
+                <Text ta="center" size="sm">{Number(item.total_qty) || 0}</Text>
             )
         },
         {
@@ -1879,18 +1940,18 @@ export default function MerchDetail() {
             title: 'Total',
             width: 120,
             render: (item: any) => (
-                <Text ta="center">{formatRupiah(item.total_price)}</Text>
+                <Text ta="center" size="sm" fw={500}>{formatRupiah(item.total_price)}</Text>
             )
         },
         {
             accessor: 'status_name',
-            title: 'Status',
-            width: 100,
+            title: 'Status Pembayaran',
+            width: 130,
             render: (item: any) => {
                 const statusInfo = getStatusInfo(item.transaction_status_id);
                 return (
                     <Flex justify="center">
-                        <Badge color={statusInfo.badgeColor}>
+                        <Badge variant="dot" color={statusInfo.badgeColor} size="sm">
                             {statusInfo.text}
                         </Badge>
                     </Flex>
@@ -1898,19 +1959,53 @@ export default function MerchDetail() {
             }
         },
         {
-            accessor: 'payment_method',
-            title: 'Payment Method',
-            width: 130,
+            accessor: 'shipping_status',
+            title: 'Status Pengiriman',
+            width: 140,
             render: (item: any) => (
-                <Text ta="center">{String(formatPaymentMethod(item.payment_method) || '-')}</Text>
+                <Flex justify="center">
+                    <Badge color="gray" variant="light" size="sm">
+                        Siap Dikirim
+                    </Badge>
+                </Flex>
+            )
+        },
+        {
+            accessor: 'payment_method',
+            title: 'Metode Pembayaran',
+            width: 140,
+            render: (item: any) => (
+                <Text ta="center" size="sm">{String(formatPaymentMethod(item.payment_method) || '-')}</Text>
+            )
+        },
+        {
+            accessor: 'view_detail',
+            title: 'Detail',
+            width: 70,
+            render: (item: any) => (
+                <Flex justify="center">
+                    <ActionIcon
+                        variant="subtle"
+                        color="blue"
+                        onClick={() => handleViewInvoiceDetail(item)}
+                        title="Lihat Detail"
+                    >
+                        <Icon icon="solar:eye-bold" width={18} />
+                    </ActionIcon>
+                </Flex>
             )
         },
         {
             accessor: 'actions',
             title: 'Cetak Resi',
-            width: 100,
+            width: 120,
             render: (item: any) => (
-                <Flex justify="center" align="center">
+                <Flex justify="center" align="center" gap="md">
+                    <Checkbox
+                        checked={selectedInvoiceIds.includes(item.invoice_no)}
+                        onChange={() => toggleSelectInvoice(item.invoice_no)}
+                        size="xs"
+                    />
                     <ActionIcon
                         variant="light"
                         color="blue"
@@ -2059,82 +2154,106 @@ export default function MerchDetail() {
 
             <Card p={30}>
                 <Stack gap={30}>
-                    {/* Accordion Statistik */}
-                    <Accordion variant="separated" radius={10}>
-                        <Accordion.Item value="statistik">
-                            <Accordion.Control>
-                                <Flex gap={10} align="center">
-                                    <Icon icon="akar-icons:statistic-up" className="text-primary-base" />
-                                    <Text>Statistik Merchandise</Text>
-                                </Flex>
-                            </Accordion.Control>
-                            <Accordion.Panel>
-                                <SimpleGrid cols={3}>
-                                    {statistics.map((statistic, index) => (
-                                        <Card key={index} radius={10} withBorder pos='relative' className="hover:!bg-grey/10">
-                                            <Stack gap={0}>
-                                                <Text>{statistic.text}</Text>
-                                                {statistic.isCurrency ? (
-                                                    <Text fw={600} size="xl">
-                                                        {formatRupiah(statistic.value)}
-                                                    </Text>
-                                                ) : (
-                                                    <Text fw={600} size="xl">
-                                                        {formatNumber(statistic.value)}
-                                                    </Text>
-                                                )}
-                                                <Icon
-                                                    icon={statistic.icon}
-                                                    className="absolute text-[5rem] -bottom-5 -right-2 text-primary-base/30"
-                                                />
-                                            </Stack>
-                                        </Card>
-                                    ))}
-                                </SimpleGrid>
-                            </Accordion.Panel>
-                        </Accordion.Item>
-                    </Accordion>
+                    <SimpleGrid cols={{ base: 1, md: 2 }} spacing={30}>
+                        {/* Header Produk */}
+                        <Flex gap={30} align="start">
+                            <AspectRatio ratio={1} maw={180} w="100%">
+                                <Image
+                                    radius={10}
+                                    src={imageList?.[0]?.image_url}
+                                    bg="gray.1"
+                                    alt={data?.product_name || 'produk'}
+                                />
+                            </AspectRatio>
 
-                    {/* Header Produk */}
-                    <Flex justify="space-between" gap={30}>
-                        <AspectRatio ratio={1} maw={200} w="100%">
-                            <Image
-                                radius={10}
-                                src={imageList?.[0]?.image_url}
-                                bg="gray.1"
-                                alt={data?.product_name || 'produk'}
-                            />
-                        </AspectRatio>
-
-                        <Stack gap={0} w="100%">
-                            <Text size="xs" c="gray" mb={5}>
-                                Dibuat pada {data?.created_at ? moment(data.created_at).format('DD MMMM YYYY') : '-'}
-                            </Text>
-                            <Flex gap={10} align="center">
-                                <Title size="h2">{data?.product_name || '-'}</Title>
-                                <Tooltip label="Tampilkan QR Code">
-                                    <ActionIcon
-                                        variant="transparent"
-                                        onClick={openQr}
-                                        size="lg"
-                                    >
-                                        <Icon icon="solar:qr-code-bold" className="text-[24px]" />
-                                    </ActionIcon>
-                                </Tooltip>
-                            </Flex>
-                            <Flex gap={8} align="center" mt={5}>
-                                <Text fw={600}>
-                                    {formatRupiah(productPrice)}
+                            <Stack gap={0} flex={1}>
+                                <Text size="xs" c="gray" mb={5}>
+                                    Dibuat pada {data?.created_at ? moment(data.created_at).format('DD MMMM YYYY') : '-'}
                                 </Text>
-                                <Divider orientation="vertical" mx={10} />
-                                <Icon icon="solar:star-bold" className="text-yellow-500 text-[24px]" />
-                                <Text>{data?.average_star ? parseFloat(data.average_star).toFixed(1) : '0.0'}</Text>
-                            </Flex>
-                            <Text size="sm" mt={10} c="gray">
-                                Total Terjual: {data?.total_sold || 0} unit
-                            </Text>
-                        </Stack>
-                    </Flex>
+                                <Flex gap={10} align="center">
+                                    <Title size="h2" style={{ fontSize: '24px' }}>{data?.product_name || '-'}</Title>
+                                    <Tooltip label="Tampilkan QR Code">
+                                        <ActionIcon
+                                            variant="transparent"
+                                            onClick={openQr}
+                                            size="lg"
+                                        >
+                                            <Icon icon="solar:qr-code-bold" className="text-[24px]" />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </Flex>
+                                <Flex gap={8} align="center" mt={5}>
+                                    <Text fw={600} size="lg">
+                                        {formatRupiah(productPrice)}
+                                    </Text>
+                                    <Divider orientation="vertical" mx={10} />
+                                    <Icon icon="solar:star-bold" className="text-yellow-500 text-[20px]" />
+                                    <Text fw={500}>{data?.average_star ? parseFloat(data.average_star).toFixed(1) : '0.0'}</Text>
+                                </Flex>
+                                <Stack gap={4} mt={15}>
+                                    <Text size="sm" fw={600} c="gray.7">
+                                        Total Terjual: {data?.total_sold || 0} unit
+                                    </Text>
+                                    <Text size="xs" fw={500} c="dimmed">
+                                        Varian Terjual:
+                                    </Text>
+                                    <Group gap={8}>
+                                        {productVariants.length > 0 ? (
+                                            productVariants.map((v, i) => (
+                                                <Badge
+                                                    key={i}
+                                                    variant="light"
+                                                    color="gray"
+                                                    size="sm"
+                                                    styles={{ label: { textTransform: 'none' } }}
+                                                >
+                                                    {v.name}: {v.soldCount}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <Text size="xs" c="dimmed italic">Belum ada varian terjual</Text>
+                                        )}
+                                    </Group>
+                                </Stack>
+                            </Stack>
+                        </Flex>
+
+                        {/* Accordion Statistik */}
+                        <Accordion variant="separated" radius={10} defaultValue="statistik">
+                            <Accordion.Item value="statistik">
+                                <Accordion.Control>
+                                    <Flex gap={10} align="center">
+                                        <Icon icon="solar:chart-square-bold" className="text-primary-base" width={20} />
+                                        <Text fw={600}>Statistik Merchandise</Text>
+                                    </Flex>
+                                </Accordion.Control>
+                                <Accordion.Panel>
+                                    <SimpleGrid cols={2} spacing="md">
+                                        {statistics.map((statistic, index) => (
+                                            <Card key={index} radius={12} withBorder pos='relative' p="md" className="hover:!bg-grey/10 transition-colors">
+                                                <Stack gap={4}>
+                                                    <Text size="xs" c="dimmed" fw={500}>{statistic.text}</Text>
+                                                    {statistic.isCurrency ? (
+                                                        <Text fw={700} size="lg">
+                                                            {formatRupiah(statistic.value)}
+                                                        </Text>
+                                                    ) : (
+                                                        <Text fw={700} size="lg">
+                                                            {formatNumber(statistic.value)}
+                                                        </Text>
+                                                    )}
+                                                    <Icon
+                                                        icon={statistic.icon}
+                                                        className="absolute text-[3rem] -bottom-2 -right-1 text-primary-base/10"
+                                                    />
+                                                </Stack>
+                                            </Card>
+                                        ))}
+                                    </SimpleGrid>
+                                </Accordion.Panel>
+                            </Accordion.Item>
+                        </Accordion>
+                    </SimpleGrid>
 
                     <Tabs defaultValue="transaction">
                         <Tabs.List>
@@ -2146,72 +2265,83 @@ export default function MerchDetail() {
                         <Tabs.Panel value="transaction">
                             <Box mt={10}>
                                 {/* Search and Filter */}
-                                <Group justify="space-between" mb="md">
-                                    <Group>
+                                <Flex direction="column" gap="md" mb="md">
+                                    <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap">
+                                        <Flex align="flex-end" gap="sm" wrap="wrap">
+                                            <Select
+                                                label="Filter Status"
+                                                placeholder="Status"
+                                                data={[
+                                                    { value: 'all', label: 'Semua Status' },
+                                                    { value: 'success', label: 'Success' },
+                                                    { value: 'pending', label: 'Pending' },
+                                                    { value: 'failed', label: 'Failed' },
+                                                ]}
+                                                value={filterBy}
+                                                onChange={handleFilterChange}
+                                                style={{ width: 140 }}
+                                                clearable={false}
+                                            />
+                                            <Select
+                                                label="Filter Varian"
+                                                placeholder="Varian"
+                                                data={[
+                                                    { value: 'all', label: 'Semua Varian' },
+                                                    ...(productVariants || []).map(v => ({
+                                                        value: v.name,
+                                                        label: v.name
+                                                    }))
+                                                ]}
+                                                value={selectedVariant}
+                                                onChange={handleVariantChange}
+                                                style={{ width: 140 }}
+                                                clearable={false}
+                                            />
+                                            <Select
+                                                label="Urutkan"
+                                                placeholder="Urutkan"
+                                                data={[
+                                                    { value: 'newest', label: 'Terbaru' },
+                                                    { value: 'oldest', label: 'Terlama' },
+                                                    { value: 'highest', label: 'Total Tertinggi' },
+                                                    { value: 'lowest', label: 'Total Terendah' },
+                                                ]}
+                                                value={sortBy}
+                                                onChange={handleSortChange}
+                                                style={{ width: 140 }}
+                                                clearable={false}
+                                            />
+                                            <Flex align="center" gap="xs" style={{ marginBottom: '6px' }}>
+                                                <Checkbox
+                                                    checked={selectedInvoiceIds.length === paginatedTransactions.length && paginatedTransactions.length > 0}
+                                                    indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedTransactions.length}
+                                                    onChange={toggleSelectAll}
+                                                    size="sm"
+                                                    label="Pilih Semua"
+                                                    styles={{ label: { fontSize: '13px', fontWeight: 500, cursor: 'pointer' } }}
+                                                />
+                                                <Button
+                                                    variant="filled"
+                                                    color="blue"
+                                                    leftSection={<Icon icon="solar:printer-bold" width={18} />}
+                                                    onClick={handleBulkPrint}
+                                                    disabled={printLoading}
+                                                    size="sm"
+                                                >
+                                                    Cetak {selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}
+                                                </Button>
+                                            </Flex>
+                                        </Flex>
+
                                         <TextInput
-                                            placeholder="Cari invoice, customer, produk, varian..."
+                                            placeholder="Cari invoice, customer, produk..."
                                             leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                                             value={searchValue}
                                             onChange={(e) => handleSearch(e.target.value)}
-                                            style={{ width: 350 }}
+                                            style={{ width: 300 }}
                                         />
-                                        <Select
-                                            placeholder="Filter Status"
-                                            leftSection={<Icon icon="solar:filter-bold" width={18} />}
-                                            data={[
-                                                { value: 'all', label: 'Semua Status' },
-                                                { value: 'success', label: 'Success' },
-                                                { value: 'pending', label: 'Pending' },
-                                                { value: 'failed', label: 'Failed' },
-                                            ]}
-                                            value={filterBy}
-                                            onChange={handleFilterChange}
-                                            style={{ width: 180 }}
-                                            clearable={false}
-                                        />
-                                        <Select
-                                            placeholder="Filter Varian"
-                                            leftSection={<Icon icon="solar:layers-bold" width={18} />}
-                                            data={[
-                                                { value: 'all', label: 'Semua Varian' },
-                                                ...productVariants.map(v => ({
-                                                    value: v.name,
-                                                    label: v.name
-                                                }))
-                                            ]}
-                                            value={selectedVariant}
-                                            onChange={handleVariantChange}
-                                            style={{ width: 180 }}
-                                            clearable={false}
-                                        />
-                                        <Select
-                                            placeholder="Urutkan"
-                                            leftSection={<Icon icon="solar:sort-bold" width={18} />}
-                                            data={[
-                                                { value: 'newest', label: 'Terbaru' },
-                                                { value: 'oldest', label: 'Terlama' },
-                                                { value: 'highest', label: 'Total Tertinggi' },
-                                                { value: 'lowest', label: 'Total Terendah' },
-                                            ]}
-                                            value={sortBy}
-                                            onChange={handleSortChange}
-                                            style={{ width: 180 }}
-                                            clearable={false}
-                                        />
-                                    </Group>
-                                    <Button
-                                        variant="light"
-                                        color="blue"
-                                        leftSection={<Icon icon="solar:printer-bold" width={18} />}
-                                        onClick={() => {
-                                            // Handle cetak semua resi
-                                            alert('Fitur cetak semua resi akan segera hadir');
-                                        }}
-                                        disabled={filteredTransactions.length === 0 || printLoading}
-                                    >
-                                        Cetak Semua Resi ({filteredTransactions.length})
-                                    </Button>
-                                </Group>
+                                    </Flex>
+                                </Flex>
 
                                 <Flex justify="space-between" align="center" mb="md">
                                     <Text size="sm" c="gray">
@@ -2258,7 +2388,8 @@ export default function MerchDetail() {
                                                 zIndex: 10,
                                                 boxShadow: '0 2px 2px -1px rgba(0, 0, 0, 0.1)'
                                             }}>
-                                                {transactionColumns.map((col, idx) => (
+                                            {transactionColumns.map((col, idx) => {
+                                                return (
                                                     <th
                                                         key={idx}
                                                         style={{
@@ -2269,12 +2400,16 @@ export default function MerchDetail() {
                                                             whiteSpace: 'nowrap',
                                                             backgroundColor: '#f8f9fa',
                                                             fontWeight: 600,
-                                                            fontSize: '14px'
+                                                            fontSize: '14px',
+                                                            position: 'sticky',
+                                                            top: 0,
+                                                            zIndex: 20
                                                         }}
                                                     >
                                                         {col.title}
                                                     </th>
-                                                ))}
+                                                );
+                                            })}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -2295,14 +2430,19 @@ export default function MerchDetail() {
                                                 >
                                                     {transactionColumns.map((col, colIdx) => {
                                                         const column = transactionColumns[colIdx];
+                                                        const bgColor = idx % 2 === 0 ? 'white' : '#fafafa';
+
+                                                        const cellStyle: React.CSSProperties = {
+                                                            padding: '12px',
+                                                            textAlign: 'center',
+                                                            whiteSpace: 'nowrap',
+                                                            backgroundColor: bgColor,
+                                                            zIndex: 1
+                                                        };
 
                                                         if (col.accessor === 'no' && column.render) {
                                                             return (
-                                                                <td key={colIdx} style={{
-                                                                    padding: '12px',
-                                                                    textAlign: 'center',
-                                                                    whiteSpace: 'nowrap'
-                                                                }}>
+                                                                <td key={colIdx} style={cellStyle}>
                                                                     {column.render(item, idx)}
                                                                 </td>
                                                             );
@@ -2310,11 +2450,7 @@ export default function MerchDetail() {
 
                                                         if (column.render && col.accessor !== 'no') {
                                                             return (
-                                                                <td key={colIdx} style={{
-                                                                    padding: '12px',
-                                                                    textAlign: 'center',
-                                                                    whiteSpace: 'nowrap'
-                                                                }}>
+                                                                <td key={colIdx} style={cellStyle}>
                                                                     {column.render(item)}
                                                                 </td>
                                                             );
@@ -2322,11 +2458,7 @@ export default function MerchDetail() {
 
                                                         const value = getValueByAccessor(item, column.accessor);
                                                         return (
-                                                            <td key={colIdx} style={{
-                                                                padding: '12px',
-                                                                textAlign: 'center',
-                                                                whiteSpace: 'nowrap'
-                                                            }}>
+                                                            <td key={colIdx} style={cellStyle}>
                                                                 {String(value || '-')}
                                                             </td>
                                                         );
@@ -2384,6 +2516,91 @@ export default function MerchDetail() {
                     </Tabs>
                 </Stack>
             </Card>
+            {/* Modal Detail Transaksi */}
+            <Modal
+                opened={detailOpened}
+                onClose={closeDetail}
+                title={
+                    <Group gap={8}>
+                        <Icon icon="solar:clipboard-text-bold" className="text-primary-base" width={24} />
+                        <Title order={4}>Detail Invoice {selectedInvoiceDetail?.invoice_no}</Title>
+                    </Group>
+                }
+                size="xl"
+                radius="lg"
+                centered
+            >
+                {selectedInvoiceDetail && (
+                    <Stack gap="xl" p="md">
+                        <SimpleGrid cols={2} spacing="lg">
+                            <InfoCardDetail title="Informasi Pesanan" icon={<Icon icon="solar:document-text-bold" width={20} />} color="blue">
+                                <InfoItemDetail label="No. Invoice" value={selectedInvoiceDetail.invoice_no} />
+                                <InfoItemDetail label="Tanggal Pesanan" value={moment(selectedInvoiceDetail.order_date).format('DD MMMM YYYY, HH:mm')} />
+                                <InfoItemDetail
+                                    label="Status Pembayaran"
+                                    value={
+                                        <Badge color={getStatusInfo(selectedInvoiceDetail.transaction_status_id).badgeColor} variant="light">
+                                            {selectedInvoiceDetail.status_name}
+                                        </Badge>
+                                    }
+                                />
+                            </InfoCardDetail>
+
+                            <InfoCardDetail title="Informasi Customer" icon={<Icon icon="solar:user-bold" width={20} />} color="green">
+                                <InfoItemDetail label="Nama" value={selectedInvoiceDetail.customer_name} />
+                                <InfoItemDetail label="Email" value={selectedInvoiceDetail.customer_email || '-'} />
+                                <InfoItemDetail label="No. Telepon" value={selectedInvoiceDetail.customer_phone || '-'} />
+                            </InfoCardDetail>
+
+                            <InfoCardDetail title="Pengiriman & Produk" icon={<Icon icon="solar:box-bold" width={20} />} color="purple">
+                                <InfoItemDetail label="Produk" value={selectedInvoiceDetail.product_name} />
+                                <InfoItemDetail label="Varian" value={selectedInvoiceDetail.product_variant || '-'} />
+                                <InfoItemDetail label="Kuantitas" value={`${selectedInvoiceDetail.total_qty} unit`} />
+                            </InfoCardDetail>
+
+                            <InfoCardDetail title="Rincian Pembayaran" icon={<Icon icon="solar:wad-of-money-bold" width={20} />} color="orange">
+                                <InfoItemDetail label="Metode" value={formatPaymentMethod(selectedInvoiceDetail.payment_method)} />
+                                <InfoItemDetail label="Metode Pembayaran" value={selectedInvoiceDetail.payment_method || '-'} />
+                                <InfoItemDetail
+                                    label="Total Pembayaran"
+                                    value={
+                                        <Text fw={700} color="primary" size="lg">
+                                            {formatRupiah(selectedInvoiceDetail.total_price)}
+                                        </Text>
+                                    }
+                                />
+                            </InfoCardDetail>
+                        </SimpleGrid>
+
+                        <Card withBorder radius="md" p="md">
+                            <Group gap="xs" mb="xs">
+                                <Icon icon="solar:map-point-bold" width={16} />
+                                <Text fw={600} size="sm">Alamat Pengiriman</Text>
+                            </Group>
+                            <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>
+                                {selectedInvoiceDetail.shipping_address || 'Tidak ada informasi alamat'}
+                            </Text>
+                        </Card>
+
+                        {selectedInvoiceDetail.notes && (
+                            <Card withBorder radius="md" p="md" bg="gray.0">
+                                <Text fw={600} size="sm" mb="xs">Catatan Pesanan</Text>
+                                <Text size="sm" fs="italic">{selectedInvoiceDetail.notes}</Text>
+                            </Card>
+                        )}
+
+                        <Flex justify="flex-end" gap="md" mt="md">
+                            <Button variant="light" onClick={closeDetail}>Tutup</Button>
+                            <Button
+                                leftSection={<Icon icon="solar:printer-bold" width={18} />}
+                                onClick={() => handlePrintClick(selectedInvoiceDetail.invoice_no)}
+                            >
+                                Cetak Resi
+                            </Button>
+                        </Flex>
+                    </Stack>
+                )}
+            </Modal>
         </>
     )
 }

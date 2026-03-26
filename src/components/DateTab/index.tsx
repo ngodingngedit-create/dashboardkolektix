@@ -4,7 +4,7 @@ import OrderCounter from "../OrderCounter";
 import { TicketProps } from "@/utils/globalInterface";
 import moment from "moment";
 import { SeatmapData } from "@/utils/formInterface";
-import { Context } from "@/pages/event/[slug]";
+import { Context } from "@/pages/dashboard/my-event/[slug]";
 import { notifications } from "@mantine/notifications";
 
 interface GroupTicket {

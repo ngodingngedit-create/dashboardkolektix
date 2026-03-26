@@ -9,7 +9,7 @@ import ImageInput from '@/components/ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { z } from 'zod';
-import { FacilitiesList } from '@/pages/venue/[slug]';
+
 
 type ComponentProps = {};
 
@@ -18,7 +18,7 @@ export default function Create({}: Readonly<ComponentProps>) {
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
     const [venue, setVenue] = useState<Partial<VenueListResponse>>();
-    const [venueFacilities, setVenueFacilities] = useState<FacilitiesList[]>();
+    const [venueFacilities, setVenueFacilities] = useState<any[]>();
     const user = useLoggedUser();
     const router = useRouter();
     const { slug } = router.query;

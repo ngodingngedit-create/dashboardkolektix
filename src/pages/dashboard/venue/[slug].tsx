@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { Accordion, Card, SimpleGrid, Stack, Text, Title, Flex, Image, AspectRatio, PillGroup, Pill, Button, ActionIcon, Tabs, Badge, Divider, Alert, NumberFormatter } from "@mantine/core";
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import { useEffect, useState } from "react";
-import { FacilitiesList } from "@/pages/venue/[slug]";
+
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useRouter } from "next/router";
 import fetch from "@/utils/fetch";
@@ -66,7 +66,7 @@ export default function VenuePage() {
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
     const [venue, setVenue] = useState<VenueListResponse>();
-    const [venueFacilities, setVenueFacilities] = useState<FacilitiesList[]>();
+    const [venueFacilities, setVenueFacilities] = useState<any[]>();
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const user = useLoggedUser();

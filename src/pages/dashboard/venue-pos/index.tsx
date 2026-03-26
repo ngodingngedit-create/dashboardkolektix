@@ -78,7 +78,7 @@ export default function VenuePos() {
 
                                         <Stack gap={0}>
                                             <Text>{e.name}</Text>
-                                            <Text c="gray" size="sm"><NumberFormatter value={parseInt(String(e.starting_price))} /></Text>
+                                            <Text c="gray" size="sm"><NumberFormatter prefix="Rp " value={parseInt(String(e.starting_price))} thousandSeparator="." decimalSeparator="," /></Text>
                                         </Stack>
                                     </Flex>
                                 </Card>
@@ -174,7 +174,7 @@ export default function VenuePos() {
 
                                     <Stack gap={0}>
                                         <Text>{selectedVenue?.name}</Text>
-                                        <Text c="gray" size="sm"><NumberFormatter value={parseInt(String(selectedVenue?.starting_price))} /></Text>
+                                        <Text c="gray" size="sm"><NumberFormatter prefix="Rp " value={parseInt(String(selectedVenue?.starting_price))} thousandSeparator="." decimalSeparator="," /></Text>
                                     </Stack>
                                 </Flex>
                             </Card>

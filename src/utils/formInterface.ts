@@ -15,6 +15,10 @@ export interface EventTicket {
   description: string;
   available_seat?: string[];
   seat_color?: string;
+  seat_number?: string[];
+  subtotal_price?: number;
+  event_ticket_id?: number;
+  qty_ticket?: number;
 }
 
 export interface FormEvent {

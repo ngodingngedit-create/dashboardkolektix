@@ -6,7 +6,7 @@ import moment from "moment";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { randomId, useDidUpdate, useInterval } from "@mantine/hooks";
-import { Context } from "@/pages/event/[slug]";
+import { Context } from "@/pages/dashboard/my-event/[slug]";
 import { SeatmapData } from "@/utils/formInterface";
 import chunk from "@/utils/chunk";
 import { contrastColor } from "contrast-color";
@@ -43,7 +43,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
   const { seatmapData, seatmapOpen, setSeatmapOpen, ticket } = useContext(Context);
 
   const selectedSeat = useMemo(() => {
-    return ticket?.map((e) => e.seat_number).reduce((c, n) => [...(c ?? []), ...(n ?? [])], []);
+    return ticket?.map((e: any) => e.seat_number).reduce((c: string[], n: string[] | undefined) => [...(c ?? []), ...(n ?? [])], []) ?? [];
   }, [ticket]);
 
   const [isCurrent, setIsCurrent] = useState(false);
@@ -224,7 +224,7 @@ const OrderCounter = ({ index, maxOrder, count: _count, ticketData: _ticketData,
                 {(selectedSeat?.length ?? 0) > 0 && (
                   <Text size="sm" c="gray">
                     Seat No:{" "}
-                    {selectedSeat?.map((e, i) => (
+                    {selectedSeat?.map((e: string, i: number) => (
                       <Badge bg="#194e9e" key={i} size="sm" ml={5} className={`translate-y-[-3px]`}>
                         {e}
                       </Badge>

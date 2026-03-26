@@ -143,9 +143,17 @@ export const Context = createContext<{
   seatmapData?: SeatmapData[];
   setSeatmapData?: UseListStateHandlers<SeatmapData>;
   ticket?: EventTicket[];
+  eventData?: EventProps | null;
+  seatmapOpen?: number;
+  setSeatmapOpen?: (index?: number) => void;
+  setTicket?: (ticket: EventTicket[]) => void;
 }>({
   seatmapData: [],
   ticket: [],
+  eventData: null,
+  seatmapOpen: undefined,
+  setSeatmapOpen: () => {},
+  setTicket: () => {},
 });
 
 const MyEventDetail = () => {
@@ -193,6 +201,7 @@ const MyEventDetail = () => {
   const [updateWithdrawHistory, setUpdateWithdrawHistory] = useState(1);
   const [seatmap, setSeatmap] = useListState<SeatmapData>([]);
   const [invitationCategory, setInvitationCategory] = useState<CategoryResponse[]>();
+  const [seatmapOpen, setSeatmapOpen] = useState<number>();
 
   const [activeTab, setActiveTab] = useState<string>("Detail");
   const [transactionLoading, setTransactionLoading] = useState(false);
@@ -1356,7 +1365,7 @@ const MyEventDetail = () => {
         eventSlug={params.slug}
       />
       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
-      <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket }}>
+      <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket, eventData: data, seatmapOpen, setSeatmapOpen, setTicket }}>
         <ModalCreateTicket isOpen={addTicket} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
         <ModalEditTicket isOpen={isEditTicketModalOpen} setIsOpen={setIsEditTicketModalOpen} ticket={ticket} setTicket={setTicket} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
       </Context.Provider>
