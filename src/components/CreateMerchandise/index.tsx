@@ -573,16 +573,37 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         <div className="border-t border-[#E2EDFF] py-[15px] shrink-0">
           <div className="mx-auto max-w-[1280px] px-[20px]">
             <Flex gap={10} justify="space-between">
-              <Button onClick={() => onClose && onClose()} className={`!border-[#E2EDFF]`} variant="subtle" color="gray" radius="xl">
+              <Button
+                onClick={() => onClose && onClose()}
+                className={`!border-[#E2EDFF]`}
+                variant="subtle"
+                color="gray"
+                radius="xl"
+                leftSection={<Icon icon="solar:arrow-left-linear" width={16} />}
+              >
                 Kembali
               </Button>
 
               <Flex gap={10}>
-                <Button loading={loading.includes("save")} onClick={() => handleSave(true)} className={`!border-[#E2EDFF]`} variant="outline" color="#0B387C" radius="xl">
+                <Button
+                  loading={loading.includes("save")}
+                  onClick={() => handleSave(true)}
+                  className={`!border-[#E2EDFF]`}
+                  variant="outline"
+                  color="#0B387C"
+                  radius="xl"
+                  leftSection={<Icon icon="solar:diskette-bold" width={16} />}
+                >
                   Simpan Draf
                 </Button>
 
-                <Button loading={loading.includes("save")} onClick={() => handleSave(false)} bg="#0B387C" radius="xl">
+                <Button
+                  loading={loading.includes("save")}
+                  onClick={() => handleSave(false)}
+                  bg="#0B387C"
+                  radius="xl"
+                  leftSection={<Icon icon="solar:check-circle-bold" width={16} />}
+                >
                   {Boolean(id) ? "Simpan Merchandise" : "Buat Merchandise"}
                 </Button>
               </Flex>

@@ -898,7 +898,7 @@
 // export default Merch;
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
@@ -1051,9 +1051,17 @@ const Merch: React.FC = () => {
   /**
    * FILTER & SEARCH STATE
    */
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+  const [filterProduct, setFilterProduct] = useState<string | null>(null);
+
+  // Daftar nama produk unik untuk dropdown filter
+  const productNames = useMemo(() => {
+    const names = new Set<string>();
+    merchList.forEach((item) => {
+      if (item.product_name) names.add(item.product_name);
+    });
+    return Array.from(names).map((n) => ({ value: n, label: n }));
+  }, [merchList]);
 
   // Fungsi untuk mendapatkan SKU produk
   const getProductSku = (item: MerchListResponse): string => {
@@ -1104,25 +1112,13 @@ const Merch: React.FC = () => {
     for (const [status] of tabStatus) {
       const baseList = splittedByStatus(status) || [];
       const filtered = (baseList || []).filter((item) => {
-        if (startDate || endDate) {
-          const dateStr = (item as any).date || (item as any).created_at || "";
-          if (dateStr) {
-            const d = new Date(dateStr);
-            if (startDate) {
-              const s = new Date(startDate);
-              if (d < s) return false;
-            }
-            if (endDate) {
-              const e = new Date(endDate);
-              e.setHours(23, 59, 59, 999);
-              if (d > e) return false;
-            }
-          }
-        }
-
         if (search) {
           const needle = search.toLowerCase().trim();
           if (!itemSearchText(item).includes(needle)) return false;
+        }
+
+        if (filterProduct && filterProduct !== "all") {
+          if (!item.product_name?.toLowerCase().includes(filterProduct.toLowerCase())) return false;
         }
 
         return true;
@@ -1131,7 +1127,7 @@ const Merch: React.FC = () => {
       map.set(status, filtered);
     }
     return map;
-  }, [splittedByStatus, startDate, endDate, search, tabStatus]);
+  }, [splittedByStatus, search, filterProduct, tabStatus]);
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
@@ -1175,71 +1171,46 @@ const Merch: React.FC = () => {
             <Tab key={status} title={label}>
               <Card className="!overflow-auto" p={0} withBorder>
                 {/* filter bar */}
-                <div className="bg-white px-6 py-4 border-b">
-                  <div className="flex flex-col gap-4">
-                    {/* Baris 1: Filter Tanggal dan Lokasi */}
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Tanggal:</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="border border-primary-light-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Mulai"
-                          />
-                          <span className="text-gray-400">-</span>
-                          <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="border border-primary-light-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Akhir"
-                          />
-                        </div>
-                      </div>
+                <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap" px={16} py={12} style={{ borderBottom: '1px solid #eee' }}>
+                  <Flex align="flex-end" gap="sm" wrap="wrap">
+                    <Select
+                      label="Filter Produk"
+                      placeholder="Semua Produk"
+                      data={[
+                        { value: 'all', label: 'Semua Produk' },
+                        ...productNames,
+                      ]}
+                      value={filterProduct || 'all'}
+                      onChange={(val) => setFilterProduct(val)}
+                      style={{ minWidth: 220 }}
+                      size="sm"
+                      searchable
+                      clearable
+                    />
+                    {(search || (filterProduct && filterProduct !== 'all')) && (
+                      <ButtonM
+                        size="sm"
+                        variant="light"
+                        color="gray"
+                        onClick={() => { setSearch(""); setFilterProduct(null); }}
+                        leftSection={<Icon icon="solar:refresh-bold" width={14} />}
+                        radius="xl"
+                        style={{ alignSelf: 'flex-end' }}
+                      >
+                        Reset Filter
+                      </ButtonM>
+                    )}
+                  </Flex>
+                  <TextInput
+                    placeholder="Cari merchandise..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    leftSection={<Icon icon="akar-icons:search" width={16} />}
+                    style={{ width: 280 }}
+                    size="sm"
+                  />
+                </Flex>
 
-                      <div className="w-px h-6 bg-gray-300"></div>
-                    </div>
-
-                    {/* Baris 2: Search dan Action Buttons */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          isClearable
-                          value={search}
-                          onChange={(e: any) => setSearch(e.target.value)}
-                          placeholder="Cari merchandise..."
-                          className="min-w-[300px]"
-                          size="sm"
-                          startContent={<Icon icon="akar-icons:search" className="text-lg text-gray-400" />}
-                          classNames={{
-                            input: "text-sm py-2 pl-2",
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Tombol Reset Filter */}
-                        <ButtonM
-                          size="sm"
-                          variant="light"
-                          color="gray"
-                          onClick={() => {
-                            setSearch("");
-                            setStartDate("");
-                            setEndDate("");
-                          }}
-                          leftSection={<Icon icon="ph:arrow-counter-clockwise" className="text-base" />}
-                          radius="xl"
-                        >
-                          Reset Filter
-                        </ButtonM>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="bg-white rounded-[8px] overflow-hidden">
                   <Table removeWrapper className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]">

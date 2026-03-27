@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import TrackingUpdateModal from "./trackingupt";
+import ResiUpdateModal from "./resiupt";
 import {
   Modal as NextUIModal,
   ModalContent,
@@ -31,6 +33,7 @@ import {
     Card as MantineCard
 } from "@mantine/core";
 import { Get } from "@/utils/REST";
+import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEye,
@@ -70,9 +73,11 @@ import {
   faRulerCombined,
   faFilter,
   faTimes,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { useRouter } from "next/router";
 
 interface CreatorData {
   id: number;
@@ -348,7 +353,10 @@ interface ShippingData {
   invoice_no: string;
   product_name: string;
   customer_name: string;
-  shipping_address: string;
+  customer_email?: string;
+  customer_phone?: string;
+  shipping_address?: string;
+  address?: string;
   shipping_status: "sent" | "pending";
   order_date: string;
   total_qty: number;
@@ -359,7 +367,8 @@ interface FilterOption {
   label: string;
 }
 
-const MerchandiseTransaction: React.FC = () => {
+const DeliveryPage: React.FC = () => {
+  const router = useRouter();
   const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [creators, setCreators] = useState<CreatorData[]>([]);
@@ -389,6 +398,12 @@ const MerchandiseTransaction: React.FC = () => {
 
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<number[]>([]);
   const [printLoading, setPrintLoading] = useState<boolean>(false);
+
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState<boolean>(false);
+  const [selectedInvoiceForTracking, setSelectedInvoiceForTracking] = useState<string>("");
+
+  const [isResiModalOpen, setIsResiModalOpen] = useState<boolean>(false);
+  const [selectedInvoiceForResi, setSelectedInvoiceForResi] = useState<string>("");
 
   const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterValue(e.target.value);
@@ -436,6 +451,7 @@ const MerchandiseTransaction: React.FC = () => {
       setSelectedInvoiceIds(paginatedItems.map(item => item.id));
     }
   };
+
 
   const getStatusInfo = (statusId?: number) => {
     switch (statusId) {
@@ -728,8 +744,10 @@ const MerchandiseTransaction: React.FC = () => {
             item.creator_id ||
             item.creator?.id ||
             (item.user_id ? parseInt(item.user_id) : null);
-          return itemCreatorId === creatorId;
+          return itemCreatorId === creatorId && item.transaction_status_id === 2 && (item.address || item.shipping_address);
         });
+      } else {
+        filteredData = filteredData.filter((item: any) => item.transaction_status_id === 2 && (item.address || item.shipping_address));
       }
 
       const mapped: MerchandiseTransactionData[] = filteredData.map((item: any) => {
@@ -1223,6 +1241,7 @@ const MerchandiseTransaction: React.FC = () => {
     return result;
   }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter]);
 
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
@@ -1476,31 +1495,7 @@ const MerchandiseTransaction: React.FC = () => {
     <>
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
-            {/* Statistics Bar moved inside better cards later if needed, but keeping current summary style refined */}
-            <Flex justify="space-between" align="center" p="md" bg="gray.0" style={{ border: '1px solid #eee', borderRadius: '8px' }}>
-                <Group gap="xl">
-                    <Stack gap={2}>
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
-                        <Text size="xl" fw={700}>{filtered.length}</Text>
-                    </Stack>
-                    <Divider orientation="vertical" />
-                    <Stack gap={2}>
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Penjualan</Text>
-                        <Text size="xl" fw={700}>
-                            <NumberFormatter prefix="Rp " value={totalPriceAllFiltered} thousandSeparator="." decimalSeparator="," />
-                        </Text>
-                    </Stack>
-                </Group>
-                <MantineButton 
-                    variant="light" 
-                    color="green" 
-                    leftSection={<Icon icon="solar:file-download-bold" width={18} />}
-                    onClick={() => exportToCSV(filtered)}
-                    disabled={filtered.length === 0}
-                >
-                    Export CSV ({filtered.length})
-                </MantineButton>
-            </Flex>
+
 
             <Box mt={15}>
                         {/* Search and Filter Row */}
@@ -1512,7 +1507,7 @@ const MerchandiseTransaction: React.FC = () => {
                                         placeholder="Semua Produk"
                                         data={[
                                             { value: 'all', label: 'Semua Produk' },
-                                            ...productOptions.map(p => ({ value: p.key, label: p.label }))
+                                            ...extractProductNames(data).map(p => ({ value: p.key, label: p.label }))
                                         ]}
                                         value={selectedProduct}
                                         onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
@@ -1575,49 +1570,53 @@ const MerchandiseTransaction: React.FC = () => {
                         </Flex>
 
                         {/* Table */}
-                        <Box style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
+                        <Box style={{ overflowX: 'auto', overflowY: 'auto' }}>
+                            <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #f0f0f0', backgroundColor: '#fafafa' }}>
                                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Invoice</th>
                                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Customer</th>
                                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Produk</th>
                                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Total</th>
-                                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Status Pembayaran</th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Alamat Tujuan</th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Dikirim Dari</th>
                                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Status Pengiriman</th>
-                                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Aksi</th>
+                                        <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', color: '#666', position: 'sticky', right: 0, backgroundColor: '#fafafa', boxShadow: '-2px 0 5px -2px rgba(0,0,0,0.1)', zIndex: 1 }}>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedItems.map((item) => {
                                         const statusInfo = getStatusInfo(item.transaction_status_id);
                                         return (
-                                            <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                                                <td style={{ padding: '12px' }}>
+                                            <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0', whiteSpace: 'nowrap' }}>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                                                     <Text size="sm" fw={600}>{item.invoice_no}</Text>
                                                     <Text size="xs" c="dimmed">{formatDate(item.order_date)}</Text>
                                                 </td>
-                                                <td style={{ padding: '12px' }}>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                                                     <Text size="sm">{item.customer_name}</Text>
                                                     <Text size="xs" c="dimmed">{item.customer_email}</Text>
                                                 </td>
-                                                <td style={{ padding: '12px' }}>
-                                                    <Text size="sm" style={{ maxWidth: '200px' }} truncate="end">
-                                                        {item.product_name}
-                                                    </Text>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                                                    <Text size="sm">{item.product_name}</Text>
                                                     <Text size="xs" c="dimmed">Qty: {item.total_qty}</Text>
                                                 </td>
-                                                <td style={{ padding: '12px' }}>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                                                     <Text size="sm" fw={600}>
                                                         <NumberFormatter prefix="Rp " value={Number(item.total_price)} thousandSeparator="." decimalSeparator="," />
                                                     </Text>
                                                 </td>
-                                                <td style={{ padding: '12px' }}>
-                                                    <Badge color={statusInfo.color} variant="light">
-                                                        {statusInfo.text}
-                                                    </Badge>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                                                    <Text size="sm">
+                                                        {formatShippingAddress((item as any).address || item.shipping_address)}
+                                                    </Text>
                                                 </td>
-                                                 <td style={{ padding: '12px' }}>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                                                    <Text size="sm">
+                                                        Warehouse Kita
+                                                    </Text>
+                                                </td>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
                                                     {(() => {
                                                         const shippingInfo = getShippingStatusInfo(item);
                                                         return (
@@ -1627,15 +1626,31 @@ const MerchandiseTransaction: React.FC = () => {
                                                         );
                                                     })()}
                                                 </td>
-                                                <td style={{ padding: '12px' }}>
+                                                <td style={{ padding: '12px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#fff', boxShadow: '-2px 0 5px -2px rgba(0,0,0,0.1)', zIndex: 1 }}>
                                                     <Flex align="center" gap="xs">
-                                                        <Tooltip label="Detail Invoice">
+                                                        <Tooltip label="Update Tracking">
                                                             <ActionIcon 
                                                                 variant="subtle" 
                                                                 color="blue" 
-                                                                onClick={() => handleViewDetail(item)}
+                                                                onClick={() => {
+                                                                    setSelectedInvoiceForTracking(item.invoice_no || "");
+                                                                    setIsTrackingModalOpen(true);
+                                                                }}
                                                             >
-                                                                <Icon icon="solar:eye-bold" width={18} />
+                                                                <FontAwesomeIcon icon={faPlus} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                        
+                                                        <Tooltip label="Update Resi">
+                                                            <ActionIcon 
+                                                                variant="subtle" 
+                                                                color="blue" 
+                                                                onClick={() => {
+                                                                    setSelectedInvoiceForResi(item.invoice_no || "");
+                                                                    setIsResiModalOpen(true);
+                                                                }}
+                                                            >
+                                                                <Icon icon="solar:ticket-bold" width={18} />
                                                             </ActionIcon>
                                                         </Tooltip>
                                                         
@@ -2206,8 +2221,94 @@ const MerchandiseTransaction: React.FC = () => {
           }}
         </ModalContent>
       </NextUIModal>
+
+      {/* Tracking Update Modal */}
+      <NextUIModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => setIsTrackingModalOpen(false)}
+        size="4xl"
+        scrollBehavior="inside"
+        classNames={{
+          base: 'bg-white',
+          backdrop: 'backdrop-blur-sm',
+          header: 'border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
+          body: 'p-0',
+          closeButton: 'text-white hover:bg-white/20',
+        }}
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Update Tracking</h2>
+                    <p className="text-xs text-white/90">Invoice: {selectedInvoiceForTracking}</p>
+                  </div>
+                </div>
+              </ModalHeader>
+              <ModalBody className="py-0">
+                <TrackingUpdateModal
+                  invoiceNo={selectedInvoiceForTracking}
+                  onClose={() => setIsTrackingModalOpen(false)}
+                  onSuccess={() => {
+                    // Optionally refresh data
+                  }}
+                />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </NextUIModal>
+
+      {/* Resi Update Modal */}
+      <NextUIModal
+        isOpen={isResiModalOpen}
+        onClose={() => setIsResiModalOpen(false)}
+        size="4xl"
+        scrollBehavior="inside"
+        classNames={{
+          base: 'bg-white',
+          backdrop: 'backdrop-blur-sm',
+          header: 'border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
+          body: 'p-0',
+          closeButton: 'text-white hover:bg-white/20',
+        }}
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <Icon icon="solar:ticket-bold" className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Update Resi Pengiriman</h2>
+                    <p className="text-xs text-white/90">Invoice: {selectedInvoiceForResi}</p>
+                  </div>
+                </div>
+              </ModalHeader>
+              <ModalBody className="py-0">
+                <ResiUpdateModal
+                  invoiceNo={selectedInvoiceForResi}
+                  onClose={() => setIsResiModalOpen(false)}
+                  onSuccess={() => {
+                    getData();
+                  }}
+                />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </NextUIModal>
     </>
   );
 };
 
-export default MerchandiseTransaction;
+export default DeliveryPage;
