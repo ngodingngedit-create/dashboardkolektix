@@ -898,7 +898,7 @@
 // export default Merch;
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select, Pagination as MantinePagination } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
@@ -1053,6 +1053,12 @@ const Merch: React.FC = () => {
    */
   const [search, setSearch] = useState<string>("");
   const [filterProduct, setFilterProduct] = useState<string | null>(null);
+  const [mtSortBy, setMtSortBy] = useState<string>("");
+  const [mtSortDir, setMtSortDir] = useState<"asc" | "desc">("asc");
+  const handleMTSort = (col: string) => {
+    if (mtSortBy === col) setMtSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setMtSortBy(col); setMtSortDir("asc"); }
+  };
 
   // Daftar nama produk unik untuk dropdown filter
   const productNames = useMemo(() => {
@@ -1129,9 +1135,44 @@ const Merch: React.FC = () => {
     return map;
   }, [splittedByStatus, search, filterProduct, tabStatus]);
 
+  const sortedFilteredMap = useMemo(() => {
+    const map = new Map<number, MerchListResponse[]>();
+    for (const [status] of tabStatus) {
+      let filtered = [...(filteredMap.get(status) || [])];
+      if (mtSortBy) {
+        filtered.sort((a: any, b: any) => {
+          let valA: any = "";
+          let valB: any = "";
+          if (mtSortBy === "product_name") {
+            valA = a.product_name ?? "";
+            valB = b.product_name ?? "";
+          } else if (mtSortBy === "sku") {
+            valA = getProductSku(a);
+            valB = getProductSku(b);
+          } else if (mtSortBy === "price") {
+            valA = parseInt(a.product_varian?.[0]?.price ?? a.price ?? "0", 10) || 0;
+            valB = parseInt(b.product_varian?.[0]?.price ?? b.price ?? "0", 10) || 0;
+          } else if (mtSortBy === "stock") {
+            valA = a.product_varian?.length ? _.sumBy(a.product_varian, "stock_qty") : a.qty;
+            valB = b.product_varian?.length ? _.sumBy(b.product_varian, "stock_qty") : b.qty;
+          }
+
+          if (typeof valA === "string") valA = valA.toLowerCase();
+          if (typeof valB === "string") valB = valB.toLowerCase();
+          
+          if (valA < valB) return mtSortDir === "asc" ? -1 : 1;
+          if (valA > valB) return mtSortDir === "asc" ? 1 : -1;
+          return 0;
+        });
+      }
+      map.set(status, filtered);
+    }
+    return map;
+  }, [filteredMap, tabStatus, mtSortBy, mtSortDir]);
+
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
-      {modalCreate !== undefined && (
+      {modalCreate !== undefined ? (
         <CreateMerchandise
           id={modalCreate}
           onClose={() => {
@@ -1139,13 +1180,13 @@ const Merch: React.FC = () => {
             getData(page);
           }}
         />
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-[20px]">
-        <Title order={1} size="h2">
-          Merchandise Saya
-        </Title>
-        <div className="flex gap-[10px] items-center"></div>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-[20px]">
+            <Title order={1} size="h2">
+              Merchandise Saya
+            </Title>
+            <div className="flex gap-[10px] items-center"></div>
 
         <Flex gap={10} align="center">
           <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />} radius="xl" color="#0B387C">
@@ -1165,42 +1206,26 @@ const Merch: React.FC = () => {
         }}
       >
         {tabStatus.map(([status, label]) => {
-          const filtered = filteredMap.get(status) ?? [];
+          const filtered = sortedFilteredMap.get(status) ?? [];
 
           return (
             <Tab key={status} title={label}>
               <Card className="!overflow-auto" p={0} withBorder>
                 {/* filter bar */}
-                <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap" px={16} py={12} style={{ borderBottom: '1px solid #eee' }}>
-                  <Flex align="flex-end" gap="sm" wrap="wrap">
-                    <Select
-                      label="Filter Produk"
-                      placeholder="Semua Produk"
-                      data={[
-                        { value: 'all', label: 'Semua Produk' },
-                        ...productNames,
-                      ]}
-                      value={filterProduct || 'all'}
-                      onChange={(val) => setFilterProduct(val)}
-                      style={{ minWidth: 220 }}
-                      size="sm"
-                      searchable
-                      clearable
-                    />
-                    {(search || (filterProduct && filterProduct !== 'all')) && (
-                      <ButtonM
-                        size="sm"
-                        variant="light"
-                        color="gray"
-                        onClick={() => { setSearch(""); setFilterProduct(null); }}
-                        leftSection={<Icon icon="solar:refresh-bold" width={14} />}
-                        radius="xl"
-                        style={{ alignSelf: 'flex-end' }}
-                      >
-                        Reset Filter
-                      </ButtonM>
-                    )}
-                  </Flex>
+                <Flex align="center" gap="sm" wrap="wrap" px={16} py={12} justify="flex-end" style={{ borderBottom: '1px solid #eee' }}>
+                  <Select
+                    placeholder="Filter Produk"
+                    data={[
+                      { value: 'all', label: 'Semua Produk' },
+                      ...productNames,
+                    ]}
+                    value={filterProduct || 'all'}
+                    onChange={(val) => setFilterProduct(val)}
+                    style={{ minWidth: 200 }}
+                    size="sm"
+                    searchable
+                    clearable
+                  />
                   <TextInput
                     placeholder="Cari merchandise..."
                     value={search}
@@ -1209,17 +1234,32 @@ const Merch: React.FC = () => {
                     style={{ width: 280 }}
                     size="sm"
                   />
+                  {(search || (filterProduct && filterProduct !== 'all')) && (
+                    <ButtonM
+                      size="sm"
+                      variant="light"
+                      color="gray"
+                      onClick={() => { setSearch(""); setFilterProduct(null); }}
+                      leftSection={<Icon icon="solar:refresh-bold" width={14} />}
+                      radius="xl"
+                    >
+                      Reset
+                    </ButtonM>
+                  )}
                 </Flex>
 
 
                 <div className="bg-white rounded-[8px] overflow-hidden">
-                  <Table removeWrapper className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]">
+                  <Table 
+                    removeWrapper 
+                    className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]"
+                  >
                     <TableHeader>
-                      <TableColumn>No</TableColumn>
-                      <TableColumn>Info Produk</TableColumn>
-                      <TableColumn>SKU</TableColumn>
-                      <TableColumn>Harga</TableColumn>
-                      <TableColumn>Stock</TableColumn>
+                      <TableColumn>#</TableColumn>
+                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('product_name')}>Info Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
+                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
+                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('price')}>Harga {mtSortBy === 'price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
+                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('stock')}>Stock {mtSortBy === 'stock' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
                       <TableColumn>Lokasi</TableColumn>
                       <TableColumn>Aktif</TableColumn>
                     </TableHeader>
@@ -1310,22 +1350,24 @@ const Merch: React.FC = () => {
                   </Center>
                 )}
 
-                <div className="flex justify-center items-center gap-4 py-6">
-                  <ButtonM disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                    Sebelumnya
-                  </ButtonM>
-                  <span>
-                    Halaman {page} dari {lastPage}
-                  </span>
-                  <ButtonM disabled={page >= lastPage} onClick={() => setPage((p) => Math.min(lastPage, p + 1))}>
-                    Berikutnya
-                  </ButtonM>
-                </div>
+                <Flex justify="center" align="center" gap="md" py={16} style={{ borderTop: '1px solid #f0f0f0' }}>
+                  <MantinePagination
+                    total={lastPage}
+                    value={page}
+                    onChange={setPage}
+                    size="sm"
+                    radius="md"
+                    withEdges
+                    color="#0B387C"
+                  />
+                </Flex>
               </Card>
             </Tab>
           );
         })}
       </Tabs>
+        </>
+      )}
     </div>
   );
 };

@@ -17,6 +17,7 @@ type MerchandiseState = {
         weight?: number;
         stock?: number;
         status?: boolean;
+        sub_name?: string;
     }[];
 };
 

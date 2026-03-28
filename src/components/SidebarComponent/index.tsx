@@ -1601,6 +1601,7 @@ import {
   faTableColumns,
   faRightFromBracket,
   faSquareArrowUpRight,
+  faBox,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1856,19 +1857,18 @@ const sidebarData: SidebarData = [
         link: "/dashboard/merch-pickup",
         role: "Creator",
       },
-    ],
-  },
-  {
-    id: 7,
-    name: "Shipping",
-    icon: faTruck,
-    role: "Creator",
-    submenu: [
       {
-        id: 1,
+        id: 5,
         name: "Delivery",
         icon: faTruck,
         link: "/dashboard/delivery",
+        role: "Creator",
+      },
+      {
+        id: 6,
+        name: "Stock Management",
+        icon: faBox,
+        link: "/dashboard/stockmanagement",
         role: "Creator",
       },
     ],

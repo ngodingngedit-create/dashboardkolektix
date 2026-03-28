@@ -27,7 +27,7 @@ const config: Config = {
       "primary-light": "#F5FAFF",
       "primary-dark": "#0b387c",
       "primary-darker": "#02255a",
-      "primary-light-200": "#E2EEFE",
+      "primary-light-200": "#e2eefe9e",
 
       // 🎨 tambahan baru:
       "primary-light-700": "#1453b6", // untuk hover (sedikit lebih terang dari dark)

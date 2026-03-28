@@ -2260,7 +2260,97 @@ export default function MerchDetail() {
                             <Tabs.Tab value="transaction" leftSection={<Icon icon="fluent:money-16-regular" />}>
                                 Transaksi ({filteredTransactions.length})
                             </Tabs.Tab>
+                            <Tabs.Tab value="stock" leftSection={<Icon icon="solar:box-bold" width={16} />}>
+                                Stock Report
+                            </Tabs.Tab>
                         </Tabs.List>
+
+                        <Tabs.Panel value="stock">
+                            <Box mt={16}>
+                                {(() => {
+                                    const variants = data?.product_varian || [];
+                                    if (variants.length === 0) {
+                                        return (
+                                            <Box py="xl" ta="center">
+                                                <Text c="dimmed">Belum ada data varian produk</Text>
+                                            </Box>
+                                        );
+                                    }
+                                    return (
+                                        <Box style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
+                                                <thead>
+                                                    <tr style={{ backgroundColor: '#f5f7fa', borderBottom: '2px solid #e8e8e8' }}>
+                                                        {['Varian', 'SKU', 'Harga', 'Stock Awal', 'Terjual', 'Paid', 'Pending', 'Expired', 'Sisa Stock'].map(col => (
+                                                            <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {variants.map((v: any, i: number) => {
+                                                        const variantName = v.varian_name || v.name || v.variant_name || `Varian ${i+1}`;
+                                                        const sku = v.sku || '-';
+                                                        const price = parsePrice(v.price || 0);
+                                                        const stockAwal = v.stock_qty || v.stock || 0;
+
+                                                        // Hitung dari allTransactions
+                                                        const vTx = allTransactions.filter(tx =>
+                                                            (tx.product_variant || '').toLowerCase() === variantName.toLowerCase()
+                                                        );
+                                                        const terjual = vTx.reduce((s, tx) => s + (tx.total_qty || 0), 0);
+                                                        const paid = vTx.filter(tx => tx.transaction_status_id === 2).reduce((s, tx) => s + (tx.total_qty || 0), 0);
+                                                        const pending = vTx.filter(tx => tx.transaction_status_id === 1).reduce((s, tx) => s + (tx.total_qty || 0), 0);
+                                                        const expired = vTx.filter(tx => tx.transaction_status_id === 4).reduce((s, tx) => s + (tx.total_qty || 0), 0);
+                                                        const sisaStock = Math.max(0, stockAwal - paid);
+                                                        const isSoldOut = sisaStock === 0 && stockAwal > 0;
+
+                                                        return (
+                                                            <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                                                    <Text size="sm" fw={600}>{variantName}</Text>
+                                                                    {isSoldOut && <Badge size="xs" color="red" variant="filled" mt={4}>SOLD OUT</Badge>}
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                                                    <Badge variant="light" color="gray" size="sm" styles={{ label: { textTransform: 'none', fontFamily: 'monospace' } }}>{sku}</Badge>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                                                                    <Text size="sm" fw={600}>{formatRupiah(price)}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Text size="sm">{stockAwal}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Text size="sm" fw={600}>{terjual}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Text size="sm" fw={700} c={paid > 0 ? 'green' : 'dimmed'}>{paid}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Text size="sm" fw={700} c={pending > 0 ? 'orange' : 'dimmed'}>{pending}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Text size="sm" fw={700} c={expired > 0 ? 'red' : 'dimmed'}>{expired}</Text>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Badge
+                                                                        color={sisaStock === 0 ? 'red' : sisaStock <= 5 ? 'orange' : 'green'}
+                                                                        variant="filled"
+                                                                        size="md"
+                                                                        style={{ fontWeight: 700, minWidth: 32, justifyContent: 'center' }}
+                                                                    >
+                                                                        {sisaStock}
+                                                                    </Badge>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </Box>
+                                    );
+                                })()}
+                            </Box>
+                        </Tabs.Panel>
 
                         <Tabs.Panel value="transaction">
                             <Box mt={10}>

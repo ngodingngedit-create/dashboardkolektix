@@ -34,6 +34,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
         price: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
         weight: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
         status: z.boolean().nullable().optional(),
+        sub_name: z.string().nullable().optional(),
       })
     )
     .optional()
@@ -79,6 +80,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 price: parseInt(e.price ?? "0"),
                 weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : undefined,
                 status: true,
+                sub_name: "", // initial empty for existing variants 
               })),
             });
           }
@@ -218,7 +220,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             ? JSON.stringify(
                 variant.map((e) => ({
                   id: e.id,
-                  varian_name: e.name,
+                  varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
                   sku: e.sku ?? "",
                   price: e.price ?? 999999,
                   weight: e.weight ?? 1,
@@ -267,17 +269,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   );
 
   return (
-    <div className="fixed w-[100vw] h-[100vh] top-0 left-0 z-[200] bg-white">
-      <div className="flex flex-col h-full w-full">
-        <div className="border-b border-[#E2EDFF] p-[10px] shrink-0">
-          <div className="mx-auto max-w-[1280px] px-[20px] flex justify-between items-center gap-[20px]">
-            <Image src={Logo} alt="Kolektix Logo" height={32} />
-            {/* <div className="h-[32px] w-[32px] bg-light-grey rounded-full"></div> */}
-          </div>
-        </div>
+    <div className="bg-white rounded-[8px] w-full">
+      <div className="flex flex-col w-full">
 
-        <div className="h-full overflow-y-auto pb-[20px]">
-          <div className="mx-auto max-w-[1280px] py-[20px] px-[20px] md:px-[30px] flex flex-col gap-[30px]">
+        <div className="w-full pb-[20px]">
+          <div className="py-[20px] px-[20px] flex flex-col gap-[30px]">
             <div>
               <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Merchandise</h2>
               <p className="text-grey">{!Boolean(id) ? "Lengkapi form dibawah untuk membuat Merchandise" : "Lengkapi form dibawah untuk update Merchandise"}</p>
@@ -372,11 +368,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 <div className="flex flex-wrap gap-[20px]">
                   <div className="min-w-[200px] shrink-0 mt-[12px]">
                     <h4 className="text-[16px] font-[500]">
-                      Stok <span className="text-red-400">*</span>
+                      {!Boolean(id) ? "Stok" : "Stok Awal"} <span className="text-red-400">*</span>
                     </h4>
                   </div>
                   <Stack className="flex-grow">
-                    <NumberInput error={form.errors.stock} value={form.values.stock} onChange={(e) => form.setValues({ stock: e as number })} hideControls type="text" placeholder="Isi Stok" />
+                    <NumberInput error={form.errors.stock} value={form.values.stock} onChange={(e) => form.setValues({ stock: e as number })} hideControls type="text" placeholder="Isi Stok" disabled={Boolean(id)} />
                     <Checkbox label="Tampilkan label jika stok habis" />
                   </Stack>
                 </div>
@@ -421,43 +417,39 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
               <div className="p-[16px_20px] flex flex-col gap-[10px]">
                 <Flex align="end" gap={10} wrap="wrap">
-                  {/* <TextInput
-                                        value={form.values.variant[i].name}
-                                        onChange={e => form.setFieldValue(`variant.${i}.name`, e.target.value)}
-                                        label="Nama Varian"
-                                        placeholder="Contoh: Ukuran, Warna"
-                                    /> */}
                   <Flex gap={10} align="center" w="100%">
                     <Select
                       searchable
-                      placeholder="Nama Varian"
+                      placeholder="Kategori Varian"
                       value={String(form.values.variant_name)}
                       onChange={(e) => e && form.setValues({ variant_name: parseInt(e as string) })}
                       data={variantCategory?.map((e) => ({ value: String(e.id), label: e.varian_name }))}
+                      style={{ width: 200 }}
                     />
-                    <TagsInput
-                      w="100%"
-                      value={form.values.variant.map((e) => e.name)}
-                      onChange={(e) =>
-                        form.setValues({
-                          variant: e.map((e, i) => ({
-                            ...form.values.variant[i],
-                            name: e,
-                            status: form.values.variant[i] ? form.values.variant[i].status : true,
-                          })),
-                        })
-                      }
-                      placeholder={`Masukan Nama Varian`}
-                    />
-                    {/* <ActionIcon
-                                            variant="transparent"
-                                            color="#0B387C"
-                                            radius="xl"
-                                            className={`!border-[#E2EDFF] shrink-0`}
-                                            size="xl"
-                                            onClick={() => form.setValues({ variant: form.values.variant.filter((_, z) => z != i) })}>
-                                            <Icon icon="material-symbols:delete-outline" className={`text-[24px]`}/>
-                                        </ActionIcon> */}
+                    {(() => {
+                      const selectedCategoryName = variantCategory?.find((e) => e.id === form.values.variant_name)?.varian_name;
+                      const tagsPlaceholder = selectedCategoryName ? `Masukkan Nama ${selectedCategoryName}` : `Masukan Nama Varian`;
+                      return (
+                        <TagsInput
+                          w="100%"
+                          value={form.values.variant.map((e) => e.name)}
+                          onChange={(e) =>
+                            form.setValues({
+                              variant: e.map((val, i) => ({
+                                name: val,
+                                sku: form.values.variant[i]?.sku ?? "",
+                                stock: form.values.variant[i]?.stock ?? 0,
+                                price: form.values.variant[i]?.price ?? 0,
+                                weight: form.values.variant[i]?.weight ?? 0,
+                                status: form.values.variant[i] ? form.values.variant[i].status : true,
+                                sub_name: form.values.variant[i]?.sub_name ?? "",
+                              })),
+                            })
+                          }
+                          placeholder={tagsPlaceholder}
+                        />
+                      );
+                    })()}
                   </Flex>
                 </Flex>
 
@@ -466,21 +458,25 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 <Divider label="Atur Varian" my={10} display={form.values.variant[0] && Boolean(form.values.variant[0].name) ? undefined : "none"} />
 
                 <Card className={`!overflow-auto`} withBorder p={0} display={form.values.variant[0] && Boolean(form.values.variant[0].name) ? undefined : "none"}>
-                  <Table className={`[&_th]:font-[500] [&_tbody_td]:py-[15px] min-w-[700px]`} horizontalSpacing="md">
-                    <Table.Thead>
+                  <Table className={`min-w-[700px]`} horizontalSpacing="md" verticalSpacing="sm">
+                    <Table.Thead className="bg-[#f5f7fa] border-b-2 border-[#e8e8e8]">
                       <Table.Tr>
-                        <Table.Th>{!Boolean(form.values.variant_name) ? "Varian" : variantCategory?.find((e) => e.id == form.values.variant_name)?.varian_name}</Table.Th>
-                        <Table.Th>SKU</Table.Th>
-                        <Table.Th>Harga</Table.Th>
-                        <Table.Th>Berat</Table.Th>
-                        <Table.Th>Stok</Table.Th>
-                        <Table.Th>Aktif</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">{!Boolean(form.values.variant_name) ? "Kategori" : variantCategory?.find((e) => e.id == form.values.variant_name)?.varian_name}</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Varian</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">SKU</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Harga</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Berat</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">{!Boolean(id) ? "Stok" : "Stok Awal"}</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Aktif</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {form.values.variant.map((e, i) => (
-                        <Table.Tr key={i}>
-                          <Table.Td miw={100}>{e.name}</Table.Td>
+                        <Table.Tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <Table.Td miw={100} fw={500}>{e.name}</Table.Td>
+                          <Table.Td>
+                            <TextInput maw={200} placeholder="Isi Nama Varian" value={form.values.variant[i].sub_name || ""} onChange={(e) => form.setFieldValue(`variant.${i}.sub_name`, e.target.value)} />
+                          </Table.Td>
                           <Table.Td>
                             <TextInput maw={200} placeholder="Isi SKU Varian" value={form.values.variant[i].sku} onChange={(e) => form.setFieldValue(`variant.${i}.sku`, e.target.value)} error={form.errors[`variant.${i}.sku`]} />
                           </Table.Td>
@@ -520,6 +516,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                               error={form.errors[`variant.${i}.stock`]}
                               decimalSeparator=","
                               thousandSeparator="."
+                              disabled={Boolean(id)}
                             />
                           </Table.Td>
                           <Table.Td>
@@ -571,7 +568,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         </div>
 
         <div className="border-t border-[#E2EDFF] py-[15px] shrink-0">
-          <div className="mx-auto max-w-[1280px] px-[20px]">
+          <div className="px-[20px]">
             <Flex gap={10} justify="space-between">
               <Button
                 onClick={() => onClose && onClose()}
