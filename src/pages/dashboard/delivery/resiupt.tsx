@@ -132,7 +132,7 @@ export default function ResiUpdateModal({
                 url: `order-product-invoice/${invoiceNo}`,
                 method: "POST",
                 data: submitData,
-                before: () => {},
+                before: () => { },
                 success: () => {
                     notifications.show({
                         title: "Sukses",
@@ -158,195 +158,202 @@ export default function ResiUpdateModal({
     };
 
     const getPaymentStatusColor = (status: string) => {
-        const colors: Record<string, string> = { 
-            'Verified': 'green', 
-            'Paid': 'teal', 
-            'Pending': 'yellow', 
-            'Unpaid': 'red', 
-            'Expired': 'gray', 
-            'Failed': 'red' 
+        const colors: Record<string, string> = {
+            'Verified': 'green',
+            'Paid': 'teal',
+            'Pending': 'yellow',
+            'Unpaid': 'red',
+            'Expired': 'gray',
+            'Failed': 'red'
         };
         return colors[status] || 'gray';
     };
 
     return (
-        <Grid>
-            {/* SISI KIRI: Info Resi / Invoice Saat Ini */}
-            <Grid.Col span={5}>
-                <Box p={20} className="h-full">
-                    <Stack gap="xl">
-                        <Group justify="space-between" align="flex-start">
-                            <Box>
-                                <Text fw={600} size="lg">Info Pesanan</Text>
-                                <Text size="xs" c="dimmed">
-                                    Invoice {invoiceNo}
-                                </Text>
-                            </Box>
-                            {invoiceData?.payment_status && (
-                                <Badge color={getPaymentStatusColor(invoiceData.payment_status)} variant="light">
-                                    {invoiceData.payment_status}
-                                </Badge>
-                            )}
-                        </Group>
-
-                        {loadingInvoice ? (
-                            <Center h={200}>
-                                <Loader size="sm" />
-                            </Center>
-                        ) : invoiceData ? (
-                            <Stack gap="sm">
-                                <Box bg="gray.0" p="md" style={{ borderRadius: 8 }}>
-                                    <Text size="xs" c="dimmed" mb={4}>Penerima</Text>
-                                    <Text size="sm" fw={500}>
-                                        {invoiceData.address?.nama_penerima || invoiceData.customer_name || "-"}
+        <Box className="flex flex-col h-full relative">
+            <Grid className="flex-1 w-full m-0">
+                {/* SISI KIRI: Info Resi / Invoice Saat Ini */}
+                <Grid.Col span={5}>
+                    <Box p={20} className="h-full">
+                        <Stack gap="xl">
+                            <Group justify="space-between" align="flex-start">
+                                <Box>
+                                    <Text fw={600} size="lg">Info Pesanan</Text>
+                                    <Text size="xs" c="dimmed">
+                                        Invoice {invoiceNo}
                                     </Text>
                                 </Box>
+                                {invoiceData?.payment_status && (
+                                    <Badge color={getPaymentStatusColor(invoiceData.payment_status)} variant="light">
+                                        {invoiceData.payment_status}
+                                    </Badge>
+                                )}
+                            </Group>
 
-                                <Divider my="sm" />
+                            {loadingInvoice ? (
+                                <Center h={200}>
+                                    <Loader size="sm" />
+                                </Center>
+                            ) : invoiceData ? (
+                                <Stack gap="sm">
+                                    <Box bg="gray.0" p="md" style={{ borderRadius: 8 }}>
+                                        <Text size="xs" c="dimmed" mb={4}>Penerima</Text>
+                                        <Text size="sm" fw={500}>
+                                            {invoiceData.address?.nama_penerima || invoiceData.customer_name || "-"}
+                                        </Text>
+                                    </Box>
 
-                                <Text fw={600} size="sm">Detail Pengiriman Saat Ini</Text>
+                                    <Divider my="sm" />
 
-                                <Grid>
-                                    <Grid.Col span={12}>
-                                        <Group gap="xs" wrap="nowrap" align="flex-start">
-                                            <ThemeIcon variant="light" color="blue" size="md" radius="xl" className="mt-1">
-                                                <Icon icon="solar:box-minimalistic-bold" />
-                                            </ThemeIcon>
-                                            <Box>
-                                                <Text size="xs" c="dimmed">Kurir</Text>
-                                                <Text size="sm" fw={500}>{invoiceData.courier?.main || "-"}</Text>
-                                            </Box>
-                                        </Group>
-                                    </Grid.Col>
+                                    <Text fw={600} size="sm">Detail Pengiriman Saat Ini</Text>
 
-                                    <Grid.Col span={12}>
-                                        <Group gap="xs" wrap="nowrap" align="flex-start">
-                                            <ThemeIcon variant="light" color="teal" size="md" radius="xl" className="mt-1">
-                                                <Icon icon="solar:tag-horizontal-bold" />
-                                            </ThemeIcon>
-                                            <Box>
-                                                <Text size="xs" c="dimmed">Layanan</Text>
-                                                <Text size="sm" fw={500}>{invoiceData.courier?.type || "-"}</Text>
-                                            </Box>
-                                        </Group>
-                                    </Grid.Col>
+                                    <Grid>
+                                        <Grid.Col span={12}>
+                                            <Group gap="xs" wrap="nowrap" align="flex-start">
+                                                <ThemeIcon variant="light" color="blue" size="md" radius="xl" className="mt-1">
+                                                    <Icon icon="solar:box-minimalistic-bold" />
+                                                </ThemeIcon>
+                                                <Box>
+                                                    <Text size="xs" c="dimmed">Kurir</Text>
+                                                    <Text size="sm" fw={500}>{invoiceData.courier?.main || "-"}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Grid.Col>
 
-                                    <Grid.Col span={12}>
-                                        <Group gap="xs" wrap="nowrap" align="flex-start">
-                                            <ThemeIcon variant="light" color="orange" size="md" radius="xl" className="mt-1">
-                                                <Icon icon="solar:barcode-bold" />
-                                            </ThemeIcon>
-                                            <Box>
-                                                <Text size="xs" c="dimmed">No. Resi</Text>
-                                                <Text size="sm" fw={600}>{invoiceData.courier?.tracking_number || "-"}</Text>
-                                            </Box>
-                                        </Group>
-                                    </Grid.Col>
+                                        <Grid.Col span={12}>
+                                            <Group gap="xs" wrap="nowrap" align="flex-start">
+                                                <ThemeIcon variant="light" color="teal" size="md" radius="xl" className="mt-1">
+                                                    <Icon icon="solar:tag-horizontal-bold" />
+                                                </ThemeIcon>
+                                                <Box>
+                                                    <Text size="xs" c="dimmed">Layanan</Text>
+                                                    <Text size="sm" fw={500}>{invoiceData.courier?.type || "-"}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Grid.Col>
 
-                                    <Grid.Col span={12}>
-                                        <Group gap="xs" wrap="nowrap" align="flex-start">
-                                            <ThemeIcon variant="light" color="grape" size="md" radius="xl" className="mt-1">
-                                                <Icon icon="solar:calendar-date-bold" />
-                                            </ThemeIcon>
-                                            <Box>
-                                                <Text size="xs" c="dimmed">ETD (Estimasi)</Text>
-                                                <Text size="sm" fw={500}>{invoiceData.courier?.etd || "-"}</Text>
-                                            </Box>
-                                        </Group>
-                                    </Grid.Col>
-                                </Grid>
-                            </Stack>
-                        ) : (
-                            <Alert color="red" variant="light">
-                                Data invoice tidak ditemukan
-                            </Alert>
-                        )}
-                    </Stack>
-                </Box>
-            </Grid.Col>
+                                        <Grid.Col span={12}>
+                                            <Group gap="xs" wrap="nowrap" align="flex-start">
+                                                <ThemeIcon variant="light" color="orange" size="md" radius="xl" className="mt-1">
+                                                    <Icon icon="solar:barcode-bold" />
+                                                </ThemeIcon>
+                                                <Box>
+                                                    <Text size="xs" c="dimmed">No. Resi</Text>
+                                                    <Text size="sm" fw={600}>{invoiceData.courier?.tracking_number || "-"}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Grid.Col>
 
-            {/* SISI KANAN: Form Input Resi */}
-            <Grid.Col span={7}>
-                <Box p={20}>
-                    <Text fw={600} size="lg" mb={4}>Update Resi Baru</Text>
-                    <Text size="sm" c="dimmed" mb="xl">
-                        Lengkapi atau ubah data pengiriman di bawah ini
-                    </Text>
+                                        <Grid.Col span={12}>
+                                            <Group gap="xs" wrap="nowrap" align="flex-start">
+                                                <ThemeIcon variant="light" color="grape" size="md" radius="xl" className="mt-1">
+                                                    <Icon icon="solar:calendar-date-bold" />
+                                                </ThemeIcon>
+                                                <Box>
+                                                    <Text size="xs" c="dimmed">ETD (Estimasi)</Text>
+                                                    <Text size="sm" fw={500}>{invoiceData.courier?.etd || "-"}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Grid.Col>
+                                    </Grid>
+                                </Stack>
+                            ) : (
+                                <Alert color="red" variant="light">
+                                    Data invoice tidak ditemukan
+                                </Alert>
+                            )}
+                        </Stack>
+                    </Box>
+                </Grid.Col>
 
-                    <form onSubmit={form.onSubmit(handleSubmit)}>
-                        <Stack gap="md">
-                            <Grid gutter="md">
-                                <Grid.Col span={6}>
+                {/* SISI KANAN: Form Input Resi */}
+                <Grid.Col span={7} style={{ padding: 0 }}>
+                    <Box className="flex flex-col h-full pl-5">
+                        <Box p={20} pb={30} className="flex-1">
+                            <Text fw={600} size="lg" mb={4}>Update Resi Baru</Text>
+                            <Text size="sm" c="dimmed" mb="xl">
+                                Lengkapi atau ubah data pengiriman di bawah ini
+                            </Text>
+
+                            <form onSubmit={form.onSubmit(handleSubmit)} id="resi-form">
+                                <Stack gap="md">
+                                    <Grid gutter="md">
+                                        <Grid.Col span={6}>
+                                            <TextInput
+                                                withAsterisk
+                                                label="Courier Company"
+                                                placeholder="Contoh: JNE, J&T, SiCepat"
+                                                size="md"
+                                                {...form.getInputProps("courier_company")}
+                                            />
+                                        </Grid.Col>
+                                        <Grid.Col span={6}>
+                                            <TextInput
+                                                label="Courier Service"
+                                                placeholder="Contoh: REG, YES, OKE"
+                                                size="md"
+                                                {...form.getInputProps("courier_service")}
+                                            />
+                                        </Grid.Col>
+                                    </Grid>
+
                                     <TextInput
                                         withAsterisk
-                                        label="Courier Company"
-                                        placeholder="Contoh: JNE, J&T, SiCepat"
+                                        label="Nomor Resi (Airway Bill)"
+                                        placeholder="Masukkan nomor resi pengiriman"
                                         size="md"
-                                        {...form.getInputProps("courier_company")}
+                                        leftSection={<Icon icon="mdi:barcode" width={18} />}
+                                        {...form.getInputProps("resi_no")}
                                     />
-                                </Grid.Col>
-                                <Grid.Col span={6}>
+
+                                    <Grid gutter="md">
+                                        <Grid.Col span={6}>
+                                            <TextInput
+                                                label="ETD (Estimasi)"
+                                                placeholder="Contoh: 1-2 hari"
+                                                size="md"
+                                                {...form.getInputProps("etd")}
+                                            />
+                                        </Grid.Col>
+                                        <Grid.Col span={6}>
+                                            <TextInput
+                                                label="ETD Time"
+                                                type="time"
+                                                size="md"
+                                                {...form.getInputProps("etd_time")}
+                                            />
+                                        </Grid.Col>
+                                    </Grid>
+
                                     <TextInput
-                                        label="Courier Service"
-                                        placeholder="Contoh: REG, YES, OKE"
+                                        label="Delivery ID"
+                                        placeholder="Contoh: DEL-123456"
                                         size="md"
-                                        {...form.getInputProps("courier_service")}
+                                        {...form.getInputProps("delivery_id")}
                                     />
-                                </Grid.Col>
-                            </Grid>
+                                </Stack>
+                            </form>
+                        </Box>
+                    </Box>
+                </Grid.Col>
+            </Grid>
 
-                            <TextInput
-                                withAsterisk
-                                label="Nomor Resi (Airway Bill)"
-                                placeholder="Masukkan nomor resi pengiriman"
-                                size="md"
-                                leftSection={<Icon icon="mdi:barcode" width={18} />}
-                                {...form.getInputProps("resi_no")}
-                            />
-
-                            <Grid gutter="md">
-                                <Grid.Col span={6}>
-                                    <TextInput
-                                        label="ETD (Estimasi)"
-                                        placeholder="Contoh: 1-2 hari"
-                                        size="md"
-                                        {...form.getInputProps("etd")}
-                                    />
-                                </Grid.Col>
-                                <Grid.Col span={6}>
-                                    <TextInput
-                                        label="ETD Time"
-                                        type="time"
-                                        size="md"
-                                        {...form.getInputProps("etd_time")}
-                                    />
-                                </Grid.Col>
-                            </Grid>
-
-                            <TextInput
-                                label="Delivery ID"
-                                placeholder="Contoh: DEL-123456"
-                                size="md"
-                                {...form.getInputProps("delivery_id")}
-                            />
-
-                            <Group justify="flex-end" mt="xl">
-                                <Button variant="light" color="gray" onClick={onClose} disabled={submitting} leftSection={<Icon icon="mdi:close" />}>
-                                    Batal
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    color="blue"
-                                    loading={submitting}
-                                    leftSection={<Icon icon="mdi:check" />}
-                                >
-                                    Simpan Resi
-                                </Button>
-                            </Group>
-                        </Stack>
-                    </form>
-                </Box>
-            </Grid.Col>
-        </Grid>
+            <Box className="sticky bottom-0 z-20 bg-white p-4 px-6 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] w-full">
+                <Group justify="flex-end">
+                    <Button variant="light" color="gray" onClick={onClose} disabled={submitting} leftSection={<Icon icon="mdi:close" />}>
+                        Batal
+                    </Button>
+                    <Button
+                        form="resi-form"
+                        type="submit"
+                        color="blue"
+                        loading={submitting}
+                        leftSection={<Icon icon="mdi:check" />}
+                    >
+                        Simpan Resi
+                    </Button>
+                </Group>
+            </Box>
+        </Box>
     );
 }

@@ -224,93 +224,195 @@ export default function TrackingUpdateModal({
     const isDelivered = manifests.some(m => m.tracking_status_id >= 3);
 
     return (
-        <div className="flex flex-col md:flex-row h-full min-h-[500px]">
-            {/* ===== LEFT: Riwayat Pelacakan ===== */}
-            <div className="w-full md:w-[45%] flex flex-col bg-gray-50">
-                <div className="px-6 py-4 bg-white">
-                    <div className="flex items-center gap-2">
-                        <FontAwesomeIcon icon={faTimeline} className="h-4 w-4 text-blue-600" />
-                        <Text fw={600} size="sm">
-                            Riwayat Pelacakan
+        <div className="flex flex-col h-full relative w-full">
+            <div className="flex flex-col md:flex-row flex-1 min-h-[500px]">
+                {/* ===== LEFT: Riwayat Pelacakan ===== */}
+                <div className="w-full md:w-[45%] flex flex-col bg-gray-50">
+                    <div className="px-6 py-4 bg-white sticky top-0 z-20 border-b border-primary-light shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <FontAwesomeIcon icon={faTimeline} className="h-4 w-4 text-blue-600" />
+                            <Text fw={600} size="sm">
+                                Riwayat Pelacakan
+                            </Text>
+                        </div>
+                        <Text size="xs" c="dimmed" mt={2}>
+                            Invoice: <span className="font-semibold text-gray-700">{invoiceNo}</span>
                         </Text>
                     </div>
-                    <Text size="xs" c="dimmed" mt={2}>
-                        Invoice: <span className="font-semibold text-gray-700">{invoiceNo}</span>
-                    </Text>
-                </div>
 
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                    {loadingInvoice ? (
-                        <Center py="xl">
-                            <Loader size="sm" />
-                        </Center>
-                    ) : manifests.length === 0 ? (
-                        <Center py="xl">
-                            <Stack align="center" gap="xs">
-                                <FontAwesomeIcon icon={faBoxOpen} className="h-10 w-10 text-gray-300" />
-                                <Text size="sm" c="dimmed" ta="center">
-                                    Belum ada riwayat pelacakan
-                                </Text>
-                            </Stack>
-                        </Center>
-                    ) : (
-                        <div className="relative">
-                            <div className="space-y-5">
-                                {manifests.map((m, idx) => {
-                                    const { icon, bg, color } = getIconByStatusId(m.tracking_status_id, idx === 0);
-                                    // Override to green if all delivered
-                                    const finalBg = isDelivered && m.tracking_status_id >= 3 ? '#DCFCE7' : bg;
-                                    const finalColor = isDelivered && m.tracking_status_id >= 3 ? '#16A34A' : color;
-                                    const { date, time } = formatDateTracking(m.courier_time || m.created_at);
-                                    return (
-                                        <div key={m.id} className="flex gap-3 relative">
-                                            {/* dot */}
-                                            <div className="relative z-10 flex-shrink-0">
-                                                <div
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center"
-                                                    style={{ backgroundColor: finalBg }}
-                                                >
-                                                    <FontAwesomeIcon
-                                                        icon={icon}
-                                                        style={{ color: finalColor }}
-                                                        className="h-4 w-4"
-                                                    />
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                        {loadingInvoice ? (
+                            <Center py="xl">
+                                <Loader size="sm" />
+                            </Center>
+                        ) : manifests.length === 0 ? (
+                            <Center py="xl">
+                                <Stack align="center" gap="xs">
+                                    <FontAwesomeIcon icon={faBoxOpen} className="h-10 w-10 text-gray-300" />
+                                    <Text size="sm" c="dimmed" ta="center">
+                                        Belum ada riwayat pelacakan
+                                    </Text>
+                                </Stack>
+                            </Center>
+                        ) : (
+                            <div className="relative">
+                                <div className="space-y-5">
+                                    {manifests.map((m, idx) => {
+                                        const { icon, bg, color } = getIconByStatusId(m.tracking_status_id, idx === 0);
+                                        // Override to green if all delivered
+                                        const finalBg = isDelivered && m.tracking_status_id >= 3 ? '#DCFCE7' : bg;
+                                        const finalColor = isDelivered && m.tracking_status_id >= 3 ? '#16A34A' : color;
+                                        const { date, time } = formatDateTracking(m.courier_time || m.created_at);
+                                        return (
+                                            <div key={m.id} className="flex gap-3 relative">
+                                                {/* dot */}
+                                                <div className="relative z-10 flex-shrink-0">
+                                                    <div
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                                                        style={{ backgroundColor: finalBg }}
+                                                    >
+                                                        <FontAwesomeIcon
+                                                            icon={icon}
+                                                            style={{ color: finalColor }}
+                                                            className="h-4 w-4"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {/* content */}
-                                            <div className="flex-1 pb-4">
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-semibold text-gray-900 leading-snug">
-                                                            {m.status_name}
-                                                        </p>
-                                                        <p className="text-xs text-gray-600 mt-0.5">{m.description}</p>
-                                                        {m.location && (
-                                                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                                                <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 text-gray-400" />
-                                                                {m.location}
+                                                {/* content */}
+                                                <div className="flex-1 pb-4">
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">
+                                                                {m.status_name}
                                                             </p>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right flex-shrink-0 text-xs text-gray-500">
-                                                        <p className="font-medium">{date}</p>
-                                                        <p>{time}</p>
+                                                            <p className="text-xs text-gray-600 mt-0.5">{m.description}</p>
+                                                            {m.location && (
+                                                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                                    <FontAwesomeIcon icon={faLocationDot} className="h-3 w-3 text-gray-400" />
+                                                                    {m.location}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right flex-shrink-0 text-xs text-gray-500">
+                                                            <p className="font-medium">{date}</p>
+                                                            <p>{time}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+
+                    {/* left footer removed */}
                 </div>
 
-                {/* Courier info footer */}
-                {invoiceData?.courier && (
-                    <div className="px-6 py-3  bg-white">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <FontAwesomeIcon icon={faTruck} className="h-3 w-3 text-blue-500" />
+                {/* ===== RIGHT: Update Tracking Form ===== */}
+                <div className="w-full md:w-[55%] flex flex-col">
+                    <div className="px-6 py-4 bg-white sticky top-0 z-20 border-b border-light-grey shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <Icon icon="mdi:truck-delivery" width={18} className="text-blue-600" />
+                            <Text fw={600} size="sm">
+                                Update Tracking
+                            </Text>
+                        </div>
+                        <Text size="xs" c="dimmed" mt={2}>
+                            Tambahkan status pelacakan baru untuk order ini
+                        </Text>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                        <Stack gap="md">
+                            {/* Order Summary */}
+                            {invoiceData && (
+                                <div className="bg-gray-50 p-3 rounded-xl">
+                                    <Group justify="space-between">
+                                        <Box>
+                                            <Text size="xs" c="dimmed">Invoice</Text>
+                                            <Text fw={600} size="sm">{invoiceData.invoice_no}</Text>
+                                        </Box>
+                                        <Box>
+                                            <Text size="xs" c="dimmed">Order ID</Text>
+                                            <Text fw={600} size="sm">#{invoiceData.id}</Text>
+                                        </Box>
+                                        <Box>
+                                            <Text size="xs" c="dimmed">Total Status</Text>
+                                            <Badge color="blue" variant="light" size="sm">
+                                                {invoiceData.manifest?.length ?? 0} riwayat
+                                            </Badge>
+                                        </Box>
+                                    </Group>
+                                </div>
+                            )}
+
+                            <Select
+                                withAsterisk
+                                label="Status Tracking"
+                                placeholder="Pilih status tracking"
+                                data={[
+                                    { value: "1", label: "1 - Dalam Proses" },
+                                    { value: "2", label: "2 - Dalam Perjalanan" },
+                                    { value: "3", label: "3 - Telah Diterima" },
+                                    { value: "4", label: "4 - Gagal Dikirim" },
+                                ]}
+                                size="sm"
+                                searchable
+                                clearable
+                                {...form.getInputProps("tracking_status_id")}
+                            />
+
+                            <TextInput
+                                withAsterisk
+                                label="Nama Status"
+                                placeholder="Contoh: Telah diterima oleh pemesan"
+                                size="sm"
+                                {...form.getInputProps("status_name")}
+                            />
+
+                            <Textarea
+                                withAsterisk
+                                label="Deskripsi"
+                                placeholder="Deskripsi detail status tracking"
+                                autosize
+                                minRows={3}
+                                size="sm"
+                                {...form.getInputProps("description")}
+                            />
+
+                            <Divider />
+
+                            <TextInput
+                                label="Lokasi"
+                                placeholder="Contoh: Warehouse Jakarta"
+                                size="sm"
+                                leftSection={<FontAwesomeIcon icon={faLocationDot} className="h-3.5 w-3.5 text-gray-400" />}
+                                {...form.getInputProps("location")}
+                            />
+
+                            <Alert color="blue" variant="light" py="xs" px="sm">
+                                <Group gap="xs" align="flex-start">
+                                    <Icon icon="mdi:information" width={16} />
+                                    <Text size="xs">
+                                        Waktu tracking akan dicatat secara otomatis berdasarkan waktu saat ini.
+                                    </Text>
+                                </Group>
+                            </Alert>
+                        </Stack>
+                    </div>
+
+                    {/* right footer removed */}
+                </div>
+            </div>
+
+            {/* Unified Footer */}
+            <div className="px-6 py-4 bg-white sticky bottom-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] w-full flex items-center justify-between">
+                <div>
+                    {invoiceData?.courier && (
+                        <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                            <FontAwesomeIcon icon={faTruck} className="h-4 w-4 text-blue-500" />
                             <span>
                                 {invoiceData.courier.courier_company || "-"}{" "}
                                 {invoiceData.courier.courier_type || ""}
@@ -318,126 +420,28 @@ export default function TrackingUpdateModal({
                             {invoiceData.courier.tracking_number && (
                                 <>
                                     <span className="text-gray-300">|</span>
-                                    <span className="font-mono font-semibold text-gray-700">
+                                    <span className="font-mono font-semibold text-gray-900">
                                         {invoiceData.courier.tracking_number}
                                     </span>
                                 </>
                             )}
                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ===== RIGHT: Update Tracking Form ===== */}
-            <div className="w-full md:w-[55%] flex flex-col">
-                <div className="px-6 py-4 bg-white">
-                    <div className="flex items-center gap-2">
-                        <Icon icon="mdi:truck-delivery" width={18} className="text-blue-600" />
-                        <Text fw={600} size="sm">
-                            Update Tracking
-                        </Text>
-                    </div>
-                    <Text size="xs" c="dimmed" mt={2}>
-                        Tambahkan status pelacakan baru untuk order ini
-                    </Text>
+                    )}
                 </div>
-
-                <div className="flex-1 overflow-y-auto px-6 py-5">
-                    <Stack gap="md">
-                        {/* Order Summary */}
-                        {invoiceData && (
-                            <div className="bg-gray-50 p-3 rounded-xl">
-                                <Group justify="space-between">
-                                    <Box>
-                                        <Text size="xs" c="dimmed">Invoice</Text>
-                                        <Text fw={600} size="sm">{invoiceData.invoice_no}</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text size="xs" c="dimmed">Order ID</Text>
-                                        <Text fw={600} size="sm">#{invoiceData.id}</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text size="xs" c="dimmed">Total Status</Text>
-                                        <Badge color="blue" variant="light" size="sm">
-                                            {invoiceData.manifest?.length ?? 0} riwayat
-                                        </Badge>
-                                    </Box>
-                                </Group>
-                            </div>
-                        )}
-
-                        <Select
-                            withAsterisk
-                            label="Status Tracking"
-                            placeholder="Pilih status tracking"
-                            data={[
-                                { value: "1", label: "1 - Dalam Proses" },
-                                { value: "2", label: "2 - Dalam Perjalanan" },
-                                { value: "3", label: "3 - Telah Diterima" },
-                                { value: "4", label: "4 - Gagal Dikirim" },
-                            ]}
-                            size="sm"
-                            searchable
-                            clearable
-                            {...form.getInputProps("tracking_status_id")}
-                        />
-
-                        <TextInput
-                            withAsterisk
-                            label="Nama Status"
-                            placeholder="Contoh: Telah diterima oleh pemesan"
-                            size="sm"
-                            {...form.getInputProps("status_name")}
-                        />
-
-                        <Textarea
-                            withAsterisk
-                            label="Deskripsi"
-                            placeholder="Deskripsi detail status tracking"
-                            autosize
-                            minRows={3}
-                            size="sm"
-                            {...form.getInputProps("description")}
-                        />
-
-                        <Divider />
-
-                        <TextInput
-                            label="Lokasi"
-                            placeholder="Contoh: Warehouse Jakarta"
-                            size="sm"
-                            leftSection={<FontAwesomeIcon icon={faLocationDot} className="h-3.5 w-3.5 text-gray-400" />}
-                            {...form.getInputProps("location")}
-                        />
-
-                        <Alert color="blue" variant="light" py="xs" px="sm">
-                            <Group gap="xs" align="flex-start">
-                                <Icon icon="mdi:information" width={16} />
-                                <Text size="xs">
-                                    Waktu tracking akan dicatat secara otomatis berdasarkan waktu saat ini.
-                                </Text>
-                            </Group>
-                        </Alert>
-                    </Stack>
-                </div>
-
-                {/* Footer buttons */}
-                <div className="px-6 py-4 bg-gray-50">
-                    <Group justify="flex-end" gap="sm">
-                        <Button variant="subtle" color="gray" size="sm" onClick={onClose}>
-                            Batal
-                        </Button>
-                        <Button
-                            size="sm"
-                            color="blue"
-                            loading={submitting}
-                            leftSection={<Icon icon="mdi:check" width={16} />}
-                            onClick={handleSubmit}
-                        >
-                            Simpan Tracking
-                        </Button>
-                    </Group>
-                </div>
+                <Group justify="flex-end" gap="sm">
+                    <Button variant="light" color="gray" size="sm" onClick={onClose}>
+                        Batal
+                    </Button>
+                    <Button
+                        size="sm"
+                        color="blue"
+                        loading={submitting}
+                        leftSection={<Icon icon="mdi:check" width={16} />}
+                        onClick={handleSubmit}
+                    >
+                        Simpan Tracking
+                    </Button>
+                </Group>
             </div>
         </div>
     );
