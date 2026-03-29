@@ -92,7 +92,7 @@ const TicketViewBlock = ({ maxOrder, isGratis, counts, setCounts, data, isLogin,
     Cookies.set("ticketCount", JSON.stringify(counts));
     Cookies.set("prevPath", router.asPath);
     selected && Cookies.set("selected", selected.toString());
-    router.push("/auth");
+    router.push("/login");
   };
 
   const total = useMemo(() => {

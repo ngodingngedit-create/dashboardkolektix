@@ -19,7 +19,7 @@ const Payment = () => {
   const router = useRouter();
   useEffect(() => {
     const userData = Cookies.get("token");
-    userData === undefined && router.push("/auth");
+    userData === undefined && router.push("/login");
   }, []);
   const { id } = router.query;
   const [step, setStep] = useState<number>(0);

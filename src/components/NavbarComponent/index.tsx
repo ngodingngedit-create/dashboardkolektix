@@ -301,7 +301,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           <Menu.Label>Akun</Menu.Label>
                           {!isLogin ? (
                             <>
-                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken" />} color="#0B387C" component={Link} href="/auth">
+                              <Menu.Item leftSection={<Icon icon="solar:login-2-broken" />} color="#0B387C" component={Link} href="/login">
                                 Login / Daftar
                               </Menu.Item>
                             </>

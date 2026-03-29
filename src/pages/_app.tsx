@@ -197,7 +197,7 @@
 //               <SidebarComponent>
 //                 <Component {...pageProps} />
 //               </SidebarComponent>
-//             ) : router.pathname.startsWith('/auth') ||
+//             ) : router.pathname.startsWith('/login') ||
 //               router.pathname.startsWith('/creator') ||
 //               router.pathname.startsWith('/login') ||
 //               router.pathname.startsWith('/sample')
@@ -418,7 +418,7 @@
 //     // Halaman yang TIDAK menampilkan navbar bottom
 //     const hideNavbarBottomPaths = [
 //       '/dashboard',
-//       '/auth',
+//       '/login',
 //       '/creator',
 //       '/login',
 //       '/sample',
@@ -451,7 +451,7 @@
 //               <SidebarComponent>
 //                 <Component {...pageProps} />
 //               </SidebarComponent>
-//             ) : router.pathname.startsWith('/auth') ||
+//             ) : router.pathname.startsWith('/login') ||
 //               router.pathname.startsWith('/creator') ||
 //               router.pathname.startsWith('/login') ||
 //               router.pathname.startsWith('/sample')
@@ -673,7 +673,7 @@ function App({ Component, pageProps }: AppProps) {
     // Halaman yang TIDAK menampilkan navbar bottom
     const hideNavbarBottomPaths = [
       '/dashboard',
-      '/auth',
+      '/login',
       '/creator',
       '/login',
       '/sample',
@@ -708,7 +708,7 @@ function App({ Component, pageProps }: AppProps) {
               <SidebarComponent>
                 <Component {...pageProps} />
               </SidebarComponent>
-            ) : router.pathname.startsWith('/auth') ||
+            ) : router.pathname.startsWith('/login') ||
               router.pathname.startsWith('/creator') ||
               router.pathname.startsWith('/login') ||
               router.pathname.startsWith('/sample')

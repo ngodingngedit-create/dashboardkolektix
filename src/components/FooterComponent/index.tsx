@@ -8,7 +8,7 @@ const FooterData = [
     id: 1,
     title: 'Tentang Kolektix',
     item: [
-      { id: 1, name: 'Masuk', link: '/auth' },
+      { id: 1, name: 'Masuk', link: '/login' },
       { id: 2, name: 'Biaya', link: '/' },
       { id: 3, name: 'Event', link: '/event' },
       { id: 4, name: 'Kebijakan Privasi', link: '/privacy' },

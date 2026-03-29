@@ -37,7 +37,7 @@ export default function Dashboard() {
   useEffect(() => {
     const userData = Cookies.get("token");
     if (userData === undefined) {
-      router.push("/auth");
+      router.push("/login");
     }
 
     if (user && user.has_creator) {

@@ -32,7 +32,8 @@ interface SelectedProduct {
   product_name: string;
   sku: string;
   initial_stock: number;
-  alteration: number;
+  add_stock: number;
+  reduce_stock: number;
 }
 
 const StockManagement = () => {
@@ -91,19 +92,23 @@ const StockManagement = () => {
     const selected = productOptions.find(p => p.display_name === val);
     if (selected) {
       const rowId = `${selected.id}-${selected.variant_id || 'base'}`;
-      if (!selectedProducts.find(p => p.id === rowId)) {
-        setSelectedProducts([...selectedProducts, {
-          id: rowId,
-          product_id: selected.id,
-          variant_id: selected.variant_id || null,
-          product_name: selected.display_name,
-          sku: selected.sku || '-',
-          initial_stock: selected.stock,
-          alteration: 0
-        }]);
-      } else {
-        notifications.show({ title: 'Info', message: 'Product already selected', color: 'blue' });
-      }
+      setSelectedProducts(prev => {
+        if (!prev.find(p => p.id === rowId)) {
+          return [...prev, {
+            id: rowId,
+            product_id: selected.id,
+            variant_id: selected.variant_id || null,
+            product_name: selected.display_name,
+            sku: selected.sku || '-',
+            initial_stock: selected.stock,
+            add_stock: 0,
+            reduce_stock: 0
+          }];
+        } else {
+          notifications.show({ title: 'Info', message: 'Product already selected', color: 'blue' });
+          return prev;
+        }
+      });
     }
     setSearchQuery('');
   };
@@ -112,9 +117,18 @@ const StockManagement = () => {
     setSelectedProducts(selectedProducts.filter(p => p.id !== id));
   };
 
-  const handleValueChange = (id: string, val: number | string) => {
+  const handleValueChange = (id: string, field: 'add_stock' | 'reduce_stock', val: number | string) => {
     const num = typeof val === 'number' ? val : 0;
-    setSelectedProducts(selectedProducts.map(p => p.id === id ? { ...p, alteration: num } : p));
+    setSelectedProducts(selectedProducts.map(p => {
+      if (p.id === id) {
+        // Prevent both add & reduce from being > 0 at the same time to avoid confusion
+        const newProductRow = { ...p, [field]: num };
+        if (field === 'add_stock' && num > 0) newProductRow.reduce_stock = 0;
+        if (field === 'reduce_stock' && num > 0) newProductRow.add_stock = 0;
+        return newProductRow;
+      }
+      return p;
+    }));
   };
 
   const handleSubmit = async () => {
@@ -132,7 +146,7 @@ const StockManagement = () => {
     const productsMap = new Map<number, any>();
 
     selectedProducts.forEach(p => {
-      if (p.alteration === 0) return;
+      if (p.add_stock === 0 && p.reduce_stock === 0) return;
 
       if (!productsMap.has(p.product_id)) {
         productsMap.set(p.product_id, {
@@ -143,19 +157,21 @@ const StockManagement = () => {
 
       const prod = productsMap.get(p.product_id);
 
-      if (p.alteration > 0) {
+      if (p.add_stock > 0) {
         prod.stocks.push({
           product_varian_id: p.variant_id,
           stock_status_id: 2,
-          qty: p.alteration,
+          qty: p.add_stock,
           reference_type: referenceType,
           notes: notes
         });
-      } else if (p.alteration < 0) {
+      }
+
+      if (p.reduce_stock > 0) {
         prod.stocks.push({
           product_varian_id: p.variant_id,
           stock_status_id: 3,
-          qty: Math.abs(p.alteration),
+          qty: p.reduce_stock,
           reference_type: referenceType,
           notes: notes
         });
@@ -164,7 +180,7 @@ const StockManagement = () => {
 
     const productsPayload = Array.from(productsMap.values());
     if (productsPayload.length === 0) {
-      notifications.show({ title: 'Error', message: 'Silakan isi jumlah Perubahan (+/-)!', color: 'red' });
+      notifications.show({ title: 'Error', message: 'Silakan isi qty Tambah Stock atau Kurangi Stock!', color: 'red' });
       return;
     }
 
@@ -287,7 +303,8 @@ const StockManagement = () => {
                     <TableHeader>
                       <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Produk</TableColumn>
                       <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4 text-center">Stok Awal</TableColumn>
-                      <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4 text-center">Perubahan (+/-)</TableColumn>
+                      <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4 text-center">Tambah (+)</TableColumn>
+                      <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4 text-center">Kurangi (-)</TableColumn>
                       <TableColumn align="center" className="bg-gray-50/80 text-gray-600 font-semibold py-4">Aksi</TableColumn>
                     </TableHeader>
                     <TableBody>
@@ -299,6 +316,7 @@ const StockManagement = () => {
                               <Text size="sm">Belum ada produk yang dipilih</Text>
                             </div>
                           </TableCell>
+                          <TableCell className="hidden">{null}</TableCell>
                           <TableCell className="hidden">{null}</TableCell>
                           <TableCell className="hidden">{null}</TableCell>
                           <TableCell className="hidden">{null}</TableCell>
@@ -316,23 +334,49 @@ const StockManagement = () => {
                               </Badge>
                             </TableCell>
                             <TableCell className="py-4">
-                              <div className="flex justify-center flex-col items-center gap-1">
+                              <div className="relative flex flex-col items-center justify-center">
                                 <NumberInput
-                                  value={p.alteration}
-                                  onChange={(val) => handleValueChange(p.id, val)}
-                                  allowNegative={true}
+                                  value={p.add_stock}
+                                  onChange={(val) => handleValueChange(p.id, 'add_stock', val)}
+                                  allowNegative={false}
+                                  min={0}
                                   w={120}
                                   size="sm"
                                   radius="md"
-                                  classNames={{
-                                    input: `text-center font-semibold ${p.alteration > 0 ? 'text-green-600' : p.alteration < 0 ? 'text-red-500' : 'text-gray-700'}`
+                                  classNames={{ 
+                                      input: `text-center font-semibold text-green-600` 
                                   }}
                                 />
-                                {p.alteration !== 0 && (
-                                  <Text size="xs" c="dimmed">
-                                    Hasil akhir: <span className="font-semibold text-gray-700">{Math.max(0, p.initial_stock + p.alteration)}</span>
-                                  </Text>
-                                )}
+                                <div className="absolute top-full mt-1 flex justify-center w-full">
+                                  {p.add_stock > 0 && (
+                                    <Text size="xs" c="dimmed" className="whitespace-nowrap">
+                                      Hasil akhir: <span className="font-semibold text-gray-700">{p.initial_stock + p.add_stock}</span>
+                                    </Text>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div className="relative flex flex-col items-center justify-center">
+                                <NumberInput
+                                  value={p.reduce_stock}
+                                  onChange={(val) => handleValueChange(p.id, 'reduce_stock', val)}
+                                  allowNegative={false}
+                                  min={0}
+                                  w={120}
+                                  size="sm"
+                                  radius="md"
+                                  classNames={{ 
+                                      input: `text-center font-semibold text-red-500` 
+                                  }}
+                                />
+                                <div className="absolute top-full mt-1 flex justify-center w-full">
+                                  {p.reduce_stock > 0 && (
+                                    <Text size="xs" c="dimmed" className="whitespace-nowrap">
+                                      Hasil akhir: <span className="font-semibold text-gray-700">{Math.max(0, p.initial_stock - p.reduce_stock)}</span>
+                                    </Text>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell className="py-4">
