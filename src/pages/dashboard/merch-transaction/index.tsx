@@ -1495,103 +1495,84 @@ const MerchandiseTransaction: React.FC = () => {
 
   return (
     <>
-      <Text fw={800} style={{ fontSize: '26px' }} mx={15} mt={15} mb={0} c="dark.9">Transaksi Merchandise</Text>
-      <MantineCard p={25} m={15} withBorder radius="md">
-        <Stack gap="xl">
-            {/* Statistics Bar moved inside better cards later if needed, but keeping current summary style refined */}
-            <Flex justify="space-between" align="center" p="md" bg="gray.0" style={{ border: '1px solid #eee', borderRadius: '8px' }}>
-                <Group gap="xl">
-                    <Stack gap={2}>
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
-                        <Text size="xl" fw={700}>{filtered.length}</Text>
-                    </Stack>
-                    <Divider orientation="vertical" />
-                    <Stack gap={2}>
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Penjualan</Text>
-                        <Text size="xl" fw={700}>
-                            <NumberFormatter prefix="Rp " value={totalPriceAllFiltered} thousandSeparator="." decimalSeparator="," />
-                        </Text>
-                    </Stack>
-                </Group>
-                <MantineButton 
-                    variant="filled" 
-                    color="green" 
-                    leftSection={<Icon icon="solar:file-download-bold" width={18} />}
-                    onClick={() => exportToCSV(filtered)}
-                    disabled={filtered.length === 0}
-                    styles={{ root: { color: 'white' } }}
-                >
-                    Export CSV ({filtered.length})
-                </MantineButton>
-            </Flex>
+      <Flex mt={15} mx={15} justify="space-between" align="center" wrap="wrap">
+          <Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Transaksi Merchandise</Text>
+          <Group gap="xl">
+              <Stack gap={2}>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
+                  <Text size="xl" fw={700}>{filtered.length}</Text>
+              </Stack>
+              <Divider orientation="vertical" />
+              <Stack gap={2}>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Penjualan</Text>
+                  <Text size="xl" fw={700}>
+                      <NumberFormatter prefix="Rp " value={totalPriceAllFiltered} thousandSeparator="." decimalSeparator="," />
+                  </Text>
+              </Stack>
+          </Group>
+      </Flex>
 
-            <Box mt={15}>
-                        {/* Row 1: Search + Filter Produk + Item per halaman */}
-                        <Flex align="center" gap="sm" wrap="wrap" mb="sm" justify="flex-end">
-                            <MantineTextInput
-                                placeholder="Cari invoice..."
-                                leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                                value={filterValue}
-                                onChange={(e) => {
-                                    setFilterValue(e.target.value);
-                                    setPage(1);
-                                }}
-                                style={{ width: 300 }}
-                                size="sm"
-                            />
-                            <MantineSelect
-                                placeholder="Filter Produk"
-                                data={[
-                                    { value: 'all', label: 'Semua Produk' },
-                                    ...productOptions.map(p => ({ value: p.key, label: p.label }))
-                                ]}
-                                value={selectedProduct}
-                                onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
-                                style={{ minWidth: 200 }}
-                                size="sm"
-                                searchable
-                                clearable
-                            />
-                            <Group gap="xs" align="center">
-                                <Text size="sm" c="gray">Item per halaman:</Text>
+      <MantineCard p={25} mt={20} mx={15} mb={15} withBorder radius="md">
+        <Stack gap="xl">
+            <Box>
+                {/* Row 1: Pagination + Export (kiri) | Filter Produk + Search (kanan) */}
+                <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+                    <Group gap="sm">
+                        <MantineSelect
+                            value={rowsPerPage.toString()}
+                            onChange={(val) => {
+                                setRowsPerPage(Number(val));
+                                setPage(1);
+                            }}
+                            data={['10', '20', '50', '100']}
+                            style={{ width: 70 }}
+                            size="sm"
+                        />
+                        <MantineButton 
+                            variant="filled" 
+                            color="green" 
+                            leftSection={<Icon icon="solar:file-download-bold" width={18} />}
+                            onClick={() => exportToCSV(filtered)}
+                            disabled={filtered.length === 0}
+                            size="sm"
+                            styles={{ root: { color: 'white' } }}
+                        >
+                            Export CSV ({filtered.length})
+                        </MantineButton>
+                    </Group>
+                            <Group gap="sm">
                                 <MantineSelect
-                                    value={rowsPerPage.toString()}
-                                    onChange={(val) => {
-                                        setRowsPerPage(Number(val));
+                                    placeholder="Filter Produk"
+                                    data={[
+                                        { value: 'all', label: 'Semua Produk' },
+                                        ...productOptions.map(p => ({ value: p.key, label: p.label }))
+                                    ]}
+                                    value={selectedProduct}
+                                    onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
+                                    style={{ minWidth: 200 }}
+                                    size="sm"
+                                    searchable
+                                    clearable
+                                />
+                                <MantineTextInput
+                                    placeholder="Cari invoice..."
+                                    leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                                    value={filterValue}
+                                    onChange={(e) => {
+                                        setFilterValue(e.target.value);
                                         setPage(1);
                                     }}
-                                    data={['10', '20', '50', '100']}
-                                    style={{ width: 80 }}
+                                    style={{ width: 300 }}
                                     size="sm"
                                 />
                             </Group>
                         </Flex>
 
-                        {/* Row 2: info transaksi kiri | Pilih Semua + Cetak kanan */}
+                        {/* Row 2: info transaksi kiri */}
                         <Flex align="center" gap="sm" mb="md">
                             <Text size="sm" c="gray">
                                 Menampilkan {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0'} dari {filtered.length} transaksi
                             </Text>
-                            <Checkbox
-                                checked={selectedInvoiceIds.length === paginatedItems.length && paginatedItems.length > 0}
-                                indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedItems.length}
-                                onChange={toggleSelectAll}
-                                size="sm"
-                                label="Pilih Semua"
-                                ml="auto"
-                                styles={{ label: { fontSize: '13px', fontWeight: 500, cursor: 'pointer' } }}
-                            />
-                            <MantineButton
-                                variant="filled"
-                                color="blue"
-                                leftSection={printLoading ? <Icon icon="line-md:loading-twotone-loop" /> : <Icon icon="solar:printer-bold" width={16} />}
-                                onClick={handleBulkPrint}
-                                disabled={selectedInvoiceIds.length === 0 || printLoading}
-                                size="sm"
-                                styles={{ root: { color: 'white' } }}
-                            >
-                                Cetak Resi Semua {selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}
-                            </MantineButton>
                         </Flex>
 
                         {/* Table */}
@@ -1606,7 +1587,33 @@ const MerchandiseTransaction: React.FC = () => {
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>Total {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('transaction_status_id')}>Status Bayar {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status Kirim</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>Aksi</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
+                                            <Flex align="center" gap="xs">
+                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
+                                                <Checkbox
+                                                    checked={selectedInvoiceIds.length === paginatedItems.length && paginatedItems.length > 0}
+                                                    indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedItems.length}
+                                                    onChange={toggleSelectAll}
+                                                    size="xs"
+                                                />
+                                                <Tooltip label={`Cetak Resi Semua ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
+                                                    <ActionIcon
+                                                        variant="transparent"
+                                                        color="blue"
+                                                        onClick={handleBulkPrint}
+                                                        disabled={selectedInvoiceIds.length === 0 || printLoading}
+                                                        style={{ position: 'relative', overflow: 'visible', marginRight: 8 }}
+                                                    >
+                                                        {printLoading ? <Icon icon="line-md:loading-twotone-loop" /> : <Icon icon="solar:printer-bold" width={18} />}
+                                                        {selectedInvoiceIds.length > 0 && (
+                                                            <Badge size="xs" color="red" variant="filled" style={{ position: 'absolute', top: -5, right: -8, pointerEvents: 'none', padding: '0 4px', height: 16, minWidth: 16, color: 'white', fontWeight: 800 }}>
+                                                                {selectedInvoiceIds.length}
+                                                            </Badge>
+                                                        )}
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Flex>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1639,12 +1646,12 @@ const MerchandiseTransaction: React.FC = () => {
                                                     </Text>
                                                 </td>
                                                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Badge color={statusInfo.color} variant="filled" style={{ fontWeight: 600 }}>
+                                                    <Badge color={statusInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                                                         {statusInfo.text}
                                                     </Badge>
                                                 </td>
                                                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600 }}>
+                                                    <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                                                         {shippingInfo.text}
                                                     </Badge>
                                                 </td>

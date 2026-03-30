@@ -223,14 +223,14 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import QrScanner from 'qr-scanner';
 import fetch from '@/utils/fetch';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-    faTicket, 
-    faHistory, 
-    faClock, 
-    faCalendarAlt, 
-    faCheck, 
-    faCamera, 
-    faKeyboard, 
+import {
+    faTicket,
+    faHistory,
+    faClock,
+    faCalendarAlt,
+    faCheck,
+    faCamera,
+    faKeyboard,
     faXmark,
     faEnvelope,
     faUser
@@ -388,14 +388,14 @@ const Merch = () => {
 
         try {
             // Different API endpoints for ticket and invitation
-            const url = activeTab === 'ticket' 
-                ? 'event/scan-eticket' 
-                : 'event/scan-invitation'; // Adjust this endpoint as needed
+            const url = activeTab === 'ticket'
+                ? 'event/scan-eticket'
+                : 'invitations/checkin';
 
-            await fetch<{ qr_code: string }, any>({
+            await fetch<any, any>({
                 method: 'POST',
                 url: url,
-                data: { qr_code: code },
+                data: activeTab === 'ticket' ? { qr_code: code } : { invitation_number: code },
                 headers: { lgntkn: 'true' },
                 success: (data: any) => {
                     const newScan: ScanItem = {
@@ -417,7 +417,7 @@ const Merch = () => {
                 },
                 error: (err) => {
                     const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
-                    
+
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: code,
@@ -463,40 +463,33 @@ const Merch = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white">
-                <div className="px-4 sm:px-6 lg:px-8 py-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Check-in</h1>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="px-4 sm:px-6 lg:px-8 mt-4">
-                <div className="flex w-full max-w-md rounded-lg overflow-hidden border border-primary-light-200">
+            {/* Header and Tabs */}
+            <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex justify-end items-center shadow-sm">
+                <div className="flex w-full md:w-auto rounded-md overflow-hidden border border-primary-light-200 bg-gray-50">
                     <button
-                        className={`flex-1 py-3 text-center font-medium flex items-center justify-center gap-2 ${activeTab === 'ticket' 
-                            ? 'bg-primary text-white' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                        className={`flex-1 md:w-32 py-1.5 md:py-2 text-center text-sm font-medium flex items-center justify-center gap-2 transition-colors ${activeTab === 'ticket'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-100'}`}
                         onClick={() => {
                             setActiveTab('ticket');
                             setShowSuccessModal(false);
                             setCurrentScanData(null);
                         }}
                     >
-                        <FontAwesomeIcon icon={faTicket} />
+                        <FontAwesomeIcon icon={faTicket} className="text-xs" />
                         Ticket
                     </button>
                     <button
-                        className={`flex-1 py-3 text-center font-medium flex items-center justify-center gap-2 ${activeTab === 'invitation' 
-                            ? 'bg-primary text-white' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                        className={`flex-1 md:w-32 py-1.5 md:py-2 text-center text-sm font-medium flex items-center justify-center gap-2 transition-colors ${activeTab === 'invitation'
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-100'}`}
                         onClick={() => {
                             setActiveTab('invitation');
                             setShowSuccessModal(false);
                             setCurrentScanData(null);
                         }}
                     >
-                        <FontAwesomeIcon icon={faEnvelope} />
+                        <FontAwesomeIcon icon={faEnvelope} className="text-xs" />
                         Invitation
                     </button>
                 </div>
@@ -506,53 +499,53 @@ const Merch = () => {
                 <div className="flex flex-col lg:flex-row">
                     {/* Bagian Scanner */}
                     <div className="lg:w-1/2">
-                        <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 m-4">
-                            <div className="flex items-center gap-3 mb-6">
-                                <FontAwesomeIcon 
-                                    icon={activeTab === 'ticket' ? faTicket : faEnvelope} 
-                                    className="text-primary text-xl" 
+                        <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-0 sm:p-6 m-0 sm:m-4 overflow-hidden relative">
+                            <div className="flex items-center gap-2 mb-4 p-6 sm:p-0">
+                                <FontAwesomeIcon
+                                    icon={activeTab === 'ticket' ? faTicket : faEnvelope}
+                                    className="text-primary text-base"
                                 />
-                                <h2 className="text-xl font-semibold text-gray-900">
+                                <h2 className="text-base md:text-lg font-semibold text-gray-900">
                                     Scan {activeTab === 'ticket' ? 'Ticket' : 'Invitation'}
                                 </h2>
                             </div>
 
-                            {/* Tombol Switch - Scan Camera dan Input Manual */}
-                            <div className="flex w-full mb-6 rounded-lg overflow-hidden border border-primary-light-200">
+                            {/* Tombol Switch - Scan Camera dan Scanner (Standard Tabs) */}
+                            <div className="flex w-full mb-5 px-6 sm:px-0">
                                 <button
-                                    className={`flex-1 py-3 text-center font-medium flex items-center justify-center gap-2 ${selected === 'qr' 
-                                        ? 'bg-primary text-white' 
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`flex-1 md:flex-none px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${selected === 'qr'
+                                        ? 'text-primary bg-primary/5'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                     onClick={() => {
                                         setSelected('qr');
                                         setShowSuccessModal(false);
                                         startScanner();
                                     }}
                                 >
-                                    <FontAwesomeIcon icon={faCamera} />
+                                    <FontAwesomeIcon icon={faCamera} className="text-xs" />
                                     Scan Camera
                                 </button>
                                 <button
-                                    className={`flex-1 py-3 text-center font-medium flex items-center justify-center gap-2 ${selected === 'manual' 
-                                        ? 'bg-primary text-white' 
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`flex-1 md:flex-none px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-200 ${selected === 'manual'
+                                        ? 'text-primary bg-primary/5'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                     onClick={() => {
                                         setSelected('manual');
                                         setShowSuccessModal(false);
                                         stopScanner();
                                     }}
                                 >
-                                    <FontAwesomeIcon icon={faKeyboard} />
-                                    Input Manual
+                                    <FontAwesomeIcon icon={faKeyboard} className="text-xs" />
+                                    Scanner
                                 </button>
                             </div>
 
                             <div>
                                 {selected === 'qr' && (
-                                    <div className="mb-4">
-                                        <div className="rounded-lg overflow-hidden border-2 border-dashed border-primary-light-200 bg-gray-50 p-2 h-[400px] relative flex items-center justify-center">
+                                    <div className="mb-0 sm:mb-4">
+                                        <div className="overflow-hidden bg-black w-full relative aspect-[3/4] md:h-[400px] flex items-center justify-center sm:rounded-lg sm:border sm:border-primary-light-200">
                                             {camError && (
-                                                <div className="absolute inset-0 bg-black bg-opacity-50 z-20 flex items-center justify-center p-4">
+                                                <div className="absolute inset-0 bg-black bg-opacity-80 z-20 flex items-center justify-center p-4">
                                                     <div className="bg-white p-6 rounded-xl text-center max-w-md w-full">
                                                         <Icon icon="ph:camera-slash" className="text-4xl mb-3 text-red-500 mx-auto" />
                                                         <p className="font-semibold mb-2">Kamera Tidak Tersedia</p>
@@ -568,34 +561,32 @@ const Merch = () => {
                                                 </div>
                                             )}
 
-                                            {/* Video dengan ukuran persegi */}
+                                            {/* Video mentok penuh */}
                                             {!camError && (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <div className="relative w-[300px] h-[300px]">
-                                                        <video
-                                                            className="w-full h-full object-cover rounded-lg"
-                                                            ref={videoRef}
-                                                            autoPlay
-                                                            playsInline
-                                                            muted
-                                                        />
-                                                        
-                                                        {/* Overlay Scanner - di atas video */}
-                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                                            <div className="relative w-64 h-64">
-                                                                {/* Kotak pembatas transparan */}
-                                                                <div className="absolute inset-0 border-2 border-primary/30 rounded-lg"></div>
-                                                                
-                                                                {/* Sudut-sudut */}
-                                                                <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-primary"></div>
-                                                                <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-primary"></div>
-                                                                <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-primary"></div>
-                                                                <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-primary"></div>
-                                                                
-                                                                {/* Garis scan yang bergerak */}
-                                                                <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary animate-scan">
-                                                                    <div className="absolute -top-1 left-1/2 w-2 h-2 bg-primary rounded-full transform -translate-x-1/2"></div>
-                                                                </div>
+                                                <div className="w-full h-full relative">
+                                                    <video
+                                                        className="absolute inset-0 w-full h-full object-cover"
+                                                        ref={videoRef}
+                                                        autoPlay
+                                                        playsInline
+                                                        muted
+                                                    />
+
+                                                    {/* Overlay Scanner - di atas video */}
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                                        <div className="relative w-4/5 h-4/5 max-w-[280px] max-h-[280px]">
+                                                            {/* Kotak pembatas transparan */}
+                                                            <div className="absolute inset-0 border-2 border-white/40 rounded-lg"></div>
+
+                                                            {/* Sudut-sudut */}
+                                                            <div className="absolute -top-1 -left-1 w-8 h-8 border-t-[3px] border-l-[3px] border-white"></div>
+                                                            <div className="absolute -top-1 -right-1 w-8 h-8 border-t-[3px] border-r-[3px] border-white"></div>
+                                                            <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-[3px] border-l-[3px] border-white"></div>
+                                                            <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-[3px] border-r-[3px] border-white"></div>
+
+                                                            {/* Garis scan yang bergerak */}
+                                                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary animate-scan z-20">
+                                                                <div className="absolute -top-1 left-1/2 w-2.5 h-2.5 bg-primary rounded-full transform -translate-x-1/2 shadow-[0_0_10px_rgba(var(--mantine-color-primary-6),1)]"></div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -606,36 +597,103 @@ const Merch = () => {
                                 )}
 
                                 {selected === 'manual' && (
-                                    <form onSubmit={handleManualSubmit} className="px-2">
+                                    <form onSubmit={handleManualSubmit} className="px-2 pb-4">
                                         <div className="mb-4">
-                                            <label className="block text-gray-700 text-sm font-medium mb-2">
+                                            <label className="block text-gray-700 text-sm font-medium mb-1.5">
                                                 {activeTab === 'ticket' ? 'Kode Tiket / Invoice' : 'Kode Invitation'}
                                             </label>
                                             <input
                                                 type="text"
-                                                className="border-2 border-primary-light-200 rounded-lg w-full py-3 px-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                                                className="border-2 border-primary-light-200 rounded-lg w-full py-2 px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
                                                 placeholder={activeTab === 'ticket' ? "Masukkan kode tiket" : "Masukkan kode undangan"}
                                                 value={isAutoInputActive ? '' : manualInput}
                                                 onChange={(e) => setManualInput(e.target.value)}
                                                 autoFocus
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {activeTab === 'ticket' 
-                                                    ? 'Masukkan nomor invoice atau kode tiket untuk check-in'
-                                                    : 'Masukkan kode undangan untuk validasi'}
+                                            <p className="text-xs text-gray-500 mt-1.5">
+                                                {activeTab === 'ticket'
+                                                    ? 'Masukkan nomor invoice atau kode tiket untuk diproses scanner'
+                                                    : 'Masukkan kode undangan untuk divalidasi oleh scanner'}
                                             </p>
                                         </div>
                                         <Button
                                             type="submit"
                                             disabled={!manualInput.trim() || loading === 'scan'}
                                             fullWidth
-                                            className="!bg-primary !text-white !py-3 !rounded-lg !font-medium"
+                                            className="!bg-primary !text-white !py-2 !rounded-lg !font-medium"
                                         >
-                                            {loading === 'scan' ? 'Memproses...' : 'Validasi'}
+                                            {loading === 'scan' ? 'Memproses...' : 'Scan / Validasi'}
                                         </Button>
                                     </form>
                                 )}
                             </div>
+
+                            {/* Modal Success - Integrated within scanner area */}
+                            {showSuccessModal && currentScanData && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
+                                    <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn shadow-2xl">
+                                        <FontAwesomeIcon
+                                            icon={currentScanData.status === 'success' ? faCheckCircle : faXmark}
+                                            className={`text-4xl mb-3 ${currentScanData.status === 'success' ? 'text-green-500' : 'text-red-500'}`}
+                                        />
+                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' : 'text-red-700'}`}>
+                                            {currentScanData.status === 'success'
+                                                ? (activeTab === 'ticket' ? 'Check-in Berhasil!' : 'Validasi Berhasil!')
+                                                : 'Gagal!'}
+                                        </p>
+
+                                        <div className="text-left mb-4 bg-gray-50 p-3 rounded-lg border border-light-grey">
+                                            {currentScanData.status === 'success' ? (
+                                                <div className="space-y-2">
+                                                    <p className="text-sm font-medium text-primary">{currentScanData.invoice_no}</p>
+                                                    <div className="grid grid-cols-2 gap-1 text-sm">
+                                                        <span className="text-gray-600">{activeTab === 'ticket' ? 'Pengunjung:' : 'Nama:'}</span>
+                                                        <span className="font-medium text-gray-900">{currentScanData.buyer_name}</span>
+
+                                                        <span className="text-gray-600">Event:</span>
+                                                        <span className="font-medium text-gray-900">{currentScanData.event_name}</span>
+
+                                                        <span className="text-gray-600">{activeTab === 'ticket' ? 'Kategori:' : 'Tipe:'}</span>
+                                                        <span className="font-medium text-gray-900">{currentScanData.category_ticket}</span>
+
+                                                        <span className="text-gray-600">Jumlah:</span>
+                                                        <span className="font-medium text-gray-900">{currentScanData.total_qty} {activeTab === 'ticket' ? 'Tiket' : 'Undangan'}</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-2">
+                                                    <p className="text-sm text-red-600 font-medium">{currentScanData.message}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {currentScanData.status === 'success' && (
+                                            <p className="text-sm text-gray-600 mb-4">
+                                                {activeTab === 'ticket'
+                                                    ? 'Tiket berhasil divalidasi. Pengunjung dapat memasuki venue.'
+                                                    : 'Undangan berhasil divalidasi.'}
+                                            </p>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button
+                                                onClick={() => setShowSuccessModal(false)}
+                                                fullWidth
+                                                className="!bg-gray-100 !text-gray-700 !py-2 !rounded-lg hover:!bg-gray-200 uppercase text-xs font-bold tracking-wider"
+                                            >
+                                                Tutup
+                                            </Button>
+                                            <Button
+                                                onClick={handleScanAgain}
+                                                fullWidth
+                                                className="!bg-primary !text-white !py-2 !rounded-lg shadow-md uppercase text-xs font-bold tracking-wider"
+                                            >
+                                                Scan Ulang
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <style>{`
                                 @keyframes scan {
@@ -669,94 +727,19 @@ const Merch = () => {
                     {/* Bagian Riwayat Scan */}
                     <div className="lg:w-1/2">
                         <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 m-4 h-full min-h-[calc(100vh-200px)] relative">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <FontAwesomeIcon icon={faHistory} className="text-primary text-xl" />
-                                    <h2 className="text-xl font-semibold text-gray-900">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <FontAwesomeIcon icon={faHistory} className="text-primary text-base" />
+                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
                                         Riwayat {activeTab === 'ticket' ? 'Ticket' : 'Invitation'}
                                     </h2>
                                 </div>
                                 {filteredHistory.length > 0 && (
-                                    <span className="bg-primary text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                                        {filteredHistory.length}
+                                    <span className="bg-primary/10 text-primary border border-primary/20 text-xs font-semibold px-2.5 py-1 rounded-full">
+                                        Total: {filteredHistory.length}
                                     </span>
                                 )}
                             </div>
-
-                            {/* Modal Success - Custom Modal */}
-                            {showSuccessModal && currentScanData && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
-                                    <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn">
-                                        <FontAwesomeIcon
-                                            icon={currentScanData.status === 'success' ? faCheckCircle : faXmark}
-                                            className={`text-4xl mb-3 ${currentScanData.status === 'success' ? 'text-green-500' : 'text-red-500'
-                                                }`}
-                                        />
-                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' : 'text-red-700'
-                                            }`}>
-                                            {currentScanData.status === 'success' 
-                                                ? (activeTab === 'ticket' ? 'Check-in Berhasil!' : 'Validasi Berhasil!')
-                                                : 'Gagal!'}
-                                        </p>
-
-                                        <div className="text-left mb-4 bg-gray-50 p-3 rounded-lg">
-                                            {currentScanData.status === 'success' ? (
-                                                // Tampilan untuk success
-                                                <div className="space-y-2">
-                                                    <p className="text-sm font-medium">{currentScanData.invoice_no}</p>
-                                                    <div className="grid grid-cols-2 gap-1 text-sm">
-                                                        <span className="text-gray-600">
-                                                            {activeTab === 'ticket' ? 'Pengunjung:' : 'Nama:'}
-                                                        </span>
-                                                        <span className="font-medium">{currentScanData.buyer_name}</span>
-                                                        
-                                                        <span className="text-gray-600">Event:</span>
-                                                        <span className="font-medium">{currentScanData.event_name}</span>
-                                                        
-                                                        <span className="text-gray-600">
-                                                            {activeTab === 'ticket' ? 'Kategori:' : 'Tipe:'}
-                                                        </span>
-                                                        <span className="font-medium">{currentScanData.category_ticket}</span>
-                                                        
-                                                        <span className="text-gray-600">Jumlah:</span>
-                                                        <span className="font-medium">{currentScanData.total_qty} {activeTab === 'ticket' ? 'Tiket' : 'Undangan'}</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                // Tampilan untuk failed
-                                                <div className="text-center">
-                                                    <p className="text-sm text-red-600">{currentScanData.message}</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {currentScanData.status === 'success' && (
-                                            <p className="text-sm text-gray-600 mb-4">
-                                                {activeTab === 'ticket'
-                                                    ? 'Tiket berhasil divalidasi. Pengunjung dapat memasuki venue.'
-                                                    : 'Undangan berhasil divalidasi.'}
-                                            </p>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <Button
-                                                onClick={() => setShowSuccessModal(false)}
-                                                fullWidth
-                                                className="!bg-primary !text-white !py-2 !rounded-lg"
-                                            >
-                                                Tutup
-                                            </Button>
-                                            <Button
-                                                onClick={handleScanAgain}
-                                                fullWidth
-                                                className="!bg-primary !text-white !py-2 !rounded-lg"
-                                            >
-                                                Scan Ulang
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             <div className="overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}>
                                 {filteredHistory.length === 0 ? (
@@ -796,8 +779,8 @@ const Merch = () => {
                                                         </div>
                                                     </div>
                                                     <div className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'success'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
                                                         }`}>
                                                         {getStatusText(item.status)}
                                                     </div>
@@ -848,35 +831,6 @@ const Merch = () => {
                 </div>
             </div>
 
-            {/* Sticky Footer */}
-            {filteredHistory.length > 0 && (
-                <div className="fixed bottom-6 z-50" style={{
-                    left: 'calc(50% + 16px)',
-                    width: 'calc(50% - 32px)'
-                }}>
-                    <div className="bg-white rounded-xl shadow-lg border border-primary-light-200 p-4 mx-4 lg:mx-0 lg:mr-4">
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={() => {
-                                    // Hapus hanya history untuk tab yang aktif
-                                    setScanHistory(prev => prev.filter(item => item.type !== activeTab));
-                                }}
-                                fullWidth
-                                className="!bg-primary !text-white !py-2 !rounded-lg"
-                            >
-                                Clear History
-                            </Button>
-                            <Button
-                                onClick={handleScanAgain}
-                                fullWidth
-                                className="!bg-primary !text-white !py-2 !rounded-lg"
-                            >
-                                Scan Ulang
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

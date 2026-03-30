@@ -1257,7 +1257,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 // Definisikan tipe untuk metode pembayaran
@@ -1364,10 +1364,10 @@ const Merch = () => {
     try {
       console.log("Starting to fetch all events...");
       console.log("Current user creator ID:", user?.has_creator?.id);
-      
+
       // Fetch halaman pertama dengan axios
       const response = await axios.get(`${config.wsUrl}event?page=${currentPage}`);
-      
+
       console.log("First page response status:", response.status);
       console.log("First page response data:", response.data);
 
@@ -1375,19 +1375,19 @@ const Merch = () => {
         // Response dengan pagination wrapper
         const firstPageData = response.data.data;
         allEvents = [...firstPageData];
-        
+
         // Dapatkan info pagination
         if (response.data.pagination) {
           lastPage = response.data.pagination.last_page || 1;
           console.log(`Total pages: ${lastPage}`);
           console.log(`Total events: ${response.data.pagination.total}`);
-          
+
           // Fetch halaman berikutnya jika ada
           if (lastPage > 1) {
             for (let page = 2; page <= lastPage; page++) {
               console.log(`Fetching page ${page}...`);
               const nextResponse = await axios.get(`${config.wsUrl}event?page=${page}`);
-              
+
               if (nextResponse.data?.data && Array.isArray(nextResponse.data.data)) {
                 allEvents = [...allEvents, ...nextResponse.data.data];
                 console.log(`Page ${page} added, total events: ${allEvents.length}`);
@@ -1400,24 +1400,24 @@ const Merch = () => {
         allEvents = response.data;
         console.log("Response is direct array, length:", allEvents.length);
       }
-      
+
       console.log("All events before filter:", allEvents.length);
-      
+
       // Filter berdasarkan creator_id - handle string dan number
       if (allEvents.length > 0) {
         // Jika user memiliki creator ID, filter berdasarkan itu
         if (user?.has_creator?.id) {
           const creatorIdNumber = Number(user.has_creator.id);
           console.log("Filtering by creator_id:", creatorIdNumber);
-          
+
           const filteredEvents = allEvents.filter((e) => {
             // creator_id bisa string atau number, konversi ke number untuk perbandingan
             const eventCreatorId = e.creator_id ? Number(e.creator_id) : null;
             return eventCreatorId === creatorIdNumber;
           });
-          
+
           console.log("Filtered events:", filteredEvents.length);
-          
+
           if (filteredEvents.length > 0) {
             setEventList(filteredEvents);
             setSelectedEvent(filteredEvents[0].id);
@@ -1427,7 +1427,7 @@ const Merch = () => {
           } else {
             // Jika tidak ada event yang cocok, tampilkan semua event untuk debugging
             console.log("No events match creator_id, showing all events");
-            console.log("All events creator_ids:", allEvents.map(e => ({id: e.id, name: e.name, creator_id: e.creator_id})));
+            console.log("All events creator_ids:", allEvents.map(e => ({ id: e.id, name: e.name, creator_id: e.creator_id })));
             setEventList(allEvents);
             if (allEvents.length > 0) {
               setSelectedEvent(allEvents[0].id);
@@ -1464,7 +1464,7 @@ const Merch = () => {
       console.log("Fetching transaction statuses...");
       const statusResponse = await axios.get(`${config.wsUrl}transaction-statuses`);
       console.log("Status response:", statusResponse.data);
-      
+
       if (statusResponse.data?.length) {
         setTransactionStatus(statusResponse.data);
       } else if (statusResponse.data?.data?.length) {
@@ -1485,10 +1485,10 @@ const Merch = () => {
     if (!paymentMethod) {
       return null;
     }
-    
+
     // Mapping berdasarkan ID
     const paymentId = paymentMethod.id;
-    
+
     // Mapping ID ke metode pembayaran
     if (paymentId === 4) {
       return {
@@ -1497,7 +1497,7 @@ const Merch = () => {
         color: "blue"
       };
     }
-    
+
     if (paymentId === 5) {
       return {
         label: "Cash",
@@ -1505,10 +1505,10 @@ const Merch = () => {
         color: "green"
       };
     }
-    
+
     // Untuk metode pembayaran lainnya berdasarkan payment_name
     const paymentName = paymentMethod.payment_name?.toLowerCase() || '';
-    
+
     if (paymentName.includes('qris')) {
       return {
         label: "QRIS",
@@ -1516,7 +1516,7 @@ const Merch = () => {
         color: "blue"
       };
     }
-    
+
     if (paymentName.includes('cash') || paymentName.includes('tunai')) {
       return {
         label: "Cash",
@@ -1524,13 +1524,13 @@ const Merch = () => {
         color: "green"
       };
     }
-    
+
     let displayLabel = paymentMethod.payment_name || paymentMethod.name || "Unknown";
     displayLabel = displayLabel
       .split(' ')
       .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
-    
+
     return {
       label: displayLabel,
       icon: null,
@@ -1571,7 +1571,7 @@ const Merch = () => {
 
       const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
       const response = await axios.get(apiUrl);
-      
+
       if (response.data?.data && Array.isArray(response.data.data)) {
         // Set data dengan spread operator
         setAllDataList([...response.data.data]);
@@ -1644,7 +1644,7 @@ const Merch = () => {
   // Proses data untuk tabel transaksi
   const processedTransactionData = useMemo(() => {
     if (!allDataList.length) return [];
-    
+
     let result = allDataList.map((transaction, index) => {
       const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
 
@@ -1660,12 +1660,12 @@ const Merch = () => {
         ticketName = transaction.tickets
           .map((ticket) => ticket.has_event_ticket?.name || "-")
           .join(", ");
-        ticketPrice = transaction.tickets.reduce((sum, ticket) => 
+        ticketPrice = transaction.tickets.reduce((sum, ticket) =>
           sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
       }
 
       const paymentMethodInfo = getPaymentMethod(transaction.payment_method);
-      
+
       return {
         no: globalIndex,
         nama: pemesanIdentity?.full_name || "-",
@@ -1674,34 +1674,47 @@ const Merch = () => {
         tiket: ticketName,
         harga: `Rp ${ticketPrice.toLocaleString("id-ID")}`,
         payment: paymentMethodInfo ? (
-          <Badge 
-            color={paymentMethodInfo.color} 
-            variant="light"
-            leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}
-          >
-            {paymentMethodInfo.label}
-          </Badge>
+          <Box style={{ display: 'flex', justifyContent: 'center' }}>
+            <Badge
+              color={paymentMethodInfo.color}
+              variant="filled"
+              leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}
+              style={{ width: 100 }}
+            >
+              {paymentMethodInfo.label}
+            </Badge>
+          </Box>
         ) : (
-          <Badge color="gray" variant="light">
-            {transaction.payment_method?.payment_name || "-"}
-          </Badge>
+          <Box style={{ display: 'flex', justifyContent: 'center' }}>
+            <Badge color="gray" variant="filled" style={{ width: 100 }}>
+              {transaction.payment_method?.payment_name || "-"}
+            </Badge>
+          </Box>
         ),
         status: (
-          <Badge color={transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.bgcolor || "gray"}>
-            {transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.name || "Unknown"}
-          </Badge>
+          <Box style={{ display: 'flex', justifyContent: 'center' }}>
+            <Badge
+              color={transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.bgcolor || "gray"}
+              variant="filled"
+              style={{ width: 100 }}
+            >
+              {transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.name || "Unknown"}
+            </Badge>
+          </Box>
         ),
         action: (
-          <ActionIcon
-            color="blue"
-            variant="subtle"
-            onClick={() => {
-              setSelectedTransaction(transaction);
-              setViewModalOpen(true);
-            }}
-          >
-            <FontAwesomeIcon icon={faEye} size="sm" />
-          </ActionIcon>
+          <Box style={{ display: 'flex', justifyContent: 'center' }}>
+            <ActionIcon
+              color="blue"
+              variant="subtle"
+              onClick={() => {
+                setSelectedTransaction(transaction);
+                setViewModalOpen(true);
+              }}
+            >
+              <FontAwesomeIcon icon={faEye} size="sm" />
+            </ActionIcon>
+          </Box>
         ),
       };
     });
@@ -1714,16 +1727,16 @@ const Merch = () => {
         // Handle string comparison
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-        
+
         // Handle React node comparison (for styling elements)
         if (React.isValidElement(valA)) return 0; // Skip complex react elements parsing, or compare their text equivalent
-        
+
         // Handle "harga" specifically
         if (sortBy === "harga") {
-            const numA = Number(String(a[sortBy]).replace(/[^0-9,-]+/g,""));
-            const numB = Number(String(b[sortBy]).replace(/[^0-9,-]+/g,""));
-            valA = isNaN(numA) ? 0 : numA;
-            valB = isNaN(numB) ? 0 : numB;
+          const numA = Number(String(a[sortBy]).replace(/[^0-9,-]+/g, ""));
+          const numB = Number(String(b[sortBy]).replace(/[^0-9,-]+/g, ""));
+          valA = isNaN(numA) ? 0 : numA;
+          valB = isNaN(numB) ? 0 : numB;
         }
 
         if (valA < valB) return sortDir === "asc" ? -1 : 1;
@@ -1758,7 +1771,7 @@ const Merch = () => {
         let valB = b[sortBy] ?? "";
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-        
+
         if (valA < valB) return sortDir === "asc" ? -1 : 1;
         if (valA > valB) return sortDir === "asc" ? 1 : -1;
         return 0;
@@ -1786,7 +1799,7 @@ const Merch = () => {
         let valB = b[sortBy] ?? "";
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-        
+
         if (valA < valB) return sortDir === "asc" ? -1 : 1;
         if (valA > valB) return sortDir === "asc" ? 1 : -1;
         return 0;
@@ -1850,11 +1863,11 @@ const Merch = () => {
           const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
 
           return [
-            globalIndex, 
-            `"${pemesanIdentity?.full_name || "-"}"`, 
-            `"${pemesanIdentity?.email || "-"}"`, 
-            `"${item.invoice_no}"`, 
-            `"${ticketName}"`, 
+            globalIndex,
+            `"${pemesanIdentity?.full_name || "-"}"`,
+            `"${pemesanIdentity?.email || "-"}"`,
+            `"${item.invoice_no}"`,
+            `"${ticketName}"`,
             ticketPrice,
             `"${paymentMethodText}"`,
             `"${statusText}"`
@@ -1920,96 +1933,47 @@ const Merch = () => {
         </div>
       </div>
 
-      <Flex gap={20} justify="flex-end" align="center" wrap="wrap">
-        <Flex align="center" gap={10}>
-          <Text size="sm">Pilih Event</Text>
-          <Select
-            value={selectedEvent ? String(selectedEvent) : null}
-            data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
-            onChange={(e) => {
-              if (e) {
-                const selectedId = parseInt(e);
-                setSelectedEvent(selectedId);
-                setSelectedTicket("all");
-                setSelectedStatus("all");
-                setTransactionSegment("all");
-                setSearchValue("");
-                setCurrentPage(1);
-                
-                // Update slug berdasarkan event yang dipilih
-                const selectedEventData = eventList.find(event => event.id === selectedId);
-                if (selectedEventData?.slug) {
-                  setSlug(selectedEventData.slug);
-                }
-              }
-            }}
-            placeholder={loading.includes("fetchEvents") ? "Loading events..." : "Pilih event"}
-            style={{ width: 250 }}
-            disabled={loading.includes("fetchEvents")}
-            nothingFoundMessage="Tidak ada event"
-            searchable
-            clearable
+      {/* Global Filter Bar - Outside the tab card */}
+      <div className="mb-4">
+        {selectedTab === "transaksi" && (
+          <SegmentedControl
+            value={transactionSegment}
+            onChange={(e) => setTransactionSegment(e)}
+            data={[
+              { label: "All", value: "all" },
+              { label: "Online", value: "online" },
+              { label: "Offline", value: "offline" },
+            ]}
+            radius="xl"
+            color="#0b387c"
           />
-          
-          {/* Tampilkan info loading/debug */}
-          {loading.includes("fetchEvents") && (
-            <Text size="xs" c="dimmed">Loading events...</Text>
-          )}
-        </Flex>
+        )}
+      </div>
 
-        <Flex align="center" gap={10}>
-          <Text size="sm">Pilih Tiket</Text>
-          <Select
-            value={selectedTicket}
-            data={availableTickets}
-            onChange={(value) => {
-              if (value) {
-                setSelectedTicket(value);
-              }
-            }}
-            placeholder="Pilih tiket"
-            style={{ width: 200 }}
-            disabled={availableTickets.length <= 1}
-          />
-        </Flex>
-
-        <Flex gap="md" align="center">
-          <Button onClick={() => loadEventData(currentPage)} loading={loading.includes("loadData")} leftSection={<FontAwesomeIcon icon={faDownload} />}>
-            Refresh Data ({apiPaginationInfo.totalRecords})
-          </Button>
-
-          <Button onClick={exportToExcel} color="green" leftSection={<FontAwesomeIcon icon={faDownload} />} disabled={!allDataList || allDataList.length === 0}>
-            Export Excel
-          </Button>
-        </Flex>
-      </Flex>
 
       {/* Tabs Container */}
       <Card className={`!overflow-auto`} p={20} withBorder>
 
         {/* Tabs Navigation */}
         <div className="mb-6">
-          <div className="flex border-b border-gray-200 gap-2">
+          <div className="flex border-b border-light-grey gap-2">
             <button
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-                selectedTab === "transaksi" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${selectedTab === "transaksi" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
+                }`}
               onClick={() => setSelectedTab("transaksi")}
             >
               Data Penjualan
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-                selectedTab === "pemesan" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${selectedTab === "pemesan" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
+                }`}
               onClick={() => setSelectedTab("pemesan")}
             >
               Data Pemesan
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${
-                selectedTab === "checkin" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${selectedTab === "checkin" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
+                }`}
               onClick={() => setSelectedTab("checkin")}
             >
               Data Checkin
@@ -2019,31 +1983,70 @@ const Merch = () => {
 
         {/* Tab Content - Data Penjualan */}
         {selectedTab === "transaksi" && (
-          <div className="pt-4">
-            <Flex justify="flex-end" align="center" mb="md" wrap="wrap" gap="md">
-              <Flex gap="md" align="center" wrap="wrap">
-                <SegmentedControl
-                  value={transactionSegment}
-                  onChange={(e) => setTransactionSegment(e)}
-                  data={[
-                    { label: "All", value: "all" },
-                    { label: "Online", value: "online" },
-                    { label: "Offline", value: "offline" },
-                  ]}
-                  radius="xl"
-                  color="#0b387c"
-                />
+          <div className="pt-2">
+            {/* Filter Bar inside the tab content */}
+            <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+              {/* Left side: Refresh and Export Excel */}
+              <Flex gap={8} align="center">
+                <Button
+                  onClick={() => loadEventData(currentPage)}
+                  loading={loading.includes("loadData")}
+                  variant="filled"
+                  color="blue"
+                  px={10}
+                  title={`Refresh Data (${apiPaginationInfo.totalRecords})`}
+                >
+                  <FontAwesomeIcon icon={faArrowsRotate} />
+                </Button>
 
-                <Input
-                  placeholder="Cari nama atau invoice..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  style={{ width: 250 }}
-                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                <Button
+                  onClick={exportToExcel}
+                  color="green"
+                  variant="filled"
+                  leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+                  disabled={!allDataList || allDataList.length === 0}
+                >
+                  Export Excel
+                </Button>
+              </Flex>
+
+              {/* Right side: Event, Tiket, Status, and Search */}
+              <Flex gap={8} align="center" wrap="wrap">
+                <Select
+                  value={selectedEvent ? String(selectedEvent) : null}
+                  data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
+                  onChange={(e) => {
+                    if (e) {
+                      const selectedId = parseInt(e);
+                      setSelectedEvent(selectedId);
+                      setSelectedTicket("all");
+                      setSelectedStatus("all");
+                      setTransactionSegment("all");
+                      setSearchValue("");
+                      setCurrentPage(1);
+                      const selectedEventData = eventList.find(event => event.id === selectedId);
+                      if (selectedEventData?.slug) setSlug(selectedEventData.slug);
+                    }
+                  }}
+                  placeholder={loading.includes("fetchEvents") ? "Loading..." : "Pilih Event"}
+                  style={{ width: 190 }}
+                  disabled={loading.includes("fetchEvents")}
+                  nothingFoundMessage="Tidak ada event"
+                  searchable
+                  clearable
                 />
 
                 <Select
-                  placeholder="Filter Status"
+                  value={selectedTicket}
+                  data={availableTickets}
+                  onChange={(value) => { if (value) setSelectedTicket(value); }}
+                  placeholder="Pilih Tiket"
+                  style={{ width: 155 }}
+                  disabled={availableTickets.length <= 1}
+                />
+
+                <Select
+                  placeholder="Semua Status"
                   value={selectedStatus}
                   onChange={(value) => value && setSelectedStatus(value)}
                   data={[
@@ -2053,26 +2056,33 @@ const Merch = () => {
                       label: status.name,
                     })) || []),
                   ]}
-                  style={{ width: 200 }}
+                  style={{ width: 165 }}
                   leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
+                />
+
+                <Input
+                  placeholder="Cari nama atau invoice..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  style={{ width: 220 }}
+                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
                 />
               </Flex>
             </Flex>
-
             {/* TABLE TRANSAKSI DENGAN SCROLL */}
             <Box style={{ overflowX: 'auto', position: 'relative' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{opacity: sortBy === 'nama' ? 1 : 0.3}}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{opacity: sortBy === 'email' ? 1 : 0.3}}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. INVOICE <span style={{opacity: sortBy === 'invoice' ? 1 : 0.3}}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{opacity: sortBy === 'tiket' ? 1 : 0.3}}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{opacity: sortBy === 'harga' ? 1 : 0.3}}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>ACTION</th>
+                    <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. INVOICE <span style={{ opacity: sortBy === 'invoice' ? 1 : 0.3 }}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2086,12 +2096,12 @@ const Merch = () => {
                     processedTransactionData.map((item, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}><Text size="sm" c="dimmed" fw={500}>{item.no}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.invoice}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.invoice}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm">{item.tiket}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.harga}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.payment}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.payment}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.status}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)' }}>{item.action}</td>
                       </tr>
@@ -2118,13 +2128,13 @@ const Merch = () => {
                 </Text>
 
                 <Flex gap="md" align="center">
-                  <Pagination 
-                    value={currentPage} 
-                    onChange={handlePageChange} 
-                    total={paginationInfo.last_page} 
-                    radius="md" 
-                    size="sm" 
-                    withEdges 
+                  <Pagination
+                    value={currentPage}
+                    onChange={handlePageChange}
+                    total={paginationInfo.last_page}
+                    radius="md"
+                    size="sm"
+                    withEdges
                   />
                 </Flex>
               </Flex>
@@ -2141,11 +2151,11 @@ const Merch = () => {
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('nik')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. IDENTITAS <span style={{opacity: sortBy === 'nik' ? 1 : 0.3}}>{sortBy === 'nik' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA PEMESAN <span style={{opacity: sortBy === 'nama' ? 1 : 0.3}}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{opacity: sortBy === 'email' ? 1 : 0.3}}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{opacity: sortBy === 'telepon' ? 1 : 0.3}}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{opacity: sortBy === 'tanggal' ? 1 : 0.3}}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('nik')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. IDENTITAS <span style={{ opacity: sortBy === 'nik' ? 1 : 0.3 }}>{sortBy === 'nik' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA PEMESAN <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2182,8 +2192,8 @@ const Merch = () => {
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('eticket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ETICKET <span style={{opacity: sortBy === 'eticket' ? 1 : 0.3}}>{sortBy === 'eticket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('waktu')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>WAKTU CHECKIN <span style={{opacity: sortBy === 'waktu' ? 1 : 0.3}}>{sortBy === 'waktu' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('eticket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ETICKET <span style={{ opacity: sortBy === 'eticket' ? 1 : 0.3 }}>{sortBy === 'eticket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('waktu')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>WAKTU CHECKIN <span style={{ opacity: sortBy === 'waktu' ? 1 : 0.3 }}>{sortBy === 'waktu' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                   </tr>
                 </thead>
                 <tbody>

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import TrackingUpdateModal from "./trackingupt";
-import ResiUpdateModal from "./resiupt";
+import TrackingUpdateForm from "./trackingupt";
+import ResiUpdateForm from "./resiupt";
 import {
   Modal as NextUIModal,
   ModalContent,
@@ -13,24 +13,24 @@ import {
   CardBody,
   Chip,
 } from "@nextui-org/react";
-import { 
-    Flex, 
-    Group, 
-    Select as MantineSelect, 
-    TextInput as MantineTextInput, 
-    Checkbox, 
-    Button as MantineButton, 
-    ActionIcon, 
-    NumberFormatter, 
-    Text, 
-    Box, 
-    Badge, 
-    Tooltip,
-    Pagination as MantinePagination,
-    Stack,
-    Divider,
-    Tabs,
-    Card as MantineCard
+import {
+  Flex,
+  Group,
+  Select as MantineSelect,
+  TextInput as MantineTextInput,
+  Checkbox,
+  Button as MantineButton,
+  ActionIcon,
+  NumberFormatter,
+  Text,
+  Box,
+  Badge,
+  Tooltip,
+  Pagination as MantinePagination,
+  Stack,
+  Divider,
+  Tabs,
+  Card as MantineCard
 } from "@mantine/core";
 import { Get } from "@/utils/REST";
 import Link from "next/link";
@@ -420,10 +420,8 @@ const DeliveryPage: React.FC = () => {
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<number[]>([]);
   const [printLoading, setPrintLoading] = useState<boolean>(false);
 
-  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'list' | 'tracking' | 'resi'>('list');
   const [selectedInvoiceForTracking, setSelectedInvoiceForTracking] = useState<string>("");
-
-  const [isResiModalOpen, setIsResiModalOpen] = useState<boolean>(false);
   const [selectedInvoiceForResi, setSelectedInvoiceForResi] = useState<string>("");
 
   const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -460,7 +458,7 @@ const DeliveryPage: React.FC = () => {
   }, []);
 
   const toggleSelectItem = (id: number) => {
-    setSelectedInvoiceIds(prev => 
+    setSelectedInvoiceIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
@@ -507,7 +505,7 @@ const DeliveryPage: React.FC = () => {
   const getShippingStatusInfo = (item: MerchandiseTransactionData) => {
     const statusName = item.status_name?.toLowerCase() || "";
     const isSent = statusName.includes("kirim") || statusName.includes("selesai") || statusName.includes("success");
-    
+
     if (isSent) {
       return {
         text: "Terkirim",
@@ -1023,11 +1021,11 @@ const DeliveryPage: React.FC = () => {
     setPrintLoading(true);
     try {
       const allResiHTML: string[] = [];
-      
+
       for (const id of selectedInvoiceIds) {
         const transaction = filtered.find(t => t.id === id);
         if (!transaction?.invoice_no) continue;
-        
+
         try {
           const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
           if (res?.data) {
@@ -1108,7 +1106,7 @@ const DeliveryPage: React.FC = () => {
       const blob = new Blob([combinedHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const printWindow = window.open(url, '_blank');
-      
+
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error("Bulk print failed:", err);
@@ -1119,7 +1117,7 @@ const DeliveryPage: React.FC = () => {
 
   const handlePrintSingle = async (transaction: MerchandiseTransactionData) => {
     if (!transaction.invoice_no) return;
-    
+
     setPrintLoading(true);
     try {
       const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
@@ -1529,227 +1527,303 @@ const DeliveryPage: React.FC = () => {
     );
   }
 
+  if (viewMode === 'tracking') {
+    return (
+      <div className="p-4">
+        <Flex align="center" gap={12} mb="xl">
+          <ActionIcon 
+            variant="subtle" 
+            color="gray" 
+            size="lg" 
+            onClick={() => setViewMode('list')}
+          >
+            <Icon icon="solar:arrow-left-linear" width={24} />
+          </ActionIcon>
+          <Box>
+            <Text fw={800} size="xl">Update Tracking Pengiriman</Text>
+            <Text size="xs" c="dimmed">Kelola rincian status pengiriman untuk invoice #{selectedInvoiceForTracking}</Text>
+          </Box>
+        </Flex>
+
+        <MantineCard withBorder radius="md" p={0} shadow="sm">
+          <TrackingUpdateForm 
+            invoiceNo={selectedInvoiceForTracking} 
+            onClose={() => setViewMode('list')}
+            onSuccess={() => {
+              getData();
+              setViewMode('list');
+            }}
+          />
+        </MantineCard>
+      </div>
+    );
+  }
+
+  if (viewMode === 'resi') {
+    return (
+      <div className="p-4">
+        <Flex align="center" gap={12} mb="xl">
+          <ActionIcon 
+            variant="subtle" 
+            color="gray" 
+            size="lg" 
+            onClick={() => setViewMode('list')}
+          >
+            <Icon icon="solar:arrow-left-linear" width={24} />
+          </ActionIcon>
+          <Box>
+            <Text fw={800} size="xl">Update Resi Pengiriman</Text>
+            <Text size="xs" c="dimmed">Kelola nomor resi dan rincian kurir untuk invoice #{selectedInvoiceForResi}</Text>
+          </Box>
+        </Flex>
+
+        <MantineCard withBorder radius="md" p={0} shadow="sm">
+          <ResiUpdateForm 
+            invoiceNo={selectedInvoiceForResi} 
+            onClose={() => setViewMode('list')}
+            onSuccess={() => {
+              getData();
+              setViewMode('list');
+            }}
+          />
+        </MantineCard>
+      </div>
+    );
+  }
+
   return (
     <>
       <Text fw={800} style={{ fontSize: '26px' }} mx={15} mt={15} mb={0} c="dark.9">Data Pengiriman</Text>
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
+          {/* ... existing content ... */}
 
 
-            <Box mt={15}>
-                        {/* Row 1: Search + Filter Produk + Item per halaman → rata kanan */}
-                        <Flex align="center" gap="sm" wrap="wrap" mb="sm" justify="flex-end">
-                            <MantineTextInput
-                                placeholder="Cari invoice..."
-                                leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                                value={filterValue}
-                                onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
-                                style={{ width: 300 }}
-                                size="sm"
-                            />
-                            <MantineSelect
-                                placeholder="Filter Produk"
-                                data={[
-                                    { value: 'all', label: 'Semua Produk' },
-                                    ...extractProductNames(data).map(p => ({ value: p.key, label: p.label }))
-                                ]}
-                                value={selectedProduct}
-                                onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
-                                style={{ minWidth: 200 }}
-                                size="sm"
-                                searchable
-                                clearable
-                            />
-                            <Group gap="xs" align="center">
-                                <Text size="sm" c="gray">Item per halaman:</Text>
-                                <MantineSelect
-                                    value={rowsPerPage.toString()}
-                                    onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
-                                    data={['10', '20', '50', '100']}
-                                    style={{ width: 80 }}
-                                    size="sm"
-                                />
-                            </Group>
-                        </Flex>
+          <Box mt={15}>
+            {/* Row 1: Pagination (kiri) | Filter Produk + Search (kanan) */}
+            <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+              <MantineSelect
+                value={rowsPerPage.toString()}
+                onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
+                data={['10', '20', '50', '100']}
+                style={{ width: 70 }}
+                size="sm"
+              />
+              <Group gap="sm">
+                <MantineSelect
+                  placeholder="Filter Produk"
+                  data={[
+                    { value: 'all', label: 'Semua Produk' },
+                    ...extractProductNames(data).map(p => ({ value: p.key, label: p.label }))
+                  ]}
+                  value={selectedProduct}
+                  onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
+                  style={{ minWidth: 200 }}
+                  size="sm"
+                  searchable
+                  clearable
+                />
+                <MantineTextInput
+                  placeholder="Cari invoice..."
+                  leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                  value={filterValue}
+                  onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
+                  style={{ width: 300 }}
+                  size="sm"
+                />
+              </Group>
+            </Flex>
 
-                        {/* Row 2: Menampilkan kiri | Pilih Semua + Cetak kanan */}
-                        <Flex align="center" gap="sm" mb="md">
-                            <Text size="sm" c="gray">
-                                Menampilkan {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0'} dari {filtered.length} pengiriman
+            {/* Row 2: Menampilkan kiri */}
+            <Flex align="center" gap="sm" mb="md">
+              <Text size="xs" c="gray">
+                Menampilkan {filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, filtered.length)}` : '0'} dari {filtered.length} pengiriman
+              </Text>
+            </Flex>
+
+            {/* Table */}
+            <Box style={{ overflowX: 'auto', overflowY: 'auto', position: 'relative' }}>
+              <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>#</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('customer_name')}>Customer <SortIcon col="customer_name" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('product_name')}>Produk <SortIcon col="product_name" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('resi_no')}>Resi <SortIcon col="resi_no" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('ongkir')}>Ongkir <SortIcon col="ongkir" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('shipping_address')}>Alamat Tujuan <SortIcon col="shipping_address" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Dikirim Dari</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
+                      <Flex align="center" gap="xs">
+                        <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
+                        <Checkbox
+                          checked={selectedInvoiceIds.length === paginatedItems.length && paginatedItems.length > 0}
+                          indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedItems.length}
+                          onChange={toggleSelectAll}
+                          size="xs"
+                        />
+                        <Tooltip label={`Cetak Resi Semua ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
+                          <ActionIcon
+                            variant="transparent"
+                            color="blue"
+                            onClick={handleBulkPrint}
+                            disabled={selectedInvoiceIds.length === 0 || printLoading}
+                            style={{ position: 'relative', overflow: 'visible', marginRight: 8 }}
+                          >
+                            {printLoading ? <Icon icon="line-md:loading-twotone-loop" /> : <Icon icon="solar:printer-bold" width={18} />}
+                            {selectedInvoiceIds.length > 0 && (
+                              <Badge size="xs" color="red" variant="filled" style={{ position: 'absolute', top: -5, right: -8, pointerEvents: 'none', padding: '0 4px', height: 16, minWidth: 16, color: 'white', fontWeight: 800 }}>
+                                {selectedInvoiceIds.length}
+                              </Badge>
+                            )}
+                          </ActionIcon>
+                        </Tooltip>
+                      </Flex>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedItems.map((item, idx) => {
+                    const shippingInfo = getShippingStatusInfo(item);
+                    const rowNumber = (page - 1) * rowsPerPage + idx + 1;
+                    return (
+                      <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}>
+                          <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          <Text
+                            size="sm"
+                            fw={600}
+                            c="blue"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleViewDetail(item)}
+                          >
+                            {item.invoice_no}
+                          </Text>
+                          <Text size="xs" c="dimmed">{formatDate(item.order_date)}</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          <Text size="sm">{item.customer_name}</Text>
+                          <Text size="xs" c="dimmed">{item.customer_email}</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <Text size="sm" style={{ whiteSpace: 'nowrap' }}>{item.product_name}</Text>
+                          <Text size="xs" c="dimmed">Qty: {item.total_qty}</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          <Text size="sm" fw={600}>{item.resi_no && item.resi_no !== '-' ? item.resi_no : <Text size="sm" c="dimmed">Belum ada</Text>}</Text>
+                          <Text size="xs" c="dimmed">{item.courier_name && item.courier_name !== '-' ? item.courier_name : ''}</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          {item.ongkir && item.ongkir > 0 ? (
+                            <Text size="sm" fw={600}>
+                              <NumberFormatter prefix="Rp " value={item.ongkir} thousandSeparator="." decimalSeparator="," />
                             </Text>
+                          ) : (
+                            <Text size="sm" c="dimmed">-</Text>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
+                            {formatShippingAddress((item as any).address || item.shipping_address)}
+                          </Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                          <Text size="sm">Warehouse Kita</Text>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }}>
+                          <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                            {shippingInfo.text}
+                          </Badge>
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
+                          <Flex align="center" gap="xs">
+                            <Tooltip label="Update Tracking">
+                              <ActionIcon
+                                variant="light"
+                                color="blue"
+                                onClick={() => { 
+                                  setSelectedInvoiceForTracking(item.invoice_no || ""); 
+                                  setViewMode('tracking');
+                                }}
+                                size="md"
+                                radius="md"
+                              >
+                                <FontAwesomeIcon icon={faPlus} style={{ width: 14 }} />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Update Resi">
+                              <ActionIcon
+                                variant="light"
+                                color="violet"
+                                onClick={() => { 
+                                  setSelectedInvoiceForResi(item.invoice_no || ""); 
+                                  setViewMode('resi');
+                                }}
+                                size="md"
+                                radius="md"
+                              >
+                                <Icon icon="solar:ticket-bold" width={16} />
+                              </ActionIcon>
+                            </Tooltip>
                             <Checkbox
-                                checked={selectedInvoiceIds.length === paginatedItems.length && paginatedItems.length > 0}
-                                indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedItems.length}
-                                onChange={toggleSelectAll}
-                                size="sm"
-                                label="Pilih Semua"
-                                ml="auto"
-                                styles={{ label: { fontSize: '13px', fontWeight: 500, cursor: 'pointer' } }}
+                              checked={selectedInvoiceIds.includes(item.id)}
+                              onChange={() => toggleSelectItem(item.id)}
+                              size="xs"
                             />
-                            <MantineButton
+                            <Tooltip label="Cetak Resi">
+                              <ActionIcon
                                 variant="filled"
                                 color="blue"
-                                leftSection={printLoading ? <Icon icon="line-md:loading-twotone-loop" /> : <Icon icon="solar:printer-bold" width={16} />}
-                                onClick={handleBulkPrint}
-                                disabled={selectedInvoiceIds.length === 0 || printLoading}
-                                size="sm"
-                                styles={{ root: { color: 'white' } }}
-                            >
-                                Cetak Resi Semua {selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}
-                            </MantineButton>
-                        </Flex>
+                                onClick={() => handlePrintSingle(item)}
+                                loading={printLoading}
+                                size="md"
+                                radius="md"
+                              >
+                                <Icon icon="solar:printer-bold" width={14} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Flex>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Box>
 
-                        {/* Table */}
-                        <Box style={{ overflowX: 'auto', overflowY: 'auto', position: 'relative' }}>
-                            <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>#</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('customer_name')}>Customer <SortIcon col="customer_name" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('product_name')}>Produk <SortIcon col="product_name" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('resi_no')}>Resi <SortIcon col="resi_no" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('ongkir')}>Ongkir <SortIcon col="ongkir" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('shipping_address')}>Alamat Tujuan <SortIcon col="shipping_address" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Dikirim Dari</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginatedItems.map((item, idx) => {
-                                        const shippingInfo = getShippingStatusInfo(item);
-                                        const rowNumber = (page - 1) * rowsPerPage + idx + 1;
-                                        return (
-                                            <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}>
-                                                    <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Text 
-                                                        size="sm" 
-                                                        fw={600} 
-                                                        c="blue" 
-                                                        style={{ cursor: 'pointer' }}
-                                                        onClick={() => handleViewDetail(item)}
-                                                    >
-                                                        {item.invoice_no}
-                                                    </Text>
-                                                    <Text size="xs" c="dimmed">{formatDate(item.order_date)}</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Text size="sm">{item.customer_name}</Text>
-                                                    <Text size="xs" c="dimmed">{item.customer_email}</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px' }}>
-                                                    <Text size="sm" style={{ whiteSpace: 'nowrap' }}>{item.product_name}</Text>
-                                                    <Text size="xs" c="dimmed">Qty: {item.total_qty}</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Text size="sm" fw={600}>{item.resi_no && item.resi_no !== '-' ? item.resi_no : <Text size="sm" c="dimmed">Belum ada</Text>}</Text>
-                                                    <Text size="xs" c="dimmed">{item.courier_name && item.courier_name !== '-' ? item.courier_name : ''}</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    {item.ongkir && item.ongkir > 0 ? (
-                                                        <Text size="sm" fw={600}>
-                                                            <NumberFormatter prefix="Rp " value={item.ongkir} thousandSeparator="." decimalSeparator="," />
-                                                        </Text>
-                                                    ) : (
-                                                        <Text size="sm" c="dimmed">-</Text>
-                                                    )}
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
-                                                        {formatShippingAddress((item as any).address || item.shipping_address)}
-                                                    </Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Text size="sm">Warehouse Kita</Text>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }}>
-                                                    <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600 }}>
-                                                        {shippingInfo.text}
-                                                    </Badge>
-                                                </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
-                                                    <Flex align="center" gap="xs">
-                                                        <Tooltip label="Update Tracking">
-                                                            <ActionIcon 
-                                                                variant="light" 
-                                                                color="blue" 
-                                                                onClick={() => { setSelectedInvoiceForTracking(item.invoice_no || ""); setIsTrackingModalOpen(true); }}
-                                                                size="md"
-                                                                radius="md"
-                                                            >
-                                                                <FontAwesomeIcon icon={faPlus} style={{ width: 14 }} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                        <Tooltip label="Update Resi">
-                                                            <ActionIcon 
-                                                                variant="light" 
-                                                                color="violet" 
-                                                                onClick={() => { setSelectedInvoiceForResi(item.invoice_no || ""); setIsResiModalOpen(true); }}
-                                                                size="md"
-                                                                radius="md"
-                                                            >
-                                                                <Icon icon="solar:ticket-bold" width={16} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                        <Checkbox
-                                                            checked={selectedInvoiceIds.includes(item.id)}
-                                                            onChange={() => toggleSelectItem(item.id)}
-                                                            size="xs"
-                                                        />
-                                                        <Tooltip label="Cetak Resi">
-                                                            <ActionIcon 
-                                                                variant="filled" 
-                                                                color="blue" 
-                                                                onClick={() => handlePrintSingle(item)}
-                                                                loading={printLoading}
-                                                                size="md"
-                                                                radius="md"
-                                                            >
-                                                                <Icon icon="solar:printer-bold" width={14} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                    </Flex>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </Box>
+            {paginatedItems.length === 0 && (
+              <Box py="xl" ta="center">
+                <Text c="dimmed">Tidak ada data pengiriman yang ditemukan</Text>
+              </Box>
+            )}
 
-                        {paginatedItems.length === 0 && (
-                            <Box py="xl" ta="center">
-                                <Text c="dimmed">Tidak ada data pengiriman yang ditemukan</Text>
-                            </Box>
-                        )}
-
-                        <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
-                            <Text size="xs" c="dimmed">
-                                Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
-                            </Text>
-                            <MantinePagination 
-                                total={totalPages} 
-                                value={page} 
-                                onChange={setPage} 
-                                size="sm"
-                                radius="xl"
-                                withEdges
-                                color="blue"
-                                styles={{
-                                    control: { border: '1px solid #e0e0e0', fontWeight: 600 },
-                                }}
-                            />
-                            <Text size="xs" c="dimmed">
-                                {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}–${Math.min(page*rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
-                            </Text>
-                        </Flex>
-                    </Box>
+            <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
+              <Text size="xs" c="dimmed">
+                Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+              </Text>
+              <MantinePagination
+                total={totalPages}
+                value={page}
+                onChange={setPage}
+                size="sm"
+                radius="xl"
+                withEdges
+                color="blue"
+                styles={{
+                  control: { border: '1px solid #e0e0e0', fontWeight: 600 },
+                }}
+              />
+              <Text size="xs" c="dimmed">
+                {filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}–${Math.min(page * rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
+              </Text>
+            </Flex>
+          </Box>
         </Stack>
-    </MantineCard>
+      </MantineCard>
 
       <NextUIModal
         isOpen={isModalOpen}
@@ -1824,14 +1898,14 @@ const DeliveryPage: React.FC = () => {
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired')
-                                  ? 'bg-gray-100'
-                                  : 'bg-green-100'
+                                ? 'bg-gray-100'
+                                : 'bg-green-100'
                                 }`}>
                                 <FontAwesomeIcon
                                   icon={getStatusIcon(invoiceDetail.transaction_status?.name || '')}
                                   className={`h-5 w-5 ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired')
-                                      ? 'text-gray-600'
-                                      : 'text-green-600'
+                                    ? 'text-gray-600'
+                                    : 'text-green-600'
                                     }`}
                                 />
                               </div>
@@ -2272,92 +2346,6 @@ const DeliveryPage: React.FC = () => {
               </>
             )
           }}
-        </ModalContent>
-      </NextUIModal>
-
-      {/* Tracking Update Modal */}
-      <NextUIModal
-        isOpen={isTrackingModalOpen}
-        onClose={() => setIsTrackingModalOpen(false)}
-        size="4xl"
-        scrollBehavior="inside"
-        classNames={{
-          base: 'bg-white',
-          backdrop: 'backdrop-blur-sm',
-          header: 'border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
-          body: 'p-0',
-          closeButton: 'text-white hover:bg-white/20',
-        }}
-      >
-        <ModalContent>
-          {() => (
-            <>
-              <ModalHeader className="flex flex-col gap-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Update Tracking</h2>
-                    <p className="text-xs text-white/90">Invoice: {selectedInvoiceForTracking}</p>
-                  </div>
-                </div>
-              </ModalHeader>
-              <ModalBody className="py-0">
-                <TrackingUpdateModal
-                  invoiceNo={selectedInvoiceForTracking}
-                  onClose={() => setIsTrackingModalOpen(false)}
-                  onSuccess={() => {
-                    // Optionally refresh data
-                  }}
-                />
-              </ModalBody>
-            </>
-          )}
-        </ModalContent>
-      </NextUIModal>
-
-      {/* Resi Update Modal */}
-      <NextUIModal
-        isOpen={isResiModalOpen}
-        onClose={() => setIsResiModalOpen(false)}
-        size="4xl"
-        scrollBehavior="inside"
-        classNames={{
-          base: 'bg-white',
-          backdrop: 'backdrop-blur-sm',
-          header: 'border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
-          body: 'p-0',
-          closeButton: 'text-white hover:bg-white/20',
-        }}
-      >
-        <ModalContent>
-          {() => (
-            <>
-              <ModalHeader className="flex flex-col gap-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <Icon icon="solar:ticket-bold" className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Update Resi Pengiriman</h2>
-                    <p className="text-xs text-white/90">Invoice: {selectedInvoiceForResi}</p>
-                  </div>
-                </div>
-              </ModalHeader>
-              <ModalBody className="py-0">
-                <ResiUpdateModal
-                  invoiceNo={selectedInvoiceForResi}
-                  onClose={() => setIsResiModalOpen(false)}
-                  onSuccess={() => {
-                    getData();
-                  }}
-                />
-              </ModalBody>
-            </>
-          )}
         </ModalContent>
       </NextUIModal>
     </>

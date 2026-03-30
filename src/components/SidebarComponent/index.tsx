@@ -1602,6 +1602,7 @@ import {
   faRightFromBracket,
   faSquareArrowUpRight,
   faBox,
+  faDolly
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1853,7 +1854,7 @@ const sidebarData: SidebarData = [
       {
         id: 4,
         name: "Pengambilan Merchandise",
-        iconify: "hugeicons:cashier",
+        icon: faDolly,
         link: "/dashboard/merch-pickup",
         role: "Creator",
       },
@@ -2119,7 +2120,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         <nav
           ref={outsideClick}
           className={`
-                        fixed md:static shrink-0
+                        fixed md:relative shrink-0
                         flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
                         overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-50
@@ -2357,32 +2358,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             {users?.email}
                           </Text>
                         </Stack>
-                        {hasCreator && (
-                          <button
-                            className="px-4 pb-2 pt-3 text-xs text-dark w-full flex justify-start hover:bg-primary-light rounded-t-md"
-                            role="menuitem"
-                            onClick={() => {
-                              setShowUserMenu(!showUserMenu);
-                              role === "Creator" ? setRole("Pembeli") : setRole("Creator");
-                              role === "Creator" ? router.push("/dashboard/user") : router.push("/dashboard");
-                              role === "Creator" ? Cookies.set("hasCreator", "false") : Cookies.set("hasCreator", "true");
-                              role === "Creator"
-                                ? toast.success("Beralih ke dashboard pembeli", {
-                                  autoClose: 2000,
-                                  hideProgressBar: true,
-                                })
-                                : toast.success("Beralih ke dashboard creator", {
-                                  autoClose: 2000,
-                                  hideProgressBar: true,
-                                });
-                            }}
-                            tabIndex={-1}
-                            id="user-menu-item-0"
-                          >
-                            <FontAwesomeIcon icon={faSquareArrowUpRight} className="mr-2" />
-                            Beralih ke {role === "Creator" ? "Pembeli" : "Creator"}
-                          </button>
-                        )}
+
 
                         {!["Staff", "Admin"].includes(role ?? "") && (
                           <>

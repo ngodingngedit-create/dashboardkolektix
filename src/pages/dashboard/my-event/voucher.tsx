@@ -31,8 +31,14 @@ import {
   faDollarSign,
   faEye,
   faInfoCircle,
+  faSave,
+  faXmark,
+  faArrowLeft,
+  faSort,
+  faSortUp,
+  faSortDown,
+  faArrowsRotate
 } from "@fortawesome/free-solid-svg-icons";
-import TableData from "@/components/TableData";
 import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import axios from "axios";
@@ -50,7 +56,7 @@ interface Voucher {
   max_use: number;
   stock: number;
   used_count: number;
-  status?: number; // Changed to number
+  status?: number;
   created_at: string;
   updated_at: string;
   event?: {
@@ -63,13 +69,9 @@ interface Event {
   id: number;
   name: string;
   creator_id?: number | string;
-  creator?: {
-    id: number;
-  };
+  creator?: { id: number };
   user_id?: number;
-  user?: {
-    id: number;
-  };
+  user?: { id: number };
 }
 
 interface PaginationInfo {
@@ -90,15 +92,15 @@ const VoucherPage = () => {
     total: 0,
     per_page: 20,
   });
-  
-  // State untuk modal dan form
-  const [modalOpen, setModalOpen] = useState(false);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [voucherToDelete, setVoucherToDelete] = useState<number | null>(null);
-  
-  // State untuk form - STATUS DIUBAH KE NUMBER
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'code', direction: 'asc' });
+
   const [formData, setFormData] = useState({
     id: null as number | null,
     event_id: "",
@@ -109,128 +111,54 @@ const VoucherPage = () => {
     date_end: "",
     max_use: 0,
     stock: 0,
-    status: 1, // Changed to number: 1 = active, 0 = inactive
+    status: 1,
   });
-  
-  // State untuk filter dan search
+
   const [searchTerm, setSearchTerm] = useState("");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchEvents();
     fetchVouchers(1);
   }, []);
 
-  // Fetch events for dropdown using axios
   const fetchEvents = async () => {
     setLoading.append("events");
-    
     try {
-      console.log("Fetching events... User:", user);
-      
       const response = await axios.get(`${config.wsUrl}event`);
-      console.log("Events API Response:", response.data);
-      
       if (response.data && Array.isArray(response.data)) {
-        // Tampilkan semua event dulu untuk debugging
-        console.log("All events:", response.data);
-        
-        // Filter events by user/creator dengan berbagai cara
         const userEvents = response.data.filter((e: Event) => {
-          
-          // Cek creator_id dalam berbagai format yang mungkin
-          const creatorId = 
-            e.creator_id || 
-            e.creator?.id ||
-            e.user_id ||
-            e.user?.id;
-          
+          const creatorId = e.creator_id || e.creator?.id || e.user_id || e.user?.id;
           const userId = user?.has_creator?.id;
-          
-          // Jika ada creator_id, bandingkan dengan user
-          if (creatorId) {
-            return parseInt(creatorId.toString()) === userId;
-          }
-          
-          // Jika tidak ada creator_id, tampilkan semua untuk testing
-          return true;
+          return creatorId ? parseInt(creatorId.toString()) === userId : true;
         });
-        
-        console.log("Filtered events for user:", userEvents);
-        setEvents(userEvents);
-        
-        // Jika tidak ada event, mungkin user belum punya event
-        if (userEvents.length === 0) {
-          console.warn("No events found for this user. Showing all events for testing.");
-          // Untuk testing, tampilkan beberapa event pertama
-          const testEvents = response.data.slice(0, 5);
-          setEvents(testEvents);
-        }
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        // Jika response berupa { data: [...] }
-        console.log("Events from data property:", response.data.data);
-        setEvents(response.data.data);
+        setEvents(userEvents.length > 0 ? userEvents : response.data.slice(0, 5));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching events:", error);
-      console.error("Error details:", error.response?.data || error.message);
-      
-      // Fallback untuk testing
-      const mockEvents = [
-        { id: 1, name: "Event Test 1", creator_id: user?.has_creator?.id || 41 },
-        { id: 2, name: "Event Test 2", creator_id: user?.has_creator?.id || 41 },
-        { id: 3, name: "Event Test 3", creator_id: user?.has_creator?.id || 41 },
-      ];
-      setEvents(mockEvents);
     } finally {
       setLoading.filter((e) => e !== "events");
     }
   };
 
-  // Fetch vouchers with pagination using axios
   const fetchVouchers = async (page: number = 1) => {
     setLoading.append("vouchers");
-    
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: "20",
       });
+      if (searchTerm) params.append("search", searchTerm);
+      if (eventFilter !== "all") params.append("event_id", eventFilter);
+      if (typeFilter !== "all") params.append("type", typeFilter);
+      if (user?.has_creator?.id) params.append("user_id", user.has_creator.id.toString());
 
-      if (searchTerm) {
-        params.append("search", searchTerm);
-      }
-
-      if (eventFilter !== "all") {
-        params.append("event_id", eventFilter);
-      }
-
-      if (typeFilter !== "all") {
-        params.append("type", typeFilter);
-      }
-
-      // Opsional: Tambahkan user_id untuk filter berdasarkan user
-      if (user?.has_creator?.id) {
-        params.append("user_id", user.has_creator.id.toString());
-      }
-
-      const url = `${config.wsUrl}vouchers?${params.toString()}`;
-      console.log("Fetching vouchers from:", url);
-      
-      const response = await axios.get(url);
-      console.log("Vouchers API Full Response:", response);
-      console.log("Vouchers API Data:", response.data);
-
-      // PERBAIKAN: Response langsung berupa array
+      const response = await axios.get(`${config.wsUrl}vouchers?${params.toString()}`);
       const responseData = response.data;
-      
+
       if (Array.isArray(responseData)) {
-        // Jika response langsung array
-        console.log("Response is array, length:", responseData.length);
-        console.log("First voucher:", responseData[0]);
         setVouchers(responseData);
         setPagination({
           current_page: page,
@@ -239,8 +167,6 @@ const VoucherPage = () => {
           per_page: 20,
         });
       } else if (responseData && Array.isArray(responseData.data)) {
-        // Jika response berupa { data: [...] }
-        console.log("Response has data property, length:", responseData.data.length);
         setVouchers(responseData.data);
         setPagination({
           current_page: responseData.current_page || 1,
@@ -248,54 +174,23 @@ const VoucherPage = () => {
           total: responseData.total || responseData.data.length,
           per_page: responseData.per_page || 20,
         });
-      } else if (responseData?.success && Array.isArray(responseData.data)) {
-        // Jika response berupa { success: true, data: [...] }
-        console.log("Response has success property, length:", responseData.data.length);
-        setVouchers(responseData.data);
-        setPagination({
-          current_page: responseData.current_page || 1,
-          last_page: responseData.last_page || 1,
-          total: responseData.total || responseData.data.length,
-          per_page: responseData.per_page || 20,
-        });
-      } else {
-        console.log("Unexpected response format:", responseData);
-        setVouchers([]);
       }
-      
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching vouchers:", error);
-      console.error("Error response:", error.response?.data);
       setVouchers([]);
     } finally {
       setLoading.filter((e) => e !== "vouchers");
     }
   };
 
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    fetchVouchers(page);
-  };
+  const handlePageChange = (page: number) => fetchVouchers(page);
 
-  // Handle search with debounce
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchVouchers(1);
-    }, 500);
-
+    const timer = setTimeout(() => fetchVouchers(1), 500);
     return () => clearTimeout(timer);
   }, [searchTerm, eventFilter, typeFilter, statusFilter]);
 
-  // Open modal for creating new voucher
   const handleCreateClick = () => {
-    console.log("Create clicked. Available events:", events);
-    
-    // Jika tidak ada event, fetch ulang
-    if (events.length === 0) {
-      fetchEvents();
-      alert("Sedang mengambil data event...");
-    }
-    
     setFormData({
       id: null,
       event_id: events.length > 0 ? events[0].id.toString() : "",
@@ -306,14 +201,13 @@ const VoucherPage = () => {
       date_end: moment().add(30, 'days').format("YYYY-MM-DD"),
       max_use: 100,
       stock: 100,
-      status: 1, // Default active
+      status: 1,
     });
-    setModalOpen(true);
+    setIsEditMode(false);
+    setIsFormVisible(true);
   };
 
-  // Open modal for editing voucher
   const handleEditClick = (voucher: Voucher) => {
-    console.log("Edit voucher:", voucher);
     setFormData({
       id: voucher.id,
       event_id: voucher.event_id.toString(),
@@ -324,823 +218,257 @@ const VoucherPage = () => {
       date_end: voucher.date_end.split("T")[0],
       max_use: voucher.max_use,
       stock: voucher.stock,
-      status: voucher.status || 1, // Default to active if not set
+      status: voucher.status || 1,
     });
-    setModalOpen(true);
+    setIsEditMode(true);
+    setIsFormVisible(true);
   };
 
-  // Open modal for viewing voucher details
   const handleViewClick = (voucher: Voucher) => {
     setSelectedVoucher(voucher);
     setViewModalOpen(true);
   };
 
-  // Handle delete confirmation
   const handleDeleteClick = (id: number) => {
     setVoucherToDelete(id);
     setDeleteModalOpen(true);
   };
 
-  // Save voucher (create or update) using axios - DIPERBAIKI PAYLOAD
   const handleSaveVoucher = async () => {
-    console.log("Save voucher form data:", formData);
-    
-    if (!formData.event_id) {
-      alert("Pilih event terlebih dahulu");
+    if (!formData.event_id || !formData.code) {
+      alert("Lengkapi data yang diperlukan");
       return;
     }
-
-    if (!formData.code) {
-      alert("Kode voucher harus diisi");
-      return;
-    }
-
-    if (formData.type === "persentase" && formData.discount > 100) {
-      alert("Diskon persentase tidak boleh lebih dari 100%");
-      return;
-    }
-
-    // Validasi tanggal
-    const startDate = moment(formData.date_start);
-    const endDate = moment(formData.date_end);
-    
-    if (endDate.isBefore(startDate)) {
-      alert("Tanggal berakhir tidak boleh sebelum tanggal mulai");
-      return;
-    }
-
-    // PERBAIKAN PAYLOAD: Semua dalam format yang benar
     const payload = {
-      event_id: formData.event_id, // Tetap string untuk API
+      event_id: formData.event_id,
       code: formData.code,
-      discount: formData.discount, // Tetap number, API akan handle conversion
+      discount: formData.discount,
       type: formData.type,
       date_start: formData.date_start,
       date_end: formData.date_end,
-      max_use: formData.max_use, // Tetap number
-      stock: formData.stock, // Tetap number
-      status: formData.status, // Number: 1 = active, 0 = inactive
+      max_use: formData.max_use,
+      stock: formData.stock,
+      status: formData.status,
     };
-
-    console.log("Saving voucher payload:", payload);
-    console.log("Payload type check:", {
-      event_id: typeof payload.event_id,
-      discount: typeof payload.discount,
-      max_use: typeof payload.max_use,
-      stock: typeof payload.stock,
-      status: typeof payload.status,
-    });
-
     setLoading.append("save");
-
     try {
       if (formData.id) {
-        // Update existing voucher
-        console.log("Updating voucher ID:", formData.id);
-        const response = await axios.put(
-          `${config.wsUrl}vouchers/${formData.id}`,
-          payload
-        );
-        
-        console.log("Update response:", response.data);
-        
-        if (response.data) {
-          alert("Voucher berhasil diperbarui");
-          setModalOpen(false);
-          fetchVouchers(pagination.current_page);
-        }
+        await axios.put(`${config.wsUrl}vouchers/${formData.id}`, payload);
+        alert("Voucher berhasil diperbarui");
       } else {
-        // Create new voucher
-        console.log("Creating new voucher...");
-        const response = await axios.post(
-          `${config.wsUrl}vouchers`,
-          payload
-        );
-        
-        console.log("Create response:", response.data);
-        
-        if (response.data) {
-          alert("Voucher berhasil dibuat");
-          setModalOpen(false);
-          fetchVouchers(1);
-        } else {
-          alert("Gagal membuat voucher. Response tidak valid.");
-        }
+        await axios.post(`${config.wsUrl}vouchers`, payload);
+        alert("Voucher berhasil dibuat");
       }
+      setIsFormVisible(false);
+      fetchVouchers(formData.id ? pagination.current_page : 1);
     } catch (error: any) {
-      console.error("Error saving voucher:", error);
-      console.error("Error response:", error.response?.data);
-      
-      let errorMessage = "Terjadi kesalahan saat menyimpan voucher";
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      // Tampilkan error details jika ada
-      if (error.response?.data) {
-        console.log("Full error response:", error.response.data);
-        
-        // Tampilkan field errors jika ada
-        if (typeof error.response.data === 'object') {
-          const fieldErrors = [];
-          for (const [key, value] of Object.entries(error.response.data)) {
-            if (Array.isArray(value)) {
-              fieldErrors.push(`${key}: ${value.join(', ')}`);
-            } else if (typeof value === 'string') {
-              fieldErrors.push(`${key}: ${value}`);
-            }
-          }
-          if (fieldErrors.length > 0) {
-            errorMessage = fieldErrors.join('\n');
-          }
-        }
-      }
-      
-      alert(`Error:\n${errorMessage}`);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading.filter((e) => e !== "save");
     }
   };
 
-  // Delete voucher using axios
   const handleDeleteVoucher = async () => {
     if (!voucherToDelete) return;
-
     setLoading.append("delete");
-
     try {
-      const response = await axios.delete(
-        `${config.wsUrl}vouchers/${voucherToDelete}`
-      );
-      
-      console.log("Delete response:", response.data);
-      
-      if (response.data) {
-        alert("Voucher berhasil dihapus");
-        setDeleteModalOpen(false);
-        setVoucherToDelete(null);
-        fetchVouchers(pagination.current_page);
-      }
+      await axios.delete(`${config.wsUrl}vouchers/${voucherToDelete}`);
+      alert("Voucher berhasil dihapus");
+      setDeleteModalOpen(false);
+      fetchVouchers(pagination.current_page);
     } catch (error: any) {
-      console.error("Error deleting voucher:", error);
-      console.error("Error details:", error.response?.data);
-      
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error ||
-                          "Terjadi kesalahan saat menghapus voucher";
-      alert(errorMessage);
+      alert(error.response?.data?.message || "Gagal menghapus voucher");
     } finally {
       setLoading.filter((e) => e !== "delete");
     }
   };
 
-  // Format table data
-  const tableData = useMemo(() => {
-    console.log("Formatting table data. Vouchers:", vouchers);
-    console.log("Vouchers length:", vouchers.length);
-    
-    return vouchers.map((voucher, index) => {
-      const globalIndex = (pagination.current_page - 1) * pagination.per_page + index + 1;
-      const now = moment();
-      const startDate = moment(voucher.date_start);
-      const endDate = moment(voucher.date_end);
-      
-      let status = "Aktif";
-      let statusColor = "green";
-      let systemStatus = null;
-      
-      // Status sistem dari API
-      if (voucher.status !== undefined) {
-        systemStatus = voucher.status === 1 ? "Aktif" : "Nonaktif";
-      }
-      
-      // Status berdasarkan logika bisnis
-      if (now.isBefore(startDate)) {
-        status = "Belum Mulai";
-        statusColor = "blue";
-      } else if (now.isAfter(endDate)) {
-        status = "Kadaluarsa";
-        statusColor = "red";
-      } else if (voucher.used_count >= voucher.max_use) {
-        status = "Terpakai";
-        statusColor = "orange";
-      } else if (voucher.stock <= 0) {
-        status = "Habis";
-        statusColor = "gray";
-      } else if (systemStatus === "Nonaktif") {
-        status = "Nonaktif";
-        statusColor = "gray";
-      }
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' | null = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    else if (sortConfig.key === key && sortConfig.direction === 'desc') direction = null;
+    setSortConfig({ key, direction });
+  };
 
-      return {
-        No: globalIndex,
-        "Kode Voucher": voucher.code,
-        "Nama Event": voucher.event?.name || `Event ID: ${voucher.event_id}`,
-        Diskon: (
-          <Badge color={voucher.type === "persentase" ? "blue" : "green"} variant="light">
-            {voucher.type === "persentase" ? `${voucher.discount}%` : `Rp ${voucher.discount.toLocaleString("id-ID")}`}
-          </Badge>
-        ),
-        "Periode": `${moment(voucher.date_start).format("DD/MM/YYYY")} - ${moment(voucher.date_end).format("DD/MM/YYYY")}`,
-        "Kuota": `${voucher.used_count}/${voucher.max_use}`,
-        "Stok": voucher.stock,
-        Status: (
-          <Stack gap={2}>
-            <Badge color={statusColor} size="sm">
-              {status}
-            </Badge>
-            {systemStatus && systemStatus !== status && (
-              <Badge color="gray" variant="outline" size="xs">
-                Sistem: {systemStatus}
-              </Badge>
-            )}
-          </Stack>
-        ),
-        Action: (
-          <Group gap="xs">
-            <ActionIcon
-              color="blue"
-              variant="subtle"
-              onClick={() => handleViewClick(voucher)}
-            >
-              <FontAwesomeIcon icon={faEye} size="sm" />
-            </ActionIcon>
-            <ActionIcon
-              color="orange"
-              variant="subtle"
-              onClick={() => handleEditClick(voucher)}
-            >
-              <FontAwesomeIcon icon={faPencil} size="sm" />
-            </ActionIcon>
-            <ActionIcon
-              color="red"
-              variant="subtle"
-              onClick={() => handleDeleteClick(voucher.id)}
-            >
-              <FontAwesomeIcon icon={faTrash} size="sm" />
-            </ActionIcon>
-          </Group>
-        ),
-      };
-    });
-  }, [vouchers, pagination]);
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key || !sortConfig.direction) return faSort;
+    return sortConfig.direction === 'asc' ? faSortUp : faSortDown;
+  };
 
-  return (
-    <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
-      {/* Header */}
+  const sortedVouchers = useMemo(() => {
+    let result = [...vouchers];
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        let valA = ""; let valB = "";
+        if (sortConfig.key === 'code') { valA = (a.code || "").toLowerCase(); valB = (b.code || "").toLowerCase(); }
+        else if (sortConfig.key === 'event') { valA = (a.event?.name || "").toLowerCase(); valB = (b.event?.name || "").toLowerCase(); }
+        else if (sortConfig.key === 'stock') return sortConfig.direction === 'asc' ? (a.stock || 0) - (b.stock || 0) : (b.stock || 0) - (a.stock || 0);
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [vouchers, sortConfig]);
+
+  const renderList = () => (
+    <Stack gap={25}>
       <Flex gap={20} justify="space-between" align="center">
         <Stack gap={0}>
-          <Title order={1} size="h2">
-            Manajemen Voucher
-          </Title>
-          <Text size="sm" c="gray">
-            Kelola voucher promo untuk event Anda
-          </Text>
+          <Title order={1} size="h2">Manajemen Voucher</Title>
+          <Text size="sm" c="gray">Kelola voucher promo untuk event Anda</Text>
         </Stack>
-        
-        <Button
-          onClick={handleCreateClick}
-          leftSection={<FontAwesomeIcon icon={faPlus} />}
-          loading={loading.includes("save")}
-          disabled={events.length === 0 && loading.includes("events")}
-        >
-          {events.length === 0 ? "Tunggu..." : "Buat Voucher Baru"}
-        </Button>
+        <Button onClick={handleCreateClick} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">Buat Voucher Baru</Button>
       </Flex>
 
-      {/* Filters */}
-      <Card withBorder p="md">
+      <Card withBorder p="md" radius="md" shadow="sm">
         <Flex gap="md" align="center" wrap="wrap">
-          <Input
-            placeholder="Cari kode voucher..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: 300 }}
-            leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-          />
-          
-          <Select
-            placeholder="Filter Event"
-            value={eventFilter}
-            onChange={(value) => setEventFilter(value || "all")}
-            data={[
-              { value: "all", label: "Semua Event" },
-              ...events.map((event) => ({
-                value: event.id.toString(),
-                label: event.name,
-              })),
-            ]}
-            style={{ width: 200 }}
-            clearable
-            disabled={events.length === 0}
-          />
-          
-          <Select
-            placeholder="Filter Tipe"
-            value={typeFilter}
-            onChange={(value) => setTypeFilter(value || "all")}
-            data={[
-              { value: "all", label: "Semua Tipe" },
-              { value: "persentase", label: "Persentase" },
-              { value: "nominal", label: "Nominal" },
-            ]}
-            style={{ width: 150 }}
-            clearable
-          />
-          
-          <Select
-            placeholder="Filter Status"
-            value={statusFilter}
-            onChange={(value) => setStatusFilter(value || "all")}
-            data={[
-              { value: "all", label: "Semua Status" },
-              { value: "active", label: "Aktif" },
-              { value: "inactive", label: "Nonaktif" },
-              { value: "expired", label: "Kadaluarsa" },
-            ]}
-            style={{ width: 150 }}
-            clearable
-          />
-          
-          <Button
-            variant="light"
-            onClick={() => {
-              setSearchTerm("");
-              setEventFilter("all");
-              setTypeFilter("all");
-              setStatusFilter("all");
-              fetchVouchers(1);
-            }}
-          >
-            Reset Filter
-          </Button>
+          <TextInput placeholder="Cari kode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
+          <Select placeholder="Semua Event" value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: "Semua Event" }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
+          <Select placeholder="Semua Tipe" value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: "Semua Tipe" }, { value: "persentase", label: "Persentase" }, { value: "nominal", label: "Nominal" }]} style={{ width: 140 }} />
+          <Select placeholder="Semua Status" value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: "Semua Status" }, { value: "active", label: "Aktif" }, { value: "inactive", label: "Nonaktif" }, { value: "expired", label: "Kadaluarsa" }]} style={{ width: 140 }} />
+          <Button variant="filled" color="blue" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
+          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); fetchVouchers(1); }}>Reset</Button>
         </Flex>
       </Card>
 
-      {/* Voucher Table */}
-      <Card className="!overflow-auto" p={20} withBorder>
-        <TableData
-          loading={loading.includes("vouchers")}
-          tablekey="vouchers"
-          withRowIndex={false}
-          data={tableData}
-          mapData={(e) => ({
-            No: e.No,
-            "Kode Voucher": e["Kode Voucher"],
-            "Nama Event": e["Nama Event"],
-            Diskon: e.Diskon,
-            Periode: e.Periode,
-            Kuota: e.Kuota,
-            Stok: e.Stok,
-            Status: e.Status,
-            Action: e.Action,
-          })}
-        />
+      <Card withBorder p={0} radius="md" shadow="sm" style={{ overflow: 'hidden' }}>
+        <Box style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                {["No", "Kode Voucher", "Nama Event", "Diskon", "Periode", "Kuota", "Stok", "Status", "Aksi"].map((label, i) => (
+                  <th key={i} onClick={() => ["Kode Voucher", "Nama Event", "Stok"].includes(label) && requestSort(label === "Kode Voucher" ? 'code' : label === "Nama Event" ? 'event' : 'stock')} style={{
+                    padding: '14px', textAlign: ["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: ["Kode Voucher", "Nama Event", "Stok"].includes(label) ? 'pointer' : 'default',
+                    position: label === "Aksi" ? 'sticky' : 'static', right: label === "Aksi" ? 0 : 'auto', backgroundColor: label === "Aksi" ? '#f8f9fa' : 'transparent', zIndex: label === "Aksi" ? 10 : 1, boxShadow: label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
+                  }}>
+                    <Flex align="center" gap={6} justify={["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'flex-start'}>
+                      {label}
+                      {["Kode Voucher", "Nama Event", "Stok"].includes(label) && <FontAwesomeIcon icon={getSortIcon(label === "Kode Voucher" ? 'code' : label === "Nama Event" ? 'event' : 'stock')} size="xs" style={{ color: '#adb5bd' }} />}
+                    </Flex>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading.includes("vouchers") ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr> :
+                sortedVouchers.length === 0 ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Tidak ada voucher ditemukan</Text></td></tr> :
+                  sortedVouchers.map((v, idx) => {
+                    const now = moment();
+                    const startDate = moment(v.date_start);
+                    const endDate = moment(v.date_end);
+                    let bStat = "Aktif"; let sCol = "green"; let sysStat = v.status === 1 ? "Aktif" : "Nonaktif";
+                    if (now.isBefore(startDate)) { bStat = "Belum Mulai"; sCol = "blue"; }
+                    else if (now.isAfter(endDate)) { bStat = "Kadaluarsa"; sCol = "red"; }
+                    else if (v.used_count >= v.max_use) { bStat = "Terpakai"; sCol = "orange"; }
+                    else if (v.stock <= 0) { bStat = "Habis"; sCol = "gray"; }
+                    else if (sysStat === "Nonaktif") { bStat = "Nonaktif"; sCol = "gray"; }
 
-        {/* Debug info */}
-        <Flex justify="space-between" align="center" mt="md">
-          <Text size="sm" c="dimmed">
-            Total Data: {vouchers.length} voucher(s) | 
-            Tabel Data: {tableData.length} row(s) | 
-            Loading: {loading.includes("vouchers") ? "Ya" : "Tidak"}
-          </Text>
-        </Flex>
-
-        {/* Pagination */}
-        {vouchers.length > 0 && (
-          <Flex justify="space-between" align="center" mt="md">
-            <Text size="sm" c="dimmed">
-              Menampilkan {tableData[0]?.No || 1} sampai {tableData[tableData.length - 1]?.No || tableData.length} dari{" "}
-              <strong>{pagination.total}</strong> voucher
-            </Text>
-            
-            <Pagination
-              value={pagination.current_page}
-              onChange={handlePageChange}
-              total={pagination.last_page}
-              radius="md"
-              size="sm"
-              withEdges
-            />
-          </Flex>
-        )}
-
-        {/* Empty State */}
-        {vouchers.length === 0 && !loading.includes("vouchers") && (
-          <Card withBorder mt="md" p="xl">
-            <Flex direction="column" align="center" gap="md">
-              <FontAwesomeIcon icon={faTicketAlt} size="2x" color="#adb5bd" />
-              <Text size="lg" c="dimmed" fw={500}>
-                Tidak ada data voucher
-              </Text>
-              <Text size="sm" c="dimmed" ta="center">
-                {searchTerm || eventFilter !== "all" || typeFilter !== "all" || statusFilter !== "all"
-                  ? "Tidak ditemukan voucher dengan filter yang dipilih"
-                  : "Belum ada voucher yang dibuat"}
-              </Text>
-              <Button 
-                onClick={handleCreateClick} 
-                leftSection={<FontAwesomeIcon icon={faPlus} />}
-                disabled={events.length === 0}
-              >
-                {events.length === 0 ? "Tunggu data event..." : "Buat Voucher Pertama"}
-              </Button>
-              
-              {events.length === 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={fetchEvents}
-                  loading={loading.includes("events")}
-                >
-                  Refresh Data Event
-                </Button>
-              )}
-            </Flex>
-          </Card>
-        )}
+                    return (
+                      <tr key={v.id} style={{ borderBottom: '1px solid #f1f3f5' }}>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={700}>{(pagination.current_page - 1) * pagination.per_page + idx + 1}</Text></td>
+                        <td style={{ padding: '12px 14px' }}><Text size="sm" fw={700} c="blue">{v.code}</Text></td>
+                        <td style={{ padding: '12px 14px' }}><Text size="sm" fw={500}>{v.event?.name || v.event_id}</Text></td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}><Badge variant="light" color={v.type === "persentase" ? "blue" : "green"}>{v.type === "persentase" ? `${v.discount}%` : `Rp ${v.discount.toLocaleString()}`}</Badge></td>
+                        <td style={{ padding: '12px 14px' }}><Text size="xs" c="dimmed">{moment(v.date_start).format("DD/MM/YY")} - {moment(v.date_end).format("DD/MM/YY")}</Text></td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={600}>{v.used_count}/{v.max_use}</Text></td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="sm" fw={700}>{v.stock}</Text></td>
+                        <td style={{ padding: '12px 14px' }}><Flex justify="center" direction="column" align="center"><Badge variant="filled" color={sCol} size="sm" style={{ width: 100 }}>{bStat}</Badge></Flex></td>
+                        <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', textAlign: 'center', borderLeft: '1px solid #f1f3f5' }}>
+                          <Flex gap={8} justify="center">
+                            <ActionIcon variant="subtle" color="blue" onClick={() => handleViewClick(v)}><FontAwesomeIcon icon={faEye} size="xs" /></ActionIcon>
+                            <ActionIcon variant="subtle" color="orange" onClick={() => handleEditClick(v)}><FontAwesomeIcon icon={faPencil} size="xs" /></ActionIcon>
+                            <ActionIcon variant="subtle" color="red" onClick={() => handleDeleteClick(v.id)}><FontAwesomeIcon icon={faTrash} size="xs" /></ActionIcon>
+                          </Flex>
+                        </td>
+                      </tr>
+                    );
+                  })}
+            </tbody>
+          </table>
+        </Box>
       </Card>
+      {vouchers.length > 0 && (
+        <Flex justify="space-between" align="center">
+          <Text size="xs" c="dimmed">Total {pagination.total} voucher</Text>
+          <Pagination value={pagination.current_page} onChange={handlePageChange} total={pagination.last_page} radius="md" size="sm" withEdges />
+        </Flex>
+      )}
+    </Stack>
+  );
 
-      {/* Modal Create/Edit Voucher - STATUS DIUBAH KE NUMBER */}
-      <Modal
-        opened={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={formData.id ? "Edit Voucher" : "Buat Voucher Baru"}
-        size="lg"
-      >
-        <Stack gap="md">
-          <Select
-            label="Event"
-            placeholder="Pilih event"
-            value={formData.event_id}
-            onChange={(value) => setFormData({ ...formData, event_id: value || "" })}
-            data={events.map((event) => ({
-              value: event.id.toString(),
-              label: event.name,
-            }))}
-            required
-            disabled={loading.includes("save") || events.length === 0}
-            error={events.length === 0 ? "Belum ada event. Silakan buat event terlebih dahulu." : undefined}
-            description={events.length === 0 ? "Tidak ada event yang tersedia" : `Tersedia ${events.length} event`}
-          />
-          
-          <TextInput
-            label="Kode Voucher"
-            placeholder="Contoh: SAVE50"
-            value={formData.code}
-            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-            required
-            disabled={loading.includes("save")}
-            maxLength={20}
-            description="Kode akan otomatis menjadi huruf besar"
-          />
-          
-          <Select
-            label="Tipe Diskon"
-            value={formData.type}
-            onChange={(value) => setFormData({ 
-              ...formData, 
-              type: value as "persentase" | "nominal" 
-            })}
-            data={[
-              { value: "persentase", label: "Persentase (%)" },
-              { value: "nominal", label: "Nominal (Rp)" },
-            ]}
-            leftSection={
-              <FontAwesomeIcon 
-                icon={formData.type === "persentase" ? faPercent : faDollarSign} 
-                size="sm" 
-              />
-            }
-            required
-            disabled={loading.includes("save")}
-          />
-          
-          <NumberInput
-            label="Nilai Diskon"
-            placeholder={formData.type === "persentase" ? "Contoh: 50" : "Contoh: 10000"}
-            value={formData.discount}
-            onChange={(value) => setFormData({ ...formData, discount: Number(value) })}
-            required
-            disabled={loading.includes("save")}
-            min={0}
-            max={formData.type === "persentase" ? 100 : 10000000}
-            leftSection={
-              formData.type === "persentase" ? (
-                <FontAwesomeIcon icon={faPercent} size="sm" />
-              ) : (
-                <Text size="sm">Rp</Text>
-              )
-            }
-            rightSection={
-              formData.type === "persentase" ? (
-                <Text size="sm">%</Text>
-              ) : undefined
-            }
-            description={formData.type === "persentase" 
-              ? "Maksimal 100%" 
-              : "Maksimal Rp 10.000.000"}
-          />
-          
-          {/* STATUS FIELD: Diubah ke number */}
-          <Select
-            label="Status"
-            value={formData.status.toString()}
-            onChange={(value) => setFormData({ ...formData, status: value === "1" ? 1 : 0 })}
-            data={[
-              { value: "1", label: "Aktif" },
-              { value: "0", label: "Nonaktif" },
-            ]}
-            required
-            disabled={loading.includes("save")}
-            description="1 = Aktif, 0 = Nonaktif"
-          />
-          
-          <Flex gap="md">
-            <TextInput
-              label="Tanggal Mulai"
-              type="date"
-              value={formData.date_start}
-              onChange={(e) => setFormData({ ...formData, date_start: e.target.value })}
-              required
-              disabled={loading.includes("save")}
-              style={{ flex: 1 }}
-              leftSection={<FontAwesomeIcon icon={faCalendarAlt} size="sm" />}
-              min={moment().format("YYYY-MM-DD")}
-            />
-            
-            <TextInput
-              label="Tanggal Berakhir"
-              type="date"
-              value={formData.date_end}
-              onChange={(e) => setFormData({ ...formData, date_end: e.target.value })}
-              required
-              disabled={loading.includes("save")}
-              style={{ flex: 1 }}
-              leftSection={<FontAwesomeIcon icon={faCalendarAlt} size="sm" />}
-              min={formData.date_start || moment().format("YYYY-MM-DD")}
-            />
-          </Flex>
-          
-          <Flex gap="md">
-            <NumberInput
-              label="Max. Penggunaan"
-              placeholder="Contoh: 100"
-              value={formData.max_use}
-              onChange={(value) => setFormData({ ...formData, max_use: Number(value) })}
-              required
-              disabled={loading.includes("save")}
-              min={1}
-              style={{ flex: 1 }}
-              description="Berapa kali voucher bisa digunakan"
-            />
-            
-            <NumberInput
-              label="Stok Awal"
-              placeholder="Contoh: 100"
-              value={formData.stock}
-              onChange={(value) => setFormData({ ...formData, stock: Number(value) })}
-              required
-              disabled={loading.includes("save")}
-              min={0}
-              style={{ flex: 1 }}
-              description="Jumlah voucher yang tersedia"
-            />
-          </Flex>
-          
-          {formData.type === "persentase" && formData.discount > 100 && (
-            <Alert 
-              variant="light" 
-              color="red" 
-              icon={<FontAwesomeIcon icon={faInfoCircle} />}
-              title="Perhatian"
-            >
-              Diskon persentase tidak boleh lebih dari 100%
-            </Alert>
-          )}
-          
-          <Flex justify="flex-end" gap="md" mt="md">
-            <Button
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-              disabled={loading.includes("save")}
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleSaveVoucher}
-              loading={loading.includes("save")}
-              disabled={!formData.event_id || !formData.code}
-            >
-              {formData.id ? "Update" : "Simpan"}
-            </Button>
-          </Flex>
+  const renderForm = () => (
+    <Stack gap={25}>
+      {/* Header */}
+      <Flex align="center" gap={15}>
+        <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="md">
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </ActionIcon>
+        <Stack gap={0}>
+          <Title order={2} size="h3">{isEditMode ? "Edit Voucher" : "Buat Voucher Baru"}</Title>
+          <Text size="xs" c="dimmed">Lengkapi rincian di bawah ini</Text>
         </Stack>
-      </Modal>
+      </Flex>
 
-      {/* Modal Delete Confirmation */}
-      <Modal
-        opened={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        title="Konfirmasi Hapus"
-        size="sm"
-      >
-        <Stack gap="md">
-          <Text>Apakah Anda yakin ingin menghapus voucher ini?</Text>
-          <Text size="sm" c="dimmed">
-            Tindakan ini tidak dapat dibatalkan.
-          </Text>
+      <form id="voucher-form" onSubmit={(e) => { e.preventDefault(); handleSaveVoucher(); }}>
+        <Card withBorder padding="xl" radius="md" shadow="sm">
+          <Stack gap="xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Select label="Event" data={events.map(e => ({ value: e.id.toString(), label: e.name }))} value={formData.event_id} onChange={v => setFormData({ ...formData, event_id: v || "" })} required />
+              <TextInput label="Kode Voucher" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required />
+              <Select label="Tipe" data={[{ value: "persentase", label: "Persen (%)" }, { value: "nominal", label: "Nominal (Rp)" }]} value={formData.type} onChange={v => setFormData({ ...formData, type: v as any })} />
+              <NumberInput label="Diskon" value={formData.discount} onChange={v => setFormData({ ...formData, discount: Number(v) })} required />
+              <TextInput label="Mulai" type="date" value={formData.date_start} onChange={e => setFormData({ ...formData, date_start: e.target.value })} />
+              <TextInput label="Berakhir" type="date" value={formData.date_end} onChange={e => setFormData({ ...formData, date_end: e.target.value })} />
+              <NumberInput label="Kuota" value={formData.max_use} onChange={v => setFormData({ ...formData, max_use: Number(v) })} />
+              <NumberInput label="Stok" value={formData.stock} onChange={v => setFormData({ ...formData, stock: Number(v) })} />
+              <Select label="Status" data={[{ value: "1", label: "Aktif" }, { value: "0", label: "Nonaktif" }]} value={formData.status.toString()} onChange={v => setFormData({ ...formData, status: parseInt(v || "1") })} />
+            </div>
+          </Stack>
+        </Card>
+
+        {/* Floating Footer - Fixed to Viewport Bottom (Edge-to-Edge) */}
+        <Box
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]"
+        >
           <Flex justify="flex-end" gap="md">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteModalOpen(false)}
-              disabled={loading.includes("delete")}
-            >
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} leftSection={<FontAwesomeIcon icon={faXmark} />}>
               Batal
             </Button>
             <Button
-              color="red"
-              onClick={handleDeleteVoucher}
-              loading={loading.includes("delete")}
+              type="submit"
+              form="voucher-form"
+              color="blue"
+              loading={loading.includes("save")}
+              leftSection={<FontAwesomeIcon icon={faSave} />}
             >
-              Hapus
+              Simpan
             </Button>
           </Flex>
+        </Box>
+      </form>
+    </Stack>
+  );
+
+  return (
+    <div className="p-5 md:p-8 pb-[100px] min-h-screen bg-[#fcfcfc]">
+      {isFormVisible ? renderForm() : renderList()}
+      <Modal opened={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Hapus Voucher" centered size="sm">
+        <Stack gap="md">
+          <Text size="sm">Yakin ingin menghapus voucher ini?</Text>
+          <Flex justify="flex-end" gap="sm"><Button variant="subtle" color="gray" onClick={() => setDeleteModalOpen(false)}>Batal</Button><Button color="red" onClick={handleDeleteVoucher} loading={loading.includes("delete")}>Hapus</Button></Flex>
         </Stack>
       </Modal>
-
-      {/* Modal View Voucher Details */}
-      <Modal
-        opened={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        title="Detail Voucher"
-        size="md"
-      >
+      <Modal opened={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Detail Voucher" size="md">
         {selectedVoucher && (
-          <Stack gap="lg">
-            <Card withBorder p="md">
-              <Stack gap="xs">
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    Kode Voucher
-                  </Text>
-                  <Badge size="lg" color="blue" variant="filled">
-                    {selectedVoucher.code}
-                  </Badge>
-                </Flex>
-                
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    Event
-                  </Text>
-                  <Text>{selectedVoucher.event?.name || `Event ID: ${selectedVoucher.event_id}`}</Text>
-                </Flex>
-                
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    Tipe Diskon
-                  </Text>
-                  <Badge 
-                    color={selectedVoucher.type === "persentase" ? "blue" : "green"} 
-                    variant="light"
-                  >
-                    {selectedVoucher.type === "persentase" ? "Persentase" : "Nominal"}
-                  </Badge>
-                </Flex>
-                
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">
-                    Nilai Diskon
-                  </Text>
-                  <Text fw={700} size="lg">
-                    {selectedVoucher.type === "persentase"
-                      ? `${selectedVoucher.discount}%`
-                      : `Rp ${selectedVoucher.discount.toLocaleString("id-ID")}`}
-                  </Text>
-                </Flex>
-                
-                {selectedVoucher.status !== undefined && (
-                  <Flex justify="space-between" align="center">
-                    <Text fw={600} size="sm" c="dimmed">
-                      Status Sistem
-                    </Text>
-                    <Badge color={selectedVoucher.status === 1 ? "green" : "red"}>
-                      {selectedVoucher.status === 1 ? "Aktif (1)" : "Nonaktif (0)"}
-                    </Badge>
-                  </Flex>
-                )}
-              </Stack>
-            </Card>
-            
-            <Card withBorder p="md">
-              <Text fw={600} size="md" mb="sm">
-                Informasi Periode
-              </Text>
-              <Stack gap="xs">
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Mulai
-                  </Text>
-                  <Text>{moment(selectedVoucher.date_start).format("DD MMMM YYYY")}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Berakhir
-                  </Text>
-                  <Text>{moment(selectedVoucher.date_end).format("DD MMMM YYYY")}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Durasi
-                  </Text>
-                  <Text>
-                    {moment(selectedVoucher.date_end).diff(
-                      moment(selectedVoucher.date_start),
-                      "days"
-                    )} hari
-                  </Text>
-                </Flex>
-              </Stack>
-            </Card>
-            
-            <Card withBorder p="md">
-              <Text fw={600} size="md" mb="sm">
-                Statistik Penggunaan
-              </Text>
-              <Stack gap="xs">
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Max. Penggunaan
-                  </Text>
-                  <Text>{selectedVoucher.max_use} kali</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Sudah Digunakan
-                  </Text>
-                  <Text color={selectedVoucher.used_count >= selectedVoucher.max_use ? "red" : "green"}>
-                    {selectedVoucher.used_count} kali
-                  </Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Stok Tersisa
-                  </Text>
-                  <Text color={selectedVoucher.stock <= 0 ? "red" : "green"}>
-                    {selectedVoucher.stock} voucher
-                  </Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">
-                    Dibuat Pada
-                  </Text>
-                  <Text>{moment(selectedVoucher.created_at).format("DD MMM YYYY HH:mm")}</Text>
-                </Flex>
-              </Stack>
-            </Card>
-            
-            {/* Status */}
-            <Card 
-              withBorder 
-              p="md" 
-              style={{ 
-                borderLeft: `4px solid ${
-                  selectedVoucher.status === 0 ? "#868e96" :
-                  selectedVoucher.used_count >= selectedVoucher.max_use ? "#fa5252" :
-                  moment().isAfter(selectedVoucher.date_end) ? "#fa5252" :
-                  selectedVoucher.stock <= 0 ? "#868e96" :
-                  moment().isBefore(selectedVoucher.date_start) ? "#228be6" :
-                  "#40c057"
-                }` 
-              }}
-            >
-              <Flex justify="space-between" align="center">
-                <Text fw={600}>Status</Text>
-                <Badge
-                  color={
-                    selectedVoucher.status === 0 ? "gray" :
-                    selectedVoucher.used_count >= selectedVoucher.max_use ? "red" :
-                    moment().isAfter(selectedVoucher.date_end) ? "red" :
-                    selectedVoucher.stock <= 0 ? "gray" :
-                    moment().isBefore(selectedVoucher.date_start) ? "blue" :
-                    "green"
-                  }
-                  size="lg"
-                >
-                  {selectedVoucher.status === 0 ? "Nonaktif" :
-                   selectedVoucher.used_count >= selectedVoucher.max_use ? "Terpakai" :
-                   moment().isAfter(selectedVoucher.date_end) ? "Kadaluarsa" :
-                   selectedVoucher.stock <= 0 ? "Habis" :
-                   moment().isBefore(selectedVoucher.date_start) ? "Belum Mulai" :
-                   "Aktif"}
-                </Badge>
-              </Flex>
-            </Card>
+          <Stack gap="md">
+            <div className="grid grid-cols-2 gap-4">
+              <div><Text size="xs" c="dimmed">Kode</Text><Text fw={700}>{selectedVoucher.code}</Text></div>
+              <div><Text size="xs" c="dimmed">Event</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id}</Text></div>
+            </div>
+            <Alert color="blue" icon={<FontAwesomeIcon icon={faInfoCircle} />}>Berlaku: {moment(selectedVoucher.date_start).format("DD/MM/YY")} - {moment(selectedVoucher.date_end).format("DD/MM/YY")}</Alert>
+            <Button fullWidth variant="light" onClick={() => setViewModalOpen(false)}>Tutup</Button>
           </Stack>
         )}
       </Modal>

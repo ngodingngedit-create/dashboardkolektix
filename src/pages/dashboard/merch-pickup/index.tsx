@@ -905,6 +905,23 @@ import {
   Divider,
   Chip
 } from "@nextui-org/react";
+import {
+  Flex,
+  Group,
+  Select as MantineSelect,
+  TextInput as MantineTextInput,
+  Button as MantineButton,
+  ActionIcon,
+  NumberFormatter,
+  Text,
+  Box,
+  Badge,
+  Tooltip,
+  Pagination as MantinePagination,
+  Stack,
+  Card as MantineCard,
+  Divider as MantineDivider
+} from "@mantine/core";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faDownload, faSearch, faBoxOpen, faQrcode, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
@@ -1230,8 +1247,39 @@ const MerchPickupPage: React.FC = () => {
     return result;
   }, [data, filterValue]);
 
+  const [mtSortBy, setMtSortBy] = useState<string>("");
+  const [mtSortDir, setMtSortDir] = useState<"asc" | "desc">("asc");
+  const handleMTSort = (col: string) => {
+    if (mtSortBy === col) setMtSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setMtSortBy(col); setMtSortDir("asc"); }
+    setPage(1);
+  };
+  const sortedFiltered = useMemo(() => {
+    if (!mtSortBy) return filtered;
+    return [...filtered].sort((a: any, b: any) => {
+      let valA = a[mtSortBy] ?? "";
+      let valB = b[mtSortBy] ?? "";
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+      if (valA < valB) return mtSortDir === "asc" ? -1 : 1;
+      if (valA > valB) return mtSortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filtered, mtSortBy, mtSortDir]);
+
+  const totalPriceAllFiltered = useMemo(
+    () => filtered.reduce((sum, item) => {
+      // Adjusted logic from transaction pickup
+      if (item.transaction_status_id === 2 || item.transaction_status_id === 3 || (item as any).payment_status === "PAID") {
+        return sum + (Number(item.total_price) || 0);
+      }
+      return sum;
+    }, 0),
+    [filtered]
+  );
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const paginatedItems = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const paginatedItems = sortedFiltered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   const handleOpenScanModal = () => {
     setIsScanModalOpen(true);
@@ -1350,290 +1398,222 @@ const MerchPickupPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      {/* Header Section */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm">
-              <FontAwesomeIcon icon={faBoxOpen} className="text-white text-xl" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Merchandise Pickup</h1>
-              <p className="text-gray-600 mt-1">Manajemen pengambilan merchandise oleh customer</p>
-            </div>
-          </div>
-          
-          <div className="bg-blue-50 border border-primary-light-200 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-blue-800">
-                Total Transaksi: {filtered.length}
-                {data.some(item => !item.isAvailable) && (
-                  <span className="text-yellow-600 ml-2">
-                    ({data.filter(item => !item.isAvailable).length} Tidak ada Invoice)
-                  </span>
+    <>
+      <Flex mt={15} mx={15} justify="space-between" align="center" wrap="wrap">
+          <Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Pickup Merchandise</Text>
+          <Group gap="xl">
+              <Stack gap={2}>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
+                  <Text size="xl" fw={700}>{filtered.length}</Text>
+              </Stack>
+              <MantineDivider orientation="vertical" />
+              <Stack gap={2}>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Penjualan</Text>
+                  <Text size="xl" fw={700}>
+                      <NumberFormatter prefix="Rp " value={totalPriceAllFiltered} thousandSeparator="." decimalSeparator="," />
+                  </Text>
+              </Stack>
+          </Group>
+      </Flex>
+
+      <MantineCard p={25} mt={20} mx={15} mb={15} withBorder radius="md">
+        <Stack gap="xl">
+            <Box>
+                <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+                    <Group gap="sm">
+                        <MantineSelect
+                            value={rowsPerPage.toString()}
+                            onChange={(val) => {
+                                setRowsPerPage(Number(val));
+                                setPage(1);
+                            }}
+                            data={['10', '20', '50', '100']}
+                            style={{ width: 70 }}
+                            size="sm"
+                        />
+                        <MantineButton 
+                            variant="filled" 
+                            color="green" 
+                            leftSection={<Icon icon="solar:file-download-bold" width={18} />}
+                            onClick={() => exportToCSV(filtered.filter(item => item.isAvailable))}
+                            disabled={filtered.filter(item => item.isAvailable).length === 0}
+                            size="sm"
+                            styles={{ root: { color: 'white' } }}
+                        >
+                            Export CSV ({filtered.filter(item => item.isAvailable).length})
+                        </MantineButton>
+                        <MantineButton
+                            variant="filled"
+                            color="blue"
+                            leftSection={<Icon icon="mdi:qrcode-scan" width={18} />}
+                            onClick={handleOpenScanModal}
+                            size="sm"
+                        >
+                            Scan QR/Barcode
+                        </MantineButton>
+                    </Group>
+                    <Group gap="sm">
+                        <MantineTextInput
+                            placeholder="Cari invoice, dll..."
+                            leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                            value={filterValue}
+                            onChange={(e) => {
+                                setFilterValue(e.target.value);
+                                setPage(1);
+                            }}
+                            style={{ width: 300 }}
+                            size="sm"
+                        />
+                    </Group>
+                </Flex>
+
+                <Flex align="center" gap="sm" mb="md">
+                    <Text size="sm" c="gray">
+                        Menampilkan {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0'} dari {filtered.length} transaksi
+                    </Text>
+                </Flex>
+
+                <Box style={{ overflow: 'auto', maxHeight: '70vh', position: 'relative' }}>
+                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #f0f0f0' }}>
+                        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                            <tr style={{ backgroundColor: '#f5f7fa' }}>
+                                <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, borderBottom: '2px solid #e8e8e8' }}>#</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('customer_name')}>Customer {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('product_name')}>Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('total_qty')}>Qty {mtSortBy === 'total_qty' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('transaction_status_id')}>Status {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('order_date')}>Tanggal Order {mtSortBy === 'order_date' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 11, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)', borderBottom: '2px solid #e8e8e8' }}>
+                                    <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedItems.map((item: MerchandiseTransactionData, idx: number) => {
+                                const statusInfo = getStatusInfo(item.transaction_status_id);
+                                const isAvailable = item.isAvailable !== false;
+                                const rowNumber = (page - 1) * rowsPerPage + idx + 1;
+                                
+                                return (
+                                    <tr key={item.id} style={{ backgroundColor: !isAvailable ? '#fef2f2' : '' }}>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, borderBottom: '1px solid #f0f0f0' }}>
+                                            <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Flex align="center" gap="xs">
+                                                <Text size="sm" fw={600} c={!isAvailable ? 'red.7' : 'dark'}>{item.invoice_no}</Text>
+                                                {!isAvailable && <Badge color="red" size="xs">Tidak Tersedia</Badge>}
+                                            </Flex>
+                                            <Text size="xs" c="dimmed">{isAvailable ? item.payment_method || "N/A" : "Data error 404"}</Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Text size="sm" c={!isAvailable ? 'red.7' : 'dark'}>{item.customer_name}</Text>
+                                            <Text size="xs" c="dimmed">{item.customer_email}</Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px' }}>
+                                            <Text size="sm" c={!isAvailable ? 'red.7' : 'dark'} style={{ whiteSpace: 'nowrap' }}>
+                                                {item.product_name} {!isAvailable && '(Data tidak tersedia)'}
+                                            </Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
+                                            <MantineButton 
+                                                color={isAvailable ? 'gray' : 'red'} 
+                                                variant="light" 
+                                                size="xs" 
+                                                radius="sm" 
+                                                w={140}
+                                                styles={{ 
+                                                    root: { minHeight: 28, height: 'auto', padding: '4px 12px' },
+                                                    label: { whiteSpace: 'nowrap', textAlign: 'center', lineHeight: 1.2 } 
+                                                }}
+                                            >
+                                                {item.sku || "-"}
+                                            </MantineButton>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Text size="sm" fw={600} c={!isAvailable ? 'red.7' : 'dark'}>{isAvailable ? item.total_qty : "-"}</Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
+                                            {isAvailable ? (
+                                                <MantineButton 
+                                                    color={statusInfo.color.includes('yellow') ? 'yellow' : statusInfo.color.includes('green') ? 'green' : statusInfo.color.includes('red') ? 'red' : 'gray'} 
+                                                    variant="filled" 
+                                                    size="xs"
+                                                    radius="xl"
+                                                    w={130}
+                                                    styles={{ 
+                                                        root: { minHeight: 28, height: 'auto', padding: '4px 8px' },
+                                                        label: { whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.2 } 
+                                                    }}
+                                                >
+                                                    {statusInfo.text}
+                                                </MantineButton>
+                                            ) : (
+                                                <MantineButton color="red" variant="filled" size="xs" radius="xl" w={130}>
+                                                    Data Error
+                                                </MantineButton>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Text size="sm" c={!isAvailable ? 'dimmed' : 'dark'}>{isAvailable ? formatDate(item.order_date) : "Tidak tersedia"}</Text>
+                                        </td>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: !isAvailable ? '#fef2f2' : 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Flex align="center" gap="xs">
+                                                {isAvailable ? (
+                                                  <Tooltip label="Lihat Detail">
+                                                      <ActionIcon 
+                                                          variant="light" 
+                                                          color="blue" 
+                                                          onClick={() => handleViewDetail(item)}
+                                                          size="md"
+                                                          radius="md"
+                                                      >
+                                                          <Icon icon="solar:eye-bold" width={16} />
+                                                      </ActionIcon>
+                                                  </Tooltip>
+                                                ) : (
+                                                  <Badge color="gray" variant="light">Tidak Tersedia</Badge>
+                                                )}
+                                            </Flex>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </Box>
+
+                {paginatedItems.length === 0 && (
+                    <Box py="xl" ta="center">
+                        <Text c="dimmed">Tidak ada data transaksi yang ditemukan</Text>
+                    </Box>
                 )}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Search and Action Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center mb-6 gap-4">
-        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
-          {/* Tombol Scan QR/Barcode yang lebih kecil */}
-          <Button
-            color="primary"
-            startContent={<Icon icon="mdi:qrcode-scan" width={16} height={16} />}
-            onClick={handleOpenScanModal}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm hover:shadow-md transition-shadow px-4 py-2.5 h-auto"
-            size="md"
-          >
-            Scan QR/Barcode
-          </Button>
-          
-          <div className="relative flex-1 md:w-96">
-            <Input
-              type="text"
-              placeholder="Cari invoice, nama customer, produk, atau SKU..."
-              value={filterValue}
-              onChange={onSearchChange}
-              startContent={<FontAwesomeIcon icon={faSearch} className="text-gray-400" />}
-              classNames={{
-                input: "pl-10",
-                inputWrapper: "h-12 bg-white border-primary-light-200 hover:border-blue-400"
-              }}
-              size="lg"
-            />
-            {filterValue && (
-              <button
-                onClick={() => setFilterValue("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
-          {/* Tombol Export yang lebih kecil */}
-          <button
-            onClick={() => exportToCSV(filtered.filter(item => item.isAvailable))}
-            disabled={filtered.filter(item => item.isAvailable).length === 0}
-            className={`px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all text-sm ${
-              filtered.filter(item => item.isAvailable).length === 0 
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                : "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-sm hover:shadow-md"
-            }`}
-          >
-            <FontAwesomeIcon icon={faDownload} className="h-3.5 w-3.5" />
-            <span>Export ({filtered.filter(item => item.isAvailable).length})</span>
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 whitespace-nowrap">Show:</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => {
-                setRowsPerPage(Number(e.target.value));
-                setPage(1);
-              }}
-              className="border border-primary-light-200 rounded-lg p-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={10}>10 rows</option>
-              <option value={25}>25 rows</option>
-              <option value={50}>50 rows</option>
-              <option value={100}>100 rows</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Table Section */}
-      <Card className="p-0 shadow-sm border border-primary-light-200 overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
-              <FontAwesomeIcon icon={faBoxOpen} className="text-gray-400 text-3xl" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-700 mb-2">
-              {filterValue ? "Tidak ditemukan" : "Belum ada data pickup"}
-            </h3>
-            <p className="text-gray-500 mb-4 max-w-md mx-auto">
-              {filterValue 
-                ? `Tidak ada transaksi yang cocok dengan "${filterValue}"`
-                : "Mulai dengan memindai QR code untuk proses pickup"}
-            </p>
-            {filterValue && (
-              <button
-                onClick={() => setFilterValue("")}
-                className="px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                Clear search
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table
-                aria-label="Merchandise Pickup Table"
-                classNames={{
-                  base: "min-w-full",
-                  th: "bg-gray-50 text-gray-700 font-semibold text-sm uppercase border-b border-primary-light-200 py-4 px-4",
-                  td: "border-b border-primary-light-200 py-4 px-4",
-                  tr: "hover:bg-gray-50 transition-colors"
-                }}
-                removeWrapper
-              >
-                <TableHeader>
-                  <TableColumn width={60} className="text-center">NO</TableColumn>
-                  <TableColumn>INVOICE NUMBER</TableColumn>
-                  <TableColumn>NAMA CUSTOMER</TableColumn>
-                  <TableColumn>NAMA PRODUK</TableColumn>
-                  <TableColumn>SKU</TableColumn>
-                  <TableColumn width={100} className="text-center">QTY</TableColumn>
-                  <TableColumn width={120} className="text-center">STATUS</TableColumn>
-                  <TableColumn width={150}>TANGGAL ORDER</TableColumn>
-                  <TableColumn width={80} className="text-center">ACTIONS</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((item, index) => {
-                    const statusInfo = getStatusInfo(item.transaction_status_id);
-                    const isAvailable = item.isAvailable !== false;
-                    
-                    return (
-                      <TableRow 
-                        key={item.id} 
-                        className={!isAvailable ? "bg-red-50 hover:bg-red-100" : ""}
-                      >
-                        <TableCell className="text-center text-gray-500">
-                          {(page - 1) * rowsPerPage + index + 1}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-gray-800 flex items-center gap-2">
-                            {item.invoice_no}
-                            {!isAvailable && (
-                              <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full flex items-center gap-1 border border-primary-light-200">
-                                <FontAwesomeIcon icon={faExclamationTriangle} className="h-3 w-3" />
-                                Tidak tersedia
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {isAvailable ? item.payment_method || "N/A" : "Data error 404"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className={`font-medium ${!isAvailable ? "text-red-600" : ""}`}>
-                            {item.customer_name}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                            {item.customer_email}
-                          </div>
-                        </TableCell>
-                        <TableCell className="max-w-[200px]">
-                          <div className={`truncate ${!isAvailable ? "text-red-600 italic" : ""}`} title={item.product_name}>
-                            {item.product_name}
-                            {!isAvailable && " (Data tidak tersedia)"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`font-mono text-sm px-2 py-1 rounded ${
-                            isAvailable ? "bg-gray-100" : "bg-red-100 text-red-700"
-                          }`}>
-                            {item.sku || "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {isAvailable ? (
-                            <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full font-medium">
-                              {item.total_qty}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-400 rounded-full font-medium">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {isAvailable ? (
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                              {statusInfo.text}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-primary-light-200">
-                              Data Error
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className={`text-sm ${!isAvailable ? "text-gray-400" : ""}`}>
-                            {isAvailable ? formatDate(item.order_date) : "Tidak tersedia"}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {isAvailable ? (
-                            <button
-                              onClick={() => handleViewDetail(item)}
-                              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View details"
-                            >
-                              <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 text-xs px-2 py-1 bg-gray-100 rounded border border-primary-light-200" title="Data tidak tersedia">
-                              Tidak tersedia
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {/* Table Footer with Pagination */}
-            <div className="p-4 border-t border-primary-light-200 bg-gray-50">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="text-sm text-gray-600">
-                  Showing <span className="font-semibold">{Math.min(filtered.length, (page - 1) * rowsPerPage + 1)}</span> to{" "}
-                  <span className="font-semibold">{Math.min(page * rowsPerPage, filtered.length)}</span> of{" "}
-                  <span className="font-semibold">{filtered.length}</span> entries
-                  {data.some(item => !item.isAvailable) && (
-                    <span className="ml-2 text-red-600">
-                      ({data.filter(item => !item.isAvailable).length} item data error)
-                    </span>
-                  )}
-                  {filterValue && (
-                    <span className="ml-2 text-blue-600">
-                      (filtered from {data.length} total)
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-4">
-                  <Pagination
-                    page={page}
-                    total={totalPages}
-                    onChange={setPage}
-                    showControls
-                    size="sm"
-                    classNames={{
-                      cursor: "bg-gradient-to-r from-blue-500 to-blue-600 text-white",
-                      item: "text-gray-700 hover:text-blue-600",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </Card>
-
+                <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
+                    <Text size="xs" c="dimmed">
+                        Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+                    </Text>
+                    <MantinePagination 
+                        total={totalPages} 
+                        value={page} 
+                        onChange={setPage} 
+                        size="sm"
+                        radius="xl"
+                        withEdges
+                        color="blue"
+                        styles={{
+                            control: { border: '1px solid #e0e0e0', fontWeight: 600 },
+                        }}
+                    />
+                    <Text size="xs" c="dimmed">
+                        {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
+                    </Text>
+                </Flex>
+            </Box>
+        </Stack>
+      </MantineCard>
       {/* Modal Scan Options */}
       <Modal
         isOpen={isScanModalOpen}
@@ -1926,7 +1906,7 @@ const MerchPickupPage: React.FC = () => {
           )}
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 };
 

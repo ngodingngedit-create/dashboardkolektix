@@ -109,7 +109,7 @@ const formatDateTracking = (dateStr: string) => {
     }
 };
 
-export default function TrackingUpdateModal({
+export default function TrackingUpdateForm({
     invoiceNo,
     onClose,
     onSuccess,
@@ -224,8 +224,8 @@ export default function TrackingUpdateModal({
     const isDelivered = manifests.some(m => m.tracking_status_id >= 3);
 
     return (
-        <div className="flex flex-col h-full relative w-full">
-            <div className="flex flex-col md:flex-row flex-1 min-h-[500px]">
+        <div className="flex flex-col relative w-full bg-white">
+            <div className="flex flex-col md:flex-row min-h-[500px]">
                 {/* ===== LEFT: Riwayat Pelacakan ===== */}
                 <div className="w-full md:w-[45%] flex flex-col bg-gray-50">
                     <div className="px-6 py-4 bg-white sticky top-0 z-20 border-b border-primary-light shadow-sm">
@@ -407,8 +407,8 @@ export default function TrackingUpdateModal({
                 </div>
             </div>
 
-            {/* Unified Footer */}
-            <div className="px-6 py-4 bg-white sticky bottom-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] w-full flex items-center justify-between">
+            {/* Unified Floating Footer - Fixed to Viewport Bottom (Edge-to-Edge) */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 px-6 py-4 bg-white border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)] flex items-center justify-between">
                 <div>
                     {invoiceData?.courier && (
                         <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">

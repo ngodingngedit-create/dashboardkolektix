@@ -2035,7 +2035,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
               classNames={{
                 root: "sticky top-0 z-10 bg-white",
                 tab: "data-[active=true]:bg-primary-base/10 data-[active=true]:text-primary-base py-3",
-                list: "border-b border-gray-200 px-4",
+                list: "border-b border-light-grey px-4",
               }}
             >
               <Tabs.List grow>

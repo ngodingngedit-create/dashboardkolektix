@@ -1,27 +1,51 @@
 // festaqingkolektiv/src/pages/dashboard/admin/crew/index.tsx
 import { useState, useEffect, useMemo } from "react";
-import { 
-  LoadingOverlay, 
-  Stack, 
-  Flex, 
-  Text, 
-  Group, 
-  Badge, 
-  Button, 
-  Modal, 
-  TextInput, 
-  Select, 
-  Textarea,
+import {
+  LoadingOverlay,
+  Stack,
+  Flex,
+  Text,
+  Group,
+  Badge,
+  Button,
+  TextInput,
+  Select,
   Image,
   FileInput,
-  Box
+  Box,
+  Title,
+  Card,
+  ActionIcon,
+  Tooltip,
+  Paper,
+  Collapse
 } from "@mantine/core";
-import { useDisclosure, useListState } from "@mantine/hooks";
+import { useListState } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import moment from "moment";
-import TableData from "@/components/TableData";
 import fetch from "@/utils/fetch";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faPlus,
+  faPencil,
+  faTrash,
+  faArrowLeft,
+  faArrowsRotate,
+  faUsers,
+  faUserCheck,
+  faUserXmark,
+  faUserTie,
+  faMapLocationDot,
+  faSearch,
+  faSave,
+  faXmark,
+  faSort,
+  faSortUp,
+  faSortDown,
+  faChevronUp,
+  faChevronDown
+} from "@fortawesome/free-solid-svg-icons";
 
 // Interface untuk data crew
 interface CrewProps {
@@ -74,12 +98,15 @@ export default function KelolaCrew() {
   const [events, setEvents] = useState<EventProps[]>([]);
   const [teritorials, setTeritorials] = useState<TeritorialProps[]>([]);
 
-  // Modal untuk form
-  const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
+  // State untuk navigasi "halaman" di dalam index
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedCrew, setSelectedCrew] = useState<CrewProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'name', direction: 'asc' });
+  const [isStatsOpen, setIsStatsOpen] = useState(true);
 
   // Form state untuk crew
   const form = useForm({
@@ -115,7 +142,7 @@ export default function KelolaCrew() {
           before: () => setLoading.append("getdata"),
           success: (response) => {
             console.log("API Response Crew:", response);
-            
+
             if (response && response.data) {
               let crews: CrewProps[] = [];
 
@@ -142,7 +169,7 @@ export default function KelolaCrew() {
 
               setData(crews);
               setPagination(response?.data || response);
-              
+
               // Ekstrak data teritorial dari response crew
               extractTeritorialsFromCrewData(crews);
             }
@@ -172,7 +199,7 @@ export default function KelolaCrew() {
       if (crew.has_teritorial) {
         const ter = crew.has_teritorial;
         const key = `${ter.id}-${ter.name}`;
-        
+
         if (!teritorialSet.has(key) && ter.status === "active") {
           teritorialSet.add(key);
           teritorialList.push({
@@ -195,7 +222,7 @@ export default function KelolaCrew() {
 
     // Urutkan berdasarkan nama
     teritorialList.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     console.log("Extracted teritorials from crew data:", teritorialList);
     setTeritorials(teritorialList);
   };
@@ -210,9 +237,9 @@ export default function KelolaCrew() {
         success: (response) => {
           if (response && response.data) {
             let eventList: EventProps[] = [];
-            
+
             console.log("Events response:", response);
-            
+
             if (Array.isArray(response.data.data)) {
               eventList = response.data.data.map((event: any) => ({
                 id: event.id,
@@ -229,7 +256,7 @@ export default function KelolaCrew() {
                 name: event.name
               }));
             }
-            
+
             console.log("Processed events:", eventList);
             setEvents(eventList);
           }
@@ -255,16 +282,16 @@ export default function KelolaCrew() {
     form.reset();
     setImageFile(null);
     setImagePreview(null);
-    openFormModal();
+    setIsFormVisible(true);
   };
 
   const handleEditClick = (rowData: any) => {
     const crew = rowData as CrewProps;
     setSelectedCrew(crew);
     setIsEditMode(true);
-    
+
     console.log("Editing crew:", crew);
-    
+
     form.setValues({
       event_id: crew.event_id?.toString() || "",
       teritorial_id: crew.teritorial_id?.toString() || "",
@@ -277,12 +304,12 @@ export default function KelolaCrew() {
       setImagePreview(crew.image_url);
     }
 
-    openFormModal();
+    setIsFormVisible(true);
   };
 
   const handleDelete = async (rowData: any) => {
     const crew = rowData as CrewProps;
-    
+
     if (!confirm(`Apakah Anda yakin ingin menghapus crew "${crew.name}"?`)) {
       return;
     }
@@ -340,7 +367,7 @@ export default function KelolaCrew() {
 
   const handleFormSubmit = async (values: typeof form.values) => {
     console.log("Form values:", values);
-    
+
     // Validasi tambahan
     if (!values.event_id) {
       notifications.show({
@@ -362,7 +389,7 @@ export default function KelolaCrew() {
 
     try {
       let imageBase64 = "";
-      
+
       // Konversi gambar ke base64 jika ada file baru
       if (imageFile) {
         try {
@@ -418,7 +445,7 @@ export default function KelolaCrew() {
               color: "green",
             });
             getData();
-            closeFormModal();
+            setIsFormVisible(false);
             form.reset();
             setImageFile(null);
             setImagePreview(null);
@@ -447,7 +474,7 @@ export default function KelolaCrew() {
               color: "green",
             });
             getData();
-            closeFormModal();
+            setIsFormVisible(false);
             form.reset();
             setImageFile(null);
             setImagePreview(null);
@@ -498,274 +525,472 @@ export default function KelolaCrew() {
   // Function untuk memetakan data ke format table
   const mapData = (crew: any) => {
     const crewData = crew as CrewProps;
-    const teritorialName = crewData.has_teritorial?.name || "Unknown";
-    
+
     return {
       id: crewData.id,
-      image: crewData.image_url ? (
-        <Image
-          src={crewData.image_url}
-          alt={crewData.name}
-          width={50}
-          height={50}
-          radius="md"
-          style={{ objectFit: "cover" }}
-        />
-      ) : (
-        <Box
-          w={50}
-          h={50}
-          bg="gray.2"
-          display="flex"
-          style={{ alignItems: "center", justifyContent: "center", borderRadius: "8px" }}
-        >
-          <svg 
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-            style={{ color: "#868e96" }}
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-        </Box>
+      image: (
+        <Flex justify="center" align="center" direction="column" gap={2}>
+          {crewData.image_url ? (
+            <Image
+              src={crewData.image_url}
+              alt={crewData.name}
+              w={90}
+              h={90}
+              radius="md"
+              fallbackSrc="https://placehold.co/90x90?text=?"
+              style={{ objectFit: "cover", border: '1px solid #f1f3f5' }}
+            />
+          ) : (
+            <Box
+              w={20}
+              h={20}
+              bg="gray.1"
+              display="flex"
+              style={{ alignItems: "center", justifyContent: "center", borderRadius: "50%", border: '1px solid #e9ecef' }}
+            >
+              <FontAwesomeIcon icon={faUsers} style={{ color: "#adb5bd" }} size="xs" />
+            </Box>
+          )}
+        </Flex>
       ),
       name: crewData.name,
       division: crewData.division,
-      event: crewData.has_event ? (
-        <Text size="sm" lineClamp={2}>
-          {crewData.has_event.name}
-        </Text>
-      ) : "-",
-      teritorial: (
-        <Badge variant="light" size="sm">
-          {teritorialName}
-        </Badge>
-      ),
-      status: (
-        <Badge 
-          color={crewData.status === "active" ? "green" : "red"} 
-          variant="light" 
-          size="sm"
-        >
-          {crewData.status === "active" ? "Active" : "Inactive"}
-        </Badge>
-      ),
-      created_at: crewData.created_at ? moment(crewData.created_at).format("DD MMM YYYY HH:mm") : "-",
-      updated_at: crewData.updated_at ? moment(crewData.updated_at).format("DD MMM YYYY HH:mm") : "-",
+      event: crewData.has_event ? crewData.has_event.name : "-",
+      action: (
+        <Flex gap={8} justify="center">
+          <Tooltip label="Edit Crew">
+            <ActionIcon
+              variant="subtle"
+              color="blue"
+              onClick={() => handleEditClick(crewData)}
+            >
+              <FontAwesomeIcon icon={faPencil} size="sm" />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Hapus Crew">
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              onClick={() => handleDelete(crewData)}
+            >
+              <FontAwesomeIcon icon={faTrash} size="sm" />
+            </ActionIcon>
+          </Tooltip>
+        </Flex>
+      )
     };
   };
 
-  return (
-    <>
-      <Stack className="p-[20px] md:p-[30px]" gap={30}>
-        <LoadingOverlay visible={loading.includes("getdata")} />
+  const filteredData = useMemo(() => {
+    let result = [...data];
 
-        {/* Header dengan tombol Tambah */}
-        <Flex gap={10} justify="space-between" align="center">
-          <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>
-              Kelola Crew
-            </Text>
-            <Text size="sm" c="gray">
-              Daftar semua crew yang tersedia di sistem
-            </Text>
-          </Stack>
+    // Search
+    if (searchValue) {
+      result = result.filter(item =>
+        item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.division.toLowerCase().includes(searchValue.toLowerCase()) ||
+        (item.has_event?.name || "").toLowerCase().includes(searchValue.toLowerCase())
+      );
+    }
 
-          <Button onClick={handleAddClick} color="blue">
-            + Tambah Crew
-          </Button>
+    // Sort
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        let valA = "";
+        let valB = "";
+
+        if (sortConfig.key === 'name') {
+          valA = a.name.toLowerCase();
+          valB = b.name.toLowerCase();
+        } else if (sortConfig.key === 'division') {
+          valA = a.division.toLowerCase();
+          valB = b.division.toLowerCase();
+        } else if (sortConfig.key === 'event') {
+          valA = (a.has_event?.name || "").toLowerCase();
+          valB = (b.has_event?.name || "").toLowerCase();
+        }
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, searchValue, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' | null = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = null;
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key || !sortConfig.direction) return faSort;
+    return sortConfig.direction === 'asc' ? faSortUp : faSortDown;
+  };
+
+  // View: List Page
+  const renderList = () => (
+    <Stack gap={30}>
+      {/* Header */}
+      <Flex gap={20} justify="space-between" align="center">
+        <Stack gap={0}>
+          <Title order={1} size="h2">
+            Kelola Crew
+          </Title>
+          <Text size="sm" c="gray">
+            Daftar semua crew yang tersedia di sistem
+          </Text>
+        </Stack>
+        <Button
+          onClick={handleAddClick}
+          leftSection={<FontAwesomeIcon icon={faPlus} />}
+          color="blue"
+          size="md"
+          radius="xl"
+        >
+          Tambah Crew
+        </Button>
+      </Flex>
+
+      {/* Statistics Section - Matched to Screenshot Design */}
+      <Card withBorder radius="md" p={0} shadow="xs" style={{ backgroundColor: '#fff' }}>
+        {/* Accordion Header */}
+        <Flex
+          justify="space-between"
+          align="center"
+          p="md"
+          onClick={() => setIsStatsOpen(!isStatsOpen)}
+          style={{ cursor: 'pointer', borderBottom: isStatsOpen ? '1px solid #f1f3f5' : 'none' }}
+        >
+          <Flex align="center" gap={12}>
+            <Box
+              w={32}
+              h={32}
+              bg="blue.7"
+              style={{
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <FontAwesomeIcon icon={faUsers} style={{ color: '#fff' }} size="sm" />
+            </Box>
+            <Text fw={700} size="lg" c="gray.9">Statistik Crew</Text>
+          </Flex>
+          <FontAwesomeIcon
+            icon={isStatsOpen ? faChevronUp : faChevronDown}
+            size="sm"
+            style={{ color: '#495057' }}
+          />
         </Flex>
 
-        {/* Statistik Cards */}
-        <Group grow gap="md">
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
-              border: "1px solid #e0e0e0",
-              backgroundColor: "#f8f9fa"
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="gray">Total Crew</Text>
-            <Text size="1.5rem" fw={600}>{stats.total}</Text>
-          </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
-              border: "1px solid #d1fae5",
-              backgroundColor: "#f0fdf4"
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="green">Active</Text>
-            <Text size="1.5rem" fw={600} c="green">{stats.active}</Text>
-          </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
-              border: "1px solid #fee2e2",
-              backgroundColor: "#fef2f2"
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="red">Inactive</Text>
-            <Text size="1.5rem" fw={600} c="red">{stats.inactive}</Text>
-          </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
-              border: "1px solid #ddd6fe",
-              backgroundColor: "#f5f3ff"
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="violet">Host</Text>
-            <Text size="1.5rem" fw={600} c="violet">{stats.host}</Text>
-          </Stack>
-          
-          <Stack 
-            p="md" 
-            style={{ 
-              borderRadius: "8px", 
-              border: "1px solid #a5f3fc",
-              backgroundColor: "#ecfeff"
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="cyan">Teritorial</Text>
-            <Text size="1.5rem" fw={600} c="cyan">{stats.teritorial}</Text>
-          </Stack>
-        </Group>
+        <Collapse in={isStatsOpen}>
+          <Box p="md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+              {[
+                { label: "Total Crew", value: stats.total, icon: faUsers, color: "blue" },
+                { label: "Active Status", value: stats.active, icon: faUserCheck, color: "green" },
+                { label: "Inactive", value: stats.inactive, icon: faUserXmark, color: "red" },
+                { label: "Host Division", value: stats.host, icon: faUserTie, color: "violet" },
+                { label: "Teritorial", value: stats.teritorial, icon: faMapLocationDot, color: "cyan" },
+              ].map((item, i) => (
+                <Card
+                  key={i}
+                  withBorder
+                  radius="md"
+                  p="md"
+                  style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backgroundColor: '#fff'
+                  }}
+                >
+                  <Stack gap={4} style={{ position: 'relative', zIndex: 1 }}>
+                    <Text size="xs" fw={600} c="gray.5" style={{ textTransform: 'capitalize' }}>
+                      {item.label}
+                    </Text>
+                    <Text size="xl" fw={800} c="gray.9">
+                      {item.value}
+                    </Text>
+                  </Stack>
 
-        {/* TABEL DATA CREW */}
-        <TableData
-          loading={loading.includes("getdata")}
-          value={pagination}
-          onChange={getData}
-          data={data}
-          mapData={mapData}
-          headerLabel={{
-            id: "ID",
-            image: "Foto",
-            name: "Nama",
-            division: "Divisi",
-            event: "Event",
-            teritorial: "Teritorial",
-            status: "Status",
-            created_at: "Dibuat Pada",
-            updated_at: "Diperbarui Pada",
-          }}
-          actionIcon={[
-            {
-              icon: "mdi:pencil",
-              text: "Edit",
-              onClick: handleEditClick,
-            },
-            {
-              icon: "mdi:trash",
-              text: "Hapus",
-              onClick: handleDelete,
-              color: "red",
-            },
-          ]}
-        />
-      </Stack>
+                  {/* Watermark Icon */}
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      bottom: -10,
+                      right: -5,
+                      opacity: 0.08,
+                      transform: 'rotate(-15deg)',
+                      pointerEvents: 'none',
+                      zIndex: 0
+                    }}
+                  >
+                    <FontAwesomeIcon icon={item.icon} size="4x" />
+                  </Box>
+                </Card>
+              ))}
+            </div>
+          </Box>
+        </Collapse>
+      </Card>
 
-      {/* MODAL FORM CREW */}
-      <Modal
-        opened={formModalOpened}
-        onClose={() => {
-          closeFormModal();
-          form.reset();
-          setImageFile(null);
-          setImagePreview(null);
-        }}
-        title={isEditMode ? "Edit Crew" : "Tambah Crew Baru"}
-        size="md"
-        centered
-      >
-        <form onSubmit={form.onSubmit(handleFormSubmit)}>
-          <LoadingOverlay visible={loading.includes("submit")} />
-          <Stack gap="md">
-            <Select
-              label="Event"
-              placeholder="Pilih event"
-              data={events.map(event => ({ 
-                value: event.id.toString(), 
-                label: event.name 
-              }))}
-              searchable
-              required
-              nothingFoundMessage="Tidak ada event ditemukan"
-              {...form.getInputProps("event_id")}
-            />
+      <Card withBorder p="md" radius="md" shadow="sm">
+        <Flex justify="space-between" align="center" mb="lg">
+          <Flex gap={10}>
+            <Button
+              variant="filled"
+              color="blue"
+              size="sm"
+              onClick={() => getData()}
+              loading={loading.includes("getdata")}
+            >
+              <FontAwesomeIcon icon={faArrowsRotate} />
+            </Button>
+          </Flex>
+          <TextInput
+            placeholder="Cari nama, divisi, atau event..."
+            leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            style={{ width: 300 }}
+          />
+        </Flex>
 
-            <Select
-              label="Teritorial"
-              placeholder="Pilih teritorial"
-              data={teritorials.map(ter => ({ 
-                value: ter.id.toString(), 
-                label: ter.name 
-              }))}
-              searchable
-              required
-              nothingFoundMessage="Tidak ada teritorial ditemukan"
-              {...form.getInputProps("teritorial_id")}
-            />
+        <Box style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                {[
+                  { label: "No", sortable: false },
+                  { label: "Foto", sortable: false },
+                  { label: "Nama", sortable: true, key: "name" },
+                  { label: "Divisi", sortable: true, key: "division" },
+                  { label: "Event", sortable: true, key: "event" },
+                  { label: "Teritorial", sortable: false },
+                  { label: "Status", sortable: false },
+                  { label: "Aksi", sortable: false }
+                ].map((col, i) => (
+                  <th
+                    key={i}
+                    onClick={() => col.sortable && requestSort(col.key!)}
+                    style={{
+                      padding: '12px 14px',
+                      textAlign: ["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'left',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#495057',
+                      textTransform: 'uppercase',
+                      borderBottom: '2px solid #e9ecef',
+                      letterSpacing: '0.5px',
+                      cursor: col.sortable ? 'pointer' : 'default',
+                      userSelect: 'none',
+                      position: col.label === "Aksi" ? 'sticky' : 'static',
+                      right: col.label === "Aksi" ? 0 : 'auto',
+                      backgroundColor: col.label === "Aksi" ? '#f8f9fa' : 'transparent',
+                      zIndex: col.label === "Aksi" ? 10 : 1,
+                      boxShadow: col.label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
+                    }}
+                  >
+                    <Flex align="center" gap={6} justify={["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'flex-start'}>
+                      {col.label}
+                      {col.sortable && (
+                        <FontAwesomeIcon
+                          icon={getSortIcon(col.key!)}
+                          size="xs"
+                          style={{
+                            color: sortConfig.key === col.key ? '#228be6' : '#adb5bd',
+                            opacity: sortConfig.key === col.key ? 1 : 0.5
+                          }}
+                        />
+                      )}
+                    </Flex>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading.includes("getdata") ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
+                    <LoadingOverlay visible />
+                    <Text c="dimmed">Memuat data...</Text>
+                  </td>
+                </tr>
+              ) : filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
+                    <Text c="dimmed">Tidak ada data ditemukan</Text>
+                  </td>
+                </tr>
+              ) : (
+                filteredData.map((item, idx) => {
+                  const mapped = mapData(item);
+                  return (
+                    <tr
+                      key={mapped.id}
+                      style={{ borderBottom: '1px solid #f1f3f5' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                    >
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={700}>{idx + 1}</Text></td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Flex justify="center">
+                          {mapped.image}
+                        </Flex>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{mapped.name}</Text></td>
+                      <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{mapped.division}</Text></td>
+                      <td style={{ padding: '12px 14px' }}><Text size="xs" lineClamp={2} style={{ maxWidth: 200 }}>{mapped.event}</Text></td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Flex justify="center">
+                          <Badge variant="filled" color="blue" size="sm" style={{ width: 100 }}>
+                            {item.has_teritorial?.name || "Unknown"}
+                          </Badge>
+                        </Flex>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Flex justify="center">
+                          <Badge
+                            variant="filled"
+                            color={item.status === "active" ? "green" : "red"}
+                            size="sm"
+                            style={{ width: 100 }}
+                          >
+                            {item.status === "active" ? "Active" : "Inactive"}
+                          </Badge>
+                        </Flex>
+                      </td>
+                      <td style={{
+                        padding: '12px 14px',
+                        position: 'sticky',
+                        right: 0,
+                        backgroundColor: 'inherit',
+                        zIndex: 5,
+                        boxShadow: '-2px 0 5px rgba(0,0,0,0.02)',
+                        borderLeft: '1px solid #f1f3f5'
+                      }}>
+                        {mapped.action}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </Box>
+      </Card>
+    </Stack>
+  );
 
-            <TextInput 
-              label="Nama Crew" 
-              placeholder="Masukkan nama crew" 
-              required 
-              {...form.getInputProps("name")}
-            />
+  // View: Form Page
+  const renderForm = () => (
+    <Stack gap={25}>
+      {/* Header */}
+      <Flex align="center" gap={15}>
+        <ActionIcon
+          variant="light"
+          color="gray"
+          onClick={() => setIsFormVisible(false)}
+          size="lg"
+          radius="md"
+        >
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </ActionIcon>
+        <Stack gap={0}>
+          <Title order={2} size="h3">
+            {isEditMode ? `Edit Crew: ${selectedCrew?.name}` : "Tambah Crew Baru"}
+          </Title>
+          <Text size="xs" c="dimmed">Isi formulir lengkap dibawah untuk mengelola data anggota crew</Text>
+        </Stack>
+      </Flex>
 
-            <Select
-              label="Divisi"
-              placeholder="Pilih divisi"
-              data={[
-                { value: "Host", label: "Host" },
-                { value: "Technical", label: "Technical" },
-                { value: "Stage Manager", label: "Stage Manager" },
-                { value: "Sound Engineer", label: "Sound Engineer" },
-                { value: "Lighting", label: "Lighting" },
-                { value: "Production", label: "Production" },
-                { value: "Security", label: "Security" },
-                { value: "Medical", label: "Medical" },
-                { value: "Catering", label: "Catering" },
-                { value: "Other", label: "Other" },
-              ]}
-              required
-              {...form.getInputProps("division")}
-            />
+      <form id="crew-form" onSubmit={form.onSubmit(handleFormSubmit)}>
+        <Card withBorder padding="xl" radius="md" shadow="sm">
+          <Stack gap="xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Select
+                label="Pilih Event"
+                placeholder="Pilih event tempat crew bertugas"
+                data={events.map(event => ({
+                  value: event.id.toString(),
+                  label: event.name
+                }))}
+                searchable
+                required
+                {...form.getInputProps("event_id")}
+              />
 
-            <FileInput
-              label="Foto Crew"
-              placeholder="Pilih file gambar"
-              accept="image/png,image/jpeg,image/jpg,image/gif"
-              value={imageFile}
-              onChange={handleImageChange}
-              clearable
-              description={isEditMode ? "Biarkan kosong jika tidak ingin mengubah foto" : "Maksimal 2MB"}
-            />
+              <Select
+                label="Pilih Teritorial"
+                placeholder="Wilayah tugas crew"
+                data={teritorials.map(ter => ({
+                  value: ter.id.toString(),
+                  label: ter.name
+                }))}
+                searchable
+                required
+                {...form.getInputProps("teritorial_id")}
+              />
+
+              <TextInput
+                label="Nama Lengkap Crew"
+                placeholder="Contoh: Andi Wijaya"
+                required
+                {...form.getInputProps("name")}
+              />
+
+              <Select
+                label="Divisi / Role"
+                placeholder="Tanggung jawab crew"
+                data={[
+                  { value: "Host", label: "Host" },
+                  { value: "Technical", label: "Technical" },
+                  { value: "Stage Manager", label: "Stage Manager" },
+                  { value: "Sound Engineer", label: "Sound Engineer" },
+                  { value: "Lighting", label: "Lighting" },
+                  { value: "Production", label: "Production" },
+                  { value: "Security", label: "Security" },
+                  { value: "Medical", label: "Medical" },
+                  { value: "Catering", label: "Catering" },
+                  { value: "Other", label: "Other" },
+                ]}
+                required
+                {...form.getInputProps("division")}
+              />
+
+              <Select
+                label="Status Anggota"
+                placeholder="Status keaktifan"
+                data={[
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ]}
+                required
+                {...form.getInputProps("status")}
+              />
+
+              <FileInput
+                label="Foto Crew"
+                placeholder="Unggah foto profil"
+                accept="image/*"
+                value={imageFile}
+                onChange={handleImageChange}
+                clearable
+                leftSection={<FontAwesomeIcon icon={faPlus} size="xs" />}
+              />
+            </div>
 
             {imagePreview && (
-              <Box>
-                <Text size="sm" mb={5}>Preview:</Text>
+              <Paper withBorder p="sm" radius="md" style={{ maxWidth: 220 }}>
+                <Text size="xs" fw={700} mb={10} c="dimmed">PREVIEW FOTO</Text>
                 <Image
                   src={imagePreview}
                   alt="Preview"
@@ -773,43 +998,45 @@ export default function KelolaCrew() {
                   radius="md"
                   fit="cover"
                 />
-              </Box>
+              </Paper>
             )}
-
-            <Select
-              label="Status"
-              placeholder="Pilih status"
-              data={[
-                { value: "active", label: "Active" },
-                { value: "inactive", label: "Inactive" },
-              ]}
-              required
-              {...form.getInputProps("status")}
-            />
-
-            <Group justify="flex-end" mt="md">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  closeFormModal();
-                  form.reset();
-                  setImageFile(null);
-                  setImagePreview(null);
-                }}
-              >
-                Batal
-              </Button>
-              <Button 
-                type="submit" 
-                color="blue" 
-                loading={loading.includes("submit")}
-              >
-                {isEditMode ? "Simpan Perubahan" : "Tambah Crew"}
-              </Button>
-            </Group>
           </Stack>
-        </form>
-      </Modal>
-    </>
+        </Card>
+
+        {/* Floating Footer - Fixed to Viewport Bottom (Edge-to-Edge) */}
+        <Box
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]"
+        >
+          <Flex justify="flex-end" gap="md">
+            <Button
+              variant="subtle"
+              color="gray"
+              onClick={() => setIsFormVisible(false)}
+              size="md"
+              leftSection={<FontAwesomeIcon icon={faXmark} />}
+            >
+              Batalkan
+            </Button>
+            <Button
+              type="submit"
+              form="crew-form"
+              color="blue"
+              size="md"
+              loading={loading.includes("submit")}
+              leftSection={!loading.includes("submit") && <FontAwesomeIcon icon={faSave} />}
+            >
+              {isEditMode ? "Simpan Perubahan" : "Konfirmasi & Simpan"}
+            </Button>
+          </Flex>
+        </Box>
+      </form>
+    </Stack>
+  );
+
+  return (
+    <div className="p-[20px] md:p-[30px] pb-[100px] min-h-screen bg-[#fcfcfc]">
+      <LoadingOverlay visible={loading.includes("submit")} overlayProps={{ blur: 2 }} />
+      {isFormVisible ? renderForm() : renderList()}
+    </div>
   );
 }

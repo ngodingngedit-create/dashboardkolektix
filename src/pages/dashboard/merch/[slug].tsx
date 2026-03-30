@@ -52,8 +52,76 @@
 //     payment_method: string;
 //     notes: string;
 //     product_id?: number;
+//     customer_phone?: string;
+//     product_variant?: string;
+//     shipping_address?: any;
 //     // Untuk kompatibilitas dengan TableData
 //     [key: string]: any;
+// }
+
+// interface InvoiceDetailData {
+//     id: number;
+//     invoice_no: string;
+//     total_qty: number;
+//     total_price: number;
+//     delivery_price: number;
+//     grandtotal: number;
+//     admin_fee: number;
+//     payment_method: string;
+//     payment_status: string;
+//     created_at: string;
+//     user: {
+//         id: number;
+//         name: string;
+//         email: string;
+//         phone?: string | null;
+//     };
+//     transaction_status: {
+//         id: number;
+//         name: string;
+//         bgcolor: string;
+//     };
+//     detail: Array<{
+//         id: number;
+//         product_id: number;
+//         qty: number;
+//         price: string;
+//         order_notes?: string;
+//         product: {
+//             id: number;
+//             product_name: string;
+//             sku?: string;
+//             creator?: {
+//                 id: number;
+//                 name: string;
+//             };
+//         };
+//         variant?: {
+//             id: number;
+//             varian_name?: string;
+//             name?: string;
+//             sku?: string;
+//         };
+//     }>;
+//     address?: {
+//         nama_penerima?: string;
+//         phone?: string;
+//         address_detail?: string;
+//         zipcode?: string | number;
+//     };
+//     manifest?: Array<{
+//         id: number;
+//         tracking_number: string;
+//         courier_name: string;
+//         status: string;
+//         created_at: string;
+//     }>;
+//     history?: Array<{
+//         id: number;
+//         status: string;
+//         note: string;
+//         created_at: string;
+//     }>;
 // }
 
 // // Interface untuk kolom TableData (sesuaikan dengan komponen TableData Anda)
@@ -587,10 +655,50 @@ import {
     Pagination,
     Checkbox
 } from "@mantine/core";
+import {
+    Modal as NextUIModal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    Button as NextUIButton,
+    Card as NextUICard,
+    CardBody,
+    Chip,
+} from "@nextui-org/react";
 import { useListState, useDisclosure } from "@mantine/hooks";
 import moment from "moment";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import NextLink from "next/link";
+import { useEffect, useState, useMemo } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+    faFileInvoice,
+    faCopy,
+    faTruck,
+    faCheckCircle,
+    faClock,
+    faExclamationCircle,
+    faBox,
+    faStore,
+    faMapMarkerAlt,
+    faPhone,
+    faEnvelope,
+    faSearch,
+    faCalendar,
+    faTag,
+    faWeightHanging,
+    faRulerCombined,
+    faMoneyBillWave,
+    faHourglassHalf,
+    faCircleCheck,
+    faInfoCircle,
+    faTimeline,
+    faUser,
+    faCreditCard,
+    faEye,
+    faPrint,
+} from "@fortawesome/free-solid-svg-icons";
 
 // Interface untuk data statistik
 interface StatisticsData {
@@ -617,18 +725,90 @@ interface MerchandiseTransactionData {
     customer_name: string;
     customer_email: string;
     customer_phone?: string;
-    shipping_address: string;
+    shipping_address?: any;
     status_name: string;
     payment_method: string;
     notes: string;
     product_id?: number;
     product_variant?: string;
-    courier?: string;
     courier_service?: string;
     shipping_cost?: number;
     creator_address?: string;
     creator_phone?: string;
+    // Untuk kompatibilitas dengan TableData
     [key: string]: any;
+}
+
+interface InvoiceDetailData {
+    id: number;
+    invoice_no: string;
+    total_qty: number;
+    total_price: number;
+    delivery_price: number;
+    grandtotal: number;
+    admin_fee: number;
+    payment_method: string;
+    payment_status: string;
+    created_at: string;
+    user: {
+        id: number;
+        name: string;
+        email: string;
+        phone?: string | null;
+    };
+    transaction_status: {
+        id: number;
+        name: string;
+        bgcolor: string;
+    };
+    detail: Array<{
+        id: number;
+        product_id: number;
+        qty: number;
+        price: string;
+        order_notes?: string;
+        product: {
+            id: number;
+            product_name: string;
+            sku?: string;
+            creator?: {
+                id: number;
+                name: string;
+            };
+        };
+        variant?: {
+            id: number;
+            varian_name?: string;
+            name?: string;
+            sku?: string;
+        };
+    }>;
+    address?: {
+        nama_penerima?: string;
+        phone?: string;
+        address_detail?: string;
+        zipcode?: string | number;
+    };
+    manifest?: Array<{
+        id: number;
+        tracking_number: string;
+        courier_name: string;
+        status: string;
+        created_at: string;
+    }>;
+    history?: Array<{
+        id: number;
+        status: string;
+        note: string;
+        created_at: string;
+    }>;
+    courier?: {
+        courier_company: string;
+        courier_type: string;
+        tracking_number?: string;
+        main?: string;
+        type?: string;
+    };
 }
 
 // Interface untuk varian produk
@@ -1334,6 +1514,9 @@ export default function MerchDetail() {
     // State untuk Detail Modal (View Detail Invoice)
     const [detailOpened, { open: openDetail, close: closeDetail }] = useDisclosure(false);
     const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<MerchandiseTransactionData | null>(null);
+    const [invoiceDetail, setInvoiceDetail] = useState<any>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
 
     // State untuk cetak resi
     const [showPrintOptions, setShowPrintOptions] = useState(false);
@@ -1363,6 +1546,10 @@ export default function MerchDetail() {
     const [searchValue, setSearchValue] = useState('');
     const [filterBy, setFilterBy] = useState<string | null>('all');
     const [sortBy, setSortBy] = useState<string | null>('newest');
+
+    // State untuk Table Header Sort
+    const [tableSortField, setTableSortField] = useState<string | null>(null);
+    const [tableSortDir, setTableSortDir] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
         if (slug) {
@@ -1593,7 +1780,7 @@ export default function MerchDetail() {
                 soldCount: variantCounts[name] || 0
             })));
 
-            applyFilters(searchValue, filterBy, sortBy, selectedVariant, transactionsData);
+            applyFilters(searchValue, filterBy, sortBy, selectedVariant, tableSortField, tableSortDir, transactionsData);
             setCurrentPage(1);
 
         } catch (error) {
@@ -1606,7 +1793,9 @@ export default function MerchDetail() {
         filter: string | null,
         sort: string | null,
         variant: string | null,
-        transactionList: MerchandiseTransactionData[]
+        tSortField: string | null = tableSortField,
+        tSortDir: 'asc' | 'desc' = tableSortDir,
+        transactionList: MerchandiseTransactionData[] = transactions
     ) => {
         let result = [...transactionList];
 
@@ -1649,67 +1838,139 @@ export default function MerchDetail() {
             }
         }
 
+        if (tSortField) {
+            result.sort((a: any, b: any) => {
+                let aVal = a[tSortField];
+                let bVal = b[tSortField];
+                if (tSortField === 'order_date') {
+                    aVal = moment(a.order_date).valueOf();
+                    bVal = moment(b.order_date).valueOf();
+                } else if (tSortField === 'total_qty' || tSortField === 'total_price' || tSortField === 'transaction_status_id') {
+                    aVal = Number(aVal) || 0;
+                    bVal = Number(bVal) || 0;
+                } else {
+                    aVal = String(aVal || '').toLowerCase();
+                    bVal = String(bVal || '').toLowerCase();
+                }
+
+                if (aVal < bVal) return tSortDir === 'asc' ? -1 : 1;
+                if (aVal > bVal) return tSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
         setFilteredTransactions(result);
     };
 
     const handleSearch = (value: string) => {
         setSearchValue(value);
-        applyFilters(value, filterBy, sortBy, selectedVariant, transactions);
+        applyFilters(value, filterBy, sortBy, selectedVariant, tableSortField, tableSortDir, transactions);
         setCurrentPage(1); // Reset ke halaman pertama
     };
 
     const handleFilterChange = (value: string | null) => {
         setFilterBy(value);
-        applyFilters(searchValue, value, sortBy, selectedVariant, transactions);
+        applyFilters(searchValue, value, sortBy, selectedVariant, tableSortField, tableSortDir, transactions);
         setCurrentPage(1); // Reset ke halaman pertama
     };
 
     const handleSortChange = (value: string | null) => {
         setSortBy(value);
-        applyFilters(searchValue, filterBy, value, selectedVariant, transactions);
+        applyFilters(searchValue, filterBy, value, selectedVariant, tableSortField, tableSortDir, transactions);
         setCurrentPage(1); // Reset ke halaman pertama
     };
 
     const handleVariantChange = (value: string | null) => {
         setSelectedVariant(value);
-        applyFilters(searchValue, filterBy, sortBy, value, transactions);
+        applyFilters(searchValue, filterBy, sortBy, value, tableSortField, tableSortDir, transactions);
         setCurrentPage(1); // Reset ke halaman pertama
     };
 
-    const handleViewInvoiceDetail = (item: MerchandiseTransactionData) => {
+    const handleTableSort = (field: string) => {
+        const isAsc = tableSortField === field && tableSortDir === 'asc';
+        const nextDir = isAsc ? 'desc' : 'asc';
+        setTableSortField(field);
+        setTableSortDir(nextDir);
+        applyFilters(searchValue, filterBy, sortBy, selectedVariant, field, nextDir, transactions);
+        setCurrentPage(1);
+    };
+
+    const getInvoiceDetail = async (invoiceNo: string) => {
+        setLoadingDetail(true);
+        setDetailError(null);
+        try {
+            const res: any = await Get(`order-product-invoice/${invoiceNo}`, {});
+            if (res?.data) {
+                setInvoiceDetail(res.data);
+            } else {
+                setDetailError("Gagal mengambil rincian invoice.");
+            }
+        } catch (err) {
+            console.error("Error fetching invoice detail:", err);
+            setDetailError("Terjadi kesalahan saat mengambil rincian invoice.");
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const handleViewInvoiceDetail = async (item: MerchandiseTransactionData) => {
         setSelectedInvoiceDetail(item);
         openDetail();
+        setInvoiceDetail(null);
+        setDetailError(null);
+        if (item.invoice_no && item.invoice_no !== "-") {
+            await getInvoiceDetail(item.invoice_no);
+        }
     };
 
-    // Helper components for Detail Modal
-    const InfoCardDetail = ({ title, icon, children, color = "blue" }: any) => {
-        const colors: any = {
-            blue: "bg-blue-50 border-blue-100",
-            green: "bg-green-50 border-green-100",
-            purple: "bg-purple-50 border-purple-100",
-            orange: "bg-orange-50 border-orange-100",
-        };
-
-        return (
-            <div className={`${colors[color]} rounded-xl border p-4 shadow-sm`}>
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-                    <div className="text-primary-base">{icon}</div>
-                    <Text fw={600} size="sm">{title}</Text>
-                </div>
-                <Stack gap={10}>{children}</Stack>
-            </div>
-        );
+    const getVariantName = (variant: any) => {
+        if (!variant) return '';
+        if (typeof variant === 'string') return '';
+        return variant.varian_name || variant.name || '';
     };
 
-    const InfoItemDetail = ({ label, value, icon }: any) => (
-        <div className="flex items-start gap-2">
-            {icon && <div className="mt-1 text-gray-400">{icon}</div>}
-            <div className="flex-1 min-w-0">
-                <Text size="xs" c="dimmed" mb={2}>{label}</Text>
-                <div className="text-sm font-medium text-gray-800 break-words">{value}</div>
-            </div>
-        </div>
-    );
+    const getVariantValue = (variant: any) => {
+        if (!variant) return '';
+        if (typeof variant === 'string') return variant;
+        return variant.varian_value || variant.value || '';
+    };
+
+    const formatVariantDisplay = (variant: any) => {
+        if (!variant) return "-";
+        if (typeof variant === 'string') return variant;
+        const name = getVariantName(variant);
+        const value = getVariantValue(variant);
+        if (name && value) return `${name}: ${value}`;
+        return name || value || "-";
+    };
+
+    const getTrackingNumber = () => {
+        if (!invoiceDetail) return '-';
+        return invoiceDetail.courier?.tracking_number ||
+            invoiceDetail.manifest?.[0]?.tracking_number ||
+            invoiceDetail.invoice_no ||
+            '-';
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+    };
+
+    const formatDateDetail = (dateString?: string) => {
+        if (!dateString || dateString === "-") return "-";
+        try {
+            return moment(dateString).format('DD MMM YYYY, HH:mm');
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    const formatPaymentMethodDetail = (method?: string) => {
+        if (!method) return "-";
+        if (method.toLowerCase().includes("cash")) return "CASH";
+        if (method.toLowerCase().includes("transfer")) return "TRANSFER";
+        return method.toUpperCase();
+    };
 
     // Fungsi untuk mengambil data invoice saat icon cetak diklik
     const handlePrintClick = async (invoiceNo: string) => {
@@ -1950,8 +2211,8 @@ export default function MerchDetail() {
             render: (item: any) => {
                 const statusInfo = getStatusInfo(item.transaction_status_id);
                 return (
-                    <Flex justify="center">
-                        <Badge variant="dot" color={statusInfo.badgeColor} size="sm">
+                    <Flex justify="center" w="100%">
+                        <Badge variant="light" color={statusInfo.badgeColor} size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                             {statusInfo.text}
                         </Badge>
                     </Flex>
@@ -1963,8 +2224,8 @@ export default function MerchDetail() {
             title: 'Status Pengiriman',
             width: 140,
             render: (item: any) => (
-                <Flex justify="center">
-                    <Badge color="gray" variant="light" size="sm">
+                <Flex justify="center" w="100%">
+                    <Badge color="gray" variant="light" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                         Siap Dikirim
                     </Badge>
                 </Flex>
@@ -1979,43 +2240,41 @@ export default function MerchDetail() {
             )
         },
         {
-            accessor: 'view_detail',
-            title: 'Detail',
-            width: 70,
-            render: (item: any) => (
-                <Flex justify="center">
-                    <ActionIcon
-                        variant="subtle"
-                        color="blue"
-                        onClick={() => handleViewInvoiceDetail(item)}
-                        title="Lihat Detail"
-                    >
-                        <Icon icon="solar:eye-bold" width={18} />
-                    </ActionIcon>
-                </Flex>
-            )
-        },
-        {
             accessor: 'actions',
-            title: 'Cetak Resi',
-            width: 120,
+            title: 'Aksi',
+            width: 140,
             render: (item: any) => (
-                <Flex justify="center" align="center" gap="md">
+                <Flex justify="center" align="center" gap="xs">
+                    <Tooltip label="Detail Invoice">
+                        <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={() => handleViewInvoiceDetail(item)}
+                            title="Lihat Detail"
+                            size="md"
+                            radius="md"
+                        >
+                            <Icon icon="solar:eye-bold" width={16} />
+                        </ActionIcon>
+                    </Tooltip>
                     <Checkbox
                         checked={selectedInvoiceIds.includes(item.invoice_no)}
                         onChange={() => toggleSelectInvoice(item.invoice_no)}
                         size="xs"
                     />
-                    <ActionIcon
-                        variant="light"
-                        color="blue"
-                        onClick={() => handlePrintClick(item.invoice_no)}
-                        title="Cetak Resi"
-                        size="md"
-                        loading={printLoading && selectedInvoice === item.invoice_no}
-                    >
-                        <Icon icon="solar:printer-bold" width={18} />
-                    </ActionIcon>
+                    <Tooltip label="Cetak Resi">
+                        <ActionIcon
+                            variant="filled"
+                            color="blue"
+                            onClick={() => handlePrintClick(item.invoice_no)}
+                            title="Cetak Resi"
+                            size="md"
+                            radius="md"
+                            loading={printLoading && selectedInvoice === item.invoice_no}
+                        >
+                            <Icon icon="solar:printer-bold" width={16} />
+                        </ActionIcon>
+                    </Tooltip>
                 </Flex>
             )
         },
@@ -2268,7 +2527,7 @@ export default function MerchDetail() {
                         <Tabs.Panel value="stock">
                             <Box mt={16}>
                                 {(() => {
-                                    const variants = data?.product_varian || [];
+                                    const variants = data?.productVarian || data?.product_varian || [];
                                     if (variants.length === 0) {
                                         return (
                                             <Box py="xl" ta="center">
@@ -2288,21 +2547,21 @@ export default function MerchDetail() {
                                                 </thead>
                                                 <tbody>
                                                     {variants.map((v: any, i: number) => {
-                                                        const variantName = v.varian_name || v.name || v.variant_name || `Varian ${i+1}`;
+                                                        const variantName = v.varian_name || v.name || v.variant_name || `Varian ${i + 1}`;
                                                         const sku = v.sku || '-';
                                                         const price = parsePrice(v.price || 0);
-                                                        const stockAwal = v.stock_qty || v.stock || 0;
+                                                        const stockAwal = v.stock_summary?.stock_awal !== undefined ? v.stock_summary.stock_awal : (v.stock_qty || v.stock || 0);
 
                                                         // Hitung dari allTransactions
                                                         const vTx = allTransactions.filter(tx =>
                                                             (tx.product_variant || '').toLowerCase() === variantName.toLowerCase()
                                                         );
-                                                        const terjual = vTx.reduce((s, tx) => s + (tx.total_qty || 0), 0);
+                                                        const terjual = v.stock_summary?.terjual !== undefined ? v.stock_summary.terjual : vTx.reduce((s, tx) => s + (tx.total_qty || 0), 0);
                                                         const paid = vTx.filter(tx => tx.transaction_status_id === 2).reduce((s, tx) => s + (tx.total_qty || 0), 0);
                                                         const pending = vTx.filter(tx => tx.transaction_status_id === 1).reduce((s, tx) => s + (tx.total_qty || 0), 0);
                                                         const expired = vTx.filter(tx => tx.transaction_status_id === 4).reduce((s, tx) => s + (tx.total_qty || 0), 0);
-                                                        const sisaStock = Math.max(0, stockAwal - paid);
-                                                        const isSoldOut = sisaStock === 0 && stockAwal > 0;
+                                                        const sisaStock = v.stock_summary?.sisa_stock !== undefined ? v.stock_summary.sisa_stock : Math.max(0, stockAwal - paid);
+                                                        const isSoldOut = sisaStock <= 0 && stockAwal > 0;
 
                                                         return (
                                                             <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
@@ -2355,12 +2614,23 @@ export default function MerchDetail() {
                         <Tabs.Panel value="transaction">
                             <Box mt={10}>
                                 {/* Search and Filter */}
-                                <Flex direction="column" gap="md" mb="md">
-                                    <Flex justify="space-between" align="flex-end" gap="md" wrap="wrap">
-                                        <Flex align="flex-end" gap="sm" wrap="wrap">
+                                <Box mb="md">
+                                    <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+                                        <Select
+                                            value={itemsPerPage.toString()}
+                                            onChange={handleItemsPerPageChange}
+                                            data={[
+                                                { value: '5', label: '5' },
+                                                { value: '10', label: '10' },
+                                                { value: '20', label: '20' },
+                                                { value: '50', label: '50' },
+                                            ]}
+                                            style={{ width: 70 }}
+                                            size="sm"
+                                        />
+                                        <Group gap="sm">
                                             <Select
-                                                label="Filter Status"
-                                                placeholder="Status"
+                                                placeholder="Filter Status"
                                                 data={[
                                                     { value: 'all', label: 'Semua Status' },
                                                     { value: 'success', label: 'Success' },
@@ -2371,10 +2641,10 @@ export default function MerchDetail() {
                                                 onChange={handleFilterChange}
                                                 style={{ width: 140 }}
                                                 clearable={false}
+                                                size="sm"
                                             />
                                             <Select
-                                                label="Filter Varian"
-                                                placeholder="Varian"
+                                                placeholder="Filter Varian"
                                                 data={[
                                                     { value: 'all', label: 'Semua Varian' },
                                                     ...(productVariants || []).map(v => ({
@@ -2386,9 +2656,9 @@ export default function MerchDetail() {
                                                 onChange={handleVariantChange}
                                                 style={{ width: 140 }}
                                                 clearable={false}
+                                                size="sm"
                                             />
                                             <Select
-                                                label="Urutkan"
                                                 placeholder="Urutkan"
                                                 data={[
                                                     { value: 'newest', label: 'Terbaru' },
@@ -2400,59 +2670,26 @@ export default function MerchDetail() {
                                                 onChange={handleSortChange}
                                                 style={{ width: 140 }}
                                                 clearable={false}
+                                                size="sm"
                                             />
-                                            <Flex align="center" gap="xs" style={{ marginBottom: '6px' }}>
-                                                <Checkbox
-                                                    checked={selectedInvoiceIds.length === paginatedTransactions.length && paginatedTransactions.length > 0}
-                                                    indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedTransactions.length}
-                                                    onChange={toggleSelectAll}
-                                                    size="sm"
-                                                    label="Pilih Semua"
-                                                    styles={{ label: { fontSize: '13px', fontWeight: 500, cursor: 'pointer' } }}
-                                                />
-                                                <Button
-                                                    variant="filled"
-                                                    color="blue"
-                                                    leftSection={<Icon icon="solar:printer-bold" width={18} />}
-                                                    onClick={handleBulkPrint}
-                                                    disabled={printLoading}
-                                                    size="sm"
-                                                >
-                                                    Cetak {selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}
-                                                </Button>
-                                            </Flex>
-                                        </Flex>
-
-                                        <TextInput
-                                            placeholder="Cari invoice, customer, produk..."
-                                            leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                                            value={searchValue}
-                                            onChange={(e) => handleSearch(e.target.value)}
-                                            style={{ width: 300 }}
-                                        />
+                                            <TextInput
+                                                placeholder="Cari invoice, customer, produk..."
+                                                leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                                                value={searchValue}
+                                                onChange={(e) => handleSearch(e.target.value)}
+                                                style={{ width: 280 }}
+                                                size="sm"
+                                            />
+                                        </Group>
                                     </Flex>
-                                </Flex>
-
-                                <Flex justify="space-between" align="center" mb="md">
-                                    <Text size="sm" c="gray">
-                                        Menampilkan {filteredTransactions.length > 0 ? `${startItem}-${endItem}` : '0'} dari {filteredTransactions.length} transaksi
-                                        {filterBy && filterBy !== 'all' && ` dengan status ${filterBy}`}
-                                        {selectedVariant && selectedVariant !== 'all' && `, varian ${selectedVariant}`}
-                                    </Text>
-
-                                    <Select
-                                        placeholder="Item per halaman"
-                                        value={itemsPerPage.toString()}
-                                        onChange={handleItemsPerPageChange}
-                                        data={[
-                                            { value: '5', label: '5 per halaman' },
-                                            { value: '10', label: '10 per halaman' },
-                                            { value: '20', label: '20 per halaman' },
-                                            { value: '50', label: '50 per halaman' },
-                                        ]}
-                                        style={{ width: 150 }}
-                                    />
-                                </Flex>
+                                    <Flex align="center" gap="sm" mb="sm">
+                                        <Text size="xs" c="gray">
+                                            Menampilkan {filteredTransactions.length > 0 ? `${startItem}-${endItem}` : '0'} dari {filteredTransactions.length} transaksi
+                                            {filterBy && filterBy !== 'all' && ` dengan status ${filterBy}`}
+                                            {selectedVariant && selectedVariant !== 'all' && `, varian ${selectedVariant}`}
+                                        </Text>
+                                    </Flex>
+                                </Box>
 
                                 {/* Tabel Transaksi dengan Fixed Header */}
                                 <Box
@@ -2478,28 +2715,71 @@ export default function MerchDetail() {
                                                 zIndex: 10,
                                                 boxShadow: '0 2px 2px -1px rgba(0, 0, 0, 0.1)'
                                             }}>
-                                            {transactionColumns.map((col, idx) => {
-                                                return (
-                                                    <th
-                                                        key={idx}
-                                                        style={{
-                                                            padding: '14px 12px',
-                                                            textAlign: 'center',
-                                                            borderBottom: '2px solid #dee2e6',
-                                                            width: col.width ? `${col.width}px` : 'auto',
-                                                            whiteSpace: 'nowrap',
-                                                            backgroundColor: '#f8f9fa',
-                                                            fontWeight: 600,
-                                                            fontSize: '14px',
-                                                            position: 'sticky',
-                                                            top: 0,
-                                                            zIndex: 20
-                                                        }}
-                                                    >
-                                                        {col.title}
-                                                    </th>
-                                                );
-                                            })}
+                                                {transactionColumns.map((col, idx) => {
+                                                    return (
+                                                        <th
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (col.accessor !== 'actions' && col.accessor !== 'no' && col.accessor !== 'shipping_status') {
+                                                                    handleTableSort(col.accessor);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                padding: '14px 12px',
+                                                                textAlign: 'center',
+                                                                borderBottom: '2px solid #dee2e6',
+                                                                width: col.width ? `${col.width}px` : 'auto',
+                                                                whiteSpace: 'nowrap',
+                                                                backgroundColor: '#f8f9fa',
+                                                                fontWeight: 600,
+                                                                fontSize: '14px',
+                                                                position: 'sticky',
+                                                                top: 0,
+                                                                zIndex: col.accessor === 'actions' ? 30 : 20,
+                                                                right: col.accessor === 'actions' ? 0 : undefined,
+                                                                boxShadow: col.accessor === 'actions' ? '-2px 0 5px rgba(0,0,0,0.07)' : undefined,
+                                                                cursor: (col.accessor !== 'actions' && col.accessor !== 'no' && col.accessor !== 'shipping_status') ? 'pointer' : 'default'
+                                                            }}
+                                                        >
+                                                            {col.accessor === 'actions' ? (
+                                                                <Flex align="center" justify="center" gap="xs">
+                                                                    <span style={{ fontSize: '14px', fontWeight: 600 }}>Aksi</span>
+                                                                    <Checkbox
+                                                                        checked={selectedInvoiceIds.length === paginatedTransactions.length && paginatedTransactions.length > 0}
+                                                                        indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedTransactions.length}
+                                                                        onChange={toggleSelectAll}
+                                                                        size="xs"
+                                                                    />
+                                                                    <Tooltip label={`Cetak Resi ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
+                                                                        <ActionIcon
+                                                                            variant="transparent"
+                                                                            color="blue"
+                                                                            onClick={handleBulkPrint}
+                                                                            disabled={selectedInvoiceIds.length === 0 || printLoading}
+                                                                            style={{ position: 'relative', overflow: 'visible', marginLeft: 4 }}
+                                                                        >
+                                                                            {printLoading ? <Icon icon="line-md:loading-twotone-loop" /> : <Icon icon="solar:printer-bold" width={18} />}
+                                                                            {selectedInvoiceIds.length > 0 && (
+                                                                                <Badge size="xs" color="red" variant="filled" style={{ position: 'absolute', top: -5, right: -5, pointerEvents: 'none', padding: '0 4px', height: 16, minWidth: 16, color: 'white', fontWeight: 800 }}>
+                                                                                    {selectedInvoiceIds.length}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </ActionIcon>
+                                                                    </Tooltip>
+                                                                </Flex>
+                                                            ) : (
+                                                                <Flex align="center" justify="center" gap={4}>
+                                                                    {col.title}
+                                                                    {(col.accessor !== 'actions' && col.accessor !== 'no' && col.accessor !== 'shipping_status') && (
+                                                                        <span style={{ fontSize: '12px', color: tableSortField === col.accessor ? '#333' : '#ccc', opacity: tableSortField === col.accessor ? 1 : 0.4 }}>
+                                                                            {tableSortField === col.accessor ? (tableSortDir === 'asc' ? '↑' : '↓') : '↑'}
+                                                                        </span>
+                                                                    )}
+                                                                </Flex>
+                                                            )}
+                                                        </th>
+                                                    );
+                                                })}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -2512,7 +2792,7 @@ export default function MerchDetail() {
                                                         transition: 'background-color 0.2s'
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                                                        e.currentTarget.style.backgroundColor = '#f8fafd';
                                                     }}
                                                     onMouseLeave={(e) => {
                                                         e.currentTarget.style.backgroundColor = idx % 2 === 0 ? 'white' : '#fafafa';
@@ -2520,14 +2800,17 @@ export default function MerchDetail() {
                                                 >
                                                     {transactionColumns.map((col, colIdx) => {
                                                         const column = transactionColumns[colIdx];
-                                                        const bgColor = idx % 2 === 0 ? 'white' : '#fafafa';
+                                                        const isAction = col.accessor === 'actions';
 
                                                         const cellStyle: React.CSSProperties = {
                                                             padding: '12px',
                                                             textAlign: 'center',
                                                             whiteSpace: 'nowrap',
-                                                            backgroundColor: bgColor,
-                                                            zIndex: 1
+                                                            backgroundColor: 'inherit',
+                                                            zIndex: isAction ? 5 : 1,
+                                                            position: isAction ? 'sticky' : undefined,
+                                                            right: isAction ? 0 : undefined,
+                                                            boxShadow: isAction ? '-2px 0 4px rgba(0,0,0,0.06)' : undefined
                                                         };
 
                                                         if (col.accessor === 'no' && column.render) {
@@ -2593,7 +2876,9 @@ export default function MerchDetail() {
                                                     setFilterBy('all');
                                                     setSelectedVariant('all');
                                                     setSortBy('newest');
-                                                    applyFilters('', 'all', 'newest', 'all', transactions);
+                                                    setTableSortField(null);
+                                                    setTableSortDir('asc');
+                                                    applyFilters('', 'all', 'newest', 'all', null, 'asc', transactions);
                                                 }}
                                             >
                                                 Reset Filter
@@ -2607,90 +2892,365 @@ export default function MerchDetail() {
                 </Stack>
             </Card>
             {/* Modal Detail Transaksi */}
-            <Modal
-                opened={detailOpened}
+            <NextUIModal
+                isOpen={detailOpened}
                 onClose={closeDetail}
-                title={
-                    <Group gap={8}>
-                        <Icon icon="solar:clipboard-text-bold" className="text-primary-base" width={24} />
-                        <Title order={4}>Detail Invoice {selectedInvoiceDetail?.invoice_no}</Title>
-                    </Group>
-                }
-                size="xl"
-                radius="lg"
-                centered
+                size="full"
+                scrollBehavior="inside"
+                classNames={{
+                    base: 'bg-white',
+                    backdrop: 'backdrop-blur-sm',
+                    header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
+                    body: 'p-0',
+                    footer: 'border-t border-primary-light-200 px-6 py-4 bg-gray-50',
+                    closeButton: 'text-white hover:bg-white/20',
+                }}
             >
-                {selectedInvoiceDetail && (
-                    <Stack gap="xl" p="md">
-                        <SimpleGrid cols={2} spacing="lg">
-                            <InfoCardDetail title="Informasi Pesanan" icon={<Icon icon="solar:document-text-bold" width={20} />} color="blue">
-                                <InfoItemDetail label="No. Invoice" value={selectedInvoiceDetail.invoice_no} />
-                                <InfoItemDetail label="Tanggal Pesanan" value={moment(selectedInvoiceDetail.order_date).format('DD MMMM YYYY, HH:mm')} />
-                                <InfoItemDetail
-                                    label="Status Pembayaran"
-                                    value={
-                                        <Badge color={getStatusInfo(selectedInvoiceDetail.transaction_status_id).badgeColor} variant="light">
-                                            {selectedInvoiceDetail.status_name}
-                                        </Badge>
-                                    }
-                                />
-                            </InfoCardDetail>
+                <ModalContent>
+                    {(onClose) => {
+                        const trackingNumber = getTrackingNumber();
 
-                            <InfoCardDetail title="Informasi Customer" icon={<Icon icon="solar:user-bold" width={20} />} color="green">
-                                <InfoItemDetail label="Nama" value={selectedInvoiceDetail.customer_name} />
-                                <InfoItemDetail label="Email" value={selectedInvoiceDetail.customer_email || '-'} />
-                                <InfoItemDetail label="No. Telepon" value={selectedInvoiceDetail.customer_phone || '-'} />
-                            </InfoCardDetail>
+                        return (
+                            <>
+                                <ModalHeader className="flex flex-col gap-0">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                                <FontAwesomeIcon icon={faFileInvoice} className="h-5 w-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-lg font-bold text-white">Detail Pesanan</h2>
+                                                <p className="text-xs text-white/90 flex items-center gap-2">
+                                                    <span>Order ID: {selectedInvoiceDetail?.invoice_no || '-'}</span>
+                                                    <button
+                                                        onClick={() => copyToClipboard(selectedInvoiceDetail?.invoice_no || '')}
+                                                        className="text-white/70 hover:text-white"
+                                                    >
+                                                        <FontAwesomeIcon icon={faCopy} className="h-3 w-3" />
+                                                    </button>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {invoiceDetail?.transaction_status && (
+                                                <span
+                                                    className="px-3 py-1 rounded-full text-xs font-semibold shadow-lg"
+                                                    style={{
+                                                        backgroundColor: invoiceDetail.transaction_status.bgcolor,
+                                                        color: '#fff'
+                                                    }}
+                                                >
+                                                    {invoiceDetail.transaction_status.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </ModalHeader>
+                                <ModalBody className="py-0">
+                                    {loadingDetail ? (
+                                        <div className="flex justify-center items-center h-64">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                        </div>
+                                    ) : detailError ? (
+                                        <div className="flex justify-center items-center h-64">
+                                            <div className="text-center">
+                                                <FontAwesomeIcon icon={faInfoCircle} className="h-12 w-12 text-red-300 mb-3" />
+                                                <p className="text-red-500">{detailError}</p>
+                                            </div>
+                                        </div>
+                                    ) : invoiceDetail ? (
+                                        <div className="bg-gray-50 pb-10">
+                                            <div className="bg-white border-b border-primary-light-200 px-6 py-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                                                <FontAwesomeIcon icon={invoiceDetail.transaction_status?.name.toLowerCase().includes('expired') ? faExclamationCircle : faCheckCircle} className="h-5 w-5" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] items-center uppercase tracking-wider text-gray-500 font-bold">Status Pesanan</p>
+                                                                <p className="text-sm font-bold text-gray-800">{invoiceDetail.transaction_status?.name || '-'}</p>
+                                                            </div>
+                                                        </div>
 
-                            <InfoCardDetail title="Pengiriman & Produk" icon={<Icon icon="solar:box-bold" width={20} />} color="purple">
-                                <InfoItemDetail label="Produk" value={selectedInvoiceDetail.product_name} />
-                                <InfoItemDetail label="Varian" value={selectedInvoiceDetail.product_variant || '-'} />
-                                <InfoItemDetail label="Kuantitas" value={`${selectedInvoiceDetail.total_qty} unit`} />
-                            </InfoCardDetail>
+                                                        <Divider orientation="vertical" h={30} />
 
-                            <InfoCardDetail title="Rincian Pembayaran" icon={<Icon icon="solar:wad-of-money-bold" width={20} />} color="orange">
-                                <InfoItemDetail label="Metode" value={formatPaymentMethod(selectedInvoiceDetail.payment_method)} />
-                                <InfoItemDetail label="Metode Pembayaran" value={selectedInvoiceDetail.payment_method || '-'} />
-                                <InfoItemDetail
-                                    label="Total Pembayaran"
-                                    value={
-                                        <Text fw={700} color="primary" size="lg">
-                                            {formatRupiah(selectedInvoiceDetail.total_price)}
-                                        </Text>
-                                    }
-                                />
-                            </InfoCardDetail>
-                        </SimpleGrid>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                                                <FontAwesomeIcon icon={faTruck} className="h-5 w-5" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Status Pengiriman</p>
+                                                                <p className="text-sm font-bold text-gray-800">
+                                                                    {invoiceDetail.manifest?.[0]?.status || 'Order berhasil dibuat'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">No. Resi</p>
+                                                        <p className="text-sm font-bold text-blue-600 font-mono tracking-wider">{trackingNumber}</p>
+                                                        <p className="text-[10px] text-gray-400 mt-0.5">{invoiceDetail.courier?.courier_type || 'jne reg'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                        <Card withBorder radius="md" p="md">
-                            <Group gap="xs" mb="xs">
-                                <Icon icon="solar:map-point-bold" width={16} />
-                                <Text fw={600} size="sm">Alamat Pengiriman</Text>
-                            </Group>
-                            <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>
-                                {selectedInvoiceDetail.shipping_address || 'Tidak ada informasi alamat'}
-                            </Text>
-                        </Card>
+                                            <div className="max-w-7xl mx-auto px-6 py-6">
+                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                    {/* Left Column - Details */}
+                                                    <div className="lg:col-span-2 space-y-6">
+                                                        <NextUICard shadow="sm" className="border-none">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faBox} className="text-blue-500 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-blue-900">Informasi Paket</span>
+                                                                </div>
+                                                                <div className="p-0 overflow-hidden">
+                                                                    <table className="w-100 min-w-full divide-y divide-gray-100">
+                                                                        <thead className="bg-gray-50/50">
+                                                                            <tr>
+                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Nama Barang</th>
+                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Varian</th>
+                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Harga</th>
+                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Catatan</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="bg-white border-b border-light-grey">
+                                                                            {invoiceDetail.detail?.map((item: any, idx: number) => (
+                                                                                <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                                                        <p className="text-sm font-semibold text-gray-800">{item.product?.product_name || '-'}</p>
+                                                                                    </td>
+                                                                                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                                                                                        {item.variant ? (
+                                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                                                                                {formatVariantDisplay(item.variant)}
+                                                                                            </span>
+                                                                                        ) : <span className="text-gray-400">-</span>}
+                                                                                    </td>
+                                                                                    <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-700">{item.qty}</td>
+                                                                                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm text-gray-600">{formatRupiah(item.price)}</td>
+                                                                                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-800">
+                                                                                        {formatRupiah(Number(item.price) * item.qty)}
+                                                                                    </td>
+                                                                                    <td className="px-4 py-4 text-sm text-gray-500 min-w-[150px]">
+                                                                                        <p className="italic text-[11px] line-clamp-2" title={item.order_notes}>{item.order_notes || '-'}</p>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
 
-                        {selectedInvoiceDetail.notes && (
-                            <Card withBorder radius="md" p="md" bg="gray.0">
-                                <Text fw={600} size="sm" mb="xs">Catatan Pesanan</Text>
-                                <Text size="sm" fs="italic">{selectedInvoiceDetail.notes}</Text>
-                            </Card>
-                        )}
+                                                        <NextUICard shadow="sm" className="border-none">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faMapMarkerAlt} className="text-blue-500 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-blue-900">Alamat Pengiriman</span>
+                                                                </div>
+                                                                <div className="p-5">
+                                                                    <div className="flex items-start gap-4">
+                                                                        <div className="w-12 h-12 rounded-xl bg-gray-50 border border-light-grey flex items-center justify-center flex-shrink-0">
+                                                                            <FontAwesomeIcon icon={faUser} className="text-gray-400 h-5 w-5" />
+                                                                        </div>
+                                                                        <div className="space-y-1 flex-1">
+                                                                            <p className="text-lg font-bold text-gray-800">{invoiceDetail.address?.nama_penerima || invoiceDetail.user?.name}</p>
+                                                                            <div className="flex items-center gap-4 text-sm text-gray-600 font-medium">
+                                                                                <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faPhone} className="h-3 w-3 text-gray-400" />{invoiceDetail.address?.phone || invoiceDetail.user?.phone || '-'}</span>
+                                                                            </div>
+                                                                            <p className="text-sm text-gray-600 leading-relaxed max-w-2xl mt-2">{invoiceDetail.address?.address_detail || '-'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
 
-                        <Flex justify="flex-end" gap="md" mt="md">
-                            <Button variant="light" onClick={closeDetail}>Tutup</Button>
-                            <Button
-                                leftSection={<Icon icon="solar:printer-bold" width={18} />}
-                                onClick={() => handlePrintClick(selectedInvoiceDetail.invoice_no)}
-                            >
-                                Cetak Resi
-                            </Button>
-                        </Flex>
-                    </Stack>
-                )}
-            </Modal>
+                                                        <NextUICard shadow="sm" className="border-none">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faFileInvoice} className="text-blue-500 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-blue-900">Ringkasan Pesanan</span>
+                                                                </div>
+                                                                <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Order ID</p>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-sm font-bold text-gray-800 font-mono tracking-tight">{invoiceDetail.invoice_no}</p>
+                                                                            <button onClick={() => copyToClipboard(invoiceDetail.invoice_no)} className="text-gray-300 hover:text-blue-500 transition-colors">
+                                                                                <FontAwesomeIcon icon={faCopy} className="h-3 w-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Tanggal Order</p>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <FontAwesomeIcon icon={faCalendar} className="h-3 w-3 text-gray-300" />
+                                                                            <p className="text-sm font-bold text-gray-800">{formatDateDetail(invoiceDetail.created_at)}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Kurir</p>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <FontAwesomeIcon icon={faTruck} className="h-3 w-3 text-gray-300" />
+                                                                            <p className="text-sm font-bold text-gray-800">{invoiceDetail.courier?.courier_company || 'jne reg'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Berat</p>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <FontAwesomeIcon icon={faWeightHanging} className="h-3 w-3 text-gray-300" />
+                                                                            <p className="text-sm font-bold text-gray-800">1 gram</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
+                                                    </div>
+
+                                                    {/* Right Column */}
+                                                    <div className="space-y-6">
+                                                        <NextUICard shadow="sm" className="border-none border-blue-100">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faTimeline} className="text-blue-500 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-blue-900">Riwayat Pelacakan</span>
+                                                                </div>
+                                                                <div className="p-5 max-h-[400px] overflow-y-auto">
+                                                                    {invoiceDetail.history && invoiceDetail.history.length > 0 ? (
+                                                                        <div className="relative space-y-6 before:absolute before:left-3.5 before:top-2 before:h-[calc(100%-16px)] before:w-0.5 before:bg-blue-100">
+                                                                            {invoiceDetail.history.map((h: any, idx: number) => (
+                                                                                <div key={idx} className="relative pl-10">
+                                                                                    <div className={`absolute left-0 top-1 w-7 h-7 rounded-full border-4 border-white flex items-center justify-center z-10 ${idx === 0 ? 'bg-blue-500 shadow-blue-200' : 'bg-gray-200'} shadow-md overflow-visible`}>
+                                                                                        {idx === 0 && <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-20"></div>}
+                                                                                        <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-white' : 'bg-gray-400'}`}></div>
+                                                                                    </div>
+                                                                                    <div className="space-y-0.5">
+                                                                                        <p className={`text-sm font-bold ${idx === 0 ? 'text-blue-600' : 'text-gray-700'}`}>{h.status}</p>
+                                                                                        <p className="text-[11px] leading-relaxed text-gray-500 font-medium">{h.note}</p>
+                                                                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-gray-400">
+                                                                                            <FontAwesomeIcon icon={faMapMarkerAlt} className="h-2 w-2" />
+                                                                                            <span>Warehouse</span>
+                                                                                            <span className="mx-1">•</span>
+                                                                                            <span>{formatDateDetail(h.created_at)}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-center py-6">
+                                                                            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                                                                                <FontAwesomeIcon icon={faHourglassHalf} className="text-gray-300 h-5 w-5" />
+                                                                            </div>
+                                                                            <p className="text-sm font-bold text-gray-800">Menunggu data kurir</p>
+                                                                            <p className="text-[11px] text-gray-500 mt-1">Status pengiriman akan diperbarui secara otomatis</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
+
+                                                        <NextUICard shadow="sm" className="border-none bg-green-50/30 border border-green-100">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-green-50 px-4 py-3 border-b border-green-100 flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faTag} className="text-green-600 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-green-900">Ringkasan Pembayaran</span>
+                                                                </div>
+                                                                <div className="p-5 space-y-3">
+                                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                                        <span className="text-gray-600">Total Harga</span>
+                                                                        <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.total_price)}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                                        <span className="text-gray-600">Ongkos Kirim</span>
+                                                                        <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.delivery_price)}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                                        <span className="text-gray-600">Admin Fee</span>
+                                                                        <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.admin_fee || 2000)}</span>
+                                                                    </div>
+                                                                    <div className="pt-3 border-t border-green-100 flex justify-between items-center">
+                                                                        <span className="text-sm font-bold text-gray-800">Total Tagihan</span>
+                                                                        <span className="text-lg font-bold text-green-600 tracking-tight">{formatRupiah(invoiceDetail.grandtotal || (Number(invoiceDetail.total_price) + Number(invoiceDetail.delivery_price) + (invoiceDetail.admin_fee || 2000)))}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
+
+                                                        <NextUICard shadow="sm" className="border-none">
+                                                            <CardBody className="p-0">
+                                                                <div className="bg-gray-50/50 px-4 py-3 border-b border-light-grey flex items-center gap-2">
+                                                                    <FontAwesomeIcon icon={faCreditCard} className="text-gray-500 h-4 w-4" />
+                                                                    <span className="text-sm font-bold text-gray-700">Detail Transaksi</span>
+                                                                </div>
+                                                                <div className="p-5 space-y-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                                                                            <FontAwesomeIcon icon={faCalendar} className="h-4 w-4" />
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Tanggal</p>
+                                                                            <p className="text-xs font-bold text-gray-800">{formatDateDetail(invoiceDetail.created_at)}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-start gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 flex-shrink-0">
+                                                                            <FontAwesomeIcon icon={faFileInvoice} className="h-4 w-4" />
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Deskripsi</p>
+                                                                            <p className="text-xs font-medium text-gray-600 leading-relaxed pr-2">
+                                                                                Payment with {formatPaymentMethodDetail(invoiceDetail.payment_method)} {invoiceDetail.invoice_no}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </CardBody>
+                                                        </NextUICard>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </ModalBody>
+                                <ModalFooter className="flex items-center justify-end gap-2 border-t border-light-grey">
+                                    <NextUIButton
+                                        variant="light"
+                                        onPress={onClose}
+                                        className="font-bold text-gray-600 h-10 px-6 rounded-xl border border-light-grey hover:bg-gray-100 transition-all"
+                                    >
+                                        Tutup
+                                    </NextUIButton>
+                                    <NextLink href={`/dashboard/merch-transaction`} passHref>
+                                        <NextUIButton
+                                            as="a"
+                                            variant="light"
+                                            color="primary"
+                                            className="font-bold h-10 px-6 rounded-xl border border-blue-100 hover:bg-blue-50 transition-all flex items-center gap-2"
+                                        >
+                                            <FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />
+                                            Lihat Invoice Lengkap
+                                        </NextUIButton>
+                                    </NextLink>
+                                    <NextUIButton
+                                        color="primary"
+                                        className="font-bold h-10 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 shadow-md shadow-blue-200 hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2"
+                                        onPress={() => handlePrintClick(selectedInvoiceDetail?.invoice_no || '')}
+                                        isLoading={printLoading}
+                                    >
+                                        <FontAwesomeIcon icon={faPrint} className="h-3.5 w-3.5" />
+                                        Cetak Resi
+                                    </NextUIButton>
+                                </ModalFooter>
+                            </>
+                        );
+                    }}
+                </ModalContent>
+            </NextUIModal>
         </>
     )
 }

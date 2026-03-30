@@ -55,7 +55,7 @@ type ResiFormValues = {
     delivery_id: string;
 };
 
-export default function ResiUpdateModal({
+export default function ResiUpdateForm({
     invoiceNo,
     onClose,
     onSuccess,
@@ -170,11 +170,11 @@ export default function ResiUpdateModal({
     };
 
     return (
-        <Box className="flex flex-col h-full relative">
+        <Box className="flex flex-col relative bg-white">
             <Grid className="flex-1 w-full m-0">
                 {/* SISI KIRI: Info Resi / Invoice Saat Ini */}
                 <Grid.Col span={5}>
-                    <Box p={20} className="h-full">
+                    <Box p={20}>
                         <Stack gap="xl">
                             <Group justify="space-between" align="flex-start">
                                 <Box>
@@ -267,78 +267,77 @@ export default function ResiUpdateModal({
                 </Grid.Col>
 
                 {/* SISI KANAN: Form Input Resi */}
-                <Grid.Col span={7} style={{ padding: 0 }}>
-                    <Box className="flex flex-col h-full pl-5">
-                        <Box p={20} pb={30} className="flex-1">
-                            <Text fw={600} size="lg" mb={4}>Update Resi Baru</Text>
-                            <Text size="sm" c="dimmed" mb="xl">
-                                Lengkapi atau ubah data pengiriman di bawah ini
-                            </Text>
+                <Grid.Col span={7} className="border-l border-gray-100">
+                    <Box p={20} pb={30}>
+                        <Text fw={600} size="lg" mb={4}>Update Resi Baru</Text>
+                        <Text size="sm" c="dimmed" mb="xl">
+                            Lengkapi atau ubah data pengiriman di bawah ini
+                        </Text>
 
-                            <form onSubmit={form.onSubmit(handleSubmit)} id="resi-form">
-                                <Stack gap="md">
-                                    <Grid gutter="md">
-                                        <Grid.Col span={6}>
-                                            <TextInput
-                                                withAsterisk
-                                                label="Courier Company"
-                                                placeholder="Contoh: JNE, J&T, SiCepat"
-                                                size="md"
-                                                {...form.getInputProps("courier_company")}
-                                            />
-                                        </Grid.Col>
-                                        <Grid.Col span={6}>
-                                            <TextInput
-                                                label="Courier Service"
-                                                placeholder="Contoh: REG, YES, OKE"
-                                                size="md"
-                                                {...form.getInputProps("courier_service")}
-                                            />
-                                        </Grid.Col>
-                                    </Grid>
+                        <form onSubmit={form.onSubmit(handleSubmit)} id="resi-form">
+                            <Stack gap="md">
+                                <Grid gutter="md">
+                                    <Grid.Col span={6}>
+                                        <TextInput
+                                            withAsterisk
+                                            label="Courier Company"
+                                            placeholder="Contoh: JNE, J&T, SiCepat"
+                                            size="md"
+                                            {...form.getInputProps("courier_company")}
+                                        />
+                                    </Grid.Col>
+                                    <Grid.Col span={6}>
+                                        <TextInput
+                                            label="Courier Service"
+                                            placeholder="Contoh: REG, YES, OKE"
+                                            size="md"
+                                            {...form.getInputProps("courier_service")}
+                                        />
+                                    </Grid.Col>
+                                </Grid>
 
-                                    <TextInput
-                                        withAsterisk
-                                        label="Nomor Resi (Airway Bill)"
-                                        placeholder="Masukkan nomor resi pengiriman"
-                                        size="md"
-                                        leftSection={<Icon icon="mdi:barcode" width={18} />}
-                                        {...form.getInputProps("resi_no")}
-                                    />
+                                <TextInput
+                                    withAsterisk
+                                    label="Nomor Resi (Airway Bill)"
+                                    placeholder="Masukkan nomor resi pengiriman"
+                                    size="md"
+                                    leftSection={<Icon icon="mdi:barcode" width={18} />}
+                                    {...form.getInputProps("resi_no")}
+                                />
 
-                                    <Grid gutter="md">
-                                        <Grid.Col span={6}>
-                                            <TextInput
-                                                label="ETD (Estimasi)"
-                                                placeholder="Contoh: 1-2 hari"
-                                                size="md"
-                                                {...form.getInputProps("etd")}
-                                            />
-                                        </Grid.Col>
-                                        <Grid.Col span={6}>
-                                            <TextInput
-                                                label="ETD Time"
-                                                type="time"
-                                                size="md"
-                                                {...form.getInputProps("etd_time")}
-                                            />
-                                        </Grid.Col>
-                                    </Grid>
+                                <Grid gutter="md">
+                                    <Grid.Col span={6}>
+                                        <TextInput
+                                            label="ETD (Estimasi)"
+                                            placeholder="Contoh: 1-2 hari"
+                                            size="md"
+                                            {...form.getInputProps("etd")}
+                                        />
+                                    </Grid.Col>
+                                    <Grid.Col span={6}>
+                                        <TextInput
+                                            label="ETD Time"
+                                            type="time"
+                                            size="md"
+                                            {...form.getInputProps("etd_time")}
+                                        />
+                                    </Grid.Col>
+                                </Grid>
 
-                                    <TextInput
-                                        label="Delivery ID"
-                                        placeholder="Contoh: DEL-123456"
-                                        size="md"
-                                        {...form.getInputProps("delivery_id")}
-                                    />
-                                </Stack>
-                            </form>
-                        </Box>
+                                <TextInput
+                                    label="Delivery ID"
+                                    placeholder="Contoh: DEL-123456"
+                                    size="md"
+                                    {...form.getInputProps("delivery_id")}
+                                />
+                            </Stack>
+                        </form>
                     </Box>
                 </Grid.Col>
             </Grid>
 
-            <Box className="sticky bottom-0 z-20 bg-white p-4 px-6 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] w-full">
+            {/* Floating Form Footer - Fixed to Viewport Bottom (Edge-to-Edge) */}
+            <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
                 <Group justify="flex-end">
                     <Button variant="light" color="gray" onClick={onClose} disabled={submitting} leftSection={<Icon icon="mdi:close" />}>
                         Batal
