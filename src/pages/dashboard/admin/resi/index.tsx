@@ -483,7 +483,7 @@ export default function OrderTracking() {
 
             {/* Header */}
             <Box bg="white" style={{ borderBottom: '1px solid #dee2e6' }}>
-                <Container size="lg" px="xl" py="lg">
+                <Box px="xl" py="lg">
                     <Group justify="space-between" align="center">
                         <Box>
                             <Title order={2} size="h2" fw={700}>
@@ -494,23 +494,26 @@ export default function OrderTracking() {
                             </Text>
                         </Box>
                         {step > 1 && (
-                            <Button
-                                variant="subtle"
-                                onClick={resetForm}
-                                leftSection={<Icon icon="mdi:arrow-left" />}
-                                size="sm"
-                            >
-                                Kembali ke Awal
-                            </Button>
+                            <Tooltip label="Kembali ke Awal">
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    onClick={resetForm}
+                                    size="lg"
+                                    radius="xl"
+                                >
+                                    <Icon icon="mdi:arrow-left" width={24} />
+                                </ActionIcon>
+                            </Tooltip>
                         )}
                     </Group>
-                </Container>
+                </Box>
             </Box>
 
             <Divider />
 
             {/* Main Content */}
-            <Container size="lg" px="xl" py="xl">
+            <Box px="xl" py="xl">
                 <StepIndicator />
 
                 <Stack gap="xl">
@@ -1052,7 +1055,7 @@ export default function OrderTracking() {
                         </Paper>
                     )}
                 </Stack>
-            </Container>
+            </Box>
         </Box>
     );
 }

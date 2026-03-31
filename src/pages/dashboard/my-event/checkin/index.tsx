@@ -233,7 +233,8 @@ import {
     faKeyboard,
     faXmark,
     faEnvelope,
-    faUser
+    faUser,
+    faCircleExclamation
 } from '@fortawesome/free-solid-svg-icons';
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons';
 
@@ -245,7 +246,7 @@ interface ScanItem {
     category_ticket: string;
     total_qty: string;
     scan_date: string;
-    status: 'success' | 'failed';
+    status: 'success' | 'warning' | 'failed';
     message?: string;
     type: 'ticket' | 'invitation';
 }
@@ -347,6 +348,13 @@ const Merch = () => {
                 </div>
             );
         }
+        if (status === 'warning') {
+            return (
+                <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <FontAwesomeIcon icon={faCircleExclamation} className="text-yellow-600 text-xs" />
+                </div>
+            );
+        }
         if (status === 'failed') {
             return (
                 <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
@@ -361,6 +369,9 @@ const Merch = () => {
         if (status === 'success') {
             return 'bg-green-50 border-green-200 text-green-800';
         }
+        if (status === 'warning') {
+            return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        }
         if (status === 'failed') {
             return 'bg-red-50 border-red-200 text-red-800';
         }
@@ -371,8 +382,11 @@ const Merch = () => {
         if (status === 'success') {
             return activeTab === 'ticket' ? 'Check-in Berhasil' : 'Validasi Berhasil';
         }
+        if (status === 'warning') {
+            return 'Sudah Check In';
+        }
         if (status === 'failed') {
-            return 'Gagal';
+            return 'Ticket Tidak Valid';
         }
         return 'Diproses';
     };
@@ -417,17 +431,19 @@ const Merch = () => {
                 },
                 error: (err) => {
                     const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
+                    const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('check-in') || errorMessage.toLowerCase().includes('already');
+                    const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid');
 
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: code,
-                        buyer_name: 'N/A',
-                        event_name: 'Validasi Gagal',
-                        category_ticket: 'Error',
+                        buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || 'N/A') : 'N/A',
+                        event_name: isAlreadyCheckedIn ? 'Sudah Check In' : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
+                        category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
                         total_qty: '0',
                         scan_date: scanDateTime,
-                        status: 'failed',
-                        message: errorMessage,
+                        status: isAlreadyCheckedIn ? 'warning' : 'failed',
+                        message: isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage,
                         type: activeTab
                     };
 
@@ -633,31 +649,28 @@ const Merch = () => {
                                 <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
                                     <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn shadow-2xl">
                                         <FontAwesomeIcon
-                                            icon={currentScanData.status === 'success' ? faCheckCircle : faXmark}
-                                            className={`text-4xl mb-3 ${currentScanData.status === 'success' ? 'text-green-500' : 'text-red-500'}`}
+                                            icon={currentScanData.status === 'success' ? faCheckCircle : (currentScanData.status === 'warning' ? faCircleExclamation : faXmark)}
+                                            className={`text-4xl mb-3 ${currentScanData.status === 'success' ? 'text-green-500' : (currentScanData.status === 'warning' ? 'text-yellow-500' : 'text-red-500')}`}
                                         />
-                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' : 'text-red-700'}`}>
+                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' : (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')}`}>
                                             {currentScanData.status === 'success'
                                                 ? (activeTab === 'ticket' ? 'Check-in Berhasil!' : 'Validasi Berhasil!')
-                                                : 'Gagal!'}
+                                                : (currentScanData.status === 'warning' ? 'Sudah Check In!' : 'Gagal!')}
                                         </p>
 
-                                        <div className="text-left mb-4 bg-gray-50 p-3 rounded-lg border border-light-grey">
-                                            {currentScanData.status === 'success' ? (
+                                        <div className={`text-left mb-4 p-3 rounded-lg border ${currentScanData.status === 'success' ? 'bg-gray-50 border-light-grey' : (currentScanData.status === 'warning' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200')}`}>
+                                            {currentScanData.status === 'success' || currentScanData.status === 'warning' ? (
                                                 <div className="space-y-2">
-                                                    <p className="text-sm font-medium text-primary">{currentScanData.invoice_no}</p>
+                                                    <p className={`text-sm font-medium ${currentScanData.status === 'warning' ? 'text-yellow-800' : 'text-primary'}`}>{currentScanData.invoice_no}</p>
                                                     <div className="grid grid-cols-2 gap-1 text-sm">
-                                                        <span className="text-gray-600">{activeTab === 'ticket' ? 'Pengunjung:' : 'Nama:'}</span>
-                                                        <span className="font-medium text-gray-900">{currentScanData.buyer_name}</span>
+                                                        <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>{activeTab === 'ticket' ? 'Pengunjung:' : 'Nama:'}</span>
+                                                        <span className={`font-medium ${currentScanData.status === 'warning' ? 'text-yellow-900' : 'text-gray-900'}`}>{currentScanData.buyer_name}</span>
 
-                                                        <span className="text-gray-600">Event:</span>
-                                                        <span className="font-medium text-gray-900">{currentScanData.event_name}</span>
+                                                        <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>Event:</span>
+                                                        <span className={`font-medium ${currentScanData.status === 'warning' ? 'text-yellow-900' : 'text-gray-900'}`}>{currentScanData.event_name}</span>
 
-                                                        <span className="text-gray-600">{activeTab === 'ticket' ? 'Kategori:' : 'Tipe:'}</span>
-                                                        <span className="font-medium text-gray-900">{currentScanData.category_ticket}</span>
-
-                                                        <span className="text-gray-600">Jumlah:</span>
-                                                        <span className="font-medium text-gray-900">{currentScanData.total_qty} {activeTab === 'ticket' ? 'Tiket' : 'Undangan'}</span>
+                                                        <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>{activeTab === 'ticket' ? 'Kategori:' : 'Tipe:'}</span>
+                                                        <span className={`font-medium ${currentScanData.status === 'warning' ? 'text-yellow-900' : 'text-gray-900'}`}>{currentScanData.category_ticket}</span>
                                                     </div>
                                                 </div>
                                             ) : (

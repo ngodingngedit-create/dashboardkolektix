@@ -1,6 +1,7 @@
 // festaqingkolektiv/src/pages/dashboard/admin/permission/index.tsx
-import { useState, useEffect } from "react";
-import { LoadingOverlay, Stack, Flex, Text, Group, Badge, Button, Modal, Select, Checkbox, Grid, Divider, Alert, TextInput, NumberInput } from "@mantine/core";
+import { useState, useEffect, useMemo } from "react";
+import { LoadingOverlay, Stack, Flex, Text, Group, Badge, Button, Select, Checkbox, Grid, Divider, Alert, TextInput, NumberInput, Card, Box, Pagination, ActionIcon, Tooltip } from "@mantine/core";
+import { Icon } from "@iconify/react";
 import { useDisclosure, useListState } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
@@ -70,8 +71,8 @@ export default function KelolaPermission() {
   const [roles, setRoles] = useState<any[]>([]);
   const [modules, setModules] = useState<any[]>([]);
 
-  // Modal untuk form
-  const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
+  // State untuk form & tampilan
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedPermission, setSelectedPermission] = useState<PermissionProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -256,7 +257,7 @@ export default function KelolaPermission() {
     setSelectedPermission(null);
     setIsEditMode(false);
     form.reset();
-    openFormModal();
+    setIsFormVisible(true);
   };
 
   const handleEditClick = (rowData: any) => {
@@ -279,7 +280,7 @@ export default function KelolaPermission() {
       is_import: permission.is_import || 0,
     });
 
-    openFormModal();
+    setIsFormVisible(true);
   };
 
   const handleDelete = async (rowData: any) => {
@@ -343,7 +344,7 @@ export default function KelolaPermission() {
             color: "green",
           });
           getData();
-          closeFormModal();
+          setIsFormVisible(false);
           form.reset();
         },
         error: (error) => {
@@ -368,7 +369,7 @@ export default function KelolaPermission() {
             color: "green",
           });
           getData();
-          closeFormModal();
+          setIsFormVisible(false);
           form.reset();
         },
         error: (error) => {
@@ -479,146 +480,62 @@ export default function KelolaPermission() {
 
   const stats = getStats();
 
-  return (
-    <>
-      <Stack className="p-[20px] md:p-[30px]" gap={30}>
-        <LoadingOverlay visible={loading.includes("getdata")} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: null, direction: null });
+  const [searchQuery, setSearchQuery] = useState("");
 
-        {/* Header dengan tombol Tambah */}
-        <Flex gap={10} justify="space-between" align="center">
-          <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>
-              Kelola Permission
-            </Text>
-            <Text size="sm" c="gray">
-              Daftar semua permission yang tersedia di sistem
-            </Text>
-          </Stack>
+  const filteredData = useMemo(() => {
+    let result = [...data];
+    if (searchQuery) {
+      result = result.filter(
+        (item) =>
+          (item.has_user?.name && item.has_user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.has_role?.name && item.has_role.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.has_module?.module_name && item.has_module.module_name.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        let valA = a[sortConfig.key as string];
+        let valB = b[sortConfig.key as string];
 
-          <Button onClick={handleAddClick} color="blue" leftSection={<Text size="1.2rem">+</Text>} loading={loading.includes("getmodules")}>
-            Tambah Permission
-          </Button>
-        </Flex>
+        if (sortConfig.key === "user") { valA = a.has_user?.name; valB = b.has_user?.name; }
+        if (sortConfig.key === "role") { valA = a.has_role?.name; valB = b.has_role?.name; }
+        if (sortConfig.key === "module") { valA = a.has_module?.module_name; valB = b.has_module?.module_name; }
 
-        {/* Statistik Cards */}
-        <Group grow gap="md">
-          <Stack
-            p="md"
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #e0e0e0",
-              backgroundColor: "#f8f9fa",
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="gray">
-              Total Permission
-            </Text>
-            <Text size="1.5rem" fw={600}>
-              {stats.total}
-            </Text>
-          </Stack>
+        valA = (valA || "").toString().toLowerCase();
+        valB = (valB || "").toString().toLowerCase();
 
-          <Stack
-            p="md"
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #dbeafe",
-              backgroundColor: "#eff6ff",
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="blue">
-              User Unik
-            </Text>
-            <Text size="1.5rem" fw={600} c="blue">
-              {stats.users}
-            </Text>
-          </Stack>
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [data, searchQuery, sortConfig]);
 
-          <Stack
-            p="md"
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #fde68a",
-              backgroundColor: "#fffbeb",
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="yellow">
-              Role Unik
-            </Text>
-            <Text size="1.5rem" fw={600} c="yellow">
-              {stats.roles}
-            </Text>
-          </Stack>
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" | null = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
+    setSortConfig({ key, direction });
+  };
 
-          <Stack
-            p="md"
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #ddd6fe",
-              backgroundColor: "#f5f3ff",
-            }}
-            gap={5}
-          >
-            <Text size="sm" c="violet">
-              Module Unik
-            </Text>
-            <Text size="1.5rem" fw={600} c="violet">
-              {stats.modules}
-            </Text>
-          </Stack>
-        </Group>
+  const renderForm = () => (
+    <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
+      <Flex align="center" gap={15}>
+        <Tooltip label="Kembali">
+          <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
+            <Icon icon="mdi:arrow-left" width={20} />
+          </ActionIcon>
+        </Tooltip>
+        <Stack gap={0}>
+          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Permission" : "Tambah Permission Baru"}</Text>
+          <Text size="xs" c="dimmed">Isi form di bawah untuk mengatur hak akses</Text>
+        </Stack>
+      </Flex>
 
-        {/* TABEL DATA PERMISSION */}
-        <TableData
-          loading={loading.includes("getdata")}
-          value={pagination}
-          onChange={getData}
-          data={data}
-          mapData={mapData}
-          headerLabel={{
-            id: "ID",
-            user: "User",
-            role: "Role",
-            module: "Module",
-            permissions: "Permissions",
-            created_at: "Dibuat Pada",
-            updated_at: "Diperbarui Pada",
-          }}
-          actionIcon={[
-            {
-              icon: "mdi:pencil",
-              text: "Edit",
-              onClick: handleEditClick,
-            },
-            {
-              icon: "mdi:trash",
-              text: "Hapus",
-              onClick: handleDelete,
-              color: "red",
-            },
-          ]}
-        />
-      </Stack>
-
-      {/* MODAL FORM PERMISSION */}
-      <Modal
-        opened={formModalOpened}
-        onClose={() => {
-          closeFormModal();
-          form.reset();
-        }}
-        title={isEditMode ? "Edit Permission" : "Tambah Permission Baru"}
-        size="lg"
-        centered
-        overlayProps={{
-          backgroundOpacity: 0.55,
-          blur: 3,
-        }}
-      >
-        <form onSubmit={form.onSubmit(handleFormSubmit)}>
+      <form id="permission-form" onSubmit={form.onSubmit(handleFormSubmit)}>
+        <Card withBorder padding="xl" radius="md" shadow="sm">
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
             <Grid>
@@ -667,24 +584,153 @@ export default function KelolaPermission() {
               </Grid.Col>
             </Grid>
 
-            <Group justify="flex-end" mt="md">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  closeFormModal();
-                  form.reset();
-                }}
-                disabled={loading.includes("submit")}
-              >
-                Batal
-              </Button>
-              <Button type="submit" color="blue" loading={loading.includes("submit")}>
-                {isEditMode ? "Simpan Perubahan" : "Tambah Permission"}
-              </Button>
-            </Group>
           </Stack>
-        </form>
-      </Modal>
-    </>
+        </Card>
+
+        <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+          <Flex justify="flex-end" gap="md">
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} disabled={loading.includes("submit")}>
+              Batal
+            </Button>
+            <Button type="submit" form="permission-form" color="blue" loading={loading.includes("submit")}>
+              {isEditMode ? "Simpan Perubahan" : "Simpan Permission"}
+            </Button>
+          </Flex>
+        </Box>
+      </form>
+    </Stack>
   );
+
+  const renderList = () => (
+    <Stack className="p-[20px] md:p-[30px]" gap={30}>
+      <LoadingOverlay visible={loading.includes("getdata")} />
+
+      <Flex gap={10} justify="space-between" align="center">
+        <Stack gap={5}>
+          <Text size="1.8rem" fw={600}>Kelola Permission</Text>
+          <Text size="sm" c="gray">Daftar semua permission yang tersedia di sistem</Text>
+        </Stack>
+        <Button onClick={handleAddClick} color="blue">+ Tambah Permission</Button>
+      </Flex>
+
+      <Group grow gap="md">
+        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #e0e0e0", backgroundColor: "#f8f9fa" }} gap={5}>
+          <Text size="sm" c="gray">Total Permission</Text>
+          <Text size="1.5rem" fw={600}>{stats.total}</Text>
+        </Stack>
+        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #dbeafe", backgroundColor: "#eff6ff" }} gap={5}>
+          <Text size="sm" c="blue">User Unik</Text>
+          <Text size="1.5rem" fw={600} c="blue">{stats.users}</Text>
+        </Stack>
+        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #fde68a", backgroundColor: "#fffbeb" }} gap={5}>
+          <Text size="sm" c="yellow">Role Unik</Text>
+          <Text size="1.5rem" fw={600} c="yellow">{stats.roles}</Text>
+        </Stack>
+        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #ddd6fe", backgroundColor: "#f5f3ff" }} gap={5}>
+          <Text size="sm" c="violet">Module Unik</Text>
+          <Text size="1.5rem" fw={600} c="violet">{stats.modules}</Text>
+        </Stack>
+      </Group>
+
+      <Card withBorder p={0} radius="md" style={{ overflow: "hidden" }}>
+        <Flex justify="space-between" align="center" p="md" style={{ borderBottom: "1px solid #f1f3f5" }}>
+          <Text fw={600}>Daftar Permission</Text>
+          <Flex gap={10} align="center">
+            <Tooltip label="Refresh Data">
+              <ActionIcon variant="filled" color="blue" size="lg" onClick={() => getData()} loading={loading.includes("getdata")}>
+                <Icon icon="mdi:refresh" width={20} />
+              </ActionIcon>
+            </Tooltip>
+            <TextInput placeholder="Cari permission..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: 250 }} />
+          </Flex>
+        </Flex>
+
+        <Box style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+            <thead>
+              <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #dee2e6" }}>
+                {[
+                  { label: "ID", sortable: true, key: "id" },
+                  { label: "User", sortable: true, key: "user" },
+                  { label: "Role", sortable: true, key: "role" },
+                  { label: "Module", sortable: true, key: "module" },
+                  { label: "Permissions", sortable: false },
+                  { label: "Aksi", sortable: false },
+                ].map((col, i) => (
+                  <th key={i} onClick={() => col.sortable && requestSort(col.key!)} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#495057", textTransform: "uppercase", cursor: col.sortable ? "pointer" : "default", position: col.label === "Aksi" ? "sticky" : "static", right: col.label === "Aksi" ? 0 : "auto", backgroundColor: col.label === "Aksi" ? "#f8f9fa" : "transparent", zIndex: col.label === "Aksi" ? 10 : 1 }}>
+                    <Flex align="center" gap={4}>
+                      {col.label}
+                      {col.sortable && (
+                        sortConfig.key === col.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : <span style={{ opacity: 0.3 }}>↑</span>
+                      )}
+                    </Flex>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.length === 0 ? (
+                <tr><td colSpan={6} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">Data tidak ditemukan</Text></td></tr>
+              ) : (
+                filteredData.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
+                    <td style={{ padding: "12px 16px" }}><Text size="sm">{item.id}</Text></td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={2}>
+                        <Text size="sm" fw={500}>{item.has_user?.name || "ID User: " + item.user_id}</Text>
+                        <Text size="xs" c="dimmed">{item.has_user?.email || "Email tidak ditemukan"}</Text>
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Badge color="blue" variant="light" size="sm">
+                        {item.has_role?.name || "-"}
+                      </Badge>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={2}>
+                        <Text size="sm" fw={500}>{item.has_module?.module_name || "-"}</Text>
+                        <Text size="xs" c="dimmed">ID: {item.module_id}</Text>
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Group gap="xs">
+                        {item.is_index === 1 && <Badge size="xs" color="gray">Index</Badge>}
+                        {item.is_view === 1 && <Badge size="xs" color="green">View</Badge>}
+                        {item.is_update === 1 && <Badge size="xs" color="yellow">Update</Badge>}
+                        {item.is_delete === 1 && <Badge size="xs" color="red">Delete</Badge>}
+                        {item.is_download === 1 && <Badge size="xs" color="blue">Download</Badge>}
+                        {item.is_import === 1 && <Badge size="xs" color="violet">Import</Badge>}
+                      </Group>
+                    </td>
+                    <td style={{ padding: "12px 16px", position: "sticky", right: 0, backgroundColor: "#fff", zIndex: 5, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
+                      <Flex gap={8}>
+                        <Tooltip label="Edit">
+                          <ActionIcon variant="filled" color="blue" onClick={() => handleEditClick(item)}>
+                            <Icon icon="mdi:pencil-outline" width={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Hapus">
+                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)}>
+                            <Icon icon="mdi:trash-can-outline" width={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Flex>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Box>
+      </Card>
+
+      {pagination && pagination.last_page > 1 && (
+        <Flex justify="center" mt="md">
+          <Pagination total={pagination.last_page} value={pagination.current_page} onChange={(page: number) => getData(`page=${page}`)} color="blue" />
+        </Flex>
+      )}
+    </Stack>
+  );
+
+  return <>{isFormVisible ? renderForm() : renderList()}</>;
 }

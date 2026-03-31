@@ -79,7 +79,7 @@
 //   const [loading, setLoading] = useListState<string>();
 //   const [data, setData] = useState<CreatorProps[]>([]);
 //   const [pagination, setPagination] = useState<any>(null);
-  
+
 //   // Modal untuk form
 //   const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
 //   const [selectedCreator, setSelectedCreator] = useState<CreatorProps | null>(null);
@@ -126,7 +126,7 @@
 //           before: () => setLoading.append("getdata"),
 //           success: (response) => {
 //             console.log("API Response:", response);
-            
+
 //             if (response && response.data) {
 //               if (Array.isArray(response.data.data)) {
 //                 setData(response.data.data);
@@ -177,13 +177,13 @@
 //     const creatorData = creator as CreatorProps;
 //     setSelectedCreator(creatorData);
 //     setIsEditMode(true);
-    
+
 //     if (creatorData.image_url) {
 //       setImagePreview(creatorData.image_url);
 //     }
-    
+
 //     setImageBase64(null);
-    
+
 //     form.setValues({
 //       name_event_organizer: creatorData.name_event_organizer || "",
 //       name: creatorData.name || "",
@@ -195,7 +195,7 @@
 //       // description: creatorData.description || "",
 //       // website: creatorData.website || "",
 //     });
-    
+
 //     openFormModal();
 //   };
 
@@ -234,10 +234,10 @@
 //       try {
 //         const base64String = await convertFileToBase64(file);
 //         setImageBase64(base64String);
-        
+
 //         const base64DataURL = await convertFileToBase64DataURL(file);
 //         setImagePreview(base64DataURL);
-        
+
 //         notifications.show({
 //           title: "Gambar berhasil diproses",
 //           message: "Gambar telah dikonversi ke base64",
@@ -321,7 +321,7 @@
 //     <>
 //       <Stack className="p-[20px] md:p-[30px]" gap={30}>
 //         <LoadingOverlay visible={loading.includes("getdata")} />
-        
+
 //         <Flex gap={10} justify="space-between" align="center">
 //           <Stack gap={5}>
 //             <Text size="1.8rem" fw={600}>
@@ -331,7 +331,7 @@
 //               Daftar semua creator/event organizer
 //             </Text>
 //           </Stack>
-          
+
 //           <Button
 //             onClick={handleAddClick}
 //             color="blue"
@@ -347,7 +347,7 @@
 //           data={data}
 //           mapData={(e: any) => {
 //             const creator = e as CreatorProps;
-            
+
 //             return {
 //               created_at: creator.created_at ? moment(creator.created_at).format("DD MMM YYYY") : "-",
 //               image: creator.image_url ? (
@@ -579,13 +579,12 @@
 //   );
 // }
 
-import TableData from "@/components/TableData";
-import { Pagination } from "@/types/model";
 import fetch from "@/utils/fetch";
-import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, Modal, TextInput, Select, FileInput } from "@mantine/core";
-import { useDisclosure, useListState } from "@mantine/hooks";
+import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, TextInput, Select, FileInput, Card, Box, Pagination, ActionIcon, Tooltip } from "@mantine/core";
+import { Icon } from "@iconify/react";
+import { useListState } from "@mantine/hooks";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 
@@ -646,9 +645,9 @@ export default function KelolaCreator() {
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CreatorProps[]>([]);
   const [pagination, setPagination] = useState<any>(null);
-  
-  // Modal untuk form
-  const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
+
+  // State untuk form & tampilan
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<CreatorProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -688,7 +687,7 @@ export default function KelolaCreator() {
           before: () => setLoading.append("getdata"),
           success: (response) => {
             console.log("API Response:", response);
-            
+
             if (response && response.data) {
               if (Array.isArray(response.data.data)) {
                 setData(response.data.data);
@@ -732,21 +731,20 @@ export default function KelolaCreator() {
     form.reset();
     setImagePreview(null);
     setImageBase64(null);
-    openFormModal();
+    setIsFormVisible(true);
   };
 
   const handleEditClick = (creator: any) => {
     const creatorData = creator as CreatorProps;
     setSelectedCreator(creatorData);
     setIsEditMode(true);
-    
+
     if (creatorData.image_url) {
       setImagePreview(creatorData.image_url);
     }
-    
+
     setImageBase64(null);
-    
-    // Untuk edit, kita tetap pakai email creator (tidak perlu user_id)
+
     form.setValues({
       name_event_organizer: creatorData.name_event_organizer || "",
       name: creatorData.name || "",
@@ -755,8 +753,8 @@ export default function KelolaCreator() {
       email: creatorData.email || "",
       status: creatorData.status || "active",
     });
-    
-    openFormModal();
+
+    setIsFormVisible(true);
   };
 
   const handleDelete = async (creator: any) => {
@@ -795,7 +793,7 @@ export default function KelolaCreator() {
         const base64DataURL = await convertFileToBase64DataURL(file);
         setImageBase64(base64DataURL);
         setImagePreview(base64DataURL);
-        
+
         notifications.show({
           title: "Gambar berhasil diproses",
           message: "Gambar siap diupload",
@@ -826,7 +824,7 @@ export default function KelolaCreator() {
       // Untuk tambah data tanpa gambar
       payload.image = null;
     }
-    
+
     // ============ KUNCI UTAMA: TANPA USER_ID ============
     // Semua field kecuali user_id
     payload.name_event_organizer = values.name_event_organizer || "";
@@ -835,13 +833,13 @@ export default function KelolaCreator() {
     payload.phone_number = values.phone_number;
     payload.email = values.email;
     payload.status = values.status;
-    
+
     // TIDAK ADA user_id di payload!
     // Backend harus handle ini dengan salah satu cara:
     // 1. Membuat user baru otomatis berdasarkan email
     // 2. Membiarkan creator.user_id = null
     // 3. Auto-generate user dengan data minimal
-    
+
     // Jika backend membutuhkan user_id tapi kita tidak punya,
     // kita bisa menambahkan fallback logic:
     if (isEditMode && selectedCreator?.user_id) {
@@ -872,14 +870,14 @@ export default function KelolaCreator() {
           color: "green",
         });
         getData();
-        closeFormModal();
+        setIsFormVisible(false);
         form.reset();
         setImagePreview(null);
         setImageBase64(null);
       },
       error: (error) => {
         console.error("Error submitting form:", error);
-        
+
         // Jika error karena user_id required
         if (error.response?.status === 422) {
           const errors = error.response.data.errors || {};
@@ -908,138 +906,66 @@ export default function KelolaCreator() {
     });
   };
 
-  return (
-    <>
-      <Stack className="p-[20px] md:p-[30px]" gap={30}>
-        <LoadingOverlay visible={loading.includes("getdata")} />
-        
-        <Flex gap={10} justify="space-between" align="center">
-          <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>
-              Kelola Creator
-            </Text>
-            <Text size="sm" c="gray">
-              Daftar semua creator/event organizer
-            </Text>
-          </Stack>
-          
-          <Button
-            onClick={handleAddClick}
-            color="blue"
-          >
-            + Tambah Creator
-          </Button>
-        </Flex>
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: null, direction: null });
+  const [searchQuery, setSearchQuery] = useState("");
 
-        <TableData
-          loading={loading.includes("getdata")}
-          value={pagination}
-          onChange={getData}
-          data={data}
-          mapData={(e: any) => {
-            const creator = e as CreatorProps;
-            
-            return {
-              created_at: creator.created_at ? moment(creator.created_at).format("DD MMM YYYY") : "-",
-              image: creator.image_url ? (
-                <Image src={creator.image_url} w={50} h={50} radius="sm" fit="cover" />
-              ) : (
-                <Avatar color="blue" radius="sm" w={50} h={50}>
-                  {creator.name?.charAt(0) || "?"}
-                </Avatar>
-              ),
-              name: (
-                <Stack gap={2}>
-                  <Text fw={500}>{creator.name || "-"}</Text>
-                  {creator.name_event_organizer && (
-                    <Text size="xs" c="dimmed">
-                      EO: {creator.name_event_organizer}
-                    </Text>
-                  )}
-                </Stack>
-              ),
-              contact: (
-                <Stack gap={2}>
-                  {creator.phone_number && <Text size="sm">{creator.phone_number}</Text>}
-                  {creator.email && <Text size="xs" c="dimmed">{creator.email}</Text>}
-                  {creator.location && <Text size="xs" c="dimmed">{creator.location}</Text>}
-                </Stack>
-              ),
-              user: (
-                <Stack gap={2}>
-                  <Text size="sm" fw={500}>{creator.has_user?.name || creator.has_user?.email || "Tidak ada user"}</Text>
-                  <Text size="xs" c="dimmed">{creator.has_user?.email || ""}</Text>
-                </Stack>
-              ),
-              status: (
-                <Badge 
-                  color={creator.status === "active" ? "green" : "red"} 
-                  variant="light" 
-                  size="sm"
-                >
-                  {creator.status === "active" ? "Aktif" : creator.status || "Unknown"}
-                </Badge>
-              ),
-              verification: (
-                <Badge 
-                  color={creator.is_verified === 1 ? "blue" : "gray"} 
-                  variant="light" 
-                  size="sm"
-                >
-                  {creator.is_verified === 1 ? "Terverifikasi" : "Belum"}
-                </Badge>
-              ),
-            };
-          }}
-          headerLabel={{
-            created_at: "Tanggal Dibuat",
-            image: "Logo",
-            name: "Nama Creator",
-            contact: "Kontak & Lokasi",
-            user: "User Akun",
-            status: "Status",
-            verification: "Verifikasi",
-          }}
-          actionIcon={[
-            { 
-              icon: "mdi:pencil", 
-              text: "Edit", 
-              onClick: (row) => handleEditClick(row) 
-            },
-            { 
-              icon: "mdi:trash", 
-              text: "Hapus", 
-              onClick: (row) => handleDelete(row), 
-              color: "red" 
-            }
-          ]}
-        />
-      </Stack>
+  const filteredData = useMemo(() => {
+    let result = [...data];
+    if (searchQuery) {
+      result = result.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.email && item.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.has_user?.name && item.has_user.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        const valA = (a[sortConfig.key as string] || "").toString().toLowerCase();
+        const valB = (b[sortConfig.key as string] || "").toString().toLowerCase();
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [data, searchQuery, sortConfig]);
 
-      <Modal
-        opened={formModalOpened}
-        onClose={() => {
-          closeFormModal();
-          form.reset();
-          setImagePreview(null);
-          setImageBase64(null);
-        }}
-        title={isEditMode ? "Edit Creator" : "Tambah Creator Baru"}
-        size="lg"
-        centered
-      >
-        <form onSubmit={form.onSubmit(handleFormSubmit)}>
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" | null = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
+    setSortConfig({ key, direction });
+  };
+
+  const renderForm = () => (
+    <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
+      <Flex align="center" gap={15}>
+        <Tooltip label="Kembali">
+          <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
+            <Icon icon="mdi:arrow-left" width={20} />
+          </ActionIcon>
+        </Tooltip>
+        <Stack gap={0}>
+          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Creator" : "Tambah Creator Baru"}</Text>
+          <Text size="xs" c="dimmed">Isi form di bawah untuk mengelola data Creator</Text>
+        </Stack>
+      </Flex>
+
+      <form id="creator-form" onSubmit={form.onSubmit(handleFormSubmit)}>
+        <Card withBorder padding="xl" radius="md" shadow="sm">
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
-            {/* Preview gambar */}
+
+            {/* Preview gambar (form is now part of renderForm and all field logic starts here) */}
             {imagePreview && (
               <Stack gap={5}>
                 <Text size="sm" fw={500}>Preview Gambar</Text>
-                <Image 
-                  src={imagePreview} 
-                  w={100} 
-                  h={100} 
-                  radius="sm" 
+                <Image
+                  src={imagePreview}
+                  w={100}
+                  h={100}
+                  radius="sm"
                   fit="cover"
                   alt="Preview"
                 />
@@ -1049,11 +975,11 @@ export default function KelolaCreator() {
             {!imagePreview && isEditMode && selectedCreator?.image_url && (
               <Stack gap={5}>
                 <Text size="sm" fw={500}>Gambar Saat Ini</Text>
-                <Image 
-                  src={selectedCreator.image_url} 
-                  w={100} 
-                  h={100} 
-                  radius="sm" 
+                <Image
+                  src={selectedCreator.image_url}
+                  w={100}
+                  h={100}
+                  radius="sm"
                   fit="cover"
                   alt="Current"
                 />
@@ -1066,8 +992,8 @@ export default function KelolaCreator() {
               accept="image/*"
               onChange={handleFileChange}
               clearable
-              description={isEditMode && selectedCreator?.image_url ? 
-                "Pilih gambar baru untuk mengubah, atau biarkan kosong untuk tetap menggunakan gambar saat ini" : 
+              description={isEditMode && selectedCreator?.image_url ?
+                "Pilih gambar baru untuk mengubah, atau biarkan kosong untuk tetap menggunakan gambar saat ini" :
                 "Opsional, dapat diupload nanti"}
             />
 
@@ -1121,29 +1047,144 @@ export default function KelolaCreator() {
               {...form.getInputProps("status")}
             />
 
-            <Group justify="flex-end" mt="md">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  closeFormModal();
-                  form.reset();
-                  setImagePreview(null);
-                  setImageBase64(null);
-                }}
-              >
-                Batal
-              </Button>
-              <Button 
-                type="submit" 
-                color="blue" 
-                loading={loading.includes("submit")}
-              >
-                {isEditMode ? "Simpan Perubahan" : "Tambah Creator"}
-              </Button>
-            </Group>
           </Stack>
-        </form>
-      </Modal>
-    </>
+        </Card>
+
+        <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+          <Flex justify="flex-end" gap="md">
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>
+              Batal
+            </Button>
+            <Button type="submit" form="creator-form" color="blue" loading={loading.includes("submit")}>
+              {isEditMode ? "Simpan Perubahan" : "Simpan Creator"}
+            </Button>
+          </Flex>
+        </Box>
+      </form>
+    </Stack>
   );
+
+  const renderList = () => (
+    <Stack className="p-[20px] md:p-[30px]" gap={30}>
+      <LoadingOverlay visible={loading.includes("getdata")} />
+
+      <Flex gap={10} justify="space-between" align="center">
+        <Stack gap={5}>
+          <Text size="1.8rem" fw={600}>Kelola Creator</Text>
+          <Text size="sm" c="gray">Daftar semua creator/event organizer</Text>
+        </Stack>
+        <Button onClick={handleAddClick} color="blue">+ Tambah Creator</Button>
+      </Flex>
+
+      <Card withBorder p={0} radius="md" style={{ overflow: "hidden" }}>
+        <Flex justify="space-between" align="center" p="md" style={{ borderBottom: "1px solid #f1f3f5" }}>
+          <Text fw={600}>Daftar Creator</Text>
+          <Flex gap={10} align="center">
+            <Tooltip label="Refresh Data">
+              <ActionIcon variant="filled" color="blue" size="lg" onClick={() => getData()} loading={loading.includes("getdata")}>
+                <Icon icon="mdi:refresh" width={20} />
+              </ActionIcon>
+            </Tooltip>
+            <TextInput placeholder="Cari creator..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: 250 }} />
+          </Flex>
+        </Flex>
+
+        <Box style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+            <thead>
+              <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #dee2e6" }}>
+                {[
+                  { label: "Tanggal", sortable: true, key: "created_at" },
+                  { label: "Logo", sortable: false },
+                  { label: "Creator & EO", sortable: true, key: "name" },
+                  { label: "Kontak & Lokasi", sortable: false },
+                  { label: "User Akun", sortable: false },
+                  { label: "Status", sortable: true, key: "status" },
+                  { label: "Aksi", sortable: false },
+                ].map((col, i) => (
+                  <th key={i} onClick={() => col.sortable && requestSort(col.key!)} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#495057", textTransform: "uppercase", cursor: col.sortable ? "pointer" : "default", position: col.label === "Aksi" ? "sticky" : "static", right: col.label === "Aksi" ? 0 : "auto", backgroundColor: col.label === "Aksi" ? "#f8f9fa" : "transparent", zIndex: col.label === "Aksi" ? 10 : 1 }}>
+                    <Flex align="center" gap={4}>
+                      {col.label}
+                      {col.sortable && (
+                        sortConfig.key === col.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : <span style={{ opacity: 0.3 }}>↑</span>
+                      )}
+                    </Flex>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">Data tidak ditemukan</Text></td></tr>
+              ) : (
+                filteredData.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
+                    <td style={{ padding: "12px 16px" }}><Text size="sm">{item.created_at ? moment(item.created_at).format("DD MMM YYYY") : "-"}</Text></td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {item.image_url ? (
+                        <Image src={item.image_url} w={45} h={45} radius="sm" fit="cover" />
+                      ) : (
+                        <Avatar color="blue" radius="sm" size={45}>{item.name?.charAt(0) || "?"}</Avatar>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={2}>
+                        <Text fw={500} size="sm">{item.name || "-"}</Text>
+                        {item.name_event_organizer && <Text size="xs" c="dimmed">EO: {item.name_event_organizer}</Text>}
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={2}>
+                        {item.phone_number && <Text size="sm">{item.phone_number}</Text>}
+                        {item.email && <Text size="xs" c="dimmed">{item.email}</Text>}
+                        {item.location && <Text size="xs" c="dimmed">{item.location}</Text>}
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={2}>
+                        <Text size="sm" fw={500}>{item.has_user?.name || item.has_user?.email || "Tidak ada user"}</Text>
+                        <Text size="xs" c="dimmed">{item.has_user?.email || ""}</Text>
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Stack gap={4} align="flex-start">
+                        <Badge color={item.status === "active" ? "green" : "red"} variant="light" size="sm">
+                          {item.status === "active" ? "Aktif" : item.status || "Unknown"}
+                        </Badge>
+                        <Badge color={item.is_verified === 1 ? "blue" : "gray"} variant="light" size="xs">
+                          {item.is_verified === 1 ? "Terverifikasi" : "Belum Verifikasi"}
+                        </Badge>
+                      </Stack>
+                    </td>
+                    <td style={{ padding: "12px 16px", position: "sticky", right: 0, backgroundColor: "#fff", zIndex: 5, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
+                      <Flex gap={8}>
+                        <Tooltip label="Edit">
+                          <ActionIcon variant="filled" color="blue" onClick={() => handleEditClick(item)}>
+                            <Icon icon="mdi:pencil-outline" width={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Hapus">
+                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)}>
+                            <Icon icon="mdi:trash-can-outline" width={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Flex>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Box>
+      </Card>
+
+      {pagination && pagination.last_page > 1 && (
+        <Flex justify="center" mt="md">
+          <Pagination total={pagination.last_page} value={pagination.current_page} onChange={(page: number) => getData(`page=${page}`)} color="blue" />
+        </Flex>
+      )}
+    </Stack>
+  );
+
+  return <>{isFormVisible ? renderForm() : renderList()}</>;
 }
