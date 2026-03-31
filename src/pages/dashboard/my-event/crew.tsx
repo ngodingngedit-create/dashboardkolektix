@@ -534,16 +534,16 @@ export default function KelolaCrew() {
             <Image
               src={crewData.image_url}
               alt={crewData.name}
-              w={90}
-              h={90}
+              w={45}
+              h={45}
               radius="md"
-              fallbackSrc="https://placehold.co/90x90?text=?"
+              fallbackSrc="https://placehold.co/45x45?text=?"
               style={{ objectFit: "cover", border: '1px solid #f1f3f5' }}
             />
           ) : (
             <Box
-              w={20}
-              h={20}
+              w={45}
+              h={45}
               bg="gray.1"
               display="flex"
               style={{ alignItems: "center", justifyContent: "center", borderRadius: "50%", border: '1px solid #e9ecef' }}

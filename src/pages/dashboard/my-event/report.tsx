@@ -1315,7 +1315,7 @@ const Merch = () => {
   useDidUpdate(() => {
     if (selectedEvent) {
       setCurrentPage(1);
-      loadEventData(1);
+      loadEventData();
     }
   }, [selectedEvent]);
 
@@ -1538,7 +1538,7 @@ const Merch = () => {
     };
   };
 
-  const loadEventData = async (page: number = 1) => {
+  const loadEventData = async () => {
     if (!selectedEvent) {
       return;
     }
@@ -1549,52 +1549,17 @@ const Merch = () => {
     try {
       const params = new URLSearchParams({
         event_id: selectedEvent.toString(),
-        page: page.toString(),
-        per_page: "20"
+        page: "1",
+        per_page: "999999"
       });
-
-      if (selectedTicket !== "all") {
-        params.append("name", selectedTicket);
-      }
-
-      if (selectedStatus !== "all") {
-        params.append("status", selectedStatus);
-      }
-
-      if (transactionSegment !== "all") {
-        params.append("type", transactionSegment);
-      }
-
-      if (searchValue) {
-        params.append("search", searchValue);
-      }
 
       const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
       const response = await axios.get(apiUrl);
 
       if (response.data?.data && Array.isArray(response.data.data)) {
-        // Set data dengan spread operator
         setAllDataList([...response.data.data]);
-
-        if (response.data.pagination) {
-          setPaginationInfo({
-            current_page: response.data.pagination.current_page || page,
-            last_page: response.data.pagination.last_page || 1,
-            total: response.data.pagination.total || response.data.data.length,
-            per_page: response.data.pagination.per_page || 20,
-          });
-        } else {
-          setPaginationInfo({
-            current_page: page,
-            last_page: 1,
-            total: response.data.data.length,
-            per_page: 20,
-          });
-        }
-
-        setCurrentPage(response.data.pagination?.current_page || page);
         setApiPaginationInfo({
-          totalRecords: response.data.pagination?.total || response.data.data.length,
+          totalRecords: response.data.data.length,
           grandTotal: response.data.grand_total || 0,
         });
       } else {
@@ -1610,24 +1575,11 @@ const Merch = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    loadEventData(page);
   };
 
   useDidUpdate(() => {
     setCurrentPage(1);
-    loadEventData(1);
-  }, [selectedTicket, selectedStatus, transactionSegment]);
-
-  useDidUpdate(() => {
-    if (selectedTab === "transaksi") {
-      const timer = setTimeout(() => {
-        setCurrentPage(1);
-        loadEventData(1);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-    setSortBy("");
-  }, [searchValue, selectedTab]);
+  }, [selectedTicket, selectedStatus, transactionSegment, searchValue]);
 
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -1641,12 +1593,53 @@ const Merch = () => {
     }
   };
 
-  // Proses data untuk tabel transaksi
-  const processedTransactionData = useMemo(() => {
-    if (!allDataList.length) return [];
+  // Proses filter secara lokal (karena ambil sekaligus)
+  const filteredDataList = useMemo(() => {
+    let result = [...allDataList];
 
-    let result = allDataList.map((transaction, index) => {
-      const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
+    // Filter by segment (Type Transaction)
+    if (transactionSegment !== "all") {
+      result = result.filter(e => e.type_transaction === transactionSegment);
+    }
+    
+    // Filter by Ticket Type
+    if (selectedTicket !== "all") {
+      result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
+    }
+    
+    // Filter by Status
+    if (selectedStatus !== "all") {
+      result = result.filter(e => String(e.transaction_status_id) === selectedStatus);
+    }
+    
+    // Search by Keyword
+    if (searchValue) {
+      const q = searchValue.toLowerCase();
+      result = result.filter(e => {
+        const inv = e.invoice_no?.toLowerCase() || "";
+        const iden = e.identities?.find((id) => id.is_pemesan == 1) || e.identities?.[0];
+        const email = iden?.email?.toLowerCase() || "";
+        const name = iden?.full_name?.toLowerCase() || "";
+        return inv.includes(q) || email.includes(q) || name.includes(q);
+      });
+    }
+
+    return result;
+  }, [allDataList, transactionSegment, selectedTicket, selectedStatus, searchValue]);
+
+  const itemsPerPageLocal = 20;
+  const currentTotal = filteredDataList.length;
+  const lastPageLocal = Math.ceil(currentTotal / itemsPerPageLocal) || 1;
+
+  // Proses data untuk tabel transaksi (di sliced)
+  const processedTransactionData = useMemo(() => {
+    if (!filteredDataList.length) return [];
+    
+    const startIndex = (currentPage - 1) * itemsPerPageLocal;
+    const paginatedArray = filteredDataList.slice(startIndex, startIndex + itemsPerPageLocal);
+
+    let result = paginatedArray.map((transaction, index) => {
+      const globalIndex = startIndex + index + 1;
 
       let pemesanIdentity = null;
       if (transaction.identities?.length) {
@@ -1746,7 +1739,7 @@ const Merch = () => {
     }
 
     return result;
-  }, [allDataList, transactionStatus, paginationInfo, sortBy, sortDir]);
+  }, [filteredDataList, transactionStatus, sortBy, sortDir, currentPage]);
 
   // Proses data untuk tabel pemesan
   const processedPemesanData = useMemo(() => {
@@ -1812,7 +1805,7 @@ const Merch = () => {
   const salesStatistics = useMemo(() => {
     const totalTickets = allDataList.reduce((sum, transaction) => {
       if (transaction.payment_status === "Verified" && transaction.tickets) {
-        return sum + transaction.tickets.reduce((ticketSum, ticket) => ticketSum + (ticket.qty_ticket || 1), 0);
+        return sum + transaction.tickets.reduce((ticketSum: any, ticket: any) => ticketSum + (ticket.qty_ticket || 1), 0);
       }
       return sum;
     }, 0);
@@ -1823,10 +1816,10 @@ const Merch = () => {
     return {
       pendingTransactions,
       totalTickets,
-      totalTransactions: paginationInfo.total,
+      totalTransactions: allDataList.length,
       totalCheckin,
     };
-  }, [allDataList, eventData, dataListEticket, paginationInfo]);
+  }, [allDataList, eventData, dataListEticket]);
 
   const exportToExcel = () => {
     if (!allDataList || allDataList.length === 0) {
@@ -1860,7 +1853,7 @@ const Merch = () => {
           const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
           const paymentMethodInfo = getPaymentMethod(item.payment_method);
           const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-          const globalIndex = (paginationInfo.current_page - 1) * paginationInfo.per_page + index + 1;
+          const globalIndex = index + 1;
 
           return [
             globalIndex,
@@ -1989,7 +1982,7 @@ const Merch = () => {
               {/* Left side: Refresh and Export Excel */}
               <Flex gap={8} align="center">
                 <Button
-                  onClick={() => loadEventData(currentPage)}
+                  onClick={() => loadEventData()}
                   loading={loading.includes("loadData")}
                   variant="filled"
                   color="blue"
@@ -2117,13 +2110,13 @@ const Merch = () => {
               </table>
             </Box>
 
-            {allDataList.length > 0 && (
+            {filteredDataList.length > 0 && (
               <Flex justify="space-between" align="center" mt="md">
                 <Text size="sm" c="dimmed">
-                  Menampilkan {((paginationInfo.current_page - 1) * paginationInfo.per_page) + 1} sampai {Math.min(paginationInfo.current_page * paginationInfo.per_page, paginationInfo.total)} dari <strong>{paginationInfo.total}</strong> transaksi
+                  Menampilkan {((currentPage - 1) * itemsPerPageLocal) + 1} sampai {Math.min(currentPage * itemsPerPageLocal, currentTotal)} dari <strong>{currentTotal}</strong> transaksi
                   <br />
                   <small>
-                    Halaman {paginationInfo.current_page} dari {paginationInfo.last_page} | Total Nilai: Rp {apiPaginationInfo.grandTotal.toLocaleString("id-ID")}
+                    Halaman {currentPage} dari {lastPageLocal} | Total Keseluruhan: Rp {apiPaginationInfo.grandTotal.toLocaleString("id-ID")}
                   </small>
                 </Text>
 
@@ -2131,7 +2124,7 @@ const Merch = () => {
                   <Pagination
                     value={currentPage}
                     onChange={handlePageChange}
-                    total={paginationInfo.last_page}
+                    total={lastPageLocal}
                     radius="md"
                     size="sm"
                     withEdges

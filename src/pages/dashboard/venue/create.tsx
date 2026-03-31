@@ -135,7 +135,7 @@ export default function Create({}: Readonly<ComponentProps>) {
 
             <Divider />
 
-            <Stack gap={20} maw={700}>
+            <Stack gap={20} w="100%">
                 <Flex gap={10} align="center">
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
                     <Text size="lg" fw={600}>Informasi Venue</Text>
@@ -309,7 +309,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 <Space h={50} />
             </Stack>
 
-            <Card pos="fixed" className={`!bottom-0 !z-10 w-full !border-t !border-[#d0d0d0]`} radius={0} px={0} maw={700}>
+            <Card pos="fixed" className={`!bottom-0 !left-0 !right-0 !z-10 !border-t !border-[#d0d0d0]`} radius={0} py={15} px={30} style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
                 <Button
                     ml="auto"
                     loading={loading.includes('submitdata')}
