@@ -1257,7 +1257,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 // Definisikan tipe untuk metode pembayaran
@@ -1903,28 +1903,41 @@ const Merch = () => {
         </Stack>
       </Flex>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
-          <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
-        </div>
+      {/* Statistics Statistics Accordion */}
+      <Accordion variant="separated" radius="md" defaultValue="statistics" styles={{
+        item: { border: '1px solid #e9ecef', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white' },
+        control: { padding: '15px 20px', '&:hover': { backgroundColor: '#f8fafc' } },
+        content: { padding: '0 20px 20px 20px' }
+      }}>
+        <Accordion.Item value="statistics">
+          <Accordion.Control icon={<FontAwesomeIcon icon={faChartPie} color="#0b387c" />}>
+            <Text fw={700} size="md" c="gray.8">Ringkasan Statistik Event</Text>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
+                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
+              </div>
 
-        <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
-          <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
-        </div>
+              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
+                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
+              </div>
 
-        <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
-          <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
-        </div>
+              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
+                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
+              </div>
 
-        <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
-          <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
-        </div>
-      </div>
+              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
+                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
+              </div>
+            </div>
+          </Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
 
       {/* Global Filter Bar - Outside the tab card */}
       <div className="mb-4">

@@ -683,24 +683,28 @@ const Legal = () => {
           <Text size="sm" c="gray">Kelola data KTP dan NPWP untuk verifikasi akun Anda</Text>
         </Stack>
         <Flex gap={10}>
-          <Button
-            onClick={handleAddKTP}
-            leftSection={<FontAwesomeIcon icon={faPlus} />}
-            color="blue"
-            size="md"
-            radius="xl"
-          >
-            Tambah KTP
-          </Button>
-          <Button
-            onClick={handleAddNPWP}
-            leftSection={<FontAwesomeIcon icon={faPlus} />}
-            color="teal"
-            size="md"
-            radius="xl"
-          >
-            Tambah NPWP
-          </Button>
+          {ktpList.length === 0 && (
+            <Button
+              onClick={handleAddKTP}
+              leftSection={<FontAwesomeIcon icon={faPlus} />}
+              color="blue"
+              size="md"
+              radius="xl"
+            >
+              Tambah KTP
+            </Button>
+          )}
+          {npwpList.length === 0 && (
+            <Button
+              onClick={handleAddNPWP}
+              leftSection={<FontAwesomeIcon icon={faPlus} />}
+              color="teal"
+              size="md"
+              radius="xl"
+            >
+              Tambah NPWP
+            </Button>
+          )}
         </Flex>
       </Flex>
 
