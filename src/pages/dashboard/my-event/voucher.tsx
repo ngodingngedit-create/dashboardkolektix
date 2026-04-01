@@ -153,6 +153,7 @@ const VoucherPage = () => {
       if (searchTerm) params.append("search", searchTerm);
       if (eventFilter !== "all") params.append("event_id", eventFilter);
       if (typeFilter !== "all") params.append("type", typeFilter);
+      if (statusFilter !== "all") params.append("status", statusFilter);
       if (user?.has_creator?.id) params.append("user_id", user.has_creator.id.toString());
 
       const response = await axios.get(`${config.wsUrl}vouchers?${params.toString()}`);
@@ -297,12 +298,58 @@ const VoucherPage = () => {
 
   const sortedVouchers = useMemo(() => {
     let result = [...vouchers];
+
+    // Frontend Filtering for better UX
+    if (searchTerm || eventFilter !== "all" || typeFilter !== "all" || statusFilter !== "all") {
+      result = result.filter((v) => {
+        // Search Filter (Code and Event Name)
+        const matchesSearch = !searchTerm || 
+          v.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (v.event?.name || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Event Filter
+        const matchesEvent = eventFilter === "all" || v.event_id.toString() === eventFilter;
+        
+        // Type Filter
+        const matchesType = typeFilter === "all" || v.type === typeFilter;
+        
+        // Status Filter (Calculated status)
+        let matchesStatus = true;
+        if (statusFilter !== "all") {
+          const now = moment();
+          const startDate = moment(v.date_start);
+          const endDate = moment(v.date_end);
+          const sysStat = v.status === 1 ? "Aktif" : "Nonaktif";
+          
+          let bStat = "Aktif";
+          if (now.isBefore(startDate)) bStat = "Belum Mulai";
+          else if (now.isAfter(endDate)) bStat = "Kadaluarsa";
+          else if (v.used_count >= v.max_use) bStat = "Terpakai";
+          else if (v.stock <= 0) bStat = "Habis";
+          else if (sysStat === "Nonaktif") bStat = "Nonaktif";
+
+          if (statusFilter === "active") matchesStatus = bStat === "Aktif";
+          else if (statusFilter === "inactive") matchesStatus = bStat === "Nonaktif";
+          else if (statusFilter === "expired") matchesStatus = bStat === "Kadaluarsa";
+        }
+
+        return matchesSearch && matchesEvent && matchesType && matchesStatus;
+      });
+    }
+
     if (sortConfig.key && sortConfig.direction) {
       result.sort((a: any, b: any) => {
-        let valA = ""; let valB = "";
-        if (sortConfig.key === 'code') { valA = (a.code || "").toLowerCase(); valB = (b.code || "").toLowerCase(); }
-        else if (sortConfig.key === 'event') { valA = (a.event?.name || "").toLowerCase(); valB = (b.event?.name || "").toLowerCase(); }
-        else if (sortConfig.key === 'stock') return sortConfig.direction === 'asc' ? (a.stock || 0) - (b.stock || 0) : (b.stock || 0) - (a.stock || 0);
+        let valA = "";
+        let valB = "";
+        if (sortConfig.key === 'code') {
+          valA = (a.code || "").toLowerCase();
+          valB = (b.code || "").toLowerCase();
+        } else if (sortConfig.key === 'event') {
+          valA = (a.event?.name || "").toLowerCase();
+          valB = (b.event?.name || "").toLowerCase();
+        } else if (sortConfig.key === 'stock') {
+          return sortConfig.direction === 'asc' ? (a.stock || 0) - (b.stock || 0) : (b.stock || 0) - (a.stock || 0);
+        }
 
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -310,7 +357,7 @@ const VoucherPage = () => {
       });
     }
     return result;
-  }, [vouchers, sortConfig]);
+  }, [vouchers, sortConfig, searchTerm, eventFilter, typeFilter, statusFilter]);
 
   const renderList = () => (
     <Stack gap={25}>

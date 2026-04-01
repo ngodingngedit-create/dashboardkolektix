@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/router";
 import bankEmpty from "../../../assets/icon/bank.png";
 import Image from "next/image";
 import {
@@ -69,6 +70,7 @@ const Bank = () => {
     direction: "asc",
   });
   const user = useLoggedUser();
+  const router = useRouter();
 
   const form = useForm({
     initialValues: {
@@ -160,6 +162,12 @@ const Bank = () => {
   useEffect(() => {
     if (user) getData();
   }, [user]);
+
+  useEffect(() => {
+    if (router.isReady && router.query.add === "true") {
+      handleAddClick();
+    }
+  }, [router.isReady, router.query.add]);
 
   const filteredData = useMemo(() => {
     let result = [...data];

@@ -603,6 +603,14 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
                         </SelectItem>
                       ))}
                     </Select>
+                    
+                    {/* Link to add new bank */}
+                    <div 
+                      className="mt-4 text-blue-500 text-sm cursor-pointer hover:underline flex items-center justify-center gap-1"
+                      onClick={() => router.push('/dashboard/bank?add=true')}
+                    >
+                      <span className="font-semibold">+ Tambah rekening baru</span>
+                    </div>
                   </div>
                 )}
 

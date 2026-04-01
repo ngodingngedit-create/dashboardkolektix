@@ -1,6 +1,6 @@
 import { Get, Put } from "@/utils/REST";
-import { 
-  Card, Center, Title, Flex, ActionIcon, Group, Select, Modal, 
+import {
+  Card, Center, Title, Flex, ActionIcon, Group, Select, Modal,
   Tooltip, SimpleGrid, Text, Badge, Avatar, Pagination as PaginationM,
   Button as ButtonM, Stack, LoadingOverlay, Divider, Paper, ScrollArea
 } from "@mantine/core";
@@ -132,8 +132,8 @@ export default function AdminEventManagement() {
           <Text size="sm" c="dimmed" fw={500}>Monitor dan kelola persetujuan event platform</Text>
         </div>
         <Group>
-           <ButtonM 
-            variant="light" 
+          <ButtonM
+            variant="light"
             color="gray"
             onClick={fetchData}
             leftSection={<Icon icon="ph:arrows-clockwise" className="text-lg" />}
@@ -144,7 +144,7 @@ export default function AdminEventManagement() {
         </Group>
       </div>
 
-      <Tabs 
+      <Tabs
         variant="underlined"
         aria-label="Filter Status"
         selectedKey={activeTab}
@@ -161,7 +161,7 @@ export default function AdminEventManagement() {
       >
         {tabStatus.map(([status, label]) => (
           <Tab key={status} title={label}>
-            <Card withBorder radius="md" p={0} className="mt-4 shadow-sm overflow-hidden border-gray-100">
+            <Card withBorder radius="md" p={0} className="mt-4 shadow-sm overflow-hidden border-light-grey">
               <div className="p-5 bg-gray-50/50">
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
                   <div className="flex flex-col gap-1.5">
@@ -185,9 +185,9 @@ export default function AdminEventManagement() {
                     <Text size="xs" fw={600} c="dimmed" className="uppercase tracking-wider">Penyelenggara</Text>
                     <Select
                       placeholder="Semua Creator"
-                      data={creators.map(c => ({ 
-                        value: String(c.id), 
-                        label: c.name 
+                      data={creators.map(c => ({
+                        value: String(c.id),
+                        label: c.name
                       }))}
                       value={selectedCreator}
                       onChange={(val) => {
@@ -247,12 +247,12 @@ export default function AdminEventManagement() {
 
               <div className="overflow-x-auto relative min-h-[400px]">
                 <LoadingOverlay visible={loading} overlayProps={{ radius: "sm", blur: 2 }} />
-                <Table 
+                <Table
                   aria-label="Tabel Event"
                   removeWrapper
                   classNames={{
-                    th: "bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100 h-12 uppercase text-[11px] tracking-wider",
-                    td: "py-4 border-b border-gray-50",
+                    th: "bg-gray-50/80 text-gray-600 font-bold border-b border-light-grey h-12 uppercase text-[11px] tracking-wider",
+                    td: "py-4 border-b border-light-grey",
                   }}
                 >
                   <TableHeader>
@@ -264,7 +264,7 @@ export default function AdminEventManagement() {
                     <TableColumn>Dibuat</TableColumn>
                     <TableColumn align="center">Aksi</TableColumn>
                   </TableHeader>
-                  <TableBody 
+                  <TableBody
                     emptyContent={loading ? " " : "Tidak ada event ditemukan"}
                   >
                     {data.map((item, i) => (
@@ -308,8 +308,8 @@ export default function AdminEventManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant="light" 
+                          <Badge
+                            variant="light"
                             color={item.main_status ? "green" : "orange"}
                             radius="sm"
                             leftSection={<Icon icon={item.main_status ? "ph:check-circle-fill" : "ph:clock-countdown-fill"} />}
@@ -350,9 +350,9 @@ export default function AdminEventManagement() {
 
               {total > PER_PAGE && (
                 <div className="p-4 border-t border-gray-50 bg-white">
-                  <PaginationM 
-                    total={Math.ceil(total / PER_PAGE)} 
-                    value={page} 
+                  <PaginationM
+                    total={Math.ceil(total / PER_PAGE)}
+                    value={page}
                     onChange={setPage}
                     color="#0B387C"
                     size="sm"
@@ -459,18 +459,18 @@ export default function AdminEventManagement() {
                 Tutup
               </ButtonM>
               {selectedEvent.main_status ? (
-                <ButtonM 
-                  variant="filled" 
-                  color="red" 
+                <ButtonM
+                  variant="filled"
+                  color="red"
                   leftSection={<Icon icon="ph:x-circle" />}
                   onClick={() => handleToggleApproval(selectedEvent.id, false)}
                 >
                   Batalkan Persetujuan
                 </ButtonM>
               ) : (
-                <ButtonM 
-                  variant="filled" 
-                  color="green" 
+                <ButtonM
+                  variant="filled"
+                  color="green"
                   leftSection={<Icon icon="ph:check-circle" />}
                   onClick={() => handleToggleApproval(selectedEvent.id, true)}
                 >

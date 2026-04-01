@@ -1149,20 +1149,20 @@ const MerchPickupPage: React.FC = () => {
           if (!mappedItem && item.id) {
             unavailableItems.push({
               id: item.id,
-              invoice_no: `Data tidak tersedia (ID: ${item.id})`,
-              product_name: "Data invoice tidak tersedia",
+              invoice_no: "Data Merchandise belum ada",
+              product_name: "-",
               sku: "-",
               total_qty: 0,
               total_price: 0,
-              transaction_status_id: 3, // Failed status
+              transaction_status_id: 1, // Reset to Pending/Neutral
               voucher: "-",
               creator_id: creatorId || 0,
               creator_name: "Unknown",
               detail: [],
               order_date: "-",
-              customer_name: "Customer tidak tersedia",
+              customer_name: "-",
               customer_email: "-",
-              status_name: "Data Error",
+              status_name: "Data belum ada",
               payment_method: "-",
               isAvailable: false // Data tidak tersedia
             });
@@ -1193,12 +1193,12 @@ const MerchPickupPage: React.FC = () => {
         const placeholderData: MerchandiseTransactionData[] = [
           {
             id: 1,
-            invoice_no: "Tidak ada data invoice",
-            product_name: "Data tidak ditemukan",
+            invoice_no: "Data Merchandise belum ada",
+            product_name: "-",
             sku: "-",
             total_qty: 0,
             total_price: 0,
-            transaction_status_id: 3,
+            transaction_status_id: 1,
             voucher: "-",
             creator_id: user?.has_creator?.id || 0,
             creator_name: user?.has_creator?.name || "Unknown",
@@ -1206,7 +1206,7 @@ const MerchPickupPage: React.FC = () => {
             order_date: "-",
             customer_name: "-",
             customer_email: "-",
-            status_name: "Data tidak tersedia",
+            status_name: "Belum ada data",
             payment_method: "-",
             isAvailable: false
           }
@@ -1497,29 +1497,28 @@ const MerchPickupPage: React.FC = () => {
                                 const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                                 
                                 return (
-                                    <tr key={item.id} style={{ backgroundColor: !isAvailable ? '#fef2f2' : '' }}>
+                                    <tr key={item.id}>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, borderBottom: '1px solid #f0f0f0' }}>
                                             <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
                                             <Flex align="center" gap="xs">
-                                                <Text size="sm" fw={600} c={!isAvailable ? 'red.7' : 'dark'}>{item.invoice_no}</Text>
-                                                {!isAvailable && <Badge color="red" size="xs">Tidak Tersedia</Badge>}
+                                                <Text size="sm" fw={600}>{item.invoice_no}</Text>
                                             </Flex>
-                                            <Text size="xs" c="dimmed">{isAvailable ? item.payment_method || "N/A" : "Data error 404"}</Text>
+                                            <Text size="xs" c="dimmed">{isAvailable ? item.payment_method || "N/A" : "-"}</Text>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
-                                            <Text size="sm" c={!isAvailable ? 'red.7' : 'dark'}>{item.customer_name}</Text>
+                                            <Text size="sm">{item.customer_name}</Text>
                                             <Text size="xs" c="dimmed">{item.customer_email}</Text>
                                         </td>
                                         <td style={{ padding: '12px 14px' }}>
-                                            <Text size="sm" c={!isAvailable ? 'red.7' : 'dark'} style={{ whiteSpace: 'nowrap' }}>
-                                                {item.product_name} {!isAvailable && '(Data tidak tersedia)'}
+                                            <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
+                                                {item.product_name}
                                             </Text>
                                         </td>
                                         <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
                                             <MantineButton 
-                                                color={isAvailable ? 'gray' : 'red'} 
+                                                color="gray" 
                                                 variant="light" 
                                                 size="xs" 
                                                 radius="sm" 
@@ -1533,33 +1532,27 @@ const MerchPickupPage: React.FC = () => {
                                             </MantineButton>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
-                                            <Text size="sm" fw={600} c={!isAvailable ? 'red.7' : 'dark'}>{isAvailable ? item.total_qty : "-"}</Text>
+                                            <Text size="sm" fw={600}>{isAvailable ? item.total_qty : "-"}</Text>
                                         </td>
                                         <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
-                                            {isAvailable ? (
-                                                <MantineButton 
-                                                    color={statusInfo.color.includes('yellow') ? 'yellow' : statusInfo.color.includes('green') ? 'green' : statusInfo.color.includes('red') ? 'red' : 'gray'} 
-                                                    variant="filled" 
-                                                    size="xs"
-                                                    radius="xl"
-                                                    w={130}
-                                                    styles={{ 
-                                                        root: { minHeight: 28, height: 'auto', padding: '4px 8px' },
-                                                        label: { whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.2 } 
-                                                    }}
-                                                >
-                                                    {statusInfo.text}
-                                                </MantineButton>
-                                            ) : (
-                                                <MantineButton color="red" variant="filled" size="xs" radius="xl" w={130}>
-                                                    Data Error
-                                                </MantineButton>
-                                            )}
+                                            <MantineButton 
+                                                color={statusInfo.color.includes('yellow') ? 'yellow' : statusInfo.color.includes('green') ? 'green' : statusInfo.color.includes('red') ? 'red' : 'gray'} 
+                                                variant="filled" 
+                                                size="xs"
+                                                radius="xl"
+                                                w={130}
+                                                styles={{ 
+                                                    root: { minHeight: 28, height: 'auto', padding: '4px 8px' },
+                                                    label: { whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.2 } 
+                                                }}
+                                            >
+                                                {isAvailable ? statusInfo.text : item.status_name}
+                                            </MantineButton>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
-                                            <Text size="sm" c={!isAvailable ? 'dimmed' : 'dark'}>{isAvailable ? formatDate(item.order_date) : "Tidak tersedia"}</Text>
+                                            <Text size="sm" c="dark">{isAvailable ? formatDate(item.order_date) : "-"}</Text>
                                         </td>
-                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: !isAvailable ? '#fef2f2' : 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)', borderBottom: '1px solid #f0f0f0' }}>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)', borderBottom: '1px solid #f0f0f0' }}>
                                             <Flex align="center" gap="xs">
                                                 {isAvailable ? (
                                                   <Tooltip label="Lihat Detail">
@@ -1574,7 +1567,7 @@ const MerchPickupPage: React.FC = () => {
                                                       </ActionIcon>
                                                   </Tooltip>
                                                 ) : (
-                                                  <Badge color="gray" variant="light">Tidak Tersedia</Badge>
+                                                  <Badge color="gray" variant="light">TIDAK TERSEDIA</Badge>
                                                 )}
                                             </Flex>
                                         </td>
@@ -1587,7 +1580,7 @@ const MerchPickupPage: React.FC = () => {
 
                 {paginatedItems.length === 0 && (
                     <Box py="xl" ta="center">
-                        <Text c="dimmed">Tidak ada data transaksi yang ditemukan</Text>
+                        <Text c="dimmed">Data Merchandise belum ada</Text>
                     </Box>
                 )}
 

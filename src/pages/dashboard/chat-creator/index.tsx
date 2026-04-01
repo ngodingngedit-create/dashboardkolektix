@@ -60,6 +60,9 @@ const ChatList = ({
         console.log(err);
       });
   };
+
+  const isActive = selected === id;
+
   return (
     <div
       onClick={() => {
@@ -68,21 +71,38 @@ const ChatList = ({
         readMsg(inbox);
         setMessages({ ...messages, to: id, inbox_id: inbox });
       }}
-      className={`flex justify-between py-3 px-4 min-h-16 max-h-16 cursor-pointer ${
-        selected === id && 'bg-primary-light-200'
+      className={`flex justify-between py-4 px-5 cursor-pointer transition-all duration-200 border-l-4 ${
+        isActive 
+          ? 'bg-blue-50/50 border-primary-base' 
+          : 'border-transparent hover:bg-gray-50'
       }`}
     >
-      <div className='flex gap-3 items-center'>
-        <ImageM src={image ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
-        <div>
-          <p className='font-semibold'>{name}</p>
-          <p className='text-xs'>{lastMsg}</p>
+      <div className='flex gap-3 items-center min-w-0 flex-grow'>
+        <div className="relative shrink-0">
+          <ImageM 
+            src={image ?? '/images/layanan-pelanggan.png'} 
+            className="rounded-full border border-gray-100 shadow-sm" 
+            w={44} 
+            h={44} 
+            radius={999}
+          />
+          {isActive && (
+             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+          )}
+        </div>
+        <div className="min-w-0 flex-grow">
+          <div className="flex justify-between items-baseline gap-2">
+            <Text fw={700} size="sm" className="truncate">{name}</Text>
+            <Text size="10px" c="dimmed">{time}</Text>
+          </div>
+          <Text size="xs" c={isActive ? "blue.8" : "dimmed"} className="line-clamp-1 mt-0.5" fw={isActive ? 600 : 400}>
+            {lastMsg}
+          </Text>
         </div>
       </div>
-      <div className='flex flex-col items-center'>
-        <p className='text-xs text-primary-base'>{time}</p>
+      <div className='flex flex-col items-end justify-center ml-2 shrink-0'>
         {(countMsg ?? 0) > 0 && (
-          <div className='bg-primary-base text-white w-6 flex items-center justify-center rounded-full text-xs mt-1'>
+          <div className='bg-primary-base text-white px-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold shadow-sm'>
             {countMsg}
           </div>
         )}
@@ -119,122 +139,131 @@ const Chat = () => {
     }
   }, [users]);
 
-    useEffect(() => {
-        if (!echo) {
-            console.error("Echo instance not available!");
-            return;
-        }
+  useEffect(() => {
+    if (!echo) {
+      console.error("Echo instance not available!");
+      return;
+    }
 
-        // const newChannelName = `new-creator-chat.${users?.id}`;
-        // const newChannel = echo.channel(newChannelName);
-        const channelName = `creator-chat.${users?.id}`;
-        const channel = echo.channel(channelName);
+    const channelName = `creator-chat.${users?.id}`;
+    const channel = echo.channel(channelName);
 
-        if (users?.id) {
-            channel.listen('.NewCreatorChat', (data: any) => {
-                setChat(chat => ([data.data, ...chat]));
-                const audio = new Audio('/audio/live-chat.wav');
-                audio.play();
-            });
-            channel.listen('.CreatorChat', (data: any) => {
-                setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
-                    ...e,
-                    chats: [
-                        ...e.chats,
-                        data.data
-                    ]
-                }) : e));
-                const audio = new Audio('/audio/live-chat.wav');
-                audio.play();
-            });
-        }
+    if (users?.id) {
+      channel.listen('.NewCreatorChat', (data: any) => {
+        setChat(chat => ([data.data, ...chat]));
+        const audio = new Audio('/audio/live-chat.wav');
+        audio.play().catch(() => { });
+      });
+      channel.listen('.CreatorChat', (data: any) => {
+        setChat(chat => chat.map(e => e.id == data.data.inbox_id ? ({
+          ...e,
+          chats: [
+            ...e.chats,
+            data.data
+          ]
+        }) : e));
+        const audio = new Audio('/audio/live-chat.wav');
+        audio.play().catch(() => { });
+      });
+    }
 
-        return () => {
-            channel.stopListening(".CreatorChat");
-        };
-    }, [users]);    
+    return () => {
+      channel.stopListening(".CreatorChat");
+    };
+  }, [users]);
 
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
         const chatlist = (res as InboxListProps[])
-        .filter(e => (Boolean(e.from) && (Boolean(e.to))))
-        .filter(e => e.to.id == users?.id)
+          .filter(e => (Boolean(e.from) && (Boolean(e.to))))
+          .filter(e => e.to.id == users?.id)
 
         setChat(chatlist)
-        console.log(chatlist, res, users?.id);
       })
       .catch((err: any) => {
-        console.log(err);
+        console.error(err);
       });
   };
 
   const sendMessage = (form?: React.FormEvent) => {
     form?.preventDefault();
-    Post('inbox-chat', {...messages, isCreator: true})
+    if (!messages.message.trim()) return;
+
+    Post('inbox-chat', { ...messages, isCreator: true })
       .then((res: any) => {
-        console.log(res);
         getData();
         setMessages({ ...messages, message: '' })
-        if (messageBoxRef.current) {
-          messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
-        }
+        setTimeout(() => {
+          if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+          }
+        }, 100);
       })
       .catch((err: any) => {
-        toast.error(err.response.data.message);
+        toast.error(err.response?.data?.message || "Gagal mengirim pesan");
       });
   };
 
   useEffect(() => {
-  }, []);
-
-  useEffect(() => {
-    if (Boolean(searchQuery)) {
+    if (searchQuery) {
       setSearchedChats(chat.filter(e => e.from.name?.toLowerCase().includes(searchQuery.toLowerCase())));
     } else {
       setSearchedChats([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, chat]);
 
   const messageBoxRef = useRef<HTMLDivElement | null>(null);
-  
+
   useEffect(() => {
     if (messageBoxRef.current) {
       messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
     }
-  }, [chat, selected])
+  }, [chat, selected]);
+
+  const currentInbox = chat.find(e => e.from.id == selected);
 
   return (
     user &&
-    user.id &&
-    chat.length > 0 && (
-      <div className='flex text-dark h-[calc(100vh_-_81px)]'>
-        <div className='w-1/3 flex flex-col divide-y divide-primary-light-200'>
-
-          <Box p={5}>
+    user.id && (
+      <div className='flex text-dark bg-white h-[calc(100vh-81px)] overflow-hidden'>
+        {/* SIDEBAR */}
+        <div className='w-[350px] flex flex-col border-r border-light-grey bg-gray-50/20'>
+          <div className='p-4 bg-white border-b border-light-grey'>
+            <Text fw={800} size="xl" className="mb-4 text-primary-dark">Pesan</Text>
             <TextInput
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              leftSection={<Icon icon="uiw:search" />}
-              placeholder="Cari Chat"
-              variant="unstyled"
+              leftSection={<Icon icon="solar:magnifer-linear" className="text-gray-400" width={18} />}
+              placeholder="Cari chat..."
+              radius="md"
+              size="sm"
+              styles={{
+                input: { backgroundColor: '#f8f9fa' }
+              }}
             />
-          </Box>
+          </div>
 
-          <Card p={0} h="100%" className={`!overflow-y-auto`}>
+          <div className='flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200'>
             {(searchQuery && searchedChats.length == 0) && (
-              <Card>
-                <Text size="sm" c="gray">Chat tidak ditemukan</Text>
-              </Card>
+              <div className="p-8 text-center">
+                 <Icon icon="solar:chat-round-unread-linear" width={48} className="text-gray-200 mb-2 mx-auto" />
+                 <Text size="sm" c="dimmed">Chat tidak ditemukan</Text>
+              </div>
+            )}
+            
+            {chat.length === 0 && (
+               <div className="p-8 text-center">
+                 <Icon icon="solar:ghost-linear" width={48} className="text-gray-200 mb-2 mx-auto" />
+                 <Text size="sm" c="dimmed">Belum ada percakapan</Text>
+              </div>
             )}
 
             {(searchQuery ? searchedChats : chat)
-              .filter((item: InboxListProps) => item.to.id == user?.id)
               .sort((a, b) => {
-                const aUnread = a.chats.some(chat => chat.status === "unread");
-                const bUnread = b.chats.some(chat => chat.status === "unread");
-                if (aUnread && !bUnread) return -1;
-                if (!aUnread && bUnread) return 1;
+                const aUnread = a.chats.filter(c => c.status === "unread" && c.user_id !== users?.id).length;
+                const bUnread = b.chats.filter(c => c.status === "unread" && c.user_id !== users?.id).length;
+                if (aUnread !== bUnread) return bUnread - aUnread;
                 return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
               })
               .map((item: InboxListProps) => (
@@ -251,116 +280,160 @@ const Chat = () => {
                   setMessages={setMessages}
                   messages={messages}
                   inbox={item.id}
+                  image={item.from.has_creator?.image_url}
                 />
               ))}
-          </Card>
+          </div>
         </div>
-        <div className='w-full flex flex-col divide-y divide-primary-light-200 border-l border-l-primary-light-200'>
-          {messagerName !== '' && (
-            <div className='flex items-center py-4 px-3 h-16 gap-3'>
-              <ImageM src={chat.find(e => e.from.id == selected)?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} className="rounded-full shrink-0" w={36} h={36} radius={999}/>
-              <div>
-                <p className='font-semibold'>{messagerName}</p>
-              </div>
-            </div>
-          )}
-          <div ref={messageBoxRef} className=' py-4 px-3 h-full gap-3 bg-chat overflow-y-scroll'>
-            {(() => {
-              let lastDate: string | null = null; // Deklarasi tipe data yang lebih spesifik
-              return chat
-                .filter(
-                  (chatitem: any) =>
-                    (chatitem.from.id === user.id && chatitem.to.id === selected) ||
-                    (chatitem.to.id === user.id && chatitem.from.id === selected)
-                )
-                .flatMap((chatitem) =>
-                  chatitem.chats.map((chat) => ({
-                    ...chat,
-                    fromId: chatitem.from.id,
-                    createdAt: chat.created_at,
-                  }))
-                )
-                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-                .map((chat, index) => {
-                  const currentDate = formatDateDiff(chat.createdAt);
-                  const showDateLabel = currentDate !== lastDate;
 
-                  if (showDateLabel) {
-                    lastDate = currentDate;
+        {/* MAIN CHAT AREA */}
+        <div className='flex-grow flex flex-col bg-[#f0f2f5] relative'>
+          {messagerName !== '' ? (
+            <>
+              {/* Header */}
+              <div className='flex items-center py-3 px-5 h-16 gap-3 bg-white border-b border-light-grey shadow-sm z-10'>
+                <ImageM 
+                  src={currentInbox?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} 
+                  className="rounded-full border border-gray-100 shadow-sm" 
+                  w={42} 
+                  h={42} 
+                  radius={999}
+                />
+                <div className="flex-grow min-w-0">
+                  <Text fw={700} className="truncate line-clamp-1">{messagerName}</Text>
+                  <Text size="10px" c="green.7" fw={600} className="uppercase tracking-widest">Active Chat</Text>
+                </div>
+                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <Icon icon="solar:menu-dots-bold" width={20} className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Messages Content */}
+              <div ref={messageBoxRef} className='flex-grow py-6 px-4 gap-3 overflow-y-auto scroll-smooth custom-scrollbar'>
+                {(() => {
+                  let lastDate: string | null = null;
+                  const currentChats = chat
+                    .filter(
+                      (chatitem: InboxListProps) =>
+                        (chatitem.from.id === user.id && chatitem.to.id === selected) ||
+                        (chatitem.to.id === user.id && chatitem.from.id === selected)
+                    )
+                    .flatMap((chatitem) =>
+                      chatitem.chats.map((chat) => ({
+                        ...chat,
+                        fromId: chatitem.from.id,
+                        createdAt: chat.created_at,
+                      }))
+                    )
+                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+                  if (currentChats.length === 0) {
+                    return (
+                      <div className="h-full flex flex-col items-center justify-center opacity-40">
+                         <Icon icon="solar:chat-square-line-linear" width={64} className="mb-2" />
+                         <Text fw={600}>Kirim pesan untuk memulai obrolan</Text>
+                      </div>
+                    );
                   }
 
-                  return (
-                    <div key={index}>
-                      {/* Label Tanggal */}
-                      {showDateLabel && (
-                        <div className='flex justify-center'>
-                          <Chip size='sm'>{currentDate}</Chip>
-                        </div>
-                      )}
-                      {/* Pesan Masuk */}
-                      <div
-                        className={`flex flex-col gap-2 px-16 ${
-                          chat.user_id == user.id ? 'items-end' : ''
-                        }`}
-                      >
-                        <div
-                          className={`${
-                            chat.user_id == user.id
-                              ? 'bg-white text-dark'
-                              : 'bg-primary-base text-white'
-                          } rounded-xl max-w-56 w-fit p-2 py-1.5 shadow-md flex justify-between my-1 items-end`}
-                        >
-                          <p className='flex-grow'>{chat.message}</p>
-                          <span
-                            className={`text-[11px] ml-2 ${
-                              chat.user_id == user.id ? 'text-grey' : 'text-primary-light-200'
+                  return currentChats.map((chatMsg, index) => {
+                    const currentDate = formatDateDiff(chatMsg.createdAt);
+                    const showDateLabel = currentDate !== lastDate;
+                    if (showDateLabel) lastDate = currentDate;
+
+                    const isMine = chatMsg.user_id == user.id;
+
+                    return (
+                      <div key={index} className="flex flex-col">
+                        {showDateLabel && (
+                          <div className='flex justify-center my-6'>
+                            <div className="bg-gray-200/60 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-gray-600 py-1 px-3 rounded-full">
+                               {currentDate}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className={`flex w-full mb-1 ${isMine ? 'justify-end pl-12' : 'justify-start pr-12'}`}>
+                          <div
+                            className={`relative group max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm ${
+                              isMine
+                                ? 'bg-primary-base text-white rounded-tr-none'
+                                : 'bg-white text-dark rounded-tl-none'
                             }`}
                           >
-                            {new Date(chat.createdAt).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false,
-                            })}
-                          </span>
-                          {chat.user_id == user.id && (
-                            <Icon
-                              icon={chat.status == "read" ? "solar:check-read-linear" : "ci:check"}
-                              className={`text-grey text-[18px] ml-[3px]`}
-                            />
-                          )}
+                            <Text size="sm" className="whitespace-pre-wrap leading-relaxed">{chatMsg.message}</Text>
+                            <div className={`flex items-center justify-end gap-1 mt-1.5 opacity-70`}>
+                              <span className="text-[9px] font-medium">
+                                {new Date(chatMsg.createdAt).toLocaleTimeString('id-Id', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              {isMine && (
+                                <Icon
+                                  icon={chatMsg.status == "read" ? "solar:check-read-bold" : "solar:check-line-linear"}
+                                  className={`text-[12px] ${chatMsg.status === 'read' ? 'text-blue-200' : 'text-gray-300'}`}
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                });
-            })()}
-          </div>
-          {selected ? (
-            <div className='sticky flex justify-center bottom-0 bg-white py-3 border border-primary-light-200'>
-              <form onSubmit={sendMessage} className={`w-full px-[20px]`}>
-                <div className='flex gap-2'>
-                  {/* <button className='text-dark-grey w-10 h-10 hover:bg-primary-light-200 rounded-full'>
-                    <FontAwesomeIcon icon={faPaperclip} />
-                  </button> */}
-                  <div className='flex-grow'>
-                    <InputField
-                      type='text'
-                      placeholder='Ketik pesan anda'
-                      fullWidth
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Input Bar */}
+              <div className='p-4 bg-white/80 backdrop-blur-md border-t border-light-grey'>
+                <form onSubmit={sendMessage} className='max-w-4xl mx-auto flex gap-3 items-center'>
+                  <button type="button" className='w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 transition-colors shrink-0'>
+                    <Icon icon="solar:paperclip-linear" width={22} />
+                  </button>
+                  <div className='flex-grow relative'>
+                    <TextInput
+                      variant="filled"
+                      placeholder='Ketik pesan anda...'
+                      radius="xl"
+                      size="md"
                       value={messages.message}
                       onChange={(e) => setMessages({ ...messages, message: e.target.value })}
+                      styles={{
+                        input: { 
+                          backgroundColor: '#f0f2f5',
+                          border: 'none',
+                          paddingRight: '15px'
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
                     />
                   </div>
                   <button
-                    className='text-white bg-primary-dark w-10 h-10 hover:bg-primary-base flex items-center justify-center rounded-full'
-                    onClick={sendMessage}
+                    type="submit"
+                    className={`w-11 h-11 flex items-center justify-center rounded-full transition-all shadow-md ${
+                      messages.message.trim() ? 'bg-primary-base text-white scale-100 hover:shadow-lg' : 'bg-gray-200 text-gray-400 scale-95 cursor-not-allowed'
+                    }`}
+                    disabled={!messages.message.trim()}
                   >
-                    <Image src={paperplane} alt='paperplane' />
+                    <Icon icon="solar:paper-plane-bold" width={22} />
                   </button>
-                </div>
-              </form>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center bg-white">
+               <div className="w-1/3 opacity-20 mb-6">
+                  <Icon icon="solar:chat-round-line-bold-duotone" width="100%" className="text-primary-dark" />
+               </div>
+               <Text fw={700} size="xl" c="dimmed">Pilih chat untuk memulai</Text>
+               <Text size="sm" c="dimmed" mt={4}>Pilih dari daftar di sebelah kiri untuk melihat percakapan</Text>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     )

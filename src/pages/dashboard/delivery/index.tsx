@@ -30,7 +30,8 @@ import {
   Stack,
   Divider,
   Tabs,
-  Card as MantineCard
+  Card as MantineCard,
+  Modal
 } from "@mantine/core";
 import { Get } from "@/utils/REST";
 import Link from "next/link";
@@ -188,6 +189,16 @@ interface MerchandiseTransactionData {
   resi_no?: string;
   courier_name?: string;
   ongkir?: number;
+  latest_manifest?: {
+    id: number;
+    tracking_status_id: number;
+    status_name: string;
+    tracking_status?: {
+      id: number;
+      status_delivery: string;
+      description: string;
+    };
+  } | null;
 }
 
 interface InvoiceDetailData {
@@ -429,6 +440,26 @@ const DeliveryPage: React.FC = () => {
     setPage(1);
   }, []);
 
+  // Print options state
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const [sensorNama, setSensorNama] = useState(true);
+  const [sensorTelepon, setSensorTelepon] = useState(true);
+  const [sensorAlamat, setSensorAlamat] = useState(false);
+  const [tampilkanHarga, setTampilkanHarga] = useState(true);
+  const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<any>(null);
+
+  const maskString = (str: string, isActivated: boolean) => {
+    if (!isActivated || !str || str === '-') return str;
+    if (str.length <= 2) return str;
+    return str.charAt(0) + '*'.repeat(str.length - 2) + str.slice(-1);
+  };
+
+  const maskPhone = (phone: string, isActivated: boolean) => {
+    if (!isActivated || !phone || phone === '-') return phone;
+    if (phone.length <= 6) return phone;
+    return phone.slice(0, 4) + '*'.repeat(phone.length - 7) + phone.slice(-3);
+  };
+
   const onProductChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedProduct(e.target.value);
     setPage(1);
@@ -503,20 +534,32 @@ const DeliveryPage: React.FC = () => {
   };
 
   const getShippingStatusInfo = (item: MerchandiseTransactionData) => {
-    const statusName = item.status_name?.toLowerCase() || "";
-    const isSent = statusName.includes("kirim") || statusName.includes("selesai") || statusName.includes("success");
-
-    if (isSent) {
-      return {
-        text: "Terkirim",
-        color: "green",
-      };
-    } else {
+    if (!item.latest_manifest) {
       return {
         text: "Belum Terkirim",
-        color: "yellow",
+        color: "red",
       };
     }
+
+    const statusDelivery = item.latest_manifest.tracking_status?.status_delivery || item.latest_manifest.status_name || "UNKNOWN";
+    const lowerStatus = statusDelivery.toLowerCase();
+    
+    // Determine color based on status_delivery
+    let color = "blue";
+    if (lowerStatus.includes("received") || lowerStatus.includes("diterima") || lowerStatus.includes("delivered") || lowerStatus.includes("success")) {
+      color = "green";
+    } else if (lowerStatus.includes("pickup") || lowerStatus.includes("jemput")) {
+      color = "yellow";
+    } else if (lowerStatus.includes("receive") && !lowerStatus.includes("received")) {
+      color = "blue";
+    } else if (lowerStatus.includes("failed") || lowerStatus.includes("cancel")) {
+      color = "red";
+    }
+
+    return {
+      text: statusDelivery.replace(/_/g, ' '),
+      color: color,
+    };
   };
 
   const getStatusIcon = (statusName: string) => {
@@ -813,6 +856,7 @@ const DeliveryPage: React.FC = () => {
           status_name: item.transaction_status?.name || "-",
           payment_method: item.payment_method || "-",
           notes: item.notes || "-",
+          latest_manifest: item.latest_manifest || null,
         };
       });
 
@@ -907,43 +951,42 @@ const DeliveryPage: React.FC = () => {
   const generateResiHTML = (detailData: any): string => {
     if (!detailData) return "";
 
-    const courierName = detailData.courier?.courier_company || detailData.courier?.main || "Biteship";
+    const courierNameRaw = detailData.courier?.courier_company || detailData.courier?.main || "Kolektix";
+    const courierNameForTitle = courierNameRaw.toUpperCase();
     const trackingNumber = detailData.courier?.tracking_number || "-";
-    const senderName = user?.has_creator?.name || "deelestari";
-    const senderPhone = detailData.user?.phone || "081287206604";
-    const senderAddress = "Perumahan Diamond Valley blok A2 no 1, bedahan Sawangan, Jl. H. Sulaiman, Kec. Sawangan, Kota Depok, Jawa Barat (rumah paling pinggir A2/1 sebelum belokan), Sawangan, Depok, Jawa B...";
+    const courierService = detailData.courier?.courier_type || "reg";
+    const referenceNumber = detailData.invoice_no || "-";
+    const orderNotes = detailData.detail?.find((d: any) => d.order_notes)?.order_notes || "mechanise deelestari";
 
-    const receiverName = detailData.address?.nama_penerima || "H****";
-    const maskedReceiverName = receiverName.length > 1
-      ? receiverName.charAt(0) + '*'.repeat(receiverName.length - 1)
-      : receiverName;
-
-    const receiverPhone = detailData.address?.phone || "0819****129";
-    const maskedReceiverPhone = receiverPhone.length > 4
-      ? receiverPhone.substring(0, 4) + '*'.repeat(receiverPhone.length - 7) + receiverPhone.substring(receiverPhone.length - 3)
-      : receiverPhone;
-
-    const receiverFullAddress = detailData.address
+    // Data Masking
+    const receiverName = maskString(detailData.address?.nama_penerima || "Customer", sensorNama);
+    const receiverPhone = maskPhone(detailData.address?.phone || "-", sensorTelepon);
+    
+    let receiverFullAddress = detailData.address
       ? `${detailData.address.address_detail}, ${detailData.address.city_id || ''}, ${detailData.address.province_id || ''}, ${detailData.address.zipcode || ''}`
-      : "JL, Jakarta Timur, DKI Jakarta";
+      : "Alamat tidak tersedia";
+    
+    if (sensorAlamat && detailData.address) {
+       receiverFullAddress = `${detailData.address.city_id || ''}, ${detailData.address.province_id || ''}`;
+    }
+
+    const creatorData = detailData.detail?.[0]?.product?.creator || user?.has_creator || {};
+    const senderName = creatorData.name || "Merchant";
+    const senderPhone = creatorData.phone || creatorData.phone_number || "-";
+    const senderAddress = creatorData.creator_address || creatorData.location || "-";
 
     const productItems = detailData.detail?.map((d: any) => {
       const productName = d.product?.product_name || 'Produk';
       let variantInfo = '';
-
       if (d.variant) {
         const variantDisplay = formatVariantDisplay(d.variant);
-        if (variantDisplay) {
-          variantInfo = ` (${variantDisplay})`;
-        }
+        if (variantDisplay) variantInfo = ` (${variantDisplay})`;
       }
-
       return `${d.qty}x ${productName}${variantInfo}`;
     }).join(', ') || "Produk Merchandise";
 
-    const courierService = detailData.courier?.courier_type || "reg";
-    const referenceNumber = detailData.invoice_no || "-";
-    const orderNotes = detailData.detail?.find((d: any) => d.order_notes)?.order_notes || "mechanise deelestari";
+    const totalQty = detailData.total_qty || 0;
+    const deliveryPrice = Number(detailData.courier?.price) || 0;
 
     const generateBarcodeBars = () => {
       const chars = trackingNumber.split('');
@@ -959,56 +1002,93 @@ const DeliveryPage: React.FC = () => {
     return `
       <div class="resi-page">
         <div class="resi-container">
+          <style>
+            @media print {
+                @page { size: A4; margin: 10mm; }
+                body { background: white; margin: 0; padding: 0; }
+                .resi-container { box-shadow: none !important; border: 2px solid #000 !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+            }
+            .resi-container {
+                max-width: 190mm;
+                width: 100%;
+                margin: 20px auto;
+                background: white;
+                border: 2px solid #000;
+                padding: 25px;
+                font-family: Arial, sans-serif;
+            }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 15px; }
+            .header h1 { font-size: 42px; font-weight: 800; margin: 0; letter-spacing: 3px; }
+            .subtitle { font-size: 16px; margin-top: 5px; font-weight: 500; }
+            .powered-by { text-align: center; margin: 15px 0; font-size: 16px; border-bottom: 2px dashed #000; padding-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+            .barcode-container { text-align: center; margin: 20px 0; padding: 15px; border: 3px solid #000; background: #f9f9f9; }
+            .barcode-bars { display: flex; justify-content: center; margin-bottom: 10px; }
+            .barcode-number { font-family: monospace; font-size: 16px; font-weight: bold; }
+            .tracking-number { text-align: center; font-size: 22px; font-weight: bold; margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; letter-spacing: 1px; }
+            .reference { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; }
+            .reference-label { font-weight: bold; font-size: 16px; margin-bottom: 8px; display: block; }
+            .reference-value { font-family: monospace; font-size: 18px; font-weight: 500; }
+            .address-section { margin: 20px 0; border: 3px solid #000; }
+            .address-box { padding: 15px; border-bottom: 3px solid #000; }
+            .address-box:last-child { border-bottom: none; }
+            .address-label { font-weight: bold; margin-bottom: 10px; font-size: 16px; text-decoration: underline; }
+            .address-name { font-weight: bold; font-size: 18px; margin: 5px 0; }
+            .address-phone { font-size: 16px; margin: 5px 0; }
+            .address-detail { line-height: 1.6; font-size: 15px; margin-top: 8px; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; }
+            .product-info { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; }
+            .product-label { font-weight: bold; text-decoration: underline; font-size: 16px; margin-bottom: 10px; display: block; }
+            .product-detail { font-size: 16px; line-height: 1.6; }
+            .notes { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; font-style: italic; font-size: 15px; }
+            .footer { margin-top: 25px; padding-top: 15px; border-top: 3px solid #000; text-align: center; font-size: 14px; }
+          </style>
+          
           <div class="header">
-            <h1>${courierName.toUpperCase()}</h1>
+            <h1>${courierNameForTitle}</h1>
             <div class="subtitle">${courierService.toUpperCase()}</div>
           </div>
           
-          <div class="biteship">
-            Shipping Powered by Biteship
-          </div>
+          <div class="powered-by">Powered by Kolektix.com</div>
           
           <div class="barcode-container">
-            <div class="barcode-bars">
-              ${generateBarcodeBars()}
-            </div>
+            <div class="barcode-bars">${generateBarcodeBars()}</div>
             <div class="barcode-number">${trackingNumber}</div>
           </div>
           
-          <div class="tracking-number">
-            No. Resi: ${trackingNumber}
-          </div>
+          <div class="tracking-number">No. Resi: ${trackingNumber}</div>
           
           <div class="reference">
-            <span class="reference-label">No. Pesanan:</span>
-            <span class="reference-value">${referenceNumber}</span>
+            <span class="reference-label">No. Pesanan / Reference Number:</span>
+            <div class="reference-value">${referenceNumber}</div>
           </div>
           
           <div class="address-section">
             <div class="address-box">
-              <div class="address-label">PENERIMA:</div>
-              <div class="address-name">${maskedReceiverName}</div>
-              <div class="address-phone">${maskedReceiverPhone}</div>
+              <div class="address-label">ALAMAT PENERIMA:</div>
+              <div class="address-name">${receiverName}</div>
+              <div class="address-phone">${receiverPhone}</div>
               <div class="address-detail">${receiverFullAddress}</div>
             </div>
             <div class="address-box">
-              <div class="address-label">PENGIRIM:</div>
+              <div class="address-label">ALAMAT PENGIRIM:</div>
               <div class="address-name">${senderName}</div>
               <div class="address-phone">${senderPhone}</div>
+              <div style="font-size: 14px; margin-top: 5px;">${senderAddress}</div>
             </div>
           </div>
           
           <div class="product-info">
             <span class="product-label">Isi Paket:</span>
-            <div class="product-detail">${productItems}</div>
+            <div class="product-detail">
+                ${productItems}<br>
+                <strong>Total Item:</strong> ${totalQty} pcs<br>
+                <strong>Ongkos Kirim:</strong> ${tampilkanHarga ? `Rp ${deliveryPrice.toLocaleString('id-ID')}` : '***'}
+            </div>
           </div>
           
-          <div class="notes">
-            <em>Catatan: ${orderNotes}</em>
-          </div>
+          <div class="notes"><em>Catatan: ${orderNotes}</em></div>
           
           <div class="footer">
-            Printed from kolektix.com
+            Printed from kolektix.com - Solusi Marketplace Terintegrasi
           </div>
         </div>
       </div>
@@ -1023,7 +1103,7 @@ const DeliveryPage: React.FC = () => {
       const allResiHTML: string[] = [];
 
       for (const id of selectedInvoiceIds) {
-        const transaction = filtered.find(t => t.id === id);
+        const transaction = data.find(t => t.id === id);
         if (!transaction?.invoice_no) continue;
 
         try {
@@ -1046,50 +1126,8 @@ const DeliveryPage: React.FC = () => {
         <html>
         <head>
           <title>Bulk Print Resi</title>
-          <style>
-            @media print {
-              @page { size: A4; margin: 0; }
-              .resi-page { 
-                page-break-after: always; 
-                height: 100vh; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center;
-              }
-              body { margin: 0; padding: 0; }
-            }
-            .resi-page { padding: 40px; border-bottom: 1px dashed #ccc; }
-            .resi-container {
-              max-width: 600px;
-              margin: 0 auto;
-              background: white;
-              border: 2px solid #000;
-              padding: 20px;
-              font-family: Arial, sans-serif;
-            }
-            .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .header h1 { font-size: 32px; font-weight: bold; margin: 0; }
-            .subtitle { font-size: 14px; margin-top: 5px; }
-            .biteship { text-align: center; margin: 10px 0; font-size: 14px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .barcode-container { text-align: center; margin: 15px 0; padding: 10px; border: 2px solid #000; }
-            .barcode-bars { display: flex; justify-content: center; margin-bottom: 5px; }
-            .barcode-number { font-family: monospace; font-size: 14px; }
-            .tracking-number { text-align: center; font-size: 18px; font-weight: bold; margin: 10px 0; padding: 10px; border: 2px solid #000; background: #f9f9f9; }
-            .reference { margin: 10px 0; padding: 8px; border: 2px solid #000; background: #f9f9f9; }
-            .reference-label { font-weight: bold; margin-bottom: 4px; display: block; }
-            .address-section { margin: 10px 0; border: 2px solid #000; }
-            .address-box { padding: 10px; }
-            .address-box:first-child { border-bottom: 2px solid #000; }
-            .address-label { font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
-            .address-detail { line-height: 1.4; background: #f9f9f9; padding: 8px; border: 2px solid #000; margin-top: 5px; font-size: 13px; }
-            .product-info { margin: 10px 0; padding: 10px; border: 2px solid #000; background: #f9f9f9; }
-            .product-label { font-weight: bold; text-decoration: underline; margin-bottom: 5px; display: block; }
-            .product-detail { font-size: 14px; line-height: 1.4; }
-            .notes { margin: 10px 0; padding: 8px; border: 2px solid #000; background: #f9f9f9; font-style: italic; font-size: 13px; }
-            .footer { margin-top: 15px; border-top: 2px solid #000; padding-top: 10px; text-align: center; font-size: 12px; }
-          </style>
         </head>
-        <body>
+        <body style="margin: 0; padding: 0;">
           ${allResiHTML.join('')}
           <script>
             window.onload = () => {
@@ -1105,8 +1143,7 @@ const DeliveryPage: React.FC = () => {
 
       const blob = new Blob([combinedHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank');
-
+      window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error("Bulk print failed:", err);
@@ -1117,54 +1154,28 @@ const DeliveryPage: React.FC = () => {
 
   const handlePrintSingle = async (transaction: MerchandiseTransactionData) => {
     if (!transaction.invoice_no) return;
+    
+    // Set selected invoice and show options modal instead of printing immediately
+    setSelectedInvoiceForPrint(transaction);
+    setShowPrintOptions(true);
+  };
 
+  const executePrintSingle = async () => {
+    if (!selectedInvoiceForPrint) return;
+    
     setPrintLoading(true);
+    setShowPrintOptions(false);
+    
     try {
-      const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
+      const res: any = await Get(`order-product-invoice/${selectedInvoiceForPrint.invoice_no}`, {});
       if (res?.data) {
         const resiHTML = `
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Resi - ${transaction.invoice_no}</title>
-            <style>
-              @media print {
-                @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 0; }
-                .resi-page { height: 100vh; display: flex; align-items: center; justify-content: center; }
-              }
-              .resi-page { padding: 40px; }
-              .resi-container {
-                max-width: 600px;
-                margin: 0 auto;
-                background: white;
-                border: 2px solid #000;
-                padding: 20px;
-                font-family: Arial, sans-serif;
-              }
-              .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-              .header h1 { font-size: 32px; font-weight: bold; margin: 0; }
-              .subtitle { font-size: 14px; margin-top: 5px; }
-              .biteship { text-align: center; margin: 10px 0; font-size: 14px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-              .barcode-container { text-align: center; margin: 15px 0; padding: 10px; border: 2px solid #000; }
-              .barcode-bars { display: flex; justify-content: center; margin-bottom: 5px; }
-              .barcode-number { font-family: monospace; font-size: 14px; }
-              .tracking-number { text-align: center; font-size: 18px; font-weight: bold; margin: 10px 0; padding: 10px; border: 2px solid #000; background: #f9f9f9; }
-              .reference { margin: 10px 0; padding: 8px; border: 2px solid #000; background: #f9f9f9; }
-              .reference-label { font-weight: bold; margin-bottom: 4px; display: block; }
-              .address-section { margin: 10px 0; border: 2px solid #000; }
-              .address-box { padding: 10px; }
-              .address-box:first-child { border-bottom: 2px solid #000; }
-              .address-label { font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
-              .address-detail { line-height: 1.4; background: #f9f9f9; padding: 8px; border: 2px solid #000; margin-top: 5px; font-size: 13px; }
-              .product-info { margin: 10px 0; padding: 10px; border: 2px solid #000; background: #f9f9f9; }
-              .product-label { font-weight: bold; text-decoration: underline; margin-bottom: 5px; display: block; }
-              .product-detail { font-size: 14px; line-height: 1.4; }
-              .notes { margin: 10px 0; padding: 8px; border: 2px solid #000; background: #f9f9f9; font-style: italic; font-size: 13px; }
-              .footer { margin-top: 15px; border-top: 2px solid #000; padding-top: 10px; text-align: center; font-size: 12px; }
-            </style>
+            <title>Resi - ${selectedInvoiceForPrint.invoice_no}</title>
           </head>
-          <body>
+          <body style="margin: 0; padding: 0;">
             ${generateResiHTML(res.data)}
             <script>
               window.onload = () => {
@@ -1180,13 +1191,14 @@ const DeliveryPage: React.FC = () => {
 
         const blob = new Blob([resiHTML], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
-        const printWindow = window.open(url, '_blank');
+        window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } catch (err) {
       console.error("Print failed:", err);
     } finally {
       setPrintLoading(false);
+      setSelectedInvoiceForPrint(null);
     }
   };
 
@@ -2348,6 +2360,57 @@ const DeliveryPage: React.FC = () => {
           }}
         </ModalContent>
       </NextUIModal>
+
+      {/* Modal Opsi Cetak Resi */}
+      <Modal opened={showPrintOptions} onClose={() => {
+          setShowPrintOptions(false);
+          setSelectedInvoiceForPrint(null);
+      }} title="Opsi Cetak Resi" centered size="sm">
+          <Stack>
+              <Text size="sm">Pilih opsi untuk resi - {selectedInvoiceForPrint?.invoice_no}</Text>
+
+              <Group gap="sm">
+                  <Checkbox
+                      id="sensorNama"
+                      checked={sensorNama}
+                      onChange={(e) => setSensorNama(e.currentTarget.checked)}
+                      label="Sensor Nama Penerima"
+                  />
+              </Group>
+
+              <Group gap="sm">
+                  <Checkbox
+                      id="sensorTelepon"
+                      checked={sensorTelepon}
+                      onChange={(e) => setSensorTelepon(e.currentTarget.checked)}
+                      label="Sensor Nomor Telepon"
+                  />
+              </Group>
+
+              <Group gap="sm">
+                  <Checkbox
+                      id="sensorAlamat"
+                      checked={sensorAlamat}
+                      onChange={(e) => setSensorAlamat(e.currentTarget.checked)}
+                      label="Sensor Alamat (hanya kota)"
+                  />
+              </Group>
+
+              <Group gap="sm">
+                  <Checkbox
+                      id="tampilkanHarga"
+                      checked={tampilkanHarga}
+                      onChange={(e) => setTampilkanHarga(e.currentTarget.checked)}
+                      label="Tampilkan Harga"
+                  />
+              </Group>
+
+              <Group justify="flex-end" mt="xl">
+                  <MantineButton variant="light" onClick={() => setShowPrintOptions(false)}>Batal</MantineButton>
+                  <MantineButton onClick={executePrintSingle} loading={printLoading}>Cetak Resi</MantineButton>
+              </Group>
+          </Stack>
+      </Modal>
     </>
   );
 };

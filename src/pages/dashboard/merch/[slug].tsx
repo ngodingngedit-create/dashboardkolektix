@@ -1209,24 +1209,32 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                 }
                 
                 @media print {
+                    @page {
+                        size: A4;
+                        margin: 10mm;
+                    }
                     body {
                         background: white;
-                        padding: 0.5in;
+                        margin: 0;
+                        padding: 0;
                     }
                     .resi-container {
                         box-shadow: none;
                         border: 2px solid #000 !important;
+                        max-width: 100% !important;
+                        width: 100% !important;
+                        margin: 0 !important;
                     }
                 }
                 
                 .resi-container {
-                    max-width: 700px;
+                    max-width: 190mm; /* A4 width (~210mm) minus margins */
                     width: 100%;
-                    margin: 0 auto;
+                    margin: 20px auto;
                     background: white;
                     border: 2px solid #000;
                     padding: 25px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
                 }
                 
                 .header {
@@ -1251,14 +1259,16 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                     font-weight: 500;
                 }
                 
-                .biteship {
+                .powered-by {
                     text-align: center;
                     margin: 15px 0;
                     font-size: 16px;
                     color: #000;
                     border-bottom: 2px dashed #000;
                     padding-bottom: 12px;
-                    font-weight: 500;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
                 }
                 
                 .tracking-number {
@@ -1417,7 +1427,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                     <div class="subtitle">${getSlogan(courierName)}</div>
                 </div>
                 
-                <div class="biteship">kolektix.com</div>
+                <div class="powered-by">Powered by Kolektix.com</div>
                 
                 <div class="tracking-number">
                     Nomor Resi - ${trackingNumber}

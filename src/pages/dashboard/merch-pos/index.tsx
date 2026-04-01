@@ -1,653 +1,3 @@
-// import useLoggedUser from "@/utils/useLoggedUser";
-// import { Icon } from "@iconify/react/dist/iconify.js";
-// import { Accordion, ActionIcon, Alert, Box, Button, Card, Flex, Image, LoadingOverlay, Menu, Modal, NumberFormatter, NumberInput, ScrollArea, Stack, Text, Textarea, TextInput, UnstyledButton } from "@mantine/core";
-// import { MerchListResponse } from "../merch/type";
-// import { useEffect, useMemo, useState } from "react";
-// import { useListState } from "@mantine/hooks";
-// import fetch from "@/utils/fetch";
-// import { modals } from "@mantine/modals";
-// import { notifications } from "@mantine/notifications";
-// import { useForm, zodResolver } from "@mantine/form";
-// import { z } from "zod";
-// import _ from "lodash";
-// import Cookies from "js-cookie";
-// import { useRouter } from "next/router";
-
-// type ComponentProps = {};
-
-// type CustomerData = {
-//   name: string;
-//   email: string;
-//   phone: string;
-//   address: string;
-// };
-
-// export type MerchCheckoutOffline = {
-//   product: {
-//     id: number;
-//     variant_id?: number;
-//     qty: number;
-//     price: number;
-//     subtotal: number;
-//   }[];
-//   invoice_num?: string;
-//   customer_name?: string;
-//   customer_email?: string;
-//   customer_phone?: string;
-//   customer_address?: string;
-//   discount?: number;
-//   summary?: { [key: string]: number };
-//   grandtotal: number;
-//   creator_id: number;
-//   payment_method?: string;
-// };
-
-// export default function Index({}: Readonly<ComponentProps>) {
-//   const user = useLoggedUser();
-//   const [loading, setLoading] = useListState<string>();
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [merch, setMerch] = useState<MerchListResponse[]>();
-//   const [discount, setDiscount] = useState(0);
-//   const [openSelect, setOpenSelect] = useState(false);
-//   const [openCustForm, setOpenCustForm] = useState(false);
-//   const [paymentMethod, setPaymentMethod] = useState<string>();
-//   const [selected, setSelected] = useState<
-//     {
-//       id: number;
-//       variant_id?: number;
-//       count: number;
-//     }[]
-//   >([]);
-//   const router = useRouter();
-
-//   const {
-//     values: custValue,
-//     getInputProps: custProps,
-//     errors: custError,
-//     validate: custValidate,
-//   } = useForm<CustomerData>({
-//     onValuesChange: (val) => {
-//       val.phone = (val.phone ?? "").replaceAll(/\D/g, "");
-//       return val;
-//     },
-//     validate: zodResolver(
-//       z.object({
-//         name: z.string().optional().nullable(),
-//         email: z.string().email().optional().nullable(),
-//         phone: z.string().optional().nullable(),
-//         address: z.string().optional().nullable(),
-//       })
-//     ),
-//   });
-
-//   useEffect(() => {
-//     if (user) getMerchList();
-//   }, [user]);
-
-//   //   const getMerchList = async () => {
-//   //     await fetch<any, MerchListResponse[]>({
-//   //       url: "product" + `?creator_id=${user?.has_creator?.id}`,
-//   //       method: "GET",
-//   //       before: () => setLoading.append("getdata"),
-//   //       success: ({ data }) => data && setMerch(data.filter((e) => e.product_status_id == 2)),
-//   //       complete: () => setLoading.filter((e) => e != "getdata"),
-//   //       error: () => {},
-//   //     });
-//   //   };
-
-//   const getMerchList = async (pageNum: number = 1) => {
-//     // guard kalau user belum siap
-//     const creatorId = user?.has_creator?.id;
-//     if (!creatorId) {
-//       console.warn("getMerchList aborted: no creator id on user", user);
-//       return;
-//     }
-
-//     const qs = new URLSearchParams({
-//       per_page: String(PER_PAGE),
-//       page: String(pageNum),
-//       creator_id: String(creatorId),
-//     }).toString();
-
-//     const url = `product-bymerchant?${qs}`;
-
-//     // ambil token dari env (NEXT_PUBLIC...) atau fallback dari cookie/localStorage
-//     const envToken = (process?.env?.NEXT_PUBLIC_API_TOKEN as string) || "";
-//     const cookieToken = Cookies.get("token") || localStorage.getItem("token") || "";
-//     const token = envToken || cookieToken || "";
-
-//     console.log("Fetching:", url, { creatorId, pageNum, tokenPresent: !!token });
-
-//     await fetch<any, any>({
-//       url,
-//       method: "GET",
-//       // sertakan header Authorization bila token ada
-//       headers: token
-//         ? {
-//             Authorization: `Bearer ${token}`,
-//           }
-//         : undefined,
-//       before: () => setLoading.append("getdata"),
-//       success: ({ data }) => {
-//         // data di API-mu adalah objek paginasi: { current_page, data: [...], ... }
-//         console.log("Raw API response (data):", data);
-
-//         if (!data) {
-//           console.warn("getMerchList: no data in response");
-//           setMerch([]);
-//           return;
-//         }
-
-//         // ambil array produk dari possible shapes:
-//         // - data bisa berupa array langsung (legacy)
-//         // - atau data.data adalah array (paginasi)
-//         const items: MerchListResponse[] = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : data.items ?? [];
-
-//         console.log("Resolved items length:", items.length);
-
-//         // filter status dan set state
-//         const filtered = items.filter((e) => e.product_status_id == 2);
-//         console.log("Filtered items (status==2) count:", filtered.length);
-//         setMerch(filtered);
-//       },
-//       complete: () => setLoading.filter((e) => e != "getdata"),
-//       error: (err) => {
-//         console.error("getMerchList error:", err);
-//         notifications.show({ message: "Gagal memuat produk. Cek console.", color: "red" });
-//         setMerch([]);
-//       },
-//     });
-//   };
-
-//   //   const merchList = useMemo(() => {
-//   //     return merch
-//   //       ?.filter((e) => Boolean(e))
-//   //       .filter((e) => (Boolean(searchQuery) ? e?.product_name.toLowerCase().includes(searchQuery) : true))
-//   //       .map((e, i) => ({
-//   //         name: e?.product_name,
-//   //         price: (e?.product_varian.length ?? 0) > 0 ? e?.product_varian.map((e) => parseInt(e.price)).reduce((acc, price) => [Math.min(acc[0], price), Math.max(acc[1], price)], [Infinity, -Infinity]) : [parseInt(e?.price ?? "999999")],
-//   //         image: (e?.product_image.length ?? 0) > 0 ? e?.product_image[0].image_url : "#",
-//   //         raw: e,
-//   //         stock: (e?.product_varian.length ?? 0) > 0 ? e?.product_varian.reduce((q, n) => q + n.stock_qty, 0) : e?.qty ?? 0,
-//   //       }));
-//   //   }, [merch, searchQuery, selected]);
-
-//   //   const merchList = useMemo(() => {
-//   //     const q = (searchQuery ?? "").trim().toLowerCase();
-
-//   //     return merch
-//   //       ?.filter(Boolean)
-//   //       .filter((e) => {
-//   //         if (!q) return true; // no query -> show all
-
-//   //         const name = String(e?.product_name ?? "").toLowerCase();
-//   //         const sku = String(e?.product_varian ?? "").toLowerCase();
-
-//   //         return name.includes(q) || sku.includes(q);
-//   //       })
-//   //       .map((e, i) => ({
-//   //         name: e?.product_name,
-//   //         price: (e?.product_varian.length ?? 0) > 0 ? e?.product_varian.map((v) => parseInt(v.price)).reduce((acc, price) => [Math.min(acc[0], price), Math.max(acc[1], price)], [Infinity, -Infinity]) : [parseInt(e?.price ?? "999999")],
-//   //         image: (e?.product_image.length ?? 0) > 0 ? e?.product_image[0].image_url : "#",
-//   //         raw: e,
-//   //         stock: (e?.product_varian.length ?? 0) > 0 ? e?.product_varian.reduce((q, n) => q + n.stock_qty, 0) : e?.qty ?? 0,
-//   //       }));
-//   //   }, [merch, searchQuery, selected]);
-
-//   const merchList = useMemo(() => {
-//     const normalize = (s: unknown) =>
-//       (s ?? "")
-//         .toString()
-//         .toLowerCase()
-//         .trim()
-//         .replace(/[\s\-_.]/g, ""); // hapus spasi, dash, underscore, dot supaya search lebih toleran
-
-//     const q = normalize(searchQuery);
-
-//     return (
-//       merch
-//         ?.filter(Boolean)
-//         .filter((e) => {
-//           if (!q) return true;
-
-//           const name = normalize(e.product_name);
-//           const skuMain = normalize((e as any).sku); // guard jika ada sku di level product
-
-//           const variantSKUs = (e.product_varian ?? []).map((v) => normalize(v?.sku));
-//           const variantNames = (e.product_varian ?? []).map((v) => normalize(v?.varian_name));
-
-//           const searchableParts = [name, skuMain, ...variantSKUs, ...variantNames].filter(Boolean);
-//           const searchable = searchableParts.join(" | ");
-
-//           // debug: uncomment satu baris ini untuk inspeksi
-//           // console.log("searchable for", e.id, searchable);
-
-//           return searchable.includes(q);
-//         })
-//         .map((e) => ({
-//           name: e.product_name,
-//           price: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.map((v) => parseInt(v.price ?? "0")).reduce((acc, price) => [Math.min(acc[0], price), Math.max(acc[1], price)], [Infinity, -Infinity]) : [parseInt(e.price ?? "0")],
-//           image: (e.product_image?.length ?? 0) > 0 ? e.product_image[0].image_url : "#",
-//           raw: e,
-//           stock: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0) : e.qty ?? 0,
-//         })) ?? []
-//     );
-//   }, [merch, searchQuery]); // removed `selected` from deps
-
-//   const selectedList = useMemo(() => {
-//     return selected.map((e) => {
-//       const product = merch?.find((z) => z.id == e.id);
-//       const name = product?.product_name;
-//       const variant_name = product?.product_varian.find((z) => z.id == e.variant_id)?.varian_name;
-//       const image = (product?.product_image?.length ?? 0) > 0 ? product?.product_image[0].image_url : "#";
-//       const price = !e.variant_id ? parseInt(product?.price ?? "999999") : parseInt(product?.product_varian?.find((z) => z.id == e.variant_id)?.price ?? "999999");
-//       const subtotal = price * e.count;
-//       const stock = !e.variant_id ? product?.qty ?? 0 : product?.product_varian.find((z) => z.id == e.variant_id)?.stock_qty ?? 0;
-
-//       return { id: e.id, variant_id: e.variant_id, name, variant_name, price, image, count: e.count, stock, subtotal };
-//     });
-//   }, [selected]);
-
-//   const handleAddProduct = (product: MerchListResponse) => {
-//     if (product.product_varian.length > 0) {
-//       const selectVariant = (variant: MerchListResponse["product_varian"][number]) => {
-//         if (selected.some((e) => e.variant_id == variant.id)) {
-//           const validStock = variant.stock_qty > (selected.find((e) => e.variant_id == variant.id)?.count ?? 9999);
-//           if (validStock) {
-//             setSelected(selected.map((e) => (e.variant_id == variant.id ? { ...e, count: e.count + 1 } : e)));
-//           } else {
-//             notifications.show({
-//               message: "Stock sudah mencapai maksimal",
-//               color: "red",
-//             });
-//           }
-//         } else {
-//           setSelected([...selected, { id: product.id, variant_id: variant.id, count: 1 }]);
-//         }
-//         modals.closeAll();
-//         setOpenSelect(!openSelect);
-//       };
-
-//       modals.open({
-//         size: 300,
-//         centered: true,
-//         title: "Pilih Varian",
-//         children: (
-//           <Stack gap={10}>
-//             {product.product_varian.map((e, i) => (
-//               <Button size="md" radius={8} onClick={() => selectVariant(e)} key={i} variant="light" color="gray" c="gray.8" fw={400}>
-//                 {e.varian_name} (<NumberFormatter value={parseInt(e.price)} />)
-//               </Button>
-//             ))}
-//           </Stack>
-//         ),
-//       });
-//     } else {
-//       if (selected.some((e) => e.id == product.id)) {
-//         const validStock = product.qty > (selected.find((e) => e.id == product.id)?.count ?? 9999);
-//         if (validStock) {
-//           setSelected(selected.map((e) => (e.id == product.id ? { ...e, count: e.count + 1 } : e)));
-//         } else {
-//           notifications.show({
-//             message: "Stock sudah mencapai maksimal",
-//             color: "red",
-//           });
-//         }
-//       } else {
-//         setSelected([...selected, { id: product.id, count: 1 }]);
-//       }
-//       setOpenSelect(!openSelect);
-//     }
-//   };
-
-//   const handleDeleteItem = (index: number) => {
-//     modals.openConfirmModal({
-//       centered: true,
-//       title: "Hapus Item",
-//       children: "Apakah kamu yakin ingin menghapus item ini?",
-//       labels: { confirm: "Hapus", cancel: "Batal" },
-//       onConfirm: () => {
-//         setSelected(selected.filter((_, i) => i != index));
-//       },
-//     });
-//   };
-
-//   const handleSummary = useMemo((): { total: number; detail: [string, number][] } => {
-//     const subtotal = selectedList.reduce((q, n) => q + n.price, 0);
-//     const admin = 0;
-//     const disc = Boolean(discount) || discount < 0 ? discount * -1 : 0;
-//     const ppn = (subtotal + admin) * 0.11;
-//     const total = Math.max(0, _.sum([subtotal, admin, ppn, disc]));
-
-//     return {
-//       total,
-//       detail: [
-//         ["Subtotal", subtotal],
-//         ["Diskon", disc],
-//         ["Admin", 0],
-//         ["PPN", ppn],
-//       ],
-//     };
-//   }, [selectedList, discount]);
-
-//   const openSelectPayment = () => {
-//     const payment = [
-//       { icon: "ph:money-wavy", text: "CASH" },
-//       { icon: "basil:card-outline", text: "Credit Card" },
-//     ];
-
-//     modals.open({
-//       centered: true,
-//       title: "Pilih Metode Pembayaran",
-//       children: (
-//         <Stack gap={15}>
-//           {payment.map((e, i) => (
-//             <Button
-//               key={i}
-//               leftSection={<Icon icon={e.icon} className={`text-[24px]`} />}
-//               variant="light"
-//               color="gray"
-//               c="gray.8"
-//               onClick={() => {
-//                 setPaymentMethod(e.text);
-//                 modals.closeAll();
-//               }}
-//             >
-//               {e.text}
-//             </Button>
-//           ))}
-//         </Stack>
-//       ),
-//     });
-//   };
-
-//   const handleCustomerSave = () => {
-//     const valid = custValidate();
-//     if (valid.hasErrors) return;
-//     setOpenCustForm(false);
-//     modals.closeAll();
-//   };
-
-// const handleSave = async () => {
-//   const summary: MerchCheckoutOffline["summary"] = {};
-//   for (const s of handleSummary.detail) summary[s[0]] = s[1];
-
-//   const data: MerchCheckoutOffline = {
-//     product: selectedList.map((e) => ({
-//       id: e.id,
-//       variant_id: e.variant_id,
-//       qty: e.count,
-//       price: e.price,
-//       subtotal: e.subtotal,
-//     })),
-//     customer_name: custValue.name,
-//     customer_email: custValue.email,
-//     customer_phone: custValue.phone,
-//     customer_address: custValue.address,
-//     grandtotal: handleSummary.total,
-//     creator_id: user?.has_creator?.id ?? 0,
-//     summary,
-//     discount,
-//     payment_method: paymentMethod,
-//   };
-//   const next = () => {
-//     Cookies.set("merch_pos_submit", JSON.stringify(data satisfies MerchCheckoutOffline));
-//     router.push("/dashboard/merch-pos-invoice");
-//   };
-//   await fetch<MerchCheckoutOffline, any>({
-//     url: "merch-offline",
-//     method: "POST",
-//     data,
-//     before: () => setLoading.append("submit"),
-//     success: () => {
-//       next();
-//     },
-//     complete: () => setLoading.filter((e) => e != "submit"),
-//     error: (err) => {
-//       next();
-//       notifications.show({
-//         message: err?.response?.data?.message ?? "Terjadi Kesalahan",
-//         color: "red",
-//       });
-//     },
-//   });
-// };
-
-//   const PER_PAGE = 10;
-//   const [pageNum, setPageNum] = useState(1);
-
-//   return (
-//     <Stack className={`md:!p-[20px_30px]`}>
-//       <Modal title="Data Pembeli" opened={openCustForm} onClose={handleCustomerSave} closeOnClickOutside={false} centered>
-//         <Stack gap={15}>
-//           <TextInput label="Nama" placeholder="Isi Nama Pembeli" {...custProps("name")} />
-//           <TextInput label="Email" placeholder="Isi Email Pembeli" {...custProps("email")} inputMode="email" />
-//           <TextInput label="No. Telp" placeholder="Isi No.Telp Pembeli" {...custProps("phone")} inputMode="numeric" />
-//           <Textarea label="Alamat" placeholder="Isi Alamat Pembeli" {...custProps("address")} minRows={3} autosize />
-//           <Button onClick={handleCustomerSave} rightSection={<Icon icon="uiw:circle-check" />}>
-//             Simpan Data
-//           </Button>
-//         </Stack>
-//       </Modal>
-
-//       <Card radius={999} className={`!bg-primary-base !p-[5px_16px] w-fit m-[10px_10px_0]`}>
-//         <Flex align="center" gap={10}>
-//           <Icon icon="hugeicons:cashier" className={`text-[20px] text-white`} />
-//           <Text size="md" fw={400} className={`!text-white`}>
-//             Penjualan Offline
-//           </Text>
-//         </Flex>
-//       </Card>
-
-//       <Flex gap={15} className={`!h-[calc(100vh_-_140px)] md:!h-[calc(100vh_-_180px)]`} pos="relative">
-//         <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static`}>
-//           <LoadingOverlay visible={loading.includes("getdata")} />
-//           <Stack gap={20} h="100%">
-//             <Text fw={600} c="#0B387C">
-//               Pilih Produk
-//             </Text>
-//             <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" />
-//             <Stack gap={10} className={`overflow-y-auto`} h="100%">
-//               {merchList?.map((e, i) => (
-//                 <UnstyledButton disabled={(e.stock ?? 0) <= 0} className={`${(e.stock ?? 0) <= 0 ? "opacity-75" : ""}`} key={i} onClick={() => e.raw && handleAddProduct(e.raw)}>
-//                   <Card p={10} withBorder radius={8} className={`relative ${(e.stock ?? 0) <= 0 ? "!bg-[#f5f5f5]" : "hover:!bg-[#fafafa]"}`}>
-//                     <Flex gap={10}>
-//                       <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
-//                       <Stack gap={0}>
-//                         <Text className={`capitalize`}>{e.name}</Text>
-//                         <Text size="sm" fw={600} className={`whitespace-nowrap`}>
-//                           {(e?.price ?? [])?.map((z, i) => (
-//                             <Box key={i} component="span">
-//                               {i != 0 && <> - </>}
-//                               <NumberFormatter value={z} key={i} />
-//                             </Box>
-//                           ))}
-//                         </Text>
-//                         {(e.stock ?? 0) <= 0 && (
-//                           <Text size="xs" c="gray" mt={5} className={`capitalize`}>
-//                             Stock Habis
-//                           </Text>
-//                         )}
-//                       </Stack>
-//                     </Flex>
-
-//                     <Icon icon="uiw:right" className={`!absolute top-2/4 -translate-y-2/4 right-5 z-20 text-[#d0d0d0]`} />
-//                   </Card>
-//                 </UnstyledButton>
-//               ))}
-//               {merchList?.length == 0 && (
-//                 <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
-//                   Tidak ada produk yang ditemukan
-//                 </Alert>
-//               )}
-//             </Stack>
-
-//             <Flex gap={10} mt={10}>
-//               <Button
-//                 onClick={() => {
-//                   setPageNum(pageNum - 1);
-//                   getMerchList(pageNum - 1);
-//                 }}
-//                 disabled={pageNum <= 1}
-//               >
-//                 Prev
-//               </Button>
-//               <Button
-//                 onClick={() => {
-//                   setPageNum(pageNum + 1);
-//                   getMerchList(pageNum + 1);
-//                 }}
-//               >
-//                 Next
-//               </Button>
-//             </Flex>
-
-//             <Button size="md" onClick={() => setOpenSelect(!openSelect)} rightSection={<Icon icon="uiw:right" />} className={`shrink-0 md:!hidden`} c="gray" variant="light">
-//               Tutup
-//             </Button>
-//           </Stack>
-//         </Card>
-
-//         <Card withBorder w="100%" p={0} radius={10} h="100%">
-//           <Stack gap={0} h="100%">
-//             <Card p={20} className={`flex-grow h-full`}>
-//               <Flex align="center" gap={10} mb={20}>
-//                 <Icon icon="uiw:information-o" className={`text-primary-base`} />
-//                 <Text fw={600} c="#0B387C">
-//                   Rincian Produk
-//                 </Text>
-//               </Flex>
-
-//               <Stack gap={12} className={`overflow-y-auto flex-grow`} justify="start">
-//                 {selectedList.map((e, i) => (
-//                   <Card p={10} withBorder radius={8} pos="relative" key={i} className={`hover:!bg-[#fafafa] shrink-0`}>
-//                     <Flex gap={10} wrap="wrap">
-//                       <Flex gap={10} className={`flex-grow`}>
-//                         <Image src={e.image} h={48} w={48} bg="gray" radius={5} />
-//                         <Stack gap={0}>
-//                           <Text size="sm" className={`capitalize whitespace-nowrap`}>
-//                             {e.name}
-//                           </Text>
-//                           {e.variant_name && (
-//                             <Text size="xs" c="gray" mb={5} className={`capitalize`}>
-//                               Varian: {e.variant_name}
-//                             </Text>
-//                           )}
-//                           <Text size="sm" className={`whitespace-nowrap`}>
-//                             <NumberFormatter value={e.subtotal} />
-//                           </Text>
-//                         </Stack>
-//                       </Flex>
-
-//                       {/* className={`!absolute z-20 top-2/4 right-5 -translate-y-2/4`} */}
-//                       <Flex gap={10} align="center" className={`shrink-0`}>
-//                         <NumberInput
-//                           min={1}
-//                           max={e.stock}
-//                           onChange={(e) => {
-//                             setSelected(selected.map((_, x) => (x == i ? { ..._, count: parseInt(e as string) } : _)));
-//                           }}
-//                           value={e.count}
-//                           size="xs"
-//                           w={80}
-//                         />
-//                         <ActionIcon onClick={() => handleDeleteItem(i)} color="red.4" variant="transparent">
-//                           <Icon icon="uiw:delete" />
-//                         </ActionIcon>
-//                       </Flex>
-//                     </Flex>
-//                   </Card>
-//                 ))}
-//                 {selected.length == 0 && (
-//                   <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />}>
-//                     Belum ada produk yang dipilih
-//                   </Alert>
-//                 )}
-//                 <Button size="md" className={`md:!hidden shrink-0`} onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light">
-//                   Tambah Produk
-//                 </Button>
-//               </Stack>
-//             </Card>
-
-//             <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-//               <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
-//                 <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-//                   Data Pembeli
-//                 </Button>
-
-//                 <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-//                   Metode Pembayaran {paymentMethod ? `(${paymentMethod})` : ""}
-//                 </Button>
-//               </Flex>
-//             </Card>
-
-//             <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-//               <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
-//                 <Flex gap={7} align="center">
-//                   <Icon icon="teenyicons:discount-outline" className={`text-primary-base`} />
-//                   <Text size="sm" className={`!text-primary-base`}>
-//                     Diskon Tambahan
-//                   </Text>
-//                 </Flex>
-//                 <NumberInput prefix="Rp " hideControls placeholder="Masukan Diskon" value={discount} onChange={(e) => setDiscount(parseInt(e as string))} className={`[&_*]:!text-center`} />
-//               </Flex>
-//             </Card>
-
-//             <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0] !shrink-0`} radius={0}>
-//               <Stack>
-//                 <Accordion
-//                   w="calc(100% + 40px)"
-//                   chevronPosition="left"
-//                   mx={-20}
-//                   mt={-12}
-//                   className={`
-//                                         ${handleSummary.detail.filter((e) => Boolean(e[1]) || e[1] < 0).length > 0 ? "" : "!hidden"}
-//                                         [&_.mantine-Accordion-label]:!text-primary-base [&_.mantine-Accordion-label]:!text-[14px]
-//                                         [&_.mantine-Accordion-chevron>svg]:!rotate-180 [&_.mantine-Accordion-label]:!ml-[-5px]
-//                                     `}
-//                 >
-//                   <Accordion.Item value="summary">
-//                     <Accordion.Control>Detail Pembayaran</Accordion.Control>
-//                     <Accordion.Panel>
-//                       <Stack px={10} gap={10}>
-//                         {handleSummary.detail
-//                           .filter((e) => Boolean(e[1]) || e[1] < 0)
-//                           .map((e, i) => (
-//                             <Flex gap={10} align="center" justify="space-between" key={i}>
-//                               <Text size="sm" c="gray.8">
-//                                 {e[0]}
-//                               </Text>
-//                               <Text size="sm" fw={600} c={e[1] < 0 ? "red" : undefined}>
-//                                 <NumberFormatter prefix="Rp " value={e[1]} />
-//                               </Text>
-//                             </Flex>
-//                           ))}
-//                       </Stack>
-//                     </Accordion.Panel>
-//                   </Accordion.Item>
-//                 </Accordion>
-//                 <Flex gap={15} justify="space-between" align="center" wrap="wrap">
-//                   <Stack gap={0}>
-//                     <Text size="xs" className={`!text-primary-base`}>
-//                       Total Pembayaran
-//                     </Text>
-//                     <Text>
-//                       <NumberFormatter className={`font-[600]`} value={handleSummary.total} />
-//                     </Text>
-//                   </Stack>
-//                   <Button loading={loading.includes("submit")} onClick={handleSave} disabled={handleSummary.total <= 0 || !paymentMethod} rightSection={<Icon icon="uiw:right" />}>
-//                     Bayar
-//                   </Button>
-//                 </Flex>
-//               </Stack>
-//             </Card>
-//           </Stack>
-//         </Card>
-//       </Flex>
-//     </Stack>
-//   );
-// }
-
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
@@ -658,6 +8,7 @@ import {
   Box,
   Button,
   Card,
+  Divider,
   Flex,
   Image,
   LoadingOverlay,
@@ -828,11 +179,11 @@ export default function Index({ }: Readonly<ComponentProps>) {
   // Fungsi untuk mendapatkan status dari transaction_status_id
   const getStatusFromId = (statusId: number): { text: string; color: string } => {
     const statusMap: Record<number, { text: string; color: string }> = {
-      1: { text: "Pending", color: "yellow" },
+      1: { text: "Pending", color: "orange" },
       2: { text: "Success", color: "green" },
-      3: { text: "Expired", color: "red" },
+      3: { text: "Expired", color: "gray" },
       4: { text: "Failed", color: "red" },
-      5: { text: "Cancelled", color: "gray" },
+      5: { text: "Cancelled", color: "red" },
     };
 
     return statusMap[statusId] || { text: "Unknown", color: "gray" };
@@ -989,7 +340,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
       complete: () => setLoading.filter((e) => e != "getdata"),
       error: (err) => {
         console.error("getMerchList error:", err);
-        notifications.show({ message: "Gagal memuat produk. Cek console.", color: "red" });
         setMerch([]);
         setProductTotal(0);
         setProductTotalPages(1);
@@ -1076,7 +426,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
       complete: () => setLoading.filter((e) => e != "get-transactions"),
       error: (err) => {
         console.error("Error fetching transactions:", err);
-        notifications.show({ message: "Gagal memuat riwayat transaksi", color: "red" });
       },
     });
   };
@@ -2507,64 +1856,64 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     </Card>
                   ) : (
                     <>
-                      <div className="overflow-x-auto">
-                        <Table striped highlightOnHover verticalSpacing="sm" style={{ minWidth: "1000px" }}>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th style={{ width: "60px" }}>No</Table.Th>
-                              <Table.Th style={{ minWidth: "200px" }}>Invoice No / Tanggal</Table.Th>
-                              <Table.Th style={{ minWidth: "150px" }}>Pelanggan</Table.Th>
-                              <Table.Th style={{ minWidth: "120px" }}>Total</Table.Th>
-                              <Table.Th style={{ minWidth: "120px" }}>Status</Table.Th>
-                              <Table.Th style={{ minWidth: "120px" }}>Pembayaran</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {transactions.map((transaction, index) => (
-                              <Table.Tr key={transaction.id}>
-                                <Table.Td>
-                                  <Text size="sm" c="gray.7">
-                                    {(transactionPage - 1) * 10 + index + 1}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Flex direction="column" gap={4}>
-                                    <Text fw={500} size="sm">
-                                      {transaction.invoice_no || transaction.invoice_number}
-                                    </Text>
-                                    <Text size="xs" c="gray.6">
+                      <div className="overflow-x-auto rounded-xl border border-gray-100">
+                        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
+                              <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 50 }}>#</th>
+                              <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Invoice / Tanggal</th>
+                              <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Pelanggan</th>
+                              <th style={{ padding: '12px 14px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Total</th>
+                              <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Status</th>
+                              <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 10, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {transactions.map((transaction, index) => {
+                              const status = getStatusFromId(transaction.transaction_status_id || 1);
+                              return (
+                                <tr key={transaction.id} style={{ borderBottom: '1px solid #f0f0f0' }} className="hover:bg-gray-50/50 transition-colors">
+                                  <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                                    <Text size="sm" c="gray.6">{((transactionPage as number) - 1) * 10 + index + 1}</Text>
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <Text fw={600} size="sm" c="blue.8">{transaction.invoice_no || transaction.invoice_number}</Text>
+                                    <Text size="xs" c="gray.5">
                                       {new Date(transaction.created_at).toLocaleDateString("id-ID", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
+                                        day: "2-digit", month: "2-digit", year: "numeric",
+                                        hour: "2-digit", minute: "2-digit"
                                       })}
                                     </Text>
-                                  </Flex>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm">{transaction.customer_name}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text fw={600} size="sm">
-                                    <NumberFormatter prefix="Rp " value={transaction.total_amount} thousandSeparator="." decimalSeparator="," />
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <div style={{ minWidth: "100px" }}>
-                                    {renderStatusBadge(transaction.transaction_status_id || transaction.status)}
-                                  </div>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Badge variant="outline" size="sm">
-                                    {transaction.payment_method}
-                                  </Badge>
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
+                                  </td>
+                                  <td style={{ padding: '12px 14px' }}>
+                                    <Text size="sm" fw={500}>{transaction.customer_name}</Text>
+                                    <Badge size="xs" variant="light" color="gray">{transaction.payment_method}</Badge>
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                                    <Text fw={700} size="sm">
+                                      <NumberFormatter prefix="Rp " value={transaction.total_amount} thousandSeparator="." />
+                                    </Text>
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                                    <Badge color={status.color} variant="filled" size="sm" fullWidth style={{ maxWidth: 100, margin: '0 auto' }}>
+                                      {status.text}
+                                    </Badge>
+                                  </td>
+                                  <td style={{ padding: '12px 14px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)' }}>
+                                    <Flex gap={8} justify="center">
+                                      <ActionIcon variant="light" color="blue" title="Detail">
+                                        <Icon icon="solar:eye-bold" width={16} />
+                                      </ActionIcon>
+                                      <ActionIcon variant="light" color="gray" title="Print" onClick={handlePrintBill}>
+                                        <Icon icon="solar:printer-bold" width={16} />
+                                      </ActionIcon>
+                                    </Flex>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
 
                       <Flex justify="space-between" align="center" mt="md">
@@ -2611,31 +1960,49 @@ export default function Index({ }: Readonly<ComponentProps>) {
       </Flex>
 
       {activeTab === "order" && (
-        <div
-          className="fixed bottom-0 z-50"
-          style={{
-            left: "300px",
-            right: "280px",
-          }}
-        >
-          <div className="bg-white border border-primary-light-200 rounded-t-lg shadow-lg px-4 py-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap=3">
-                <Button variant="light" color="gray" onClick={handlePrintBill} loading={printBillLoading} disabled={selectedList.length === 0} leftSection={<Icon icon="uiw:printer" />} size="md">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xl px-4 pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-xl border border-light-grey rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] px-4 py-2 pointer-events-auto">
+            <Flex justify="space-between" align="center" gap={15}>
+              <Flex align="center" gap={12}>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  onClick={handlePrintBill}
+                  loading={printBillLoading}
+                  disabled={selectedList.length === 0}
+                  leftSection={<Icon icon="uiw:printer" className="text-base" />}
+                  size="xs"
+                  radius="md"
+                  className="hover:!bg-gray-100"
+                >
                   Print Bill
                 </Button>
-                <div className="h-6 border-l border-gray-300"></div>
+
+                <Divider orientation="vertical" h={24} color="gray.2" />
+
                 <div className="flex flex-col">
-                  <span className="text-sm text-primary-base font-medium">Total Pembayaran</span>
-                  <span className="text-base font-bold">
-                    <NumberFormatter prefix="Rp " value={handleSummary.total} />
-                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1">Total Bayar</span>
+                  <div className="flex items-baseline">
+                    <span className="text-lg font-black text-primary-base tracking-tight leading-none">
+                      <NumberFormatter prefix="Rp " value={handleSummary.total} thousandSeparator="." />
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <Button loading={loading.includes("submit") || loading.includes("checkout")} onClick={handleCheckout} disabled={handleSummary.total <= 0 || !paymentMethod} size="md" radius="xl" className="min-w-[120px]">
+              </Flex>
+
+              <Button
+                loading={loading.includes("submit") || loading.includes("checkout")}
+                onClick={handleCheckout}
+                disabled={handleSummary.total <= 0 || !paymentMethod}
+                size="sm"
+                radius="xl"
+                className="min-w-[120px] shadow-sm hover:shadow-md transition-all duration-300"
+                rightSection={<Icon icon="uiw:right" className="text-base" />}
+                fw={700}
+              >
                 Bayar
               </Button>
-            </div>
+            </Flex>
           </div>
         </div>
       )}
