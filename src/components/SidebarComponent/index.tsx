@@ -1602,7 +1602,11 @@ import {
   faRightFromBracket,
   faSquareArrowUpRight,
   faBox,
-  faDolly
+  faDolly,
+  faBlog,
+  faBook,
+  faListCheck,
+  faPercent
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1815,7 +1819,7 @@ const sidebarData: SidebarData = [
       {
         id: 1,
         name: "Voucher",
-        icon: faTicket,
+        icon: faPercent,
         link: "/dashboard/my-event/voucher",
         role: "Creator",
       },
@@ -1903,10 +1907,18 @@ const sidebarData: SidebarData = [
       },
     ],
   },
+  {
+    id: 10,
+    name: "Blog",
+    icon: faBook,
+    role: "Creator",
+    link: "/dashboard/blog"
+  },
   { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat", role: "Pembeli" },
   { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator" },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
+  { id: 11, name: "Issue Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
 ];
 
 const SidebarComponent = ({ children }: { children: ReactNode }) => {
@@ -1930,6 +1942,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
   const [saldoData, setSaldoData] = useState<SaldoData | null>(null);
+  const [hostname, setHostname] = useState<string>("");
   const loggedUser = useLoggedUser();
 
   useEffect(() => {
@@ -1938,6 +1951,9 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
     if (creatorId) {
       getSaldoData(creatorId);
+    }
+    if (typeof window !== "undefined") {
+      setHostname(window.location.hostname);
     }
   }, [loggedUser]);
 
@@ -1997,9 +2013,14 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const filteredSidebarData = useMemo(() => {
     console.log("🔄 Filtering menu with role:", role, "and user:", user?.name);
 
-    return sidebarData.filter((el) => el.role === role);
-    // Semua item yang role-nya sesuai akan ditampilkan, termasuk Merchandise untuk Creator
-  }, [role, user]);
+    return sidebarData.filter((el) => {
+      if (el.id === 11) {
+        const isProduction = hostname === "kolektix.com" || hostname === "dashboard.kolektix.com";
+        return !isProduction && el.role === role;
+      }
+      return el.role === role;
+    });
+  }, [role, user, hostname]);
 
   useEffect(() => {
     const userCookie = Cookies.get("user");
