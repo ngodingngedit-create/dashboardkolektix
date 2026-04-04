@@ -1425,15 +1425,10 @@ const Merch = () => {
             setSlug(selectedEventSlug);
             console.log("Selected event:", filteredEvents[0].name);
           } else {
-            // Jika tidak ada event yang cocok, tampilkan semua event untuk debugging
-            console.log("No events match creator_id, showing all events");
-            console.log("All events creator_ids:", allEvents.map(e => ({ id: e.id, name: e.name, creator_id: e.creator_id })));
-            setEventList(allEvents);
-            if (allEvents.length > 0) {
-              setSelectedEvent(allEvents[0].id);
-              const selectedEventSlug = allEvents[0].slug || "";
-              setSlug(selectedEventSlug);
-            }
+            console.log("No events match creator_id, setting empty state");
+            setEventList([]);
+            setSelectedEvent(undefined as any);
+            setSlug("");
           }
         } else {
           // Jika user tidak punya creator ID, tampilkan semua event

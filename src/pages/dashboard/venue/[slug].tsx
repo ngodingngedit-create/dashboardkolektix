@@ -163,7 +163,7 @@ export default function VenuePage() {
                     <AspectRatio ratio={128/40} maw={500} w="100%">
                         <Image
                             radius={10}
-                            src={venue?.venue_gallery[0].image_url}
+                            src={venue?.venue_gallery?.[0]?.image_url}
                             bg="gray.1"
                         />
                     </AspectRatio>
@@ -222,8 +222,8 @@ export default function VenuePage() {
                                             <Flex align="center" gap={8}>
                                                 <Text size="sm" c="gray">Status Pembayaran:</Text>
                                                 <Badge variant="light" className={`capitalize`} size="lg" color={
-                                                    e?.payment_status.toLowerCase() == 'pending' ? 'yellow' :
-                                                    e?.payment_status.toLowerCase() == 'verified' ? 'green' : 'red'
+                                                    e?.payment_status?.toLowerCase() == 'pending' ? 'yellow' :
+                                                    e?.payment_status?.toLowerCase() == 'verified' ? 'green' : 'red'
                                                 }>{e?.payment_status}</Badge>
                                             </Flex>
                                             <Text size="lg" fw={600}>Total Dibayar <NumberFormatter value={e?.grandtotal ?? 0} /></Text>

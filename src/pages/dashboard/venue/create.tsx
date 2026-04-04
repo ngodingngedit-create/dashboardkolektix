@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { Button, Card, Divider, Flex, InputWrapper, LoadingOverlay, NumberInput, Select, Space, Stack, TagsInput, Text, Textarea, TextInput } from '@mantine/core';
+import { Button, Card, Divider, Flex, InputWrapper, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import fetch from '@/utils/fetch';
@@ -184,14 +184,14 @@ export default function Create({}: Readonly<ComponentProps>) {
                     {...inputProps('description')}
                 />
 
-                <TagsInput
+                <MultiSelect
                     withAsterisk
                     label="Fasilitas Venue"
                     placeholder="Isi Fasilitas Venue"
-                    data={facility?.map(e => ({ value: String(e.id), label: e.name }))}
-                    {...inputProps('venue_facilities_id')}
-                    value={(form.values.venue_facility_id ?? []).map(e => facility?.find(z => z.id == e)?.name ?? '-')}
-                    onChange={e => e && form.setValues({ venue_facility_id: e.map(e => facility?.find(z => z.name == e)?.id ?? 0) })}
+                    data={facility?.map(e => ({ value: String(e.id), label: e.name ?? '' })).filter(e => e.label) ?? []}
+                    value={(form.values.venue_facility_id ?? []).map(String)}
+                    onChange={vals => form.setValues({ venue_facility_id: vals.map(Number) })}
+                    disabled={loading.includes('getdatacat')}
                 />
 
                 <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>

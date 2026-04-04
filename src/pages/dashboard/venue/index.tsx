@@ -19,7 +19,7 @@ const MyVenue = () => {
 
   const venue = useMemo(() => {
     if (!search) return _venue;
-    return _venue?.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+    return _venue?.filter(e => e.name?.toLowerCase().includes(search.toLowerCase()));
   }, [_venue, search]);
 
   const getData = async () => {

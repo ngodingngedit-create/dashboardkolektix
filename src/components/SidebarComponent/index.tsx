@@ -1765,6 +1765,7 @@ const sidebarData: SidebarData = [
         link: "/dashboard/my-event/checkin",
         role: "Staff",
       },
+
       {
         id: 1,
         name: "Report Event",
@@ -1793,6 +1794,13 @@ const sidebarData: SidebarData = [
         name: "Check In Event",
         iconify: "lets-icons:in",
         link: "/dashboard/my-event/checkin",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Check In Report",
+        iconify: "carbon:document",
+        link: "/dashboard/my-event/checkinreport",
         role: "Creator",
       },
       {
