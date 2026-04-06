@@ -276,7 +276,7 @@ export default function AdminEventManagement() {
                           <Group gap="sm" wrap="nowrap">
                             <div className="w-12 h-16 rounded overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
                               {item.image_url ? (
-                                <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                <img src={item.image_url || undefined} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <Center className="h-full"><Icon icon="ph:image-square" className="text-gray-300 text-2xl" /></Center>
                               )}
@@ -289,7 +289,7 @@ export default function AdminEventManagement() {
                         </TableCell>
                         <TableCell>
                           <Group gap="xs" wrap="nowrap">
-                            <Avatar src={item.has_creator?.image_url} size="sm" radius="xl" color="blue">
+                            <Avatar src={item.has_creator?.image_url || undefined} size="sm" radius="xl" color="blue">
                               {item.has_creator?.name?.substring(0, 1)}
                             </Avatar>
                             <Text size="sm" fw={500} lineClamp={1}>{item.has_creator?.name || "Unknown"}</Text>
@@ -325,6 +325,11 @@ export default function AdminEventManagement() {
                             <Tooltip label="Detail Event">
                               <ActionIcon variant="light" color="#0B387C" onClick={() => openDetail(item)} size="md">
                                 <Icon icon="ph:eye" className="text-lg" />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Edit Event">
+                              <ActionIcon variant="light" color="indigo" component={Link} href={`/dashboard/admin/event/edit/${item.id}`} size="md">
+                                <Icon icon="ph:pencil-simple" className="text-lg" />
                               </ActionIcon>
                             </Tooltip>
                             {item.main_status ? (
@@ -381,7 +386,7 @@ export default function AdminEventManagement() {
           <Stack gap="xl">
             <div className="relative h-48 md:h-64 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
               {selectedEvent.image_url ? (
-                <img src={selectedEvent.image_url} alt="" className="w-full h-full object-cover" />
+                <img src={selectedEvent.image_url || undefined} alt="" className="w-full h-full object-cover" />
               ) : (
                 <Center className="h-full"><Icon icon="ph:image-square" className="text-gray-200 text-6xl" /></Center>
               )}
@@ -432,7 +437,7 @@ export default function AdminEventManagement() {
                   <Text size="xs" fw={700} c="dimmed" className="uppercase mb-3">Penyelenggara</Text>
                   <Paper withBorder radius="md" p="md" bg="gray.50/50">
                     <Group>
-                      <Avatar src={selectedEvent.has_creator?.image_url} size="lg" radius="md" />
+                      <Avatar src={selectedEvent.has_creator?.image_url || undefined} size="lg" radius="md" />
                       <div>
                         <Text fw={700} size="sm">{selectedEvent.has_creator?.name}</Text>
                         <Text size="xs" c="dimmed">{selectedEvent.has_creator?.email || "Email tidak publik"}</Text>
@@ -457,6 +462,15 @@ export default function AdminEventManagement() {
             <Group justify="flex-end" gap="md">
               <ButtonM variant="subtle" color="gray" onClick={() => setDetailOpened(false)}>
                 Tutup
+              </ButtonM>
+              <ButtonM
+                component={Link}
+                href={`/dashboard/admin/event/edit/${selectedEvent.id}`}
+                variant="outline"
+                color="indigo"
+                leftSection={<Icon icon="ph:pencil-simple" />}
+              >
+                Edit Event
               </ButtonM>
               {selectedEvent.main_status ? (
                 <ButtonM

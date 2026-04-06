@@ -73,7 +73,17 @@ export default function Create() {
                         <ImageInput
                             dimension={[300, 150]}
                             value={form.values.featured_image as string}
-                            onChange={(e: any) => form.setFieldValue('featured_image', e || '')}
+                            onChange={async (file: File | null) => {
+                                if (!file) {
+                                    form.setFieldValue('featured_image', '');
+                                    return;
+                                }
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    form.setFieldValue('featured_image', reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                            }}
                             onDelete={() => form.setFieldValue('featured_image', '')}
                         />
                     </Box>

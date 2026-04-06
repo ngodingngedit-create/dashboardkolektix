@@ -1658,9 +1658,9 @@ const profileData: SidebarData[number]["submenu"] = [
   },
   {
     id: 2,
-    name: "Profile Creator",
+    name: "Akun Creator",
     icon: faIdBadge,
-    link: "/dashboard/profile",
+    link: "/dashboard/profile-creator",
     role: "Creator",
   },
   {
@@ -1677,13 +1677,13 @@ const profileData: SidebarData[number]["submenu"] = [
     link: "/dashboard/profile/address",
     role: "Creator",
   },
-  {
-    id: 5,
-    name: "Informasi Legal",
-    icon: faFileLines,
-    link: "/dashboard/legal",
-    role: "Creator",
-  },
+  // {
+  //   id: 5,
+  //   name: "Informasi Legal",
+  //   icon: faFileLines,
+  //   link: "/dashboard/legal",
+  //   role: "Creator",
+  // },
   {
     id: 6,
     name: "Rekening Saya",

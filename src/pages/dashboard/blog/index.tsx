@@ -27,11 +27,13 @@ const BlogDashboard = () => {
     const getData = async () => {
         if (loading.includes('getdata')) return;
         await fetch<any, BlogListResponse>({
-            url: 'blogs',
+            url: 'creator-data/blog-bycreator',
             method: 'GET',
             success: (response) => {
-                if (response && response.data && response.data.data) {
-                    setBlogs.setState(response.data.data);
+                // Handle various possible response structures gracefully
+                const result = response?.data?.data || response?.data || response;
+                if (Array.isArray(result)) {
+                    setBlogs.setState(result);
                 }
             },
             before: () => setLoading.append('getdata'),

@@ -26,6 +26,17 @@ export default function VenuePos() {
     const [dummyDate, setDummyDate] = useSetState<DateList>({});
     const [selectedPayment, setSelectedPayment] = useState<string>();
 
+    const getData = async () => {
+        if (!user) return;
+        await fetch<any, VenueListResponse[]>({
+            url: 'creator-data/venue',
+            method: 'GET',
+            success: ({ data }) => data && setVenue.setState(data),
+            before: () => setLoading.append('getdata'),
+            complete: () => setLoading.filter(e => e != 'getdata'),
+        });
+    }
+
     useEffect(() => {
         setDummyDate({
             date: undefined,
@@ -37,16 +48,6 @@ export default function VenuePos() {
     useEffect(() => {
         getData();
     }, [user]);
-
-    const getData = async () => {
-        await fetch<any, VenueListResponse[]>({
-            url: 'venue',
-            method: 'GET',
-            success: ({ data }) => data && setVenue.setState(data.filter(e => e.creator_id == user?.has_creator?.id)),
-            before: () => setLoading.append('getdata'),
-            complete: () => setLoading.filter(e => e != 'getdata'),
-        });
-    }
 
     return (
         <>
@@ -232,7 +233,7 @@ export default function VenuePos() {
                 <Flex justify="space-between" align="center" pl={{ base: 0, md: 90 }}>
                     <Stack gap={0}>
                         <Text size="sm" c="gray" fw={600}>Total Pembayaran</Text>
-                        <Text size="xl" fw={800} c="blue"><NumberFormatter value={0} prefix="Rp " thousandSeparator="." decimalSeparator=","/></Text>
+                        <Text size="xl" fw={800} c="blue"><NumberFormatter value={0} prefix="Rp " thousandSeparator="." decimalSeparator="," /></Text>
                     </Stack>
                     <Button
                         color="#194e9e"

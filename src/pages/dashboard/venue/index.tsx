@@ -1,11 +1,13 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { AspectRatio, Badge, Button, Card, Center, Divider, Flex, Image, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, AspectRatio, Badge, Button, Card, Center, Divider, Flex, Image, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
 import { VenueListResponse } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
+import { modals } from '@mantine/modals';
+import { notifications } from '@mantine/notifications';
 
 const MyVenue = () => {
   const [loading, setLoading] = useListState<string>();
@@ -30,6 +32,42 @@ const MyVenue = () => {
       success: ({ data }) => data && setVenue.setState(data),
       before: () => setLoading.append('getdata'),
       complete: () => setLoading.filter(e => e != 'getdata'),
+    });
+  }
+
+  const handleDelete = (id: number) => {
+    modals.openConfirmModal({
+        title: 'Hapus Venue',
+        children: (
+            <Text size="sm">
+                Apakah Anda yakin ingin menghapus venue ini? Tindakan ini tidak dapat dibatalkan.
+            </Text>
+        ),
+        labels: { confirm: 'Hapus', cancel: 'Batal' },
+        confirmProps: { color: 'red', radius: 'xl' },
+        cancelProps: { radius: 'xl' },
+        onConfirm: async () => {
+            await fetch({
+                url: `venue/${id}`, // adjust endpoint if needed
+                method: 'POST',
+                data: { _method: 'DELETE' },
+                success: () => {
+                    notifications.show({
+                        title: 'Berhasil',
+                        message: 'Venue berhasil dihapus',
+                        color: 'green',
+                    });
+                    getData();
+                },
+                error: () => {
+                    notifications.show({
+                        title: 'Gagal',
+                        message: 'Gagal menghapus venue',
+                        color: 'red',
+                    });
+                }
+            });
+        },
     });
   }
 
@@ -62,27 +100,82 @@ const MyVenue = () => {
 
       <Divider />
 
-      <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-xgrow [&>*]:!w-full md:[&>*]:!max-w-[250px]`}>
-        {venue?.map((e ,i) => (
-          <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/venue/${e.id}`} p={0}>
-            <AspectRatio>
-              {e.venue_gallery[0] && <Image src={e.venue_gallery[0] ? e.venue_gallery[0].image_url : e.image_url} alt={`${e.name} - Image`} />}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 w-full">
+        {venue?.map((e: any, i) => (
+          <Card key={i} withBorder radius={10} p={0} className={`relative group hover:shadow-md transition-shadow`}>
+            <AspectRatio ratio={16/9}>
+              {e.venue_gallery && e.venue_gallery.length > 0 ? (
+                <Image src={e.venue_gallery[0].image_url} alt={`${e.name} - Image`} />
+              ) : (
+                <Image src={e.image_url || 'https://placehold.co/600x400?text=No+Image'} alt={`${e.name} - Image`} />
+              )}
             </AspectRatio>
 
-            <Card>
-              <Stack gap={3}>
-                <Text size="sm" c="gray" fw={400}>{e.location}</Text>
-                <Text fw={600}>{e.name}</Text>
+            <Card p="md">
+              <Stack gap={5}>
+                <Text size="xs" c="gray" fw={500}>{e.location_name || e.location}</Text>
+                <Text fw={600} lineClamp={1}>{e.name}</Text>
+                
+                {e.starting_price && (
+                   <Text size="sm" c="blue" fw={700}>
+                      <NumberFormatter prefix="Rp " value={Number(e.starting_price)} thousandSeparator="." decimalSeparator="," />
+                      <Text component="span" size="xs" c="dimmed" fw={400}> / hari</Text>
+                   </Text>
+                )}
+
                 {e.has_venue_category && (
-                  <Badge variant="outline" className={`mt-1 [&_*]:!font-[400]`}>
+                  <Badge variant="outline" size="sm" className={`mt-1`}>
                     {e.has_venue_category?.name}
                   </Badge>
                 )}
+                
+                {(e.venue_areas?.length > 0 || e.venue_facilities?.length > 0) && (
+                  <>
+                    <Divider mt="xs" mb={4} />
+                    <Flex gap={15} align="center" wrap="wrap">
+                        {e.venue_areas?.length > 0 && (
+                            <Text size="xs" c="dimmed" className="flex items-center gap-1">
+                              <Icon icon="tabler:layout-dashboard" /> {e.venue_areas.length} Area
+                            </Text>
+                        )}
+                        {e.venue_facilities?.length > 0 && (
+                            <Text size="xs" c="dimmed" className="flex items-center gap-1">
+                              <Icon icon="tabler:building" /> {e.venue_facilities.length} Fasilitas
+                            </Text>
+                        )}
+                    </Flex>
+                  </>
+                )}
+
+                <Divider mt="xs" />
+
+                <Flex justify="flex-end" gap={10} mt="sm">
+                  <ActionIcon
+                    variant="filled"
+                    color="blue"
+                    radius="md"
+                    component={Link}
+                    href={`/dashboard/venue/edit/${e.slug || e.id}`}
+                  >
+                    <Icon icon="solar:pen-bold" />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="filled"
+                    color="red"
+                    radius="md"
+                    onClick={(evt) => {
+                      evt.preventDefault();
+                      handleDelete(e.id);
+                    }}
+                  >
+                    <Icon icon="solar:trash-bin-trash-bold" />
+                  </ActionIcon>
+                </Flex>
               </Stack>
             </Card>
           </Card>
         ))}
-      </Flex>
+      </div>
 
       {((venue.length == 0 || !venue) && !loading.includes('getdata')) && (
         <Center mih={200} w="100%">
@@ -93,7 +186,7 @@ const MyVenue = () => {
           <div className='text-center'>
             <p className='font-semibold text-lg'>Tidak ada venue yang tersedia</p>
             <p className='text-grey max-w-72 mt-[10px]'>
-              Mulai buat venu dengan klik button “Buat Venue di bawah.{' '}
+              Mulai buat venue dengan klik button “Buat Venue di bawah.{' '}
             </p>
           </div>
 
