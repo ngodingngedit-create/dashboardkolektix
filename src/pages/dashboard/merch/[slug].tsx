@@ -2222,7 +2222,7 @@ export default function MerchDetail() {
                 const statusInfo = getStatusInfo(item.transaction_status_id);
                 return (
                     <Flex justify="center" w="100%">
-                        <Badge variant="light" color={statusInfo.badgeColor} size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                        <Badge variant="filled" color={statusInfo.badgeColor} size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                             {statusInfo.text}
                         </Badge>
                     </Flex>
@@ -2234,11 +2234,11 @@ export default function MerchDetail() {
             title: 'Status Pengiriman',
             width: 140,
             render: (item: any) => (
-                <Flex justify="center" w="100%">
-                    <Badge color="gray" variant="light" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
-                        Siap Dikirim
-                    </Badge>
-                </Flex>
+                    <Flex justify="center" w="100%">
+                        <Badge color="gray" variant="filled" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                            Siap Dikirim
+                        </Badge>
+                    </Flex>
             )
         },
         {

@@ -409,16 +409,55 @@ const MerchandiseTransaction: React.FC = () => {
   const [tampilkanHarga, setTampilkanHarga] = useState(true);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<any>(null);
 
-  const maskString = (str: string, isActivated: boolean) => {
-    if (!isActivated || !str || str === '-') return str;
-    if (str.length <= 2) return str;
-    return str.charAt(0) + '*'.repeat(str.length - 2) + str.slice(-1);
+  // Helper function untuk sensor nama
+  const maskName = (name: string, sensor: boolean): string => {
+    if (!sensor || !name) return name || '-';
+    if (name.length <= 2) return name.charAt(0) + '*';
+    return name.charAt(0) + '*'.repeat(name.length - 1);
   };
 
-  const maskPhone = (phone: string, isActivated: boolean) => {
-    if (!isActivated || !phone || phone === '-') return phone;
-    if (phone.length <= 6) return phone;
-    return phone.slice(0, 4) + '*'.repeat(phone.length - 7) + phone.slice(-3);
+  // Helper function untuk sensor telepon
+  const maskPhone = (phone: string, sensor: boolean): string => {
+    if (!sensor || !phone) return phone || '-';
+    if (phone.length <= 6) return phone.substring(0, 2) + '*'.repeat(phone.length - 2);
+    return phone.substring(0, 4) + '*'.repeat(phone.length - 7) + phone.substring(phone.length - 3);
+  };
+
+  // Helper function untuk sensor alamat
+  const maskAddress = (address: string, city: string, province: string, zipcode: string, sensor: boolean): string => {
+    if (!sensor) return address;
+    const parts = [];
+    if (city) parts.push(city);
+    if (province) parts.push(province);
+    if (zipcode) parts.push(zipcode);
+    return parts.join(', ') || 'Alamat disembunyikan';
+  };
+
+  // Helper function untuk format nama kurir
+  const formatCourierName = (courier: any): string => {
+    if (!courier) return "J&T";
+    const courierStr = String(courier).toLowerCase();
+    if (courierStr.includes('jne')) return "JNE";
+    if (courierStr.includes('jnt') || courierStr.includes('jt')) return "J&T";
+    if (courierStr.includes('sicepat')) return "SiCepat";
+    if (courierStr.includes('pos')) return "POS Indonesia";
+    if (courierStr.includes('tiki')) return "TIKI";
+    if (courierStr.includes('wahana')) return "Wahana";
+    if (courierStr.includes('ninja')) return "Ninja Xpress";
+    if (courierStr.includes('anteraja')) return "AnterAja";
+    return String(courier).toUpperCase();
+  };
+
+  // Helper function untuk format service kurir
+  const formatCourierService = (service: any): string => {
+    if (!service) return "Reg";
+    const serviceStr = String(service).toLowerCase();
+    if (serviceStr.includes('reg')) return "Reg";
+    if (serviceStr.includes('yes')) return "YES";
+    if (serviceStr.includes('oke')) return "OKE";
+    if (serviceStr.includes('express')) return "Express";
+    if (serviceStr.includes('priority')) return "Priority";
+    return String(service);
   };
 
   const onSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -908,34 +947,76 @@ const MerchandiseTransaction: React.FC = () => {
     return "JNE";
   };
 
-  const generateResiHTML = (detailData: any): string => {
-    if (!detailData) return "";
+  // Fungsi untuk generate QR code dengan pendekatan yang lebih kompatibel untuk PDF
+  const generateQRCodeHTML = (text: string): string => {
+    const qrData = text || 'KLTRX-JLBVTZRYH';
+    const size = 21;
+    const seed = qrData.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 
-    const courierNameRaw = detailData.courier?.courier_company || detailData.courier?.main || "Kolektix";
-    const courierNameForTitle = courierNameRaw.toUpperCase();
-    const trackingNumber = detailData.courier?.tracking_number || "-";
-    const courierService = detailData.courier?.courier_type || "reg";
-    const referenceNumber = detailData.invoice_no || "-";
-    const orderNotes = detailData.detail?.find((d: any) => d.order_notes)?.order_notes || "mechanise deelestari";
+    const generateQRPattern = (): boolean[][] => {
+      const grid: boolean[][] = [];
+      for (let i = 0; i < size; i++) {
+        const row: boolean[] = [];
+        for (let j = 0; j < size; j++) {
+          if ((i < 7 && j < 7) || (i < 7 && j > size - 8) || (i > size - 8 && j < 7)) {
+            if (i === 0 || i === 6 || j === 0 || j === 6) row.push(true);
+            else if (i === 1 || i === 5 || j === 1 || j === 5) row.push(false);
+            else if (i >= 2 && i <= 4 && j >= 2 && j <= 4) row.push(true);
+            else row.push(false);
+          } else if (i > size - 9 && j > size - 9 && i < size - 2 && j < size - 2) {
+            if (i === size - 8 || i === size - 4 || j === size - 8 || j === size - 4) row.push(true);
+            else if (i === size - 7 || i === size - 5 || j === size - 7 || j === size - 5) row.push(false);
+            else if (i === size - 6 && j === size - 6) row.push(true);
+            else row.push(false);
+          } else if (i === 6 && j > 7 && j < size - 8) row.push(j % 2 === 0);
+          else if (j === 6 && i > 7 && i < size - 8) row.push(i % 2 === 0);
+          else {
+            const charIndex = (i * j + seed) % qrData.length;
+            const charCode = qrData.charCodeAt(charIndex) || 0;
+            const val = (charCode + i + j + seed) % 3;
+            row.push(val === 0);
+          }
+        }
+        grid.push(row);
+      }
+      return grid;
+    };
 
-    // Data Masking
-    const receiverName = maskString(detailData.address?.nama_penerima || "Customer", sensorNama);
-    const receiverPhone = maskPhone(detailData.address?.phone || "-", sensorTelepon);
-    
-    let receiverFullAddress = detailData.address
-      ? `${detailData.address.address_detail}, ${detailData.address.city_id || ''}, ${detailData.address.province_id || ''}, ${detailData.address.zipcode || ''}`
-      : "Alamat tidak tersedia";
-    
-    if (sensorAlamat && detailData.address) {
-       receiverFullAddress = `${detailData.address.city_id || ''}, ${detailData.address.province_id || ''}`;
+    const grid = generateQRPattern();
+    const cellSize = 10;
+    let svg = `<svg width="${size * cellSize}" height="${size * cellSize}" viewBox="0 0 ${size * cellSize} ${size * cellSize}" xmlns="http://www.w3.org/2000/svg">`;
+    svg += `<rect width="100%" height="100%" fill="white"/>`;
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (grid[i][j]) svg += `<rect x="${j * cellSize}" y="${i * cellSize}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
+      }
     }
+    svg += `</svg>`;
+    return svg;
+  };
 
-    const creatorData = detailData.detail?.[0]?.product?.creator || user?.has_creator || {};
-    const senderName = creatorData.name || "Merchant";
-    const senderPhone = creatorData.phone || creatorData.phone_number || "-";
-    const senderAddress = creatorData.creator_address || creatorData.location || "-";
+  const generateResiHTML = (invoice: any): string => {
+    if (!invoice) return "";
 
-    const productItems = detailData.detail?.map((d: any) => {
+    const courierCompany = invoice?.courier?.courier_company || invoice?.courier?.main || 'J&T';
+    const courierType = invoice?.courier?.courier_type || invoice?.courier?.type || 'reg';
+    const trackingNumber = invoice?.courier?.tracking_number || invoice?.manifest?.[0]?.tracking_number || invoice?.invoice_no || 'KLTRX-XXXXXXXXX';
+    const deliveryPrice = tampilkanHarga ? (parseFloat(invoice?.courier?.price || invoice?.delivery_price) || 0) : 0;
+
+    const creatorData = invoice?.detail?.[0]?.product?.creator || user?.has_creator || {};
+    const senderName = creatorData?.name || "Merchant";
+    const senderPhone = creatorData?.phone || creatorData?.phone_number || "-";
+    const senderAddress = creatorData?.creator_address || creatorData?.location || creatorData?.address || "-";
+
+    const receiverName = maskName(invoice?.address?.nama_penerima || "Customer", sensorNama);
+    const receiverPhone = maskPhone(invoice?.address?.phone || "-", sensorTelepon);
+    const receiverAddressDetail = invoice?.address?.address_detail || '';
+    const receiverZipcode = invoice?.address?.zipcode?.toString() || '';
+    const receiverFullAddress = sensorAlamat ? maskAddress(receiverAddressDetail, invoice?.address?.city_id || '', invoice?.address?.province_id || '', receiverZipcode, true) : `${receiverAddressDetail}${receiverZipcode ? ', ' + receiverZipcode : ''}`;
+
+    const qrCodeSVG = generateQRCodeHTML(trackingNumber);
+
+    const productItems = invoice?.detail?.map((d: any) => {
       const productName = d.product?.product_name || 'Produk';
       let variantInfo = '';
       if (d.variant) {
@@ -945,115 +1026,114 @@ const MerchandiseTransaction: React.FC = () => {
       return `${d.qty}x ${productName}${variantInfo}`;
     }).join(', ') || "Produk Merchandise";
 
-    const totalQty = detailData.total_qty || 0;
-    const deliveryPrice = Number(detailData.courier?.price) || 0;
+    const totalQty = invoice.total_qty || 0;
+    const referenceNumber = invoice.invoice_no || "-";
+    const orderNotes = invoice.detail?.find((d: any) => d.order_notes)?.order_notes || "-";
+    const courierName = formatCourierName(courierCompany);
 
-    const generateBarcodeBars = () => {
-      const chars = trackingNumber.split('');
-      let bars = '';
-      chars.forEach((char: string) => {
-        const code = char.charCodeAt(0);
-        const width = (code % 5 + 2) * 2;
-        bars += `<div style="display: inline-block; width: ${width}px; height: 60px; background-color: #000000; margin-right: 2px; -webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>`;
-      });
-      return bars;
+    const getSlogan = (kurir: string) => {
+      if (kurir === 'J&T') return 'EXPRESS ACROSS NATIONS';
+      if (kurir === 'JNE') return 'CONNECTING HAPPINESS';
+      if (kurir === 'SiCepat') return 'BEST COURIER';
+      if (kurir === 'POS Indonesia') return 'MELAYANI DENGAN HATI';
+      if (kurir === 'TIKI') return 'TIKI TURUT BERBAGI';
+      if (kurir === 'Ninja Xpress') return 'NINJA EXPRESS';
+      if (kurir === 'AnterAja') return 'ANTERAJA';
+      return 'EXPRESS DELIVERY';
     };
 
     return `
-      <div class="resi-page">
-        <div class="resi-container">
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Resi Pengiriman - ${trackingNumber}</title>
           <style>
-            @media print {
-                @page { size: A4; margin: 10mm; }
-                body { background: white; margin: 0; padding: 0; }
-                .resi-container { box-shadow: none !important; border: 2px solid #000 !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; }
-            }
-            .resi-container {
-                max-width: 190mm;
-                width: 100%;
-                margin: 20px auto;
-                background: white;
-                border: 2px solid #000;
-                padding: 25px;
-                font-family: Arial, sans-serif;
-            }
-            .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 15px; }
-            .header h1 { font-size: 42px; font-weight: 800; margin: 0; letter-spacing: 3px; }
-            .subtitle { font-size: 16px; margin-top: 5px; font-weight: 500; }
-            .powered-by { text-align: center; margin: 15px 0; font-size: 16px; border-bottom: 2px dashed #000; padding-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-            .barcode-container { text-align: center; margin: 20px 0; padding: 15px; border: 3px solid #000; background: #f9f9f9; }
-            .barcode-bars { display: flex; justify-content: center; margin-bottom: 10px; }
-            .barcode-number { font-family: monospace; font-size: 16px; font-weight: bold; }
-            .tracking-number { text-align: center; font-size: 22px; font-weight: bold; margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; letter-spacing: 1px; }
-            .reference { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; }
-            .reference-label { font-weight: bold; font-size: 16px; margin-bottom: 8px; display: block; }
-            .reference-value { font-family: monospace; font-size: 18px; font-weight: 500; }
-            .address-section { margin: 20px 0; border: 3px solid #000; }
-            .address-box { padding: 15px; border-bottom: 3px solid #000; }
-            .address-box:last-child { border-bottom: none; }
-            .address-label { font-weight: bold; margin-bottom: 10px; font-size: 16px; text-decoration: underline; }
-            .address-name { font-weight: bold; font-size: 18px; margin: 5px 0; }
-            .address-phone { font-size: 16px; margin: 5px 0; }
-            .address-detail { line-height: 1.6; font-size: 15px; margin-top: 8px; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; }
-            .product-info { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; }
-            .product-label { font-weight: bold; text-decoration: underline; font-size: 16px; margin-bottom: 10px; display: block; }
-            .product-detail { font-size: 16px; line-height: 1.6; }
-            .notes { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; font-style: italic; font-size: 15px; }
-            .footer { margin-top: 25px; padding-top: 15px; border-top: 3px solid #000; text-align: center; font-size: 14px; }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+              @media print {
+                  @page { size: A4; margin: 10mm; }
+                  body { background: white; margin: 0; padding: 0; }
+                  .resi-container { box-shadow: none; border: 2px solid #000 !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+              }
+              .resi-container { max-width: 190mm; width: 100%; margin: 20px auto; background: white; border: 2px solid #000; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+              .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 15px; }
+              .header h1 { font-size: 42px; font-weight: 800; margin: 0; color: #000; letter-spacing: 3px; }
+              .header .subtitle { font-size: 16px; color: #000; margin-top: 5px; font-weight: 500; }
+              .powered-by { text-align: center; margin: 15px 0; font-size: 16px; color: #000; border-bottom: 2px dashed #000; padding-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+              .tracking-number { text-align: center; font-size: 22px; font-weight: bold; margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; letter-spacing: 1px; }
+              .qr-container { display: flex; justify-content: center; margin: 25px 0; }
+              .qr-code { width: 210px; height: 210px; background-color: white; border: 3px solid #000; display: flex; justify-content: center; align-items: center; padding: 5px; }
+              .qr-code svg { width: 100%; height: 100%; display: block; }
+              .info-row { display: flex; justify-content: space-between; margin: 15px 0; padding: 12px 0; border-bottom: 2px solid #000; font-size: 16px; }
+              .reference { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f0f0f0; }
+              .reference-label { font-weight: bold; margin-right: 10px; display: block; margin-bottom: 8px; font-size: 16px; }
+              .reference-value { font-family: monospace; font-size: 18px; word-break: break-all; font-weight: 500; }
+              .address-section { margin: 20px 0; border: 3px solid #000; }
+              .address-box { padding: 15px; border-bottom: 3px solid #000; }
+              .address-box:last-child { border-bottom: none; }
+              .address-label { font-weight: bold; margin-bottom: 10px; font-size: 16px; text-decoration: underline; }
+              .address-name { font-weight: bold; margin: 5px 0; font-size: 18px; }
+              .address-phone { color: #000; margin: 5px 0 10px 0; font-size: 16px; }
+              .address-detail { line-height: 1.6; margin: 5px 0 0 0; padding: 0; font-size: 15px; }
+              .product-info { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; }
+              .product-label { font-weight: bold; margin-bottom: 10px; display: block; text-decoration: underline; font-size: 16px; }
+              .product-detail { font-size: 16px; line-height: 1.6; }
+              .notes { margin: 20px 0; padding: 15px; border: 3px solid #000; background-color: #f9f9f9; font-style: italic; font-size: 15px; }
+              .footer { margin-top: 25px; padding-top: 15px; border-top: 3px solid #000; text-align: center; font-size: 14px; color: #000; }
           </style>
-          
-          <div class="header">
-            <h1>${courierNameForTitle}</h1>
-            <div class="subtitle">${courierService.toUpperCase()}</div>
+      </head>
+      <body>
+          <div class="resi-container">
+              <div class="header">
+                  <h1>${courierName}</h1>
+                  <div class="subtitle">${getSlogan(courierName)}</div>
+              </div>
+              <div class="powered-by">Powered by Kolektix.com</div>
+              <div class="tracking-number">Nomor Resi - ${trackingNumber}</div>
+              <div class="qr-container">
+                  <div class="qr-code">${qrCodeSVG}</div>
+              </div>
+              <div class="info-row">
+                  <span><strong>Ongkos Kirim:</strong> Rp ${deliveryPrice.toLocaleString('id-ID')}</span>
+                  <span><strong>Layanan:</strong> ${courierType.toUpperCase()}</span>
+              </div>
+              <div class="reference">
+                  <span class="reference-label">Reference Number</span>
+                  <div class="reference-value">${referenceNumber}</div>
+              </div>
+              <div class="address-section">
+                  <div class="address-box">
+                      <div class="address-label">ALAMAT PENERIMA:</div>
+                      <div class="address-name">${receiverName}</div>
+                      <div class="address-phone">${receiverPhone}</div>
+                      <div class="address-detail">${receiverFullAddress}</div>
+                  </div>
+                  <div class="address-box">
+                      <div class="address-label">ALAMAT PENGIRIM:</div>
+                      <div class="address-name">${senderName}</div>
+                      <div class="address-phone">${senderPhone}</div>
+                      <div class="address-detail">${senderAddress}</div>
+                  </div>
+              </div>
+              <div class="product-info">
+                  <span class="product-label">Jenis Barang:</span>
+                  <div class="product-detail">
+                      ${productItems}<br>
+                      <strong>Total Item:</strong> ${totalQty} pcs
+                  </div>
+              </div>
+              <div class="notes"><em>Catatan: ${orderNotes}</em></div>
+              <div class="footer">
+                  Pengiriman melalui ${courierName}<br>
+                  kolektix.com - Solusi Marketplace Terintegrasi
+              </div>
           </div>
-          
-          <div class="powered-by">Powered by Kolektix.com</div>
-          
-          <div class="barcode-container">
-            <div class="barcode-bars">${generateBarcodeBars()}</div>
-            <div class="barcode-number">${trackingNumber}</div>
-          </div>
-          
-          <div class="tracking-number">No. Resi: ${trackingNumber}</div>
-          
-          <div class="reference">
-            <span class="reference-label">No. Pesanan / Reference Number:</span>
-            <div class="reference-value">${referenceNumber}</div>
-          </div>
-          
-          <div class="address-section">
-            <div class="address-box">
-              <div class="address-label">ALAMAT PENERIMA:</div>
-              <div class="address-name">${receiverName}</div>
-              <div class="address-phone">${receiverPhone}</div>
-              <div class="address-detail">${receiverFullAddress}</div>
-            </div>
-            <div class="address-box">
-              <div class="address-label">ALAMAT PENGIRIM:</div>
-              <div class="address-name">${senderName}</div>
-              <div class="address-phone">${senderPhone}</div>
-              <div style="font-size: 14px; margin-top: 5px;">${senderAddress}</div>
-            </div>
-          </div>
-          
-          <div class="product-info">
-            <span class="product-label">Isi Paket:</span>
-            <div class="product-detail">
-                ${productItems}<br>
-                <strong>Total Item:</strong> ${totalQty} pcs<br>
-                <strong>Ongkos Kirim:</strong> ${tampilkanHarga ? `Rp ${deliveryPrice.toLocaleString('id-ID')}` : '***'}
-            </div>
-          </div>
-          
-          <div class="notes"><em>Catatan: ${orderNotes}</em></div>
-          
-          <div class="footer">
-            Printed from kolektix.com - Solusi Marketplace Terintegrasi
-          </div>
-        </div>
-      </div>
+          <script>window.onload = function() { setTimeout(function() { window.print(); }, 500); }</script>
+      </body>
+      </html>
     `;
   };
+
 
   const handleBulkPrint = async () => {
     if (selectedInvoiceIds.length === 0) return;

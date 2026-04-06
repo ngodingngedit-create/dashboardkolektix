@@ -238,7 +238,7 @@ const ProfileCreator = () => {
         (item) =>
           item.name?.toLowerCase().includes(searchProfile.toLowerCase()) ||
           item.email?.toLowerCase().includes(searchProfile.toLowerCase()) ||
-          item.phone?.includes(searchProfile)
+          (item.phone_number || item.phone || '').includes(searchProfile)
       );
     }
     if (sortProfile.key && sortProfile.direction) {
@@ -595,7 +595,7 @@ const ProfileCreator = () => {
                     </td>
                     <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{item.name || '-'}</Text></td>
                     <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.email || '-'}</Text></td>
-                    <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.phone || '-'}</Text></td>
+                    <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.phone_number || item.phone || '-'}</Text></td>
                     <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)', borderLeft: '1px solid #f1f3f5' }}>
                       <Flex gap={8} justify="center">
                         <Tooltip label="Edit Profil Creator">

@@ -1606,7 +1606,8 @@ import {
   faBlog,
   faBook,
   faListCheck,
-  faPercent
+  faPercent,
+  faGlobe
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1927,6 +1928,7 @@ const sidebarData: SidebarData = [
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
   { id: 11, name: "Issue Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
+  { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard/issuemanagement" },
 ];
 
 const SidebarComponent = ({ children }: { children: ReactNode }) => {

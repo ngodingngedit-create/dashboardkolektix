@@ -133,6 +133,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
   const [transactionStatus, setTransactionStatus] = useState<string>("all");
   const [printBillLoading, setPrintBillLoading] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionItem | null>(null);
+  const [openDetailModal, setOpenDetailModal] = useState(false);
 
   // State untuk pagination produk
   const [productPage, setProductPage] = useState(1);
@@ -1142,6 +1144,99 @@ export default function Index({ }: Readonly<ComponentProps>) {
         </Stack>
       </Modal>
 
+      {/* ── Transaction Detail Modal ── */}
+      <Modal
+        opened={openDetailModal}
+        onClose={() => setOpenDetailModal(false)}
+        title={
+          <Flex align="center" gap={10}>
+            <div className="bg-primary-base/10 p-1.5 rounded-lg">
+              <Icon icon="solar:file-text-bold" className="text-primary-base text-base" />
+            </div>
+            <div>
+              <Text fw={700} size="sm" c="#0B387C">Detail Transaksi</Text>
+              <Text size="xs" c="gray.5">{selectedTransaction?.invoice_no || selectedTransaction?.invoice_number || '-'}</Text>
+            </div>
+          </Flex>
+        }
+        size="md"
+        radius="lg"
+        padding="xl"
+        styles={{
+          header: { borderBottom: '1px solid #f1f3f5', paddingBottom: 12 },
+          body: { paddingTop: 16 },
+        }}
+      >
+        {selectedTransaction && (
+          <Stack gap={16}>
+            {/* Status Badge */}
+            <Flex justify="space-between" align="center">
+              <Badge
+                color={getStatusFromId(selectedTransaction.transaction_status_id || 1).color}
+                variant="filled"
+                size="md"
+                radius="sm"
+              >
+                {getStatusFromId(selectedTransaction.transaction_status_id || 1).text}
+              </Badge>
+              <Text size="xs" c="gray.5">
+                {new Date(selectedTransaction.created_at).toLocaleDateString('id-ID', {
+                  day: '2-digit', month: 'long', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit'
+                })}
+              </Text>
+            </Flex>
+
+            {/* Customer Info */}
+            <Card withBorder p={14} radius="md" className="bg-gray-50/50">
+              <Text size="xs" c="gray.5" fw={600} mb={10} className="uppercase tracking-wider">Info Pelanggan</Text>
+              <Stack gap={6}>
+                <Flex justify="space-between">
+                  <Text size="sm" c="gray.6">Nama</Text>
+                  <Text size="sm" fw={600}>{selectedTransaction.customer_name || '-'}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text size="sm" c="gray.6">Metode Bayar</Text>
+                  <Badge size="sm" variant="light" color="blue">
+                    {selectedTransaction.payment_method?.toLowerCase() === 'xendit' ? 'QRIS' : selectedTransaction.payment_method || '-'}
+                  </Badge>
+                </Flex>
+              </Stack>
+            </Card>
+
+            {/* Items */}
+            {selectedTransaction.items && selectedTransaction.items.length > 0 && (
+              <Card withBorder p={14} radius="md">
+                <Text size="xs" c="gray.5" fw={600} mb={10} className="uppercase tracking-wider">Rincian Produk</Text>
+                <Stack gap={8}>
+                  {selectedTransaction.items.map((item, i) => (
+                    <Flex key={i} justify="space-between" align="center">
+                      <div>
+                        <Text size="sm" fw={500}>{item.product_name}</Text>
+                        <Text size="xs" c="gray.5">x{item.quantity} @ <NumberFormatter prefix="Rp " value={item.price} thousandSeparator="." /></Text>
+                      </div>
+                      <Text size="sm" fw={600}>
+                        <NumberFormatter prefix="Rp " value={item.price * item.quantity} thousandSeparator="." />
+                      </Text>
+                    </Flex>
+                  ))}
+                </Stack>
+              </Card>
+            )}
+
+            {/* Total */}
+            <Card withBorder p={14} radius="md" className="bg-primary-base/5 border-primary-base/20">
+              <Flex justify="space-between" align="center">
+                <Text fw={700} c="#0B387C">Total Bayar</Text>
+                <Text fw={800} size="lg" c="#0B387C">
+                  <NumberFormatter prefix="Rp " value={selectedTransaction.total_amount} thousandSeparator="." />
+                </Text>
+              </Flex>
+            </Card>
+          </Stack>
+        )}
+      </Modal>
+
       <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
         <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static overflow-hidden flex flex-col`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
@@ -1856,7 +1951,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     </Card>
                   ) : (
                     <>
-                      <div className="overflow-x-auto rounded-xl border border-gray-100">
+                      <div className="overflow-x-auto rounded-xl border border-light-grey">
                         <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                           <thead>
                             <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
@@ -1887,7 +1982,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                                   </td>
                                   <td style={{ padding: '12px 14px' }}>
                                     <Text size="sm" fw={500}>{transaction.customer_name}</Text>
-                                    <Badge size="xs" variant="light" color="gray">{transaction.payment_method}</Badge>
+                                    <Badge size="xs" variant="light" color="gray">{transaction.payment_method?.toLowerCase() === 'xendit' ? 'QRIS' : transaction.payment_method}</Badge>
                                   </td>
                                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                                     <Text fw={700} size="sm">
@@ -1901,12 +1996,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                                   </td>
                                   <td style={{ padding: '12px 14px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)' }}>
                                     <Flex gap={8} justify="center">
-                                      <ActionIcon variant="light" color="blue" title="Detail">
-                                        <Icon icon="solar:eye-bold" width={16} />
-                                      </ActionIcon>
-                                      <ActionIcon variant="light" color="gray" title="Print" onClick={handlePrintBill}>
-                                        <Icon icon="solar:printer-bold" width={16} />
-                                      </ActionIcon>
+                                      <ActionIcon variant="light" color="blue" title="Detail" onClick={() => { setSelectedTransaction(transaction); setOpenDetailModal(true); }}><Icon icon="solar:eye-bold" width={16} /></ActionIcon>
                                     </Flex>
                                   </td>
                                 </tr>
@@ -1960,30 +2050,30 @@ export default function Index({ }: Readonly<ComponentProps>) {
       </Flex>
 
       {activeTab === "order" && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xl px-4 pointer-events-none">
-          <div className="bg-white/95 backdrop-blur-xl border border-light-grey rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] px-4 py-2 pointer-events-auto">
-            <Flex justify="space-between" align="center" gap={15}>
-              <Flex align="center" gap={12}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl px-4 pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-xl border border-light-grey rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] px-6 py-3 pointer-events-auto">
+            <Flex justify="space-between" align="center" gap={20}>
+              <Flex align="center" gap={16}>
                 <Button
                   variant="subtle"
                   color="gray"
                   onClick={handlePrintBill}
                   loading={printBillLoading}
                   disabled={selectedList.length === 0}
-                  leftSection={<Icon icon="uiw:printer" className="text-base" />}
-                  size="xs"
+                  leftSection={<Icon icon="uiw:printer" className="text-lg" />}
+                  size="sm"
                   radius="md"
                   className="hover:!bg-gray-100"
                 >
                   Print Bill
                 </Button>
 
-                <Divider orientation="vertical" h={24} color="gray.2" />
+                <Divider orientation="vertical" h={32} color="gray.2" />
 
                 <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1">Total Bayar</span>
+                  <span className="text-[11px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1">Total Bayar</span>
                   <div className="flex items-baseline">
-                    <span className="text-lg font-black text-primary-base tracking-tight leading-none">
+                    <span className="text-xl font-black text-primary-base tracking-tight leading-none">
                       <NumberFormatter prefix="Rp " value={handleSummary.total} thousandSeparator="." />
                     </span>
                   </div>
@@ -1994,9 +2084,9 @@ export default function Index({ }: Readonly<ComponentProps>) {
                 loading={loading.includes("submit") || loading.includes("checkout")}
                 onClick={handleCheckout}
                 disabled={handleSummary.total <= 0 || !paymentMethod}
-                size="sm"
+                size="md"
                 radius="xl"
-                className="min-w-[120px] shadow-sm hover:shadow-md transition-all duration-300"
+                className="min-w-[140px] shadow-sm hover:shadow-md transition-all duration-300"
                 rightSection={<Icon icon="uiw:right" className="text-base" />}
                 fw={700}
               >

@@ -104,12 +104,16 @@ const StockManagement = () => {
     try {
       const res: any = await Get("product", { creator_id: creatorId });
       if (res?.data) {
-        setProductsData(Array.isArray(res.data) ? res.data : res.data.data || []);
+        const raw = Array.isArray(res.data) ? res.data : res.data.data || [];
+        // Filter client-side to ensure only products belonging to this creator
+        const filtered = raw.filter((p: any) => !p.creator_id || String(p.creator_id) === String(creatorId));
+        setProductsData(filtered);
       }
     } catch (error) {
       console.error(error);
     }
   };
+
 
   // One entry per BASE PRODUCT only
   const baseProductOptions = (() => {
@@ -243,7 +247,7 @@ const StockManagement = () => {
       await fetch({
         url: "stock-management/stock-movement",
         method: "POST",
-        data: { products: productsPayload, created_by: "system" },
+        data: { products: productsPayload, created_by: user?.name || user?.has_creator?.name || "system" },
         before: () => { },
         success: () => {
           notifications.show({ title: "Sukses", message: "Perubahan stock berhasil disimpan!", color: "green" });
@@ -301,7 +305,7 @@ const StockManagement = () => {
                       {alteration}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-gray-600">{h.created_by || h.user || 'system'}</TableCell>
+                  <TableCell className="py-4 text-sm text-gray-600">{h.created_by || h.user || h.product?.created_by || h.product?.creator_id || 'system'}</TableCell>
                 </TableRow>
               );
             })}
