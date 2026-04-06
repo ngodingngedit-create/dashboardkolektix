@@ -59,6 +59,7 @@ interface SelectedProduct {
   qty: number;
   referenceType: string;
   notes: string;
+  creator_name?: string;
 }
 
 const CELL_STYLE: React.CSSProperties = {
@@ -90,10 +91,14 @@ const StockManagement = () => {
   const fetchHistory = async (creatorId: number) => {
     try {
       const res: any = await Get("stock-management", { creator_id: creatorId });
-      if (res?.data?.data) {
-        setHistoryData(res.data.data);
-      } else if (Array.isArray(res?.data)) {
-        setHistoryData(res.data);
+      if (res?.data) {
+        const raw = Array.isArray(res.data) ? res.data : res.data.data || [];
+        // Filter client-side as a safeguard to ensure only movements for this creator's products are shown
+        const filtered = raw.filter((h: any) => {
+            const prodCreatorId = h.product?.creator_id || h.creator_id;
+            return String(prodCreatorId) === String(creatorId);
+        });
+        setHistoryData(filtered);
       }
     } catch (e) {
       console.error("Failed to fetch history:", e);
@@ -191,6 +196,7 @@ const StockManagement = () => {
           qty: 0,
           referenceType: "restock_supplier",
           notes: "",
+          creator_name: baseProduct.creator?.name || String(baseProduct.creator_id || '-'),
         },
       ];
     });
@@ -285,7 +291,6 @@ const StockManagement = () => {
             <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Referensi</TableColumn>
             <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Produk</TableColumn>
             <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Perubahan</TableColumn>
-            <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">User</TableColumn>
           </TableHeader>
           <TableBody>
             {historyData.map((h, index) => {
@@ -305,7 +310,6 @@ const StockManagement = () => {
                       {alteration}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4 text-sm text-gray-600">{h.created_by || h.user || h.product?.created_by || h.product?.creator_id || 'system'}</TableCell>
                 </TableRow>
               );
             })}
