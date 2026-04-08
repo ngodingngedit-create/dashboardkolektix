@@ -519,7 +519,7 @@ const Merch: React.FC = () => {
         />
       )}
 
-      {/* Modal Pilih Creator */}
+      {/* Modal Pilih Creatr */}
       <Modal
         opened={showCreatorModal}
         onClose={() => setShowCreatorModal(false)}
