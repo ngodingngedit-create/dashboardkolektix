@@ -155,7 +155,7 @@ const MyVenue = () => {
                     color="blue"
                     radius="md"
                     component={Link}
-                    href={`/dashboard/venue/edit/${e.slug || e.id}`}
+                    href={`/dashboard/venue/edit/${e.id}`}
                   >
                     <Icon icon="solar:pen-bold" />
                   </ActionIcon>

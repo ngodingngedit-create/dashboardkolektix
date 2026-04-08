@@ -71,7 +71,7 @@ export default function VenuePage() {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const user = useLoggedUser();
     const router = useRouter();
-    const { slug } = router.query;
+    const { id } = router.query;
     const { getEpgProps, getLayoutProps } = useEpg({
         epg: [],
         channels: [
@@ -83,15 +83,15 @@ export default function VenuePage() {
     });
 
     useEffect(() => {
-        slug && getData();
-    }, [slug]);
+        id && getData();
+    }, [id]);
 
     const getData = async () => {
         if (loading.includes('getdata')) return;
         setLoading.append('getdata');
 
         await fetch<any, VenueListResponse>({
-            url: 'creator-data/venue/' + slug,
+            url: 'creator-data/venue/' + id,
             method: 'GET',
             success: async (data) => {
                 if (data) {
@@ -153,7 +153,7 @@ export default function VenuePage() {
                             ))}
                         </PillGroup>
                         <Flex gap={10} mt={25} align="center">
-                            <Button w="fit-content" component={Link} href={`/dashboard/venue/edit/${slug}`} size="xs" variant="outline">Edit Venue</Button>
+                            <Button w="fit-content" component={Link} href={`/dashboard/venue/edit/${id}`} size="xs" variant="outline">Edit Venue</Button>
                             <ActionIcon variant="transparent" title="Buka Halaman Venue" onClick={() => window.open(`/venue/${venue?.slug}`, '_blank')}>
                                 <Icon icon="proicons:open" className={`text-[24px]`}/>
                             </ActionIcon>

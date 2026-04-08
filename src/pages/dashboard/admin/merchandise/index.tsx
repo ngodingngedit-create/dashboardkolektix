@@ -1,6 +1,6 @@
 import CreateMerchandiseAdmin from "@/components/CreateMerchandiseAdmin";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, Group, Select, Modal, Tooltip, SimpleGrid, Text, Badge, Avatar, Paper } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, Group, Select, Modal, Tooltip, SimpleGrid, Text, Badge, Avatar, Paper, Stack } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
 import NextImage from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
@@ -12,6 +12,25 @@ import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import { Get } from "@/utils/REST";
+import { useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+
+const tableHeadStyle: React.CSSProperties = {
+  padding: "12px 15px",
+  textAlign: "left",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#495057",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+
+const tableCellStyle: React.CSSProperties = {
+  padding: "10px 15px",
+  fontSize: "13px",
+  color: "#495057",
+  verticalAlign: "middle",
+};
 
 const PER_PAGE = 10;
 
@@ -74,13 +93,29 @@ const Merch: React.FC = () => {
   const [selectedCreator, setSelectedCreator] = useState<string>("");
   const [selectedCreatorForCreate, setSelectedCreatorForCreate] = useState<string>("");
   const [tempSelectedCreator, setTempSelectedCreator] = useState<string>("");
-  
+
   // State untuk modal pilih creator
   const [showCreatorModal, setShowCreatorModal] = useState<boolean>(false);
 
   // pagination
   const [page, setPage] = useState<number>(1);
   const [lastPage, setLastPage] = useState<number>(1);
+
+  // Filter & Search State
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
+  const [method, setMethod] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [locationFilter, setLocationFilter] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
+
+  // Sorting
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  // Debounced search
+  const [debouncedSearch] = useDebouncedValue(search, 500);
 
   const tabStatus: [number, string][] = [
     [2, "Sedang Dijual"],
@@ -93,11 +128,14 @@ const Merch: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    fetchCreators();
+  }, []);
+
+  useEffect(() => {
     if (!isRender) return;
     fetchData();
-    fetchCreators();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRender, page, selectedCreator]);
+  }, [isRender, page, selectedCreator, debouncedSearch, startDate, endDate]);
 
   // Fetch daftar creator dari API
   const fetchCreators = async () => {
@@ -115,14 +153,18 @@ const Merch: React.FC = () => {
   const fetchData = () => {
     setLoading2(true);
 
-    const qs = new URLSearchParams({
+    const params: any = {
       per_page: String(PER_PAGE),
       page: String(page),
-      ...(selectedCreator && { creator_id: selectedCreator }),
-      ...(search && { search: search }),
-      ...(startDate && { start_date: startDate }),
-      ...(endDate && { end_date: endDate }),
-    }).toString();
+    };
+
+    if (selectedCreator) params.creator_id = selectedCreator;
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+
+    const qs = new URLSearchParams(params).toString();
+    console.log("Fetching merch with params:", qs);
 
     Get(`product?${qs}`, {})
       .then((res: any) => {
@@ -151,6 +193,15 @@ const Merch: React.FC = () => {
   const handleSearch = () => {
     setPage(1);
     fetchData();
+  };
+
+  const handleRequestSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
   };
 
   // Fungsi untuk reset semua filter
@@ -197,7 +248,7 @@ const Merch: React.FC = () => {
   const handleDelete = (id: number) => {
     const item = merchList.find((p) => p.id === id);
     const itemName = item?.product_name || "produk ini";
-    
+
     modals.openConfirmModal({
       centered: true,
       title: "Hapus Produk?",
@@ -230,7 +281,7 @@ const Merch: React.FC = () => {
       setModalCreate(slug);
       return;
     }
-    
+
     // Reset temporary selection dan tampilkan modal
     setTempSelectedCreator("");
     setShowCreatorModal(true);
@@ -241,10 +292,10 @@ const Merch: React.FC = () => {
       alert("Silakan pilih creator terlebih dahulu");
       return;
     }
-    
+
     setSelectedCreatorForCreate(tempSelectedCreator);
     setShowCreatorModal(false);
-    
+
     // Buka modal create merchandise setelah delay singkat
     setTimeout(() => {
       setModalCreate("");
@@ -262,7 +313,7 @@ const Merch: React.FC = () => {
         file.name.endsWith(".csv")
       ) {
         setExcelFile(file);
-        
+
         // Tampilkan modal pilih creator untuk import
         modals.open({
           title: "Import Excel",
@@ -275,9 +326,9 @@ const Merch: React.FC = () => {
                 placeholder="Pilih creator"
                 data={[
                   { value: "", label: "Semua Creator" },
-                  ...creators.map(c => ({ 
-                    value: String(c.id), 
-                    label: `${c.name}${c.has_user?.email ? ` - ${c.has_user.email}` : ''}` 
+                  ...creators.map(c => ({
+                    value: String(c.id),
+                    label: `${c.name}${c.has_user?.email ? ` - ${c.has_user.email}` : ''}`
                   }))
                 ]}
                 value={tempSelectedCreator}
@@ -306,7 +357,7 @@ const Merch: React.FC = () => {
                       formData.append("creator_id", tempSelectedCreator);
                     }
                     formData.append("admin_import", "true");
-                    
+
                     // Implementasi upload API di sini
                     console.log("Importing file:", file.name, "for creator:", tempSelectedCreator);
                     alert(`File "${file.name}" akan diimport ${tempSelectedCreator ? 'untuk creator terpilih' : 'untuk semua creator'}.`);
@@ -327,15 +378,8 @@ const Merch: React.FC = () => {
   };
 
   /**
-   * FILTER & SEARCH STATE
+   * ITEM SEARCH SEARCH HELPER
    */
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
-  const [method, setMethod] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [locationFilter, setLocationFilter] = useState<string>("");
-  const [search, setSearch] = useState<string>("");
 
   const itemSearchText = (item: MerchListResponse) => {
     const parts: string[] = [];
@@ -428,8 +472,40 @@ const Merch: React.FC = () => {
     return creator?.has_user?.email || creator?.email || "";
   };
 
+  const sortedList = useMemo(() => {
+    let result = [...merchList];
+
+    // Client-side filtering as fallback
+    if (debouncedSearch) {
+      const needle = debouncedSearch.toLowerCase().trim();
+      result = result.filter(item =>
+        (item.product_name?.toLowerCase().includes(needle)) ||
+        (item.has_creator?.name?.toLowerCase().includes(needle)) ||
+        (item.product_varian?.some(v => v.sku?.toLowerCase().includes(needle)))
+      );
+    }
+
+    if (selectedCreator) {
+      result = result.filter(item => String(item.creator_id) === String(selectedCreator));
+    }
+
+    if (!sortBy) return result;
+
+    return result.sort((a: any, b: any) => {
+      let valA = _.get(a, sortBy) ?? "";
+      let valB = _.get(b, sortBy) ?? "";
+
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+
+      if (valA < valB) return sortDir === "asc" ? -1 : 1;
+      if (valA > valB) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [merchList, sortBy, sortDir, debouncedSearch, selectedCreator]);
+
   return (
-    <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
+    <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
       {modalCreate !== undefined && (
         <CreateMerchandiseAdmin
           id={modalCreate}
@@ -455,9 +531,9 @@ const Merch: React.FC = () => {
           <Select
             label="Pilih Creator"
             placeholder="Pilih creator"
-            data={creators.map(c => ({ 
-              value: String(c.id), 
-              label: `${c.name}${c.has_user?.email ? ` - ${c.has_user.email}` : ''}` 
+            data={creators.map(c => ({
+              value: String(c.id),
+              label: `${c.name}${c.has_user?.email ? ` - ${c.has_user.email}` : ''}`
             }))}
             value={tempSelectedCreator}
             onChange={(value) => setTempSelectedCreator(value || "")}
@@ -485,20 +561,17 @@ const Merch: React.FC = () => {
 
       <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv" onChange={handleExcelImport} style={{ display: "none" }} />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <Title order={1} size="h2" className="text-[#0B387C]">
-            Merchandise Management
-          </Title>
-          <Text size="sm" c="dimmed">
-            {selectedCreator 
-              ? `Manajemen produk untuk creator: ${getCreatorName(Number(selectedCreator))}` 
+      <Flex justify="space-between" align="center" mb={10}>
+        <Stack gap={5}>
+          <Text size="1.8rem" fw={600}>Merchandise Management</Text>
+          <Text size="sm" c="gray">
+            {selectedCreator
+              ? `Manajemen produk untuk creator: ${getCreatorName(Number(selectedCreator))}`
               : "Kelola semua merchandise dari berbagai creator dalam satu tempat"}
           </Text>
-        </div>
-
+        </Stack>
         <Group gap={12}>
-          <ButtonM
+          {/* <ButtonM
             variant="light"
             color="indigo"
             radius="md"
@@ -506,18 +579,18 @@ const Merch: React.FC = () => {
             leftSection={<Icon icon="ph:file-xls" className="text-xl" />}
           >
             Import Excel
-          </ButtonM>
-          <ButtonM 
-            onClick={() => openCreateModal("")} 
-            leftSection={<Icon icon="ph:plus-bold" className="text-lg" />} 
-            radius="md" 
-            color="#0B387C"
+          </ButtonM> */}
+          <ButtonM
+            onClick={() => openCreateModal("")}
+            leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}
+            radius="md"
+            color="blue"
             className="shadow-sm"
           >
             Tambah Produk
           </ButtonM>
         </Group>
-      </div>
+      </Flex>
 
       <Tabs
         variant="underlined"
@@ -535,119 +608,109 @@ const Merch: React.FC = () => {
           return (
             <Tab key={status} title={label}>
               <Card withBorder radius="md" p={0} className="mt-4 shadow-sm overflow-hidden">
-                <div className="p-5 bg-gray-50/50">
-                  <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-                    <div className="flex flex-col gap-1.5">
-                      <Text size="xs" fw={600} c="dimmed" className="uppercase tracking-wider">Pencarian</Text>
-                      <Input
-                        isClearable
-                        value={search}
-                        onChange={(e: any) => setSearch(e.target.value)}
-                        onClear={() => {
-                          setSearch("");
+                <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
+                  <div style={{ width: 220 }}>
+                    <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Penyelenggara</Text>
+                    <Select
+                      placeholder="Semua Creator"
+                      data={creators.map(c => ({
+                        value: String(c.id),
+                        label: c.name || c.has_user?.name || "Unknown"
+                      }))}
+                      value={selectedCreator}
+                      onChange={(val) => {
+                        setSelectedCreator(val || "");
+                        setPage(1);
+                      }}
+                      size="sm"
+                      searchable
+                      clearable
+                      radius="md"
+                    />
+                  </div>
+                  <div style={{ width: 250 }}>
+                    <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Rentang Tanggal</Text>
+                    <Flex gap={5}>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
                           setPage(1);
                         }}
-                        placeholder="Cari nama, SKU, atau Creator..."
-                        size="sm"
-                        startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
-                        className="w-full"
+                        style={{
+                          height: "36px",
+                          padding: "0 10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "13px",
+                          width: "50%"
+                        }}
                       />
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <Text size="xs" fw={600} c="dimmed" className="uppercase tracking-wider">Creator</Text>
-                      <Select
-                        placeholder="Semua Creator"
-                        data={creators.map(c => ({ 
-                          value: String(c.id), 
-                          label: `${c.name}${c.has_user?.email ? ` (${c.has_user.email})` : ''}` 
-                        }))}
-                        value={selectedCreator}
-                        onChange={(value) => {
-                          setSelectedCreator(value || "");
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => {
+                          setEndDate(e.target.value);
                           setPage(1);
-                          // Trigging fetchData indirectly via useEffect/search logic
-                          // or explicitly if needed.
                         }}
-                        size="sm"
-                        variant="filled"
-                        clearable
-                        searchable
-                        leftSection={<Icon icon="ph:user" className="text-gray-400" />}
-                        className="w-full"
-                        styles={{
-                          input: { backgroundColor: '#f1f3f5', border: 'none' }
+                        style={{
+                          height: "36px",
+                          padding: "0 10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "13px",
+                          width: "50%"
                         }}
                       />
-                    </div>
+                    </Flex>
+                  </div>
+                  <div style={{ width: 220 }}>
+                    <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+                    <Input
+                      isClearable
+                      value={search}
+                      placeholder="Cari produk..."
+                      onChange={(e: any) => setSearch(e.target.value)}
+                      onClear={() => {
+                        setSearch("");
+                        setPage(1);
+                      }}
+                      size="sm"
+                      startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
+                    />
+                  </div>
+                </Flex>
 
-                    <div className="flex flex-col gap-1.5">
-                      <Text size="xs" fw={600} c="dimmed" className="uppercase tracking-wider">Rentang Tanggal</Text>
-                      <Group gap={8} grow>
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="h-[36px] bg-gray-100/50 border-none rounded-md px-2 text-xs focus:ring-1 focus:ring-[#0B387C] outline-none"
-                        />
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="h-[36px] bg-gray-100/50 border-none rounded-md px-2 text-xs focus:ring-1 focus:ring-[#0B387C] outline-none"
-                        />
-                      </Group>
-                    </div>
-
-                    <div className="flex items-end gap-2">
-                      <ButtonM
-                        variant="filled"
-                        color="#0B387C"
-                        onClick={handleSearch}
-                        leftSection={<Icon icon="ph:funnel" className="text-lg" />}
-                        loading={loading2}
-                        size="sm"
-                        className="flex-1"
-                      >
-                        Filter
-                      </ButtonM>
-                      <Tooltip label="Reset semua filter">
-                        <ActionIcon
-                          variant="light"
-                          color="gray"
-                          onClick={handleResetFilters}
-                          size="lg"
-                          radius="md"
-                        >
-                          <Icon icon="ph:arrow-counter-clockwise" className="text-xl" />
-                        </ActionIcon>
-                      </Tooltip>
-                    </div>
-                  </SimpleGrid>
-                </div>
-
-                <div className="bg-white rounded-[8px] overflow-hidden">
-                  <Table 
-                    removeWrapper 
-                    className="rounded-[8px] [&_td]:py-[15px] min-w-[900px]"
-                    aria-label="Table merchandise"
-                  >
-                    <TableHeader>
-                      <TableColumn>No</TableColumn>
-                      <TableColumn>Creator</TableColumn>
-                      <TableColumn>Info Produk</TableColumn>
-                      <TableColumn>SKU</TableColumn>
-                      <TableColumn>Harga</TableColumn>
-                      <TableColumn>Stock</TableColumn>
-                      <TableColumn>Lokasi</TableColumn>
-                      <TableColumn>Aksi</TableColumn>
-                    </TableHeader>
-
-                    <TableBody 
-                      emptyContent={null}
-                    >
-                      {filtered.map((item, i) => {
-                          const safeId = String(item.id ?? i);
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #eee" }}>
+                        <th style={tableHeadStyle}>No</th>
+                        <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("has_creator.name")}>
+                          Creator {sortBy === "has_creator.name" && (sortDir === "asc" ? "↑" : "↓")}
+                        </th>
+                        <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("product_name")}>
+                          Info Produk {sortBy === "product_name" && (sortDir === "asc" ? "↑" : "↓")}
+                        </th>
+                        <th style={tableHeadStyle}>SKU</th>
+                        <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("price")}>
+                          Harga {sortBy === "price" && (sortDir === "asc" ? "↑" : "↓")}
+                        </th>
+                        <th style={tableHeadStyle}>Stok</th>
+                        <th style={tableHeadStyle}>Lokasi</th>
+                        <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedList.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ padding: "40px", textAlign: "center" }}>
+                            <Text c="dimmed">Data tidak ditemukan</Text>
+                          </td>
+                        </tr>
+                      ) : (
+                        sortedList.map((item, i) => {
                           const safeSlug = String(item.slug ?? "");
                           const safeSku = String(item.product_varian?.[0]?.sku ?? "-");
                           const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
@@ -655,118 +718,92 @@ const Merch: React.FC = () => {
                           const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
                           const location = item.has_store_location?.store_name || "-";
                           const creatorName = getCreatorName(item.creator_id);
-                          const creatorEmail = getCreatorEmail(item.creator_id);
                           const productImage = item.product_image?.[0]?.image_url;
 
                           return (
-                            <TableRow key={safeId} className="hover:bg-gray-50/50 transition-colors">
-                              <TableCell className="text-gray-400 font-medium">{((page - 1) * PER_PAGE) + i + 1}</TableCell>
-
-                              <TableCell>
-                                <Group gap="sm" wrap="nowrap">
-                                  <Avatar 
-                                    src={creators.find(c => c.id === item.creator_id)?.image_url} 
-                                    radius="xl" 
+                            <tr key={item.id} className="table-row-hover" style={{ borderBottom: "1px solid #f8f9fa" }}>
+                              <td style={tableCellStyle}>
+                                <Text size="xs" c="dimmed">{(page - 1) * PER_PAGE + i + 1}</Text>
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Group gap="xs" wrap="nowrap">
+                                  <Avatar
+                                    src={creators.find(c => c.id === item.creator_id)?.image_url}
+                                    radius="sm"
                                     size="sm"
-                                    color="#0B387C"
+                                    color="blue"
                                   >
                                     {creatorName.substring(0, 1)}
                                   </Avatar>
-                                  <div className="flex flex-col min-w-0">
-                                    <Text size="sm" fw={600} truncate className="text-gray-800">{creatorName}</Text>
-                                    {creatorEmail && (
-                                      <Text size="xs" c="dimmed" truncate>{creatorEmail}</Text>
-                                    )}
-                                  </div>
+                                  <Text size="xs" fw={700} truncate maw={150}>{creatorName}</Text>
                                 </Group>
-                              </TableCell>
-
-                              <TableCell>
-                                <Group gap="sm" wrap="nowrap">
-                                  <div className="w-10 h-10 rounded-md border border-gray-100 overflow-hidden bg-gray-50 flex-shrink-0">
-                                    {productImage ? (
-                                      <img src={productImage} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <Center className="h-full">
-                                        <Icon icon="ph:package" className="text-gray-300 text-xl" />
-                                      </Center>
-                                    )}
-                                  </div>
-                                  <Text size="sm" fw={500} lineClamp={2} className="text-gray-800 max-w-[200px]">
-                                    {String(item.product_name ?? "Produk Tanpa Nama")}
-                                  </Text>
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Group gap="xs" wrap="nowrap">
+                                  {productImage && (
+                                    <div style={{ width: 35, height: 35, borderRadius: 4, overflow: "hidden", border: "1px solid #eee" }}>
+                                      <img src={productImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                  )}
+                                  <Text size="xs" fw={600} lineClamp={1} maw={200}>{item.product_name || "Tanpa Nama"}</Text>
                                 </Group>
-                              </TableCell>
-
-                              <TableCell>
-                                <Text size="xs" fw={600} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase tracking-tighter inline-block">
-                                  {safeSku === "-" ? "N/A" : safeSku}
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Badge color="gray" variant="light" radius="xs" size="xs">{safeSku}</Badge>
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Text size="xs" fw={700} c="blue">
+                                  <NumberFormatter value={safePrice} prefix="Rp " thousandSeparator="." />
                                 </Text>
-                              </TableCell>
-
-                              <TableCell>
-                                <Text size="sm" fw={700} className="text-[#0B387C]">
-                                  <NumberFormatter value={safePrice} prefix="Rp " thousandSeparator="." decimalSeparator="," />
-                                </Text>
-                              </TableCell>
-
-                              <TableCell>
-                                <Badge 
-                                  variant="light" 
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Badge
                                   color={(stock ?? 0) > 10 ? "green" : (stock ?? 0) > 0 ? "orange" : "red"}
-                                  radius="sm"
+                                  variant="filled"
+                                  radius="xs"
+                                  size="xs"
                                 >
                                   {stock ?? 0} Unit
                                 </Badge>
-                              </TableCell>
-
-                              <TableCell>
-                                <Group gap={4} wrap="nowrap" className="text-gray-600">
-                                  <Icon icon="ph:map-pin" className="text-gray-400" />
-                                  <Text size="xs" fw={500} truncate className="max-w-[120px]">{String(location)}</Text>
-                                </Group>
-                              </TableCell>
-
-                              <TableCell>
-                                <Group gap={8} wrap="nowrap">
-                                  <Tooltip label={item.product_status_id === 2 ? "Nonaktifkan Produk" : "Aktifkan Produk"}>
-                                    <ActionIcon 
-                                      variant="subtle" 
+                              </td>
+                              <td style={tableCellStyle}>
+                                <Text size="xs" c="dimmed" truncate maw={100}>{location}</Text>
+                              </td>
+                              <td style={{ ...tableCellStyle, textAlign: "center" }}>
+                                <Group gap={5} justify="center">
+                                  <Tooltip label={item.product_status_id === 2 ? "Nonaktifkan" : "Aktifkan"}>
+                                    <ActionIcon
+                                      variant="filled"
                                       onClick={() => handleToggleStatus(item.id, item.product_status_id !== 2)}
                                       color={item.product_status_id === 2 ? "green" : "gray"}
-                                      size="md"
+                                      size="sm"
                                     >
-                                      <Icon 
-                                        icon={item.product_status_id === 2 ? "ph:toggle-right-fill" : "ph:toggle-left"} 
-                                        className="text-[26px]"
-                                      />
+                                      <Icon icon={item.product_status_id === 2 ? "ph:toggle-right-fill" : "ph:toggle-left-fill"} />
                                     </ActionIcon>
                                   </Tooltip>
-                                  
-                                  <Tooltip label="Lihat Produk">
-                                    <ActionIcon variant="subtle" color="blue" component={Link} href={`/dashboard/merch/${safeSlug}`} size="md">
-                                      <Icon icon="ph:eye" className="text-xl" />
+                                  <Tooltip label="Lihat">
+                                    <ActionIcon variant="filled" color="blue" component={Link} href={`/dashboard/merch/${safeSlug}`} size="sm">
+                                      <Icon icon="ph:eye" />
                                     </ActionIcon>
                                   </Tooltip>
-
-                                  <Tooltip label="Edit Produk">
-                                    <ActionIcon variant="subtle" color="indigo" onClick={() => openCreateModal(safeSlug)} size="md">
-                                      <Icon icon="ph:pencil-simple" className="text-xl" />
+                                  <Tooltip label="Edit">
+                                    <ActionIcon variant="filled" color="indigo" onClick={() => openCreateModal(safeSlug)} size="sm">
+                                      <Icon icon="ph:pencil-simple" />
                                     </ActionIcon>
                                   </Tooltip>
-
-                                  <Tooltip label="Hapus Produk">
-                                    <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(item.id)} size="md">
-                                      <Icon icon="ph:trash" className="text-xl" />
+                                  <Tooltip label="Hapus">
+                                    <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item.id)} size="sm">
+                                      <Icon icon="ph:trash" />
                                     </ActionIcon>
                                   </Tooltip>
                                 </Group>
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           );
-                        })}
-                    </TableBody>
-                  </Table>
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
                 {filtered.length === 0 && (
@@ -779,12 +816,12 @@ const Merch: React.FC = () => {
                         Belum ada merchandise
                       </Title>
                       <Text c="dimmed" size="sm" className="max-w-xs mt-2 mb-6">
-                        {selectedCreator 
+                        {selectedCreator
                           ? `${getCreatorName(Number(selectedCreator))} belum memiliki produk yang terdaftar di kategori ini.`
                           : "Gunakan tombol di bawah untuk menambahkan produk pertama Anda atau ubah filter pencarian."
                         }
                       </Text>
-                      <ButtonM 
+                      <ButtonM
                         variant="filled"
                         color="#0B387C"
                         radius="md"
@@ -803,10 +840,10 @@ const Merch: React.FC = () => {
                       Menampilkan <span className="text-gray-700">{Math.min(filtered.length, PER_PAGE)}</span> dari <span className="text-gray-700">{filtered.length}</span> produk
                     </Text>
                     <Group gap={8}>
-                      <ButtonM 
-                        variant="white" 
-                        color="gray" 
-                        disabled={page <= 1} 
+                      <ButtonM
+                        variant="white"
+                        color="gray"
+                        disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         leftSection={<Icon icon="ph:caret-left-bold" />}
                         size="xs"
@@ -820,10 +857,10 @@ const Merch: React.FC = () => {
                           {page} <span className="text-gray-400 mx-1">/</span> {lastPage}
                         </Text>
                       </Paper>
-                      <ButtonM 
-                        variant="white" 
-                        color="gray" 
-                        disabled={page >= lastPage} 
+                      <ButtonM
+                        variant="white"
+                        color="gray"
+                        disabled={page >= lastPage}
                         onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
                         rightSection={<Icon icon="ph:caret-right-bold" />}
                         size="xs"

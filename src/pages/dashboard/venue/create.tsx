@@ -21,7 +21,7 @@ export default function Create({}: Readonly<ComponentProps>) {
     const [venueFacilities, setVenueFacilities] = useState<any[]>();
     const user = useLoggedUser();
     const router = useRouter();
-    const { slug } = router.query;
+    const { id: slug } = router.query;
 
     const form = useForm<any>({
         initialValues: {

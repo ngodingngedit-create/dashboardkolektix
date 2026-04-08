@@ -1,13 +1,28 @@
-// festaqingkolektiv/src/pages/dashboard/admin/permission/index.tsx
 import { useState, useEffect, useMemo } from "react";
-import { LoadingOverlay, Stack, Flex, Text, Group, Badge, Button, Select, Checkbox, Grid, Divider, Alert, TextInput, NumberInput, Card, Box, Pagination, ActionIcon, Tooltip } from "@mantine/core";
+import { LoadingOverlay, Stack, Flex, Text, Group, Badge, Button, Select, Checkbox, Grid, Divider, TextInput, NumberInput, Box, Pagination, ActionIcon, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react";
-import { useDisclosure, useListState } from "@mantine/hooks";
+import { useListState, useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import moment from "moment";
-import TableData from "@/components/TableData";
 import fetch from "@/utils/fetch";
+
+const tableHeadStyle: React.CSSProperties = {
+  padding: "12px 15px",
+  textAlign: "left",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#495057",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+
+const tableCellStyle: React.CSSProperties = {
+  padding: "10px 15px",
+  fontSize: "13px",
+  color: "#495057",
+  verticalAlign: "middle",
+};
 
 // Interface untuk data permission
 interface PermissionProps {
@@ -76,6 +91,10 @@ export default function KelolaPermission() {
   const [selectedPermission, setSelectedPermission] = useState<PermissionProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "created_at", direction: "desc" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
+
   // Form state untuk permission
   const form = useForm({
     initialValues: {
@@ -94,7 +113,6 @@ export default function KelolaPermission() {
       user_id: (value) => {
         if (!value) return "User ID harus diisi";
         if (isNaN(Number(value))) return "User ID harus berupa angka";
-        if (Number(value) <= 0) return "User ID harus lebih dari 0";
         return null;
       },
       role_id: (value) => (!value ? "Role harus dipilih" : null),
@@ -117,20 +135,12 @@ export default function KelolaPermission() {
           data: {},
           before: () => setLoading.append("getdata"),
           success: (response) => {
-            console.log("API Permission Response:", response);
-
             if (response && response.data) {
               let permissions: PermissionProps[] = [];
-
-              if (Array.isArray(response.data.data)) {
-                permissions = response.data.data;
-              } else if (Array.isArray(response.data)) {
-                permissions = response.data;
-              } else if (response.data.items) {
-                permissions = response.data.items;
-              } else {
-                permissions = [response.data];
-              }
+              if (Array.isArray(response.data.data)) permissions = response.data.data;
+              else if (Array.isArray(response.data)) permissions = response.data;
+              else if (response.data.items) permissions = response.data.items;
+              else permissions = [response.data];
 
               setData(permissions);
               setPagination(response?.data || response);
@@ -138,12 +148,7 @@ export default function KelolaPermission() {
           },
           complete: () => setLoading.filter((e) => e !== "getdata"),
           error: (error) => {
-            console.error("Error fetching permission data:", error);
-            notifications.show({
-              title: "Gagal",
-              message: "Gagal mengambil data permission",
-              color: "red",
-            });
+            notifications.show({ title: "Gagal", message: "Gagal mengambil data permission", color: "red" });
           },
         });
       } catch (error) {
@@ -160,31 +165,14 @@ export default function KelolaPermission() {
         data: {},
         before: () => setLoading.append("getroles"),
         success: (response) => {
-          console.log("API Role Response:", response);
-
           if (response && response.data) {
             const rolesData = Array.isArray(response.data.data) ? response.data.data : Array.isArray(response.data) ? response.data : [];
-            setRoles(
-              rolesData.map((role: any) => ({
-                value: role.id.toString(),
-                label: role.name,
-              })),
-            );
+            setRoles(rolesData.map((role: any) => ({ value: role.id.toString(), label: role.name })));
           }
         },
         complete: () => setLoading.filter((e) => e !== "getroles"),
-        error: (error) => {
-          console.error("Error fetching roles:", error);
-          notifications.show({
-            title: "Gagal",
-            message: "Gagal mengambil data roles",
-            color: "red",
-          });
-        },
       });
-    } catch (error) {
-      console.error("Error fetching roles:", error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const getModules = async () => {
@@ -195,62 +183,16 @@ export default function KelolaPermission() {
         data: {},
         before: () => setLoading.append("getmodules"),
       });
-
-      console.log("RAW API Modules Response:", response);
-
-      // SIMPLE LOGIC - ambil data apapun yang ada
       let modulesData = [];
-
-      // Coba dari berbagai kemungkinan lokasi data
-      if (Array.isArray(response)) {
-        modulesData = response;
-      } else if (response && Array.isArray(response.data)) {
-        modulesData = response.data;
-      } else if (response && response.data && Array.isArray(response.data.data)) {
-        modulesData = response.data.data;
-      } else if (response && response.data && Array.isArray(response.data.modules)) {
-        modulesData = response.data.modules;
-      } else if (response && response.modules && Array.isArray(response.modules)) {
-        modulesData = response.modules;
-      }
-
-      console.log("Extracted modulesData:", modulesData);
+      if (Array.isArray(response)) modulesData = response;
+      else if (response && Array.isArray(response.data)) modulesData = response.data;
+      else if (response && response.data && Array.isArray(response.data.data)) modulesData = response.data.data;
 
       if (modulesData.length > 0) {
-        // Map data untuk dropdown - SIMPLE
-        const moduleOptions = modulesData.map((module: any) => ({
-          value: module.id ? module.id.toString() : Math.random().toString(),
-          label: module.module_name || module.name || `Module ${module.id || "unknown"}`,
-        }));
-
-        console.log("Module Options:", moduleOptions);
-        setModules(moduleOptions);
-      } else {
-        console.error("No modules data found!");
-        // FALLBACK: Data langsung dari console Anda
-        const fallbackModules = [
-          { value: "1", label: "Event" },
-          { value: "2", label: "Merchandise" },
-          { value: "3", label: "lowongan" },
-          { value: "4", label: "talenta" },
-          { value: "5", label: "Venue" },
-        ];
-        setModules(fallbackModules);
+        setModules(modulesData.map((module: any) => ({ value: module.id.toString(), label: module.module_name || module.name })));
       }
-    } catch (error) {
-      console.error("Error fetching modules:", error);
-      // FALLBACK jika error
-      const fallbackModules = [
-        { value: "1", label: "Event" },
-        { value: "2", label: "Merchandise" },
-        { value: "3", label: "lowongan" },
-        { value: "4", label: "talenta" },
-        { value: "5", label: "Venue" },
-      ];
-      setModules(fallbackModules);
-    } finally {
-      setLoading.filter((e) => e !== "getmodules");
-    }
+    } catch (error) { console.error(error); }
+    finally { setLoading.filter((e) => e !== "getmodules"); }
   };
 
   const handleAddClick = () => {
@@ -260,14 +202,9 @@ export default function KelolaPermission() {
     setIsFormVisible(true);
   };
 
-  const handleEditClick = (rowData: any) => {
-    const permissionId = rowData.id;
-    const permission = data.find((p) => p.id === permissionId) as PermissionProps;
-    if (!permission) return;
-
+  const handleEditClick = (permission: any) => {
     setSelectedPermission(permission);
     setIsEditMode(true);
-
     form.setValues({
       user_id: permission.user_id.toString(),
       role_id: permission.role_id.toString(),
@@ -279,39 +216,21 @@ export default function KelolaPermission() {
       is_download: permission.is_download || 0,
       is_import: permission.is_import || 0,
     });
-
     setIsFormVisible(true);
   };
 
-  const handleDelete = async (rowData: any) => {
-    const permissionId = rowData.id;
-    const permission = data.find((p) => p.id === permissionId) as PermissionProps;
-    if (!permission) return;
-
-    if (!confirm(`Apakah Anda yakin ingin menghapus permission ini?`)) {
-      return;
-    }
-
+  const handleDelete = async (permission: any) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus permission ini?`)) return;
     await fetch({
       url: `permission/${permission.id}`,
       method: "DELETE",
       data: {},
       before: () => setLoading.append("delete"),
       success: () => {
-        notifications.show({
-          title: "Berhasil",
-          message: "Permission berhasil dihapus",
-          color: "green",
-        });
+        notifications.show({ title: "Berhasil", message: "Permission berhasil dihapus", color: "green" });
         getData();
       },
-      error: (error) => {
-        notifications.show({
-          title: "Gagal",
-          message: error.message || "Gagal menghapus permission",
-          color: "red",
-        });
-      },
+      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menghapus", color: "red" }),
       complete: () => setLoading.filter((e) => e !== "delete"),
     });
   };
@@ -329,189 +248,53 @@ export default function KelolaPermission() {
       is_import: values.is_import ? 1 : 0,
     };
 
-    console.log("Form Data to Submit:", formData);
+    const url = isEditMode ? `permissions/${selectedPermission?.id}` : "permissions";
+    const method = isEditMode ? "PUT" : "POST";
 
-    if (isEditMode && selectedPermission) {
-      await fetch({
-        url: `permissions/${selectedPermission.id}`,
-        method: "PUT",
-        data: formData,
-        before: () => setLoading.append("submit"),
-        success: () => {
-          notifications.show({
-            title: "Berhasil",
-            message: "Permission berhasil diperbarui",
-            color: "green",
-          });
-          getData();
-          setIsFormVisible(false);
-          form.reset();
-        },
-        error: (error) => {
-          notifications.show({
-            title: "Gagal",
-            message: error.message || "Gagal memperbarui permission",
-            color: "red",
-          });
-        },
-        complete: () => setLoading.filter((e) => e !== "submit"),
-      });
-    } else {
-      await fetch({
-        url: "permissions",
-        method: "POST",
-        data: formData,
-        before: () => setLoading.append("submit"),
-        success: () => {
-          notifications.show({
-            title: "Berhasil",
-            message: "Permission berhasil ditambahkan",
-            color: "green",
-          });
-          getData();
-          setIsFormVisible(false);
-          form.reset();
-        },
-        error: (error) => {
-          notifications.show({
-            title: "Gagal",
-            message: error.message || "Gagal menambahkan permission",
-            color: "red",
-          });
-        },
-        complete: () => setLoading.filter((e) => e !== "submit"),
-      });
-    }
-  };
-
-  const mapData = (permission: any) => {
-    const permissionData = permission as PermissionProps;
-    return {
-      id: permissionData.id,
-      user: (
-        <Stack gap={2}>
-          <Text fw={500}>{permissionData.has_user?.name || "-"}</Text>
-          <Text size="xs" c="dimmed">
-            {permissionData.has_user?.email || ""}
-          </Text>
-          <Text size="xs" c="blue">
-            ID: {permissionData.user_id}
-          </Text>
-        </Stack>
-      ),
-      role: (
-        <Badge color="blue" variant="light" size="sm">
-          {permissionData.has_role?.name || "-"}
-        </Badge>
-      ),
-      module: (
-        <Stack gap={2}>
-          <Text size="sm" fw={500}>
-            {permissionData.has_module?.module_name || "-"}
-          </Text>
-          <Text size="xs" c="dimmed">
-            ID: {permissionData.module_id}
-          </Text>
-        </Stack>
-      ),
-      permissions: (
-        <Group gap="xs">
-          {permissionData.is_index === 1 && (
-            <Badge size="xs" color="gray">
-              Index
-            </Badge>
-          )}
-          {permissionData.is_view === 1 && (
-            <Badge size="xs" color="green">
-              View
-            </Badge>
-          )}
-          {permissionData.is_update === 1 && (
-            <Badge size="xs" color="yellow">
-              Update
-            </Badge>
-          )}
-          {permissionData.is_delete === 1 && (
-            <Badge size="xs" color="red">
-              Delete
-            </Badge>
-          )}
-          {permissionData.is_download === 1 && (
-            <Badge size="xs" color="blue">
-              Download
-            </Badge>
-          )}
-          {permissionData.is_import === 1 && (
-            <Badge size="xs" color="violet">
-              Import
-            </Badge>
-          )}
-        </Group>
-      ),
-      created_at: permissionData.created_at ? moment(permissionData.created_at).format("DD MMM YYYY HH:mm") : "-",
-      updated_at: permissionData.updated_at ? moment(permissionData.updated_at).format("DD MMM YYYY HH:mm") : "-",
-    };
-  };
-
-  const getStats = () => {
-    const userIds: number[] = [];
-    const roleIds: number[] = [];
-    const moduleIds: number[] = [];
-
-    data.forEach((permission) => {
-      if (!userIds.includes(permission.user_id)) {
-        userIds.push(permission.user_id);
-      }
-      if (!roleIds.includes(permission.role_id)) {
-        roleIds.push(permission.role_id);
-      }
-      if (!moduleIds.includes(permission.module_id)) {
-        moduleIds.push(permission.module_id);
-      }
+    await fetch({
+      url,
+      method,
+      data: formData,
+      before: () => setLoading.append("submit"),
+      success: () => {
+        notifications.show({ title: "Berhasil", message: `Permission berhasil ${isEditMode ? "diperbarui" : "ditambahkan"}`, color: "green" });
+        getData();
+        setIsFormVisible(false);
+        form.reset();
+      },
+      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menyimpan", color: "red" }),
+      complete: () => setLoading.filter((e) => e !== "submit"),
     });
-
-    return {
-      total: data.length,
-      users: userIds.length,
-      roles: roleIds.length,
-      modules: moduleIds.length,
-    };
   };
-
-  const stats = getStats();
-
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: null, direction: null });
-  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredData = useMemo(() => {
     let result = [...data];
-    if (searchQuery) {
+    if (debouncedSearch) {
+      const needle = debouncedSearch.toLowerCase().trim();
       result = result.filter(
         (item) =>
-          (item.has_user?.name && item.has_user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.has_role?.name && item.has_role.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.has_module?.module_name && item.has_module.module_name.toLowerCase().includes(searchQuery.toLowerCase()))
+          (item.has_user?.name && item.has_user.name.toLowerCase().includes(needle)) ||
+          (item.has_role?.name && item.has_role.name.toLowerCase().includes(needle)) ||
+          (item.has_module?.module_name && item.has_module.module_name.toLowerCase().includes(needle))
       );
     }
     if (sortConfig.key && sortConfig.direction) {
       result.sort((a: any, b: any) => {
         let valA = a[sortConfig.key as string];
         let valB = b[sortConfig.key as string];
-
         if (sortConfig.key === "user") { valA = a.has_user?.name; valB = b.has_user?.name; }
         if (sortConfig.key === "role") { valA = a.has_role?.name; valB = b.has_role?.name; }
         if (sortConfig.key === "module") { valA = a.has_module?.module_name; valB = b.has_module?.module_name; }
 
         valA = (valA || "").toString().toLowerCase();
         valB = (valB || "").toString().toLowerCase();
-
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
     return result;
-  }, [data, searchQuery, sortConfig]);
+  }, [data, debouncedSearch, sortConfig]);
 
   const requestSort = (key: string) => {
     let direction: "asc" | "desc" | null = "asc";
@@ -525,74 +308,57 @@ export default function KelolaPermission() {
       <Flex align="center" gap={15}>
         <Tooltip label="Kembali">
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
-            <Icon icon="mdi:arrow-left" width={20} />
+            <Icon icon="ph:arrow-left-bold" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Permission" : "Tambah Permission Baru"}</Text>
-          <Text size="xs" c="dimmed">Isi form di bawah untuk mengatur hak akses</Text>
+          <Text size="xs" c="dimmed">Kelola hak akses user ke modul tertentu</Text>
         </Stack>
       </Flex>
 
       <form id="permission-form" onSubmit={form.onSubmit(handleFormSubmit)}>
-        <Card withBorder padding="xl" radius="md" shadow="sm">
+        <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", padding: "30px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
           <LoadingOverlay visible={loading.includes("submit")} />
-          <Stack gap="md">
-            <Grid>
-              <Grid.Col span={6}>
-                <NumberInput label="User ID" placeholder="Masukkan User ID (angka)" required min={1} allowNegative={false} allowDecimal={false} description="Masukkan ID user berupa angka" {...form.getInputProps("user_id")} />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <Select label="Role" placeholder="Pilih role" data={roles} searchable required nothingFoundMessage="Role tidak ditemukan" {...form.getInputProps("role_id")} />
-              </Grid.Col>
-            </Grid>
+          <Grid>
+            <Grid.Col span={6}>
+              <NumberInput label="User ID" placeholder="ID User" required min={1} {...form.getInputProps("user_id")} variant="filled" />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Select label="Role" placeholder="Pilih role" data={roles} searchable required {...form.getInputProps("role_id")} variant="filled" />
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <Select label="Module" placeholder="Pilih module" data={modules} searchable required {...form.getInputProps("module_id")} variant="filled" />
+            </Grid.Col>
+          </Grid>
 
-            <Select label="Module" placeholder="Pilih module" data={modules} searchable required nothingFoundMessage="Module tidak ditemukan" description="Pilih module yang akan diberikan permission" {...form.getInputProps("module_id")} />
+          <Divider my="xl" label="Access Rights" labelPosition="center" />
 
-            {modules.length === 0 && (
-              <Text size="sm" c="red">
-                ⚠️ Module belum tersedia. Cek console untuk detail error.
-              </Text>
-            )}
-
-            {modules.length > 0 && (
-              <Text size="xs" c="dimmed">
-                {modules.length} module tersedia
-              </Text>
-            )}
-
-            <Divider my="sm" label="Permission Settings" />
-
-            <Grid>
-              <Grid.Col span={4}>
-                <Checkbox label="Index" description="Akses halaman index" checked={form.values.is_index === 1} onChange={(e) => form.setFieldValue("is_index", e.currentTarget.checked ? 1 : 0)} />
+          <Grid>
+            {[
+              { key: "is_index", label: "Index", icon: "ph:list-bullets" },
+              { key: "is_view", label: "View", icon: "ph:eye" },
+              { key: "is_update", label: "Update", icon: "ph:pencil-simple" },
+              { key: "is_delete", label: "Delete", icon: "ph:trash" },
+              { key: "is_download", label: "Download", icon: "ph:download-simple" },
+              { key: "is_import", label: "Import", icon: "ph:upload-simple" },
+            ].map((perm) => (
+              <Grid.Col span={4} key={perm.key}>
+                <Checkbox 
+                  label={perm.label} 
+                  checked={(form.values as any)[perm.key] === 1} 
+                  onChange={(e) => form.setFieldValue(perm.key, e.currentTarget.checked ? 1 : 0)} 
+                  styles={{ label: { fontWeight: 500 } }}
+                />
               </Grid.Col>
-              <Grid.Col span={4}>
-                <Checkbox label="View" description="Akses view data" checked={form.values.is_view === 1} onChange={(e) => form.setFieldValue("is_view", e.currentTarget.checked ? 1 : 0)} />
-              </Grid.Col>
-              <Grid.Col span={4}>
-                <Checkbox label="Update" description="Akses update data" checked={form.values.is_update === 1} onChange={(e) => form.setFieldValue("is_update", e.currentTarget.checked ? 1 : 0)} />
-              </Grid.Col>
-              <Grid.Col span={4}>
-                <Checkbox label="Delete" description="Akses delete data" checked={form.values.is_delete === 1} onChange={(e) => form.setFieldValue("is_delete", e.currentTarget.checked ? 1 : 0)} />
-              </Grid.Col>
-              <Grid.Col span={4}>
-                <Checkbox label="Download" description="Akses download data" checked={form.values.is_download === 1} onChange={(e) => form.setFieldValue("is_download", e.currentTarget.checked ? 1 : 0)} />
-              </Grid.Col>
-              <Grid.Col span={4}>
-                <Checkbox label="Import" description="Akses import data" checked={form.values.is_import === 1} onChange={(e) => form.setFieldValue("is_import", e.currentTarget.checked ? 1 : 0)} />
-              </Grid.Col>
-            </Grid>
-
-          </Stack>
-        </Card>
+            ))}
+          </Grid>
+        </Box>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} disabled={loading.includes("submit")}>
-              Batal
-            </Button>
-            <Button type="submit" form="permission-form" color="blue" loading={loading.includes("submit")}>
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>Batal</Button>
+            <Button type="submit" form="permission-form" color="indigo" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan Permission"}
             </Button>
           </Flex>
@@ -605,63 +371,66 @@ export default function KelolaPermission() {
     <Stack className="p-[20px] md:p-[30px]" gap={30}>
       <LoadingOverlay visible={loading.includes("getdata")} />
 
-      <Flex gap={10} justify="space-between" align="center">
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Kelola Permission</Text>
-          <Text size="sm" c="gray">Daftar semua permission yang tersedia di sistem</Text>
+      <Flex justify="space-between" align="center">
+        <Stack gap={2}>
+          <Text size="1.8rem" fw={600} c="black">Kelola Permission</Text>
+          <Text size="sm" c="black">Daftar semua permission kustom per user</Text>
         </Stack>
-        <Button onClick={handleAddClick} color="blue">+ Tambah Permission</Button>
+        <Button 
+          onClick={handleAddClick} 
+          leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}
+          color="indigo"
+          radius="md"
+        >
+          Tambah Permission
+        </Button>
       </Flex>
 
-      <Group grow gap="md">
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #e0e0e0", backgroundColor: "#f8f9fa" }} gap={5}>
-          <Text size="sm" c="gray">Total Permission</Text>
-          <Text size="1.5rem" fw={600}>{stats.total}</Text>
-        </Stack>
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #dbeafe", backgroundColor: "#eff6ff" }} gap={5}>
-          <Text size="sm" c="blue">User Unik</Text>
-          <Text size="1.5rem" fw={600} c="blue">{stats.users}</Text>
-        </Stack>
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #fde68a", backgroundColor: "#fffbeb" }} gap={5}>
-          <Text size="sm" c="yellow">Role Unik</Text>
-          <Text size="1.5rem" fw={600} c="yellow">{stats.roles}</Text>
-        </Stack>
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #ddd6fe", backgroundColor: "#f5f3ff" }} gap={5}>
-          <Text size="sm" c="violet">Module Unik</Text>
-          <Text size="1.5rem" fw={600} c="violet">{stats.modules}</Text>
-        </Stack>
-      </Group>
-
-      <Card withBorder p={0} radius="md" style={{ overflow: "hidden" }}>
-        <Flex justify="space-between" align="center" p="md" style={{ borderBottom: "1px solid #f1f3f5" }}>
-          <Text fw={600}>Daftar Permission</Text>
-          <Flex gap={10} align="center">
-            <Tooltip label="Refresh Data">
-              <ActionIcon variant="filled" color="blue" size="lg" onClick={() => getData()} loading={loading.includes("getdata")}>
-                <Icon icon="mdi:refresh" width={20} />
-              </ActionIcon>
-            </Tooltip>
-            <TextInput placeholder="Cari permission..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: 250 }} />
-          </Flex>
+      <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 250 }}>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <TextInput 
+              placeholder="Cari user, role, module..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
+            />
+          </div>
         </Flex>
 
         <Box style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
-              <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #dee2e6" }}>
+              <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
-                  { label: "ID", sortable: true, key: "id" },
+                  { label: "No", sortable: false },
                   { label: "User", sortable: true, key: "user" },
                   { label: "Role", sortable: true, key: "role" },
                   { label: "Module", sortable: true, key: "module" },
-                  { label: "Permissions", sortable: false },
+                  { label: "Rights", sortable: false },
                   { label: "Aksi", sortable: false },
                 ].map((col, i) => (
-                  <th key={i} onClick={() => col.sortable && requestSort(col.key!)} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#495057", textTransform: "uppercase", cursor: col.sortable ? "pointer" : "default", position: col.label === "Aksi" ? "sticky" : "static", right: col.label === "Aksi" ? 0 : "auto", backgroundColor: col.label === "Aksi" ? "#f8f9fa" : "transparent", zIndex: col.label === "Aksi" ? 10 : 1 }}>
-                    <Flex align="center" gap={4}>
+                  <th 
+                    key={i} 
+                    onClick={() => col.sortable && requestSort(col.key!)} 
+                    style={{ 
+                      ...tableHeadStyle,
+                      cursor: col.sortable ? "pointer" : "default",
+                      position: col.label === "Aksi" ? "sticky" : "static", 
+                      right: col.label === "Aksi" ? 0 : "auto", 
+                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent",
+                      zIndex: col.label === "Aksi" ? 10 : 1
+                    }}
+                  >
+                    <Flex align="center" gap={6}>
                       {col.label}
                       {col.sortable && (
-                        sortConfig.key === col.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : <span style={{ opacity: 0.3 }}>↑</span>
+                        sortConfig.key === col.key ? (
+                          <Icon icon={sortConfig.direction === "asc" ? "ph:caret-up-bold" : "ph:caret-down-bold"} width={12} className="text-indigo-500" />
+                        ) : (
+                          <Icon icon="ph:caret-up-down-bold" width={12} className="text-gray-300" />
+                        )
                       )}
                     </Flex>
                   </th>
@@ -670,48 +439,60 @@ export default function KelolaPermission() {
             </thead>
             <tbody>
               {filteredData.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">Data tidak ditemukan</Text></td></tr>
+                <tr>
+                  <td colSpan={6} style={{ padding: "60px", textAlign: "center" }}>
+                    <Stack align="center" gap="xs">
+                      <Icon icon="ph:shield-slash" className="text-5xl text-gray-300" />
+                      <Text c="dimmed" fw={500}>Data permission tidak ditemukan</Text>
+                    </Stack>
+                  </td>
+                </tr>
               ) : (
                 filteredData.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                    <td style={{ padding: "12px 16px" }}><Text size="sm">{item.id}</Text></td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Stack gap={2}>
-                        <Text size="sm" fw={500}>{item.has_user?.name || "ID User: " + item.user_id}</Text>
-                        <Text size="xs" c="dimmed">{item.has_user?.email || "Email tidak ditemukan"}</Text>
+                  <tr 
+                    key={idx} 
+                    style={{ borderBottom: "1px solid #f1f3f5", transition: "background 0.2s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafd")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <td style={tableCellStyle}>
+                      <Text size="sm" fw={600} c="dimmed">
+                        {pagination?.current_page ? (Number(pagination.current_page) - 1) * (Number(pagination.per_page) || 10) + idx + 1 : idx + 1}
+                      </Text>
+                    </td>
+                    <td style={tableCellStyle}>
+                      <Stack gap={0}>
+                        <Text fw={600} size="sm" c="gray.8">{item.has_user?.name || "Admin?"}</Text>
+                        <Text size="xs" c="dimmed">{item.has_user?.email || "ID: "+item.user_id}</Text>
                       </Stack>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Badge color="blue" variant="light" size="sm">
+                    <td style={tableCellStyle}>
+                      <Badge color="indigo" variant="filled" size="xs" radius="xs">
                         {item.has_role?.name || "-"}
                       </Badge>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Stack gap={2}>
-                        <Text size="sm" fw={500}>{item.has_module?.module_name || "-"}</Text>
-                        <Text size="xs" c="dimmed">ID: {item.module_id}</Text>
-                      </Stack>
+                    <td style={tableCellStyle}>
+                      <Text fw={500} size="sm">{item.has_module?.module_name || "Module "+item.module_id}</Text>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Group gap="xs">
-                        {item.is_index === 1 && <Badge size="xs" color="gray">Index</Badge>}
-                        {item.is_view === 1 && <Badge size="xs" color="green">View</Badge>}
-                        {item.is_update === 1 && <Badge size="xs" color="yellow">Update</Badge>}
-                        {item.is_delete === 1 && <Badge size="xs" color="red">Delete</Badge>}
-                        {item.is_download === 1 && <Badge size="xs" color="blue">Download</Badge>}
-                        {item.is_import === 1 && <Badge size="xs" color="violet">Import</Badge>}
+                    <td style={tableCellStyle}>
+                      <Group gap={4}>
+                        {item.is_index === 1 && <Badge size="xs" radius="xs" color="gray" variant="outline">IDX</Badge>}
+                        {item.is_view === 1 && <Badge size="xs" radius="xs" color="teal" variant="light">VIEW</Badge>}
+                        {item.is_update === 1 && <Badge size="xs" radius="xs" color="orange" variant="light">UPD</Badge>}
+                        {item.is_delete === 1 && <Badge size="xs" radius="xs" color="red" variant="light">DEL</Badge>}
+                        {item.is_download === 1 && <Badge size="xs" radius="xs" color="indigo" variant="light">DL</Badge>}
                       </Group>
                     </td>
-                    <td style={{ padding: "12px 16px", position: "sticky", right: 0, backgroundColor: "#fff", zIndex: 5, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
-                      <Flex gap={8}>
-                        <Tooltip label="Edit">
-                          <ActionIcon variant="filled" color="blue" onClick={() => handleEditClick(item)}>
-                            <Icon icon="mdi:pencil-outline" width={16} />
+                    <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
+                      <Flex gap={6}>
+                        <Tooltip label="Edit Permission" withArrow>
+                          <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm">
+                            <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus">
-                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)}>
-                            <Icon icon="mdi:trash-can-outline" width={16} />
+                        <Tooltip label="Hapus" withArrow>
+                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm">
+                            <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
                       </Flex>
@@ -722,11 +503,11 @@ export default function KelolaPermission() {
             </tbody>
           </table>
         </Box>
-      </Card>
+      </Box>
 
       {pagination && pagination.last_page > 1 && (
         <Flex justify="center" mt="md">
-          <Pagination total={pagination.last_page} value={pagination.current_page} onChange={(page: number) => getData(`page=${page}`)} color="blue" />
+          <Pagination total={pagination.last_page} value={pagination.current_page} onChange={(page: number) => getData(`page=${page}`)} color="indigo" />
         </Flex>
       )}
     </Stack>

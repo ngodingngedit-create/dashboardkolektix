@@ -6,8 +6,25 @@ import { Pagination as PaginationType } from "@/types/model";
 import fetch from "@/utils/fetch";
 import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, TextInput, Select, FileInput, Textarea, Switch, Divider, Card, Box, Pagination, Grid, ActionIcon, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react";
-import { useDisclosure, useListState } from "@mantine/hooks";
+import { useDisclosure, useListState, useDebouncedValue } from "@mantine/hooks";
 import moment from "moment";
+
+const tableHeadStyle: React.CSSProperties = {
+  padding: "12px 15px",
+  textAlign: "left",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#495057",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+
+const tableCellStyle: React.CSSProperties = {
+  padding: "10px 15px",
+  fontSize: "13px",
+  color: "#495057",
+  verticalAlign: "middle",
+};
 
 // Interface untuk data creator (disesuaikan untuk user)
 interface CreatorProps {
@@ -61,8 +78,9 @@ export default function KelolaUser() {
   const [selectedUser, setSelectedUser] = useState<CreatorProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: null, direction: null });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "created_at", direction: "desc" });
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
 
   // Form state untuk user
   const form = useForm({
@@ -484,12 +502,13 @@ export default function KelolaUser() {
 
   const filteredData = useMemo(() => {
     let result = [...data];
-    if (searchQuery) {
+    if (debouncedSearch) {
+      const needle = debouncedSearch.toLowerCase().trim();
       result = result.filter(
         (item) =>
-          (item.has_user?.name && item.has_user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.has_user?.email && item.has_user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.name_event_organizer && item.name_event_organizer.toLowerCase().includes(searchQuery.toLowerCase()))
+          (item.has_user?.name && item.has_user.name.toLowerCase().includes(needle)) ||
+          (item.has_user?.email && item.has_user.email.toLowerCase().includes(needle)) ||
+          (item.name_event_organizer && item.name_event_organizer.toLowerCase().includes(needle))
       );
     }
     if (sortConfig.key && sortConfig.direction) {
@@ -498,9 +517,11 @@ export default function KelolaUser() {
         let valB = b[sortConfig.key as string];
 
         if (sortConfig.key === "user") { valA = a.has_user?.name; valB = b.has_user?.name; }
+        if (sortConfig.key === "status") { valA = a.status; valB = b.status; }
+        if (sortConfig.key === "is_verified") { valA = a.is_verified; valB = b.is_verified; }
 
-        valA = (valA || "").toString().toLowerCase();
-        valB = (valB || "").toString().toLowerCase();
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
 
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
@@ -508,7 +529,7 @@ export default function KelolaUser() {
       });
     }
     return result;
-  }, [data, searchQuery, sortConfig]);
+  }, [data, debouncedSearch, sortConfig]);
 
   const requestSort = (key: string) => {
     let direction: "asc" | "desc" | null = "asc";
@@ -631,47 +652,48 @@ export default function KelolaUser() {
     <Stack className="p-[20px] md:p-[30px]" gap={30}>
       <LoadingOverlay visible={loading.includes("getdata")} />
 
-      <Flex gap={10} justify="space-between" align="center">
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Kelola User</Text>
-          <Text size="sm" c="gray">Daftar semua user non-creator</Text>
+      <Flex justify="space-between" align="center">
+        <Stack gap={2}>
+          <Text size="1.8rem" fw={600} c="black">Kelola User</Text>
+          <Text size="sm" c="black">Daftar semua user kolektix</Text>
         </Stack>
-        <Button onClick={handleAddClick} color="blue">+ Tambah User</Button>
+        <Button 
+          onClick={handleAddClick} 
+          leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}
+          color="indigo"
+          radius="md"
+        >
+          Tambah User
+        </Button>
       </Flex>
 
-      <Group grow gap="md">
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #e0e0e0", backgroundColor: "#f8f9fa" }} gap={5}>
-          <Text size="sm" c="gray">Total User</Text>
-          <Text size="1.5rem" fw={600}>{stats.total}</Text>
-        </Stack>
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #dbeafe", backgroundColor: "#eff6ff" }} gap={5}>
-          <Text size="sm" c="blue">User Aktif</Text>
-          <Text size="1.5rem" fw={600} c="blue">{stats.active}</Text>
-        </Stack>
-        <Stack p="md" style={{ borderRadius: "8px", border: "1px solid #fde68a", backgroundColor: "#fffbeb" }} gap={5}>
-          <Text size="sm" c="yellow">Terverifikasi</Text>
-          <Text size="1.5rem" fw={600} c="yellow">{stats.verified}</Text>
-        </Stack>
-      </Group>
-
-      <Card withBorder p={0} radius="md" style={{ overflow: "hidden" }}>
-        <Flex justify="space-between" align="center" p="md" style={{ borderBottom: "1px solid #f1f3f5" }}>
-          <Text fw={600}>Daftar User</Text>
-          <Flex gap={10} align="center">
-            <Tooltip label="Refresh Data">
-              <ActionIcon variant="filled" color="blue" size="lg" onClick={() => getData()} loading={loading.includes("getdata")}>
-                <Icon icon="mdi:refresh" width={20} />
-              </ActionIcon>
-            </Tooltip>
-            <TextInput placeholder="Cari user..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: 250 }} />
-          </Flex>
+      <Box 
+        style={{ 
+          backgroundColor: "white", 
+          borderRadius: "12px", 
+          border: "1px solid #eee", 
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.03)"
+        }}
+      >
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 250 }}>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <TextInput 
+              placeholder="Cari user (nama, email)..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
+            />
+          </div>
         </Flex>
 
         <Box style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
-              <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #dee2e6" }}>
+              <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
+                  { label: "No", sortable: false },
                   { label: "Tanggal Dibuat", sortable: true, key: "created_at" },
                   { label: "User", sortable: true, key: "user" },
                   { label: "Kontak", sortable: false },
@@ -679,11 +701,26 @@ export default function KelolaUser() {
                   { label: "Verifikasi", sortable: true, key: "is_verified" },
                   { label: "Aksi", sortable: false },
                 ].map((col, i) => (
-                  <th key={i} onClick={() => col.sortable && requestSort(col.key!)} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#495057", textTransform: "uppercase", cursor: col.sortable ? "pointer" : "default", position: col.label === "Aksi" ? "sticky" : "static", right: col.label === "Aksi" ? 0 : "auto", backgroundColor: col.label === "Aksi" ? "#f8f9fa" : "transparent", zIndex: col.label === "Aksi" ? 10 : 1 }}>
-                    <Flex align="center" gap={4}>
+                  <th 
+                    key={i} 
+                    onClick={() => col.sortable && requestSort(col.key!)} 
+                    style={{ 
+                      ...tableHeadStyle,
+                      cursor: col.sortable ? "pointer" : "default",
+                      position: col.label === "Aksi" ? "sticky" : "static", 
+                      right: col.label === "Aksi" ? 0 : "auto", 
+                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent", 
+                      zIndex: col.label === "Aksi" ? 10 : 1 
+                    }}
+                  >
+                    <Flex align="center" gap={6}>
                       {col.label}
                       {col.sortable && (
-                        sortConfig.key === col.key ? (sortConfig.direction === "asc" ? "↑" : "↓") : <span style={{ opacity: 0.3 }}>↑</span>
+                        sortConfig.key === col.key ? (
+                          <Icon icon={sortConfig.direction === "asc" ? "ph:caret-up-bold" : "ph:caret-down-bold"} width={12} className="text-indigo-500" />
+                        ) : (
+                          <Icon icon="ph:caret-up-down-bold" width={12} className="text-gray-300" />
+                        )
                       )}
                     </Flex>
                   </th>
@@ -692,42 +729,85 @@ export default function KelolaUser() {
             </thead>
             <tbody>
               {filteredData.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">Data tidak ditemukan</Text></td></tr>
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px", textAlign: "center" }}>
+                    <Stack align="center" gap="xs">
+                      <Icon icon="ph:user-circle-minus" className="text-5xl text-gray-300" />
+                      <Text c="dimmed" fw={500}>Data user tidak ditemukan</Text>
+                    </Stack>
+                  </td>
+                </tr>
               ) : (
                 filteredData.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #f1f3f5" }}>
-                    <td style={{ padding: "12px 16px" }}><Text size="sm">{item.created_at ? moment(item.created_at).format("DD MMM YYYY") : "-"}</Text></td>
-                    <td style={{ padding: "12px 16px" }}>
+                  <tr 
+                    key={idx} 
+                    style={{ borderBottom: "1px solid #f1f3f5", transition: "background 0.2s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafd")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <td style={tableCellStyle}>
+                      <Text size="sm" fw={600} c="dimmed">
+                        {pagination?.current_page ? (Number(pagination.current_page) - 1) * (Number(pagination.per_page) || 10) + idx + 1 : idx + 1}
+                      </Text>
+                    </td>
+                    <td style={tableCellStyle}>
+                      <Text size="sm">{item.created_at ? moment(item.created_at).format("DD MMM YYYY") : "-"}</Text>
+                    </td>
+                    <td style={tableCellStyle}>
                       <Group gap="sm">
-                        <Avatar color="blue" radius="sm" size="md">{item.has_user?.name?.charAt(0) || "?"}</Avatar>
-                        <Stack gap={2}>
-                          <Text size="sm" fw={500}>{item.has_user?.name || "-"}</Text>
+                        <Avatar color="indigo" radius="sm" size="md" variant="light">
+                          {item.has_user?.name?.charAt(0) || "?"}
+                        </Avatar>
+                        <Stack gap={0}>
+                          <Text size="sm" fw={600} c="gray.8">{item.has_user?.name || "-"}</Text>
                           <Text size="xs" c="dimmed">{item.has_user?.email || ""}</Text>
-                          <Text size="xs" c="dimmed">ID: {item.user_id || "-"}</Text>
+                          <Text size="xs" c="indigo.4">ID: {item.user_id || "-"}</Text>
                         </Stack>
                       </Group>
                     </td>
-                    <td style={{ padding: "12px 16px" }}><Text size="sm">{item.has_user?.phone || "-"}</Text></td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Badge color={item.status === "active" ? "green" : "gray"} variant="light" size="sm">
-                        {item.status === "active" ? "Aktif" : "Nonaktif"}
+                    <td style={tableCellStyle}>
+                      <Text size="sm" fw={500}>{item.has_user?.phone || "-"}</Text>
+                    </td>
+                    <td style={tableCellStyle}>
+                      <Badge 
+                        color={item.status === "active" ? "teal" : "gray"} 
+                        variant="filled" 
+                        radius="xs"
+                        size="xs"
+                      >
+                        {item.status === "active" ? "AKTIF" : "NONAKTIF"}
                       </Badge>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <Badge color={item.is_verified === 1 ? "blue" : "orange"} variant="light" size="sm">
-                        {item.is_verified === 1 ? "Terverifikasi" : "Belum"}
+                    <td style={tableCellStyle}>
+                      <Badge 
+                        color={item.is_verified === 1 ? "indigo" : "orange"} 
+                        variant="filled" 
+                        radius="xs"
+                        size="xs"
+                      >
+                        {item.is_verified === 1 ? "VERIFIED" : "PENDING"}
                       </Badge>
                     </td>
-                    <td style={{ padding: "12px 16px", position: "sticky", right: 0, backgroundColor: "#fff", zIndex: 5, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
-                      <Flex gap={8}>
-                        <Tooltip label="Edit">
-                          <ActionIcon variant="filled" color="blue" onClick={() => handleEditClick(item)}>
-                            <Icon icon="mdi:pencil-outline" width={16} />
+                    <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
+                      <Flex gap={6}>
+                        <Tooltip label="Edit Data" withArrow>
+                          <ActionIcon 
+                            variant="filled" 
+                            color="indigo" 
+                            onClick={() => handleEditClick(item)}
+                            size="sm"
+                          >
+                            <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus">
-                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)}>
-                            <Icon icon="mdi:trash-can-outline" width={16} />
+                        <Tooltip label="Hapus User" withArrow>
+                          <ActionIcon 
+                            variant="filled" 
+                            color="red" 
+                            onClick={() => handleDelete(item)}
+                            size="sm"
+                          >
+                            <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
                       </Flex>
@@ -738,7 +818,7 @@ export default function KelolaUser() {
             </tbody>
           </table>
         </Box>
-      </Card>
+      </Box>
 
       {pagination && pagination.last_page > 1 && (
         <Flex justify="center" mt="md">
