@@ -666,6 +666,52 @@ function App({ Component, pageProps }: AppProps) {
     setCartCount(totalCartCount)
   }, [])
 
+  useEffect(() => {
+    const userDataStr = Cookies.get('user_data');
+    const token = Cookies.get('token');
+    
+    let userData = null;
+    try {
+      userData = userDataStr ? JSON.parse(userDataStr) : null;
+    } catch (e) {
+      console.error('Error parsing user_data:', e);
+    }
+
+    const isLoggedIn = !!token && !!userData;
+    const role = userData?.role;
+    const { pathname } = router;
+
+    // Public paths that guests can access
+    const publicPaths = ['/login'];
+
+    if (!isLoggedIn) {
+      // If not logged in and not on a public path, redirect to login
+      if (!publicPaths.includes(pathname)) {
+        router.push('/login');
+      }
+    } else {
+      // If logged in and on login or home page, redirect to appropriate dashboard
+      if (pathname === '/login' || pathname === '/') {
+        if (role === 'Admin') {
+          router.push('/dashboard/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      }
+
+      // Prevent non-admins from accessing admin dashboard
+      if (pathname.startsWith('/dashboard/admin') && role !== 'Admin') {
+        router.push('/dashboard');
+      }
+
+      // If accessing other top-level pages, force to dashboard as per user request
+      const isOtherTopLevel = !pathname.startsWith('/dashboard') && !publicPaths.includes(pathname) && pathname !== '/';
+      if (isOtherTopLevel) {
+        router.push(role === 'Admin' ? '/dashboard/admin' : '/dashboard');
+      }
+    }
+  }, [router.pathname]);
+
   // Tentukan apakah perlu menampilkan navbar bottom
   const shouldShowNavbarBottom = () => {
     const { pathname } = router;

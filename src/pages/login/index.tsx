@@ -63,7 +63,11 @@ const Auth = () => {
 
   useEffect(() => {
     if (users?.id) {
-      router.push("/dashboard");
+      if (users.role === 'Admin') {
+        router.push("/dashboard/admin");
+      } else {
+        router.push("/dashboard");
+      }
       toast.warning("Anda Sudah Login");
     }
     //eslint-disable-next-line

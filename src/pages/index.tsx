@@ -7,8 +7,20 @@ export default function Home() {
 
   useEffect(() => {
     const token = Cookies.get("token");
-    if (token) {
-      router.push("/dashboard");
+    const userDataStr = Cookies.get("user_data");
+    let userData = null;
+    try {
+      userData = userDataStr ? JSON.parse(userDataStr) : null;
+    } catch (e) {
+      console.error('Error parsing user_data:', e);
+    }
+
+    if (token && userData) {
+      if (userData.role === 'Admin') {
+        router.push("/dashboard/admin");
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       router.push("/login");
     }
