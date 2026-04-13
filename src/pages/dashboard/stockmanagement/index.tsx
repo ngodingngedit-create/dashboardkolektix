@@ -1,5 +1,5 @@
 import Head from "next/head";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Get } from "@/utils/REST";
 import fetch from "@/utils/fetch";
 import { notifications } from "@mantine/notifications";
@@ -70,10 +70,12 @@ const CELL_STYLE: React.CSSProperties = {
 const StockManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [productsData, setProductsData] = useState<any[]>([]);
+  const [allProductsData, setAllProductsData] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Inline variant dropdown state
   const [pendingBaseProduct, setPendingBaseProduct] = useState<any>(null);
@@ -87,6 +89,25 @@ const StockManagement = () => {
       fetchHistory(user.has_creator.id);
     }
   }, [user]);
+
+  // Client-side filtering with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (!searchQuery.trim()) {
+        setProductsData(allProductsData);
+      } else {
+        const q = searchQuery.toLowerCase();
+        setProductsData(
+          allProductsData.filter((p) =>
+            (p.product_name || "").toLowerCase().includes(q) ||
+            (p.sku || "").toLowerCase().includes(q)
+          )
+        );
+      }
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery, allProductsData]);
 
   const fetchHistory = async (creatorId: number) => {
     try {
@@ -107,13 +128,29 @@ const StockManagement = () => {
 
   const fetchProducts = async (creatorId: number) => {
     try {
-      const res: any = await Get("product", { creator_id: creatorId });
-      if (res?.data) {
-        const raw = Array.isArray(res.data) ? res.data : res.data.data || [];
-        // Filter client-side to ensure only products belonging to this creator
-        const filtered = raw.filter((p: any) => !p.creator_id || String(p.creator_id) === String(creatorId));
-        setProductsData(filtered);
+      // First fetch to get pagination info
+      const firstRes: any = await Get("product-bymerchant", { creator_id: creatorId, per_page: 20, page: 1 });
+      const firstData = firstRes?.data?.data ?? firstRes?.data ?? [];
+      const lastPage: number = firstRes?.data?.last_page ?? firstRes?.last_page ?? 1;
+
+      let allProducts: any[] = Array.isArray(firstData) ? firstData : [];
+
+      // Fetch remaining pages in parallel
+      if (lastPage > 1) {
+        const pageRequests = [];
+        for (let p = 2; p <= lastPage; p++) {
+          pageRequests.push(Get("product-bymerchant", { creator_id: creatorId, per_page: 20, page: p }));
+        }
+        const pageResults = await Promise.all(pageRequests);
+        pageResults.forEach((res: any) => {
+          const pageData = res?.data?.data ?? res?.data ?? [];
+          if (Array.isArray(pageData)) allProducts = allProducts.concat(pageData);
+        });
       }
+
+      const filtered = allProducts.filter((p: any) => !p.creator_id || String(p.creator_id) === String(creatorId));
+      setAllProductsData(filtered);
+      setProductsData(filtered);
     } catch (error) {
       console.error(error);
     }

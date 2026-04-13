@@ -928,7 +928,7 @@ const Merch: React.FC = () => {
   const user = useLoggedUser();
   const tabStatus: [number, string][] = [
     [2, "Sedang Dijual"],
-    [1, "Merchandise Draf"],
+    [1, "Produk Draf"],
     [3, "Non Aktif"],
   ];
 
@@ -959,6 +959,8 @@ const Merch: React.FC = () => {
       per_page: String(PER_PAGE),
       page: String(pageNum),
       creator_id: String(creatorId),
+      order_by: "created_at",
+      order_direction: "desc",
     }).toString();
 
     Get(`product?${qs}`, {})
@@ -966,7 +968,13 @@ const Merch: React.FC = () => {
         if (res.data) {
           console.log("Merchant data response:", res);
 
-          const products = Array.isArray(res.data) ? res.data : [];
+          const rawProducts = Array.isArray(res.data) ? res.data : [];
+          // Sort client-side: newest first
+          const products = [...rawProducts].sort((a, b) => {
+            const dateA = new Date(a.created_at || 0).getTime();
+            const dateB = new Date(b.created_at || 0).getTime();
+            return dateB - dateA;
+          });
           const totalLastPage = res?.last_page ?? 1;
 
           setMerchList(products);
@@ -1073,16 +1081,16 @@ const Merch: React.FC = () => {
   const getProductSku = (item: MerchListResponse): string => {
     // 1. Cek SKU di level produk (jika ada)
     if (item.sku) return item.sku;
-    
+
     // 2. Cek SKU dari varian pertama (jika ada varian)
     if (item.product_varian?.[0]?.sku) return item.product_varian[0].sku;
-    
+
     // 3. Cek semua varian untuk SKU
     if (item.product_varian?.length > 0) {
       const sku = item.product_varian.find(v => v.sku)?.sku;
       if (sku) return sku;
     }
-    
+
     // 4. Default
     return "-";
   };
@@ -1091,18 +1099,18 @@ const Merch: React.FC = () => {
     const parts: string[] = [];
     if (item.product_name) parts.push(String(item.product_name));
     if (item.slug) parts.push(String(item.slug));
-    
+
     // Tambahkan SKU produk ke search
     const sku = getProductSku(item);
     if (sku && sku !== "-") parts.push(String(sku));
-    
+
     if (item.product_varian?.length) {
       parts.push(...item.product_varian
         .filter(v => v?.sku)
         .map(v => String(v.sku))
       );
     }
-    
+
     if (item.product_varian?.[0]?.price) parts.push(String(item.product_varian[0].price));
     if (item.price) parts.push(String(item.price));
     if (item.qty !== undefined) parts.push(String(item.qty));
@@ -1159,7 +1167,7 @@ const Merch: React.FC = () => {
 
           if (typeof valA === "string") valA = valA.toLowerCase();
           if (typeof valB === "string") valB = valB.toLowerCase();
-          
+
           if (valA < valB) return mtSortDir === "asc" ? -1 : 1;
           if (valA > valB) return mtSortDir === "asc" ? 1 : -1;
           return 0;
@@ -1184,188 +1192,188 @@ const Merch: React.FC = () => {
         <>
           <div className="flex flex-wrap items-center justify-between gap-[20px]">
             <Title order={1} size="h2">
-              Merchandise Saya
+              Produk Saya
             </Title>
             <div className="flex gap-[10px] items-center"></div>
 
-        <Flex gap={10} align="center">
-          <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />} radius="xl" color="#0B387C">
-            Buat Merchandise
-          </ButtonM>
-        </Flex>
-      </div>
+            <Flex gap={10} align="center">
+              <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />} radius="xl" color="#0B387C">
+                Buat Produk
+              </ButtonM>
+            </Flex>
+          </div>
 
-      <Tabs
-        variant="solid"
-        aria-label="Tabs variants"
-        className="border-b-2 border-primary-light-200"
-        classNames={{
-          tabList: "pb-0 self-center font-semibold bg-white",
-          tab: "p-5",
-          cursor: "!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base",
-        }}
-      >
-        {tabStatus.map(([status, label]) => {
-          const filtered = sortedFilteredMap.get(status) ?? [];
+          <Tabs
+            variant="solid"
+            aria-label="Tabs variants"
+            className="border-b-2 border-primary-light-200"
+            classNames={{
+              tabList: "pb-0 self-center font-semibold bg-white",
+              tab: "p-5",
+              cursor: "!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base",
+            }}
+          >
+            {tabStatus.map(([status, label]) => {
+              const filtered = sortedFilteredMap.get(status) ?? [];
 
-          return (
-            <Tab key={status} title={label}>
-              <Card className="!overflow-auto" p={0} withBorder>
-                {/* filter bar */}
-                <Flex align="center" gap="sm" wrap="wrap" px={16} py={12} justify="flex-end" style={{ borderBottom: '1px solid #eee' }}>
-                  <Select
-                    placeholder="Filter Produk"
-                    data={[
-                      { value: 'all', label: 'Semua Produk' },
-                      ...productNames,
-                    ]}
-                    value={filterProduct || 'all'}
-                    onChange={(val) => setFilterProduct(val)}
-                    style={{ minWidth: 200 }}
-                    size="sm"
-                    searchable
-                    clearable
-                  />
-                  <TextInput
-                    placeholder="Cari merchandise..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    leftSection={<Icon icon="akar-icons:search" width={16} />}
-                    style={{ width: 280 }}
-                    size="sm"
-                  />
-                  {(search || (filterProduct && filterProduct !== 'all')) && (
-                    <ButtonM
-                      size="sm"
-                      variant="light"
-                      color="gray"
-                      onClick={() => { setSearch(""); setFilterProduct(null); }}
-                      leftSection={<Icon icon="solar:refresh-bold" width={14} />}
-                      radius="xl"
-                    >
-                      Reset
-                    </ButtonM>
-                  )}
-                </Flex>
-
-
-                <div className="bg-white rounded-[8px] overflow-hidden">
-                  <Table 
-                    removeWrapper 
-                    className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]"
-                  >
-                    <TableHeader>
-                      <TableColumn>#</TableColumn>
-                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('product_name')}>Info Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
-                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
-                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('price')}>Harga {mtSortBy === 'price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
-                      <TableColumn className="cursor-pointer" onClick={() => handleMTSort('stock')}>Stock {mtSortBy === 'stock' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</TableColumn>
-                      <TableColumn>Lokasi</TableColumn>
-                      <TableColumn>Aktif</TableColumn>
-                    </TableHeader>
-
-                    <TableBody>
-                      {filtered.length === 0 ? (
-                        <TableRow key="empty">
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                          <TableCell>{null}</TableCell>
-                        </TableRow>
-                      ) : (
-                        filtered.map((item, i) => {
-                          const safeId = String(item.id ?? i);
-                          const safeSlug = String(item.slug ?? "");
-                          
-                          // Gunakan fungsi getProductSku untuk mendapatkan SKU
-                          const safeSku = getProductSku(item);
-                          
-                          const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
-                          const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
-                          const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
-                          const location = item.has_store_location?.store_name || "-";
-
-                          return (
-                            <TableRow key={safeId}>
-                              <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
-
-                              <TableCell>
-                                <div className="flex items-center gap-[10px]">
-                                  <p>{String(item.product_name ?? "")}</p>
-                                </div>
-                              </TableCell>
-
-                              <TableCell className="whitespace-nowrap">
-                                {safeSku !== "-" ? safeSku : "-"}
-                              </TableCell>
-
-                              <TableCell className="whitespace-nowrap">
-                                <NumberFormatter value={safePrice} prefix="Rp " />
-                              </TableCell>
-
-                              <TableCell>{stock ?? 0}</TableCell>
-
-                              <TableCell className="whitespace-nowrap">{String(location)}</TableCell>
-
-                              <TableCell>
-                                <div className="flex items-center gap-[10px]">
-                                  <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
-                                  <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${safeSlug}`}>
-                                    <Icon icon="akar-icons:eye" className="text-[24px]" />
-                                  </ActionIcon>
-                                  <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
-                                    <Icon icon="akar-icons:edit" className="text-[24px]" />
-                                  </ActionIcon>
-                                  <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id)}>
-                                    <Icon icon="uiw:delete" className="text-[18px]" />
-                                  </ActionIcon>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
+              return (
+                <Tab key={status} title={label}>
+                  <Card className="!overflow-auto" p={0} withBorder>
+                    {/* filter bar */}
+                    <Flex align="center" gap="sm" wrap="wrap" px={16} py={12} justify="flex-end" style={{ borderBottom: '1px solid #eee' }}>
+                      <Select
+                        placeholder="Filter Produk"
+                        data={[
+                          { value: 'all', label: 'Semua Produk' },
+                          ...productNames,
+                        ]}
+                        value={filterProduct || 'all'}
+                        onChange={(val) => setFilterProduct(val)}
+                        style={{ minWidth: 200 }}
+                        size="sm"
+                        searchable
+                        clearable
+                      />
+                      <TextInput
+                        placeholder="Cari Produk..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        leftSection={<Icon icon="akar-icons:search" width={16} />}
+                        style={{ width: 280 }}
+                        size="sm"
+                      />
+                      {(search || (filterProduct && filterProduct !== 'all')) && (
+                        <ButtonM
+                          size="sm"
+                          variant="light"
+                          color="gray"
+                          onClick={() => { setSearch(""); setFilterProduct(null); }}
+                          leftSection={<Icon icon="solar:refresh-bold" width={14} />}
+                          radius="xl"
+                        >
+                          Reset
+                        </ButtonM>
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    </Flex>
 
-                {filtered.length === 0 && (
-                  <Center mih={200} w="100%">
-                    <div className="py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full">
-                      <div className="border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2">
-                        {/* <NextImage src={merchIcon} alt="merch" className="w-7" /> */}
-                        <div className="w-7 h-7 bg-gray-300 rounded"></div>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">Belum ada merchandise yang dibuat</p>
-                        <p className="text-grey max-w-72 mt-[10px]">
-                          Mulai buat merchandise dengan klik button &quot;Buat Merchandise&quot; di bawah.
-                        </p>
-                      </div>
-                      <Button label="Buat Merchandise" color="primary" className="mt-4" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
+
+                    <div className="bg-white rounded-[8px] overflow-hidden">
+                      <Table
+                        removeWrapper
+                        className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]"
+                      >
+                        <TableHeader>
+                          <TableColumn>#</TableColumn>
+                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('product_name')}>Info Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
+                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
+                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('price')}>Harga {mtSortBy === 'price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
+                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('stock')}>Stock {mtSortBy === 'stock' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
+                          <TableColumn>Lokasi</TableColumn>
+                          <TableColumn>Aktif</TableColumn>
+                        </TableHeader>
+
+                        <TableBody>
+                          {filtered.length === 0 ? (
+                            <TableRow key="empty">
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                              <TableCell>{null}</TableCell>
+                            </TableRow>
+                          ) : (
+                            filtered.map((item, i) => {
+                              const safeId = String(item.id ?? i);
+                              const safeSlug = String(item.slug ?? "");
+
+                              // Gunakan fungsi getProductSku untuk mendapatkan SKU
+                              const safeSku = getProductSku(item);
+
+                              const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
+                              const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
+                              const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
+                              const location = item.has_store_location?.store_name || "-";
+
+                              return (
+                                <TableRow key={safeId}>
+                                  <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
+
+                                  <TableCell>
+                                    <div className="flex items-center gap-[10px]">
+                                      <p>{String(item.product_name ?? "")}</p>
+                                    </div>
+                                  </TableCell>
+
+                                  <TableCell className="whitespace-nowrap">
+                                    {safeSku !== "-" ? safeSku : "-"}
+                                  </TableCell>
+
+                                  <TableCell className="whitespace-nowrap">
+                                    <NumberFormatter value={safePrice} prefix="Rp " />
+                                  </TableCell>
+
+                                  <TableCell>{stock ?? 0}</TableCell>
+
+                                  <TableCell className="whitespace-nowrap">{String(location)}</TableCell>
+
+                                  <TableCell>
+                                    <div className="flex items-center gap-[10px]">
+                                      <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
+                                      <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${safeSlug}`}>
+                                        <Icon icon="akar-icons:eye" className="text-[24px]" />
+                                      </ActionIcon>
+                                      <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
+                                        <Icon icon="akar-icons:edit" className="text-[24px]" />
+                                      </ActionIcon>
+                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id)}>
+                                        <Icon icon="uiw:delete" className="text-[18px]" />
+                                      </ActionIcon>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
                     </div>
-                  </Center>
-                )}
 
-                <Flex justify="center" align="center" gap="md" py={16} style={{ borderTop: '1px solid #f0f0f0' }}>
-                  <MantinePagination
-                    total={lastPage}
-                    value={page}
-                    onChange={setPage}
-                    size="sm"
-                    radius="md"
-                    withEdges
-                    color="#0B387C"
-                  />
-                </Flex>
-              </Card>
-            </Tab>
-          );
-        })}
-      </Tabs>
+                    {filtered.length === 0 && (
+                      <Center mih={200} w="100%">
+                        <div className="py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full">
+                          <div className="border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2">
+                            {/* <NextImage src={merchIcon} alt="merch" className="w-7" /> */}
+                            <div className="w-7 h-7 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="text-center">
+                            <p className="font-semibold text-lg">Belum ada Produk yang dibuat</p>
+                            <p className="text-grey max-w-72 mt-[10px]">
+                              Mulai buat merchandise dengan klik button &quot;Buat Produk&quot; di bawah.
+                            </p>
+                          </div>
+                          <Button label="Buat Produk" color="primary" className="mt-4" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
+                        </div>
+                      </Center>
+                    )}
+
+                    <Flex justify="center" align="center" gap="md" py={16} style={{ borderTop: '1px solid #f0f0f0' }}>
+                      <MantinePagination
+                        total={lastPage}
+                        value={page}
+                        onChange={setPage}
+                        size="sm"
+                        radius="md"
+                        withEdges
+                        color="#0B387C"
+                      />
+                    </Flex>
+                  </Card>
+                </Tab>
+              );
+            })}
+          </Tabs>
         </>
       )}
     </div>

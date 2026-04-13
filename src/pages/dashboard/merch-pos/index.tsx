@@ -24,6 +24,8 @@ import {
   Textarea,
   TextInput,
   UnstyledButton,
+  Popover,
+  Tooltip,
 } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
@@ -36,7 +38,7 @@ import { z } from "zod";
 import _ from "lodash";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
-import { DatePickerInput, DatesRangeValue } from "@mantine/dates";
+import { DatePickerInput, DatesRangeValue, DatePicker } from "@mantine/dates";
 
 type ComponentProps = {};
 
@@ -171,12 +173,26 @@ export default function Index({ }: Readonly<ComponentProps>) {
   }, [user]);
 
   useEffect(() => {
-    // Reset ke halaman 1 ketika search berubah
-    if (searchQuery && user?.has_creator?.id) {
-      setProductPage(1);
-      getMerchList(1);
-    }
-  }, [searchQuery]);
+    // Lakukan pencarian ke API dengan debounce
+    const timeoutId = setTimeout(() => {
+      if (user?.has_creator?.id) {
+        setProductPage(1);
+        getMerchList(1, searchQuery);
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, user?.has_creator?.id]);
+
+  useEffect(() => {
+    // Lakukan pencarian transaksi ke API secara otomatis dengan debounce
+    const timeoutId = setTimeout(() => {
+      if (user?.has_creator?.id) {
+        setTransactionPage(1);
+        getTransactions(1);
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [transactionSearch, transactionStatus, dateRange, user?.has_creator?.id]);
 
   // Fungsi untuk mendapatkan status dari transaction_status_id
   const getStatusFromId = (statusId: number): { text: string; color: string } => {
@@ -266,7 +282,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
     setPaymentMethod("Cash");
   };
 
-  const getMerchList = async (pageNum: number = 1) => {
+  const getMerchList = async (pageNum: number = 1, searchQueryParam: string = searchQuery) => {
     // Dapatkan creator_id dari user yang sedang login
     const creatorId = user?.has_creator?.id;
     if (!creatorId) {
@@ -277,14 +293,18 @@ export default function Index({ }: Readonly<ComponentProps>) {
       return;
     }
 
-    const qs = new URLSearchParams({
-      per_page: String(productPerPage),
+    const isSearching = searchQueryParam.trim().length > 0;
+
+    const params: Record<string, string> = {
+      per_page: isSearching ? "9999" : String(productPerPage),
       page: String(pageNum),
       // Tambahkan filter creator_id
       creator_id: String(creatorId)
-    }).toString();
+    };
 
-    const url = `product?${qs}`;
+    const qs = new URLSearchParams(params).toString();
+
+    const url = `product-bymerchant?${qs}`;
 
     const envToken = (process?.env?.NEXT_PUBLIC_API_TOKEN as string) || "";
     const cookieToken = Cookies.get("token") || localStorage.getItem("token") || "";
@@ -309,14 +329,19 @@ export default function Index({ }: Readonly<ComponentProps>) {
         let totalPages = 1;
         let currentPage = pageNum;
 
-        if (response.data && Array.isArray(response.data)) {
-          products = response.data;
-          total = response.total || products.length;
-          totalPages = response.last_page || Math.ceil(total / productPerPage);
-          currentPage = response.current_page || pageNum;
-          setProductPerPage(response.per_page || productPerPage);
-        } else if (Array.isArray(response)) {
-          products = response;
+        // Menyesuaikan dengan format Product, maupun product-bymerchant
+        const paginationObj = response?.data?.data && Array.isArray(response.data.data) ? response.data : response;
+
+        if (paginationObj?.data && Array.isArray(paginationObj.data)) {
+          products = paginationObj.data;
+          total = paginationObj.total || products.length;
+          totalPages = paginationObj.last_page || Math.ceil(total / productPerPage);
+          currentPage = paginationObj.current_page || pageNum;
+          if (!isSearching) {
+            setProductPerPage(paginationObj.per_page || productPerPage);
+          }
+        } else if (Array.isArray(paginationObj)) {
+          products = paginationObj;
           total = products.length;
           totalPages = Math.ceil(total / productPerPage);
         }
@@ -383,40 +408,48 @@ export default function Index({ }: Readonly<ComponentProps>) {
         let total = 0;
 
         if (data?.data) {
-          formattedTransactions = data.data.map((item: any) => ({
-            id: item.id,
-            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
-            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
-            customer_name: item.customer_name || item.nama_pemesan || "Guest",
-            total_amount: item.grandtotal || item.total_amount || 0,
-            status: item.status || "completed",
-            transaction_status_id: item.transaction_status_id ||
-              (item.status === "pending" ? 1 :
-                item.status === "completed" ? 2 :
-                  item.status === "expired" ? 3 :
-                    item.status === "failed" ? 4 : 1),
-            payment_method: item.payment_method || "Cash",
-            created_at: item.created_at || new Date().toISOString(),
-            items: item.items || item.products || [],
-          }));
+          formattedTransactions = data.data.map((item: any) => {
+            const pm = (item.payment_method_custom || item.payment_method || "").toLowerCase();
+            const isCash = pm.includes("cash") || pm === "";
+            return ({
+              id: item.id,
+              invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+              invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+              customer_name: item.customer_name || item.nama_pemesan || "Guest",
+              total_amount: isCash ? (item.total_price || item.grandtotal || item.total_amount || 0) : (item.grandtotal || item.total_amount || 0),
+              status: item.status || "completed",
+              transaction_status_id: item.transaction_status_id ||
+                (item.status === "pending" ? 1 :
+                  item.status === "completed" ? 2 :
+                    item.status === "expired" ? 3 :
+                      item.status === "failed" ? 4 : 1),
+              payment_method: item.payment_method_custom || item.payment_method || "Cash",
+              created_at: item.created_at || new Date().toISOString(),
+              items: item.items || item.products || [],
+            });
+          });
           total = data.total || data.meta?.total || formattedTransactions.length;
         } else if (Array.isArray(data)) {
-          formattedTransactions = data.map((item: any) => ({
-            id: item.id,
-            invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
-            invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
-            customer_name: item.customer_name || item.nama_pemesan || "Guest",
-            total_amount: item.grandtotal || item.total_amount || 0,
-            status: item.status || "completed",
-            transaction_status_id: item.transaction_status_id ||
-              (item.status === "pending" ? 1 :
-                item.status === "completed" ? 2 :
-                  item.status === "expired" ? 3 :
-                    item.status === "failed" ? 4 : 1),
-            payment_method: item.payment_method || "Cash",
-            created_at: item.created_at || new Date().toISOString(),
-            items: item.items || item.products || [],
-          }));
+          formattedTransactions = data.map((item: any) => {
+            const pm = (item.payment_method_custom || item.payment_method || "").toLowerCase();
+            const isCash = pm.includes("cash") || pm === "";
+            return ({
+              id: item.id,
+              invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+              invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
+              customer_name: item.customer_name || item.nama_pemesan || "Guest",
+              total_amount: isCash ? (item.total_price || item.grandtotal || item.total_amount || 0) : (item.grandtotal || item.total_amount || 0),
+              status: item.status || "completed",
+              transaction_status_id: item.transaction_status_id ||
+                (item.status === "pending" ? 1 :
+                  item.status === "completed" ? 2 :
+                    item.status === "expired" ? 3 :
+                      item.status === "failed" ? 4 : 1),
+              payment_method: item.payment_method_custom || item.payment_method || "Cash",
+              created_at: item.created_at || new Date().toISOString(),
+              items: item.items || item.products || [],
+            });
+          });
           total = formattedTransactions.length;
         }
 
@@ -592,24 +625,31 @@ export default function Index({ }: Readonly<ComponentProps>) {
       title: "Pilih Metode Pembayaran",
       children: (
         <Stack gap={15}>
-          {paymentMethods.map((method, i) => (
-            <Button
-              key={i}
-              leftSection={method.id === 5 ? <Icon icon="ph:money-wavy" className={`text-[24px]`} /> : <Icon icon="ph:qrcode" className={`text-[24px]`} />}
-              variant={paymentMethod === method.payment_name ? "filled" : "light"}
-              color={paymentMethod === method.payment_name ? "blue" : "gray"}
-              c={paymentMethod === method.payment_name ? "white" : "gray.8"}
-              onClick={() => {
-                setPaymentMethod(method.payment_name);
-                modals.closeAll();
-              }}
-              fullWidth
-              justify="start"
-            >
-              {method.payment_name}
-              {method.id === 4 && " (QRIS)"}
-            </Button>
-          ))}
+          {paymentMethods.map((method, i) => {
+            const isCash = method.payment_name?.toLowerCase().includes("cash");
+            const isSelected = paymentMethod === method.payment_name;
+            return (
+              <Button
+                key={i}
+                leftSection={
+                  isCash
+                    ? <Icon icon="ph:money-wavy" className="text-[24px]" />
+                    : <Icon icon="ph:qr-code-bold" className="text-[24px]" />
+                }
+                variant={isSelected ? "filled" : "light"}
+                color={isSelected ? "blue" : "gray"}
+                c={isSelected ? "white" : "gray.8"}
+                onClick={() => {
+                  setPaymentMethod(method.payment_name);
+                  modals.closeAll();
+                }}
+                fullWidth
+                justify="start"
+              >
+                {isCash ? "Cash" : "QRIS"}
+              </Button>
+            );
+          })}
         </Stack>
       ),
     });
@@ -947,7 +987,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
           status: "pending",
         };
 
-        await fetch<any, { invoice_url: string }>({
+        await fetch<any, any>({
           url: "order-product",
           method: "POST",
           data: qrisPayload,
@@ -955,15 +995,24 @@ export default function Index({ }: Readonly<ComponentProps>) {
           success: async ({ data }) => {
             console.log("Xendit response:", data);
 
-            await handleSave();
+            // Read the invoice URL from various possible API structures
+            const invoiceUrl =
+              data?.xendit?.[0]?.invoice_url ||
+              data?.data?.xendit?.[0]?.invoice_url ||
+              data?.invoice_url ||
+              data?.data?.invoice_url;
 
-            if (data?.invoice_url) {
-              router.push(data.invoice_url);
+            if (invoiceUrl) {
+              // Direct langsung menuju Xendit
+              window.location.href = invoiceUrl;
               return;
             }
 
+            // Fallback kembali ke halaman invoice lokal bila tidak ada link
+            await handleSave();
+
             notifications.show({
-              message: "Checkout sukses, tapi invoice tidak tersedia.",
+              message: "Checkout sukses, masuk ke sistem lokal.",
               color: "yellow",
             });
           },
@@ -1637,7 +1686,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     </Button>
 
                     <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                      Metode Pembayaran {paymentMethod ? `(${paymentMethod})` : ""}
+                      Metode Pembayaran {paymentMethod ? `(${paymentMethod.toLowerCase().includes("cash") ? "Cash" : "QRIS"})` : ""}
                     </Button>
                   </Flex>
                 </Card>
@@ -1690,9 +1739,61 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     >
                       <Accordion.Item value="customer">
                         <Accordion.Control>
-                          <div className="flex items-center gap-2">
-                            <Icon icon="mdi:account-outline" className="text-sm" />
-                            <span className="text-sm">Data Pembeli</span>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Icon icon="mdi:account-outline" className="text-sm" />
+                              <span className="text-sm">Data Pembeli</span>
+                            </div>
+                            <Button
+                              component="div"
+                              size="compact-xs"
+                              h={24}
+                              fz={11}
+                              px={8}
+                              variant={isGuest ? "filled" : "light"}
+                              color={isGuest ? "green" : "blue"}
+                              className="mr-2 rounded z-10"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const safeChange = (propName: keyof CustomerData, value: string) => {
+                                  const p = custProps(propName as any) as any;
+                                  if (!p) return;
+                                  try {
+                                    if (typeof p.onChange === "function") {
+                                      p.onChange(value);
+                                      return;
+                                    }
+                                  } catch { }
+                                  try {
+                                    if (typeof p.onChange === "function") p.onChange({ target: { value } });
+                                  } catch { }
+                                };
+
+                                if (isGuest) {
+                                  safeChange("name", "");
+                                  safeChange("email", "");
+                                  safeChange("phone", "");
+                                  safeChange("address", "");
+                                  return;
+                                }
+
+                                const randomId = Math.floor(100000 + Math.random() * 900000);
+                                const randomName = `Guest ${randomId}`;
+                                const randomEmail = `guest_${randomId}@mail.com`;
+                                const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
+                                const addrA = Math.floor(Math.random() * 101);
+                                const addrB = Math.floor(Math.random() * 101);
+                                const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
+
+                                safeChange("name", randomName);
+                                safeChange("email", randomEmail);
+                                safeChange("phone", randomPhone);
+                                safeChange("address", randomAddress);
+                              }}
+                            >
+                              {isGuest ? "Guest Aktif" : "Gunakan Guest"}
+                            </Button>
                           </div>
                         </Accordion.Control>
                         <Accordion.Panel>
@@ -1798,55 +1899,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         </Accordion.Panel>
                       </Accordion.Item>
                     </Accordion>
-                    <Flex justify="flex-end" mt={2}>
-                      <Button
-                        component="button"
-                        type="button"
-                        size="xs"
-                        radius="sm"
-                        variant={isGuest ? "filled" : "blue"}
-                        color={isGuest ? "green" : "gray"}
-                        data-ssr="1"
-                        onClick={() => {
-                          const safeChange = (propName: keyof CustomerData, value: string) => {
-                            const p = custProps(propName as any) as any;
-                            if (!p) return;
-                            try {
-                              if (typeof p.onChange === "function") {
-                                p.onChange(value);
-                                return;
-                              }
-                            } catch { }
-                            try {
-                              if (typeof p.onChange === "function") p.onChange({ target: { value } });
-                            } catch { }
-                          };
 
-                          if (isGuest) {
-                            safeChange("name", "");
-                            safeChange("email", "");
-                            safeChange("phone", "");
-                            safeChange("address", "");
-                            return;
-                          }
-
-                          const randomId = Math.floor(100000 + Math.random() * 900000);
-                          const randomName = `Guest ${randomId}`;
-                          const randomEmail = `guest_${randomId}@mail.com`;
-                          const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
-                          const addrA = Math.floor(Math.random() * 101);
-                          const addrB = Math.floor(Math.random() * 101);
-                          const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
-
-                          safeChange("name", randomName);
-                          safeChange("email", randomEmail);
-                          safeChange("phone", randomPhone);
-                          safeChange("address", randomAddress);
-                        }}
-                      >
-                        {isGuest ? "Guest Aktif" : "Gunakan Guest"}
-                      </Button>
-                    </Flex>
                   </Stack>
                 </Card>
               </Tabs.Panel>
@@ -1873,32 +1926,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         Filter Transaksi
                       </Text>
 
-                      <Flex gap="md" wrap="wrap">
-                        <TextInput
-                          placeholder="Cari berdasarkan invoice atau nama..."
-                          value={transactionSearch}
-                          onChange={(e) => setTransactionSearch(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleSearchTransactions();
-                            }
-                          }}
-                          leftSection={<Icon icon="uiw:search" />}
-                          className="flex-1 min-w-[200px]"
-                          size="sm"
-                        />
-
-                        <DatePickerInput
-                          type="range"
-                          placeholder="Pilih rentang tanggal"
-                          value={dateRange}
-                          onChange={setDateRange}
-                          className="w-[250px]"
-                          size="sm"
-                          clearable
-                          valueFormat="DD/MM/YYYY"
-                        />
-
+                      <Flex gap="sm" align="center" justify="space-between" wrap="wrap">
+                        {/* Kiri: Status */}
                         <Menu shadow="md" width={200}>
                           <Menu.Target>
                             <Button variant="outline" size="sm" rightSection={<Icon icon="uiw:down" />}>
@@ -1920,15 +1949,31 @@ export default function Index({ }: Readonly<ComponentProps>) {
                             <Menu.Item onClick={() => setTransactionStatus("5")}>Cancelled</Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
-                      </Flex>
 
-                      <Flex gap="sm" justify="flex-end">
-                        <Button variant="light" size="sm" onClick={handleResetFilters} leftSection={<Icon icon="uiw:reload" />}>
-                          Reset
-                        </Button>
-                        <Button size="sm" onClick={handleSearchTransactions} loading={loading.includes("get-transactions")} leftSection={<Icon icon="uiw:search" />}>
-                          Cari
-                        </Button>
+                        {/* Kanan: Date picker + Search */}
+                        <Flex gap="sm" align="center">
+                          <Popover position="bottom-end" shadow="md">
+                            <Popover.Target>
+                              <Tooltip label="Pilih Rentang Tanggal">
+                                <ActionIcon size={36} variant={dateRange[0] ? "filled" : "light"} color="blue">
+                                  <Icon icon="solar:calendar-bold" className="text-xl" />
+                                </ActionIcon>
+                              </Tooltip>
+                            </Popover.Target>
+                            <Popover.Dropdown p={10}>
+                              <DatePicker type="range" value={dateRange} onChange={setDateRange} />
+                            </Popover.Dropdown>
+                          </Popover>
+
+                          <TextInput
+                            placeholder="Cari berdasarkan invoice atau nama..."
+                            value={transactionSearch}
+                            onChange={(e) => setTransactionSearch(e.target.value)}
+                            leftSection={<Icon icon="uiw:search" />}
+                            className="w-full sm:w-auto sm:min-w-[260px]"
+                            size="sm"
+                          />
+                        </Flex>
                       </Flex>
                     </Stack>
                   </Card>

@@ -1839,34 +1839,34 @@ const sidebarData: SidebarData = [
   // { id: 5, name: "Profile Talenta", icon: faStar, link: "/dashboard/talenta", role: "Pembeli" },
   {
     id: 6,
-    name: "Merchandise",
+    name: "Produk",
     icon: faGift,
     role: "Creator",
     submenu: [
       {
         id: 1,
-        name: "Kelola Merchandise",
+        name: "Kelola Produk",
         icon: faGift,
         link: "/dashboard/merch",
         role: "Creator",
       },
       {
         id: 2,
-        name: "Transaksi Merchandise",
+        name: "Transaksi Produk",
         iconify: "icon-park-outline:transaction",
         link: "/dashboard/merch-transaction",
         role: "Creator",
       },
       {
         id: 3,
-        name: "POS Merchandise",
+        name: "POS Produk",
         iconify: "hugeicons:cashier",
         link: "/dashboard/merch-pos",
         role: "Creator",
       },
       {
         id: 4,
-        name: "Pengambilan Merchandise",
+        name: "Pengambilan Produk",
         icon: faDolly,
         link: "/dashboard/merch-pickup",
         role: "Creator",
@@ -2349,7 +2349,9 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
                   </button>
                   {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
-                    <Button label="Buat Event" color="secondary" onClick={() => router.push("/create-event")} />
+                    <button type="button" title="Buat Event" className="relative flex justify-center items-center rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/create-event")}>
+                      <Icon icon="solar:calendar-add-bold" className="text-[20px]" />
+                    </button>
                   ) : (
                     role === "Creator" && (
                       <>

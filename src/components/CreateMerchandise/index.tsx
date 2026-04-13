@@ -218,17 +218,17 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           is_product_varian: is_variant ? 1 : 0,
           product_variant: is_variant
             ? JSON.stringify(
-                variant.map((e) => ({
-                  id: e.id,
-                  varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
-                  sku: e.sku ?? "",
-                  price: e.price ?? 999999,
-                  weight: e.weight ?? 1,
-                  stock_qty: e.stock ?? 0,
-                  varian_category_id: variant_name,
-                  status_product: e.status ? "active" : "inactive",
-                })) satisfies VariantStoreRequest[]
-              )
+              variant.map((e) => ({
+                id: e.id,
+                varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
+                sku: e.sku ?? "",
+                price: e.price ?? 999999,
+                weight: e.weight ?? 1,
+                stock_qty: e.stock ?? 0,
+                varian_category_id: variant_name,
+                status_product: e.status ? "active" : "inactive",
+              })) satisfies VariantStoreRequest[]
+            )
             : "[]",
         } satisfies MerchandiseStoreRequest,
         "multipart/form-data"
@@ -275,18 +275,18 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         <div className="w-full pb-[20px]">
           <div className="py-[20px] px-[20px] flex flex-col gap-[30px]">
             <div>
-              <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Merchandise</h2>
-              <p className="text-grey">{!Boolean(id) ? "Lengkapi form dibawah untuk membuat Merchandise" : "Lengkapi form dibawah untuk update Merchandise"}</p>
+              <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Produk</h2>
+              <p className="text-grey">{!Boolean(id) ? "Lengkapi form dibawah untuk membuat Produk" : "Lengkapi form dibawah untuk update Produk"}</p>
             </div>
 
             <div className="border border-[#E2EDFF] rounded-[8px]">
-              <h3 className="text-[20px] font-[500] p-[12px_16px] border-b border-[#E2EDFF]">Informasi Merchandise</h3>
+              <h3 className="text-[20px] font-[500] p-[12px_16px] border-b border-[#E2EDFF]">Informasi Produk</h3>
 
               <div className="p-[24px_16px] flex flex-col gap-[20px]">
                 <div className="flex flex-wrap gap-[20px]">
                   <div className="min-w-[250px] shrink-0">
                     <h4 className="text-[16px] font-[500]">
-                      Foto Merchandise <span className="text-red-400">*</span>
+                      Foto Produk <span className="text-red-400">*</span>
                     </h4>
                     <p className="text-grey mt-[5px]">Direkomendasikan tidak lebih dari 2mb</p>
                   </div>
@@ -332,7 +332,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     </h4>
                   </div>
                   <div className="flex-grow [&_*]:border-[#E2EDFF]">
-                    <TextInput placeholder="Isi Nama Produk" error={form.errors.sku} value={form.values.sku} onChange={(e) => form.setValues({ sku: e.target.value.replaceAll(/\s/g, "") })} />
+                    <Flex gap={10}>
+                      <ActionIcon variant="filled" bg="#0B387C" size={36} radius="md" title="Generate SKU" onClick={() => form.setFieldValue('sku', `${user?.has_creator?.id ?? 0}-${Math.floor(100000 + Math.random() * 900000)}`)}>
+                        <Icon icon="ph:link-bold" className="text-lg" />
+                      </ActionIcon>
+                      <TextInput className="flex-grow" placeholder="Isi SKU Produk" error={form.errors.sku} value={form.values.sku} onChange={(e) => form.setFieldValue('sku', e.target.value.replaceAll(/\s/g, ""))} />
+                    </Flex>
                   </div>
                 </div>
 
@@ -347,11 +352,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               </div>
             </div>
 
-            <Switch checked={form.values.is_variant} onChange={(e) => form.setFieldValue("is_variant", e.target.checked)} label="Gunakan Varian Merchandise" />
+            <Switch checked={form.values.is_variant} onChange={(e) => form.setFieldValue("is_variant", e.target.checked)} label="Gunakan Varian Produk" />
 
             <div className={`${form.values.is_variant ? "hidden" : ""} border border-[#E2EDFF] rounded-[8px]`}>
               <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
-                <h3 className="text-[20px] font-[500]">Detail Merchandise</h3>
+                <h3 className="text-[20px] font-[500]">Detail Produk</h3>
               </Flex>
 
               <div className="p-[16px] flex flex-col gap-[20px]">
@@ -401,7 +406,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
             <div className={`${form.values.is_variant ? "" : "hidden"} border border-[#E2EDFF] rounded-[8px]`}>
               <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`} wrap="wrap">
-                <h3 className="text-[20px] font-[500]">Varian Merchandise</h3>
+                <h3 className="text-[20px] font-[500]">Varian Produk</h3>
                 {/* <Button
                                     p={0}
                                     onClick={() => form.setValues({ variant: [...form.values.variant, { name: '', value: [] }] })}
@@ -478,7 +483,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             <TextInput maw={200} placeholder="Isi Nama Varian" value={form.values.variant[i].sub_name || ""} onChange={(e) => form.setFieldValue(`variant.${i}.sub_name`, e.target.value)} />
                           </Table.Td>
                           <Table.Td>
-                            <TextInput maw={200} placeholder="Isi SKU Varian" value={form.values.variant[i].sku} onChange={(e) => form.setFieldValue(`variant.${i}.sku`, e.target.value)} error={form.errors[`variant.${i}.sku`]} />
+                            <Flex gap={5}>
+                              <TextInput className="flex-grow" placeholder="Isi SKU Varian" value={form.values.variant[i].sku} onChange={(e) => form.setFieldValue(`variant.${i}.sku`, e.target.value)} error={form.errors[`variant.${i}.sku`]} />
+                              <ActionIcon variant="filled" bg="#0B387C" size={36} radius="md" onClick={() => form.setFieldValue(`variant.${i}.sku`, `${user?.has_creator?.id ?? 0}-${Math.floor(100000 + Math.random() * 900000)}`)} title="Generate SKU">
+                                <Icon icon="ph:link-bold" className="text-lg" />
+                              </ActionIcon>
+                            </Flex>
                           </Table.Td>
                           <Table.Td>
                             <NumberInput
@@ -601,7 +611,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                   radius="xl"
                   leftSection={<Icon icon="solar:check-circle-bold" width={16} />}
                 >
-                  {Boolean(id) ? "Simpan Merchandise" : "Buat Merchandise"}
+                  {Boolean(id) ? "Simpan Produk" : "Buat Produk"}
                 </Button>
               </Flex>
             </Flex>

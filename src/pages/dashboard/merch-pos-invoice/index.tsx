@@ -62,89 +62,88 @@ export default function MerchPosInvoice({  }: Readonly<ComponentProps>) {
                 <Text size="1.5rem" fw={600}>Cetak Faktur</Text>
                 <Text size="sm" c="gray">Faktur Penjualan Merchandise</Text>
             </Stack>
-            <Card maw={400} w="100%" withBorder p={0} shadow="lg">
-                <Card w="100%" ref={contentRef}>
-                    <Stack mb={20} gap={5}>
-                        <Text fw={600} ta="center" className={`uppercase !italic !underline`}>{user?.has_creator?.name}</Text>
-                        <Text ta="center" className={``}>{user?.has_creator?.website ?? 'www.kolektix.com'}</Text>
-                    </Stack>
-                    <Table unstyled className={`
-                        mb-[20px]
-                        [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
-                        [&_th]:text-start [&_th]:!font-[600] [&_td:last-child]:!text-end
-                    `}>
-                        <Table.Tbody>
-                            <Table.Tr>
-                                <Table.Td>Tel: {user?.has_creator?.phone_number}</Table.Td>
-                                <Table.Td>Invoice #{data?.invoice_num}</Table.Td>
-                            </Table.Tr>
-                            <Table.Tr>
-                                <Table.Td>Customer: Walk-in</Table.Td>
-                                <Table.Td>{moment(new Date()).format('DD/MM/YYYY')}</Table.Td>
-                            </Table.Tr>
-                            <Table.Tr>
-                                <Table.Td>{data?.customer_name ?? '-'}</Table.Td>
-                                <Table.Td>{moment(new Date()).format('HH:mm:ss')}</Table.Td>
-                            </Table.Tr>
-                        </Table.Tbody>
-                    </Table>
-                    <Table unstyled className={`
-                        [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
-                        [&_th]:text-start [&_th]:!font-[600] [&_th]:!italic
-                    `}>
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>#</Table.Th>
-                                <Table.Th>Produk</Table.Th>
-                                <Table.Th>Varian</Table.Th>
-                                <Table.Th>Qty</Table.Th>
-                                <Table.Th style={{ textAlign: 'end' }}>Subtotal</Table.Th>
-                            </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                            {invoiceData.product?.map((e, i) => (
-                                <Table.Tr key={i}>
-                                    <Table.Td>{i + 1}</Table.Td>
-                                    <Table.Td>{e.name}</Table.Td>
-                                    <Table.Td>{e.variant ?? '-'}</Table.Td>
-                                    <Table.Td>{e.qty}</Table.Td>
-                                    <Table.Td className={`text-end`}><NumberFormatter prefix="" value={e.subtotal} /></Table.Td>
-                                </Table.Tr>
-                            ))}
-                        </Table.Tbody>
-                    </Table>
-                    <Table unstyled className={`
-                        mt-[10px]
-                        [&_tr:first-child_td]:pt-[10px]
-                        [&_tr:last-child_td]:pb-[10px]
-                        border-t border-t-[#838383]
-                        border-b border-b-[#838383]
-                        [&_th]:!border-b [&_th]:!border-b-[#838383] [&_th]:!bg-transparent
-                        [&_th]:text-start [&_th]:!font-[600] [&_td:last-child]:!text-end
-                    `}>
-                        <Table.Tbody>
-                            {Object.keys(invoiceData.raw?.summary ?? {}).map((e, i) => (
-                                <Table.Tr key={i}>
-                                    <Table.Td>{e}</Table.Td>
-                                    <Table.Td><NumberFormatter value={(invoiceData.raw?.summary ? invoiceData.raw?.summary[e] : 0)} /></Table.Td>
-                                </Table.Tr>
-                            ))}
-                            <Table.Tr className={`[&_*]:font-[600] border-t [&_*]:pt-[7px] [&_*]:mt-[7px]`}>
-                                <Table.Td>Jumlah Dibayar</Table.Td>
-                                <Table.Td><NumberFormatter value={invoiceData.raw?.grandtotal} /></Table.Td>
-                            </Table.Tr>
-                            {invoiceData.raw?.payment_method && (
-                                <Table.Tr>
-                                    <Table.Td>Metode</Table.Td>
-                                    <Table.Td>{invoiceData.raw?.payment_method}</Table.Td>
-                                </Table.Tr>
-                            )}
-                        </Table.Tbody>
-                    </Table>
-                    <Text size="sm" ta="center" my={20}>Terima Kasih Banyak Sudah Berbelanja!</Text>
-                </Card>
+            <Card maw={400} w="100%" withBorder p={15} shadow="lg" className="bg-gray-100 flex justify-center items-center">
+                <div ref={contentRef} style={{ width: '58mm', background: '#fff', padding: '10px', fontFamily: '"Courier New", Courier, monospace', fontSize: '11px', color: '#000', lineHeight: 1.4, boxSizing: 'border-box' }}>
+                    <style type="text/css" media="print">
+                        {`
+                            @page { size: 58mm auto; margin: 0; }
+                            body { margin: 0; padding: 0; background: none; }
+                            * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+                            .print-border-bottom { border-bottom: 1px dashed #000 !important; }
+                            .print-border-top { border-top: 1px dashed #000 !important; }
+                        `}
+                    </style>
+
+                    <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>{user?.has_creator?.name}</div>
+                        <div>{user?.has_creator?.website ?? 'www.kolektix.com'}</div>
+                        <div>Tel: {user?.has_creator?.phone_number}</div>
+                    </div>
+
+                    <div className="print-border-bottom" style={{ paddingBottom: '8px', marginBottom: '8px', borderBottom: '1px dashed #888' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Inv:</span>
+                            <span>#{data?.invoice_num || `KL-${Math.floor(Math.random() * 10000)}`}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Tgl:</span>
+                            <span>{moment(new Date()).format('DD/MM/YY HH:mm')}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Plg:</span>
+                            <span>{data?.customer_name || 'Walk-in'}</span>
+                        </div>
+                    </div>
+
+                    <div className="print-border-bottom" style={{ paddingBottom: '3px', marginBottom: '5px', borderBottom: '1px dashed #888', fontWeight: 'bold' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Item</span>
+                            <span>Total</span>
+                        </div>
+                    </div>
+                    
+                    <div style={{ paddingBottom: '5px', marginBottom: '5px' }}>
+                        {invoiceData.product?.map((e, i) => (
+                            <div key={i} style={{ marginBottom: '8px' }}>
+                                <div style={{ wordBreak: 'break-word', paddingRight: '5px' }}>{e.name} {e.variant ? `(${e.variant})` : ''}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '5px' }}>
+                                    <span>{e.qty} x <NumberFormatter value={e.price || Math.floor((e.subtotal || 0) / (e.qty || 1))} thousandSeparator="." decimalSeparator="," /></span>
+                                    <span><NumberFormatter value={e.subtotal} thousandSeparator="." decimalSeparator="," /></span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="print-border-top" style={{ paddingTop: '8px', marginTop: '5px', borderTop: '1px dashed #888' }}>
+                        {Object.keys(invoiceData.raw?.summary ?? {}).map((e, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                <span>{e}</span>
+                                <span><NumberFormatter value={(invoiceData.raw?.summary ? invoiceData.raw?.summary[e] : 0)} thousandSeparator="." decimalSeparator="," /></span>
+                            </div>
+                        ))}
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginTop: '8px', fontSize: '13px' }}>
+                            <span>TOTAL</span>
+                            <span>Rp <NumberFormatter value={invoiceData.raw?.grandtotal} thousandSeparator="." decimalSeparator="," /></span>
+                        </div>
+                        
+                        {invoiceData.raw?.payment_method && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                                <span>Metode</span>
+                                <span style={{ textTransform: 'capitalize' }}>{invoiceData.raw?.payment_method}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginTop: '15px', fontWeight: 'bold' }}>
+                        Terima Kasih Banyak<br/>Sudah Berbelanja!
+                    </div>
+                </div>
             </Card>
             <Flex gap={20}>
+                <Button size="md" variant="light" color="gray" onClick={() => router.push('/dashboard/merch-pos')} leftSection={<Icon icon="uiw:left" className="text-lg" />}>
+                    Kembali
+                </Button>
                 <Button size="md" onClick={() => printContent()} rightSection={<Icon icon="la:print" className={`text-[24px]`} />}>
                     Cetak Faktur
                 </Button>
