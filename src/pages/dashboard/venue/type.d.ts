@@ -14,9 +14,11 @@ interface VenueCategory {
 
 interface VenueFacility {
     id: number;
-    name: string;
-    description: string;
-    status: string;
+    venue_id: number;
+    facility_id: number;
+    facility_name: string | null;
+    facility_description: string | null;
+    created_at: string;
 }
 
 interface VenueCapacity {

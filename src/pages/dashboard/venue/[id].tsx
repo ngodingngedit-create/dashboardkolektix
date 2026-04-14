@@ -32,8 +32,8 @@ const monthNames = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-const Item = ({ program,...rest }: ProgramItem) => {
-    const { styles, formatTime, isLive, isMinWidth } = useProgram({ program,...rest });
+const Item = ({ program, ...rest }: ProgramItem) => {
+    const { styles, formatTime, isLive, isMinWidth } = useProgram({ program, ...rest });
 
     const { data } = program;
     const { image, title, since, till } = data;
@@ -43,20 +43,20 @@ const Item = ({ program,...rest }: ProgramItem) => {
 
     return (
         <ProgramBox width={styles.width} style={styles.position}>
-        <ProgramContent
-            width={styles.width}
-            isLive={isLive}
-        >
-            <ProgramFlex>
-            {isLive && isMinWidth && <ProgramImage src={image} alt="Preview" />}
-            <ProgramStack>
-                <ProgramTitle>{title}</ProgramTitle>
-                <ProgramText>
-                {sinceTime} - {tillTime}
-                </ProgramText>
-            </ProgramStack>
-            </ProgramFlex>
-        </ProgramContent>
+            <ProgramContent
+                width={styles.width}
+                isLive={isLive}
+            >
+                <ProgramFlex>
+                    {isLive && isMinWidth && <ProgramImage src={image} alt="Preview" />}
+                    <ProgramStack>
+                        <ProgramTitle>{title}</ProgramTitle>
+                        <ProgramText>
+                            {sinceTime} - {tillTime}
+                        </ProgramText>
+                    </ProgramStack>
+                </ProgramFlex>
+            </ProgramContent>
         </ProgramBox>
     );
 };
@@ -149,18 +149,18 @@ export default function VenuePage() {
                         <Text size="sm" c="gray">{category?.find(e => e.id == venue?.venue_category_id)?.name}</Text>
                         <PillGroup mt={10}>
                             {facility?.filter(e => venue?.venue_facility_id?.map(e => parseInt(String(e))).includes(e.id)).map((e, i) => (
-                                <Pill key={i}>{e.name}</Pill>
+                                <Pill key={i}>{e.facility_name}</Pill>
                             ))}
                         </PillGroup>
                         <Flex gap={10} mt={25} align="center">
                             <Button w="fit-content" component={Link} href={`/dashboard/venue/edit/${id}`} size="xs" variant="outline">Edit Venue</Button>
                             <ActionIcon variant="transparent" title="Buka Halaman Venue" onClick={() => window.open(`/venue/${venue?.slug}`, '_blank')}>
-                                <Icon icon="proicons:open" className={`text-[24px]`}/>
+                                <Icon icon="proicons:open" className={`text-[24px]`} />
                             </ActionIcon>
                         </Flex>
                     </Stack>
 
-                    <AspectRatio ratio={128/40} maw={500} w="100%">
+                    <AspectRatio ratio={128 / 40} maw={500} w="100%">
                         <Image
                             radius={10}
                             src={venue?.venue_gallery?.[0]?.image_url}
@@ -223,7 +223,7 @@ export default function VenuePage() {
                                                 <Text size="sm" c="gray">Status Pembayaran:</Text>
                                                 <Badge variant="light" className={`capitalize`} size="lg" color={
                                                     e?.payment_status?.toLowerCase() == 'pending' ? 'yellow' :
-                                                    e?.payment_status?.toLowerCase() == 'verified' ? 'green' : 'red'
+                                                        e?.payment_status?.toLowerCase() == 'verified' ? 'green' : 'red'
                                                 }>{e?.payment_status}</Badge>
                                             </Flex>
                                             <Text size="lg" fw={600}>Total Dibayar <NumberFormatter value={e?.grandtotal ?? 0} /></Text>

@@ -1,10 +1,10 @@
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { ActionIcon, Button, Card, Checkbox, Divider, Flex, Grid, InputWrapper, LoadingOverlay, MultiSelect, NumberInput, Select, Space, Stack, Tabs, Text, Textarea, TextInput } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { ActionIcon, Button, Card, Checkbox, Divider, Flex, Grid, InputWrapper, LoadingOverlay, Modal, MultiSelect, NumberInput, Select, Space, Stack, Tabs, Text, Textarea, TextInput } from '@mantine/core';
+import { useEffect, useState, useMemo } from 'react';
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
-import { useDidUpdate, useListState } from '@mantine/hooks';
+import { useDidUpdate, useDisclosure, useListState } from '@mantine/hooks';
 import ImageInput from '@/components/ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
 import { useRouter } from 'next/router';
@@ -13,15 +13,26 @@ import { z } from 'zod';
 
 type ComponentProps = {};
 
-export default function Create({}: Readonly<ComponentProps>) {
+export default function Create({ }: Readonly<ComponentProps>) {
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
     const [venue, setVenue] = useState<Partial<VenueListResponse>>();
     const [venueFacilities, setVenueFacilities] = useState<any[]>();
+    const [addFacilityOpened, { open: openAddFacility, close: closeAddFacility }] = useDisclosure(false);
+    const [newFacilityName, setNewFacilityName] = useState('');
+    const [newFacilityDesc, setNewFacilityDesc] = useState('');
+    const [addFacilityLoading, setAddFacilityLoading] = useState(false);
     const user = useLoggedUser();
     const router = useRouter();
     const { id: slug } = router.query;
+
+    // Memoize the data array so it has a stable reference across renders
+    const memoizedFacilityData = useMemo(() => {
+        return facility
+            ?.filter(e => e.facility_name)
+            .map(e => ({ value: String(e.facility_id), label: e.facility_name! })) ?? [];
+    }, [facility]);
 
     const form = useForm<any>({
         initialValues: {
@@ -80,7 +91,19 @@ export default function Create({}: Readonly<ComponentProps>) {
         await fetch<any, VenueFacility[]>({
             url: 'venue-facility',
             method: 'GET',
-            success: ({ data }) => data && setFacility(data),
+            success: ({ data }) => {
+                if (data) {
+                    // Filter nulls first, then deduplicate by facility_id
+                    const validData = data.filter(f => f.facility_name);
+                    const seen = new Set<number>();
+                    const unique = validData.filter(f => {
+                        if (seen.has(f.facility_id)) return false;
+                        seen.add(f.facility_id);
+                        return true;
+                    });
+                    setFacility(unique);
+                }
+            },
             before: () => setLoading.append('getdatacat'),
             complete: () => setLoading.filter(e => e != 'getdatacat'),
         });
@@ -114,12 +137,37 @@ export default function Create({}: Readonly<ComponentProps>) {
             return;
         };
 
+        setLoading.append('submitdata');
+
+        // Convert images to base64 format for JSON payload
+        const processedImages = await Promise.all((form.values.image || []).map(async (file: any, index: number) => {
+            if (file instanceof Blob || file instanceof File) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        resolve({
+                            name: (file as File).name || `image_${index}.jpg`,
+                            image: reader.result as string
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else if (typeof file === 'string') {
+                return {
+                    name: `existing_image_${index}`,
+                    image: file // Send existing string URL or already base64 string
+                };
+            }
+            return null;
+        }));
+
         const payload: any = {
             ...form.values,
             venue_capacity_id: 0,
             venue_schedule_id: 0,
             opening_hour: '2024-07-02T09:00:00',
             status: "active",
+            image: processedImages.filter(Boolean),
             operating_hours: form.values.operating_hours?.map((h: any) => ({
                 day_of_week: h.day_of_week,
                 ...(h.is_closed ? { is_closed: 1 } : { open_time: h.open_time?.length === 5 ? h.open_time + ":00" : h.open_time, close_time: h.close_time?.length === 5 ? h.close_time + ":00" : h.close_time })
@@ -128,6 +176,7 @@ export default function Create({}: Readonly<ComponentProps>) {
             areas: form.values.areas || [],
             prices: form.values.prices?.map((p: any) => ({
                 ...p,
+                venue_area_index: parseInt(String(p.venue_area_index)) || 0,
                 start_time: p.start_time?.length === 5 ? p.start_time + ":00" : p.start_time,
                 end_time: p.end_time?.length === 5 ? p.end_time + ":00" : p.end_time,
             })) || [],
@@ -138,7 +187,10 @@ export default function Create({}: Readonly<ComponentProps>) {
             url: slug ? 'creator-data/venue/' + venue?.id : 'creator-data/venue',
             method: 'POST',
             data: payload,
-            before: () => setLoading.append('submitdata'),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            before: () => {}, // Handled manually at the top of submitData
             success: () => {
                 router.push('/dashboard/venue')
             },
@@ -172,7 +224,7 @@ export default function Create({}: Readonly<ComponentProps>) {
 
             <Stack gap={20} w="100%">
                 <Flex gap={10} align="center">
-                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Informasi Venue</Text>
                 </Flex>
 
@@ -182,8 +234,8 @@ export default function Create({}: Readonly<ComponentProps>) {
                             <ImageInput
                                 dimension={[200, 100]}
                                 value={form.values.image && form.values.image[i] ? form.values.image[i] : undefined}
-                                onChange={e => e && form.setValues({ image: [...(form.values.image ?? []), e]})}
-                                onDelete={() => form.setValues({ image: (form.values.image ?? []).filter((_: any, x: number) => x != i)})}
+                                onChange={e => e && form.setValues({ image: [...(form.values.image ?? []), e] })}
+                                onDelete={() => form.setValues({ image: (form.values.image ?? []).filter((_: any, x: number) => x != i) })}
                                 key={i}
                             />
                         ))}
@@ -288,21 +340,33 @@ export default function Create({}: Readonly<ComponentProps>) {
                                 withAsterisk
                                 label="Pilih Fasilitas Venue"
                                 placeholder="Cari & Pilih Fasilitas"
-                                data={facility?.map(e => ({ value: String(e.id), label: e.name ?? '' })).filter(e => e.label) ?? []}
+                                data={memoizedFacilityData}
                                 value={(form.values.venue_facility_id ?? []).map(String)}
-                                onChange={vals => form.setValues({ venue_facility_id: vals.map(Number) })}
+                                onChange={vals => form.setFieldValue('venue_facility_id', vals.map(Number))}
                                 disabled={loading.includes('getdatacat')}
                                 searchable
                             />
+
+                            <Button
+                                leftSection={<Icon icon="uiw:plus" />}
+                                color="#194e9e"
+                                variant="filled"
+                                size="sm"
+                                radius="xl"
+                                w="fit-content"
+                                onClick={openAddFacility}
+                            >
+                                Tambah Fasilitas
+                            </Button>
 
                             {form.values.venue_facility_id && form.values.venue_facility_id.length > 0 && (
                                 <Stack gap={10} mt={10}>
                                     <Text fw={600} size="sm">Informasi Fasilitas Terpilih:</Text>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {facility?.filter(f => form.values.venue_facility_id?.includes(f.id)).map(f => (
-                                            <Card key={f.id} withBorder p="sm" radius="md">
-                                                <Text fw={600} size="sm">{f.name}</Text>
-                                                <Text size="xs" c="gray" mt={2}>{f.description || 'Tidak ada deskripsi tersedia.'}</Text>
+                                        {facility?.filter(f => form.values.venue_facility_id?.includes(f.facility_id)).map(f => (
+                                            <Card key={f.facility_id} withBorder p="sm" radius="md">
+                                                <Text fw={600} size="sm">{f.facility_name}</Text>
+                                                <Text size="xs" c="gray" mt={2}>{f.facility_description || 'Tidak ada deskripsi tersedia.'}</Text>
                                             </Card>
                                         ))}
                                     </div>
@@ -318,7 +382,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                                     <TextInput label="Nama Jadwal" withAsterisk placeholder="Regular Schedule" {...inputProps('schedule.name')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <Select label="Status Jadwal" data={[{value: 'active', label: 'Aktif'}, {value: 'inactive', label: 'Inaktif'}]} {...inputProps('schedule.status')} />
+                                    <Select label="Status Jadwal" data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
                                     <TextInput type="date" label="Tanggal Mulai" withAsterisk {...inputProps('schedule.start_date')} />
@@ -415,7 +479,7 @@ export default function Create({}: Readonly<ComponentProps>) {
 
                             <Flex justify="space-between" align="center">
                                 <Text fw={600} size="lg">Harga Kustom (Prices)</Text>
-                                <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('prices', { pricing_type: 'hourly', day_type: 'weekday', start_time: '08:00', end_time: '17:00', price: 0 })}>
+                                <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('prices', { venue_area_index: '0', pricing_type: 'hourly', day_type: 'weekday', start_time: '08:00', end_time: '17:00', price: 0 })}>
                                     Tambah Harga Kustom
                                 </Button>
                             </Flex>
@@ -424,10 +488,13 @@ export default function Create({}: Readonly<ComponentProps>) {
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Grid align="flex-end">
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Harga" data={[{value: 'hourly', label: 'Per Jam'}, {value: 'daily', label: 'Per Hari'}]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                                <Select label="Pilih Area" data={form.values.areas?.map((a: any, i: number) => ({ value: String(i), label: a.name || `Area ${i+1}` })) || []} {...inputProps(`prices.${index}.venue_area_index`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Hari" data={[{value: 'weekday', label: 'Weekday'}, {value: 'weekend', label: 'Weekend'}]} {...inputProps(`prices.${index}.day_type`)} />
+                                                <Select label="Tipe Harga" data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                            </Grid.Col>
+                                            <Grid.Col span={{ base: 12, md: 2 }}>
+                                                <Select label="Tipe Hari" data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
                                                 <TextInput type="time" label="Waktu Mulai" {...inputProps(`prices.${index}.start_time`)} />
@@ -455,7 +522,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 </Tabs>
 
                 <Flex gap={10} align="center" mt={10}>
-                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Alamat Venue</Text>
                 </Flex>
 
@@ -486,7 +553,7 @@ export default function Create({}: Readonly<ComponentProps>) {
                 />
 
                 <Flex gap={10} align="center" mt={10}>
-                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Contact Person</Text>
                 </Flex>
 
@@ -539,6 +606,91 @@ export default function Create({}: Readonly<ComponentProps>) {
                     </Button>
                 </Flex>
             </Card>
+
+            {/* Modal Tambah Fasilitas */}
+            <Modal
+                opened={addFacilityOpened}
+                onClose={() => { closeAddFacility(); setNewFacilityName(''); setNewFacilityDesc(''); }}
+                title={<Text fw={700} size="lg">Tambah Fasilitas Baru</Text>}
+                centered
+                radius="md"
+            >
+                <Stack gap={15}>
+                    <TextInput
+                        label="Nama Fasilitas"
+                        placeholder="Contoh: Parkir, WiFi, AC"
+                        withAsterisk
+                        value={newFacilityName}
+                        onChange={e => setNewFacilityName(e.currentTarget.value)}
+                    />
+                    <Textarea
+                        label="Deskripsi Fasilitas"
+                        placeholder="Isi deskripsi fasilitas (opsional)"
+                        autosize
+                        minRows={2}
+                        value={newFacilityDesc}
+                        onChange={e => setNewFacilityDesc(e.currentTarget.value)}
+                    />
+                    <Flex gap={10} justify="flex-end" mt={5}>
+                        <Button
+                            variant="default"
+                            radius="xl"
+                            onClick={() => { closeAddFacility(); setNewFacilityName(''); setNewFacilityDesc(''); }}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            color="#194e9e"
+                            radius="xl"
+                            loading={addFacilityLoading}
+                            leftSection={<Icon icon="uiw:plus" />}
+                            disabled={!newFacilityName.trim()}
+                            onClick={async () => {
+                                setAddFacilityLoading(true);
+                                await fetch<any, VenueFacility>({
+                                    url: 'venue-facility',
+                                    method: 'POST',
+                                    data: { name: newFacilityName.trim(), description: newFacilityDesc.trim(), status: 'active' },
+                                    success: ({ data }) => {
+                                        if (data) {
+                                            // Handle case where POST returns standard 'id' and 'name' instead of 'facility_id' and 'facility_name'
+                                            const resData = data as any;
+                                            const newFacilityData: any = {
+                                                ...resData,
+                                                facility_id: resData.facility_id || resData.id,
+                                                facility_name: resData.facility_name || resData.name,
+                                                facility_description: resData.facility_description || resData.description,
+                                            };
+
+                                            setFacility(prev => {
+                                                const updated = [...(prev ?? []), newFacilityData as VenueFacility];
+                                                // Deduplicate by facility_id
+                                                const seen = new Set<number>();
+                                                return updated.filter(f => {
+                                                    const f_id = f.facility_id || f.id;
+                                                    if (seen.has(f_id)) return false;
+                                                    seen.add(f_id);
+                                                    return true;
+                                                });
+                                            });
+                                            // Auto-select new facility
+                                            form.setValues({
+                                                venue_facility_id: [...(form.values.venue_facility_id ?? []), newFacilityData.facility_id || newFacilityData.id]
+                                            });
+                                        }
+                                        closeAddFacility();
+                                        setNewFacilityName('');
+                                        setNewFacilityDesc('');
+                                    },
+                                    complete: () => setAddFacilityLoading(false),
+                                });
+                            }}
+                        >
+                            Simpan Fasilitas
+                        </Button>
+                    </Flex>
+                </Stack>
+            </Modal>
         </Stack>
     );
 }

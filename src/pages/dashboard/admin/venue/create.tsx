@@ -185,10 +185,10 @@ export default function AdminCreateVenue() {
 
             <Stack gap={20} w="100%">
                 <Flex gap={10} align="center">
-                    <Icon icon="ph:user-circle-bold" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="ph:user-circle-bold" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Penyelenggara (Creator)</Text>
                 </Flex>
-                
+
                 <Select
                     withAsterisk
                     label="Pilih Creator"
@@ -202,7 +202,7 @@ export default function AdminCreateVenue() {
                 <Divider my="sm" />
 
                 <Flex gap={10} align="center">
-                    <Icon icon="ph:info-bold" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="ph:info-bold" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Informasi Venue</Text>
                 </Flex>
 
@@ -329,7 +329,7 @@ export default function AdminCreateVenue() {
                                 withAsterisk
                                 label="Pilih Fasilitas Venue"
                                 placeholder="Cari & Pilih Fasilitas"
-                                data={facility?.map(e => ({ value: String(e.id), label: e.name ?? '' })).filter(e => e.label) ?? []}
+                                data={facility?.map(e => ({ value: String(e.id), label: e.facility_name ?? '' })).filter(e => e.label) ?? []}
                                 value={(form.values.venue_facility_id ?? []).map(String)}
                                 onChange={vals => form.setValues({ venue_facility_id: vals.map(Number) })}
                                 disabled={loading.includes('getdatacat')}
@@ -337,7 +337,7 @@ export default function AdminCreateVenue() {
                             />
                         </Stack>
                     </Tabs.Panel>
-                    
+
                     <Tabs.Panel value="jadwal" pt="xl">
                         <Stack gap={20}>
                             <Text fw={600} size="lg">Pengaturan Jadwal (Schedule)</Text>
@@ -346,7 +346,7 @@ export default function AdminCreateVenue() {
                                     <TextInput label="Nama Jadwal" withAsterisk placeholder="Regular Schedule" {...inputProps('schedule.name')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <Select label="Status Jadwal" data={[{value: 'active', label: 'Aktif'}, {value: 'inactive', label: 'Inaktif'}]} {...inputProps('schedule.status')} />
+                                    <Select label="Status Jadwal" data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
                                     <TextInput type="date" label="Tanggal Mulai" withAsterisk {...inputProps('schedule.start_date')} />
@@ -445,10 +445,10 @@ export default function AdminCreateVenue() {
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Grid align="flex-end">
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Harga" data={[{value: 'hourly', label: 'Per Jam'}, {value: 'daily', label: 'Per Hari'}]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                                <Select label="Tipe Harga" data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Hari" data={[{value: 'weekday', label: 'Weekday'}, {value: 'weekend', label: 'Weekend'}]} {...inputProps(`prices.${index}.day_type`)} />
+                                                <Select label="Tipe Hari" data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
                                                 <TextInput type="time" label="Waktu Mulai" {...inputProps(`prices.${index}.start_time`)} />
@@ -473,7 +473,7 @@ export default function AdminCreateVenue() {
                 </Tabs>
 
                 <Flex gap={10} align="center" mt={10}>
-                    <Icon icon="ph:map-pin-bold" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="ph:map-pin-bold" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Alamat Venue</Text>
                 </Flex>
 
@@ -504,7 +504,7 @@ export default function AdminCreateVenue() {
                 />
 
                 <Flex gap={10} align="center" mt={10}>
-                    <Icon icon="ph:phone-bold" className={`text-[20px] text-primary-base`}/>
+                    <Icon icon="ph:phone-bold" className={`text-[20px] text-primary-base`} />
                     <Text size="lg" fw={600}>Contact Person</Text>
                 </Flex>
 
