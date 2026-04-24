@@ -46,7 +46,7 @@ const Button = ({
         {startIcon ? (
           <p>
             <span>
-              <FontAwesomeIcon icon={startIcon} className='mr-1 text-center text-sm' />
+              <FontAwesomeIcon icon={startIcon} className={`${label ? 'mr-1' : ''} text-center text-sm`} />
             </span>
             {label}
           </p>

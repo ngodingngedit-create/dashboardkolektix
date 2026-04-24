@@ -234,7 +234,8 @@ import {
     faXmark,
     faEnvelope,
     faUser,
-    faCircleExclamation
+    faCircleExclamation,
+    faExclamation
 } from '@fortawesome/free-solid-svg-icons';
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons';
 
@@ -412,6 +413,10 @@ const Merch = () => {
                 data: activeTab === 'ticket' ? { qr_code: code } : { invitation_number: code },
                 headers: { lgntkn: 'true' },
                 success: (data: any) => {
+                    const message = data?.message || (activeTab === 'ticket' ? 'Check-in berhasil' : 'Validasi berhasil');
+                    const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('check-in') || message.toLowerCase().includes('already');
+                    const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
+
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: data?.data?.eticket_number || data?.data?.invitation_code || code,
@@ -420,8 +425,8 @@ const Merch = () => {
                         category_ticket: data?.data?.ticket_category || data?.data?.invitation_type || 'Regular',
                         total_qty: data?.data?.quantity || '1',
                         scan_date: scanDateTime,
-                        status: 'success',
-                        message: data?.message || (activeTab === 'ticket' ? 'Check-in berhasil' : 'Validasi berhasil'),
+                        status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
+                        message: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : message,
                         type: activeTab
                     };
 
@@ -432,18 +437,18 @@ const Merch = () => {
                 error: (err) => {
                     const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
                     const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('check-in') || errorMessage.toLowerCase().includes('already');
-                    const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid');
+                    const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid') || errorMessage.toLowerCase().includes('invalid');
 
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: code,
                         buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || 'N/A') : 'N/A',
-                        event_name: isAlreadyCheckedIn ? 'Sudah Check In' : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
+                        event_name: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
                         category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
                         total_qty: '0',
                         scan_date: scanDateTime,
                         status: isAlreadyCheckedIn ? 'warning' : 'failed',
-                        message: isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage,
+                        message: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : (isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage),
                         type: activeTab
                     };
 
@@ -648,14 +653,25 @@ const Merch = () => {
                             {showSuccessModal && currentScanData && (
                                 <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
                                     <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn shadow-2xl">
-                                        <FontAwesomeIcon
-                                            icon={currentScanData.status === 'success' ? faCheckCircle : (currentScanData.status === 'warning' ? faCircleExclamation : faXmark)}
-                                            className={`text-4xl mb-3 ${currentScanData.status === 'success' ? 'text-green-500' : (currentScanData.status === 'warning' ? 'text-yellow-500' : 'text-red-500')}`}
-                                        />
-                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' : (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')}`}>
+                                        <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${
+                                            currentScanData.status === 'success' ? 'bg-green-100' : 
+                                            (currentScanData.status === 'warning' ? 'bg-yellow-100' : 'bg-red-500')
+                                        }`}>
+                                            <FontAwesomeIcon
+                                                icon={currentScanData.status === 'success' ? faCheck : (currentScanData.status === 'warning' ? faExclamation : faXmark)}
+                                                className={`text-2xl ${
+                                                    currentScanData.status === 'success' ? 'text-green-500' : 
+                                                    (currentScanData.status === 'warning' ? 'text-yellow-500' : 'text-white')
+                                                }`}
+                                            />
+                                        </div>
+                                        <p className={`font-semibold mb-2 text-lg ${
+                                            currentScanData.status === 'success' ? 'text-green-700' : 
+                                            (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')
+                                        }`}>
                                             {currentScanData.status === 'success'
                                                 ? (activeTab === 'ticket' ? 'Check-in Berhasil!' : 'Validasi Berhasil!')
-                                                : (currentScanData.status === 'warning' ? 'Sudah Check In!' : 'Gagal!')}
+                                                : (currentScanData.status === 'warning' ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : 'Gagal!')}
                                         </p>
 
                                         <div className={`text-left mb-4 p-3 rounded-lg border ${currentScanData.status === 'success' ? 'bg-gray-50 border-light-grey' : (currentScanData.status === 'warning' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200')}`}>

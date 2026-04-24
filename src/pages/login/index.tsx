@@ -159,14 +159,24 @@ const Auth = () => {
         Cookies.set("token", res.access_token);
         const role: UserProps["role"] = res?.user_access?.some((e: any) => e?.has_role.id == 3) ? "Creator" : res?.user_access?.some((e: any) => e?.has_role?.name == "Admin") ? "Admin" : "Staff";
 
-        Cookies.set(
-          "user_data",
-          JSON.stringify({
-            ...(res?.data ?? {}),
-            force_creator: true,
-            role,
-          }),
-        );
+        // Optimize cookie size by only storing essential info
+        const userData = {
+          id: res?.data?.id,
+          name: res?.data?.name,
+          email: res?.data?.email,
+          role,
+          force_creator: true,
+          has_creator: res?.data?.has_creator ? {
+            id: res.data.has_creator.id,
+            name: res.data.has_creator.name,
+            slug: res.data.has_creator.slug,
+          } : undefined,
+          permissions: (res?.data?.permissions ?? []).map((p: any) => ({
+            module_id: p.module_id
+          }))
+        };
+
+        Cookies.set("user_data", JSON.stringify(userData));
         setLoading(false);
         router.push(role == "Admin" ? "/dashboard/admin" : "/dashboard");
       })

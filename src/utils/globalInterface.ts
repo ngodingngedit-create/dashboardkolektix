@@ -266,6 +266,27 @@ interface PaymentChannel {
   active: string;
 }
 
+export interface ModulePermission {
+  id: number;
+  user_id: number;
+  role_id: number;
+  module_id: number;
+  is_index: number | null;
+  is_view: number | null;
+  is_update: number | null;
+  is_delete: number | null;
+  is_download: number | null;
+  is_import: number | null;
+  role?: {
+    id: number;
+    name: string;
+  };
+  module?: {
+    id: number;
+    module_name: string;
+  };
+}
+
 export type UserProps = Partial<{
   id: number;
   name: string | null;
@@ -293,6 +314,7 @@ export type UserProps = Partial<{
     talenta_id?: number;
     venue_id?: number;
   }[];
+  permissions?: ModulePermission[];
 }>;
 
 export interface SliderProps {

@@ -35,7 +35,7 @@ import _ from "lodash";
 import { isNotEmpty, useForm } from "@mantine/form";
 import { contrastColor } from "contrast-color";
 import { Context as EditContext } from "@/pages/dashboard/my-event/[slug]";
-import { Context } from "@/pages/create-event";
+import { Context } from "@/pages/dashboard/create-event";
 import { Guide } from "../Guide";
 
 type ComponentProps = {
@@ -108,6 +108,18 @@ export default function Seatmap({
       reset();
     }
   }, [modalArea]);
+
+  const handleAddRectangle = () => {
+    setData?.append({
+      position: [0, 0],
+      size: [300, 200],
+      type: "box",
+      text: "New Rectangle",
+      background: "#ffffff",
+      radius: [5, 5, 5, 5],
+    });
+    setSelected(_data.length);
+  };
 
   const handleSaveArea = () => {
     if (areaForm.validate().hasErrors && modalArea != 0 && areaVal?.type == "seat") {
@@ -386,9 +398,14 @@ export default function Seatmap({
 
         <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
           <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
-            <Button onClick={() => setModalArea("new")} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
-              Tambah Area
-            </Button>
+            <Flex gap={10}>
+              <Button onClick={handleAddRectangle} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
+                Tambah Rectangle
+              </Button>
+              <Button onClick={() => setModalArea("new")} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
+                Tambah Area
+              </Button>
+            </Flex>
           </Guide>
           <ActionIcon color="gray.1" radius="xl" onClick={() => setIsFullscreen(!isFullscreen)}>
             <Icon icon="ic:outline-fullscreen" className={`text-primary-base`} />

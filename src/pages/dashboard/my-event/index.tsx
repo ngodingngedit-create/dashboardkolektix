@@ -457,7 +457,7 @@ const MyEvent = () => {
                     <Image src={addevent} alt="draft" />
                     <h3 className="text-xl font-semibold">Belum ada event</h3>
                     <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                    <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/create-event")} className="mt-3" />
+                    <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
                   </div>
                 ) : (
                   <div>
@@ -522,7 +522,7 @@ const MyEvent = () => {
                 <Image src={addevent} alt="draft" />
                 <h3 className="text-xl font-semibold">Belum ada event yang dibuat</h3>
                 <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/create-event")} className="mt-3" />
+                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (
@@ -561,7 +561,7 @@ const MyEvent = () => {
                 <Image src={addevent} alt="draft" />
                 <h3 className="text-xl font-semibold">Belum ada event draf</h3>
                 <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/create-event")} className="mt-3" />
+                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (
@@ -600,7 +600,7 @@ const MyEvent = () => {
                 <Image src={addevent} alt="draft" />
                 <h3 className="text-xl font-semibold">Belum ada event lalu</h3>
                 <p className="px-10">Mulai buat eventmu dengan klik button Buat Event di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/create-event")} className="mt-3" />
+                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (

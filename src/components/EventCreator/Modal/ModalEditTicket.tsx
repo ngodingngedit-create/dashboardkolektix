@@ -14,7 +14,7 @@ import TicketContainer from "@/components/TicketContainer";
 import { modals } from "@mantine/modals";
 import { Guide } from "@/components/Guide";
 import { notifications } from "@mantine/notifications";
-import { Context } from "@/pages/create-event";
+import { Context } from "@/pages/dashboard/create-event";
 import { useRouter } from "next/router";
 
 interface ModalProps {

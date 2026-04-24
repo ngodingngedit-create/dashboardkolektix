@@ -67,7 +67,7 @@ const PromoBlock = () => {
   const router = useRouter();
 
   const handleCreateEvent = () => {
-    router.push(!userData?.has_creator ? "/register/creator" : "/create-event");
+    router.push(!userData?.has_creator ? "/register/creator" : "/dashboard/create-event");
   };
 
   useEffect(() => {

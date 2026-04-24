@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { UserProps } from "@/utils/globalInterface";
-import imagePlus from "../../assets/icon/image-plus.png";
+import imagePlus from "../../../assets/icon/image-plus.png";
 import { faCalendar, faClock } from "@fortawesome/free-regular-svg-icons";
 import { Alert, LoadingOverlay, TagsInput } from "@mantine/core";
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from "@nextui-org/react";
@@ -224,19 +224,23 @@ const CreateEvent = () => {
       .then((res) => {
         console.log("submit event", res);
         toast.success(eventId === null ? "Event Berhasil Dibuat" : "Event Berhasil Diupdate");
-        router.push(eventId === null ? "/create-event/success" : "/dashboard/my-event/" + slug);
+        router.push(eventId === null ? "/dashboard/create-event/success" : "/dashboard/my-event/" + slug);
       })
       .catch((err) => {
-        const error = err.response.data.errors;
-        toast.error(err.response.data.message);
-        setError(error);
+        const errorObj = err?.response?.data?.errors || {};
+        const errorMessage = err?.response?.data?.message || "Terjadi Kesalahan";
+        
+        toast.error(errorMessage);
+        setError(errorObj);
 
-        const keys = Object.keys(error);
-        const hasDescription = keys.includes("description");
-        const hasTermCondition = keys.includes("term_condition");
+        if (Object.keys(errorObj).length > 0) {
+          const keys = Object.keys(errorObj);
+          const hasDescription = keys.includes("description");
+          const hasTermCondition = keys.includes("term_condition");
 
-        if ((hasDescription || hasTermCondition) && keys.length <= 2) {
-          setTab("detail");
+          if ((hasDescription || hasTermCondition) && keys.length <= 2) {
+            setTab("detail");
+          }
         }
       })
       .finally(() => {
@@ -313,8 +317,8 @@ const CreateEvent = () => {
   return (
     <>
       <LoadingOverlay visible={loadingEvent} />
-      <div className="text-dark min-h-screen max-w-7xl mx-auto py-20 border-primary-light-200 px-4 sm:px-8 md:px-12 lg:px-[20px]">
-        <div className="grid grid-cols-1 md:grid-cols-2">
+      <div className="text-dark min-h-screen max-w-full mx-auto pt-8 pb-32 border-primary-light-200 px-4 sm:px-6 md:px-8 lg:px-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 max-w-[1400px] mx-auto">
           <div className="md:col-span-2 self-center mb-8 text-center md:text-start">
             {!!slug ? (
               <>
@@ -328,7 +332,7 @@ const CreateEvent = () => {
               </>
             )}
           </div>
-          <div className="md:pr-10">
+          <div className="md:pr-2 xl:pr-6">
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/jpeg, image/png, image/gif" />
               {image ? (
@@ -408,7 +412,7 @@ const CreateEvent = () => {
               </div>
             </div>
           </div>
-          <div className="md:px-10">
+          <div className="md:pl-2 xl:pl-6">
             <Tabs
               selectedKey={tab}
               onSelectionChange={(e) => setTab(e as string)}
@@ -598,18 +602,27 @@ const CreateEvent = () => {
           </div>
         </div>
       </div>
-      <div className="border border-t-primary-light-200 fixed bottom-0 w-full bg-white shadow-md">
-        <div className="flex justify-center items-center px-8 py-4 text-dark z-50">
-          <div className="flex flex-col md:flex-row justify-between items-center w-full">
-            <p className="mb-4 md:mb-0">Hai Creator! Selangkah lagi event kamu berhasil dibuat.</p>
-            <div className="flex gap-4">
-              {!slug && <Button onClick={saveDraft} color="secondary" label="Draf" />}
+      <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
+        <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
+          <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
+            <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0">
+              Hai Creator! Selangkah lagi event kamu berhasil dibuat.
+            </p>
+            <div className="flex gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
+              {!slug && (
+                <Button 
+                  onClick={saveDraft} 
+                  color="secondary" 
+                  label="Draf" 
+                  className="flex-1 md:flex-none max-w-[120px]" 
+                />
+              )}
               <Button
-                className={`whitespace-nowrap`}
+                className={`flex-1 md:flex-none max-w-[120px] whitespace-nowrap`}
                 onClick={submitEvent}
                 color="primary"
-                disabled={loading} // Nonaktifkan tombol saat loading
-                label={loading ? "Loading..." : "Simpan"} // Ubah label berdasarkan status loading
+                disabled={loading}
+                label={loading ? "Loading..." : "Simpan"}
               />
             </div>
           </div>

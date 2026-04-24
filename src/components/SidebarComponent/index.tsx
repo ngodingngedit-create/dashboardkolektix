@@ -1640,6 +1640,7 @@ interface SaldoData {
 
 type SidebarData = {
   id: number;
+  moduleId?: number;
   name: string;
   icon?: IconDefinition;
   iconify?: string;
@@ -1779,6 +1780,7 @@ const sidebarData: SidebarData = [
   },
   {
     id: 3,
+    moduleId: 1,
     name: "Event",
     iconify: "mdi:event-star",
     role: "Creator",
@@ -1813,6 +1815,13 @@ const sidebarData: SidebarData = [
       },
       {
         id: 1,
+        name: "Sales Report",
+        iconify: "carbon:flag",
+        link: "/dashboard/my-event/seatreport",
+        role: "Creator",
+      },
+      {
+        id: 1,
         name: "Ticket OTS",
         icon: faTicket,
         link: "/dashboard/my-event/ticket-ots",
@@ -1839,6 +1848,7 @@ const sidebarData: SidebarData = [
   // { id: 5, name: "Profile Talenta", icon: faStar, link: "/dashboard/talenta", role: "Pembeli" },
   {
     id: 6,
+    moduleId: 2,
     name: "Produk",
     icon: faGift,
     role: "Creator",
@@ -1889,6 +1899,7 @@ const sidebarData: SidebarData = [
   },
   {
     id: 7,
+    moduleId: 5,
     name: "Venue",
     icon: faLocationDot,
     role: "Creator",
@@ -1918,16 +1929,17 @@ const sidebarData: SidebarData = [
   },
   {
     id: 10,
+    moduleId: 7,
     name: "Blog",
     icon: faBook,
     role: "Creator",
     link: "/dashboard/blog"
   },
   { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat", role: "Pembeli" },
-  { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator" },
+  { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator", moduleId: 6 },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
-  { id: 11, name: "Issue Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
+  { id: 11, name: "Project Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
   { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard/issuemanagement" },
 ];
 
@@ -2010,7 +2022,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     setShowUserMenu(false);
   });
   useEffect(() => {
-    const userDataCookie = Cookies.get("user");
+    const userDataCookie = Cookies.get("user_data");
     if (userDataCookie) {
       try {
         setUser(JSON.parse(userDataCookie));
@@ -2021,16 +2033,33 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const filteredSidebarData = useMemo(() => {
-    console.log("🔄 Filtering menu with role:", role, "and user:", user?.name);
+    console.log("🔄 Filtering menu with role:", role, "and user:", users?.name);
 
     return sidebarData.filter((el) => {
+      // Role filtering
+      if (el.role !== role) return false;
+
+      // Module permission filtering (for Creators)
+      if (role === "Creator" && el.moduleId) {
+        // Event module (1) always visible
+        if (el.moduleId === 1) return true;
+
+        // Check other modules
+        const hasPermission = users?.permissions?.some(
+          (p) => p.module_id === el.moduleId
+        );
+        return !!hasPermission;
+      }
+
+      // Feature flag for Issue Management
       if (el.id === 11) {
         const isProduction = hostname === "kolektix.com" || hostname === "dashboard.kolektix.com";
-        return !isProduction && el.role === role;
+        return !isProduction;
       }
-      return el.role === role;
+
+      return true;
     });
-  }, [role, user, hostname]);
+  }, [role, users, hostname]);
 
   useEffect(() => {
     const userCookie = Cookies.get("user");
@@ -2251,7 +2280,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                       </div>
                     )}
                     {el.submenu && (
-                      <ul className={`${openMenu[el.id] && visible ? "max-h-80" : "max-h-0"} ml-[10px] transition-max-height duration-150 ease-in-out`}>
+                      <ul className={`${openMenu[el.id] && visible ? "max-h-[1000px] mb-3" : "max-h-0"} ml-[10px] transition-all duration-300 ease-in-out overflow-hidden`}>
                         {el.submenu
                           .filter((subEl) => subEl.role === role)
                           .map((subEl, i) => (
@@ -2349,14 +2378,12 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
                   </button>
                   {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
-                    <button type="button" title="Buat Event" className="relative flex justify-center items-center rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/create-event")}>
-                      <Icon icon="solar:calendar-add-bold" className="text-[20px]" />
-                    </button>
+                    <Button label="Buat Event" startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
                   ) : (
                     role === "Creator" && (
                       <>
-                        <Button label="Edit" color="secondary" onClick={() => router.push(`/edit-event/${params.slug}`)} startIcon={faEdit} />
-                        <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/event/${params.slug}`)} />
+                        <Button label="Edit" color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
+                        <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/dashboard/event/${params.slug}`)} />
                       </>
                     )
                   )}

@@ -723,7 +723,7 @@ function App({ Component, pageProps }: AppProps) {
       '/creator',
       '/login',
       '/sample',
-      '/create-event',
+      '/dashboard/create-event',
       '/merch-cart',
       '/merch-order',
       '/transaction-woauth',

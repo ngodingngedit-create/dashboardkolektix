@@ -239,7 +239,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 <div className="flex items-center">
                   {!route.startsWith("/event/") && !route.startsWith("/transaction-woauth") && (
                     <button type="button" className="relative rounded-full font-semibold flex items-center bg-white px-2 py-1 text-center text-primary-base hover:text-primary-dark mx-2 text-sm md:px-3 md:py-1.5">
-                      <Link href={!userData?.has_creator ? "/register/creator" : "/create-event"} className="flex items-center">
+                      <Link href={!userData?.has_creator ? "/register/creator" : "/dashboard/create-event"} className="flex items-center">
                         <FontAwesomeIcon icon={faCirclePlus} className={`text-[24px]`} />
                         <span className="ml-1 hidden lg:inline whitespace-nowrap">Buat Event</span>
                       </Link>
