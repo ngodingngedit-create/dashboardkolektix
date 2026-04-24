@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { GetServerSideProps } from "next";
+import axios from "axios";
 import { useDebouncedValue } from "@mantine/hooks";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get } from "@/utils/REST";
@@ -58,17 +60,22 @@ interface EventData {
   }[];
 }
 
-const SeatReport = () => {
+interface Props {
+  initialEvents: EventData[];
+  initialCreatorId: number | null;
+}
+
+const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const users = useLoggedUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<EventData[]>(initialEvents || []);
+  const [loading, setLoading] = useState(false);
   const [loadingTrx, setLoadingTrx] = useState(false);
   const [seatPage, setSeatPage] = useState(1);
   const [apiTotalPages, setApiTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [selectedEventId, setSelectedEventId] = useState<string>(initialEvents && initialEvents.length > 0 ? String(initialEvents[0].id) : "");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
@@ -92,16 +99,13 @@ const SeatReport = () => {
     return !hasAnySeats;
   }, [selectedCategory, selectedEventData]);
 
-  // 1. Initial Load: Fetch Events
+  // 1. Initial Load: Fetch Events (Only used if need to manually refresh, mostly handled by SSR now)
   const fetchEvents = async (creatorId: number) => {
     try {
       setLoading(true);
       const res: any = await Get(`event-by-creator/${creatorId}`, { status: "" });
       if (res && res.data) {
         setEvents(res.data);
-        if (res.data.length > 0) {
-          setSelectedEventId(String(res.data[0].id));
-        }
       }
     } catch (err) {
       console.error("Error fetching events:", err);
@@ -155,11 +159,15 @@ const SeatReport = () => {
     }
   };
 
+  // We no longer need to auto-fetch events on mount because it's handled by SSR
+  // But we can keep it as a fallback if needed
+  /*
   useEffect(() => {
-    if (users?.has_creator?.id) {
+    if (users?.has_creator?.id && events.length === 0) {
       fetchEvents(users.has_creator.id);
     }
   }, [users]);
+  */
 
   // Refresh transactions when selected event, page, or search changes
   useEffect(() => {
@@ -346,10 +354,12 @@ const SeatReport = () => {
   const itemsPerPage = 20;
   const filteredFestivalTransactions = useMemo(() => {
     if (!isFestival) return [];
-    return transactions.filter(trx => 
-      !selectedTicketName || trx.tickets.some(t => (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName)
-    );
-  }, [transactions, selectedTicketName, isFestival]);
+    return transactions.filter(trx => {
+      const matchTicket = !selectedTicketName || trx.tickets.some(t => (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName);
+      const matchStatus = selectedStatus === "all" || trx.payment_status === selectedStatus;
+      return matchTicket && matchStatus;
+    });
+  }, [transactions, selectedTicketName, selectedStatus, isFestival]);
 
   const totalFestivalPages = Math.ceil(filteredFestivalTransactions.length / itemsPerPage);
   
@@ -780,6 +790,53 @@ const SeatReport = () => {
       </div>
     </div>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { req } = context;
+  const token = req.cookies['token'];
+  const userDataStr = req.cookies['user_data'];
+
+  if (!token || !userDataStr) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  let user = null;
+  try {
+    user = JSON.parse(userDataStr);
+  } catch (e) {
+    // Invalid JSON
+  }
+
+  const creatorId = user?.has_creator?.id;
+  let initialEvents: EventData[] = [];
+
+  if (creatorId) {
+    try {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_WS_URL}event-by-creator/${creatorId}?status=`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      let evData = res.data?.data;
+      if (!Array.isArray(evData)) {
+          evData = Array.isArray(res.data) ? res.data : [];
+      }
+      initialEvents = evData;
+    } catch (e) {
+      console.error("Error fetching initial events in SSR:", e);
+    }
+  }
+
+  return {
+    props: {
+      initialEvents,
+      initialCreatorId: creatorId || null,
+    }
+  };
 };
 
 export default SeatReport;

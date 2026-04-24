@@ -2041,8 +2041,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
       // Module permission filtering (for Creators)
       if (role === "Creator" && el.moduleId) {
-        // Event module (1) always visible
-        if (el.moduleId === 1) return true;
+        // Chat Creator module (6) always visible
+        if (el.moduleId === 6) return true;
 
         // Check other modules
         const hasPermission = users?.permissions?.some(

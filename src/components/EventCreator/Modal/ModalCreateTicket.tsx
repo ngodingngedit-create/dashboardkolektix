@@ -60,6 +60,11 @@ export default function ModalCreateTicket({
     description: "",
     starting_time: "00:00",
     ending_time: "00:00",
+    is_promo: 0,
+    promo_title: "",
+    promo_price: 0,
+    is_bundling: 0,
+    bundling_qty: 0,
   };
   const {
     values: form,
@@ -154,7 +159,7 @@ export default function ModalCreateTicket({
             color: "green",
           });
         },
-        error: () => {},
+        error: () => { },
       });
     }
   };
@@ -201,9 +206,9 @@ export default function ModalCreateTicket({
     return onSelectSeat === undefined
       ? []
       : ticket
-          .map((e) => e.available_seat)
-          .reduce<string[]>((c, n) => [...c, ...(n ?? [])], [])
-          .filter((e) => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
+        .map((e) => e.available_seat)
+        .reduce<string[]>((c, n) => [...c, ...(n ?? [])], [])
+        .filter((e) => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
   }, [onSelectSeat]);
 
   const allSeat = useMemo(() => {
@@ -458,6 +463,61 @@ export default function ModalCreateTicket({
                       onChange={(e: any) => setForm({ ...form, qty: e.target.value })}
                       placeholder="Masukan Jumlah"
                     />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 my-2">
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Promo</span>}
+                        checked={form.is_promo === 1}
+                        onChange={(event) => setForm({ ...form, is_promo: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                      {form.is_promo === 1 && (
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          <InputField
+                            type="text"
+                            label="Nama Promo"
+                            placeholder="Nama Promo"
+                            fullWidth
+                            value={form.promo_title || ""}
+                            onChange={(e: any) => setForm({ ...form, promo_title: e.target.value })}
+                          />
+                          <InputField
+                            type="num"
+                            label="Harga Promo"
+                            placeholder="Harga Promo"
+                            fullWidth
+                            value={form.promo_price || ""}
+                            onChange={(e: any) => setForm({ ...form, promo_price: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 my-2">
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Bundling</span>}
+                        checked={form.is_bundling === 1}
+                        onChange={(event) => setForm({ ...form, is_bundling: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                      {form.is_bundling === 1 && (
+                        <div className="mt-3">
+                          <p className="mb-1 text-grey text-sm">
+                            Jumlah Tiket Bundling<span className="text-danger"> *</span>
+                          </p>
+                          <select
+                            className="w-full border border-primary-light-200 shadow-sm focus:outline-primary-disabled rounded-lg px-3 py-2 text-sm bg-white"
+                            value={form.bundling_qty || ""}
+                            onChange={(e: any) => setForm({ ...form, bundling_qty: Number(e.target.value) })}
+                          >
+                            <option value="" disabled>Pilih Jumlah Tiket</option>
+                            {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                              <option key={num} value={num}>{num} Tiket</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <InputField
                     error={Boolean(errors["description"])}

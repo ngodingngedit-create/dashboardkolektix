@@ -19,6 +19,11 @@ export interface EventTicket {
   subtotal_price?: number;
   event_ticket_id?: number;
   qty_ticket?: number;
+  is_promo?: number;
+  promo_title?: string;
+  promo_price?: number;
+  is_bundling?: number;
+  bundling_qty?: number;
 }
 
 export interface FormEvent {

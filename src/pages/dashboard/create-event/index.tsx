@@ -318,20 +318,20 @@ const CreateEvent = () => {
     <>
       <LoadingOverlay visible={loadingEvent} />
       <div className="text-dark min-h-screen max-w-full mx-auto pt-8 pb-32 border-primary-light-200 px-4 sm:px-6 md:px-8 lg:px-10">
+        <div className="max-w-[1400px] mx-auto mb-6 text-center md:text-start">
+          {!!slug ? (
+            <>
+              <h1 className="">Edit Event</h1>
+              <p className="text-grey">Lengkapi form dibawah ini untuk merubah event</p>
+            </>
+          ) : (
+            <>
+              <h1 className="">Buat Event</h1>
+              <p className="text-grey">Lengkapi form dibawah ini untuk membuat event</p>
+            </>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 max-w-[1400px] mx-auto">
-          <div className="md:col-span-2 self-center mb-8 text-center md:text-start">
-            {!!slug ? (
-              <>
-                <h1 className="">Edit Event</h1>
-                <p className="text-grey">Lengkapi form dibawah ini untuk merubah event</p>
-              </>
-            ) : (
-              <>
-                <h1 className="">Buat Event</h1>
-                <p className="text-grey">Lengkapi form dibawah ini untuk membuat event</p>
-              </>
-            )}
-          </div>
           <div className="md:pr-2 xl:pr-6">
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/jpeg, image/png, image/gif" />
