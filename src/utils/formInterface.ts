@@ -58,6 +58,13 @@ export interface FormEvent {
   description: string;
   term_condition: string;
   save_as_draft: boolean;
+  is_promo?: number;
+  is_bundling?: number;
+  is_assistant?: boolean;
+  is_profession?: boolean;
+  is_company?: boolean;
+  is_kelas?: boolean;
+  is_merch?: boolean;
   tickets: EventTicket[];
   seatmap?: string;
 }

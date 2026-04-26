@@ -48,7 +48,27 @@ export interface TicketProps {
   is_ots: number;
 }
 
-export type TicketPropsInputRequest = Pick<TicketProps, "event_id" | "name" | "qty" | "price" | "description" | "ticket_date" | "ticket_end">;
+export type TicketPropsInputRequest = Pick<
+  TicketProps,
+  | "event_id"
+  | "name"
+  | "qty"
+  | "price"
+  | "description"
+  | "ticket_date"
+  | "ticket_end"
+  | "starting_time"
+  | "ending_time"
+  | "is_promo"
+  | "promo_title"
+  | "promo_price"
+  | "is_bundling"
+  | "bundling_qty"
+  | "event_schedule_date"
+  | "available_seat_number"
+  | "seat_color"
+  | "ticket_category"
+>;
 
 export interface VacancyProps {
   id: number;
@@ -492,6 +512,7 @@ export interface EventProps {
   max_use_voucher?: number;
   has_insurances?: Insurance[];
   is_promo?: number;
+  is_bundling?: number;
 }
 
 export interface Insurance {

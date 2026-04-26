@@ -137,7 +137,7 @@ export default function ModalCreateTicket({
       console.log("*******************************************************");
       console.log("submit ticket", form);
       await fetch<TicketPropsInputRequest, any>({
-        url: `event-ticket/${idx}`,
+        url: `event-ticket/${form.id}`,
         method: "PUT",
         data: {
           ...form,
@@ -468,10 +468,10 @@ export default function ModalCreateTicket({
                     <div className="p-3 border border-light-grey rounded-lg">
                       <Checkbox
                         label={<span className="font-small text-sm text-grey">Promo</span>}
-                        checked={form.is_promo === 1}
+                        checked={Number(form.is_promo) === 1}
                         onChange={(event) => setForm({ ...form, is_promo: event.currentTarget.checked ? 1 : 0 })}
                       />
-                      {form.is_promo === 1 && (
+                      {Number(form.is_promo) === 1 && (
                         <div className="grid grid-cols-2 gap-2 mt-3">
                           <InputField
                             type="text"
@@ -497,10 +497,10 @@ export default function ModalCreateTicket({
                     <div className="p-3 border border-light-grey rounded-lg">
                       <Checkbox
                         label={<span className="font-small text-sm text-grey">Bundling</span>}
-                        checked={form.is_bundling === 1}
+                        checked={Number(form.is_bundling) === 1}
                         onChange={(event) => setForm({ ...form, is_bundling: event.currentTarget.checked ? 1 : 0 })}
                       />
-                      {form.is_bundling === 1 && (
+                      {Number(form.is_bundling) === 1 && (
                         <div className="mt-3">
                           <p className="mb-1 text-grey text-sm">
                             Jumlah Tiket Bundling<span className="text-danger"> *</span>

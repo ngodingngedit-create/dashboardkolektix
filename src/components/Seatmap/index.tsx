@@ -399,9 +399,11 @@ export default function Seatmap({
         <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
           <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
             <Flex gap={10}>
-              <Button onClick={handleAddRectangle} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
-                Tambah Rectangle
-              </Button>
+              <Tooltip label="Tambah Rectangle" position="bottom" withArrow>
+                <Button onClick={handleAddRectangle} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
+                  <Icon icon="ic:outline-rectangle" className="text-lg" />
+                </Button>
+              </Tooltip>
               <Button onClick={() => setModalArea("new")} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                 Tambah Area
               </Button>

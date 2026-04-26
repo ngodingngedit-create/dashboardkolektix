@@ -448,10 +448,10 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                     <div className="p-3 border border-gray-200 rounded-lg">
                       <Checkbox
                         label={<span className="font-medium text-sm text-dark">Promo</span>}
-                        checked={form.is_promo === 1}
+                        checked={Number(form.is_promo) === 1}
                         onChange={(event) => setForm({ ...form, is_promo: event.currentTarget.checked ? 1 : 0 })}
                       />
-                      {form.is_promo === 1 && (
+                      {Number(form.is_promo) === 1 && (
                         <div className="grid grid-cols-2 gap-2 mt-3">
                           <InputField
                             type="text"
@@ -477,10 +477,10 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                     <div className="p-3 border border-gray-200 rounded-lg">
                       <Checkbox
                         label={<span className="font-medium text-sm text-dark">Bundling</span>}
-                        checked={form.is_bundling === 1}
+                        checked={Number(form.is_bundling) === 1}
                         onChange={(event) => setForm({ ...form, is_bundling: event.currentTarget.checked ? 1 : 0 })}
                       />
-                      {form.is_bundling === 1 && (
+                      {Number(form.is_bundling) === 1 && (
                         <div className="mt-3">
                           <p className="mb-1 text-grey text-sm">
                             Jumlah Tiket Bundling<span className="text-danger"> *</span>

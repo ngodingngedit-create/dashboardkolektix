@@ -102,6 +102,13 @@ const CreateEvent = () => {
     description: "",
     term_condition: "",
     save_as_draft: false,
+    is_promo: 0,
+    is_bundling: 0,
+    is_assistant: false,
+    is_profession: false,
+    is_company: false,
+    is_kelas: false,
+    is_merch: false,
     tickets: ticket,
   });
   const defaultForm: EventTicket = {
@@ -115,6 +122,11 @@ const CreateEvent = () => {
     qty: 0,
     price: 0,
     description: "",
+    is_promo: 0,
+    promo_title: "",
+    promo_price: 0,
+    is_bundling: 0,
+    bundling_qty: 0,
   };
   const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);
