@@ -21,6 +21,14 @@ interface VenueFacility {
     created_at: string;
 }
 
+interface BlockedDate {
+    id?: number;
+    venue_id?: number;
+    start_date: string;
+    end_date: string;
+    reason: string;
+}
+
 interface VenueCapacity {
     id: number;
     name: string;
@@ -96,6 +104,7 @@ interface Venue {
     }[]
     has_booking_venue?: any[];
     facility?: string[];
+    blocked_dates?: BlockedDate[];
 }
 
 export type VenueListResponse = Venue;
@@ -120,6 +129,11 @@ export type VenueStoreRequest = {
     description: string;
     status: string;
     image: (string | Blob)[];
+    blocked_dates?: {
+        start_date: string;
+        end_date: string;
+        reason: string;
+    }[];
 }
 export type VenueGalleryStoreRequest = {
     venue_id: number;

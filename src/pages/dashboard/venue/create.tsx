@@ -277,6 +277,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         <Tabs.Tab value="fasilitas" leftSection={<Icon icon="uiw:appstore-o" />}>Fasilitas Venue</Tabs.Tab>
                         <Tabs.Tab value="jadwal" leftSection={<Icon icon="uiw:time" />}>Jadwal & Waktu</Tabs.Tab>
                         <Tabs.Tab value="area" leftSection={<Icon icon="uiw:appstore" />}>Area & Harga Tambahan</Tabs.Tab>
+                        <Tabs.Tab value="blocked-dates" leftSection={<Icon icon="uiw:date" />}>Blocked Dates</Tabs.Tab>
                     </Tabs.List>
 
                     <Tabs.Panel value="detail" pt="xl">
@@ -422,6 +423,11 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                             <Divider my="sm" />
 
+                        </Stack>
+                    </Tabs.Panel>
+
+                    <Tabs.Panel value="blocked-dates" pt="xl">
+                        <Stack gap={20}>
                             <Flex justify="space-between" align="center">
                                 <Text fw={600} size="lg">Tanggal Diblokir (Blocked Dates)</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('blocked_dates', { start_date: '', end_date: '', reason: '' })}>
@@ -445,7 +451,6 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     <Text size="sm" c="dimmed" ta="center">Belum ada tanggal yang diblokir.</Text>
                                 )}
                             </Stack>
-
                         </Stack>
                     </Tabs.Panel>
 

@@ -168,7 +168,23 @@ const CreateEvent = () => {
     setLoadingEvent(true);
     Get(`event/${slug}`, {})
       .then((res: any) => {
-        const { image_thumbnail, image, ...rest } = res.data;
+        const {
+          image_thumbnail,
+          image,
+          has_event_ticket,
+          has_creator,
+          has_event_status,
+          has_event_payment_method,
+          has_event_social_meida,
+          has_venue_layout,
+          has_category_event,
+          has_merches,
+          has_insurances,
+          has_event_format,
+          has_event_topic,
+          has_event_type,
+          ...rest
+        } = res.data;
         setForm({ ...rest });
         setTicket(
           (res.data.has_event_ticket as EventTicket[]).map((e: any) => ({
@@ -231,6 +247,7 @@ const CreateEvent = () => {
     fetchMethod(eventId === null ? "event" : "event/" + eventId, {
       ...form,
       tickets: form.tickets.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
+      has_event_ticket: ticket.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
       seatmap: form.tickets.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
     })
       .then((res) => {
@@ -241,7 +258,7 @@ const CreateEvent = () => {
       .catch((err) => {
         const errorObj = err?.response?.data?.errors || {};
         const errorMessage = err?.response?.data?.message || "Terjadi Kesalahan";
-        
+
         toast.error(errorMessage);
         setError(errorObj);
 
@@ -622,11 +639,11 @@ const CreateEvent = () => {
             </p>
             <div className="flex gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
               {!slug && (
-                <Button 
-                  onClick={saveDraft} 
-                  color="secondary" 
-                  label="Draf" 
-                  className="flex-1 md:flex-none max-w-[120px]" 
+                <Button
+                  onClick={saveDraft}
+                  color="secondary"
+                  label="Draf"
+                  className="flex-1 md:flex-none max-w-[120px]"
                 />
               )}
               <Button
@@ -655,6 +672,7 @@ const CreateEvent = () => {
           setIdx={setIdxTicket}
           idx={idxTicket}
           addTicketModal={addTicketModal}
+          eventId={eventId ?? undefined}
           eventStartTime={form.start_time}
           eventEndTime={form.end_time}
         />

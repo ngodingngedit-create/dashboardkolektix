@@ -124,38 +124,35 @@ export default function ModalCreateTicket({
   const submitTicket = async () => {
     console.log("submit ticket", form);
     if (eventId == undefined) {
-      let arr = [...ticket];
-      if (typeof idx === "number") {
-        arr[idx] = form;
+      // Offline mode: just update local state
+      if (typeof openForm === "number") {
+        setTicket(ticket.map((e, i) => (i == openForm ? form : e)));
       } else {
-        arr.push(form);
+        setTicket([...ticket, form]);
       }
-      setTicket(arr);
       setIsOpen(false);
       setIdx(undefined);
     } else {
-      console.log("*******************************************************");
-      console.log("submit ticket", form);
+      // Edit mode: call API
+      const isUpdate = typeof openForm === "number" && form.id;
       await fetch<TicketPropsInputRequest, any>({
-        url: `event-ticket/${form.id}`,
-        method: "PUT",
+        url: isUpdate ? `event-ticket/${form.id}` : `event-ticket`,
+        method: isUpdate ? "PUT" : "POST",
         data: {
           ...form,
           event_id: String(eventId),
         } as TicketPropsInputRequest,
         success: () => {
-          let arr = [...ticket];
-          if (typeof idx === "number") {
-            arr[idx] = form;
+          if (typeof openForm === "number") {
+            setTicket(ticket.map((e, i) => (i == openForm ? form : e)));
           } else {
-            arr.push(form);
+            setTicket([...ticket, form]);
           }
-          setTicket(arr);
-          setIsOpen(false);
+          setOpenForm(undefined);
           setIdx(undefined);
 
           notifications.show({
-            message: "Berhasil Update Tiket",
+            message: isUpdate ? "Berhasil Update Tiket" : "Berhasil Tambah Tiket",
             color: "green",
           });
         },
@@ -547,8 +544,11 @@ export default function ModalCreateTicket({
                 <button
                   className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2"
                   onClick={() => {
-                    handleSaveTicket();
-                    !!eventId && submitTicket();
+                    if (!!eventId) {
+                      submitTicket();
+                    } else {
+                      handleSaveTicket();
+                    }
                     // step === 0 ? submitTicket() : setStep(1);
                   }}
                 >
