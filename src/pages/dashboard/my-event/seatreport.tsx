@@ -6,7 +6,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import { Get } from "@/utils/REST";
 import { Select, TextInput, Card, Flex, Stack, Text, Title, Loader, Tooltip, Pagination as MantinePagination } from "@mantine/core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 
 interface Identity {
@@ -457,15 +457,27 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
         {/* Left Column: Seat List (25%) */}
         <div className="w-full md:w-1/4 flex flex-col gap-4">
           <div className="bg-white rounded-2xl border border-light-grey overflow-hidden shadow-sm flex flex-col h-[70vh]">
-            <div className="bg-primary-base p-4 text-white font-bold flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span>{isFestival ? "Tiket Festival" : "Seat Number"}</span>
-                <Tooltip label={isFestival ? "Abu-abu = Terjual, Biru Terang = Tersedia" : "Abu-abu = Terisi, Biru Terang = Tersedia"} position="top" withArrow>
-                  <FontAwesomeIcon icon={faInfoCircle} className="cursor-help text-sm opacity-80 hover:opacity-100" />
-                </Tooltip>
+            <div className="bg-white border-b border-light-grey p-4 text-dark font-bold flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={isFestival ? faTicket : faChair} className="text-primary-base text-sm" />
+                  <span>{isFestival ? "Tiket Festival" : "Seat Number"}</span>
+                </div>
+                {selectedSeat && (
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" title="Seat Selected"></div>
+                )}
               </div>
-              {selectedSeat && (
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" title="Seat Selected"></div>
+              {!isFestival && (
+                <div className="flex items-center gap-4 text-xs font-normal mt-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-grey border border-grey"></div>
+                    <span className="text-grey">Terisi</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-white border border-light-grey"></div>
+                    <span className="text-grey">Tersedia</span>
+                  </div>
+                </div>
               )}
             </div>
             <div className="flex-grow overflow-y-auto p-2 scrollbar-hide">
@@ -563,7 +575,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                 {isFestival && selectedSeat && (
                   <button 
                     onClick={() => setSelectedSeat(null)}
-                    className="text-primary-base hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-primary-base px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-dark hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-light-grey px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <FontAwesomeIcon icon={faChevronRight} className="rotate-180" />
                     Kembali
@@ -571,7 +583,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                 )}
                 <h2 className="text-xl font-bold text-dark flex items-center gap-2">
                   <FontAwesomeIcon icon={faIdBadge} className="text-primary-base" />
-                  {isFestival && !selectedSeat ? `DAFTAR TRANSAKSI: ${selectedTicketName}` : "LAPORAN PEMESAN"}
+                  {isFestival && !selectedSeat ? `Daftar Transaksi: ${selectedTicketName}` : "Laporan Pemesan"}
                   {selectedSeat && <span className="text-primary-base ml-2">[{selectedSeat}]</span>}
                 </h2>
               </div>

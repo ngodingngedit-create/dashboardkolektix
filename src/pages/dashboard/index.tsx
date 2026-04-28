@@ -86,7 +86,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-2 px-4 py-4 md:px-7 md:py-4 w-full bg-gradient-to-b from-white to-[#f5f5f5]">
         <h1 className="mb-4 text-dark">Dashboard</h1>
         <Box px={0}>
-          {!user?.is_verified && !user?.verified_status_id && (
+          {user && !user?.has_creator?.is_verified && !user?.has_creator?.verified_status_id && (
             <Alert color="red" icon={<Icon icon="uiw:information-o" />} radius={8} className={`mt-[-10px] mb-[10px]`}>
               Akun Anda belum terverifikasi.{" "}
               <Link className={`text-primary-base hover:underline`} href="/dashboard/legal">
@@ -94,11 +94,16 @@ export default function Dashboard() {
               </Link>
             </Alert>
           )}
+          {user && (user?.has_creator?.is_verified || user?.has_creator?.verified_status_id) && (
+            <Alert color="green" icon={<Icon icon="uiw:information-o" />} radius={8} className={`mt-[-10px] mb-[10px]`}>
+              Akun Anda Sudah terverifikasi.{" "}
+            </Alert>
+          )}
         </Box>
         <p className="text-dark-grey mb-1">
           {formatDay(now.toString())} &bull; {formatDateNoCheck(now.toString())}, {formatYear(now.toString())}
         </p>
-        <h3 className="font-semibold text-xl md:text-2xl capitalize">Halo, {user?.has_creator?.name}</h3>
+        <h3 className="font-semibold text-xl md:text-2xl capitalize">Halo, {user?.has_creator?.name_event_organizer || user?.has_creator?.name}</h3>
         <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p>
       </div>
 

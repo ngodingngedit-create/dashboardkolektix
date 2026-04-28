@@ -527,6 +527,7 @@ const ProfileCreator = () => {
                   { label: 'No', sortable: false },
                   { label: 'Foto', sortable: false },
                   { label: 'Nama', sortable: true, key: 'name' },
+                  { label: 'Nama Creator', sortable: true, key: 'name_event_organizer' },
                   { label: 'Email', sortable: true, key: 'email' },
                   { label: 'Telepon', sortable: false },
                   { label: 'Aksi', sortable: false },
@@ -563,10 +564,10 @@ const ProfileCreator = () => {
             </thead>
             <tbody>
               {loading.includes('getprofile') ? (
-                <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr>
+                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr>
               ) : filteredProfile.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '60px', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '60px', textAlign: 'center' }}>
                     <Stack align="center" gap={10}>
                       <Text c="dimmed" fw={500}>Belum ada data profil creator</Text>
                       <Text size="xs" c="gray">Klik &quot;Tambah Profil&quot; untuk membuat profil baru</Text>
@@ -594,6 +595,7 @@ const ProfileCreator = () => {
                       )}
                     </td>
                     <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{item.name || '-'}</Text></td>
+                    <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{item.name_event_organizer || '-'}</Text></td>
                     <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.email || '-'}</Text></td>
                     <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.phone_number || item.phone || '-'}</Text></td>
                     <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)', borderLeft: '1px solid #f1f3f5' }}>

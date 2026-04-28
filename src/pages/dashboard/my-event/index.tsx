@@ -297,7 +297,7 @@ import { Tabs, Tab } from "@nextui-org/react";
 import { EventProps } from "@/utils/globalInterface";
 import EventCard from "@/components/Card/EventCard";
 import EventCardLoading from "@/components/Card/EventCard/loading";
-import { faPlusCircle, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faPlusCircle, faSearch, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get } from "@/utils/REST";
 import InputField from "@/components/Input";
@@ -391,7 +391,16 @@ const MyEvent = () => {
   return (
     <>
       <div className="p-5">
-        <h1 className="mb-4 text-dark">Event Saya</h1>
+        <div className="flex items-center mb-4 gap-4">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <h1 className="text-dark m-0">Event Saya</h1>
+        </div>
         <div className="flex items-center gap-3">
           <InputField
             type="text"

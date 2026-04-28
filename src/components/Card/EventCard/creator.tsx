@@ -29,9 +29,10 @@ interface EventCardProps {
   eventStatus: string;
   event_status_id?: number;
   shareLink?: string;
+  liveReportLink?: string;
 }
 
-const EventCardCreator = ({ shareLink, slug, title, date, location, img, withoutButton, end, status, eventStatus, event_status_id }: EventCardProps) => {
+const EventCardCreator = ({ liveReportLink, shareLink, slug, title, date, location, img, withoutButton, end, status, eventStatus, event_status_id }: EventCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const router = useRouter();
 
@@ -53,7 +54,7 @@ const EventCardCreator = ({ shareLink, slug, title, date, location, img, without
         </AspectRatio>
       </Link>
       <div className="p-3">
-        <Link href={`/event/${slug}`}>
+        <Link href={`/dashboard/my-event/${slug}`}>
           <h5 className="mb-2 text-lg font-semibold tracking-tight text-dark truncate max-w-[230px]">{title}</h5>
         </Link>
         <p className="text-grey text-sm mb-1">Tanggal & Waktu</p>
@@ -67,9 +68,9 @@ const EventCardCreator = ({ shareLink, slug, title, date, location, img, without
           <FontAwesomeIcon icon={faLocationDot} className="mr-2 text-grey" />
           <span className="text-grey">{location}</span>
         </p>
-        <p className="text-grey text-sm mb-1">Halaman Event</p>
+        <p className="text-grey text-sm mb-1 mt-3">Halaman Event</p>
         {Boolean(shareLink) && (
-          <Card p={0} mt={15}>
+          <Card p={0} mt={5}>
             <Flex align="center" gap={5}>
               <TextInput variant="filled" value={shareLink} readOnly size="xs" radius={10} />
               <CopyButton value={shareLink ?? "-"} timeout={2000}>
@@ -89,14 +90,39 @@ const EventCardCreator = ({ shareLink, slug, title, date, location, img, without
             </Flex>
           </Card>
         )}
+        
+        {Boolean(liveReportLink) && (
+          <>
+            <p className="text-grey text-sm mb-1 mt-3">Halaman Live Report</p>
+            <Card p={0} mt={5}>
+              <Flex align="center" gap={5}>
+                <TextInput variant="filled" value={liveReportLink} readOnly size="xs" radius={10} />
+                <CopyButton value={liveReportLink ?? "-"} timeout={2000}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={"Copy"} withArrow position="right">
+                      <ActionIcon color={"#194e9e"} variant="subtle" onClick={copy}>
+                        <Icon icon="tabler:copy" />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+                <Tooltip label={"Buka Live Report"} withArrow position="right">
+                  <ActionIcon color={"#194e9e"} variant="subtle" component="a" href={liveReportLink} target="_blank" rel="noopener noreferrer">
+                    <Icon icon="tabler:send" />
+                  </ActionIcon>
+                </Tooltip>
+              </Flex>
+            </Card>
+          </>
+        )}
       </div>
       {!withoutButton &&
         event_status_id &&
         (event_status_id === 3 ? (
           <div className="border-t-1.5 border-dashed border-primary-light-200 grid grid-cols-2 justify-items-center w-full p-3 gap-x-2">
             <Button label="Lihat Detail" color="primary" fullWidth className="col-span-2 mb-2" onClick={() => router.push(`/dashboard/my-event/${slug}`)} />
-            <Button label="Check In" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/scan/${slug}`)} />
-            <Button label="Penjualan" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/sell/${slug}`)} />
+            <Button label="Check In" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/checkin`)} />
+            <Button label="Penjualan" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/report`)} />
           </div>
         ) : event_status_id === 2 ? (
           <div className="border-t-1.5 border-dashed border-primary-light-200 grid grid-cols-2 justify-items-center w-full p-3 gap-x-2">

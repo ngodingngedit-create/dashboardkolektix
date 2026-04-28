@@ -22,7 +22,7 @@ const QrCode = ({ slug, errorCorrectionLevel = "M", margin = 4, logoSizeRatio = 
         text: slug,
         width: qrSize,
         height: qrSize,
-        logo: window.location.origin + "/images/logobaru.png",
+        logo: window.location.origin + "/images/logoblack.png",
         logoWidth: logoSize,
         logoHeight: logoSize,
         colorDark: "#000000",

@@ -17,7 +17,7 @@ import TicketContainer from "@/components/TicketContainer";
 import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket";
 import ModalEditTicket from "@/components/EventCreator/Modal/ModalEditTicket";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faPaperPlane, faPlus, faMoneyBillTransfer, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import * as XLSX from "xlsx";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
@@ -869,12 +869,18 @@ const MyEventDetail = () => {
 
   return !loading && data ? (
     <>
-      <div>
-        <Breadcrumbs className="mb-5 p-5">
-          <BreadcrumbItem onPress={() => router.push("/dashboard/my-event")}>Event Saya</BreadcrumbItem>
-          <BreadcrumbItem>Detail Event</BreadcrumbItem>
-        </Breadcrumbs>
-        <div className="p-5 flex flex-col md:flex-row lg:flex gap-2">
+      <div className="p-5">
+        <div className="flex items-center mb-4 gap-4">
+          <button
+            onClick={() => router.push("/dashboard/my-event")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Event Saya"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <h1 className="text-dark m-0">Detail Event</h1>
+        </div>
+        <div className="flex flex-col md:flex-row lg:flex gap-2">
           <div className="max-w-[300px]">
             <EventCardCreator
               key={data.id}
@@ -889,12 +895,13 @@ const MyEventDetail = () => {
               creatorImg={data.has_creator?.image}
               creator={data.has_creator?.name}
               withoutButton
-              shareLink={window.location.origin + "/event/" + data.slug}
+              shareLink={window.location.hostname === "dashboard.kolektix.com" ? `https://kolektix.com/event/${data.slug}` : `${window.location.origin}/event/${data.slug}`}
+              liveReportLink={`https://api.kolektix.com/event/dashboard/${(data as any).slug_url || data.slug}`}
             />
 
             <div className="flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4">
               <h5 className="text-lg font-semibold mb-2">Share your event link</h5>
-              <QrCode slug={`${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
+              <QrCode slug={window.location.hostname === "dashboard.kolektix.com" ? `https://kolektix.com/event/${data.slug}` : `${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
               {
                 <Button
                   label="Download QR Code"
@@ -933,7 +940,7 @@ const MyEventDetail = () => {
                         {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
                       </h6>
                     </div>
-                    <Button color="primary" label="Tarik Dana" className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    <Button color="primary" label="Tarik Dana" startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
                   </div>
                 }
               >

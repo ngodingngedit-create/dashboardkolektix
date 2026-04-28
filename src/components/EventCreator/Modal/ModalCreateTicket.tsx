@@ -3,7 +3,7 @@ import { EventTicket } from "@/utils/formInterface";
 import InputField from "@/components/Input";
 import { useState, useEffect, useMemo, PropsWithChildren, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faSave, faPlus } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import { TicketProps, TicketPropsInputRequest } from "@/utils/globalInterface";
 import fetch from "@/utils/fetch";
@@ -542,7 +542,7 @@ export default function ModalCreateTicket({
 
               <Flex justify="end" py={10} className={`sticky bottom-[-15px] bg-white`}>
                 <button
-                  className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2"
+                  className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2 flex items-center justify-center gap-2"
                   onClick={() => {
                     if (!!eventId) {
                       submitTicket();
@@ -552,6 +552,7 @@ export default function ModalCreateTicket({
                     // step === 0 ? submitTicket() : setStep(1);
                   }}
                 >
+                  <FontAwesomeIcon icon={openForm === null ? faPlus : faSave} />
                   {openForm === null ? "Tambah Tiket" : "Simpan Tiket"}
                 </button>
               </Flex>
@@ -571,7 +572,7 @@ export default function ModalCreateTicket({
           </Flex>
 
           <Flex gap={15} display={ticket.length > 0 && addSeatMap ? undefined : "none"} ml="auto">
-            <Button className={`shrink-0 h-fit`} w="fit-content" size="md" variant="outline" rightSection={<Icon icon="uiw:download" />}>
+            <Button className={`shrink-0 h-fit`} w="fit-content" size="md" variant="outline" leftSection={<Icon icon="uiw:download" />}>
               Download Seatmap
             </Button>
             <Button
@@ -582,7 +583,7 @@ export default function ModalCreateTicket({
                 setIdx(undefined);
                 setIsOpen(false);
               }}
-              // rightSection={<Icon icon="uiw:check" />}
+              leftSection={<FontAwesomeIcon icon={faSave} />}
               display={ticket.length > 0 && addSeatMap ? undefined : "none"}
             >
               Simpan Tiket

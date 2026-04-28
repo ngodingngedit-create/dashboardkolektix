@@ -3,7 +3,7 @@ import { EventTicket } from "@/utils/formInterface";
 import InputField from "@/components/Input";
 import { useState, useEffect, useMemo, PropsWithChildren, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faSave, faPlus } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
 import { TicketProps, TicketPropsInputRequest } from "@/utils/globalInterface";
 import fetch from "@/utils/fetch";
@@ -274,7 +274,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                             setIdx(e?.id);
                             setOpenForm(i);
                           }}
-                          //   onDelete={() => handleDeleteTicket(i)}
+                        //   onDelete={() => handleDeleteTicket(i)}
                         />
                       </Box>
                     </UnstyledButton>
@@ -445,7 +445,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                     />
                   </div>
                   <div className="grid grid-cols-1 gap-2 my-2">
-                    <div className="p-3 border border-gray-200 rounded-lg">
+                    <div className="p-3 border border-light-grey rounded-lg">
                       <Checkbox
                         label={<span className="font-medium text-sm text-dark">Promo</span>}
                         checked={Number(form.is_promo) === 1}
@@ -474,7 +474,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-2 my-2">
-                    <div className="p-3 border border-gray-200 rounded-lg">
+                    <div className="p-3 border border-light-grey rounded-lg">
                       <Checkbox
                         label={<span className="font-medium text-sm text-dark">Bundling</span>}
                         checked={Number(form.is_bundling) === 1}
@@ -513,12 +513,13 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
 
               <Flex justify="end" py={10} className="sticky bottom-[-15px] bg-white">
                 <button
-                  className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2"
+                  className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2 flex items-center justify-center gap-2"
                   onClick={() => {
                     handleSaveTicket();
                     !!eventId && submitTicket();
                   }}
                 >
+                  <FontAwesomeIcon icon={openForm === null ? faPlus : faSave} />
                   {openForm === null ? "Tambah Tiket" : "Simpan Tiket"}
                 </button>
               </Flex>

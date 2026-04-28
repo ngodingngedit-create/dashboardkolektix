@@ -169,7 +169,10 @@ const Auth = () => {
           has_creator: res?.data?.has_creator ? {
             id: res.data.has_creator.id,
             name: res.data.has_creator.name,
+            name_event_organizer: res.data.has_creator.name_event_organizer,
             slug: res.data.has_creator.slug,
+            is_verified: res.data.has_creator.is_verified,
+            verified_status_id: res.data.has_creator.verified_status_id,
           } : undefined,
           permissions: (res?.data?.permissions ?? []).map((p: any) => ({
             module_id: p.module_id

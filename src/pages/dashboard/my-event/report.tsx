@@ -1248,7 +1248,7 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
@@ -2227,111 +2227,111 @@ const Merch = () => {
         title={
           <Flex align="center" gap="sm">
             <FontAwesomeIcon icon={faReceipt} color="white" />
-            <Text fw={600} c="white">Detail Transaksi</Text>
+            <Text fw={600} size="md" c="white">Detail Transaksi</Text>
           </Flex>
         }
         size="lg"
         radius="md"
         styles={{
-          header: { backgroundColor: "#0b387c", color: "white", margin: 0, borderTopLeftRadius: "8px", borderTopRightRadius: "8px", padding: "16px 20px" },
-          content: { padding: 0 },
-          title: { fontSize: "16px", fontWeight: 600, color: "white", flex: 1 },
-          close: { color: "white", marginRight: "4px" },
+          header: { backgroundColor: "#0b387c", color: "white", padding: "15px 20px" },
           body: { padding: "20px" },
+          close: { color: "white" },
         }}
-        closeButtonProps={{ "aria-label": "Close modal", style: { backgroundColor: "transparent" } }}
       >
         {selectedTransaction && (
           <Stack gap="lg">
-            <Card withBorder shadow="sm" radius="md" p="lg">
+            {/* Informasi Utama */}
+            <div>
+              <Text fw={700} size="sm" mb="md" c="dimmed" tt="uppercase">Informasi Transaksi</Text>
               <Stack gap="xs">
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">No. Invoice</Text>
-                  <Text fw={600} size="lg" className="font-mono">{selectedTransaction.invoice_no}</Text>
+                <Flex justify="space-between">
+                  <Text size="sm" c="dimmed">No. Invoice</Text>
+                  <Text fw={600} size="sm">{selectedTransaction.invoice_no}</Text>
                 </Flex>
-                <Flex justify="space-between" align="center">
-                  <Text fw={600} size="sm" c="dimmed">Status</Text>
-                  <Badge size="lg" color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor} radius="sm">
+                <Flex justify="space-between">
+                  <Text size="sm" c="dimmed">Status</Text>
+                  <Badge 
+                    size="sm" 
+                    color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor} 
+                    radius="sm"
+                  >
                     {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
                   </Badge>
                 </Flex>
+                <Flex justify="space-between">
+                  <Text size="sm" c="dimmed">Waktu Transaksi</Text>
+                  <Text size="sm">{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY, HH:mm") : "-"}</Text>
+                </Flex>
               </Stack>
-            </Card>
+            </div>
 
-            <Card withBorder shadow="sm" radius="md" p="lg">
-              <Text fw={600} size="md" mb="md">Informasi Pembeli</Text>
-              <Stack gap="sm">
+            <Divider size="xs" variant="dashed" />
+
+            {/* Informasi Pembeli */}
+            <div>
+              <Text fw={700} size="sm" mb="md" c="dimmed" tt="uppercase">Informasi Pembeli</Text>
+              <Stack gap="xs">
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">Nama</Text>
-                  <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
+                  <Text size="sm" c="dimmed">Nama</Text>
+                  <Text size="sm" fw={500}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">Email</Text>
-                  <Text>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
+                  <Text size="sm" c="dimmed">Email</Text>
+                  <Text size="sm" fw={500}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">Tipe Transaksi</Text>
-                  <Badge color={selectedTransaction.type_transaction === "online" ? "blue" : "orange"} variant="light">
-                    {selectedTransaction.type_transaction?.toUpperCase()}
-                  </Badge>
+                  <Text size="sm" c="dimmed">Tipe Transaksi</Text>
+                  <Text size="sm" fw={500} className="capitalize">{selectedTransaction.type_transaction}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text fw={500} size="sm">Metode Pembayaran</Text>
+                  <Text size="sm" c="dimmed">Metode Pembayaran</Text>
                   {selectedTransaction.payment_method ? (
                     (() => {
                       const paymentMethodInfo = getPaymentMethod(selectedTransaction.payment_method);
-                      return paymentMethodInfo ? (
-                        <Badge color={paymentMethodInfo.color} variant="light" leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}>
-                          {paymentMethodInfo.label}
-                        </Badge>
-                      ) : (
-                        <Badge color="gray" variant="light">{selectedTransaction.payment_method.payment_name || "Tidak Ada"}</Badge>
+                      return (
+                        <Text size="sm" fw={500}>{paymentMethodInfo?.label || selectedTransaction.payment_method.payment_name || "-"}</Text>
                       );
                     })()
-                  ) : <Text>-</Text>}
+                  ) : <Text size="sm">-</Text>}
                 </Flex>
               </Stack>
-            </Card>
+            </div>
 
-            <Card withBorder shadow="sm" radius="md" p="lg">
-              <Text fw={600} size="md" mb="md">Ringkasan Pembayaran</Text>
-              <Stack gap="sm">
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">Tanggal Transaksi</Text>
-                  <Text>{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY HH:mm:ss") : "-"}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text fw={500} size="sm">Total Pembayaran</Text>
-                  <Text fw={700} size="lg" c="blue">Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
-                </Flex>
-              </Stack>
-            </Card>
+            <Divider size="xs" variant="dashed" />
 
+            {/* Ringkasan Pembayaran */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <Flex justify="space-between" align="center">
+                <Text fw={700} size="sm">Total Pembayaran</Text>
+                <Text fw={800} size="xl" c="blue">
+                  Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
+                </Text>
+              </Flex>
+            </div>
+
+            {/* Detail Item (Accordion) */}
             <Accordion variant="separated" radius="md" chevron={<FontAwesomeIcon icon={faChevronDown} />}>
               {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
                 <Accordion.Item value="tickets">
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={600}>Detail Tiket</Text>
+                      <Text fw={600} size="sm">Detail Tiket</Text>
                       <Badge size="sm" color="blue" variant="light">{selectedTransaction.tickets.length} item</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <Stack gap="md">
+                    <Stack gap="xs">
                       {selectedTransaction.tickets.map((ticket, index) => (
-                        <Card key={index} withBorder radius="sm" p="md" style={{ borderLeft: "4px solid #228be6" }}>
-                          <Flex justify="space-between" align="start" mb="xs">
-                            <div>
-                              <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
-                              <Text size="xs" c="dimmed">Qty: {ticket.qty_ticket} tiket</Text>
-                            </div>
-                            <Badge color="blue" variant="light">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Badge>
+                        <div key={index} className="p-3 border rounded-md bg-white">
+                          <Flex justify="space-between" align="start" mb={4}>
+                            <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                            <Text fw={600} size="sm">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
                           </Flex>
                           <Flex justify="space-between" align="center">
-                            <Text size="sm" c="dimmed">Subtotal</Text>
-                            <Text fw={600} size="sm">Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" c="dimmed">Qty: {ticket.qty_ticket} tiket</Text>
+                            <Text size="xs" fw={600}>Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
                           </Flex>
-                        </Card>
+                        </div>
                       ))}
                     </Stack>
                   </Accordion.Panel>
@@ -2342,59 +2342,34 @@ const Merch = () => {
                 <Accordion.Item value="merch">
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={600}>Detail Merchandise</Text>
+                      <Text fw={600} size="sm">Detail Merchandise</Text>
                       <Badge size="sm" color="green" variant="light">{selectedTransaction.transaction_merches.length} item</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <Stack gap="md">
+                    <Stack gap="xs">
                       {selectedTransaction.transaction_merches.map((merch: any, index: number) => (
-                        <Card key={index} withBorder radius="sm" p="md" style={{ borderLeft: "4px solid #40c057" }}>
-                          <Flex justify="space-between" align="start" mb="xs">
+                        <div key={index} className="p-3 border rounded-md bg-white">
+                          <Flex justify="space-between" align="start" mb={4}>
                             <div>
                               <Text fw={600} size="sm">Merch {index + 1}</Text>
                               {merch.product_variant?.varian_name && (
-                                <Badge size="xs" color="gray" ml="sm">{merch.product_variant.varian_name}</Badge>
+                                <Text size="xs" c="blue">{merch.product_variant.varian_name}</Text>
                               )}
-                              <Text size="xs" c="dimmed">Qty: {merch.qty} pcs</Text>
                             </div>
-                            <Badge color="green" variant="light">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Badge>
+                            <Text fw={600} size="sm">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Text>
                           </Flex>
                           <Flex justify="space-between" align="center">
-                            <div>
-                              <Text size="sm" c="dimmed">Subtotal</Text>
-                              {merch.noted && <Text size="xs" c="dimmed" mt={4}>Catatan: {merch.noted}</Text>}
-                            </div>
-                            <Text fw={600} size="sm">Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" c="dimmed">Qty: {merch.qty} pcs</Text>
+                            <Text size="xs" fw={600}>Subtotal: Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
                           </Flex>
-                        </Card>
+                        </div>
                       ))}
                     </Stack>
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
             </Accordion>
-
-            <Card withBorder shadow="sm" radius="md" p="lg" bg="blue.0">
-              <Stack gap="xs">
-                {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
-                  <Flex justify="space-between">
-                    <Text fw={500} size="sm">Subtotal Tiket</Text>
-                    <Text fw={600} size="sm">Rp {selectedTransaction.tickets.reduce((sum, ticket) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0).toLocaleString("id-ID")}</Text>
-                  </Flex>
-                )}
-                {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
-                  <Flex justify="space-between">
-                    <Text fw={500} size="sm">Subtotal Merch</Text>
-                    <Text fw={600} size="sm">Rp {selectedTransaction.transaction_merches.reduce((sum, merch) => sum + parseFloat(merch.price || "0") * (merch.qty || 0), 0).toLocaleString("id-ID")}</Text>
-                  </Flex>
-                )}
-                <Flex justify="space-between" align="center" pt="xs" style={{ borderTop: "1px solid #dee2e6" }}>
-                  <Text fw={700} size="lg">Total Transaksi</Text>
-                  <Text fw={800} size="xl" c="blue">Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}</Text>
-                </Flex>
-              </Stack>
-            </Card>
           </Stack>
         )}
       </Modal>

@@ -7,7 +7,7 @@ import imagePlus from "../../../assets/icon/image-plus.png";
 import { faCalendar, faClock } from "@fortawesome/free-regular-svg-icons";
 import { Alert, LoadingOverlay, TagsInput } from "@mantine/core";
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from "@nextui-org/react";
-import { faLocationDot, faExclamation, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { faLocationDot, faExclamation, faExclamationCircle, faSave, faFileAlt, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import InputField from "@/components/Input";
 import InputEditor from "@/components/Input/InputEditor";
@@ -346,19 +346,27 @@ const CreateEvent = () => {
   return (
     <>
       <LoadingOverlay visible={loadingEvent} />
-      <div className="text-dark min-h-screen max-w-full mx-auto pt-8 pb-32 border-primary-light-200 px-4 sm:px-6 md:px-8 lg:px-10">
-        <div className="max-w-[1400px] mx-auto mb-6 text-center md:text-start">
-          {!!slug ? (
-            <>
-              <h1 className="">Edit Event</h1>
-              <p className="text-grey">Lengkapi form dibawah ini untuk merubah event</p>
-            </>
-          ) : (
-            <>
-              <h1 className="">Buat Event</h1>
-              <p className="text-grey">Lengkapi form dibawah ini untuk membuat event</p>
-            </>
-          )}
+      <div className="text-dark min-h-screen max-w-full mx-auto pt-2 pb-32 border-primary-light-200 px-4 sm:px-6 md:px-8 lg:px-10">
+        <div className="max-w-[1400px] mx-auto mb-6 text-center md:text-start flex items-center gap-4">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <div className="flex flex-col">
+            {!!slug ? (
+              <>
+                <h1 className="text-2xl font-bold">Edit Event</h1>
+                <p className="text-grey">Lengkapi form dibawah ini untuk merubah event</p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold">Buat Event</h1>
+                <p className="text-grey">Lengkapi form dibawah ini untuk membuat event</p>
+              </>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 max-w-[1400px] mx-auto">
           <div className="md:pr-2 xl:pr-6">
@@ -514,6 +522,15 @@ const CreateEvent = () => {
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_gender} onChange={(e: any) => setForm({ ...form, is_gender: e.target.checked })}>
                         Jenis Kelamin
                       </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_assistant} onChange={(e: any) => setForm({ ...form, is_assistant: e.target.checked })}>
+                        Asisten
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_profession} onChange={(e: any) => setForm({ ...form, is_profession: e.target.checked })}>
+                        Profesi
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_company} onChange={(e: any) => setForm({ ...form, is_company: e.target.checked })}>
+                        Perusahaan
+                      </Checkbox>
                     </div>
                   </div>
                 </div>
@@ -634,7 +651,7 @@ const CreateEvent = () => {
       <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
         <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
           <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
-            <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0">
+            <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0 font-bold">
               Hai Creator! Selangkah lagi event kamu berhasil dibuat.
             </p>
             <div className="flex gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
@@ -643,6 +660,7 @@ const CreateEvent = () => {
                   onClick={saveDraft}
                   color="secondary"
                   label="Draf"
+                  startIcon={faFileAlt}
                   className="flex-1 md:flex-none max-w-[120px]"
                 />
               )}
@@ -651,6 +669,7 @@ const CreateEvent = () => {
                 onClick={submitEvent}
                 color="primary"
                 disabled={loading}
+                startIcon={faSave}
                 label={loading ? "Loading..." : "Simpan"}
               />
             </div>

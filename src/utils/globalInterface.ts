@@ -174,6 +174,8 @@ export interface CreatorProps {
   email: string | null;
   phone_number: string | null;
   location: string | null;
+  verified_status_id: number | null;
+  name_event_organizer: string | null;
 }
 
 export interface TransactionVoucherProps {

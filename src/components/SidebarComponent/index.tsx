@@ -1607,7 +1607,8 @@ import {
   faBook,
   faListCheck,
   faPercent,
-  faGlobe
+  faGlobe,
+  faStore
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1691,6 +1692,13 @@ const profileData: SidebarData[number]["submenu"] = [
     name: "Rekening Saya",
     icon: faBuildingColumns,
     link: "/dashboard/bank",
+    role: "Creator",
+  },
+  {
+    id: 7,
+    name: "Store Location",
+    icon: faStore,
+    link: "/dashboard/storelocation",
     role: "Creator",
   },
 ];
@@ -1940,7 +1948,7 @@ const sidebarData: SidebarData = [
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
   { id: 11, name: "Project Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
-  { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard/issuemanagement" },
+  // { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard" },
 ];
 
 const SidebarComponent = ({ children }: { children: ReactNode }) => {
@@ -2114,6 +2122,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   };
   useEffect(() => {
     if (users) {
+      console.log("DEBUG USER DATA:", users);
       setUserData(users);
       if (route === "/dashboard/user") {
         if (!!users.has_creator) setHasCreator(true);
@@ -2203,7 +2212,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                 {visible && (
                   <>
                     <div className={`w-full ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `}>
-                      <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name : userData?.name}</p>
+                      <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name || userData.has_creator?.name_event_organizer : userData?.name}</p>
                       <p className="text-[10px] ">{role}</p>
                     </div>
                     <div>
@@ -2383,7 +2392,13 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     role === "Creator" && (
                       <>
                         <Button label="Edit" color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
-                        <Button color="primary" startIcon={faEye} className="mr-0" onClick={() => router.push(`/dashboard/event/${params.slug}`)} />
+                        <Button label="Preview" color="primary" startIcon={faEye} className="mr-0" onClick={() => {
+                          if (window.location.hostname === "dashboard.kolektix.com") {
+                            window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
+                          } else {
+                            window.open(`${window.location.origin}/event/${params.slug}`, '_blank');
+                          }
+                        }} />
                       </>
                     )
                   )}

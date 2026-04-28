@@ -14,6 +14,8 @@ import { useRouter } from "next/router";
 import { useListState } from "@mantine/hooks";
 import { useEffect, useState, useCallback } from "react";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   name: z.string().min(1, { message: '"Wajib Diisi' }),
@@ -28,13 +30,13 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   variant: z
     .array(
       z.object({
-        name: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
-        sku: z.string({ message: '"Wajib Diisi' }).min(1, { message: '"Wajib Diisi' }),
-        stock: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
-        price: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
-        weight: z.number({ message: '"Wajib Diisi' }).min(0, { message: '"Wajib Diisi' }),
+        name: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
+        sku: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
+        stock: z.number({ message: 'Wajib Diisi' }).min(0, { message: 'Wajib Diisi' }),
+        price: z.number({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
+        weight: z.number({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         status: z.boolean().nullable().optional(),
-        sub_name: z.string().nullable().optional(),
+        sub_name: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
       })
     )
     .optional()
@@ -62,8 +64,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             setMerchId(data.id);
             setImageList(data.product_image);
 
-            if (data.is_product_varian) form.setValues({ is_variant: Boolean(data.is_product_varian) });
+            const productVarian = (data as any).productVarian || (data as any).product_varian || [];
             form.setValues({
+              is_variant: Boolean(data.is_product_varian),
               name: data.product_name,
               sku: data.sku,
               price: parseInt(data.price ?? "0"),
@@ -71,17 +74,35 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               weight: parseInt(data.weight ?? "0"),
               description: data.description ?? "",
               image: data.product_image.map((e) => e.image_url),
-              variant_name: data.product_varian.length > 0 ? data.product_varian[0].varian_category_id : 0,
-              variant: data.product_varian.map((e) => ({
-                id: e.id,
-                name: e.varian_name,
-                sku: e.sku,
-                stock: e.stock_qty,
-                price: parseInt(e.price ?? "0"),
-                weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : undefined,
-                status: true,
-                sub_name: "", // initial empty for existing variants 
-              })),
+              variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
+              variant: productVarian.map((e: any) => {
+                const parts = (e.varian_name || "").split(" - ");
+                const name = parts[0];
+                const sub_name = parts.slice(1).join(" - ");
+                
+                let stock_awal = e.stock_qty;
+                if (e.stock_summary) {
+                  try {
+                    const summary = typeof e.stock_summary === 'string' ? JSON.parse(e.stock_summary) : e.stock_summary;
+                    if (summary && summary.stock_awal !== undefined) {
+                      stock_awal = summary.stock_awal;
+                    }
+                  } catch (err) {
+                    console.error("Failed to parse stock_summary", err);
+                  }
+                }
+
+                return {
+                  id: e.id,
+                  name: name,
+                  sku: e.sku,
+                  stock: Number(stock_awal ?? 0),
+                  price: parseInt(e.price ?? "0"),
+                  weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : 0,
+                  status: true,
+                  sub_name: sub_name,
+                };
+              }),
             });
           }
           setLoading.filter((e) => e != "getdata");
@@ -272,12 +293,24 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     <div className="bg-white rounded-[8px] w-full">
       <div className="flex flex-col w-full">
 
-        <div className="w-full pb-[20px]">
-          <div className="py-[20px] px-[20px] flex flex-col gap-[30px]">
+        <div className="sticky top-0 bg-white z-30 border-b border-light-grey pb-4 px-[20px] pt-[20px]">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onClose && onClose()}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+              aria-label="Kembali"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </button>
             <div>
-              <h2 className="text-[30px] font-[600]">{!Boolean(id) ? "Buat" : "Update"} Produk</h2>
-              <p className="text-grey">{!Boolean(id) ? "Lengkapi form dibawah untuk membuat Produk" : "Lengkapi form dibawah untuk update Produk"}</p>
+              <h2 className="text-[30px] font-[600] m-0">{!Boolean(id) ? "Buat" : "Update"} Produk</h2>
+              <p className="text-grey m-0">{!Boolean(id) ? "Lengkapi form dibawah untuk membuat Produk" : "Lengkapi form dibawah untuk update Produk"}</p>
             </div>
+          </div>
+        </div>
+
+        <div className="w-full pb-[100px]">
+          <div className="py-[20px] px-[20px] flex flex-col gap-[30px]">
 
             <div className="border border-[#E2EDFF] rounded-[8px]">
               <h3 className="text-[20px] font-[500] p-[12px_16px] border-b border-[#E2EDFF]">Informasi Produk</h3>
@@ -480,7 +513,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         <Table.Tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
                           <Table.Td miw={100} fw={500}>{e.name}</Table.Td>
                           <Table.Td>
-                            <TextInput maw={200} placeholder="Isi Nama Varian" value={form.values.variant[i].sub_name || ""} onChange={(e) => form.setFieldValue(`variant.${i}.sub_name`, e.target.value)} />
+                            <TextInput maw={200} placeholder="Isi Nama Varian" value={form.values.variant[i].sub_name || ""} onChange={(e) => form.setFieldValue(`variant.${i}.sub_name`, e.target.value)} error={form.errors[`variant.${i}.sub_name`]} />
                           </Table.Td>
                           <Table.Td>
                             <Flex gap={5}>
@@ -577,19 +610,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           </div>
         </div>
 
-        <div className="border-t border-[#E2EDFF] py-[15px] shrink-0">
+        <div className="border-t border-[#E2EDFF] py-[15px] fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-40 transition-all duration-300">
           <div className="px-[20px]">
-            <Flex gap={10} justify="space-between">
-              <Button
-                onClick={() => onClose && onClose()}
-                className={`!border-[#E2EDFF]`}
-                variant="subtle"
-                color="gray"
-                radius="xl"
-                leftSection={<Icon icon="solar:arrow-left-linear" width={16} />}
-              >
-                Kembali
-              </Button>
+            <Flex gap={10} justify="flex-end">
 
               <Flex gap={10}>
                 <Button
