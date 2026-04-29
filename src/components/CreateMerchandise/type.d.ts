@@ -9,6 +9,7 @@ type MerchandiseState = {
     status: boolean;
     variant_name: number;
     is_variant: boolean;
+    store_location_id: number | null;
     variant: {
         id?: number;
         name: string;
@@ -104,35 +105,9 @@ type MerchandiseStoreRequest = {
     discount: number;
     description: string;
     is_product_varian: 1 | 0;
-    // product_category_id: number;
-    // product_brand_id: number;
-    // barcode_id: number;
-    // unit_id: number;
-    // buying_price: number;
-    // selling_price: number;
-    // variation_price: number;
-    // status: number;
-    // order: number;
-    // can_purchasable: 1 | 0;
-    // weight: number;
-    // refundable: 1 | 0;
-    // shipping_and_return: string;
-    // offer_start_date: string;
-    // offer_end_date: string;
-    // is_product_quantity_multiply: 1 | 0;
-    // editor_type: string;
-    // editor_id: number;
+    store_location_id?: number | null;
     image: (Blob | string)[];
     product_variant: string;
-    // product_variant: {
-    //     varian_name: string;
-    //     sku: string;
-    //     price: number;
-    //     weight: number;
-    //     stock_qty: number;
-    //     varian_category_id: number;
-    //     status_product: "active" | "inactive";
-    // }[];
 };
 
 type VariantStoreRequest = {

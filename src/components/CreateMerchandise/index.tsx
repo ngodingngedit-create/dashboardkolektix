@@ -17,6 +17,13 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
+interface StoreLocationOption {
+  id: number;
+  store_name: string;
+  full_address: string;
+  city?: { name: string };
+}
+
 const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   name: z.string().min(1, { message: '"Wajib Diisi' }),
   weight: z.number().min(0, { message: '"Wajib Diisi' }),
@@ -27,6 +34,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   description: z.string().min(1, { message: '"Wajib Diisi' }),
   image: z.array(z.any()).min(1, { message: "Masukan minimal satu gambar" }),
   variant_name: z.number().optional().nullable(),
+  store_location_id: z.number().nullable().optional(),
   variant: z
     .array(
       z.object({
@@ -49,11 +57,16 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
   const [loading, setLoading] = useListState<string>();
   const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
+  const [storeLocations, setStoreLocations] = useState<StoreLocationOption[]>([]);
   const user = useLoggedUser();
 
   useEffect(() => {
     getData();
   }, []);
+
+  useEffect(() => {
+    if (user) getStoreLocations();
+  }, [user]);
 
   const getData = () => {
     if (id) {
@@ -74,6 +87,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               weight: parseInt(data.weight ?? "0"),
               description: data.description ?? "",
               image: data.product_image.map((e) => e.image_url),
+              store_location_id: (data as any).store_location_id ?? null,
               variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
               variant: productVarian.map((e: any) => {
                 const parts = (e.varian_name || "").split(" - ");
@@ -127,6 +141,20 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     }
   };
 
+  const getStoreLocations = useCallback(() => {
+    Get("creator", {})
+      .then((res: any) => {
+        const creators: any[] = res.data ?? [];
+        const matched = creators.find((c: any) => c.id === user?.has_creator?.id);
+        if (matched?.slug_url) {
+          Get(`store-locations/creator/${matched.slug_url}`, {})
+            .then((r: any) => setStoreLocations(r.data ?? []))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
   const router = useRouter();
   const form = useForm<MerchandiseState>({
     initialValues: {
@@ -141,6 +169,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       variant_name: 0,
       variant: [],
       status: true,
+      store_location_id: null,
     },
     validate: zodResolver(storeSchema),
   });
@@ -212,7 +241,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     if (valid.hasErrors) return;
 
     setLoading.append("save");
-    const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
+    const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
 
     try {
       const resProduct: any = await Post(
@@ -237,6 +266,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           // is_product_quantity_multiply: 1,
           add_to_flash_sale: 0,
           is_product_varian: is_variant ? 1 : 0,
+          store_location_id: store_location_id ?? null,
           product_variant: is_variant
             ? JSON.stringify(
               variant.map((e) => ({
@@ -382,6 +412,27 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                         <TagsInput placeholder="Isi Kategori Produk" />
                                     </div>
                                 </div> */}
+
+                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">Lokasi Toko</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Gudang/lokasi asal produk ini</p>
+                  </div>
+                  <div className="flex-grow">
+                    <Select
+                      placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi toko"}
+                      searchable
+                      clearable
+                      data={storeLocations.map((s) => ({
+                        value: String(s.id),
+                        label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
+                      }))}
+                      value={form.values.store_location_id ? String(form.values.store_location_id) : null}
+                      onChange={(v) => form.setFieldValue("store_location_id", v ? Number(v) : null)}
+                      disabled={storeLocations.length === 0}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
