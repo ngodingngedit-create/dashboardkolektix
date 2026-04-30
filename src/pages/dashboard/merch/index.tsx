@@ -1028,7 +1028,7 @@ const Merch: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: number, slug: string) => {
     modals.openConfirmModal({
       centered: true,
       title: "Hapus Produk?",
@@ -1036,7 +1036,7 @@ const Merch: React.FC = () => {
       labels: { confirm: "Hapus", cancel: "Batal" },
       onConfirm: () => {
         setLoading((prev) => [...prev, `delete${id}`]);
-        Delete(`product/${id}`, {})
+        Delete(`product/${slug}`, {})
           .then(() => {
             setMerchList((prev) => prev.filter((e) => e.id !== id));
           })
@@ -1327,7 +1327,7 @@ const Merch: React.FC = () => {
                                       <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
                                         <Icon icon="akar-icons:edit" className="text-[24px]" />
                                       </ActionIcon>
-                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id)}>
+                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, safeSlug)}>
                                         <Icon icon="uiw:delete" className="text-[18px]" />
                                       </ActionIcon>
                                     </div>

@@ -12,6 +12,7 @@ import Cookies from "js-cookie";
 import z from "zod";
 import { useRouter } from "next/router";
 import { useListState } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useEffect, useState, useCallback } from "react";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -44,13 +45,22 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
         price: z.number({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         weight: z.number({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         status: z.boolean().nullable().optional(),
-        sub_name: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
+        sub_name: z.string().optional().nullable(),
       })
     )
     .optional()
     .nullable(),
   status: z.boolean().nullable().optional(),
 });
+
+const fileToBase64 = (file: File | Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
   const [merchId, setMerchId] = useState<number>();
@@ -244,49 +254,67 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
 
     try {
+      const base64Images = await Promise.all(
+        image.map(async (e) => {
+          if (e instanceof Blob) {
+            return await fileToBase64(e);
+          }
+          return imageList?.find((z) => e == z.image_url)?.image ?? e;
+        })
+      );
+
       const resProduct: any = await Post(
-        Boolean(id) ? `product/${merchId}` : "product",
+        Boolean(id) ? `product/${id}` : "product",
         {
           product_name: name,
           description: description ?? "-",
           sku,
           price: price ?? 99999,
-          image: image.map((e) => (e instanceof Blob ? e : imageList?.find((z) => e == z.image_url)?.image ?? "")),
+          image: base64Images as string[],
           product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
           creator_id: user?.has_creator?.id ?? 0,
-          // order: 10,
-          // can_purchasable: 1,
           qty: stock ?? 0,
-          weight: form.values.weight ?? 1,
+          weight: String(form.values.weight ?? 1),
           show_stock_out: 1,
           max_purchase_quantity: 100,
           low_quantity_warning: 4,
-          // refundable: 0,
           discount: 0,
-          // is_product_quantity_multiply: 1,
           add_to_flash_sale: 0,
           is_product_varian: is_variant ? 1 : 0,
           store_location_id: store_location_id ?? null,
           product_variant: is_variant
             ? JSON.stringify(
-              variant.map((e) => ({
-                id: e.id,
-                varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
-                sku: e.sku ?? "",
-                price: e.price ?? 999999,
-                weight: e.weight ?? 1,
-                stock_qty: e.stock ?? 0,
-                varian_category_id: variant_name,
-                status_product: e.status ? "active" : "inactive",
-              })) satisfies VariantStoreRequest[]
-            )
+                variant.map((e) => ({
+                  id: e.id,
+                  varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
+                  sku: e.sku ?? "",
+                  price: Number(e.price ?? 0),
+                  weight: Number(e.weight ?? 0),
+                  stock_qty: Number(e.stock ?? 0),
+                  varian_category_id: variant_name,
+                  status_product: e.status ? "active" : "inactive",
+                })) satisfies VariantStoreRequest[]
+              )
             : "[]",
-        } satisfies MerchandiseStoreRequest,
-        "multipart/form-data"
+        } satisfies MerchandiseStoreRequest
       );
       product_id = resProduct.data.id as number;
 
-      if (resProduct.status) router.reload();
+      if (resProduct) {
+        notifications.show({
+          title: "Sukses",
+          message: Boolean(id) ? "Produk berhasil diupdate" : "Produk berhasil dibuat",
+          color: "green",
+        });
+        
+        if (onClose) {
+          onClose();
+        } else {
+          setTimeout(() => {
+            router.push("/dashboard/merch");
+          }, 1000);
+        }
+      }
     } catch (err: any) {
       const error = err?.response?.data?.errors;
       if (error) {

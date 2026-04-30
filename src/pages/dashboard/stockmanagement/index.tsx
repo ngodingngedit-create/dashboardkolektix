@@ -1,5 +1,6 @@
 import Head from "next/head";
-import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Get } from "@/utils/REST";
 import fetch from "@/utils/fetch";
 import { notifications } from "@mantine/notifications";
@@ -19,8 +20,11 @@ import {
   Group,
   Divider,
   ScrollArea,
+  Tabs,
+  Stack,
 } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import TableData from "@/components/TableData";
 import {
   Table,
   TableHeader,
@@ -68,6 +72,7 @@ const CELL_STYLE: React.CSSProperties = {
 };
 
 const StockManagement = () => {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [productsData, setProductsData] = useState<any[]>([]);
   const [allProductsData, setAllProductsData] = useState<any[]>([]);
@@ -75,6 +80,38 @@ const StockManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
+  const [selectedProductFilter, setSelectedProductFilter] = useState("all");
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [tableState, setTableState] = useState<{ page: number; perPage: number }>({ page: 1, perPage: 10 });
+
+  const productOptions = useMemo(() => {
+    if (!allProductsData) return [];
+    return allProductsData.map((p) => ({
+      value: p.id.toString(),
+      label: p.product_name,
+    }));
+  }, [allProductsData]);
+
+  const filteredHistory = useMemo(() => {
+    return historyData.filter((h) => {
+      const productName = h.variant
+        ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}`
+        : h.product?.product_name || h.product || "-";
+
+      const matchesSearch =
+        productName.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
+        (h.reference_type || h.reference || "").toLowerCase().includes(historySearchQuery.toLowerCase());
+
+      const matchesProduct =
+        selectedProductFilter === "all" ||
+        h.product_id?.toString() === selectedProductFilter ||
+        h.product?.id?.toString() === selectedProductFilter;
+
+      return matchesSearch && matchesProduct;
+    });
+  }, [historyData, historySearchQuery, selectedProductFilter]);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Inline variant dropdown state
@@ -314,46 +351,127 @@ const StockManagement = () => {
   // History data uses API now
 
   const renderHistory = () => (
-    <Card p="xl" radius="lg" className="border border-light-grey shadow-sm">
-      <Group mb="xl" justify="space-between">
-        <Group>
-          <Icon icon="solar:history-bold-duotone" width={24} className="text-blue-500" />
-          <Title order={4} className="text-gray-800">Riwayat Terakhir</Title>
-        </Group>
-      </Group>
-      <Box className="rounded-xl overflow-hidden border border-light-grey shadow-sm" bg="white">
-        <Table removeWrapper aria-label="History Table" className="w-full">
-          <TableHeader>
-            <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Tanggal</TableColumn>
-            <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Referensi</TableColumn>
-            <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Produk</TableColumn>
-            <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold py-4">Perubahan</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {historyData.map((h, index) => {
-              const dir = getDirection(h.reference_type || h.reference);
-              const alteration = (dir === "reduce" ? "-" : "+") + (h.qty || h.alteration?.replace(/\D/g, '') || 0);
-              const productName = h.variant ? `${h.product?.product_name || '-'} - ${h.variant.varian_name}` : (h.product?.product_name || h.product || '-');
-              const dateObj = new Date(h.created_at || h.date);
-              const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : (h.date || '-');
+    <Box mt="md">
+      <Stack gap="xs" mb="md">
+        <Flex align="center" justify="space-between" wrap="wrap" gap="sm">
+          <Group gap="sm">
+            <Select
+              value={rowsPerPage.toString()}
+              onChange={(val) => setRowsPerPage(Number(val))}
+              data={["10", "20", "50", "100"]}
+              style={{ width: 80 }}
+              size="sm"
+            />
+          </Group>
 
-              return (
-                <TableRow key={h.id || index} className="border-b border-light-grey last:border-0 hover:bg-gray-50/50">
-                  <TableCell className="py-4 text-sm text-gray-600">{dateStr}</TableCell>
-                  <TableCell className="py-4 text-sm font-medium text-gray-800">{h.reference_type || h.reference}</TableCell>
-                  <TableCell className="py-4 text-sm text-gray-800">{productName}</TableCell>
-                  <TableCell className="py-4">
-                    <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm">
-                      {alteration}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Box>
-    </Card>
+          <Group gap="sm">
+            <Select
+              placeholder="Semua Produk"
+              data={[{ value: "all", label: "Semua Produk" }, ...productOptions]}
+              value={selectedProductFilter}
+              onChange={(val) => setSelectedProductFilter(val || "all")}
+              style={{ minWidth: 200 }}
+              size="sm"
+              searchable
+              clearable
+            />
+            <TextInput
+              placeholder="Cari data..."
+              leftSection={<Icon icon="uiw:search" width={14} />}
+              value={historySearchQuery}
+              onChange={(e) => setHistorySearchQuery(e.target.value)}
+              size="sm"
+              style={{ minWidth: 250 }}
+            />
+          </Group>
+        </Flex>
+        <Text size="xs" c="dimmed">
+          Menampilkan {Math.min((tableState.page - 1) * tableState.perPage + 1, filteredHistory.length)}-
+          {Math.min(tableState.page * tableState.perPage, filteredHistory.length)} dari {filteredHistory.length} data
+        </Text>
+      </Stack>
+
+      <TableData
+        tablekey="stock-history"
+        withRowIndex
+        searchField={false}
+        data={filteredHistory}
+        options={{ highlightOnHover: true }}
+        canSort={["date", "reference", "product"]}
+        onChangeRaw={(state) => setTableState({ page: Number(state.page), perPage: Number(state.perpage) })}
+        headerLabel={{
+          date: "Tanggal",
+          reference: "Referensi",
+          product: "Produk",
+          alteration: "Perubahan",
+          action: "Aksi",
+        }}
+        mapData={(h: any) => {
+          const dir = getDirection(h.reference_type || h.reference);
+          const alterationNum = h.qty || (typeof h.alteration === 'string' ? h.alteration.replace(/\D/g, "") : h.alteration) || 0;
+          const productName = h.variant
+            ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}`
+            : h.product?.product_name || h.product || "-";
+          const dateObj = new Date(h.created_at || h.date || "");
+          const dateStr = !isNaN(dateObj.getTime())
+            ? dateObj.toLocaleString("id-ID", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })
+            : h.date || "-";
+
+          return {
+            date: dateStr,
+            reference: h.reference_type || h.reference,
+            product: productName,
+            alteration: (
+              <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm">
+                {(dir === "reduce" ? "-" : "+") + alterationNum}
+              </Badge>
+            ),
+            action: (
+              <Group gap={5}>
+                <ActionIcon
+                  variant="light"
+                  color="blue"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    if (h && h.product) {
+                      handleProductOptionSubmit(h.product.product_name);
+                      setIsFormVisible(true);
+                    }
+                  }}
+                >
+                  <Icon icon="solar:pen-bold-duotone" width={18} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="light"
+                  color="green"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    const product = h.product || allProductsData.find((p: any) => p.id === h.product_id);
+                    const slug = product?.slug;
+                    if (slug) {
+                      router.push(`/dashboard/merch/${slug}`);
+                    } else {
+                      notifications.show({
+                        title: "Info",
+                        message: "Slug produk tidak ditemukan",
+                        color: "orange"
+                      });
+                    }
+                  }}
+                >
+                  <Icon icon="solar:eye-bold-duotone" width={18} />
+                </ActionIcon>
+              </Group>
+            ),
+          };
+        }}
+      />
+    </Box>
   );
 
   const renderForm = () => (
@@ -618,7 +736,20 @@ const StockManagement = () => {
             )}
           </Flex>
 
-          {isFormVisible ? renderForm() : renderHistory()}
+          {isFormVisible ? (
+            renderForm()
+          ) : (
+            <Card p="xl" radius="lg" className="border border-light-grey shadow-sm">
+              <Group mb="md">
+                <Icon icon="solar:history-bold-duotone" width={24} className="text-blue-500" />
+                <Title order={4} className="text-gray-800">
+                  Riwayat Stock Movement
+                </Title>
+              </Group>
+              <Divider mb="xl" />
+              {renderHistory()}
+            </Card>
+          )}
 
         </div>
       </div>

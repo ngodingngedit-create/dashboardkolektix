@@ -97,7 +97,7 @@ type MerchandiseStoreRequest = {
     qty: number;
     sku: string;
     price: number;
-    weight: number;
+    weight: string | number;
     show_stock_out: 1 | 0;
     max_purchase_quantity: number;
     low_quantity_warning: number;
@@ -106,8 +106,8 @@ type MerchandiseStoreRequest = {
     description: string;
     is_product_varian: 1 | 0;
     store_location_id?: number | null;
-    image: (Blob | string)[];
-    product_variant: string;
+    image: string[];
+    product_variant: VariantStoreRequest[] | string;
 };
 
 type VariantStoreRequest = {

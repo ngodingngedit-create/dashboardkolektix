@@ -53,18 +53,18 @@ interface MerchandiseStoreRequest {
   description: string;
   sku: string;
   price: number;
-  image: (string | File)[];
+  image: string[];
   product_status_id: number;
   creator_id: number;
   qty: number;
-  weight: number;
+  weight: string | number;
   show_stock_out: number;
   max_purchase_quantity: number;
   low_quantity_warning: number;
   discount: number;
   add_to_flash_sale: number;
   is_product_varian: number;
-  product_variant: string;
+  product_variant: VariantStoreRequest[] | string;
 }
 
 interface MerchandiseShowResponse {
@@ -142,6 +142,15 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     .nullable(),
   status: z.boolean().nullable().optional(),
 });
+
+const fileToBase64 = (file: File | Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Readonly<ComponentProps & { creatorId?: string }>) {
   const [merchId, setMerchId] = useState<number>();
@@ -281,15 +290,24 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
     const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
 
     try {
+      const base64Images = await Promise.all(
+        image.map(async (e) => {
+          if (e instanceof Blob) {
+            return await fileToBase64(e);
+          }
+          return imageList?.find((z) => e == z.image_url)?.image ?? e;
+        })
+      );
+
       // Create variant data with proper type
       const variantData: VariantStoreRequest[] = is_variant && variant
         ? variant.map((e) => ({
             id: e.id,
             varian_name: e.name,
             sku: e.sku ?? "",
-            price: e.price ?? 999999,
-            weight: e.weight ?? 1,
-            stock_qty: e.stock ?? 0,
+            price: Number(e.price ?? 0),
+            weight: Number(e.weight ?? 0),
+            stock_qty: Number(e.stock ?? 0),
             varian_category_id: variant_name || 0,
             status_product: e.status ? "active" : "inactive",
           }))
@@ -300,11 +318,11 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
         description: description ?? "-",
         sku,
         price: price ?? 99999,
-        image: image.map((e) => (e instanceof Blob ? e : imageList?.find((z) => e == z.image_url)?.image ?? "")),
+        image: base64Images as string[],
         product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
         creator_id: currentCreatorId,
         qty: stock ?? 0,
-        weight: form.values.weight ?? 1,
+        weight: String(form.values.weight ?? 1),
         show_stock_out: 1,
         max_purchase_quantity: 100,
         low_quantity_warning: 4,
@@ -318,8 +336,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
 
       const resProduct: any = await Post(
         Boolean(id) ? `product/${merchId}` : "product",
-        requestData,
-        "multipart/form-data"
+        requestData
       );
       product_id = resProduct.data.id as number;
 
