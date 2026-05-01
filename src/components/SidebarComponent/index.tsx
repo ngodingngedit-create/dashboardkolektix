@@ -1694,13 +1694,6 @@ const profileData: SidebarData[number]["submenu"] = [
     link: "/dashboard/bank",
     role: "Creator",
   },
-  {
-    id: 7,
-    name: "Store Location",
-    icon: faStore,
-    link: "/dashboard/storelocation",
-    role: "Creator",
-  },
 ];
 
 const sidebarData: SidebarData = [
@@ -1901,6 +1894,13 @@ const sidebarData: SidebarData = [
         name: "Stock Management",
         icon: faBox,
         link: "/dashboard/stockmanagement",
+        role: "Creator",
+      },
+      {
+        id: 7,
+        name: "Store Location",
+        icon: faStore,
+        link: "/dashboard/storelocation",
         role: "Creator",
       },
     ],

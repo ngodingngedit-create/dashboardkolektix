@@ -12,6 +12,22 @@ interface VenueCategory {
     deleted_at: string | null;
 }
 
+export interface VenueRule {
+    id?: number;
+    venue_id?: number;
+    title: string;
+    description: string | null;
+    sort_order: number;
+}
+
+export interface VenueFaq {
+    id?: number;
+    venue_id?: number;
+    question: string;
+    answer: string;
+}
+
+
 interface VenueFacility {
     id: number;
     venue_id: number;
@@ -105,7 +121,10 @@ interface Venue {
     has_booking_venue?: any[];
     facility?: string[];
     blocked_dates?: BlockedDate[];
+    rules?: VenueRule[];
+    faqs?: VenueFaq[];
 }
+
 
 export type VenueListResponse = Venue;
 export type VenueStoreRequest = {
@@ -134,7 +153,17 @@ export type VenueStoreRequest = {
         end_date: string;
         reason: string;
     }[];
+    rules?: {
+        title: string;
+        description?: string | null;
+        sort_order?: number;
+    }[];
+    faqs?: {
+        question: string;
+        answer: string;
+    }[];
 }
+
 export type VenueGalleryStoreRequest = {
     venue_id: number;
     name: string;

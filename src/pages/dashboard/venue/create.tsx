@@ -54,8 +54,11 @@ export default function Create({ }: Readonly<ComponentProps>) {
             },
             areas: [],
             prices: [],
-            blocked_dates: []
+            blocked_dates: [],
+            rules: [],
+            faqs: []
         },
+
         onValuesChange: (val) => {
             if (val.contact_person_phone) val.contact_person_phone = val.contact_person_phone.replaceAll(/\D/g, '');
             return val;
@@ -76,7 +79,10 @@ export default function Create({ }: Readonly<ComponentProps>) {
                 image: venue?.venue_gallery?.map(e => e.image_url),
                 starting_price: Math.round(venue?.starting_price ?? 0),
                 per_hour_price: Math.round(venue?.per_hour_price ?? 0),
+                rules: venue?.rules ?? [],
+                faqs: venue?.faqs ?? [],
             });
+
         }
     }, [venue, category, facility]);
 
@@ -180,8 +186,11 @@ export default function Create({ }: Readonly<ComponentProps>) {
                 start_time: p.start_time?.length === 5 ? p.start_time + ":00" : p.start_time,
                 end_time: p.end_time?.length === 5 ? p.end_time + ":00" : p.end_time,
             })) || [],
-            blocked_dates: form.values.blocked_dates || []
+            blocked_dates: form.values.blocked_dates || [],
+            rules: form.values.rules || [],
+            faqs: form.values.faqs || []
         };
+
 
         await fetch<any, any>({
             url: slug ? 'creator-data/venue/' + venue?.id : 'creator-data/venue',
@@ -278,7 +287,10 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         <Tabs.Tab value="jadwal" leftSection={<Icon icon="uiw:time" />}>Jadwal & Waktu</Tabs.Tab>
                         <Tabs.Tab value="area" leftSection={<Icon icon="uiw:appstore" />}>Area & Harga Tambahan</Tabs.Tab>
                         <Tabs.Tab value="blocked-dates" leftSection={<Icon icon="uiw:date" />}>Blocked Dates</Tabs.Tab>
+                        <Tabs.Tab value="rules" leftSection={<Icon icon="uiw:file-text" />}>Aturan Venue</Tabs.Tab>
+                        <Tabs.Tab value="faqs" leftSection={<Icon icon="uiw:comment" />}>FAQ</Tabs.Tab>
                     </Tabs.List>
+
 
                     <Tabs.Panel value="detail" pt="xl">
                         <Stack gap={15}>
@@ -524,7 +536,65 @@ export default function Create({ }: Readonly<ComponentProps>) {
                             </Stack>
                         </Stack>
                     </Tabs.Panel>
+ 
+                    <Tabs.Panel value="rules" pt="xl">
+                        <Stack gap={20}>
+                            <Flex justify="space-between" align="center">
+                                <Text fw={600} size="lg">Aturan Venue (Rules)</Text>
+                                <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('rules', { title: '', description: '', sort_order: 0 })}>
+                                    Tambah Aturan
+                                </Button>
+                            </Flex>
+                            <Stack gap={10}>
+                                {form.values.rules?.map((item: any, index: number) => (
+                                    <Card key={index} withBorder p="sm" radius="md">
+                                        <Flex gap={15} align="flex-end" wrap="wrap">
+                                            <TextInput label="Judul Aturan" placeholder="Contoh: Dilarang Merokok" required {...inputProps(`rules.${index}.title`)} flex={1} />
+                                            <TextInput label="Keterangan" placeholder="Isi detail aturan (opsional)" {...inputProps(`rules.${index}.description`)} flex={2} />
+                                            <NumberInput label="Urutan" min={0} hideControls {...inputProps(`rules.${index}.sort_order`)} w={{ base: '100%', md: '10%' }} />
+                                            <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('rules', index)} size="lg" mb={5}>
+                                                <Icon icon="uiw:delete" />
+                                            </ActionIcon>
+                                        </Flex>
+                                    </Card>
+                                ))}
+                                {form.values.rules?.length === 0 && (
+                                    <Text size="sm" c="dimmed" ta="center">Belum ada aturan yang ditambahkan.</Text>
+                                )}
+                            </Stack>
+                        </Stack>
+                    </Tabs.Panel>
+
+                    <Tabs.Panel value="faqs" pt="xl">
+                        <Stack gap={20}>
+                            <Flex justify="space-between" align="center">
+                                <Text fw={600} size="lg">Pertanyaan Umum (FAQ)</Text>
+                                <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('faqs', { question: '', answer: '' })}>
+                                    Tambah FAQ
+                                </Button>
+                            </Flex>
+                            <Stack gap={10}>
+                                {form.values.faqs?.map((item: any, index: number) => (
+                                    <Card key={index} withBorder p="sm" radius="md">
+                                        <Stack gap={10}>
+                                            <Flex gap={15} align="flex-end">
+                                                <TextInput label="Pertanyaan" placeholder="Contoh: Apakah ada parkir?" required {...inputProps(`faqs.${index}.question`)} flex={1} />
+                                                <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('faqs', index)} size="lg" mb={5}>
+                                                    <Icon icon="uiw:delete" />
+                                                </ActionIcon>
+                                            </Flex>
+                                            <Textarea label="Jawaban" placeholder="Isi jawaban dari pertanyaan" required autosize minRows={2} {...inputProps(`faqs.${index}.answer`)} />
+                                        </Stack>
+                                    </Card>
+                                ))}
+                                {form.values.faqs?.length === 0 && (
+                                    <Text size="sm" c="dimmed" ta="center">Belum ada FAQ yang ditambahkan.</Text>
+                                )}
+                            </Stack>
+                        </Stack>
+                    </Tabs.Panel>
                 </Tabs>
+
 
                 <Flex gap={10} align="center" mt={10}>
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
