@@ -1608,7 +1608,8 @@ import {
   faListCheck,
   faPercent,
   faGlobe,
-  faStore
+  faStore,
+  faClock
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1931,6 +1932,13 @@ const sidebarData: SidebarData = [
         name: "Buat Booking Venue",
         iconify: "fluent:form-48-regular",
         link: "/dashboard/venue-pos",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Venue Schedule",
+        icon: faClock,
+        link: "/dashboard/venue-schedule",
         role: "Creator",
       },
     ],
