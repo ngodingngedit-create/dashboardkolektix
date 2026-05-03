@@ -16,13 +16,16 @@ const QrCode = ({ slug, errorCorrectionLevel = "M", margin = 4, logoSizeRatio = 
   useEffect(() => {
     if (qrCodeRef.current && slug) {
       qrCodeRef.current.innerHTML = "";
-      const qrSize = 200;
+      const displaySize = 200;
+      const qrSize = 1000; // High resolution for sharpness
       const logoSize = qrSize * logoSizeRatio;
       const options = {
         text: slug,
         width: qrSize,
         height: qrSize,
-        logo: window.location.origin + "/images/logoblack.png",
+        logo: window.location.origin + "/images/logoblack-bg.png",
+        logoBackgroundTransparent: false,
+        logoBackgroundColor: "#000000",
         logoWidth: logoSize,
         logoHeight: logoSize,
         colorDark: "#000000",
@@ -34,7 +37,18 @@ const QrCode = ({ slug, errorCorrectionLevel = "M", margin = 4, logoSizeRatio = 
     }
   }, [slug, errorCorrectionLevel, margin, logoSizeRatio]);
 
-  return <div className="qrcode" ref={qrCodeRef} />;
+  return (
+    <>
+      <div className="qrcode" ref={qrCodeRef} style={{ width: 200, height: 200 }} />
+      <style>{`
+        .qrcode canvas, .qrcode img {
+          width: 100% !important;
+          height: 100% !important;
+          display: block;
+        }
+      `}</style>
+    </>
+  );
 };
 
 export default QrCode;
