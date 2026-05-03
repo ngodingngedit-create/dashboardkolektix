@@ -138,6 +138,7 @@ export type TransactionListResponse = {
       varian_name: string
     }
   }>;
+  etickets: Array<EticketListResponse>;
 };
 
 export type EventListResponse = {

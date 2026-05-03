@@ -187,21 +187,38 @@ const CheckinReport = () => {
 
     if (reportType === "eticket") {
       allDataList.forEach((trans) => {
-        trans.tickets?.forEach((ticket) => {
-          const qty = parseInt(String(ticket.qty_ticket)) || 1;
-          for (let i = 0; i < qty; i++) {
-            const identity = trans.identities?.[i];
+        if (trans.etickets && trans.etickets.length > 0) {
+          // Prioritize new etickets payload
+          trans.etickets.forEach((eticket, index) => {
+            const identity = trans.identities?.[index];
             list.push({
               no: absoluteRowNum++,
               nama: identity?.full_name || (trans.has_user as any)?.name || "-",
               telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
               email: identity?.email || (trans.has_user as any)?.email || "-",
-              status_checkin: ticket.ticket_checkin_status === 1,
+              status_checkin: eticket.is_checkin === 1,
               invoice: trans.invoice_no,
-              qr_code: ticket.etiket_number // Used for manual check-in
+              qr_code: eticket.eticket_number // Used for manual check-in
             });
-          }
-        });
+          });
+        } else {
+          // Fallback to previous logic
+          trans.tickets?.forEach((ticket) => {
+            const qty = parseInt(String(ticket.qty_ticket)) || 1;
+            for (let i = 0; i < qty; i++) {
+              const identity = trans.identities?.[i];
+              list.push({
+                no: absoluteRowNum++,
+                nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+                telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+                email: identity?.email || (trans.has_user as any)?.email || "-",
+                status_checkin: ticket.ticket_checkin_status === 1,
+                invoice: trans.invoice_no,
+                qr_code: ticket.etiket_number // Used for manual check-in
+              });
+            }
+          });
+        }
       });
     } else {
       invitationData.forEach((invGroup) => {
