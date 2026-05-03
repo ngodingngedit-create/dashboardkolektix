@@ -2140,10 +2140,13 @@ export default function MerchDetail() {
     };
 
     const downloadQRCode = () => {
-        const productUrl = `${window.location.origin}/merchandise/${slug}`;
+        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+        const isProduction = host.includes('kolektix.com') && !host.includes('festaging');
+        const domain = isProduction ? 'kolektix.com' : 'kolektix.my.id';
+        const finalProductUrl = `https://${domain}/merchandise/${slug}`;
 
         const link = document.createElement('a');
-        link.href = `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(productUrl)}&choe=UTF-8`;
+        link.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(finalProductUrl)}`;
         link.download = `qr-${data?.product_name || 'product'}.png`;
         document.body.appendChild(link);
         link.click();
@@ -2317,7 +2320,17 @@ export default function MerchDetail() {
 
     const productPrice = data ? parsePrice(data.price) : 0;
     const maxTableHeight = 400;
-    const productUrl = typeof window !== 'undefined' ? `${window.location.origin}/merchandise/${slug}` : '';
+    
+    // Logic for storefront URL based on environment
+    const getStorefrontUrl = () => {
+        if (typeof window === 'undefined') return '';
+        const host = window.location.hostname;
+        // Check if it's production dashboard or production main site
+        const isProduction = host.includes('kolektix.com') && !host.includes('festaging');
+        const domain = isProduction ? 'kolektix.com' : 'kolektix.my.id';
+        return `https://${domain}/merchandise/${slug}`;
+    };
+    const productUrl = getStorefrontUrl();
 
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
     const startItem = filteredTransactions.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -2329,7 +2342,7 @@ export default function MerchDetail() {
             <Modal opened={qrOpened} onClose={closeQr} title="QR Code Produk" centered size="md">
                 <Stack align="center" gap="md">
                     <Image
-                        src={`https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(productUrl)}&choe=UTF-8`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(productUrl)}`}
                         alt={`QR Code untuk ${data?.product_name || 'produk'}`}
                         width={250}
                         height={250}

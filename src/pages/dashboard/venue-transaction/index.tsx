@@ -11,6 +11,11 @@ import {
   Pagination as MantinePagination,
   Stack,
   Card as MantineCard,
+  Button,
+  Modal,
+  Divider,
+  Grid,
+  Paper,
 } from "@mantine/core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -20,6 +25,8 @@ import {
   faTimes,
   faClock,
   faReceipt,
+  faEye,
+  faUndo
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
@@ -71,6 +78,13 @@ export default function VenueTransaction() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortBy, setSortBy] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [detailModalOpened, setDetailModalOpened] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<DataResponse | null>(null);
+
+  const handleViewDetail = (item: DataResponse) => {
+    setSelectedTransaction(item);
+    setDetailModalOpened(true);
+  };
 
   const handleSort = (col: string) => {
     if (sortBy === col) {
@@ -144,7 +158,7 @@ export default function VenueTransaction() {
     const statusStr = (item.payment_status || "").toLowerCase();
 
     if (statusId === 2 || statusStr.includes("paid") || statusStr.includes("success") || statusStr.includes("berhasil")) {
-      return { text: "Berhasil", color: "green" };
+      return { text: "Success", color: "green" };
     } else if (statusId === 1 || statusStr.includes("pending") || statusStr.includes("menunggu") || statusStr.includes("unpaid")) {
       return { text: "Pending", color: "yellow" };
     } else if (statusId === 3 || statusStr.includes("gagal") || statusStr.includes("failed") || statusStr.includes("cancel")) {
@@ -284,27 +298,19 @@ export default function VenueTransaction() {
                   onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
                   style={{ width: 280 }}
                   size="sm"
-                />
-
-                {/* Clear filter */}
-                {hasActiveFilters && (
-                  <Tooltip label="Hapus semua filter">
-                    <ActionIcon variant="light" color="gray" size="sm" onClick={clearFilters}>
-                      <FontAwesomeIcon icon={faTimes} style={{ width: 12 }} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-
-                {/* Refresh */}
-                <Tooltip label="Refresh data">
-                  <ActionIcon
-                    variant="light"
-                    color="blue"
-                    size="sm"
-                    onClick={() => getData()}
-                    loading={loading}
+                />                {/* Reset filter */}
+                <Tooltip label="Reset filter">
+                  <ActionIcon 
+                    variant="filled" 
+                    color="gray.1" 
+                    size="40px" 
+                    radius="xl"
+                    onClick={clearFilters}
+                    styles={{
+                      root: { color: '#495057' }
+                    }}
                   >
-                    <Icon icon="solar:refresh-linear" width={16} />
+                    <FontAwesomeIcon icon={faUndo} style={{ width: 16 }} />
                   </ActionIcon>
                 </Tooltip>
               </Flex>
@@ -482,7 +488,7 @@ export default function VenueTransaction() {
                         letterSpacing: "0.04em",
                         cursor: "pointer",
                         position: "sticky",
-                        right: 0,
+                        right: 100, // Adjusted to make room for Action
                         backgroundColor: "#f5f7fa",
                         zIndex: 2,
                         boxShadow: "-2px 0 5px rgba(0,0,0,0.06)",
@@ -490,6 +496,25 @@ export default function VenueTransaction() {
                       onClick={() => handleSort("payment_status")}
                     >
                       Status <SortIcon col="payment_status" />
+                    </th>
+                    <th
+                      style={{
+                        padding: "10px 14px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#777",
+                        whiteSpace: "nowrap",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        position: "sticky",
+                        right: 0,
+                        backgroundColor: "#f5f7fa",
+                        zIndex: 2,
+                        boxShadow: "-2px 0 5px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      Action
                     </th>
                   </tr>
                 </thead>
@@ -565,7 +590,22 @@ export default function VenueTransaction() {
                                 icon={faReceipt}
                                 style={{ width: 12, height: 12, color: "#868e96" }}
                               />
-                              <Text size="sm" fw={600} c="blue" style={{ fontFamily: "monospace", letterSpacing: 0.5 }}>
+                              <Text 
+                                size="sm" 
+                                fw={600} 
+                                c="blue" 
+                                style={{ 
+                                  fontFamily: "monospace", 
+                                  letterSpacing: 0.5,
+                                  cursor: "pointer",
+                                  textDecoration: "underline"
+                                }}
+                                onClick={() => {
+                                  const isProd = typeof window !== 'undefined' && window.location.hostname === 'kolektix.com';
+                                  const baseUrl = isProd ? 'https://kolektix.com' : 'https://kolektix.my.id';
+                                  window.open(`${baseUrl}/venue-invoice/${item.invoice_no}`, '_blank');
+                                }}
+                              >
                                 {item.invoice_no || "-"}
                               </Text>
                             </Flex>
@@ -653,7 +693,7 @@ export default function VenueTransaction() {
                               padding: "12px 14px",
                               whiteSpace: "nowrap",
                               position: "sticky",
-                              right: 0,
+                              right: 100, // Matching header
                               backgroundColor: "white",
                               zIndex: 1,
                               boxShadow: "-2px 0 5px rgba(0,0,0,0.07)",
@@ -666,6 +706,28 @@ export default function VenueTransaction() {
                             >
                               {statusInfo.text}
                             </Badge>
+                          </td>
+
+                          {/* Action — sticky */}
+                          <td
+                            style={{
+                              padding: "12px 14px",
+                              whiteSpace: "nowrap",
+                              position: "sticky",
+                              right: 0,
+                              backgroundColor: "white",
+                              zIndex: 1,
+                              boxShadow: "-2px 0 5px rgba(0,0,0,0.07)",
+                              textAlign: "center"
+                            }}
+                          >
+                            <ActionIcon
+                              variant="subtle"
+                              color="blue"
+                              onClick={() => handleViewDetail(item)}
+                            >
+                              <FontAwesomeIcon icon={faEye} style={{ width: 14, height: 14 }} />
+                            </ActionIcon>
                           </td>
                         </tr>
                       );
@@ -721,6 +783,110 @@ export default function VenueTransaction() {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      {/* Transaction Detail Modal */}
+      <Modal
+        opened={detailModalOpened}
+        onClose={() => setDetailModalOpened(false)}
+        title={<Text fw={700}>Detail Transaksi Venue</Text>}
+        size="lg"
+        radius="md"
+      >
+        {selectedTransaction && (
+          <Stack gap="md">
+            <Grid>
+              <Grid.Col span={6}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Invoice No</Text>
+                <Text fw={700} c="blue" style={{ fontFamily: "monospace" }}>{selectedTransaction.invoice_no}</Text>
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Status</Text>
+                <Badge color={getStatusInfo(selectedTransaction).color} variant="filled">
+                  {getStatusInfo(selectedTransaction).text}
+                </Badge>
+              </Grid.Col>
+            </Grid>
+
+            <Divider />
+
+            <Grid>
+              <Grid.Col span={6}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Tanggal Order</Text>
+                <Text fw={600}>{formatDate(selectedTransaction.created_at)}</Text>
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Metode Pembayaran</Text>
+                <Text fw={600}>{selectedTransaction.payment_method || "-"}</Text>
+              </Grid.Col>
+            </Grid>
+
+            <Divider variant="dashed" />
+
+            <Box>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>Informasi Event & Venue</Text>
+              <Paper withBorder p="sm" radius="md" bg="gray.0">
+                <Grid>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Nama Event</Text>
+                    <Text fw={600}>{selectedTransaction.event_name || "-"}</Text>
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Venue</Text>
+                    <Text fw={600}>{selectedTransaction.venue?.name || "-"}</Text>
+                  </Grid.Col>
+                  <Grid.Col span={12}>
+                    <Text size="xs" c="dimmed">Tanggal Pelaksanaan</Text>
+                    <Text fw={600}>
+                      {formatDate(selectedTransaction.start_date)} 
+                      {selectedTransaction.end_date && selectedTransaction.end_date !== selectedTransaction.start_date && ` - ${formatDate(selectedTransaction.end_date)}`}
+                    </Text>
+                  </Grid.Col>
+                </Grid>
+              </Paper>
+            </Box>
+
+            <Box>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>Informasi Client</Text>
+              <Paper withBorder p="sm" radius="md" bg="gray.0">
+                <Grid>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Nama Client</Text>
+                    <Text fw={600}>{selectedTransaction.user?.name || "-"}</Text>
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Email</Text>
+                    <Text fw={600}>{selectedTransaction.user?.email || "-"}</Text>
+                  </Grid.Col>
+                </Grid>
+              </Paper>
+            </Box>
+
+            <Divider />
+
+            <Flex justify="space-between" align="center">
+              <Text fw={700}>Total Pembayaran</Text>
+              <Text fw={800} size="xl" c="blue">
+                Rp {(selectedTransaction.grandtotal || selectedTransaction.total_price || 0).toLocaleString('id-ID')}
+              </Text>
+            </Flex>
+
+            <Button 
+              fullWidth 
+              variant="light" 
+              color="blue" 
+              mt="md"
+              onClick={() => {
+                const isProd = typeof window !== 'undefined' && window.location.hostname === 'kolektix.com';
+                const baseUrl = isProd ? 'https://kolektix.com' : 'https://kolektix.my.id';
+                window.open(`${baseUrl}/venue-invoice/${selectedTransaction.invoice_no}`, '_blank');
+              }}
+              leftSection={<FontAwesomeIcon icon={faReceipt} />}
+            >
+              Lihat Invoice Full
+            </Button>
+          </Stack>
+        )}
+      </Modal>
     </>
   );
 }

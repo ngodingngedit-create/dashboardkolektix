@@ -640,275 +640,235 @@ export default function KelolaCrew() {
     return sortConfig.direction === 'asc' ? faSortUp : faSortDown;
   };
 
-  // View: List Page
-  const renderList = () => (
-    <Stack gap={30}>
-      {/* Header */}
-      <Flex gap={20} justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={1} size="h2">
-            Kelola Crew
-          </Title>
-          <Text size="sm" c="gray">
-            Daftar semua crew yang tersedia di sistem
-          </Text>
-        </Stack>
-        <Button
-          onClick={handleAddClick}
-          leftSection={<FontAwesomeIcon icon={faPlus} />}
-          color="blue.4"
-          size="md"
-          radius="xl"
-        >
-          Tambah Crew
-        </Button>
-      </Flex>
-
-      {/* Statistics Section - Matched to Screenshot Design */}
-      <Card withBorder radius="md" p={0} shadow="xs" style={{ backgroundColor: '#fff' }}>
-        {/* Accordion Header */}
-        <Flex
-          justify="space-between"
-          align="center"
-          p="md"
-          onClick={() => setIsStatsOpen(!isStatsOpen)}
-          style={{ cursor: 'pointer', borderBottom: isStatsOpen ? '1px solid #f1f3f5' : 'none' }}
-        >
-          <Flex align="center" gap={12}>
-            <Box
-              w={32}
-              h={32}
-              bg="blue.7"
-              style={{
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <FontAwesomeIcon icon={faUsers} style={{ color: '#fff' }} size="sm" />
-            </Box>
-            <Text fw={700} size="lg" c="gray.9">Statistik Crew</Text>
-          </Flex>
-          <FontAwesomeIcon
-            icon={isStatsOpen ? faChevronUp : faChevronDown}
-            size="sm"
-            style={{ color: '#495057' }}
-          />
-        </Flex>
-
-        <Collapse in={isStatsOpen}>
-          <Box p="md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+  const renderList = () => {
+    return (
+      <Stack gap={30}>
+        {/* Header & Statistics */}
+        <Flex justify="space-between" align="flex-start">
+          <Stack gap={0}>
+            <Title order={1} size="h2">
+              Kelola Crew
+            </Title>
+            <Text size="sm" c="gray">
+              Daftar semua crew yang tersedia di sistem
+            </Text>
+          </Stack>
+          
+          <Stack align="flex-end" gap="md">
+            <Flex gap={8} wrap="wrap" justify="flex-end">
               {[
-                { label: "Total Crew", value: stats.total, icon: faUsers, color: "blue" },
-                { label: "Active Status", value: stats.active, icon: faUserCheck, color: "green" },
-                { label: "Inactive", value: stats.inactive, icon: faUserXmark, color: "red" },
-                { label: "Host Division", value: stats.host, icon: faUserTie, color: "violet" },
-                { label: "Teritorial", value: stats.teritorial, icon: faMapLocationDot, color: "cyan" },
+                { label: "Total Crew", value: stats.total, unit: "crew" },
+                { label: "Active Status", value: stats.active, unit: "status" },
+                { label: "Inactive", value: stats.inactive, unit: "status" },
+                { label: "Host Division", value: stats.host, unit: "divisi" },
+                { label: "Teritorial", value: stats.teritorial, unit: "teritorial" },
               ].map((item, i) => (
-                <Card
+                <Paper
                   key={i}
                   withBorder
                   radius="md"
-                  p="md"
+                  px={16}
+                  py={10}
                   style={{
-                    position: 'relative',
-                    overflow: 'hidden',
-                    backgroundColor: '#fff'
+                    backgroundColor: '#fff',
+                    minWidth: '130px',
+                    borderColor: '#edf2f7',
                   }}
                 >
-                  <Stack gap={4} style={{ position: 'relative', zIndex: 1 }}>
-                    <Text size="xs" fw={600} c="gray.5" style={{ textTransform: 'capitalize' }}>
+                  <Stack gap={2}>
+                    <Text size="10px" fw={800} c="gray.9" tt="uppercase" style={{ letterSpacing: '0.5px' }}>
                       {item.label}
                     </Text>
-                    <Text size="xl" fw={800} c="gray.9">
-                      {item.value}
-                    </Text>
+                    <Group gap={4} align="baseline">
+                      <Text size="lg" fw={700} c="dark" lh={1.2}>
+                        {item.value}
+                      </Text>
+                      <Text size="xs" fw={600} c="gray.7">
+                        {item.unit}
+                      </Text>
+                    </Group>
                   </Stack>
-
-                  {/* Watermark Icon */}
-                  <Box
-                    style={{
-                      position: 'absolute',
-                      bottom: -10,
-                      right: -5,
-                      opacity: 0.08,
-                      transform: 'rotate(-15deg)',
-                      pointerEvents: 'none',
-                      zIndex: 0
-                    }}
-                  >
-                    <FontAwesomeIcon icon={item.icon} size="4x" />
-                  </Box>
-                </Card>
+                </Paper>
               ))}
-            </div>
-          </Box>
-        </Collapse>
-      </Card>
-
-      <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="center" mb="lg">
-          <Flex gap={10}>
+            </Flex>
+            
             <Button
-              variant="filled"
+              onClick={handleAddClick}
+              leftSection={<FontAwesomeIcon icon={faPlus} />}
               color="blue.4"
-              size="sm"
-              onClick={() => getData()}
-              loading={loading.includes("getdata")}
+              size="md"
+              radius="xl"
+              px="xl"
             >
-              <FontAwesomeIcon icon={faArrowsRotate} />
+              Tambah Crew
             </Button>
-          </Flex>
-          <Flex gap="sm" align="center">
-            <Select
-              placeholder="Filter Divisi"
-              data={[
-                { value: "all", label: "Semua Divisi" },
-                ...Array.from(new Set(data.map(c => c.division))).filter(Boolean).map(d => ({ value: d, label: d }))
-              ]}
-              value={divisionFilter}
-              onChange={(val) => setDivisionFilter(val || "all")}
-              style={{ width: 180 }}
-              radius="md"
-            />
-            <TextInput
-              placeholder="Cari nama, divisi, atau event..."
-              leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              style={{ width: 300 }}
-              radius="md"
-            />
-          </Flex>
+          </Stack>
         </Flex>
 
-        <Box style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8f9fa' }}>
-                {[
-                  { label: "No", sortable: false },
-                  { label: "Foto", sortable: false },
-                  { label: "Nama", sortable: true, key: "name" },
-                  { label: "Divisi", sortable: true, key: "division" },
-                  { label: "Event", sortable: true, key: "event" },
-                  { label: "Teritorial", sortable: false },
-                  { label: "Status", sortable: false },
-                  { label: "Aksi", sortable: false }
-                ].map((col, i) => (
-                  <th
-                    key={i}
-                    onClick={() => col.sortable && requestSort(col.key!)}
-                    style={{
-                      padding: '12px 14px',
-                      textAlign: ["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'left',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      color: '#495057',
-                      textTransform: 'uppercase',
-                      borderBottom: '2px solid #e9ecef',
-                      letterSpacing: '0.5px',
-                      cursor: col.sortable ? 'pointer' : 'default',
-                      userSelect: 'none',
-                      position: col.label === "Aksi" ? 'sticky' : 'static',
-                      right: col.label === "Aksi" ? 0 : 'auto',
-                      backgroundColor: col.label === "Aksi" ? '#f8f9fa' : 'transparent',
-                      zIndex: col.label === "Aksi" ? 10 : 1,
-                      boxShadow: col.label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
-                    }}
-                  >
-                    <Flex align="center" gap={6} justify={["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'flex-start'}>
-                      {col.label}
-                      {col.sortable && (
-                        <FontAwesomeIcon
-                          icon={getSortIcon(col.key!)}
-                          size="xs"
-                          style={{
-                            color: sortConfig.key === col.key ? '#228be6' : '#adb5bd',
-                            opacity: sortConfig.key === col.key ? 1 : 0.5
-                          }}
-                        />
-                      )}
-                    </Flex>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading.includes("getdata") ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
-                    <LoadingOverlay visible />
-                    <Text c="dimmed">Memuat data...</Text>
-                  </td>
-                </tr>
-              ) : filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
-                    <Text c="dimmed">Tidak ada data ditemukan</Text>
-                  </td>
-                </tr>
-              ) : (
-                filteredData.map((item, idx) => {
-                  const mapped = mapData(item);
-                  return (
-                    <tr
-                      key={mapped.id}
-                      style={{ borderBottom: '1px solid #f1f3f5' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
-                    >
-                      <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={700}>{idx + 1}</Text></td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <Flex justify="center">
-                          {mapped.image}
-                        </Flex>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{mapped.name}</Text></td>
-                      <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{mapped.division}</Text></td>
-                      <td style={{ padding: '12px 14px' }}><Text size="xs" lineClamp={2} style={{ maxWidth: 200 }}>{mapped.event}</Text></td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <Flex justify="center">
-                          <Badge variant="filled" color="blue" size="sm" style={{ width: 100 }}>
-                            {item.has_teritorial?.name || "Unknown"}
-                          </Badge>
-                        </Flex>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <Flex justify="center">
-                          <Badge
-                            variant="filled"
-                            color={item.status === "active" ? "green" : "red"}
-                            size="sm"
-                            style={{ width: 100 }}
-                          >
-                            {item.status === "active" ? "Active" : "Inactive"}
-                          </Badge>
-                        </Flex>
-                      </td>
-                      <td style={{
+        <Card withBorder p="md" radius="md" shadow="sm">
+          <Flex justify="space-between" align="center" mb="lg">
+            <Box /> {/* Empty left space */}
+            <Flex gap="sm" align="center">
+              <Select
+                placeholder="Filter Divisi"
+                data={[
+                  { value: "all", label: "Semua Divisi" },
+                  ...Array.from(new Set(data.map(c => c.division))).filter(Boolean).map(d => ({ value: d, label: d }))
+                ]}
+                value={divisionFilter}
+                onChange={(val) => setDivisionFilter(val || "all")}
+                style={{ width: 180 }}
+                radius="md"
+              />
+              <TextInput
+                placeholder="Cari nama, divisi, atau event..."
+                leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                style={{ width: 300 }}
+                radius="md"
+              />
+              <Tooltip label="Refresh Data">
+                <ActionIcon
+                  variant="filled"
+                  color="blue.4"
+                  size="36px"
+                  radius="md"
+                  onClick={() => getData()}
+                  loading={loading.includes("getdata")}
+                >
+                  <FontAwesomeIcon icon={faArrowsRotate} />
+                </ActionIcon>
+              </Tooltip>
+            </Flex>
+          </Flex>
+
+          <Box style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                  {[
+                    { label: "No", sortable: false },
+                    { label: "Foto", sortable: false },
+                    { label: "Nama", sortable: true, key: "name" },
+                    { label: "Divisi", sortable: true, key: "division" },
+                    { label: "Event", sortable: true, key: "event" },
+                    { label: "Teritorial", sortable: false },
+                    { label: "Status", sortable: false },
+                    { label: "Aksi", sortable: false }
+                  ].map((col, i) => (
+                    <th
+                      key={i}
+                      onClick={() => col.sortable && requestSort(col.key!)}
+                      style={{
                         padding: '12px 14px',
-                        position: 'sticky',
-                        right: 0,
-                        backgroundColor: 'inherit',
-                        zIndex: 5,
-                        boxShadow: '-2px 0 5px rgba(0,0,0,0.02)',
-                        borderLeft: '1px solid #f1f3f5'
-                      }}>
-                        {mapped.action}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </Box>
-      </Card>
-    </Stack>
-  );
+                        textAlign: ["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'left',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#495057',
+                        textTransform: 'uppercase',
+                        borderBottom: '2px solid #e9ecef',
+                        letterSpacing: '0.5px',
+                        cursor: col.sortable ? 'pointer' : 'default',
+                        userSelect: 'none',
+                        position: col.label === "Aksi" ? 'sticky' : 'static',
+                        right: col.label === "Aksi" ? 0 : 'auto',
+                        backgroundColor: col.label === "Aksi" ? '#f8f9fa' : 'transparent',
+                        zIndex: col.label === "Aksi" ? 10 : 1,
+                        boxShadow: col.label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
+                      }}
+                    >
+                      <Flex align="center" gap={6} justify={["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'flex-start'}>
+                        {col.label}
+                        {col.sortable && (
+                          <FontAwesomeIcon
+                            icon={getSortIcon(col.key!)}
+                            size="xs"
+                            style={{
+                              color: sortConfig.key === col.key ? '#228be6' : '#adb5bd',
+                              opacity: sortConfig.key === col.key ? 1 : 0.5
+                            }}
+                          />
+                        )}
+                      </Flex>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading.includes("getdata") ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
+                      <LoadingOverlay visible />
+                      <Text c="dimmed">Memuat data...</Text>
+                    </td>
+                  </tr>
+                ) : filteredData.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
+                      <Text c="dimmed">Tidak ada data ditemukan</Text>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredData.map((item, idx) => {
+                    const mapped = mapData(item);
+                    return (
+                      <tr
+                        key={mapped.id}
+                        style={{ borderBottom: '1px solid #f1f3f5' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                      >
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={700}>{idx + 1}</Text></td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <Flex justify="center">
+                            {mapped.image}
+                          </Flex>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}><Text size="sm" fw={600}>{mapped.name}</Text></td>
+                        <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{mapped.division}</Text></td>
+                        <td style={{ padding: '12px 14px' }}><Text size="xs" lineClamp={2} style={{ maxWidth: 200 }}>{mapped.event}</Text></td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <Flex justify="center">
+                            <Badge variant="filled" color="blue" size="sm" style={{ width: 100 }}>
+                              {item.has_teritorial?.name || "Unknown"}
+                            </Badge>
+                          </Flex>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <Flex justify="center">
+                            <Badge
+                              variant="filled"
+                              color={item.status === "active" ? "green" : "red"}
+                              size="sm"
+                              style={{ width: 100 }}
+                            >
+                              {item.status === "active" ? "Active" : "Inactive"}
+                            </Badge>
+                          </Flex>
+                        </td>
+                        <td style={{
+                          padding: '12px 14px',
+                          position: 'sticky',
+                          right: 0,
+                          backgroundColor: 'inherit',
+                          zIndex: 5,
+                          boxShadow: '-2px 0 5px rgba(0,0,0,0.02)',
+                          borderLeft: '1px solid #f1f3f5'
+                        }}>
+                          {mapped.action}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </Box>
+        </Card>
+      </Stack>
+    );
+  };
 
   // View: Form Page
   const renderForm = () => (

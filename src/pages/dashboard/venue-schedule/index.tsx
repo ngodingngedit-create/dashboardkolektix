@@ -5,7 +5,7 @@ import moment from 'moment';
 import { Card, CardBody, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Skeleton } from '@nextui-org/react';
 import { DatePicker } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
-import { Badge, Divider, Flex, Image, Stack, Text, Title, Box } from '@mantine/core';
+import { Badge, Divider, Flex, Image, Stack, Text, Title, Box, TextInput as MantineTextInput, Textarea as MantineTextarea, Paper } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Get } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -28,6 +28,25 @@ const VenueSchedulePage = () => {
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [taskTitle, setTaskTitle] = useState('');
     const [taskDetails, setTaskDetails] = useState('');
+
+    // New Booking States
+    const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+    const [bookingTitle, setBookingTitle] = useState('');
+    const [bookingNotes, setBookingNotes] = useState('');
+    const [selectedSlot, setSelectedSlot] = useState<moment.Moment | null>(null);
+    const [selectedHour, setSelectedHour] = useState<number>(0);
+
+    const handleSaveBooking = () => {
+        if (!bookingTitle) {
+            toast.error('Please enter a title');
+            return;
+        }
+        // Logic to save can be added here
+        toast.success('Booking task saved locally');
+        setIsCreatingBooking(false);
+        setBookingTitle('');
+        setBookingNotes('');
+    };
 
     useEffect(() => {
         if (loggedUser) {
@@ -163,30 +182,14 @@ const VenueSchedulePage = () => {
     };
 
     const handleCellClick = (day: moment.Moment, hour: number) => {
-        const timeStr = day.clone().hour(hour).minute(0).format('DD MMMM YYYY, HH:mm');
-        modals.openConfirmModal({
-            title: 'Schedule Availability',
-            centered: true,
-            radius: 'xl',
-            children: (
-                <Text size="sm">
-                    This slot is available for <b>{timeStr}</b>. Would you like to create a new booking for this time in POS?
-                </Text>
-            ),
-            labels: { confirm: 'Go to POS', cancel: 'Close' },
-            confirmProps: { radius: 'xl', color: 'blue' },
-            cancelProps: { radius: 'xl', variant: 'subtle' },
-            onConfirm: () => {
-                router.push({
-                    pathname: '/dashboard/venue-pos',
-                    query: { 
-                        date: day.format('YYYY-MM-DD'),
-                        start_time: moment().hour(hour).minute(0).format('HH:mm'),
-                        venue_id: selectedVenue?.id
-                    }
-                });
-            }
-        });
+        setSelectedSlot(day);
+        setSelectedHour(hour);
+        setIsCreatingBooking(true);
+        setBookingTitle('');
+        setBookingNotes('');
+        
+        // Scroll to top to see the form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const getBookingsForDayAndHour = (day: moment.Moment, hour: number) => {
@@ -377,6 +380,62 @@ const VenueSchedulePage = () => {
 
                 {/* ── MAIN CONTENT AREA ── */}
                 <div className="flex-1 min-w-0">
+                    {isCreatingBooking && (
+                        <div className="bg-white border border-blue-100 rounded-2xl p-6 mb-6 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Stack gap="md">
+                                <Flex align="center" gap="sm">
+                                    <Box className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                                        <Icon icon="solar:calendar-add-bold-duotone" width={20} />
+                                    </Box>
+                                    <Title order={4} className="text-slate-800">Add Booking Task</Title>
+                                </Flex>
+                                <Divider />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">What needs to be booked?</Text>
+                                        <MantineTextInput 
+                                            placeholder="e.g. Corporate Meeting, Wedding Rehearsal..." 
+                                            value={bookingTitle} 
+                                            onChange={(e) => setBookingTitle(e.target.value)}
+                                            radius="md"
+                                            size="md"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Selected Date</Text>
+                                        <Paper withBorder p="sm" radius="md" bg="gray.0">
+                                            <Flex align="center" gap="sm">
+                                                <Icon icon="solar:calendar-minimalistic-linear" width={18} className="text-slate-400" />
+                                                <Text fw={600} size="sm">{selectedSlot?.format('DD MMMM YYYY')}</Text>
+                                            </Flex>
+                                        </Paper>
+                                    </div>
+                                    <div>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Time Slot</Text>
+                                        <Paper withBorder p="sm" radius="md" bg="gray.0">
+                                            <Flex align="center" gap="sm">
+                                                <Icon icon="solar:clock-circle-linear" width={18} className="text-slate-400" />
+                                                <Text fw={600} size="sm">
+                                                    {moment().hour(selectedHour).minute(0).format('HH:mm')} - {moment().hour(selectedHour + 1).minute(0).format('HH:mm')}
+                                                </Text>
+                                            </Flex>
+                                        </Paper>
+                                    </div>
+                                    <div className="col-span-1 md:col-span-2">
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Additional Notes</Text>
+                                        <MantineTextarea 
+                                            placeholder="Add specific requirements or notes here..." 
+                                            value={bookingNotes} 
+                                            onChange={(e) => setBookingNotes(e.target.value)}
+                                            radius="md"
+                                            minRows={3}
+                                        />
+                                    </div>
+                                </div>
+                            </Stack>
+                        </div>
+                    )}
+
                     {activeView === 'CALENDAR' ? (
                         <Card className="border border-light-grey shadow-sm rounded-2xl overflow-hidden h-[850px]" shadow="none">
                             {/* Calendar Header */}
@@ -588,6 +647,51 @@ const VenueSchedulePage = () => {
                     )}
                 </div>
             </div>
+
+            {/* Sticky Footer for Creating Booking */}
+            {isCreatingBooking && (
+                <div 
+                    className="booking-sticky-footer"
+                    style={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: 'white',
+                        padding: '16px 40px',
+                        borderTop: '1px solid #e9ecef',
+                        boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
+                        zIndex: 40,
+                        transition: 'left 0.3s ease',
+                    }}
+                >
+                    <div className="max-w-[1600px] mx-auto flex justify-end gap-4">
+                        <Button 
+                            variant="flat" 
+                            color="default" 
+                            radius="lg"
+                            startContent={<Icon icon="mdi:close" width={18} />}
+                            onClick={() => {
+                                setIsCreatingBooking(false);
+                                setBookingTitle('');
+                                setBookingNotes('');
+                            }}
+                            className="px-8 font-bold text-slate-600 h-11"
+                        >
+                            Batal
+                        </Button>
+                        <Button 
+                            color="primary" 
+                            radius="lg"
+                            startContent={<Icon icon="mdi:check" width={18} />}
+                            onClick={handleSaveBooking}
+                            className="bg-[#194e9e] px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
+                        >
+                            Simpan Task
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

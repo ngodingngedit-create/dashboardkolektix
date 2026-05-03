@@ -47,7 +47,8 @@ import config from "@/Config";
 // Types
 interface Voucher {
   id: number;
-  event_id: number;
+  event_id: number | null;
+  product_id: number | null;
   code: string;
   discount: number;
   type: "persentase" | "nominal";
@@ -211,7 +212,7 @@ const VoucherPage = () => {
   const handleEditClick = (voucher: Voucher) => {
     setFormData({
       id: voucher.id,
-      event_id: voucher.event_id.toString(),
+      event_id: voucher.event_id?.toString() || "",
       code: voucher.code,
       discount: voucher.discount,
       type: voucher.type,
@@ -308,7 +309,7 @@ const VoucherPage = () => {
           (v.event?.name || "").toLowerCase().includes(searchTerm.toLowerCase());
         
         // Event Filter
-        const matchesEvent = eventFilter === "all" || v.event_id.toString() === eventFilter;
+        const matchesEvent = eventFilter === "all" || v.event_id?.toString() === eventFilter;
         
         // Type Filter
         const matchesType = typeFilter === "all" || v.type === typeFilter;
@@ -344,9 +345,9 @@ const VoucherPage = () => {
         if (sortConfig.key === 'code') {
           valA = (a.code || "").toLowerCase();
           valB = (b.code || "").toLowerCase();
-        } else if (sortConfig.key === 'event') {
-          valA = (a.event?.name || "").toLowerCase();
-          valB = (b.event?.name || "").toLowerCase();
+        } else if (sortConfig.key === 'type') {
+          valA = a.event_id && !a.product_id ? "event" : "produk";
+          valB = b.event_id && !b.product_id ? "event" : "produk";
         } else if (sortConfig.key === 'stock') {
           return sortConfig.direction === 'asc' ? (a.stock || 0) - (b.stock || 0) : (b.stock || 0) - (a.stock || 0);
         }
@@ -385,8 +386,8 @@ const VoucherPage = () => {
             onClick={handleCreateClick} 
             color="blue" 
             size="md" 
-            radius="xl" 
-            px={18}
+            radius="lg" 
+            px={24}
             title="Buat Voucher Baru"
           >
             <FontAwesomeIcon icon={faPlus} />
@@ -400,7 +401,7 @@ const VoucherPage = () => {
           <Select placeholder="Semua Event" value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: "Semua Event" }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
           <Select placeholder="Semua Tipe" value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: "Semua Tipe" }, { value: "persentase", label: "Persentase" }, { value: "nominal", label: "Nominal" }]} style={{ width: 140 }} />
           <Select placeholder="Semua Status" value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: "Semua Status" }, { value: "active", label: "Aktif" }, { value: "inactive", label: "Nonaktif" }, { value: "expired", label: "Kadaluarsa" }]} style={{ width: 140 }} />
-          <Button variant="filled" color="blue" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
+          <Button variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
           <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); fetchVouchers(1); }}>Reset</Button>
         </Flex>
       </Card>
@@ -410,14 +411,14 @@ const VoucherPage = () => {
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
-                {["No", "Kode Voucher", "Nama Event", "Diskon", "Periode", "Kuota", "Stok", "Status", "Aksi"].map((label, i) => (
-                  <th key={i} onClick={() => ["Kode Voucher", "Nama Event", "Stok"].includes(label) && requestSort(label === "Kode Voucher" ? 'code' : label === "Nama Event" ? 'event' : 'stock')} style={{
-                    padding: '14px', textAlign: ["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: ["Kode Voucher", "Nama Event", "Stok"].includes(label) ? 'pointer' : 'default',
+                {["No", "Kode Voucher", "Tipe Voucher", "Diskon", "Periode", "Kuota", "Stok", "Status", "Aksi"].map((label, i) => (
+                  <th key={i} onClick={() => ["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) && requestSort(label === "Kode Voucher" ? 'code' : label === "Tipe Voucher" ? 'type' : 'stock')} style={{
+                    padding: '14px', textAlign: ["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: ["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) ? 'pointer' : 'default',
                     position: label === "Aksi" ? 'sticky' : 'static', right: label === "Aksi" ? 0 : 'auto', backgroundColor: label === "Aksi" ? '#f8f9fa' : 'transparent', zIndex: label === "Aksi" ? 10 : 1, boxShadow: label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
                   }}>
                     <Flex align="center" gap={6} justify={["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'flex-start'}>
                       {label}
-                      {["Kode Voucher", "Nama Event", "Stok"].includes(label) && <FontAwesomeIcon icon={getSortIcon(label === "Kode Voucher" ? 'code' : label === "Nama Event" ? 'event' : 'stock')} size="xs" style={{ color: '#adb5bd' }} />}
+                      {["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) && <FontAwesomeIcon icon={getSortIcon(label === "Kode Voucher" ? 'code' : label === "Tipe Voucher" ? 'type' : 'stock')} size="xs" style={{ color: '#adb5bd' }} />}
                     </Flex>
                   </th>
                 ))}
@@ -441,7 +442,11 @@ const VoucherPage = () => {
                       <tr key={v.id} style={{ borderBottom: '1px solid #f1f3f5' }}>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={700}>{(pagination.current_page - 1) * pagination.per_page + idx + 1}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm" fw={700} c="blue">{v.code}</Text></td>
-                        <td style={{ padding: '12px 14px' }}><Text size="sm" fw={500}>{v.event?.name || v.event_id}</Text></td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <Badge variant="light" color={v.event_id && !v.product_id ? "blue" : "orange"} size="sm">
+                            {v.event_id && !v.product_id ? "Event" : "Produk"}
+                          </Badge>
+                        </td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Badge variant="light" color={v.type === "persentase" ? "blue" : "green"}>{v.type === "persentase" ? `${v.discount}%` : `Rp ${v.discount.toLocaleString()}`}</Badge></td>
                         <td style={{ padding: '12px 14px' }}><Text size="xs" c="dimmed">{moment(v.date_start).format("DD/MM/YY")} - {moment(v.date_end).format("DD/MM/YY")}</Text></td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={600}>{v.used_count}/{v.max_use}</Text></td>

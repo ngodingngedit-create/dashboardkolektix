@@ -67,7 +67,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, onCancel, onSave }: an
                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                             <Icon icon="mdi:cube-outline" className="text-blue-500" width={20} />
                         </div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{project?.name || "New Project"}</h2>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{project?.name || "New Task"}</h2>
                         <div className="flex items-center gap-2 ml-2 px-2 py-1 bg-slate-100 rounded-md">
                              <Icon icon="mdi:account-group" className="text-slate-500" width={16} />
                              <span className="text-[10px] font-bold text-slate-600">{project?.members?.length || 0}</span>
@@ -78,26 +78,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, onCancel, onSave }: an
 
                 <div className="flex items-center gap-3">
                     {viewMode === 'FORM' ? (
-                        <div className="flex gap-2">
-                             <Button 
-                                variant="light" 
-                                size="sm"
-                                onClick={onCancel}
-                                className="text-slate-400 font-bold h-9 rounded-lg"
-                                startContent={<Icon icon="mdi:close" width={18} />}
-                            >
-                                Batal
-                            </Button>
-                            <Button 
-                                color="primary" 
-                                size="sm"
-                                onClick={onSave}
-                                className="bg-blue-600 font-bold h-9 rounded-lg shadow-md shadow-blue-200"
-                                startContent={<Icon icon="mdi:content-save" width={18} />}
-                            >
-                                Simpan Project
-                            </Button>
-                        </div>
+                        null
                     ) : (
                         <Button 
                             color="primary" 
@@ -462,25 +443,70 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                 </div>
                             </div>
                         </ModalBody>
-                        <ModalFooter className="justify-between">
-                            {!readOnly ? (
-                                <>
-                                    <Button variant="light" color="danger" onClick={() => { onDelete(); onClose(); }}>
-                                        <FontAwesomeIcon icon={faTrash} className="mr-2" />
-                                        Delete Issue
-                                    </Button>
-                                    <div className="flex gap-2">
-                                        <Button variant="light" onPress={onClose}>Cancel</Button>
-                                        <Button color="primary" onClick={handleSave}>Apply Changes</Button>
-                                    </div>
-                                </>
-                            ) : (
-                                <Button variant="light" onPress={onClose} className="w-full">Close</Button>
-                            )}
-                        </ModalFooter>
+                        <ModalFooter className="border-t border-light-grey bg-white/50 h-2" />
                     </>
                 )}
             </ModalContent>
+
+            {/* Global Sticky Footer for Modal Actions */}
+            {isOpen && (
+                <div 
+                    className="fixed bottom-0 left-0 md:left-[65px] transition-all duration-300"
+                    style={{
+                        right: 0,
+                        backgroundColor: 'white',
+                        padding: '16px 40px',
+                        borderTop: '1px solid #e9ecef',
+                        boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+                        zIndex: 10000, 
+                    }}
+                >
+                    <div className="flex justify-between items-center px-10">
+                        {!readOnly ? (
+                            <>
+                                <Button 
+                                    variant="light" 
+                                    color="danger" 
+                                    onClick={() => { onDelete(); onOpenChange(false); }}
+                                    startContent={<Icon icon="mdi:trash-can-outline" width={18} />}
+                                    className="font-bold text-red-500"
+                                >
+                                    Hapus Task
+                                </Button>
+                                <div className="flex gap-4">
+                                    <Button 
+                                        variant="flat" 
+                                        onPress={() => onOpenChange(false)}
+                                        startContent={<Icon icon="mdi:close" width={18} />}
+                                        className="font-bold text-slate-600 px-8 h-11"
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button 
+                                        color="primary" 
+                                        onClick={handleSave}
+                                        startContent={<Icon icon="mdi:check" width={18} />}
+                                        className="bg-[#194e9e] font-bold text-white shadow-lg shadow-blue-100 px-10 h-11"
+                                    >
+                                        Simpan Perubahan
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="w-full flex justify-end">
+                                <Button 
+                                    variant="flat" 
+                                    onPress={() => onOpenChange(false)} 
+                                    className="font-bold px-10 h-11"
+                                    startContent={<Icon icon="mdi:close" width={18} />}
+                                >
+                                    Tutup
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </Modal>
     );
 };
@@ -804,15 +830,15 @@ const IssueManagement = () => {
             <div className="flex-1 overflow-y-auto p-10 bg-white">
                 <div className="max-w-4xl mx-auto space-y-10">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 mb-2">Project Details</h1>
-                        <p className="text-slate-400 text-sm">Lengkapi rincian project Anda di bawah ini</p>
+                        <h1 className="text-2xl font-black text-slate-800 mb-2">Task Details</h1>
+                        <p className="text-slate-400 text-sm">Lengkapi rincian task Anda di bawah ini</p>
                     </div>
 
                     <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
                         <CardBody className="p-8">
                             <div className="grid grid-cols-2 gap-x-10 gap-y-8">
                                 <Input
-                                    label="Project Name *"
+                                    label="Task Name *"
                                     placeholder="e.g. Mobile Ticketing Platform"
                                     labelPlacement="outside"
                                     value={formData.name || ""}
@@ -842,7 +868,7 @@ const IssueManagement = () => {
                                 <div className="col-span-2">
                                     <Textarea
                                         label="Description"
-                                        placeholder="Describe the purpose of this project..."
+                                        placeholder="Describe the purpose of this task..."
                                         labelPlacement="outside"
                                         value={formData.description || ""}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -877,6 +903,45 @@ const IssueManagement = () => {
                         </CardBody>
                     </Card>
                 </div>
+
+                {/* Sticky Footer for Form */}
+                {!isReadOnly && (
+                    <div 
+                        style={{
+                            position: 'fixed',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            backgroundColor: 'white',
+                            padding: '16px 40px',
+                            borderTop: '1px solid #e9ecef',
+                            boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
+                            zIndex: 40,
+                        }}
+                    >
+                        <div className="flex justify-end gap-4 px-10">
+                            <Button 
+                                variant="flat" 
+                                color="default" 
+                                radius="lg"
+                                startContent={<Icon icon="mdi:close" width={18} />}
+                                onClick={() => setViewMode('BOARD')}
+                                className="px-8 font-bold text-slate-600 h-11"
+                            >
+                                Batal
+                            </Button>
+                            <Button 
+                                color="primary" 
+                                radius="lg"
+                                startContent={<Icon icon="mdi:check" width={18} />}
+                                onClick={handleSubmit}
+                                className="bg-blue-600 px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
+                            >
+                                Simpan Task
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };

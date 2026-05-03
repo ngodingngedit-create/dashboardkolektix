@@ -278,10 +278,10 @@ const Auth = () => {
           {step === 0 && (
             <div className={`flex flex-col justify-center items-center transition-opacity duration-100 ${step === 0 ? "opacity-100" : "opacity-0"}`}>
               <Image src={Logo} alt="Logo" className="w-1/2" />
-              <h2 className="text-dark font-semibold text-xl mt-4 text-center">Masuk sebagai Creator/Staff</h2>
+              <h2 className="text-dark font-semibold text-xl mt-4 text-center">Masuk ke Akun Creator</h2>
               <div className="flex">
-                <p className="text-grey text-[12px] mb-2 text-center">
-                  Masukan akunmu yang sudah terdaftar sebagai Creator/Staff,
+                <p className="text-grey text-[14px] mt-1 mb-2 text-center">
+                  Belum punya akun?
                   <span
                     className="cursor-pointer text-primary-base font-semibold"
                     onClick={() => {
@@ -289,7 +289,7 @@ const Auth = () => {
                     }}
                   >
                     {" "}
-                    Daftar Akun
+                    Daftar Creator
                   </span>
                 </p>
               </div>
