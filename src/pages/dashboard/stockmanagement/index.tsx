@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Get } from "@/utils/REST";
 import fetch from "@/utils/fetch";
 import { notifications } from "@mantine/notifications";
+import { useListState } from "@mantine/hooks";
 import {
   Card,
   Title,
@@ -22,8 +23,19 @@ import {
   ScrollArea,
   Tabs,
   Stack,
+  Pagination
 } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { 
+  faSort, 
+  faSortUp, 
+  faSortDown, 
+  faArrowsRotate, 
+  faPencil, 
+  faEye,
+  faPlus 
+} from "@fortawesome/free-solid-svg-icons";
 import TableData from "@/components/TableData";
 import {
   Table,
@@ -77,12 +89,16 @@ const StockManagement = () => {
   const [productsData, setProductsData] = useState<any[]>([]);
   const [allProductsData, setAllProductsData] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [loading, setLoading] = useListState<string>([]);
   const [submitting, setSubmitting] = useState(false);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [selectedProductFilter, setSelectedProductFilter] = useState("all");
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>("desc");
   const [tableState, setTableState] = useState<{ page: number; perPage: number }>({ page: 1, perPage: 10 });
 
   const productOptions = useMemo(() => {
@@ -108,9 +124,56 @@ const StockManagement = () => {
         h.product_id?.toString() === selectedProductFilter ||
         h.product?.id?.toString() === selectedProductFilter;
 
-      return matchesSearch && matchesProduct;
+    return matchesSearch && matchesProduct;
     });
   }, [historyData, historySearchQuery, selectedProductFilter]);
+
+  const sortedHistory = useMemo(() => {
+    let result = [...filteredHistory];
+    if (sortBy && sortDir) {
+      result.sort((a, b) => {
+        let valA: any = "";
+        let valB: any = "";
+        
+        if (sortBy === 'date') {
+          valA = new Date(a.created_at || a.date || "").getTime();
+          valB = new Date(b.created_at || b.date || "").getTime();
+        } else if (sortBy === 'reference') {
+          valA = (a.reference_type || a.reference || "").toLowerCase();
+          valB = (b.reference_type || b.reference || "").toLowerCase();
+        } else if (sortBy === 'product') {
+          valA = (a.variant ? `${a.product?.product_name || "-"} - ${a.variant.varian_name}` : a.product?.product_name || a.product || "-").toLowerCase();
+          valB = (b.variant ? `${b.product?.product_name || "-"} - ${b.variant.varian_name}` : b.product?.product_name || b.product || "-").toLowerCase();
+        }
+
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [filteredHistory, sortBy, sortDir]);
+
+  const pagedHistory = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return sortedHistory.slice(start, start + rowsPerPage);
+  }, [sortedHistory, currentPage, rowsPerPage]);
+
+  const totalPages = Math.ceil(sortedHistory.length / rowsPerPage);
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : sortDir === 'desc' ? null : 'asc');
+    } else {
+      setSortBy(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ active, dir }: { active: boolean, dir: 'asc' | 'desc' | null }) => {
+    if (!active || !dir) return <FontAwesomeIcon icon={faSort} size="xs" style={{ color: '#adb5bd', opacity: 0.5 }} />;
+    return <FontAwesomeIcon icon={dir === 'asc' ? faSortUp : faSortDown} size="xs" style={{ color: '#228be6' }} />;
+  };
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -147,6 +210,7 @@ const StockManagement = () => {
   }, [searchQuery, allProductsData]);
 
   const fetchHistory = async (creatorId: number) => {
+    setLoading.append("getdata");
     try {
       const res: any = await Get("stock-management", { creator_id: creatorId });
       if (res?.data) {
@@ -160,10 +224,13 @@ const StockManagement = () => {
       }
     } catch (e) {
       console.error("Failed to fetch history:", e);
+    } finally {
+      setLoading.filter((e) => e !== "getdata");
     }
   };
 
   const fetchProducts = async (creatorId: number) => {
+    setLoading.append("getproducts");
     try {
       // First fetch to get pagination info
       const firstRes: any = await Get("product-bymerchant", { creator_id: creatorId, per_page: 20, page: 1 });
@@ -190,6 +257,8 @@ const StockManagement = () => {
       setProductsData(filtered);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading.filter((e) => e !== "getproducts");
     }
   };
 
@@ -351,13 +420,16 @@ const StockManagement = () => {
   // History data uses API now
 
   const renderHistory = () => (
-    <Box mt="md">
+    <Box mt={0}>
       <Stack gap="xs" mb="md">
         <Flex align="center" justify="space-between" wrap="wrap" gap="sm">
           <Group gap="sm">
             <Select
               value={rowsPerPage.toString()}
-              onChange={(val) => setRowsPerPage(Number(val))}
+              onChange={(val) => {
+                setRowsPerPage(Number(val));
+                setCurrentPage(1);
+              }}
               data={["10", "20", "50", "100"]}
               style={{ width: 80 }}
               size="sm"
@@ -369,7 +441,10 @@ const StockManagement = () => {
               placeholder="Semua Produk"
               data={[{ value: "all", label: "Semua Produk" }, ...productOptions]}
               value={selectedProductFilter}
-              onChange={(val) => setSelectedProductFilter(val || "all")}
+              onChange={(val) => {
+                setSelectedProductFilter(val || "all");
+                setCurrentPage(1);
+              }}
               style={{ minWidth: 200 }}
               size="sm"
               searchable
@@ -379,98 +454,167 @@ const StockManagement = () => {
               placeholder="Cari data..."
               leftSection={<Icon icon="uiw:search" width={14} />}
               value={historySearchQuery}
-              onChange={(e) => setHistorySearchQuery(e.target.value)}
+              onChange={(e) => {
+                setHistorySearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               size="sm"
               style={{ minWidth: 250 }}
             />
+            <Button 
+              variant="filled" 
+              color="blue" 
+              size="sm"
+              onClick={() => user?.has_creator?.id && fetchHistory(user.has_creator.id)} 
+              loading={loading.includes("getdata")}
+            >
+              <FontAwesomeIcon icon={faArrowsRotate} />
+            </Button>
           </Group>
         </Flex>
         <Text size="xs" c="dimmed">
-          Menampilkan {Math.min((tableState.page - 1) * tableState.perPage + 1, filteredHistory.length)}-
-          {Math.min(tableState.page * tableState.perPage, filteredHistory.length)} dari {filteredHistory.length} data
+          Menampilkan {Math.min((currentPage - 1) * rowsPerPage + 1, sortedHistory.length)}-
+          {Math.min(currentPage * rowsPerPage, sortedHistory.length)} dari {sortedHistory.length} data
         </Text>
       </Stack>
 
-      <TableData
-        tablekey="stock-history"
-        withRowIndex
-        searchField={false}
-        data={filteredHistory}
-        options={{ highlightOnHover: true }}
-        canSort={["date", "reference", "product"]}
-        onChangeRaw={(state) => setTableState({ page: Number(state.page), perPage: Number(state.perpage) })}
-        headerLabel={{
-          date: "Tanggal",
-          reference: "Referensi",
-          product: "Produk",
-          alteration: "Perubahan",
-          action: "Aksi",
-        }}
-        mapData={(h: any) => {
-          const dir = getDirection(h.reference_type || h.reference);
-          const alterationNum = h.qty || (typeof h.alteration === 'string' ? h.alteration.replace(/\D/g, "") : h.alteration) || 0;
-          const productName = h.variant
-            ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}`
-            : h.product?.product_name || h.product || "-";
-          const dateObj = new Date(h.created_at || h.date || "");
-          const dateStr = !isNaN(dateObj.getTime())
-            ? dateObj.toLocaleString("id-ID", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })
-            : h.date || "-";
+      <Card withBorder p={0} radius="md" shadow="sm" style={{ overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+        <Box style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', width: 60 }}>
+                  NO
+                </th>
+                <th onClick={() => handleSort('date')} style={{ padding: '14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: 'pointer' }}>
+                  <Flex align="center" gap={6}>
+                    TANGGAL <SortIcon active={sortBy === 'date'} dir={sortDir} />
+                  </Flex>
+                </th>
+                <th onClick={() => handleSort('reference')} style={{ padding: '14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: 'pointer' }}>
+                  <Flex align="center" gap={6}>
+                    REFERENSI <SortIcon active={sortBy === 'reference'} dir={sortDir} />
+                  </Flex>
+                </th>
+                <th onClick={() => handleSort('product')} style={{ padding: '14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: 'pointer' }}>
+                  <Flex align="center" gap={6}>
+                    PRODUK <SortIcon active={sortBy === 'product'} dir={sortDir} />
+                  </Flex>
+                </th>
+                <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef' }}>
+                  PERUBAHAN
+                </th>
+                <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', position: 'sticky', right: 0, backgroundColor: '#f8f9fa', zIndex: 10, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)' }}>
+                  AKSI
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading.includes("getdata") ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>
+                    <Text c="dimmed" fw={500}>Memuat data...</Text>
+                  </td>
+                </tr>
+              ) : pagedHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>
+                    <Text c="dimmed" fw={500}>Tidak ada data ditemukan</Text>
+                  </td>
+                </tr>
+              ) : (
+                pagedHistory.map((h, idx) => {
+                  const dir = getDirection(h.reference_type || h.reference);
+                  const alterationNum = h.qty || (typeof h.alteration === 'string' ? h.alteration.replace(/\D/g, "") : h.alteration) || 0;
+                  const productName = h.variant
+                    ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}`
+                    : h.product?.product_name || h.product || "-";
+                  const dateObj = new Date(h.created_at || h.date || "");
+                  const dateStr = !isNaN(dateObj.getTime())
+                    ? dateObj.toLocaleString("id-ID", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : h.date || "-";
 
-          return {
-            date: dateStr,
-            reference: h.reference_type || h.reference,
-            product: productName,
-            alteration: (
-              <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm">
-                {(dir === "reduce" ? "-" : "+") + alterationNum}
-              </Badge>
-            ),
-            action: (
-              <Group gap={5}>
-                <ActionIcon
-                  variant="light"
-                  color="blue"
-                  size="md"
-                  radius="md"
-                  onClick={() => {
-                    if (h && h.product) {
-                      handleProductOptionSubmit(h.product.product_name);
-                      setIsFormVisible(true);
-                    }
-                  }}
-                >
-                  <Icon icon="solar:pen-bold-duotone" width={18} />
-                </ActionIcon>
-                <ActionIcon
-                  variant="light"
-                  color="green"
-                  size="md"
-                  radius="md"
-                  onClick={() => {
-                    const product = h.product || allProductsData.find((p: any) => p.id === h.product_id);
-                    const slug = product?.slug;
-                    if (slug) {
-                      router.push(`/dashboard/merch/${slug}`);
-                    } else {
-                      notifications.show({
-                        title: "Info",
-                        message: "Slug produk tidak ditemukan",
-                        color: "orange"
-                      });
-                    }
-                  }}
-                >
-                  <Icon icon="solar:eye-bold-duotone" width={18} />
-                </ActionIcon>
-              </Group>
-            ),
-          };
-        }}
-      />
+                  return (
+                    <tr key={h.id || idx} style={{ borderBottom: '1px solid #f1f3f5' }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <Text size="xs" fw={700}>{(currentPage - 1) * rowsPerPage + idx + 1}</Text>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Text size="sm">{dateStr}</Text>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Badge variant="light" color="gray" size="sm" radius="sm">
+                          {h.reference_type || h.reference}
+                        </Badge>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Text size="sm" fw={500}>{productName}</Text>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm" size="md">
+                          {(dir === "reduce" ? "-" : "+") + alterationNum}
+                        </Badge>
+                      </td>
+                      <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', textAlign: 'center', borderLeft: '1px solid #f1f3f5' }}>
+                        <Group gap={8} justify="center">
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            onClick={() => {
+                              if (h && h.product) {
+                                handleProductOptionSubmit(h.product.product_name);
+                                setIsFormVisible(true);
+                              }
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faPencil} size="xs" />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="green"
+                            onClick={() => {
+                              const product = h.product || allProductsData.find((p: any) => p.id === h.product_id);
+                              const slug = product?.slug;
+                              if (slug) {
+                                router.push(`/dashboard/merch/${slug}`);
+                              } else {
+                                notifications.show({
+                                  title: "Info",
+                                  message: "Slug produk tidak ditemukan",
+                                  color: "orange"
+                                });
+                              }
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faEye} size="xs" />
+                          </ActionIcon>
+                        </Group>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </Box>
+      </Card>
+      
+      {sortedHistory.length > 0 && (
+        <Flex justify="space-between" align="center" mt="md">
+          <Text size="xs" c="dimmed">Total {sortedHistory.length} riwayat</Text>
+          <Pagination 
+            value={currentPage} 
+            onChange={setCurrentPage} 
+            total={totalPages} 
+            radius="md" 
+            size="sm" 
+            withEdges 
+          />
+        </Flex>
+      )}
     </Box>
   );
 
@@ -739,14 +883,7 @@ const StockManagement = () => {
           {isFormVisible ? (
             renderForm()
           ) : (
-            <Card p="xl" radius="lg" className="border border-light-grey shadow-sm">
-              <Group mb="md">
-                <Icon icon="solar:history-bold-duotone" width={24} className="text-blue-500" />
-                <Title order={4} className="text-gray-800">
-                  Riwayat Stock Movement
-                </Title>
-              </Group>
-              <Divider mb="xl" />
+            <Card p="lg" radius="lg" className="border border-light-grey shadow-sm">
               {renderHistory()}
             </Card>
           )}

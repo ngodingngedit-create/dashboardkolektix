@@ -1,4 +1,4 @@
-import { Badge, Flex, Select, Stack, Text, Title, Card, Box, Input, Pagination, Button } from "@mantine/core";
+import { Badge, Flex, Select, Stack, Text, Title, Card, Box, Input, Pagination, Button, Modal, Group } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useListState } from "@mantine/hooks";
 import { EventListResponse, TransactionListResponse } from "../type";
@@ -7,7 +7,8 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { notifications } from "@mantine/notifications";
 
 const CheckinReport = () => {
   const [isr, setIsr] = useState(false);
@@ -15,7 +16,14 @@ const CheckinReport = () => {
   const [eventList, setEventList] = useState<EventListResponse[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<number>();
   const [loading, setLoading] = useListState<string>();
-  
+
+  // New state for Report Type and Invitation data
+  const [reportType, setReportType] = useState<"eticket" | "invitation">("eticket");
+  const [invitationData, setInvitationData] = useState<any[]>([]);
+  const [isCheckinModalOpen, setIsCheckinModalOpen] = useState(false);
+  const [selectedCheckin, setSelectedCheckin] = useState<any>(null);
+  const [checkingIn, setCheckingIn] = useState(false);
+
   // Table state matching report.tsx standard
   const [searchValue, setSearchValue] = useState("");
   const [sortBy, setSortBy] = useState<string>("no");
@@ -39,7 +47,7 @@ const CheckinReport = () => {
     if (selectedEvent) {
       getData();
     }
-  }, [selectedEvent]);
+  }, [selectedEvent, reportType]);
 
   const getEvent = async () => {
     setLoading.append("getevent");
@@ -71,10 +79,10 @@ const CheckinReport = () => {
 
       if (fullEvents.length > 0) {
         const creatorId = user?.has_creator?.id;
-        const filtered = creatorId 
+        const filtered = creatorId
           ? fullEvents.filter((e) => String(e.creator_id) === String(creatorId))
           : [];
-        
+
         setEventList(filtered);
         if (filtered.length > 0 && !selectedEvent) {
           setSelectedEvent(filtered[0].id);
@@ -92,35 +100,83 @@ const CheckinReport = () => {
 
     setLoading.append("getdata");
     setAllDataList([]);
+    setInvitationData([]);
 
     try {
-      const params = new URLSearchParams({
-        event_id: selectedEvent.toString(),
-        page: "1",
-        per_page: "999999",
-      });
+      if (reportType === "eticket") {
+        const params = new URLSearchParams({
+          event_id: selectedEvent.toString(),
+          page: "1",
+          per_page: "999999",
+        });
 
-      const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
-      const response = await axios.get(apiUrl, {
+        const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
+        const response = await axios.get(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${Cookies.get('token')}`
+          }
+        });
+
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          const verifiedData = response.data.data.filter((t: any) =>
+            t.payment_status?.toLowerCase() === 'verified' || t.transaction_status_id === 2
+          );
+          setAllDataList(verifiedData);
+        }
+      } else {
+        // Fetch Invitations
+        const response = await axios.get(`${config.wsUrl}invitations/event/${selectedEvent}`, {
+          params: { with_details: true },
+          headers: {
+            'Authorization': `Bearer ${Cookies.get('token')}`
+          }
+        });
+
+        const data = Array.isArray(response.data) ? response.data : response.data.data || [];
+        setInvitationData(data);
+      }
+    } catch (error: any) {
+      console.error("API Error:", error);
+    } finally {
+      setLoading.filter((e) => e != "getdata");
+    }
+  };
+
+  const handleManualCheckin = async () => {
+    if (!selectedCheckin) return;
+    setCheckingIn(true);
+    try {
+      const isEticket = reportType === "eticket";
+      const url = isEticket ? "event/scan-eticket" : "invitations/checkin";
+      const payload = isEticket 
+        ? { qr_code: selectedCheckin.qr_code } 
+        : { invitation_number: selectedCheckin.invitation_number };
+
+      const response = await axios.post(`${config.wsUrl}${url}`, payload, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('token')}`
         }
       });
 
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        const verifiedData = response.data.data.filter((t: any) => 
-          t.payment_status?.toLowerCase() === 'verified' || t.transaction_status_id === 2
-        );
-        
-        setAllDataList(verifiedData);
+      if (response.data?.success || response.data?.status === 200 || response.data?.status === true) {
+        notifications.show({
+          title: "Berhasil",
+          message: "Check-in manual berhasil dilakukan",
+          color: "green"
+        });
+        setIsCheckinModalOpen(false);
+        getData();
       } else {
-        setAllDataList([]);
+        throw new Error(response.data?.message || "Gagal melakukan check-in manual");
       }
     } catch (error: any) {
-      console.error("API Error:", error);
-      setAllDataList([]);
+      notifications.show({
+        title: "Gagal",
+        message: error.response?.data?.message || error.message || "Terjadi kesalahan",
+        color: "red"
+      });
     } finally {
-      setLoading.filter((e) => e != "getdata");
+      setCheckingIn(false);
     }
   };
 
@@ -128,28 +184,44 @@ const CheckinReport = () => {
   const processedData = useMemo(() => {
     let list: any[] = [];
     let absoluteRowNum = 1;
-    
-    allDataList.forEach((trans) => {
-      trans.tickets?.forEach((ticket) => {
-        const qty = parseInt(String(ticket.qty_ticket)) || 1;
-        for (let i = 0; i < qty; i++) {
-          const identity = trans.identities?.[i];
+
+    if (reportType === "eticket") {
+      allDataList.forEach((trans) => {
+        trans.tickets?.forEach((ticket) => {
+          const qty = parseInt(String(ticket.qty_ticket)) || 1;
+          for (let i = 0; i < qty; i++) {
+            const identity = trans.identities?.[i];
+            list.push({
+              no: absoluteRowNum++,
+              nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+              telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+              email: identity?.email || (trans.has_user as any)?.email || "-",
+              status_checkin: ticket.ticket_checkin_status === 1,
+              invoice: trans.invoice_no,
+              qr_code: ticket.etiket_number // Used for manual check-in
+            });
+          }
+        });
+      });
+    } else {
+      invitationData.forEach((invGroup) => {
+        invGroup.event_invitation_detail?.forEach((detail: any) => {
           list.push({
             no: absoluteRowNum++,
-            nama: identity?.full_name || (trans.has_user as any)?.name || "-",
-            telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
-            email: identity?.email || (trans.has_user as any)?.email || "-",
-            status_checkin: ticket.ticket_checkin_status === 1,
-            invoice: trans.invoice_no
+            nama: detail.fullname || "-",
+            telepon: detail.phone || "-",
+            email: detail.email || "-",
+            status_checkin: detail.checkin_status === 1,
+            invoice: detail.invitation_number // In invitation mode, we show invitation number
           });
-        }
+        });
       });
-    });
+    }
 
     // Filtering
     if (searchValue) {
       const lowerSearch = searchValue.toLowerCase();
-      list = list.filter(item => 
+      list = list.filter(item =>
         item.nama?.toLowerCase().includes(lowerSearch) ||
         item.telepon?.toLowerCase().includes(lowerSearch) ||
         item.email?.toLowerCase().includes(lowerSearch) ||
@@ -161,7 +233,7 @@ const CheckinReport = () => {
     list.sort((a, b) => {
       let valA = a[sortBy];
       let valB = b[sortBy];
-      
+
       if (typeof valA === 'string') valA = valA.toLowerCase();
       if (typeof valB === 'string') valB = valB.toLowerCase();
 
@@ -177,6 +249,13 @@ const CheckinReport = () => {
   // Pagination logic
   const totalItems = processedData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
+  // Stats calculation
+  const stats = useMemo(() => {
+    const total = processedData.length;
+    const checkin = processedData.filter(i => i.status_checkin).length;
+    return { total, checkin };
+  }, [processedData]);
+
   const pagedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return processedData.slice(start, start + itemsPerPage);
@@ -199,27 +278,44 @@ const CheckinReport = () => {
       <Flex justify="space-between" align="flex-end">
         <Stack gap={2}>
           <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-            Check-in Report
+            Check-in Report {reportType === "eticket" ? "E-Ticket" : "Invitation"}
           </Title>
           <Text size="sm" c="dimmed">
-            Daftar status kedatangan peserta berdasarkan tiket yang valid.
+            Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket" : "undangan"} yang valid.
           </Text>
         </Stack>
+
+        <Select
+          value={reportType}
+          onChange={(val) => {
+            if (val) {
+              setReportType(val as any);
+              setCurrentPage(1);
+            }
+          }}
+          data={[
+            { value: "eticket", label: "E-Ticket" },
+            { value: "invitation", label: "Invitation" },
+          ]}
+          radius="md"
+          style={{ width: 150 }}
+        />
       </Flex>
 
       <Card p={0} withBorder radius="md" style={{ overflow: 'hidden', border: '1px solid #f0f0f0' }}>
         {/* Filter Bar */}
         <Flex justify="space-between" align="center" p="md" bg="white" gap="md" wrap="wrap">
-          <Button
-            onClick={() => getData()}
-            loading={loading.includes("getdata")}
-            variant="filled"
-            color="blue"
-            px={12}
-            title="Refresh Data"
-          >
-            <FontAwesomeIcon icon={faArrowsRotate} />
-          </Button>
+          <Flex gap="md" align="center">
+            {/* Stats Cards */}
+            <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL {reportType === "eticket" ? "E-TICKET" : "INVITATION"}</Text>
+              <Text size="lg" fw={700}>{stats.total}</Text>
+            </Card>
+            <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL CHECKIN</Text>
+              <Text size="lg" fw={700} c="green">{stats.checkin}</Text>
+            </Card>
+          </Flex>
 
           <Flex gap="sm" align="center">
             <Select
@@ -261,10 +357,10 @@ const CheckinReport = () => {
               <tr style={{ backgroundColor: "#f5f7fa", borderBottom: "2px solid #e8e8e8" }}>
                 <th style={headerStyle(true)}>NO</th>
                 <th onClick={() => handleSort('invoice')} style={headerStyle(false, sortBy === 'invoice', sortDir)}>
-                  NOMOR INVOICE <SortIcon active={sortBy === 'invoice'} dir={sortDir} />
+                  {reportType === "eticket" ? "NOMOR INVOICE" : "NOMOR UNDANGAN"} <SortIcon active={sortBy === 'invoice'} dir={sortDir} />
                 </th>
                 <th onClick={() => handleSort('nama')} style={headerStyle(false, sortBy === 'nama', sortDir)}>
-                  NAMA PEMESAN <SortIcon active={sortBy === 'nama'} dir={sortDir} />
+                  NAMA <SortIcon active={sortBy === 'nama'} dir={sortDir} />
                 </th>
                 <th onClick={() => handleSort('telepon')} style={headerStyle(false, sortBy === 'telepon', sortDir)}>
                   NO. TELEPON <SortIcon active={sortBy === 'telepon'} dir={sortDir} />
@@ -275,21 +371,22 @@ const CheckinReport = () => {
                 <th onClick={() => handleSort('status_checkin')} style={headerStyle(false, sortBy === 'status_checkin', sortDir)}>
                   STATUS CHECK-IN <SortIcon active={sortBy === 'status_checkin'} dir={sortDir} />
                 </th>
+                <th style={headerStyle()}>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {loading.includes("getdata") ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "80px" }}>
-                    <Text fw={500} c="dimmed">Memuat data transaksi...</Text>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
+                    <Text fw={500} c="dimmed">Memuat data...</Text>
                   </td>
                 </tr>
               ) : pagedData.length > 0 ? (
                 pagedData.map((item, idx) => (
-                  <tr 
-                    key={idx} 
+                  <tr
+                    key={idx}
                     style={{ borderBottom: "1px solid #f0f0f0", transition: "background 0.2s" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} 
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                   >
                     <td style={cellStyle(true)}>
@@ -308,20 +405,40 @@ const CheckinReport = () => {
                       <Text size="sm" c="dimmed">{item.email}</Text>
                     </td>
                     <td style={cellStyle()}>
-                      <Badge 
-                        color={item.status_checkin ? "green" : "gray"} 
-                        variant="light" 
-                        size="sm" 
+                      <Badge
+                        color={item.status_checkin ? "green" : "gray"}
+                        variant="light"
+                        size="sm"
                         className="font-semibold px-3 py-1"
                       >
                         {item.status_checkin ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
                       </Badge>
                     </td>
+                    <td style={cellStyle()}>
+                      {!item.status_checkin && (
+                        <Button 
+                          size="compact-xs" 
+                          variant="light" 
+                          color="blue"
+                          leftSection={<FontAwesomeIcon icon={faCheckCircle} />}
+                          onClick={() => {
+                            setSelectedCheckin({
+                              ...item,
+                              invitation_number: item.invoice, // For invitation
+                              qr_code: item.qr_code // For eticket
+                            });
+                            setIsCheckinModalOpen(true);
+                          }}
+                        >
+                          Checkin Manual
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "80px" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
                     <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
                   </td>
                 </tr>
@@ -336,12 +453,12 @@ const CheckinReport = () => {
             <Text size="sm" c="dimmed">
               Menampilkan <strong>{((currentPage - 1) * itemsPerPage) + 1}</strong> sampai <strong>{Math.min(currentPage * itemsPerPage, totalItems)}</strong> dari <strong>{totalItems}</strong> data
             </Text>
-            
-            <Pagination 
-              total={totalPages} 
-              value={currentPage} 
-              onChange={setCurrentPage} 
-              radius="md" 
+
+            <Pagination
+              total={totalPages}
+              value={currentPage}
+              onChange={setCurrentPage}
+              radius="md"
               size="sm"
               withEdges
               color="blue"
@@ -349,8 +466,32 @@ const CheckinReport = () => {
           </Flex>
         )}
       </Card>
-      
-      <style dangerouslySetInnerHTML={{ __html: `
+
+      <Modal
+        opened={isCheckinModalOpen}
+        onClose={() => setIsCheckinModalOpen(false)}
+        title="Konfirmasi Check-in Manual"
+        centered
+        radius="md"
+      >
+        <Stack>
+          <Text size="sm">
+            Apakah Anda yakin ingin melakukan check-in manual untuk peserta berikut?
+          </Text>
+          <Box p="md" bg="gray.0" style={{ borderRadius: 8 }}>
+            <Text size="sm"><strong>Nama:</strong> {selectedCheckin?.nama}</Text>
+            <Text size="sm"><strong>{reportType === "eticket" ? "Invoice" : "No. Undangan"}:</strong> {selectedCheckin?.invoice}</Text>
+            {reportType === "eticket" && <Text size="sm"><strong>Kode Tiket:</strong> {selectedCheckin?.qr_code}</Text>}
+          </Box>
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => setIsCheckinModalOpen(false)}>Batal</Button>
+            <Button onClick={handleManualCheckin} loading={checkingIn} color="blue">Konfirmasi Check-in</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .mantine-Select-input, .mantine-Input-input {
           border-color: #e0e0e0;
         }

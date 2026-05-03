@@ -105,6 +105,7 @@ export default function KelolaCrew() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'name', direction: 'asc' });
   const [isStatsOpen, setIsStatsOpen] = useState(true);
 
@@ -584,6 +585,11 @@ export default function KelolaCrew() {
   const filteredData = useMemo(() => {
     let result = [...data];
 
+    // Division Filter
+    if (divisionFilter !== "all") {
+      result = result.filter(item => item.division === divisionFilter);
+    }
+
     // Search
     if (searchValue) {
       result = result.filter(item =>
@@ -650,7 +656,7 @@ export default function KelolaCrew() {
         <Button
           onClick={handleAddClick}
           leftSection={<FontAwesomeIcon icon={faPlus} />}
-          color="blue"
+          color="blue.4"
           size="md"
           radius="xl"
         >
@@ -747,7 +753,7 @@ export default function KelolaCrew() {
           <Flex gap={10}>
             <Button
               variant="filled"
-              color="blue"
+              color="blue.4"
               size="sm"
               onClick={() => getData()}
               loading={loading.includes("getdata")}
@@ -755,13 +761,27 @@ export default function KelolaCrew() {
               <FontAwesomeIcon icon={faArrowsRotate} />
             </Button>
           </Flex>
-          <TextInput
-            placeholder="Cari nama, divisi, atau event..."
-            leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            style={{ width: 300 }}
-          />
+          <Flex gap="sm" align="center">
+            <Select
+              placeholder="Filter Divisi"
+              data={[
+                { value: "all", label: "Semua Divisi" },
+                ...Array.from(new Set(data.map(c => c.division))).filter(Boolean).map(d => ({ value: d, label: d }))
+              ]}
+              value={divisionFilter}
+              onChange={(val) => setDivisionFilter(val || "all")}
+              style={{ width: 180 }}
+              radius="md"
+            />
+            <TextInput
+              placeholder="Cari nama, divisi, atau event..."
+              leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              style={{ width: 300 }}
+              radius="md"
+            />
+          </Flex>
         </Flex>
 
         <Box style={{ overflowX: 'auto' }}>

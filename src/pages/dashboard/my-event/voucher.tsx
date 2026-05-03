@@ -359,6 +359,12 @@ const VoucherPage = () => {
     return result;
   }, [vouchers, sortConfig, searchTerm, eventFilter, typeFilter, statusFilter]);
 
+  const stats = useMemo(() => {
+    const total = vouchers.length;
+    const used = vouchers.reduce((sum, v) => sum + (v.used_count || 0), 0);
+    return { total, used };
+  }, [vouchers]);
+
   const renderList = () => (
     <Stack gap={25}>
       <Flex gap={20} justify="space-between" align="center">
@@ -366,7 +372,26 @@ const VoucherPage = () => {
           <Title order={1} size="h2">Manajemen Voucher</Title>
           <Text size="sm" c="gray">Kelola voucher promo untuk event Anda</Text>
         </Stack>
-        <Button onClick={handleCreateClick} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">Buat Voucher Baru</Button>
+        <Flex gap="md" align="center">
+          <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL VOUCHER</Text>
+            <Text size="lg" fw={700}>{stats.total}</Text>
+          </Card>
+          <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL TERPAKAI</Text>
+            <Text size="lg" fw={700} c="blue">{stats.used}</Text>
+          </Card>
+          <Button 
+            onClick={handleCreateClick} 
+            color="blue" 
+            size="md" 
+            radius="xl" 
+            px={18}
+            title="Buat Voucher Baru"
+          >
+            <FontAwesomeIcon icon={faPlus} />
+          </Button>
+        </Flex>
       </Flex>
 
       <Card withBorder p="md" radius="md" shadow="sm">

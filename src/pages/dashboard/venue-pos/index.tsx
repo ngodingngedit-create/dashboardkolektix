@@ -1,7 +1,7 @@
 import { VenueProps } from "@/utils/globalInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { ActionIcon, Alert, Button, Card, Center, Divider, Flex, Image, Modal, NumberFormatter, NumberInput, Select, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
-import { DatePickerInput, TimeInput } from "@mantine/dates";
+import { Accordion, ActionIcon, Alert, Box, Button, Card, Center, Divider, Flex, Grid, Group, Image, Modal, NumberFormatter, NumberInput, Select, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
 import { VenueListResponse } from "../venue/type";
 import { useListState, useSetState } from "@mantine/hooks";
@@ -62,7 +62,7 @@ export default function VenuePos() {
 
                 <Flex className={`[&>*]:!flex-grow`} gap={20}>
                     <Stack>
-                        <Card withBorder radius={10} p={25}>
+                        <Card withBorder radius="xl" p={25}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="tabler:building" className="text-primary-base" />
@@ -78,7 +78,7 @@ export default function VenuePos() {
                                 />
 
                                 {selectedVenue && (
-                                    <Card withBorder radius={10} p="sm">
+                                    <Card withBorder radius="xl" p="sm">
                                         <Flex gap={10}>
                                             {selectedVenue?.venue_gallery[0] ? <Image src={selectedVenue?.venue_gallery[0].image_url} w={64} radius={8} /> : (
                                                 <Card w={64} h={64} radius={8} bg="gray.1"></Card>
@@ -93,91 +93,165 @@ export default function VenuePos() {
                             </Stack>
                         </Card>
 
-                        <Card withBorder radius={10} p={25}>
-                            <Stack>
-                                <Flex align="center" gap={10}>
-                                    <Icon icon="uil:calendar" className="text-primary-base" />
-                                    <Text size="sm" className={`!text-primary-base`}>Tanggal Booking</Text>
+                        <Card withBorder radius="xl" p={30} shadow="sm">
+                            <Stack gap="xl">
+                                <Flex align="center" gap={12}>
+                                    <Box className="p-2.5 rounded-xl bg-primary-base/10 text-primary-base">
+                                        <Icon icon="uil:calendar" width={24} />
+                                    </Box>
+                                    <Stack gap={0}>
+                                        <Text size="lg" fw={700} className="!text-gray-800">Tanggal Booking</Text>
+                                        <Text size="xs" c="dimmed">Pilih tanggal dan durasi penyewaan venue</Text>
+                                    </Stack>
                                 </Flex>
 
-                                <Flex gap={10} align="flex-end" wrap="wrap">
+                                <Stack gap="lg">
                                     <DatePickerInput
                                         minDate={new Date()}
-                                        label="Tanggal"
-                                        placeholder="Pilih Tanggal"
+                                        label="Pilih Tanggal"
+                                        placeholder="Kapan venue akan digunakan?"
+                                        leftSection={<Icon icon="solar:calendar-date-bold-duotone" className="text-primary-base" width={18} />}
                                         value={dummyDate.date ? new Date(dummyDate.date) : undefined}
                                         onChange={e => setDummyDate({ ...dummyDate, date: e ? moment(e).format('YYYY-MM-DD') : undefined })}
-                                        style={{ flex: 1, minWidth: 150 }}
+                                        size="md"
+                                        radius="xl"
                                     />
-                                    <TimeInput
-                                        label="Jam Awal"
-                                        value={dummyDate.start_time || ""}
-                                        onChange={e => setDummyDate({ ...dummyDate, start_time: e.target.value })}
-                                        style={{ width: 100 }}
-                                    />
-                                    <TimeInput
-                                        label="Jam Selesai"
-                                        value={dummyDate.end_time || ""}
-                                        onChange={e => setDummyDate({ ...dummyDate, end_time: e.target.value })}
-                                        style={{ width: 100 }}
-                                    />
-                                    <Button
-                                        onClick={() => {
-                                            setDate.append(dummyDate);
-                                            setDummyDate({ date: undefined, start_time: undefined, end_time: undefined });
-                                        }}
-                                        disabled={!dummyDate.date || !dummyDate.end_time || !dummyDate.start_time}
-                                        variant="light" color="blue"
-                                    >
-                                        Tambah
-                                    </Button>
-                                </Flex>
+
+                                    <Box className="p-4 rounded-2xl bg-gray-50 border border-light-grey">
+                                        <Text size="xs" fw={700} mb={10} c="gray.6" className="uppercase tracking-wider">Durasi Booking</Text>
+                                        <Grid align="center" gutter="sm">
+                                            <Grid.Col span={5}>
+                                                <Select
+                                                    label="Jam Awal"
+                                                    placeholder="Pilih Jam"
+                                                    leftSection={<Icon icon="solar:clock-circle-bold-duotone" className="text-green-500" width={18} />}
+                                                    data={Array.from({ length: 48 }).map((_, i) => {
+                                                        const hour = Math.floor(i / 2);
+                                                        const minute = i % 2 === 0 ? '00' : '30';
+                                                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                                                        return { value: time, label: time };
+                                                    })}
+                                                    value={dummyDate.start_time || null}
+                                                    onChange={val => setDummyDate({ ...dummyDate, start_time: val || undefined })}
+                                                    size="md"
+                                                    radius="xl"
+                                                    searchable
+                                                />
+                                            </Grid.Col>
+                                            <Grid.Col span={2}>
+                                                <Center pt={25}>
+                                                    <Icon icon="solar:arrow-right-linear" className="text-gray-400" width={20} />
+                                                </Center>
+                                            </Grid.Col>
+                                            <Grid.Col span={5}>
+                                                <Select
+                                                    label="Jam Selesai"
+                                                    placeholder="Pilih Jam"
+                                                    leftSection={<Icon icon="solar:clock-circle-bold-duotone" className="text-red-500" width={18} />}
+                                                    data={Array.from({ length: 48 }).map((_, i) => {
+                                                        const hour = Math.floor(i / 2);
+                                                        const minute = i % 2 === 0 ? '00' : '30';
+                                                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                                                        return { value: time, label: time };
+                                                    })}
+                                                    value={dummyDate.end_time || null}
+                                                    onChange={val => setDummyDate({ ...dummyDate, end_time: val || undefined })}
+                                                    size="md"
+                                                    radius="xl"
+                                                    searchable
+                                                />
+                                            </Grid.Col>
+                                        </Grid>
+                                    </Box>
+
+                                    <Flex justify="flex-end">
+                                        <Button
+                                            onClick={() => {
+                                                setDate.append(dummyDate);
+                                                setDummyDate({ date: undefined, start_time: undefined, end_time: undefined });
+                                            }}
+                                            disabled={!dummyDate.date || !dummyDate.end_time || !dummyDate.start_time}
+                                            variant="filled"
+                                            color="blue"
+                                            size="lg"
+                                            radius="xl"
+                                            leftSection={<Icon icon="solar:add-circle-bold-duotone" width={22} />}
+                                            className="shadow-md hover:shadow-lg transition-all"
+                                        >
+                                            Tambah ke Daftar Jadwal
+                                        </Button>
+                                    </Flex>
+                                </Stack>
 
                                 {date.length > 0 && (
-                                    <Stack gap="xs" mt="sm">
-                                        {date.map((e, i) => (
-                                            <Card p="xs" withBorder radius={8} key={i}>
-                                                <Flex justify="space-between" align="center">
-                                                    <Text size="sm">{moment(e.date).format('DD MMMM YYYY')} ({e.start_time} - {e.end_time})</Text>
-                                                    <ActionIcon color="red" variant="subtle" onClick={() => setDate.remove(i)}>
-                                                        <Icon icon="uiw:delete" />
-                                                    </ActionIcon>
-                                                </Flex>
-                                            </Card>
-                                        ))}
+                                    <Stack gap="md" mt="xs">
+                                        <Divider label={<Text size="xs" fw={700} c="dimmed">JADWAL TERPILIH</Text>} labelPosition="center" />
+                                        <Grid gutter="md">
+                                            {date.map((e, i) => (
+                                                <Grid.Col span={{ base: 12, md: 12 }} key={i}>
+                                                    <Card p="md" withBorder radius="xl" className="!bg-white hover:!border-primary-base transition-colors shadow-sm">
+                                                        <Flex justify="space-between" align="center">
+                                                            <Group gap="md">
+                                                                <Box className="p-3 rounded-2xl bg-primary-base/5 text-primary-base border border-primary-base/10">
+                                                                    <Icon icon="solar:calendar-minimalistic-bold-duotone" width={24} />
+                                                                </Box>
+                                                                <Stack gap={2}>
+                                                                    <Text fw={700} size="md" className="text-gray-800">{moment(e.date).format('DD MMMM YYYY')}</Text>
+                                                                    <Group gap={6}>
+                                                                        <Icon icon="solar:clock-circle-linear" width={14} className="text-gray-400" />
+                                                                        <Text size="sm" fw={600} className="text-primary-base">{e.start_time} — {e.end_time}</Text>
+                                                                    </Group>
+                                                                </Stack>
+                                                            </Group>
+                                                            <ActionIcon
+                                                                color="red"
+                                                                variant="light"
+                                                                radius="xl"
+                                                                size="lg"
+                                                                onClick={() => setDate.remove(i)}
+                                                            >
+                                                                <Icon icon="solar:trash-bin-trash-bold-duotone" width={20} />
+                                                            </ActionIcon>
+                                                        </Flex>
+                                                    </Card>
+                                                </Grid.Col>
+                                            ))}
+                                        </Grid>
                                     </Stack>
                                 )}
                             </Stack>
                         </Card>
 
-                        <Card withBorder radius={10} p={25}>
-                            <Stack>
-                                <Flex align="center" gap={10}>
-                                    <Icon icon="ep:user" className="text-primary-base" />
-                                    <Text size="sm" className={`!text-primary-base`}>Data Pemesan</Text>
-                                </Flex>
-
-                                <TextInput
-                                    required
-                                    label="Nama Pemesan"
-                                    placeholder="Masukan Nama Pemesan"
-                                />
-                                <TextInput
-                                    required
-                                    label="Email Pemesan"
-                                    placeholder="Masukan Email Pemesan"
-                                />
-                                <TextInput
-                                    required
-                                    label="No. Telp Pemesan"
-                                    placeholder="Masukan No. Telp Pemesan"
-                                />
-                            </Stack>
-                        </Card>
+                        <Accordion variant="separated" radius="xl" defaultValue="data-pemesan">
+                            <Accordion.Item value="data-pemesan" className="!border !border-[#dee2e6]">
+                                <Accordion.Control icon={<Icon icon="ep:user" className="text-primary-base text-lg" />}>
+                                    <Text size="sm" fw={600} className={`!text-primary-base`}>Data Pemesan</Text>
+                                </Accordion.Control>
+                                <Accordion.Panel>
+                                    <Stack gap="md" pt="xs">
+                                        <TextInput
+                                            required
+                                            label="Nama Pemesan"
+                                            placeholder="Masukan Nama Pemesan"
+                                        />
+                                        <TextInput
+                                            required
+                                            label="Email Pemesan"
+                                            placeholder="Masukan Email Pemesan"
+                                        />
+                                        <TextInput
+                                            required
+                                            label="No. Telp Pemesan"
+                                            placeholder="Masukan No. Telp Pemesan"
+                                        />
+                                    </Stack>
+                                </Accordion.Panel>
+                            </Accordion.Item>
+                        </Accordion>
                     </Stack>
 
                     <Stack maw={300}>
-                        <Card p={20} withBorder radius={10} className={`!sticky !top-0 !overflow-visible`}>
+                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ep:money" className="text-primary-base text-[20px]" />
@@ -194,7 +268,7 @@ export default function VenuePos() {
                             </Stack>
                         </Card>
 
-                        <Card p={20} withBorder radius={10} className={`!sticky !top-0 !overflow-visible`}>
+                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ic:baseline-percent" className="text-primary-base text-[20px]" />
@@ -211,7 +285,7 @@ export default function VenuePos() {
                             </Stack>
                         </Card>
 
-                        <Card p={20} withBorder radius={10} className={`!sticky !top-0 !overflow-visible`}>
+                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="material-symbols-light:order-approve-outline" className="text-primary-base text-[20px]" />

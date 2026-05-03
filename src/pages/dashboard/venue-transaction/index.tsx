@@ -181,6 +181,20 @@ export default function VenueTransaction() {
     return result;
   }, [data, filterValue, dateFilter]);
 
+  const stats = useMemo(() => {
+    const successfulTrans = data.filter(item => {
+      const statusId = item.transaction_status_id;
+      const statusStr = (item.payment_status || "").toLowerCase();
+      return statusId === 2 || statusStr.includes("paid") || statusStr.includes("success") || statusStr.includes("berhasil");
+    });
+    
+    const totalSales = successfulTrans.reduce((sum, item) => sum + (item.grandtotal || item.total_price || 0), 0);
+    const totalTransactions = successfulTrans.length;
+    const totalBooking = data.length;
+
+    return { totalSales, totalTransactions, totalBooking };
+  }, [data]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
 
   const sortedFiltered = useMemo(() => {
@@ -208,12 +222,30 @@ export default function VenueTransaction() {
 
   return (
     <>
-      <Text fw={800} style={{ fontSize: "26px" }} mx={15} mt={15} mb={0} c="dark.9">
-        Transaksi Venue
-      </Text>
-      <Text size="sm" c="gray" mx={15} mb={10}>
-        Daftar semua transaksi venue
-      </Text>
+      <Flex justify="space-between" align="center" mx={15} mt={15} mb={10}>
+        <Stack gap={0}>
+          <Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
+            Transaksi Venue
+          </Text>
+          <Text size="sm" c="gray">
+            Daftar semua transaksi venue
+          </Text>
+        </Stack>
+        <Flex gap="md" align="center">
+          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Penjualan</Text>
+            <Text size="lg" fw={700}>Rp {stats.totalSales.toLocaleString('id-ID')}</Text>
+          </MantineCard>
+          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Transaksi</Text>
+            <Text size="lg" fw={700}>{stats.totalTransactions}</Text>
+          </MantineCard>
+          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Booking</Text>
+            <Text size="lg" fw={700}>{stats.totalBooking}</Text>
+          </MantineCard>
+        </Flex>
+      </Flex>
 
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">

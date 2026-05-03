@@ -5,6 +5,8 @@ import moment from 'moment';
 import { Card, CardBody, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Skeleton } from '@nextui-org/react';
 import { DatePicker } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
+import { Badge, Divider, Flex, Image, Stack, Text, Title, Box } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { Get } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { VenueListResponse } from '../venue/type';
@@ -15,6 +17,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i);
 
 const VenueSchedulePage = () => {
     const loggedUser = useLoggedUser();
+    const router = useRouter();
     const [venues, setVenues] = useState<any[]>([]);
     const [selectedVenue, setSelectedVenue] = useState<any | null>(null);
     const [loadingVenues, setLoadingVenues] = useState(true);
@@ -57,7 +60,8 @@ const VenueSchedulePage = () => {
             const res: any = await Get(`venue/${venueSlug}`, {});
             if (res && (res.status || res.success)) {
                 const venueData = Array.isArray(res.data) ? res.data[0] : res.data;
-                setSelectedVenue(venueData);
+                // Merge with previous data to avoid "disappearing" data if detail API has different fields
+                setSelectedVenue((prev: any) => ({ ...prev, ...venueData }));
                 
                 // If the venue has a schedule start date, jump the calendar to it
                 if (venueData.venue_schedule?.start_date) {
@@ -82,12 +86,108 @@ const VenueSchedulePage = () => {
     const handleToday = () => setCurrentDate(moment());
 
     const bookings = useMemo(() => {
-        if (!selectedVenue?.has_booked_venue) return [];
-        return selectedVenue.has_booked_venue.map((b: any) => ({
-            ...b,
-            moment: moment(b.start_date)
-        }));
+        const list: any[] = [];
+        
+        // The API might return has_booked_venue or has_booking_venue depending on the endpoint
+        const bookingsData = selectedVenue?.has_booked_venue || selectedVenue?.has_booking_venue || [];
+        
+        // Add individual bookings
+        if (Array.isArray(bookingsData)) {
+            list.push(...bookingsData.map((b: any) => ({
+                ...b,
+                is_booking: true,
+                moment: moment(b.start_date)
+            })));
+        }
+        
+        // Add main venue schedule as a block
+        if (selectedVenue?.venue_schedule) {
+            list.push({
+                ...selectedVenue.venue_schedule,
+                event_name: selectedVenue.venue_schedule.name,
+                is_schedule: true,
+                moment: moment(selectedVenue.venue_schedule.start_date)
+            });
+        }
+        
+        return list;
     }, [selectedVenue]);
+
+    const handleItemClick = (item: any) => {
+        modals.open({
+            title: item.is_schedule ? 'Venue Schedule' : 'Booking Detail',
+            centered: true,
+            radius: 'xl',
+            size: 'lg',
+            children: (
+                <Stack gap="lg" p="sm">
+                    <Flex justify="space-between" align="start">
+                        <Stack gap={4}>
+                            <Title order={3} className="text-slate-800">{item.event_name}</Title>
+                            <Badge color={item.is_schedule ? 'blue' : 'green'} variant="light" radius="xl">
+                                {item.is_schedule ? 'Master Schedule' : 'Confirmed Booking'}
+                            </Badge>
+                        </Stack>
+                        {item.image && <Image src={item.image} w={80} h={80} radius="md" />}
+                    </Flex>
+                    
+                    <Divider />
+                    
+                    <Stack gap="md">
+                        <Flex align="center" gap={12}>
+                            <Box className="p-2 rounded-2xl bg-blue-50 text-blue-600">
+                                <Icon icon="solar:calendar-bold-duotone" width={20} />
+                            </Box>
+                            <Stack gap={0}>
+                                <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">Date & Time</Text>
+                                <Text fw={700}>{moment(item.start_date).format('DD MMMM YYYY')}</Text>
+                                <Text size="sm" c="dimmed">{moment(item.start_date).format('HH:mm')} - {moment(item.end_date).format('HH:mm')}</Text>
+                            </Stack>
+                        </Flex>
+                        
+                        {(item.description || item.reason) && (
+                            <Flex align="start" gap={12}>
+                                <Box className="p-2 rounded-2xl bg-gray-50 text-gray-600">
+                                    <Icon icon="solar:notes-bold-duotone" width={20} />
+                                </Box>
+                                <Stack gap={0}>
+                                    <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">Description</Text>
+                                    <Text size="sm">{item.description || item.reason}</Text>
+                                </Stack>
+                            </Flex>
+                        )}
+                    </Stack>
+                </Stack>
+            )
+        });
+    };
+
+    const handleCellClick = (day: moment.Moment, hour: number) => {
+        const timeStr = day.clone().hour(hour).minute(0).format('DD MMMM YYYY, HH:mm');
+        modals.openConfirmModal({
+            title: 'Schedule Availability',
+            centered: true,
+            radius: 'xl',
+            children: (
+                <Text size="sm">
+                    This slot is available for <b>{timeStr}</b>. Would you like to create a new booking for this time in POS?
+                </Text>
+            ),
+            labels: { confirm: 'Go to POS', cancel: 'Close' },
+            confirmProps: { radius: 'xl', color: 'blue' },
+            cancelProps: { radius: 'xl', variant: 'subtle' },
+            onConfirm: () => {
+                router.push({
+                    pathname: '/dashboard/venue-pos',
+                    query: { 
+                        date: day.format('YYYY-MM-DD'),
+                        start_time: moment().hour(hour).minute(0).format('HH:mm'),
+                        venue_id: selectedVenue?.id
+                    }
+                });
+            }
+        });
+    };
 
     const getBookingsForDayAndHour = (day: moment.Moment, hour: number) => {
         return bookings.filter((b: any) => 
@@ -348,19 +448,27 @@ const VenueSchedulePage = () => {
                                     {weekDays.map((day, dayIdx) => (
                                         <div key={dayIdx} className="flex-1 min-w-[120px] border-r border-light-grey last:border-r-0 relative group">
                                             {hours.map(h => (
-                                                <div key={h} className="h-[70px] border-b border-light-grey hover:bg-slate-50/50 transition-colors relative">
+                                                <div 
+                                                    key={h} 
+                                                    className="h-[70px] border-b border-light-grey hover:bg-slate-50/50 transition-colors relative cursor-pointer"
+                                                    onClick={() => handleCellClick(day, h)}
+                                                >
                                                     {/* Hourly bookings */}
                                                     <div className="absolute inset-x-1 top-1 bottom-1 flex flex-col gap-1 z-10">
                                                         {getBookingsForDayAndHour(day, h).map((booking: any, bIdx: number) => (
                                                             <div 
                                                                 key={bIdx}
-                                                                className="bg-[#194e9e]/10 border-l-4 border-[#194e9e] rounded-r-lg p-2 overflow-hidden shadow-sm hover:shadow-md hover:bg-[#194e9e]/15 transition-all cursor-pointer h-full group/booking"
+                                                                className={`${booking.is_schedule ? 'bg-orange-50 border-orange-400 text-orange-700' : 'bg-[#194e9e]/10 border-[#194e9e] text-[#194e9e]'} border-l-4 rounded-r-xl p-2 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer h-full group/booking`}
                                                                 title={`${booking.event_name} at ${booking.moment.format('HH:mm')}`}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleItemClick(booking);
+                                                                }}
                                                             >
-                                                                <p className="text-[10px] font-black text-[#194e9e] leading-tight truncate uppercase">
+                                                                <p className="text-[10px] font-black leading-tight truncate uppercase">
                                                                     {booking.event_name}
                                                                 </p>
-                                                                <p className="text-[9px] font-bold text-slate-500 mt-1">
+                                                                <p className="text-[9px] font-bold opacity-70 mt-1">
                                                                     {booking.moment.format('HH:mm')} - {moment(booking.end_date).format('HH:mm')}
                                                                 </p>
                                                             </div>

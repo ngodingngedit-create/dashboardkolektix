@@ -14,8 +14,141 @@ import { toast } from "react-toastify";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get, Post, Put, Delete } from "@/utils/REST";
 import { Project, UserMember, Label, Issue } from "@/types/issuemanagement";
+import moment from "moment";
 
 // --- Sub-components ---
+
+const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
+    return (
+        <div className="w-[280px] bg-slate-50 text-slate-600 flex flex-col h-full border-r border-light-grey">
+            <div className="p-4 border-b border-light-grey bg-white">
+                <div className="flex items-center gap-2 px-2 py-1">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
+                        <Icon icon="mdi:view-grid-plus" className="text-white text-xl" />
+                    </div>
+                    <span className="font-bold text-slate-900 tracking-tight">Kolektix Work</span>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                {/* Spaces Section */}
+                <div className="px-4 space-y-1">
+                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Spaces</p>
+                    {projects.map((p: any) => (
+                        <div 
+                            key={p.id}
+                            onClick={() => onSelect(p)}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${selectedProject?.id === p.id ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'hover:bg-slate-200/50 text-slate-500'}`}
+                        >
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#2463EB' }} />
+                            <span className="text-sm font-medium truncate">{p.name}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="px-4 space-y-1 pt-4 border-t border-light-grey">
+                    <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-200/50 rounded-lg cursor-pointer">
+                        <Icon icon="mdi:account-group-outline" width={18} />
+                        <span className="text-sm font-medium">Teams</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const WorkspaceHeader = ({ project, onAddIssue, viewMode, onCancel, onSave }: any) => {
+    return (
+        <div className="px-6 pt-6 pb-2 space-y-4 bg-white border-b border-light-grey">
+            <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Spaces</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <Icon icon="mdi:cube-outline" className="text-blue-500" width={20} />
+                        </div>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{project?.name || "New Project"}</h2>
+                        <div className="flex items-center gap-2 ml-2 px-2 py-1 bg-slate-100 rounded-md">
+                             <Icon icon="mdi:account-group" className="text-slate-500" width={16} />
+                             <span className="text-[10px] font-bold text-slate-600">{project?.members?.length || 0}</span>
+                        </div>
+                        <Icon icon="mdi:dots-horizontal" className="text-slate-400 cursor-pointer hover:text-slate-600" width={20} />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {viewMode === 'FORM' ? (
+                        <div className="flex gap-2">
+                             <Button 
+                                variant="light" 
+                                size="sm"
+                                onClick={onCancel}
+                                className="text-slate-400 font-bold h-9 rounded-lg"
+                                startContent={<Icon icon="mdi:close" width={18} />}
+                            >
+                                Batal
+                            </Button>
+                            <Button 
+                                color="primary" 
+                                size="sm"
+                                onClick={onSave}
+                                className="bg-blue-600 font-bold h-9 rounded-lg shadow-md shadow-blue-200"
+                                startContent={<Icon icon="mdi:content-save" width={18} />}
+                            >
+                                Simpan Project
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button 
+                            color="primary" 
+                            size="sm"
+                            onClick={onAddIssue}
+                            className="bg-blue-600 font-bold h-9 rounded-lg shadow-md shadow-blue-200"
+                            startContent={<Icon icon="mdi:plus" width={18} />}
+                        >
+                            Create
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex items-center gap-6 overflow-x-auto pb-px no-scrollbar">
+                {['Board'].map((tab) => (
+                    <div 
+                        key={tab} 
+                        className={`pb-3 text-sm font-bold cursor-pointer transition-all px-1 whitespace-nowrap ${tab === 'Board' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                        <div className="flex items-center gap-2">
+                             {tab === 'Board' && <Icon icon="mdi:view-column-outline" width={16} />}
+                             {tab}
+                        </div>
+                    </div>
+                ))}
+                <Icon icon="mdi:plus" className="text-slate-400 cursor-pointer mb-3" width={18} />
+            </div>
+            
+            {viewMode !== 'FORM' && (
+                <div className="flex items-center gap-4 py-2">
+                    <div className="relative flex-1 max-w-md">
+                        <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width={16} />
+                        <input 
+                            type="text" 
+                            placeholder="Search board..." 
+                            className="w-full bg-slate-50 text-sm text-slate-600 pl-10 pr-4 py-1.5 rounded-lg border border-light-grey focus:outline-none focus:border-blue-500/50 transition-all"
+                        />
+                    </div>
+                    <div className="flex items-center -space-x-1">
+                        <div className="w-7 h-7 rounded-full bg-slate-200 border-2 border-white text-[10px] font-bold text-slate-600 flex items-center justify-center">JD</div>
+                        <div className="w-7 h-7 rounded-full bg-blue-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center">EN</div>
+                    </div>
+                    <Button variant="flat" size="sm" className="bg-white text-slate-600 font-bold h-8 border border-light-grey" startContent={<Icon icon="mdi:filter-variant" width={14} />}>
+                        Filter
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const MembersSection = ({ formData, setFormData, readOnly }: { formData: Project, setFormData: any, readOnly?: boolean }) => {
     const [newMember, setNewMember] = useState({ user_id: "", role: "developer" });
@@ -405,113 +538,95 @@ const BoardSection = ({ formData, setFormData, readOnly }: { formData: Project, 
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 mb-2">
-                <Icon icon="mdi:view-dashboard-outline" width={24} className="text-primary" />
-                <h3 className="text-lg font-bold">Board & Issues</h3>
-            </div>
-            <Input
-                label="Board Name"
-                placeholder="e.g. Sprint 1"
-                labelPlacement="outside"
-                size="md"
-                value={formData.board.name}
-                onChange={(e) => setFormData({ ...formData, board: { ...formData.board, name: e.target.value } })}
-                variant="bordered"
-                className="max-w-md bg-white"
-                isDisabled={readOnly}
-            />
-
-            <div className="flex gap-4 overflow-x-auto pb-4 items-start min-h-[400px]">
+        <div className="flex-1 overflow-hidden flex flex-col bg-white">
+            <div className="flex gap-4 overflow-x-auto p-6 items-start h-full no-scrollbar">
                 {formData.board.lists.map((list, listIdx) => (
-                    <div key={listIdx} className="min-w-[300px] bg-slate-100/50 rounded-2xl p-3 border border-light-grey">
-                        <div className="flex justify-between items-center mb-4 px-2">
-                            <input
-                                className="bg-transparent font-bold text-slate-700 w-full focus:outline-none disabled:opacity-100"
-                                value={list.name}
-                                disabled={readOnly}
-                                onChange={(e) => {
-                                    const updated = [...formData.board.lists];
-                                    updated[listIdx].name = e.target.value;
-                                    setFormData({ ...formData, board: { ...formData.board, lists: updated } });
-                                }}
-                            />
+                    <div key={listIdx} className="min-w-[320px] max-w-[320px] flex flex-col max-h-full">
+                        <div className="flex justify-between items-center mb-3 px-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{list.name}</span>
+                                <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500">{list.issues.length}</span>
+                            </div>
                             {!readOnly && (
-                                <Button isIconOnly size="sm" variant="light" color="danger" onClick={() => removeList(listIdx)}>
-                                    <FontAwesomeIcon icon={faTrash} size="xs" />
-                                </Button>
+                                <Dropdown>
+                                    <DropdownTrigger>
+                                        <Button isIconOnly size="sm" variant="light" className="text-slate-400 hover:text-slate-600">
+                                            <Icon icon="mdi:dots-horizontal" width={18} />
+                                        </Button>
+                                    </DropdownTrigger>
+                                    <DropdownMenu onAction={(key) => key === 'delete' && removeList(listIdx)}>
+                                        <DropdownItem key="delete" color="danger" className="text-danger">Delete Column</DropdownItem>
+                                    </DropdownMenu>
+                                </Dropdown>
                             )}
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-3 overflow-y-auto pr-1 no-scrollbar pb-20">
                             {list.issues.map((issue, issueIdx) => (
                                 <Card
                                     key={issueIdx}
                                     isPressable
                                     onPress={() => handleEditIssue(listIdx, issueIdx)}
-                                    className="shadow-sm border border-light-grey hover:border-primary-300 transition-colors bg-white w-full"
+                                    className="shadow-sm border border-light-grey hover:border-slate-300 transition-all bg-white w-full group/card"
                                     shadow="none"
                                 >
-                                    <CardBody className="p-3">
-                                        <div className="flex justify-between items-start gap-2 mb-2">
-                                            <span className="font-semibold text-sm text-slate-700 text-left line-clamp-2">{issue.title || "Untitled Issue"}</span>
+                                    <CardBody className="p-4 space-y-3">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <span className="font-bold text-sm text-slate-700 text-left line-clamp-2 leading-snug group-hover/card:text-blue-600 transition-colors">{issue.title || "Untitled Issue"}</span>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-1 mb-2">
-                                            {issue.labels.map((lKey, i) => {
-                                                const label = formData.labels.find(l => l.key === lKey);
-                                                return (
-                                                    <Chip
-                                                        key={i}
-                                                        size="sm"
-                                                        variant="flat"
-                                                        style={{ backgroundColor: label ? `${label.color}20` : '#f1f5f9', color: label ? label.color : '#64748b' }}
-                                                        className="text-[10px] h-4 px-1"
-                                                    >
-                                                        {label ? label.name : lKey}
-                                                    </Chip>
-                                                );
-                                            })}
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-light-grey">
+                                                <Icon icon="solar:calendar-linear" width={12} />
+                                                <span>May 13, 2026</span>
+                                            </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <Chip
-                                                size="sm"
-                                                color={issue.priority === 'high' ? 'danger' : issue.priority === 'medium' ? 'warning' : 'success'}
-                                                variant="flat"
-                                                className="text-[9px] h-4 uppercase font-bold"
-                                            >
-                                                {issue.priority}
-                                            </Chip>
-                                            <div className="flex -space-x-1 items-center">
-                                                {issue.assignees.map((id, i) => (
-                                                    <Tooltip key={i} content={`Assignee ID: ${id}`}>
-                                                        <div className="w-5 h-5 rounded-full bg-primary-100 border border-white text-[8px] flex items-center justify-center font-bold text-primary-600">
-                                                            {id}
-                                                        </div>
-                                                    </Tooltip>
-                                                ))}
-                                                {issue.comments.length > 0 && (
-                                                    <div className="ml-2 flex items-center gap-1 text-slate-400">
-                                                        <Icon icon="mdi:comment-outline" width={12} />
-                                                        <span className="text-[10px]">{issue.comments.length}</span>
+                                        <div className="flex justify-between items-center pt-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <Icon icon="mdi:bookmark" className="text-green-500" width={16} />
+                                                <span className="text-[10px] font-black text-slate-400 tracking-tighter uppercase">SCRUM-{listIdx}{issueIdx}</span>
+                                            </div>
+                                            <div className="flex -space-x-1.5 items-center">
+                                                {issue.assignees.length > 0 ? issue.assignees.map((id, i) => (
+                                                    <div key={i} className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white text-[8px] flex items-center justify-center font-bold text-slate-700">
+                                                        {id}
+                                                    </div>
+                                                )) : (
+                                                    <div className="w-6 h-6 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-slate-300">
+                                                        <Icon icon="mdi:account-outline" width={12} />
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
+
+                                        {issue.labels.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {issue.labels.map((lKey, i) => {
+                                                    const label = formData.labels.find(l => l.key === lKey);
+                                                    return (
+                                                        <div 
+                                                            key={i}
+                                                            className="h-1 rounded-full flex-1"
+                                                            style={{ backgroundColor: label ? label.color : '#64748b' }}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </CardBody>
                                 </Card>
                             ))}
                             {!readOnly && (
                                 <Button
                                     fullWidth
-                                    variant="flat"
+                                    variant="light"
                                     size="sm"
-                                    startContent={<FontAwesomeIcon icon={faPlus} />}
+                                    startContent={<Icon icon="mdi:plus" width={18} />}
                                     onClick={() => addIssue(listIdx)}
-                                    className="border-slate-300 text-slate-500 hover:bg-white border-2 border-dashed"
+                                    className="text-slate-400 hover:text-slate-600 font-bold justify-start px-2 h-10 hover:bg-slate-50 transition-colors"
                                 >
-                                    Add Issue
+                                    Create
                                 </Button>
                             )}
                         </div>
@@ -521,12 +636,11 @@ const BoardSection = ({ formData, setFormData, readOnly }: { formData: Project, 
                 {!readOnly && (
                     <Button
                         variant="flat"
-                        color="primary"
-                        className="min-w-[300px] h-12 rounded-2xl border-2 border-dashed border-primary-200 bg-white"
-                        startContent={<FontAwesomeIcon icon={faPlus} />}
+                        className="min-w-[320px] h-10 rounded-xl bg-slate-50 border border-dashed border-light-grey text-slate-400 hover:bg-slate-100 font-bold transition-colors"
+                        startContent={<Icon icon="mdi:plus" width={18} />}
                         onClick={addList}
                     >
-                        Add New Column
+                        Add Column
                     </Button>
                 )}
             </div>
@@ -565,7 +679,7 @@ const IssueManagement = () => {
     const [loading, setLoading] = useState(true);
 
     // View State
-    const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
+    const [viewMode, setViewMode] = useState<'BOARD' | 'FORM'>('BOARD');
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -590,41 +704,31 @@ const IssueManagement = () => {
         fetchProjects();
     }, []);
 
-    useEffect(() => {
-        if (loggedUser && !selectedProject) {
-            setFormData(prev => ({ ...prev, creator_id: loggedUser.has_creator?.id ?? 0 }));
-        }
-    }, [loggedUser, selectedProject]);
-
     const fetchProjects = async () => {
         setLoading(true);
         try {
             const res: any = await Get("projects", {});
-            // Handle the paginated response structure: { success: true, data: { data: [...] } }
             if (res && res.success && res.data && Array.isArray(res.data.data)) {
-                setProjects(res.data.data);
-            } else if (Array.isArray(res)) {
-                setProjects(res);
-            } else if (res && Array.isArray(res.data)) {
-                setProjects(res.data);
-            } else {
-                setProjects([]);
+                const data = res.data.data;
+                setProjects(data);
+                if (data.length > 0 && !selectedProject) {
+                    handleSelectProject(data[0]);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch projects:", error);
-            setProjects([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchProjectDetail = async (slug_url: string) => {
+    const handleSelectProject = async (project: Project) => {
         setLoading(true);
+        setSelectedProject(project);
         try {
-            const res: any = await Get(`projects/${slug_url}/full`, {});
+            const res: any = await Get(`projects/${project.slug_url}/full`, {});
             if (res && res.success && res.data) {
                 const fullData = res.data;
-                // Map full data to our formData structure
                 const mappedData: Project = {
                     id: fullData.id,
                     slug_url: fullData.slug_url,
@@ -632,13 +736,13 @@ const IssueManagement = () => {
                     description: fullData.description,
                     creator_id: fullData.creator_id,
                     members: fullData.members.map((m: any) => ({ user_id: m.user_id, role: m.role })),
-                    labels: [], // Will populate from issues
+                    labels: [],
                     board: {
                         name: fullData.boards[0]?.name || "Default Board",
-                        lists: (fullData.boards[0]?.lists || []).map((l: any) => ({
+                        lists: (fullData.boards[0]?.lists || []).map((l: any, lIdx: number) => ({
                             name: l.name,
                             position: l.position,
-                            issues: l.issues.map((i: any) => ({
+                            issues: l.issues.map((i: any, iIdx: number) => ({
                                 title: i.title,
                                 description: i.description,
                                 priority: i.priority,
@@ -649,40 +753,17 @@ const IssueManagement = () => {
                         }))
                     }
                 };
-
-                // Extract unique labels from all issues
-                const allLabels: Label[] = [];
-                const seenLabels = new Set();
-                fullData.boards.forEach((b: any) => {
-                    b.lists.forEach((l: any) => {
-                        l.issues.forEach((i: any) => {
-                            (i.labels || []).forEach((lbl: any) => {
-                                if (!seenLabels.has(lbl.name)) {
-                                    seenLabels.add(lbl.name);
-                                    allLabels.push({
-                                        key: lbl.name.toLowerCase().replace(/\s+/g, '-'),
-                                        name: lbl.name,
-                                        color: lbl.color || "#3B82F6"
-                                    });
-                                }
-                            });
-                        });
-                    });
-                });
-                mappedData.labels = allLabels;
-
                 setFormData(mappedData);
-                setViewMode('FORM');
+                setViewMode('BOARD');
             }
         } catch (error) {
             console.error("Failed to fetch project detail:", error);
-            toast.error("Failed to load project details");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleOpenCreate = () => {
+    const handleCreateNewProject = () => {
         setIsReadOnly(false);
         setSelectedProject(null);
         setFormData({
@@ -703,112 +784,33 @@ const IssueManagement = () => {
         setViewMode('FORM');
     };
 
-    const handleView = (project: Project) => {
-        setIsReadOnly(true);
-        setSelectedProject(project);
-        if (project.slug_url) {
-            fetchProjectDetail(project.slug_url);
-        } else {
-            setFormData({ ...project });
-            setViewMode('FORM');
-        }
-    };
-
-    const handleEdit = (project: Project) => {
-        setIsReadOnly(false);
-        setSelectedProject(project);
-        if (project.slug_url) {
-            fetchProjectDetail(project.slug_url);
-        } else {
-            setFormData({ ...project });
-            setViewMode('FORM');
-        }
-    };
-
-    const handleDelete = async (id: number) => {
-        if (confirm("Are you sure you want to delete this project?")) {
-            try {
-                await Delete(`projects/${id}`, {});
-                toast.success("Project deleted successfully");
-                fetchProjects();
-            } catch (error) {
-                toast.error("Failed to delete project");
-            }
-        }
-    };
-
     const handleSubmit = async () => {
         try {
-            if (selectedProject) {
+            if (selectedProject?.id) {
                 await Put(`projects/${selectedProject.id}`, formData);
                 toast.success("Project updated successfully");
             } else {
                 await Post("projects", formData);
                 toast.success("Project created successfully");
             }
-            setViewMode('LIST');
             fetchProjects();
         } catch (error) {
             toast.error("Failed to save project");
         }
     };
 
-    // Table Sorting State
-    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-        column: "name",
-        direction: "ascending",
-    });
-
-    const sortedItems = [...projects].sort((a, b) => {
-        const first = a[sortDescriptor.column as keyof Project] as any;
-        const second = b[sortDescriptor.column as keyof Project] as any;
-
-        // Handle special cases for members_count and boards_count if they are not in Project type
-        let aVal = first;
-        let bVal = second;
-
-        if (sortDescriptor.column === "team") aVal = (a as any).members_count || 0;
-        if (sortDescriptor.column === "team") bVal = (b as any).members_count || 0;
-        if (sortDescriptor.column === "boards") aVal = (a as any).boards_count || 0;
-        if (sortDescriptor.column === "boards") bVal = (b as any).boards_count || 0;
-
-        let cmp = (parseInt(aVal) || aVal) < (parseInt(bVal) || bVal) ? -1 : 1;
-
-        if (sortDescriptor.direction === "descending") {
-            cmp *= -1;
-        }
-
-        return cmp;
-    });
-
-    if (viewMode === 'FORM') {
+    const ProjectFormSection = ({ formData, setFormData, isReadOnly }: any) => {
         return (
-            <div className="min-h-screen bg-[#F8F9FA] pb-24">
-                {/* Header Section */}
-                <div className="max-w-7xl mx-auto px-6 py-10">
-                    <div className="flex items-center gap-6 mb-8">
-                        <Button
-                            isIconOnly
-                            variant="flat"
-                            onClick={() => setViewMode('LIST')}
-                            className="bg-white shadow-sm border border-light-grey text-slate-600 rounded-xl"
-                        >
-                            <FontAwesomeIcon icon={faChevronLeft} />
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-800">
-                                {isReadOnly ? "Detail Project" : selectedProject ? "Edit Project" : "Buat Project Baru"}
-                            </h1>
-                            <p className="text-slate-400 text-sm">
-                                {isReadOnly ? "Informasi rincian project Anda" : "Lengkapi rincian di bawah ini"}
-                            </p>
-                        </div>
+            <div className="flex-1 overflow-y-auto p-10 bg-white">
+                <div className="max-w-4xl mx-auto space-y-10">
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-800 mb-2">Project Details</h1>
+                        <p className="text-slate-400 text-sm">Lengkapi rincian project Anda di bawah ini</p>
                     </div>
 
-                    {/* Main Card Section */}
-                    <Card className="border border-light-grey shadow-sm rounded-2xl overflow-visible mb-8" shadow="none">
-                        <CardBody className="p-10">
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                    <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
+                        <CardBody className="p-8">
+                            <div className="grid grid-cols-2 gap-x-10 gap-y-8">
                                 <Input
                                     label="Project Name *"
                                     placeholder="e.g. Mobile Ticketing Platform"
@@ -820,7 +822,7 @@ const IssueManagement = () => {
                                     isDisabled={isReadOnly}
                                     classNames={{
                                         label: "text-slate-700 font-bold mb-2",
-                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors"
+                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
                                     }}
                                 />
                                 <Input
@@ -834,7 +836,7 @@ const IssueManagement = () => {
                                     isDisabled={isReadOnly}
                                     classNames={{
                                         label: "text-slate-700 font-bold mb-2",
-                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors"
+                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
                                     }}
                                 />
                                 <div className="col-span-2">
@@ -849,7 +851,7 @@ const IssueManagement = () => {
                                         isDisabled={isReadOnly}
                                         classNames={{
                                             label: "text-slate-700 font-bold mb-2",
-                                            inputWrapper: "border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors"
+                                            inputWrapper: "border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
                                         }}
                                         minRows={3}
                                     />
@@ -862,160 +864,62 @@ const IssueManagement = () => {
                                 <Divider />
                                 <LabelsSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
                                 <Divider />
-                                <BoardSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
+                                <div className="space-y-4">
+                                     <h3 className="text-lg font-bold text-slate-800">Initial Board Structure</h3>
+                                     <p className="text-xs text-slate-500">Board ini akan dibuat secara otomatis dengan kolom-kolom berikut</p>
+                                     <div className="flex gap-2">
+                                         {formData.board.lists.map((l: any, i: number) => (
+                                             <Chip key={i} variant="flat" className="bg-slate-50 text-slate-600 border border-light-grey font-bold">{l.name}</Chip>
+                                         ))}
+                                     </div>
+                                </div>
                             </div>
                         </CardBody>
                     </Card>
                 </div>
-
-                {/* Footer Bar */}
-                {!isReadOnly && (
-                    <div className="fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white border-t border-light-grey py-4 px-6 z-40 transition-all duration-300">
-                        <div className="max-w-7xl mx-auto flex justify-end gap-4 items-center">
-                            <Button
-                                variant="light"
-                                className="text-slate-400 font-semibold"
-                                onClick={() => setViewMode('LIST')}
-                            >
-                                <Icon icon="mdi:close" className="mr-1" /> Batal
-                            </Button>
-                            <Button
-                                color="primary"
-                                onClick={handleSubmit}
-                                className="bg-[#2463EB] font-bold px-10 h-11 rounded-xl shadow-lg shadow-blue-200"
-                                startContent={<Icon icon="mdi:content-save" width={20} />}
-                            >
-                                Simpan
-                            </Button>
-                        </div>
-                    </div>
-                )}
             </div>
         );
-    }
+    };
 
     return (
-        <div className="min-h-screen bg-[#F8F9FA] text-slate-800 pb-20">
-            {/* Header Section */}
-            <div className="max-w-7xl mx-auto px-6 pt-10 pb-6 flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Manajemen Project</h1>
-                    <p className="text-slate-500 mt-1">Kelola project dan issue tracking Anda</p>
+        <div className="fixed inset-0 top-[65px] left-0 md:left-[65px] hvr:md:left-[280px] bg-white flex transition-all duration-300 overflow-hidden">
+            <WorkspaceSidebar 
+                projects={projects} 
+                selectedProject={selectedProject} 
+                onSelect={handleSelectProject}
+            />
+            
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <WorkspaceHeader 
+                    project={selectedProject || formData} 
+                    onAddIssue={handleCreateNewProject} 
+                    viewMode={viewMode}
+                    onCancel={() => setViewMode('BOARD')}
+                    onSave={handleSubmit}
+                />
+                
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    {loading ? (
+                         <div className="flex items-center justify-center h-full gap-3 text-slate-400">
+                             <Icon icon="mdi:loading" className="animate-spin" width={24} />
+                             <span className="font-bold">Syncing Workspace...</span>
+                         </div>
+                    ) : (
+                        viewMode === 'FORM' ? (
+                            <ProjectFormSection 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                isReadOnly={isReadOnly} 
+                            />
+                        ) : (
+                            <BoardSection 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                readOnly={isReadOnly} 
+                            />
+                        )
+                    )}
                 </div>
-                <Button
-                    color="primary"
-                    startContent={<FontAwesomeIcon icon={faPlus} />}
-                    onClick={handleOpenCreate}
-                    className="bg-[#2463EB] font-bold px-6 h-11 rounded-xl shadow-lg shadow-blue-200"
-                >
-                    Buat Project Baru
-                </Button>
-            </div>
-
-            <div className="max-w-7xl mx-auto px-6 space-y-6">
-                {/* Filter Bar */}
-                <Card className="border-none shadow-sm rounded-2xl">
-                    <CardBody className="p-4 flex flex-row items-center gap-3">
-                        <Input
-                            placeholder="Cari project..."
-                            startContent={<Icon icon="mdi:magnify" className="text-slate-400" />}
-                            className="flex-1"
-                            variant="bordered"
-                            size="sm"
-                        />
-                        <div className="flex gap-2">
-                            <Button isIconOnly color="primary" variant="flat" onClick={fetchProjects} className="bg-blue-50 text-blue-600">
-                                <Icon icon="mdi:refresh" width={20} />
-                            </Button>
-                            <Button variant="flat" className="bg-slate-100 text-slate-500 font-semibold px-6">
-                                Reset
-                            </Button>
-                        </div>
-                    </CardBody>
-                </Card>
-
-                {/* Table Section */}
-                <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
-                    <Table
-                        aria-label="Projects table"
-                        shadow="none"
-                        selectionMode="none"
-                        sortDescriptor={sortDescriptor}
-                        onSortChange={setSortDescriptor}
-                        classNames={{
-                            base: "overflow-auto",
-                            table: "min-w-[800px]",
-                            thead: "bg-[#f5f7fa]",
-                            th: "bg-transparent text-[#777] font-bold text-[12px] uppercase tracking-wider py-4 px-6",
-                            td: "py-4 px-6 last:border-0",
-                            tr: "hover:bg-[#f8fafd] transition-colors"
-                        }}
-                    >
-                        <TableHeader>
-                            <TableColumn key="no" width={60} align="center">#</TableColumn>
-                            <TableColumn key="name" allowsSorting>PROJECT NAME</TableColumn>
-                            <TableColumn key="creator_id" allowsSorting>CREATOR ID</TableColumn>
-                            <TableColumn key="team" allowsSorting>TEAM</TableColumn>
-                            <TableColumn key="boards" allowsSorting>BOARDS</TableColumn>
-                            <TableColumn key="status" align="center">STATUS</TableColumn>
-                            <TableColumn align="center">AKSI</TableColumn>
-                        </TableHeader>
-                        <TableBody emptyContent={loading ? "Synchronizing data..." : "No projects active at the moment"}>
-                            {sortedItems.map((project, idx) => (
-                                <TableRow key={project.id}>
-                                    <TableCell className="font-bold text-slate-500">{idx + 1}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="mdi:folder-outline" className="text-slate-400" width={16} />
-                                            <span className="font-bold text-[#2463EB] cursor-pointer hover:underline" onClick={() => handleView(project)}>
-                                                {project.name || "N/A"}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="font-bold text-slate-700">{project.creator_id || "-"}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="mdi:account-group-outline" className="text-slate-400" width={16} />
-                                            <span className="font-semibold text-slate-600">{(project as any).members_count || 0} Members</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip size="sm" variant="flat" color="secondary" className="bg-purple-50 text-purple-600 border-none font-bold">
-                                            {(project as any).boards_count || 0} Boards
-                                        </Chip>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            size="sm"
-                                            className="bg-[#4ade80] text-white font-extrabold px-4 h-6 rounded-md text-[10px]"
-                                        >
-                                            AKTIF
-                                        </Chip>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <Tooltip content="View Detail">
-                                                <Button isIconOnly size="sm" variant="light" onClick={() => handleView(project)} className="text-[#2463EB]">
-                                                    <Icon icon="mdi:eye-outline" width={18} />
-                                                </Button>
-                                            </Tooltip>
-                                            <Tooltip content="Edit">
-                                                <Button isIconOnly size="sm" variant="light" onClick={() => handleEdit(project)} className="text-warning">
-                                                    <Icon icon="mdi:pencil-outline" width={18} />
-                                                </Button>
-                                            </Tooltip>
-                                            <Tooltip content="Delete">
-                                                <Button isIconOnly size="sm" variant="light" onClick={() => handleDelete(project.id!)} className="text-danger">
-                                                    <Icon icon="mdi:trash-can-outline" width={18} />
-                                                </Button>
-                                            </Tooltip>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </Card>
             </div>
         </div>
     );

@@ -1596,17 +1596,17 @@ const Merch = () => {
     if (transactionSegment !== "all") {
       result = result.filter(e => e.type_transaction === transactionSegment);
     }
-    
+
     // Filter by Ticket Type
     if (selectedTicket !== "all") {
       result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
     }
-    
+
     // Filter by Status
     if (selectedStatus !== "all") {
       result = result.filter(e => String(e.transaction_status_id) === selectedStatus);
     }
-    
+
     // Search by Keyword
     if (searchValue) {
       const q = searchValue.toLowerCase();
@@ -1629,7 +1629,7 @@ const Merch = () => {
   // Proses data untuk tabel transaksi (di sliced)
   const processedTransactionData = useMemo(() => {
     if (!filteredDataList.length) return [];
-    
+
     const startIndex = (currentPage - 1) * itemsPerPageLocal;
     const paginatedArray = filteredDataList.slice(startIndex, startIndex + itemsPerPageLocal);
 
@@ -1896,60 +1896,27 @@ const Merch = () => {
             Halaman Report Event Anda
           </Text>
         </Stack>
+
+        <Flex gap="md" wrap="wrap">
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
+          </div>
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTickets} tiket</p>
+          </div>
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalCheckin} checkin</p>
+          </div>
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
+          </div>
+        </Flex>
       </Flex>
 
-      {/* Statistics Statistics Accordion */}
-      <Accordion variant="separated" radius="md" defaultValue="statistics" styles={{
-        item: { border: '1px solid #e9ecef', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white' },
-        control: { padding: '15px 20px', '&:hover': { backgroundColor: '#f8fafc' } },
-        content: { padding: '0 20px 20px 20px' }
-      }}>
-        <Accordion.Item value="statistics">
-          <Accordion.Control icon={<FontAwesomeIcon icon={faChartPie} color="#0b387c" />}>
-            <Text fw={700} size="md" c="gray.8">Ringkasan Statistik Event</Text>
-          </Accordion.Control>
-          <Accordion.Panel>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
-              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
-                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
-              </div>
-
-              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
-                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTickets} tiket</p>
-              </div>
-
-              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
-                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalCheckin} checkin</p>
-              </div>
-
-              <div className="bg-white border border-light-grey rounded-xl p-4 shadow-xs hover:shadow-sm transition-shadow duration-200">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
-                <p className="text-lg font-semibold mt-1 text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
-              </div>
-            </div>
-          </Accordion.Panel>
-        </Accordion.Item>
-      </Accordion>
-
-      {/* Global Filter Bar - Outside the tab card */}
-      <div className="mb-4">
-        {selectedTab === "transaksi" && (
-          <SegmentedControl
-            value={transactionSegment}
-            onChange={(e) => setTransactionSegment(e)}
-            data={[
-              { label: "All", value: "all" },
-              { label: "Online", value: "online" },
-              { label: "Offline", value: "offline" },
-            ]}
-            radius="xl"
-            color="#0b387c"
-          />
-        )}
-      </div>
 
 
       {/* Tabs Container */}
@@ -1987,32 +1954,31 @@ const Merch = () => {
           <div className="pt-2">
             {/* Filter Bar inside the tab content */}
             <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
-              {/* Left side: Refresh and Export Excel */}
-              <Flex gap={8} align="center">
-                <Button
-                  onClick={() => loadEventData()}
-                  loading={loading.includes("loadData")}
-                  variant="filled"
-                  color="blue"
-                  px={10}
-                  title={`Refresh Data (${apiPaginationInfo.totalRecords})`}
-                >
-                  <FontAwesomeIcon icon={faArrowsRotate} />
-                </Button>
+              <SegmentedControl
+                value={transactionSegment}
+                onChange={(e) => setTransactionSegment(e)}
+                data={[
+                  { label: "All", value: "all" },
+                  { label: "Online", value: "online" },
+                  { label: "Offline", value: "offline" },
+                ]}
+                radius="xl"
+                color="#0b387c"
+                size="sm"
+              />
 
+              <Flex gap={8} align="center" wrap="wrap">
                 <Button
                   onClick={exportToExcel}
                   color="green"
                   variant="filled"
                   leftSection={<FontAwesomeIcon icon={faFileExcel} />}
                   disabled={!allDataList || allDataList.length === 0}
+                  size="sm"
                 >
                   Export Excel
                 </Button>
-              </Flex>
 
-              {/* Right side: Event, Tiket, Status, and Search */}
-              <Flex gap={8} align="center" wrap="wrap">
                 <Select
                   value={selectedEvent ? String(selectedEvent) : null}
                   data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
@@ -2035,6 +2001,7 @@ const Merch = () => {
                   nothingFoundMessage="Tidak ada event"
                   searchable
                   clearable
+                  size="sm"
                 />
 
                 <Select
@@ -2044,6 +2011,7 @@ const Merch = () => {
                   placeholder="Pilih Tiket"
                   style={{ width: 155 }}
                   disabled={availableTickets.length <= 1}
+                  size="sm"
                 />
 
                 <Select
@@ -2059,6 +2027,7 @@ const Merch = () => {
                   ]}
                   style={{ width: 165 }}
                   leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
+                  size="sm"
                 />
 
                 <Input
@@ -2067,9 +2036,11 @@ const Merch = () => {
                   onChange={(e) => setSearchValue(e.target.value)}
                   style={{ width: 220 }}
                   leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                  size="sm"
                 />
               </Flex>
             </Flex>
+
             {/* TABLE TRANSAKSI DENGAN SCROLL */}
             <Box style={{ overflowX: 'auto', position: 'relative' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
@@ -2250,9 +2221,9 @@ const Merch = () => {
                 </Flex>
                 <Flex justify="space-between">
                   <Text size="sm" c="dimmed">Status</Text>
-                  <Badge 
-                    size="sm" 
-                    color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor} 
+                  <Badge
+                    size="sm"
+                    color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor}
                     radius="sm"
                   >
                     {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
