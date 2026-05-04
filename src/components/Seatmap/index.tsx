@@ -47,6 +47,7 @@ type ComponentProps = {
   onEdit?: boolean;
   onFinishSelectSeat?: () => void;
   fullscreenState: [boolean, (state: boolean) => void];
+  onSeatClick?: (seatnumber: string) => void;
 };
 
 export const defaultSeatmapData: SeatmapData[] = [
@@ -65,6 +66,7 @@ export default function Seatmap({
   onSelect: setSelectedSeat,
   unavailSeat,
   onSelectAll,
+  onSeatClick,
 }: Readonly<ComponentProps>) {
   const [isDragSelect, setIsDragSelect] = useState<string[]>();
   const [isCanvasMove, setIsCanvasMove] = useState(false);
@@ -266,6 +268,8 @@ export default function Seatmap({
     seatDown: (seatnumber: string, index: number) => {
       if (onEdit && !unavailSeat?.includes(seatnumber)) {
         setIsDragSelect([seatnumber]);
+      } else if (!onEdit && onSeatClick) {
+        onSeatClick(seatnumber);
       }
     },
     seatUp: () => {

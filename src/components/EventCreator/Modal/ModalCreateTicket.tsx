@@ -185,6 +185,18 @@ export default function ModalCreateTicket({
     setTicket(ticket.map((e, i) => (i == onSelectSeat ? { ...e, available_seat: data } : e)));
   };
 
+  const handleSeatClick = (seatnumber: string) => {
+    const ticketIdx = ticket.findIndex((t) => t.available_seat?.includes(seatnumber));
+    if (ticketIdx !== -1) {
+      setOnSelectSeat(ticketIdx);
+    } else {
+      const firstSeated = ticket.findIndex((t) => t.ticket_category === "Seated");
+      if (firstSeated !== -1) {
+        setOnSelectSeat(firstSeated);
+      }
+    }
+  };
+
   const handleDeleteTicket = (index: number) => {
     modals.openConfirmModal({
       title: "Hapus Tiket",
@@ -258,9 +270,8 @@ export default function ModalCreateTicket({
 
                 <Stack gap={10} className={`overflow-y-auto h-full `}>
                   {ticket.map((e, i) => (
-                    // onClick={() => setSelected(selected == i ? undefined : i)}
-                    <UnstyledButton key={i}>
-                      <Box onMouseEnter={() => setHoveredTicket(i)} onMouseLeave={() => setHoveredTicket(undefined)} className={`${selected == i ? "!border !border-primary-base rounded-lg" : ""}`}>
+                    <UnstyledButton key={i} onClick={() => e.ticket_category == "Seated" && addSeatMap && setOnSelectSeat(i)}>
+                      <Box onMouseEnter={() => setHoveredTicket(i)} onMouseLeave={() => setHoveredTicket(undefined)} className={`${onSelectSeat == i ? "!border !border-primary-base rounded-lg" : ""}`}>
                         <TicketContainer
                           key={i}
                           type={e.ticket_type}
@@ -275,7 +286,7 @@ export default function ModalCreateTicket({
                             setOpenForm(i);
                           }}
                           onDelete={() => handleDeleteTicket(i)}
-                          onSelectSeatButton={e.ticket_category == "Seated" && !eventId && onSelectSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
+                          onSelectSeatButton={e.ticket_category == "Seated" && onSelectSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
                           seatColor={e.seat_color}
                           onSelectSeatColor={onSelectSeat == i ? (e) => setTicket(ticket?.map((z, _i) => (i == _i ? { ...z, seat_color: e } : z))) : undefined}
                         />
@@ -567,6 +578,7 @@ export default function ModalCreateTicket({
                 onSelectAll={handleSelectSeat}
                 onEdit={onSelectSeat !== undefined}
                 onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
+                onSeatClick={handleSeatClick}
               />
             </Box>
           </Flex>
