@@ -827,8 +827,8 @@ const IssueManagement = () => {
 
     const ProjectFormSection = ({ formData, setFormData, isReadOnly }: any) => {
         return (
-            <div className="flex-1 overflow-y-auto p-10 bg-white">
-                <div className="max-w-4xl mx-auto space-y-10">
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-white">
+                <div className="w-full space-y-10">
                     <div>
                         <h1 className="text-2xl font-black text-slate-800 mb-2">Task Details</h1>
                         <p className="text-slate-400 text-sm">Lengkapi rincian task Anda di bawah ini</p>

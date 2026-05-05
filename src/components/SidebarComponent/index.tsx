@@ -2200,7 +2200,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                         fixed md:relative shrink-0
                         flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
-                        overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-50
+                        overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-[1100]
                         ${collapse ? "w-[280px]" : "w-0 md:w-[65px]"}
                     `}
         >

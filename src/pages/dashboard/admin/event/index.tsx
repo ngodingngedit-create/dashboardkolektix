@@ -199,10 +199,10 @@ export default function AdminEventManagement() {
           <Text size="1.8rem" fw={600}>Kelola Event</Text>
           <Text size="sm" c="gray">Monitor dan kelola persetujuan event platform</Text>
         </Stack>
-        <ButtonM 
-          component={Link} 
+        <ButtonM
+          component={Link}
           href="/dashboard/admin/event/create"
-          color="blue" 
+          color="blue"
           leftSection={<Icon icon="ph:plus-bold" />}
           radius="md"
           size="md"
@@ -392,13 +392,9 @@ export default function AdminEventManagement() {
                           </td>
                           <td style={{ padding: '12px 14px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
                             <Group gap={8} justify="center">
-                              <Tooltip label="Detail Event">
-                                <ActionIcon variant="filled" color="blue" onClick={() => openDetail(item)} size="md" radius="sm">
-                                  <Icon icon="ph:eye" className="text-lg" />
-                                </ActionIcon>
-                              </Tooltip>
+
                               <Tooltip label="Edit Event">
-                                <ActionIcon variant="filled" color="indigo" component={Link} href={`/dashboard/admin/event/edit/${item.id}`} size="md" radius="sm">
+                                <ActionIcon variant="filled" color="indigo" component={Link} href={`/dashboard/admin/event/edit/${item.slug_url}`} size="md" radius="sm">
                                   <Icon icon="ph:pencil-simple" className="text-lg" />
                                 </ActionIcon>
                               </Tooltip>

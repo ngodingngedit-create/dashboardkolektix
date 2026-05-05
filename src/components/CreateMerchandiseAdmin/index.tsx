@@ -69,7 +69,9 @@ interface MerchandiseStoreRequest {
 
 interface MerchandiseShowResponse {
   id: number;
+  slug?: string;
   product_name?: string;
+
   sku?: string;
   price?: string;
   qty?: number;
@@ -154,6 +156,8 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
 
 export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Readonly<ComponentProps & { creatorId?: string }>) {
   const [merchId, setMerchId] = useState<number>();
+  const [slug, setSlug] = useState<string>("");
+
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
   const [loading, setLoading] = useListState<string>();
   const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
@@ -205,7 +209,9 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
           if (res.data) {
             const data = res.data as MerchandiseShowResponse;
             setMerchId(data.id);
+            setSlug(data.slug || "");
             setImageList(data.product_image);
+
 
             if (data.is_product_varian) form.setValues({ is_variant: Boolean(data.is_product_varian) });
             form.setValues({
@@ -335,7 +341,8 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
       console.log("Request data to save:", requestData);
 
       const resProduct: any = await Post(
-        Boolean(id) ? `product/${merchId}` : "product",
+        Boolean(id) ? `product/${slug || id}` : "product",
+
         requestData
       );
       product_id = resProduct.data.id as number;

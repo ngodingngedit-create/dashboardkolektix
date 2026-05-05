@@ -198,15 +198,37 @@ export default function ModalCreateTicket({
   };
 
   const handleDeleteTicket = (index: number) => {
+    const ticketToDelete = ticket[index];
     modals.openConfirmModal({
       title: "Hapus Tiket",
       children: "Apakah kamu yakin ingin menghapus tiket ini?",
       labels: { confirm: "Hapus", cancel: "Batal" },
       centered: true,
       confirmProps: { color: "red" },
-      onConfirm: () => {
-        setTicket(ticket.filter((e, i) => i != index));
-        setOpenForm(undefined);
+      onConfirm: async () => {
+        if (eventId && ticketToDelete.id) {
+          await fetch({
+            url: `event-ticket/${ticketToDelete.id}`,
+            method: "DELETE",
+            success: () => {
+              setTicket(ticket.filter((_, i) => i !== index));
+              setOpenForm(undefined);
+              notifications.show({
+                message: "Berhasil Hapus Tiket",
+                color: "green",
+              });
+            },
+            error: (err: any) => {
+              notifications.show({
+                message: err?.response?.data?.message || "Gagal Hapus Tiket",
+                color: "red",
+              });
+            },
+          });
+        } else {
+          setTicket(ticket.filter((e, i) => i != index));
+          setOpenForm(undefined);
+        }
       },
     });
   };

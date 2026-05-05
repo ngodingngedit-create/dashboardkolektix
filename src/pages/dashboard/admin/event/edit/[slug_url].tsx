@@ -1,8 +1,7 @@
 import { useState, useEffect, createContext, SetStateAction, Dispatch } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { UserProps } from "@/utils/globalInterface";
-import imagePlus from "../../../../assets/icon/image-plus.png";
+import imagePlus from "../../../../../assets/icon/image-plus.png";
 import { faCalendar, faClock } from "@fortawesome/free-regular-svg-icons";
 import { Alert, LoadingOverlay, TagsInput, Paper, Grid as MantineGrid } from "@mantine/core";
 import { Tabs, Tab, Checkbox, Switch, Select, SelectItem, Spinner } from "@nextui-org/react";
@@ -18,7 +17,7 @@ import ModalTicket from "@/components/EventCreator/Modal/ModalTicket";
 import { FormEvent, EventTicket, SeatmapData } from "@/utils/formInterface";
 import ModalLocation from "@/components/EventCreator/Modal/ModalLocation";
 import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket";
-import { Get, Post } from "@/utils/REST";
+import { Get, Put } from "@/utils/REST";
 import { formatDate } from "@/utils/useFormattedDate";
 import { toast } from "react-toastify";
 import Button from "@/components/Button";
@@ -26,8 +25,6 @@ import React from "react";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import { defaultSeatmapData } from "@/components/Seatmap";
 import { Icon } from "@iconify/react/dist/iconify.js";
-
-const option = Array.from({ length: 10 }, (_, i) => ({ key: i + 1, label: `${i + 1} Tiket` }));
 
 interface ErrorResponse {
   name?: string[];
@@ -56,8 +53,9 @@ export const Context = createContext<{
   ticket: [],
 });
 
-const CreateEventAdmin = () => {
+const EditEventAdmin = () => {
   const router = useRouter();
+  const { slug_url } = router.query;
   const [ticket, setTicket] = useState<EventTicket[]>([]);
   const [form, setForm] = useState<any>({
     creator_id: 0,
@@ -71,7 +69,7 @@ const CreateEventAdmin = () => {
     end_date: null,
     start_time: "",
     end_time: "",
-    zone_time: "WIB",
+    zone_time: "Asia/Jakarta",
     organization_method: "Offline",
     location_name: "",
     location_city: "",
@@ -142,8 +140,11 @@ const CreateEventAdmin = () => {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    if (slug_url) fetchEventData();
+  }, [slug_url]);
+
   const fetchInitialData = async () => {
-    setLoadingInitial(true);
     try {
       const [tagsRes, creatorsRes] = await Promise.all([
         Get("category", {}),
@@ -157,9 +158,60 @@ const CreateEventAdmin = () => {
       setCreators(creatorsData);
     } catch (error) {
       console.error("Failed to fetch initial data", error);
-    } finally {
-      setLoadingInitial(false);
     }
+  };
+
+  const fetchEventData = () => {
+    setLoadingInitial(true);
+    Get(`admin-data/event/${slug_url}`, {})
+      .then((res: any) => {
+        const data = res.data;
+        const {
+          image_thumbnail,
+          has_event_ticket,
+          has_creator,
+          has_event_status,
+          has_event_payment_method,
+          has_event_social_meida,
+          has_venue_layout,
+          has_category_event,
+          has_merches,
+          has_insurances,
+          has_event_format,
+          has_event_topic,
+          has_event_type,
+          ...rest
+        } = data;
+
+        setForm({
+          ...rest,
+          is_name: !!data.is_name,
+          is_phone_number: !!data.is_phone_number,
+          is_birthdate: !!data.is_birthdate,
+          is_email: !!data.is_email,
+          is_noidentity: !!data.is_noidentity,
+          is_gender: !!data.is_gender,
+          one_email_ticket: !!data.one_email_ticket || data.one_email_ticket === "1",
+          one_id_one_ticket: !!data.one_id_one_ticket || data.one_id_one_ticket === "1",
+        });
+
+        setTicket(
+          (data.has_event_ticket as EventTicket[]).map((e: any) => ({
+            ...e,
+            available_seat: e.available_seat_number ? e.available_seat_number.split(",") : [],
+          }))
+        );
+
+        setImage(data.image_url || data.image_base64);
+
+        const seatmap = data.seatmap ? JSON.parse(data.seatmap) : [];
+        setSeatmapData.setState(seatmap);
+      })
+      .catch((err) => {
+        toast.error("Gagal memuat data event");
+        console.error(err);
+      })
+      .finally(() => setLoadingInitial(false));
   };
 
   const submitEvent = () => {
@@ -178,20 +230,17 @@ const CreateEventAdmin = () => {
       seatmap: ticket.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
     };
 
-    Post("event", payload)
+    Put(`admin-data/event/${slug_url}`, payload)
       .then((res: any) => {
-        toast.success("Event Berhasil Dibuat (Admin)");
+        toast.success("Event Berhasil Diupdate (Admin)");
         router.push("/dashboard/admin/event");
       })
       .catch((err) => {
         const errorObj = err?.response?.data?.errors || {};
-        const errorMessage = err?.response?.data?.message || "Terjadi Kesalahan";
-        toast.error(errorMessage);
+        toast.error(err?.response?.data?.message || "Terjadi Kesalahan");
         setError(errorObj);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -236,8 +285,8 @@ const CreateEventAdmin = () => {
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold">Tambah Event Baru (Admin)</h1>
-            <p className="text-grey">Lengkapi form dibawah ini untuk membuat event baru sebagai admin</p>
+            <h1 className="text-2xl font-bold">Edit Event (Admin)</h1>
+            <p className="text-grey">Lengkapi form dibawah ini untuk merubah event sebagai admin</p>
           </div>
         </div>
 
@@ -246,7 +295,7 @@ const CreateEventAdmin = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
               {image ? (
-                <Image src={image} alt="image" className="object-cover" width={0} height={0} style={{ width: "100%", height: "100%" }} />
+                <Image src={image} alt="image" className="object-cover" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
               ) : (
                 <>
                   <Image src={imagePlus} alt="image-plus" />
@@ -272,7 +321,6 @@ const CreateEventAdmin = () => {
                   </SelectItem>
                 ))}
               </Select>
-              {error?.creator_id && <p className="text-danger text-xs mt-1">{error.creator_id[0]}</p>}
 
               <InputField type="text" placeholder="Nama Event" fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
               {error?.name && <p className="text-danger text-xs mt-1">{error.name[0]}</p>}
@@ -442,7 +490,7 @@ const CreateEventAdmin = () => {
           <p className="text-sm font-bold hidden md:block">Mode Admin: Konfigurasi event secara penuh.</p>
           <div className="flex gap-4 w-full md:w-auto">
             <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label="Batal" />
-            <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? "Loading..." : "Daftarkan Event"} />
+            <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? "Loading..." : "Simpan Perubahan"} />
           </div>
         </div>
       </div>
@@ -459,6 +507,7 @@ const CreateEventAdmin = () => {
           data={editTicket}
           setIdx={setIdxTicket}
           idx={idxTicket}
+          eventId={form.id}
           endDate={form.end_date}
           eventStartTime={form.start_time}
           eventEndTime={form.end_time}
@@ -468,4 +517,4 @@ const CreateEventAdmin = () => {
   );
 };
 
-export default CreateEventAdmin;
+export default EditEventAdmin;

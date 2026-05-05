@@ -414,7 +414,7 @@
 //   // Tentukan halaman yang TIDAK menampilkan navbar bottom
 //   const shouldShowNavbarBottom = () => {
 //     const { pathname } = router;
-    
+
 //     // Halaman yang TIDAK menampilkan navbar bottom
 //     const hideNavbarBottomPaths = [
 //       '/dashboard',
@@ -428,15 +428,15 @@
 //       '/transaction-woauth',
 //       '/venue-order'
 //     ];
-    
+
 //     // Cek apakah pathname dimulai dengan salah satu dari hideNavbarBottomPaths
 //     const shouldHide = hideNavbarBottomPaths.some(path => 
 //       pathname.startsWith(path)
 //     );
-    
+
 //     // Juga cek jika ada /dashboard/ dalam pathname
 //     const isDashboard = pathname.includes('/dashboard/');
-    
+
 //     return !shouldHide && !isDashboard;
 //   };
 
@@ -592,13 +592,13 @@ const theme = createTheme({
       }
     }),
     Table: Table.extend({
-        defaultProps: {
-            className: `
+      defaultProps: {
+        className: `
                 [&_thead]:!bg-[#f0f0f0] [&_*]:text-[14px] [&_tbody_td]:bg-white [&_tr:hover_td]:!bg-gray-50 [&_th]:!bg-gray-100
                 [&_tr_.hoverBtn]:opacity-0 [&_tr:hover_.hoverBtn]:opacity-100
             `,
-            horizontalSpacing: 20,
-        }
+        horizontalSpacing: 20,
+      }
     }),
     Modal: {
       styles: (theme: MantineTheme) => ({
@@ -669,7 +669,7 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const userDataStr = Cookies.get('user_data');
     const token = Cookies.get('token');
-    
+
     let userData = null;
     try {
       userData = userDataStr ? JSON.parse(userDataStr) : null;
@@ -715,7 +715,7 @@ function App({ Component, pageProps }: AppProps) {
   // Tentukan apakah perlu menampilkan navbar bottom
   const shouldShowNavbarBottom = () => {
     const { pathname } = router;
-    
+
     // Halaman yang TIDAK menampilkan navbar bottom
     const hideNavbarBottomPaths = [
       '/dashboard',
@@ -729,16 +729,16 @@ function App({ Component, pageProps }: AppProps) {
       '/transaction-woauth',
       '/venue-order'
     ];
-    
+
     // Halaman event detail juga tidak tampilkan navbar bottom
     const isEventDetailPage = pathname.startsWith('/event/') && pathname !== '/event';
-    
-    const shouldHide = hideNavbarBottomPaths.some(path => 
+
+    const shouldHide = hideNavbarBottomPaths.some(path =>
       pathname.startsWith(path)
     ) || isEventDetailPage;
-    
+
     const isDashboard = pathname.includes('/dashboard/');
-    
+
     // Hanya tampilkan di mobile dan bukan halaman yang harus di-hide
     return isMobile && !shouldHide && !isDashboard;
   };
@@ -758,17 +758,17 @@ function App({ Component, pageProps }: AppProps) {
               router.pathname.startsWith('/creator') ||
               router.pathname.startsWith('/login') ||
               router.pathname.startsWith('/sample')
-            ? (
-              <Component {...pageProps} />
-            ) : (
-              <AppMainContext.Provider value={{ cartCount, setCartCount }}>
-                <NavbarComponent>
-                  <Component {...pageProps} />
-                </NavbarComponent>
-                {/* NavbarBottom hanya tampil di mobile dan kondisi tertentu */}
-                {shouldShowNavbarBottom() && <NavbarBottom />}
-              </AppMainContext.Provider>
-            )}
+              ? (
+                <Component {...pageProps} />
+              ) : (
+                <AppMainContext.Provider value={{ cartCount, setCartCount }}>
+                  <NavbarComponent>
+                    <Component {...pageProps} />
+                  </NavbarComponent>
+                  {/* NavbarBottom hanya tampil di mobile dan kondisi tertentu */}
+                  {shouldShowNavbarBottom() && <NavbarBottom />}
+                </AppMainContext.Provider>
+              )}
           </ModalsProvider>
         </MantineProvider>
       </NextUIProvider>

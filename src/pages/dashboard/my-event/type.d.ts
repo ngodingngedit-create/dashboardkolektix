@@ -195,6 +195,7 @@ export type EventListResponse = {
   payment_method_custom: null | string;
   image_url: string;
   thumbnail_url: string;
+  slug_url: string;
 
   has_creator: {
     id: number;

@@ -330,13 +330,13 @@ const FilterMenu = () => {
   // 3) fetch SEMUA merchandise data dengan looping semua pages
   const fetchAllMerchandise = useCallback(async () => {
     if (merchandise.length > 0 || loadingMerch) return;
-    
+
     setLoadingMerch(true);
     try {
       let allProducts: any[] = [];
       let currentPage = 1;
       let totalPages = 1;
-      
+
       while (currentPage <= totalPages) {
         try {
           const res = (await Get("product", {
@@ -347,7 +347,7 @@ const FilterMenu = () => {
           let pageData: any[] = [];
           let pageTotal = 0;
           let pageLastPage = 1;
-          
+
           if (Array.isArray(res)) {
             pageData = res;
           } else if (Array.isArray(res.data)) {
@@ -402,7 +402,7 @@ const FilterMenu = () => {
 
     } catch (err) {
       console.error("Error in main fetch process:", err);
-      
+
       try {
         const fallbackRes = (await Get("product", {
           limit: 1000,
@@ -410,7 +410,7 @@ const FilterMenu = () => {
         })) as any;
 
         let fallbackData: any[] = [];
-        
+
         if (Array.isArray(fallbackRes)) {
           fallbackData = fallbackRes;
         } else if (Array.isArray(fallbackRes.data)) {
@@ -432,7 +432,7 @@ const FilterMenu = () => {
         }));
 
         setMerchandise(normalized);
-        
+
       } catch (fallbackErr) {
         console.error("Fallback also failed:", fallbackErr);
         setMerchandise([]);
@@ -456,7 +456,7 @@ const FilterMenu = () => {
   const merchandiseMatches = useMemo(() => {
     if (!query || !pathname?.toLowerCase().startsWith("/merchandise")) return [];
     const q = query.toLowerCase().trim();
-    
+
     return merchandise.filter((m) => {
       const productName = m.name?.toLowerCase() || "";
       return productName.includes(q);
@@ -472,7 +472,7 @@ const FilterMenu = () => {
   // 5) final suggestion list sesuai halaman
   const suggestions = useMemo(() => {
     const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
-    
+
     if (isMerchandisePage) {
       return [
         ...merchandiseMatches.slice(0, 10),
@@ -567,10 +567,10 @@ const FilterMenu = () => {
     const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
 
     if (isMerchandisePage) {
-      const exactMerch = merchandise.find((m) => 
+      const exactMerch = merchandise.find((m) =>
         m.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactMerch) {
         router.push(`/merchandise/${encodeURIComponent(exactMerch.slug)}`);
         setShowSuggest(false);
@@ -585,20 +585,20 @@ const FilterMenu = () => {
 
       router.push(`/merchandise?search=${encodeURIComponent(q)}`);
     } else {
-      const exactEvent = events.find((ev) => 
+      const exactEvent = events.find((ev) =>
         ev.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactEvent) {
         router.push(`/event/${encodeURIComponent(exactEvent.slug)}`);
         setShowSuggest(false);
         return;
       }
 
-      const exactPage = pages.find((p) => 
+      const exactPage = pages.find((p) =>
         p.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactPage) {
         router.push(exactPage.path);
         setShowSuggest(false);
@@ -624,9 +624,9 @@ const FilterMenu = () => {
           {/* Search form */}
           <form onSubmit={handleSubmit} className="flex-1 relative">
             <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-3 md:px-4 py-1.5 md:py-2 flex-1">
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="text-white opacity-80 text-sm md:text-base" 
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="text-white opacity-80 text-sm md:text-base"
               />
               <input
                 id="search-filter-input"
@@ -666,16 +666,16 @@ const FilterMenu = () => {
             {showSuggest && !loadingMerch && !loadingEvents && suggestions.length > 0 && (
               <>
                 {/* Backdrop for mobile */}
-                <div 
+                <div
                   className="fixed inset-0 bg-black/30 z-40 md:hidden"
                   onClick={() => {
                     setShowSuggest(false);
                     setActiveIndex(-1);
                   }}
                 />
-                
-                <ul 
-                  ref={listRef} 
+
+                <ul
+                  ref={listRef}
                   className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg overflow-hidden max-h-[60vh] md:max-h-80 overflow-y-auto"
                   style={{
                     top: '100%',
@@ -721,7 +721,7 @@ const FilterMenu = () => {
                       </li>
                     );
                   })}
-                  
+
                   {/* Info jumlah data - mobile friendly */}
                   <li className="px-3 md:px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
                     <div className="flex justify-between items-center">
@@ -745,20 +745,20 @@ const FilterMenu = () => {
             {showSuggest && !loadingMerch && !loadingEvents && query.trim() && suggestions.length === 0 && (
               <>
                 {/* Backdrop for mobile */}
-                <div 
+                <div
                   className="fixed inset-0 bg-black/30 z-40 md:hidden"
                   onClick={() => {
                     setShowSuggest(false);
                     setActiveIndex(-1);
                   }}
                 />
-                
+
                 <div className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg p-3 md:p-4 text-center text-gray-500">
                   <div className="mb-1 md:mb-2 text-sm md:text-base">Tidak ditemukan hasil untuk</div>
                   <div className="font-medium text-gray-700 mb-2 md:mb-3">&quot;{query}&quot;</div>
                   <div className="text-xs md:text-sm">
-                    {pathname?.toLowerCase().startsWith("/merchandise") 
-                      ? `Mencari di ${merchandise.length} produk` 
+                    {pathname?.toLowerCase().startsWith("/merchandise")
+                      ? `Mencari di ${merchandise.length} produk`
                       : `Mencari di ${events.length} event`}
                   </div>
                   <button
@@ -778,15 +778,15 @@ const FilterMenu = () => {
 
           {/* Search button */}
           <div className="flex-shrink-0">
-            <button 
-              onClick={() => handleSubmit()} 
-              type="button" 
+            <button
+              onClick={() => handleSubmit()}
+              type="button"
               className="bg-primary-base rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center hover:bg-primary-dark transition-colors shadow-md active:scale-95 transition-transform"
               aria-label="Search"
             >
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="text-white text-sm md:text-lg" 
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="text-white text-sm md:text-lg"
               />
             </button>
           </div>

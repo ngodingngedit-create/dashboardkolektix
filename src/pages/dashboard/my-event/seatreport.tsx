@@ -128,7 +128,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
         creator_id: creatorId,
         event_id: eventId,
         page: pageNum,
-        per_page: isFestival ? 999 : 20
+        per_page: 500
       };
       
       if (searchStr) {
@@ -174,7 +174,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     if (selectedEventId && users?.has_creator?.id) {
       // In festival mode, we fetch a large batch to handle client-side filtering/counts correctly
       // In seated mode, we still use pagination as it's more structured
-      fetchTransactions(users.has_creator.id, selectedEventId, isFestival ? 1 : seatPage, debouncedSearch, isFestival ? (selectedTicketName || "") : "");
+      fetchTransactions(users.has_creator.id, selectedEventId, seatPage, debouncedSearch, isFestival ? (selectedTicketName || "") : "");
     }
   }, [selectedEventId, users, seatPage, debouncedSearch, isFestival]);
 
@@ -351,7 +351,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   }, [allSeats, seatMap, searchQuery, selectedStatus]);
 
   // Handle Festival Table Filtering and Pagination
-  const itemsPerPage = 20;
+  const itemsPerPage = 500;
   const filteredFestivalTransactions = useMemo(() => {
     if (!isFestival) return [];
     return transactions.filter(trx => {
@@ -607,7 +607,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
-                          {paginatedFestivalTransactions.map((trx) => {
+                          {transactions.map((trx) => {
                                // Find the specific seat identifier for this transaction to use as the selection key
                                const seatId = Object.keys(seatMap).find(k => seatMap[k].transaction.id === trx.id);
                               
@@ -643,7 +643,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                                 </tr>
                               );
                           })}
-                          {paginatedFestivalTransactions.length === 0 && (
+                          {transactions.length === 0 && (
                             <tr>
                               <td colSpan={6} className="p-10 text-center text-grey">
                                 <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-10 mb-2 block mx-auto" />
@@ -658,7 +658,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                   {/* Pagination for the table */}
                   <div className="flex justify-center pt-4">
                     <MantinePagination 
-                      total={isFestival ? Math.max(1, totalFestivalPages) : Math.max(1, apiTotalPages)} 
+                      total={Math.max(1, apiTotalPages)} 
                       value={seatPage}  
                       onChange={setSeatPage} 
                       color="blue" 

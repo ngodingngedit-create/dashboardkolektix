@@ -30,7 +30,7 @@
 //   const { width } = useWindowSize();
 //   const users = useLoggedUser();
 //   const isLoggedIn = !!users?.name;
-  
+
 //   const [cartCount, setCartCount] = useState(0);
 //   const [scrolled, setScrolled] = useState(false);
 
@@ -46,10 +46,10 @@
 //     };
 
 //     updateCartCount();
-    
+
 //     // Update cart count setiap 2 detik untuk real-time
 //     const interval = setInterval(updateCartCount, 2000);
-    
+
 //     return () => clearInterval(interval);
 //   }, []);
 
@@ -113,7 +113,7 @@
 //     const handleScroll = () => {
 //       setScrolled(window.scrollY > 10);
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll);
 //     return () => window.removeEventListener('scroll', handleScroll);
 //   }, []);
@@ -121,7 +121,7 @@
 //   const renderNavItem = (item: NavItem) => {
 //     const active = isActive(item);
 //     const IconComponent = active && item.activeIcon ? item.activeIcon : item.icon;
-    
+
 //     const content = (
 //       <div className="relative flex flex-col items-center justify-center">
 //         {item.badgeCount && item.badgeCount > 0 ? (
@@ -161,7 +161,7 @@
 //             />
 //           </div>
 //         )}
-        
+
 //         <span className={`text-[10px] sm:text-xs mt-1 transition-all duration-300 ${
 //           active 
 //             ? 'font-bold text-primary-dark scale-105' 
@@ -169,7 +169,7 @@
 //         }`}>
 //           {item.label}
 //         </span>
-        
+
 //         {/* Active indicator */}
 //         {active && (
 //           <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
@@ -212,7 +212,7 @@
 //     <>
 //       {/* Spacer untuk menghindari konten tertutup */}
 //       <div className="h-16 md:hidden"></div>
-      
+
 //       {/* Navbar Bottom - Hanya 4 item */}
 //       <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 md:hidden ${
 //         scrolled 
@@ -222,24 +222,24 @@
 //         <div className="flex justify-around items-center h-16 px-2">
 //           {navItems.map(renderNavItem)}
 //         </div>
-        
+
 //         {/* Safe area untuk device dengan notch */}
 //         <div className="h-safe-bottom bg-inherit"></div>
 //       </div>
-      
+
 //       <style jsx>{`
 //         .h-safe-bottom {
 //           height: env(safe-area-inset-bottom, 0px);
 //           background-color: inherit;
 //           backdrop-filter: inherit;
 //         }
-        
+
 //         /* Smooth transition untuk backdrop blur */
 //         .backdrop-blur-lg {
 //           backdrop-filter: blur(12px);
 //           -webkit-backdrop-filter: blur(12px);
 //         }
-        
+
 //         /* Gradient text untuk label aktif */
 //         .text-gradient {
 //           background: linear-gradient(135deg, #0B387C 0%, #3B82F6 100%);
@@ -247,13 +247,13 @@
 //           -webkit-text-fill-color: transparent;
 //           background-clip: text;
 //         }
-        
+
 //         /* Animasi pulse untuk badge */
 //         @keyframes pulse-gentle {
 //           0%, 100% { transform: scale(1); }
 //           50% { transform: scale(1.05); }
 //         }
-        
+
 //         .pulse-animation {
 //           animation: pulse-gentle 2s infinite;
 //         }
@@ -268,10 +268,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faHome, 
-  faCalendarDays, 
-  faShirt, 
+import {
+  faHome,
+  faCalendarDays,
+  faShirt,
   faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 import Cookies from 'js-cookie';
@@ -293,7 +293,7 @@ const NavbarBottom: React.FC = () => {
   const router = useRouter();
   const { pathname } = router;
   const users = useLoggedUser();
-  
+
   const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
@@ -306,10 +306,10 @@ const NavbarBottom: React.FC = () => {
     };
 
     updateCartCount();
-    
+
     // Update cart count setiap 2 detik untuk real-time
     const interval = setInterval(updateCartCount, 2000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -352,8 +352,8 @@ const NavbarBottom: React.FC = () => {
   ];
 
   const isActive = (item: NavItem) => {
-    return item.activePaths.some(path => 
-      pathname === path || 
+    return item.activePaths.some(path =>
+      pathname === path ||
       (path !== '/' && pathname.startsWith(path))
     );
   };
@@ -373,7 +373,7 @@ const NavbarBottom: React.FC = () => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -381,7 +381,7 @@ const NavbarBottom: React.FC = () => {
   const renderNavItem = (item: NavItem) => {
     const active = isActive(item);
     const IconComponent = active && item.activeIcon ? item.activeIcon : item.icon;
-    
+
     const content = (
       <div className="relative flex flex-col items-center justify-center">
         {item.badgeCount && item.badgeCount > 0 ? (
@@ -394,42 +394,37 @@ const NavbarBottom: React.FC = () => {
             withBorder
             className="!absolute -top-1 -right-1"
           >
-            <div className={`p-2 rounded-xl transition-all duration-300 ${
-              active 
-                ? 'bg-gradient-to-br from-primary-light-100 to-primary-light-200 shadow-md' 
+            <div className={`p-2 rounded-xl transition-all duration-300 ${active
+                ? 'bg-gradient-to-br from-primary-light-100 to-primary-light-200 shadow-md'
                 : 'hover:bg-gray-100'
-            }`}>
-              <FontAwesomeIcon 
-                icon={IconComponent} 
-                className={`text-lg transition-colors duration-300 ${
-                  active ? 'text-primary-dark' : 'text-gray-500'
-                }`}
+              }`}>
+              <FontAwesomeIcon
+                icon={IconComponent}
+                className={`text-lg transition-colors duration-300 ${active ? 'text-primary-dark' : 'text-gray-500'
+                  }`}
               />
             </div>
           </Indicator>
         ) : (
-          <div className={`p-2 rounded-xl transition-all duration-300 ${
-            active 
-              ? 'bg-gradient-to-br from-primary-light-100 to-primary-light-200 shadow-md' 
+          <div className={`p-2 rounded-xl transition-all duration-300 ${active
+              ? 'bg-gradient-to-br from-primary-light-100 to-primary-light-200 shadow-md'
               : 'hover:bg-gray-100'
-          }`}>
-            <FontAwesomeIcon 
-              icon={IconComponent} 
-              className={`text-lg transition-colors duration-300 ${
-                active ? 'text-primary-dark' : 'text-gray-500'
-              }`}
+            }`}>
+            <FontAwesomeIcon
+              icon={IconComponent}
+              className={`text-lg transition-colors duration-300 ${active ? 'text-primary-dark' : 'text-gray-500'
+                }`}
             />
           </div>
         )}
-        
-        <span className={`text-[10px] sm:text-xs mt-1 transition-all duration-300 ${
-          active 
-            ? 'font-bold text-primary-dark scale-105' 
+
+        <span className={`text-[10px] sm:text-xs mt-1 transition-all duration-300 ${active
+            ? 'font-bold text-primary-dark scale-105'
             : 'font-medium text-gray-600'
-        }`}>
+          }`}>
           {item.label}
         </span>
-        
+
         {/* Active indicator */}
         {active && (
           <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
@@ -472,21 +467,20 @@ const NavbarBottom: React.FC = () => {
     <>
       {/* Spacer untuk menghindari konten tertutup */}
       <div className="h-16 md:hidden"></div>
-      
+
       {/* Navbar Bottom - Hanya 4 item */}
-      <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 md:hidden ${
-        scrolled 
-          ? 'bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-xl' 
+      <div className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 md:hidden ${scrolled
+          ? 'bg-white/95 backdrop-blur-lg border-t border-gray-200/50 shadow-xl'
           : 'bg-white border-t border-gray-100 shadow-lg'
-      }`}>
+        }`}>
         <div className="flex justify-around items-center h-16 px-2">
           {navItems.map(renderNavItem)}
         </div>
-        
+
         {/* Safe area untuk device dengan notch */}
         <div className="h-safe-bottom bg-inherit"></div>
       </div>
-      
+
       <style jsx>{`
         .h-safe-bottom {
           height: env(safe-area-inset-bottom, 0px);

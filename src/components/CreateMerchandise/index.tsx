@@ -64,6 +64,8 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
 
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
   const [merchId, setMerchId] = useState<number>();
+  const [slug, setSlug] = useState<string>("");
+
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
   const [loading, setLoading] = useListState<string>();
   const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
@@ -85,6 +87,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           if (res.data) {
             const data = res.data as MerchandiseShowResponse;
             setMerchId(data.id);
+            setSlug(data.slug || "");
+
             setImageList(data.product_image);
 
             const productVarian = (data as any).productVarian || (data as any).product_varian || [];
@@ -264,7 +268,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       );
 
       const resProduct: any = await Post(
-        Boolean(id) ? `product/${id}` : "product",
+        Boolean(id) ? `product/${slug || id}` : "product",
+
         {
           product_name: name,
           description: description ?? "-",

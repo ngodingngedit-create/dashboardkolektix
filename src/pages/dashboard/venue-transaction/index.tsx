@@ -29,6 +29,7 @@ import {
   faUndo
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { useMediaQuery } from "@mantine/hooks";
 import fetch from "@/utils/fetch";
 
 // Matches actual API: GET creator-data/venue-transaction
@@ -80,6 +81,8 @@ export default function VenueTransaction() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [detailModalOpened, setDetailModalOpened] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<DataResponse | null>(null);
+
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const handleViewDetail = (item: DataResponse) => {
     setSelectedTransaction(item);
@@ -816,7 +819,7 @@ export default function VenueTransaction() {
               </Grid.Col>
               <Grid.Col span={6}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Metode Pembayaran</Text>
-                <Text fw={600}>{selectedTransaction.payment_method || "-"}</Text>
+                <Text fw={600}>{selectedTransaction.payment_method?.toLowerCase() === 'xendit' ? 'QRIS' : selectedTransaction.payment_method || "-"}</Text>
               </Grid.Col>
             </Grid>
 
@@ -870,23 +873,56 @@ export default function VenueTransaction() {
               </Text>
             </Flex>
 
+          </Stack>
+        )}
+      </Modal>
+
+      {/* Separate Fixed Footer outside Modal */}
+      {detailModalOpened && selectedTransaction && (
+        <Box
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: 'white',
+            padding: '16px 40px',
+            borderTop: '1px solid #e9ecef',
+            boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
+            zIndex: 1000,
+            transition: 'left 0.3s ease',
+          }}
+        >
+          <Flex justify="flex-end" gap="md" maw={1400} mx="auto">
             <Button 
-              fullWidth 
-              variant="light" 
+              variant="outline" 
+              color="gray"
+              size="md"
+              radius="md"
+              onClick={() => setDetailModalOpened(false)}
+              leftSection={<FontAwesomeIcon icon={faTimes} />}
+              style={{ minWidth: 120 }}
+            >
+              Tutup
+            </Button>
+            <Button 
+              variant="filled" 
               color="blue" 
-              mt="md"
+              size="md"
+              radius="md"
               onClick={() => {
                 const isProd = typeof window !== 'undefined' && window.location.hostname === 'kolektix.com';
                 const baseUrl = isProd ? 'https://kolektix.com' : 'https://kolektix.my.id';
                 window.open(`${baseUrl}/venue-invoice/${selectedTransaction.invoice_no}`, '_blank');
               }}
               leftSection={<FontAwesomeIcon icon={faReceipt} />}
+              style={{ minWidth: 200 }}
             >
               Lihat Invoice Full
             </Button>
-          </Stack>
-        )}
-      </Modal>
+          </Flex>
+        </Box>
+      )}
     </>
   );
 }
