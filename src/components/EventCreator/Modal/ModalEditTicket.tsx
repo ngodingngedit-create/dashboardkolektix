@@ -31,9 +31,10 @@ interface ModalProps {
   eventStartTime?: string;
   eventEndTime?: string;
   onSuccess?(): void;
+  startDate?: string | null;
 }
 
-export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, endDate, data, idx, setIdx, eventId, addTicketModal, eventStartTime, eventEndTime, onSuccess }: ModalProps) {
+export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, endDate, data, idx, setIdx, eventId, addTicketModal, eventStartTime, eventEndTime, onSuccess, startDate }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: "",
     ticket_category_id: 1,
@@ -200,6 +201,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
         setIsOpen(false);
         setIdx(undefined);
         setOpenForm(undefined);
+        onSuccess?.();
       } catch (err) {
         console.error("✗ Error:", err);
         notifications.show({
@@ -281,7 +283,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                   ))}
                 </Stack>
 
-                <Button display={!eventId ? undefined : "none"} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className="shrink-0">
+                <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className="shrink-0">
                   Tambah Tiket
                 </Button>
               </Stack>
@@ -371,7 +373,7 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                       label="Tgl Event"
                       required
                       value={form.event_schedule_date && form.event_schedule_date}
-                      minDateVal={form.ticket_date ? form.ticket_date : undefined}
+                      minDateVal={startDate ? startDate : undefined}
                       maxDateVal={endDate ? endDate : undefined}
                       onChange={(e: any) => {
                         e && setForm({ ...form, event_schedule_date: e.toString() });

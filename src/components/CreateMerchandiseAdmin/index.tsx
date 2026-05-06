@@ -154,6 +154,13 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
   });
 };
 
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
+  if (!response.ok) throw new Error("Failed to fetch image via proxy");
+  const data = await response.json();
+  return data.base64;
+};
+
 export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Readonly<ComponentProps & { creatorId?: string }>) {
   const [merchId, setMerchId] = useState<number>();
   const [slug, setSlug] = useState<string>("");
@@ -171,7 +178,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
   // Gunakan creatorId dari prop jika ada (untuk admin), jika tidak gunakan dari user
   // Konversi ke number karena creator_id harus number
   const currentCreatorId = creatorId ? parseInt(creatorId) : (user?.has_creator?.id || 0);
-  
+
   console.log("CreateMerchandiseAdmin - currentCreatorId:", currentCreatorId);
 
   useEffect(() => {
@@ -188,10 +195,10 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
   const fetchCreatorData = async () => {
     try {
       if (!creatorId) return;
-      
+
       const creatorIdNum = parseInt(creatorId);
       console.log("Fetching creator data for ID:", creatorIdNum);
-      
+
       const res: any = await Get(`creator/${creatorIdNum}`, {});
       if (res.data) {
         console.log("Creator data fetched:", res.data);
@@ -233,7 +240,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                 status: true,
               })),
             });
-            
+
             // Jika edit, fetch creator data
             if (data.creator_id) {
               Get(`creator/${data.creator_id}`, {})
@@ -291,7 +298,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
     if (valid.hasErrors) return;
 
     console.log("Saving with creator ID:", currentCreatorId);
-    
+
     setLoading.append("save");
     const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name } = form.values;
 
@@ -301,25 +308,31 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
           if (e instanceof Blob) {
             return await fileToBase64(e);
           }
-          return imageList?.find((z) => e == z.image_url)?.image ?? e;
+          try {
+            return await getBase64FromUrl(e);
+          } catch (err) {
+            console.error("Failed to convert image to base64:", e, err);
+            return imageList?.find((z) => e == z.image_url)?.image ?? e;
+          }
         })
       );
 
       // Create variant data with proper type
       const variantData: VariantStoreRequest[] = is_variant && variant
         ? variant.map((e) => ({
-            id: e.id,
-            varian_name: e.name,
-            sku: e.sku ?? "",
-            price: Number(e.price ?? 0),
-            weight: Number(e.weight ?? 0),
-            stock_qty: Number(e.stock ?? 0),
-            varian_category_id: variant_name || 0,
-            status_product: e.status ? "active" : "inactive",
-          }))
+          id: e.id,
+          varian_name: e.name,
+          sku: e.sku ?? "",
+          price: Number(e.price ?? 0),
+          weight: Number(e.weight ?? 0),
+          stock_qty: Number(e.stock ?? 0),
+          varian_category_id: variant_name || 0,
+          status_product: e.status ? "active" : "inactive",
+        }))
         : [];
 
-      const requestData: MerchandiseStoreRequest = {
+      const requestData: any = {
+        _method: Boolean(id) ? "PUT" : undefined,
         product_name: name,
         description: description ?? "-",
         sku,
@@ -341,8 +354,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
       console.log("Request data to save:", requestData);
 
       const resProduct: any = await Post(
-        Boolean(id) ? `product/${slug || id}` : "product",
-
+        Boolean(id) ? `product/${merchId || id}` : "product",
         requestData
       );
       product_id = resProduct.data.id as number;
@@ -398,18 +410,18 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
               <p className="text-grey">
                 {!Boolean(id) ? "Lengkapi form dibawah untuk membuat Merchandise" : "Lengkapi form dibawah untuk update Merchandise"}
               </p>
-              
+
               {/* Tampilkan informasi creator jika ada */}
               {selectedCreatorData && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="font-medium text-blue-800">Merchandise untuk Creator:</p>
                   <p className="text-blue-600">
-                    {selectedCreatorData.name} 
+                    {selectedCreatorData.name}
                     {selectedCreatorData.has_user?.email && ` (${selectedCreatorData.has_user.email})`}
                   </p>
                 </div>
               )}
-              
+
               {!id && creatorId && !selectedCreatorData && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="font-medium text-yellow-800">Memuat data creator...</p>
@@ -449,11 +461,11 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                     </h4>
                   </div>
                   <div className="flex-grow [&_*]:border-[#E2EDFF]">
-                    <TextInput 
-                      placeholder="Isi Nama Produk" 
-                      error={form.errors.name as string} 
-                      value={form.values.name} 
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ name: e.target.value })} 
+                    <TextInput
+                      placeholder="Isi Nama Produk"
+                      error={form.errors.name as string}
+                      value={form.values.name}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ name: e.target.value })}
                     />
                   </div>
                 </div>
@@ -465,21 +477,21 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                     </h4>
                   </div>
                   <div className="flex-grow [&_*]:border-[#E2EDFF]">
-                    <TextInput 
-                      placeholder="Isi SKU Produk" 
-                      error={form.errors.sku as string} 
-                      value={form.values.sku} 
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ sku: e.target.value.replaceAll(/\s/g, "") })} 
+                    <TextInput
+                      placeholder="Isi SKU Produk"
+                      error={form.errors.sku as string}
+                      value={form.values.sku}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ sku: e.target.value.replaceAll(/\s/g, "") })}
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <Switch 
-              checked={form.values.is_variant} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue("is_variant", e.target.checked)} 
-              label="Gunakan Varian Merchandise" 
+            <Switch
+              checked={form.values.is_variant}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue("is_variant", e.target.checked)}
+              label="Gunakan Varian Merchandise"
             />
 
             <div className={`${form.values.is_variant ? "hidden" : ""} border border-[#E2EDFF] rounded-[8px]`}>
@@ -495,18 +507,18 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                     </h4>
                   </div>
                   <div className="flex-grow">
-                    <NumberInput 
-                      error={form.errors.price as string} 
-                      value={form.values.price} 
+                    <NumberInput
+                      error={form.errors.price as string}
+                      value={form.values.price}
                       onChange={(value: string | number) => {
                         const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
                         form.setValues({ price: numValue });
-                      }} 
-                      hideControls 
-                      placeholder="Isi Harga" 
-                      decimalSeparator="," 
-                      thousandSeparator="." 
-                      prefix="Rp " 
+                      }}
+                      hideControls
+                      placeholder="Isi Harga"
+                      decimalSeparator=","
+                      thousandSeparator="."
+                      prefix="Rp "
                     />
                   </div>
                 </div>
@@ -517,15 +529,15 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                     </h4>
                   </div>
                   <Stack className="flex-grow">
-                    <NumberInput 
-                      error={form.errors.stock as string} 
-                      value={form.values.stock} 
+                    <NumberInput
+                      error={form.errors.stock as string}
+                      value={form.values.stock}
                       onChange={(value: string | number) => {
                         const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
                         form.setValues({ stock: numValue });
-                      }} 
-                      hideControls 
-                      placeholder="Isi Stok" 
+                      }}
+                      hideControls
+                      placeholder="Isi Stok"
                     />
                     <Checkbox label="Tampilkan label jika stok habis" />
                   </Stack>
@@ -614,12 +626,12 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                         <Table.Tr key={i}>
                           <Table.Td miw={100}>{e.name}</Table.Td>
                           <Table.Td>
-                            <TextInput 
-                              maw={200} 
-                              placeholder="Isi SKU Varian" 
-                              value={e.sku} 
-                              onChange={(event: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue(`variant.${i}.sku`, event.target.value)} 
-                              error={form.errors[`variant.${i}.sku`] as string} 
+                            <TextInput
+                              maw={200}
+                              placeholder="Isi SKU Varian"
+                              value={e.sku}
+                              onChange={(event: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue(`variant.${i}.sku`, event.target.value)}
+                              error={form.errors[`variant.${i}.sku`] as string}
                             />
                           </Table.Td>
                           <Table.Td>
@@ -670,11 +682,11 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                             />
                           </Table.Td>
                           <Table.Td>
-                            <Switch 
-                              color="#0B387C" 
-                              checked={e.status || false} 
-                              onChange={(event: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue(`variant.${i}.status`, event.target.checked)} 
-                              error={form.errors[`variant.${i}.status`] as string} 
+                            <Switch
+                              color="#0B387C"
+                              checked={e.status || false}
+                              onChange={(event: React.ChangeEvent<HTMLInputElement>) => form.setFieldValue(`variant.${i}.status`, event.target.checked)}
+                              error={form.errors[`variant.${i}.status`] as string}
                             />
                           </Table.Td>
                         </Table.Tr>
@@ -712,12 +724,12 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
             <div className="border border-[#E2EDFF] rounded-[8px]">
               <Flex align="center" justify="space-between" className="p-[12px_16px] border-b border-[#E2EDFF]">
                 <h3 className="text-[20px] font-[500]">Status Produk</h3>
-                <Switch 
-                  defaultChecked 
-                  size="md" 
-                  color="#0B387C" 
-                  checked={form.values.status || false} 
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ status: e.target.checked })} 
+                <Switch
+                  defaultChecked
+                  size="md"
+                  color="#0B387C"
+                  checked={form.values.status || false}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ status: e.target.checked })}
                 />
               </Flex>
 

@@ -19,6 +19,7 @@ interface InputProps {
   error?: boolean;
   className?: string;
   autofocus?: boolean;
+  noShadow?: boolean;
 }
 
 const InputField = ({
@@ -36,6 +37,7 @@ const InputField = ({
   error,
   className,
   autofocus,
+  noShadow,
 }: InputProps) => {
   const handleKeyPress = (event: any) => {
     const key = event.key;
@@ -64,7 +66,7 @@ const InputField = ({
           type='text'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
-          }  shadow-sm border focus:outline-primary-disabled rounded-lg ${
+          }  ${noShadow ? "" : "shadow-sm"} border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
           placeholder={placeholder}
@@ -80,7 +82,7 @@ const InputField = ({
           type='number'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} border-spacing-1 ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
-          }  shadow-sm border focus:outline-primary-disabled rounded-lg ${
+          }  ${noShadow ? "" : "shadow-sm"} border focus:outline-primary-disabled rounded-lg ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
           placeholder={placeholder}
@@ -95,7 +97,7 @@ const InputField = ({
           type='text'
           className={`${error ? 'border-red-400' : 'border-primary-light-200'} ${
             size === 'lg' ? 'py-2 px-3' : 'px-3 py-2 text-sm'
-          } shadow-sm border focus:outline-primary-disabled rounded-lg disabled:bg-light-grey ${
+          } ${noShadow ? "" : "shadow-sm"} border focus:outline-primary-disabled rounded-lg disabled:bg-light-grey ${
             fullWidth ? 'w-full' : 'w-80'
           }`}
           disabled={disabled}
@@ -139,7 +141,7 @@ const InputField = ({
           autoFocus={autofocus}
           startContent={<FontAwesomeIcon icon={faClock} className='text-dark' />}
           classNames={{
-            inputWrapper: `border shadow-sm ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,
+            inputWrapper: `border ${noShadow ? "" : "shadow-sm"} ${error ? 'border-red-400' : 'border-primary-light-200'} bg-white rounded-lg`,
           }}
           aria-label='time'
           fullWidth={fullWidth}

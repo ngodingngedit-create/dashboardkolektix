@@ -1,7 +1,7 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, RadioGroup, Radio, Tabs, Tab } from "@nextui-org/react";
 import { EventTicket } from "@/utils/formInterface";
 import InputField from "@/components/Input";
-import { useState, useEffect, useMemo, PropsWithChildren, useContext } from "react";
+import { useState, useEffect, useMemo, PropsWithChildren, useContext, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faSave, faPlus } from "@fortawesome/free-solid-svg-icons";
 import React from "react";
@@ -31,6 +31,8 @@ interface ModalProps {
   addTicketModal?: boolean;
   eventStartTime?: string; // ✅ Tambah ini
   eventEndTime?: string; // ✅ Tambah ini
+  onSuccess?(): void;
+  startDate?: string | null;
 }
 
 export default function ModalCreateTicket({
@@ -46,6 +48,8 @@ export default function ModalCreateTicket({
   addTicketModal,
   eventStartTime, // ✅ Destructure props
   eventEndTime, // ✅ Destructure props
+  onSuccess,
+  startDate,
 }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: "",
@@ -85,6 +89,7 @@ export default function ModalCreateTicket({
       price: isNotEmpty(),
       starting_time: isNotEmpty(),
       ending_time: isNotEmpty(),
+      // description: isNotEmpty(),
     },
   });
   const [step, setStep] = useState(0);
@@ -141,6 +146,8 @@ export default function ModalCreateTicket({
         data: {
           ...form,
           event_id: String(eventId),
+          available_seat_number: form.available_seat?.join(","),
+          seat_color: form.seat_color ?? "#194e9e",
         } as TicketPropsInputRequest,
         success: () => {
           if (typeof openForm === "number") {
@@ -150,13 +157,15 @@ export default function ModalCreateTicket({
           }
           setOpenForm(undefined);
           setIdx(undefined);
+          onSuccess?.();
 
           notifications.show({
             message: isUpdate ? "Berhasil Update Tiket" : "Berhasil Tambah Tiket",
             color: "green",
           });
+          setIsOpen(false);
         },
-        error: () => { },
+        error: () => {},
       });
     }
   };
@@ -256,6 +265,17 @@ export default function ModalCreateTicket({
     console.log("FORM", form);
   }, [form]);
 
+  const seatmapRef = useRef<any>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (seatmapRef.current) {
+      setDownloading(true);
+      await seatmapRef.current.download();
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <ModalM
@@ -317,7 +337,7 @@ export default function ModalCreateTicket({
                   ))}
                 </Stack>
 
-                <Button display={!eventId ? undefined : "none"} variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
+                <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className={`shrink-0`}>
                   Tambah Tiket
                 </Button>
 
@@ -421,7 +441,7 @@ export default function ModalCreateTicket({
                       label="Tgl Event"
                       required
                       value={form.event_schedule_date && form.event_schedule_date}
-                      minDateVal={form.ticket_date ? form.ticket_date : undefined}
+                      minDateVal={startDate ? startDate : undefined}
                       maxDateVal={endDate ? endDate : undefined}
                       onChange={(e: any) => {
                         e && setForm({ ...form, event_schedule_date: e.toString() });
@@ -593,6 +613,7 @@ export default function ModalCreateTicket({
 
             <Box className={`flex-grow`} display={openSeatMap ? undefined : "none"}>
               <Seatmap
+                ref={seatmapRef}
                 fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
                 unavailSeat={unavailSeat}
                 selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
@@ -606,7 +627,15 @@ export default function ModalCreateTicket({
           </Flex>
 
           <Flex gap={15} display={ticket.length > 0 && addSeatMap ? undefined : "none"} ml="auto">
-            <Button className={`shrink-0 h-fit`} w="fit-content" size="md" variant="outline" leftSection={<Icon icon="uiw:download" />}>
+            <Button 
+              className={`shrink-0 h-fit`} 
+              w="fit-content" 
+              size="md" 
+              variant="outline" 
+              leftSection={<Icon icon="uiw:download" />}
+              onClick={handleDownload}
+              loading={downloading}
+            >
               Download Seatmap
             </Button>
             <Button

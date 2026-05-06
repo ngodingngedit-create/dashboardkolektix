@@ -392,7 +392,11 @@ export default function AdminEventManagement() {
                           </td>
                           <td style={{ padding: '12px 14px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
                             <Group gap={8} justify="center">
-
+                              <Tooltip label="View Detail Event">
+                                <ActionIcon variant="filled" color="cyan" component={Link} href={`/dashboard/admin/event/view/${item.slug_url}`} size="md" radius="sm">
+                                  <Icon icon="ph:eye" className="text-lg" />
+                                </ActionIcon>
+                              </Tooltip>
                               <Tooltip label="Edit Event">
                                 <ActionIcon variant="filled" color="indigo" component={Link} href={`/dashboard/admin/event/edit/${item.slug_url}`} size="md" radius="sm">
                                   <Icon icon="ph:pencil-simple" className="text-lg" />

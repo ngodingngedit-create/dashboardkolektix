@@ -62,6 +62,13 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
   });
 };
 
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
+  if (!response.ok) throw new Error("Failed to fetch image via proxy");
+  const data = await response.json();
+  return data.base64;
+};
+
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
   const [merchId, setMerchId] = useState<number>();
   const [slug, setSlug] = useState<string>("");
@@ -107,7 +114,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 const parts = (e.varian_name || "").split(" - ");
                 const name = parts[0];
                 const sub_name = parts.slice(1).join(" - ");
-                
+
                 let stock_awal = e.stock_qty;
                 if (e.stock_summary) {
                   try {
@@ -163,10 +170,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         if (matched?.slug_url) {
           Get(`store-locations/creator/${matched.slug_url}`, {})
             .then((r: any) => setStoreLocations(r.data ?? []))
-            .catch(() => {});
+            .catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [user]);
 
   const router = useRouter();
@@ -263,45 +270,52 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           if (e instanceof Blob) {
             return await fileToBase64(e);
           }
-          return imageList?.find((z) => e == z.image_url)?.image ?? e;
+          try {
+            return await getBase64FromUrl(e);
+          } catch (err) {
+            console.error("Failed to convert image to base64:", e, err);
+            return imageList?.find((z) => e == z.image_url)?.image ?? e;
+          }
         })
       );
 
-      const resProduct: any = await Post(
-        Boolean(id) ? `product/${slug || id}` : "product",
+      const requestData: any = {
+        _method: Boolean(id) ? "PUT" : undefined,
+        product_name: name,
+        description: description ?? "-",
+        sku,
+        price: price ?? 99999,
+        image: base64Images as string[],
+        product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
+        creator_id: user?.has_creator?.id ?? 0,
+        qty: stock ?? 0,
+        weight: String(form.values.weight ?? 1),
+        show_stock_out: 1,
+        max_purchase_quantity: 100,
+        low_quantity_warning: 4,
+        discount: 0,
+        add_to_flash_sale: 0,
+        is_product_varian: is_variant ? 1 : 0,
+        store_location_id: store_location_id ?? null,
+        product_variant: is_variant
+          ? JSON.stringify(
+            variant.map((e) => ({
+              id: e.id,
+              varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
+              sku: e.sku ?? "",
+              price: Number(e.price ?? 0),
+              weight: Number(e.weight ?? 0),
+              stock_qty: Number(e.stock ?? 0),
+              varian_category_id: variant_name,
+              status_product: e.status ? "active" : "inactive",
+            })) satisfies VariantStoreRequest[]
+          )
+          : "[]",
+      };
 
-        {
-          product_name: name,
-          description: description ?? "-",
-          sku,
-          price: price ?? 99999,
-          image: base64Images as string[],
-          product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
-          creator_id: user?.has_creator?.id ?? 0,
-          qty: stock ?? 0,
-          weight: String(form.values.weight ?? 1),
-          show_stock_out: 1,
-          max_purchase_quantity: 100,
-          low_quantity_warning: 4,
-          discount: 0,
-          add_to_flash_sale: 0,
-          is_product_varian: is_variant ? 1 : 0,
-          store_location_id: store_location_id ?? null,
-          product_variant: is_variant
-            ? JSON.stringify(
-                variant.map((e) => ({
-                  id: e.id,
-                  varian_name: e.sub_name ? `${e.name} - ${e.sub_name}` : e.name,
-                  sku: e.sku ?? "",
-                  price: Number(e.price ?? 0),
-                  weight: Number(e.weight ?? 0),
-                  stock_qty: Number(e.stock ?? 0),
-                  varian_category_id: variant_name,
-                  status_product: e.status ? "active" : "inactive",
-                })) satisfies VariantStoreRequest[]
-              )
-            : "[]",
-        } satisfies MerchandiseStoreRequest
+      const resProduct: any = await Post(
+        Boolean(id) ? `product/${merchId || id}` : "product",
+        requestData
       );
       product_id = resProduct.data.id as number;
 
@@ -311,7 +325,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           message: Boolean(id) ? "Produk berhasil diupdate" : "Produk berhasil dibuat",
           color: "green",
         });
-        
+
         if (onClose) {
           onClose();
         } else {

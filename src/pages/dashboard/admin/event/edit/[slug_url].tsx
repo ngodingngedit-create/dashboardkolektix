@@ -97,8 +97,8 @@ const EditEventAdmin = () => {
     event_status_id: 3,
     payment_method_custom: "QRIS,BCA,BNI,BRI,MANDIRI",
     max_use_voucher: 2,
-    admin_fee: 2000,
-    admin_fee_plus: "1000",
+    ppn_type: "percentage",
+    ppn: 0,
     starting_price: 1000,
   });
 
@@ -454,28 +454,45 @@ const EditEventAdmin = () => {
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 p-5">
                   <MantineGrid>
                     <MantineGrid.Col span={6}>
-                      <InputField label="URL Slug" type="text" fullWidth value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
+                      <InputField label="URL Slug" type="text" fullWidth noShadow value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Status ID (3=Review, 1=Active)" type="num" fullWidth value={form.event_status_id} onChange={(e: any) => setForm({ ...form, event_status_id: Number(e.target.value) })} />
+                      <InputField label="Status ID (3=Review, 1=Active)" type="num" fullWidth noShadow value={form.event_status_id} onChange={(e: any) => setForm({ ...form, event_status_id: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
-                      <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
+                      <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth noShadow value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Admin Fee" type="num" fullWidth value={form.admin_fee} onChange={(e: any) => setForm({ ...form, admin_fee: Number(e.target.value) })} />
+                      <Select
+                        label="Tipe PPN"
+                        placeholder="Pilih tipe PPN"
+                        variant="bordered"
+                        radius="sm"
+                        classNames={{
+                          trigger: "!shadow-none"
+                        }}
+                        selectedKeys={form.ppn_type ? [form.ppn_type] : []}
+                        onChange={(e) => setForm({ ...form, ppn_type: e.target.value })}
+                      >
+                        <SelectItem key="percentage" value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem key="nominal" value="nominal">Nominal (Rp)</SelectItem>
+                      </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Admin Fee Plus" type="text" fullWidth value={form.admin_fee_plus} onChange={(e: any) => setForm({ ...form, admin_fee_plus: e.target.value })} />
+                      <InputField 
+                        label={form.ppn_type === "percentage" ? "PPN (%)" : "PPN (Nominal)"} 
+                        type="num" 
+                        fullWidth 
+                        noShadow
+                        value={form.ppn} 
+                        onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} 
+                      />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="PPN (%)" type="num" fullWidth value={form.ppn} onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} />
+                      <InputField label="Starting Price" type="num" fullWidth noShadow value={form.starting_price} onChange={(e: any) => setForm({ ...form, starting_price: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Starting Price" type="num" fullWidth value={form.starting_price} onChange={(e: any) => setForm({ ...form, starting_price: Number(e.target.value) })} />
-                    </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
-                      <InputField label="Maks Penggunaan Voucher" type="num" fullWidth value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
+                      <InputField label="Maks Penggunaan Voucher" type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
                     </MantineGrid.Col>
                   </MantineGrid>
                 </div>

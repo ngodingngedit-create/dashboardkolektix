@@ -83,4 +83,7 @@ export type SeatmapData = {
   seat?: string[][];
   radius?: [number, number, number, number];
   starting_seat?: number;
+  seat_label?: string;
+  label_seat?: string;
+  is_show_code?: boolean;
 };

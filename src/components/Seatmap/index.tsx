@@ -1,5 +1,6 @@
 import { SeatmapData } from "@/utils/formInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { toPng } from "html-to-image";
 import {
   DEFAULT_THEME,
   ActionIcon,
@@ -25,7 +26,7 @@ import {
   Switch,
 } from "@mantine/core";
 import { useDidUpdate, useListState } from "@mantine/hooks";
-import { useRef, useState, useCallback, useContext, useEffect, useMemo } from "react";
+import { useRef, useState, useCallback, useContext, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import SeatmapComponent from "./SeatmapComponent";
 import { modals } from "@mantine/modals";
 import Moveable, { MoveableRefType, OnDrag, OnDragEnd, OnResize, OnResizeEnd, OnRotate, OnRotateEnd } from "react-moveable";
@@ -57,7 +58,7 @@ export const defaultSeatmapData: SeatmapData[] = [
   // {"text":"REGULER","type":"box","position":[228,-17],"size":[134,200]}
 ];
 
-export default function Seatmap({
+export default forwardRef(function Seatmap({
   fullscreenState: [isFullscreen, setIsFullscreen],
   onFinishSelectSeat,
   onEdit = true,
@@ -67,7 +68,7 @@ export default function Seatmap({
   unavailSeat,
   onSelectAll,
   onSeatClick,
-}: Readonly<ComponentProps>) {
+}: Readonly<ComponentProps>, ref) {
   const [isDragSelect, setIsDragSelect] = useState<string[]>();
   const [isCanvasMove, setIsCanvasMove] = useState(false);
   const [canvasPos, setCanvasPos] = useState<[number, number]>([0, 0]);
@@ -94,6 +95,58 @@ export default function Seatmap({
 
   const canvasWrap = useRef<HTMLDivElement>(null);
 
+  useImperativeHandle(ref, () => ({
+    download: async () => {
+      if (canvasWrap.current === null) return;
+
+      try {
+        const dataUrl = await toPng(canvasWrap.current, {
+          cacheBust: true,
+          width: 2000,
+          height: 2000,
+          pixelRatio: 2, // Better quality
+          style: {
+            transform: 'translate(0,0)',
+            scale: '1',
+            width: '2000px',
+            height: '2000px',
+            margin: '0',
+            padding: '0',
+            display: 'block',
+            position: 'relative',
+            backgroundColor: '#f8f9fa'
+          },
+          filter: (node) => {
+            const el = node as HTMLElement;
+            if (!el.classList) return true;
+            
+            // Filter out UI elements by class
+            const isUILayout = el.classList.contains('z-50') || 
+                               el.classList.contains('tooltipx') || 
+                               el.classList.contains('bg-grey/10') ||
+                               el.classList.contains('moveable-control-box') ||
+                               el.classList.contains('moveable-line') ||
+                               el.classList.contains('moveable-area');
+            
+            // Hide specific nudge/control containers if they don't have z-50
+            const isControl = el.classList.contains('mantine-ActionIcon-root') || 
+                             el.classList.contains('mantine-Button-root');
+
+            return !isUILayout && !(isControl && el.closest('.z-50') === null && !el.closest('.seat-container'));
+          },
+          backgroundColor: '#f8f9fa'
+        });
+
+        const link = document.createElement('a');
+        link.download = `seatmap-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error('oops, something went wrong!', err);
+      }
+    }
+  }));
+
   useDidUpdate(() => {
     if (typeof modalArea == "number") {
       setAreaVal(_data[modalArea]);
@@ -106,6 +159,8 @@ export default function Seatmap({
         prefix: "",
         row: 0,
         col: 0,
+        seat_label: "",
+        is_show_code: true,
       });
       reset();
     }
@@ -122,6 +177,40 @@ export default function Seatmap({
     });
     setSelected(_data.length);
   };
+
+  const handleAddText = () => {
+    setData?.append({
+      position: [0, 0],
+      size: [200, 50],
+      type: "box",
+      text: "New Text",
+      background: undefined,
+      radius: [0, 0, 0, 0],
+    });
+    setSelected(_data.length);
+  };
+
+  const handleNudge = (dx: number, dy: number) => {
+    if (selected !== null) {
+      setData?.applyWhere(
+        (_, i) => i == selected,
+        (e) => ({ ...e, position: [e.position[0] + dx, e.position[1] + dy] })
+      );
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selected !== null) {
+        if (e.key === "ArrowUp") handleNudge(0, -1);
+        if (e.key === "ArrowDown") handleNudge(0, 1);
+        if (e.key === "ArrowLeft") handleNudge(-1, 0);
+        if (e.key === "ArrowRight") handleNudge(1, 0);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selected]);
 
   const handleSaveArea = () => {
     if (areaForm.validate().hasErrors && modalArea != 0 && areaVal?.type == "seat") {
@@ -266,10 +355,14 @@ export default function Seatmap({
       }
     },
     seatDown: (seatnumber: string, index: number) => {
-      if (onEdit && !unavailSeat?.includes(seatnumber)) {
-        setIsDragSelect([seatnumber]);
-      } else if (!onEdit && onSeatClick) {
-        onSeatClick(seatnumber);
+      if (onFinishSelectSeat) {
+        if (onEdit && !unavailSeat?.includes(seatnumber)) {
+          setIsDragSelect([seatnumber]);
+        } else if (!onEdit && onSeatClick) {
+          onSeatClick(seatnumber);
+        }
+      } else {
+        handleMouse.boxDown(index);
       }
     },
     seatUp: () => {
@@ -362,8 +455,8 @@ export default function Seatmap({
     return ((__data?.length ?? 0) > 0 ? __data ?? [] : _data ?? []).map((e) => {
       const seat = chunk(
         Array((e.row ?? 1) * (e.col ?? 1))
-          .fill(e.prefix)
-          .map((pre, i) => `${pre}${i + (e?.starting_seat ?? 1)}`) ?? [],
+          .fill(0)
+          .map((_, i) => `${e.prefix ?? ""}${e.seat_label ?? ""}${i + (e?.starting_seat ?? 1)}`) ?? [],
         e.col ?? 1
       );
       return { ...e, seat, type: e?.type ?? "seat" };
@@ -403,6 +496,11 @@ export default function Seatmap({
         <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
           <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
             <Flex gap={10}>
+              <Tooltip label="Tambah Teks" position="bottom" withArrow>
+                <Button onClick={handleAddText} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
+                  <Icon icon="bi:type" className="text-lg" />
+                </Button>
+              </Tooltip>
               <Tooltip label="Tambah Rectangle" position="bottom" withArrow>
                 <Button onClick={handleAddRectangle} size="xs" bg="gray.1" className={`!text-primary-base`} leftSection={<Icon icon="uiw:plus" />}>
                   <Icon icon="ic:outline-rectangle" className="text-lg" />
@@ -447,13 +545,23 @@ export default function Seatmap({
               {...areaProps("type")}
             />
 
-            <TextInput label="Label Area" placeholder="Isi Label Area" {...areaProps("text")} />
+            <Flex gap={15}>
+              <TextInput style={{ flex: 1 }} label="Label Area" placeholder="Isi Label Area" {...areaProps("text")} />
+              <TextInput 
+                style={{ flex: 1 }} 
+                display={areaVal?.type == "box" ? "none" : undefined}
+                label="Label Seat" 
+                placeholder="Isi Label Seat" 
+                {...areaProps("label_seat")} 
+              />
+            </Flex>
 
             <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined}>
               <NumberInput withAsterisk hideControls label="Jumlah Kolom" placeholder="Isi Jumlah Kolom" {...areaProps("col")} />
               <NumberInput withAsterisk hideControls label="Jumlah Baris" placeholder="Isi Jumlah Baris" {...areaProps("row")} />
-              <TextInput withAsterisk mt={5} description="Code Seat" placeholder="Isi Code Seat" {...areaProps("prefix")} />
-              <NumberInput hideControls withAsterisk mt={5} description="Starting Seat" placeholder="Isi Code Seat" defaultValue={1} {...areaProps("starting_seat")} />
+              <TextInput withAsterisk mt={5} label="Code Seat" placeholder="Isi Code Seat" {...areaProps("prefix")} />
+              <TextInput mt={5} label="Label Code" placeholder="Isi Label Code" {...areaProps("seat_label")} />
+              <NumberInput hideControls withAsterisk mt={5} label="Starting Seat" placeholder="Isi Starting Seat" defaultValue={1} {...areaProps("starting_seat")} />
             </Flex>
 
             <InputWrapper label="Atur Radius" display={modalArea == 0 || areaVal?.type == "box" ? undefined : "none"}>
@@ -497,7 +605,6 @@ export default function Seatmap({
               <ColorInput
                 display={areaVal.background == undefined ? "none" : undefined}
                 disallowInput
-                // withPicker={false}
                 label="Warna Background Area"
                 swatches={[...DEFAULT_THEME.colors.red, ...DEFAULT_THEME.colors.green, ...theme.colors.blue, ...DEFAULT_THEME.colors.yellow, ...DEFAULT_THEME.colors.gray]}
                 swatchesPerRow={10}
@@ -515,7 +622,6 @@ export default function Seatmap({
               <ColorInput
                 display={modalArea == 0 ? "none" : undefined}
                 disallowInput
-                // withPicker={false}
                 label="Warna Seat"
                 swatches={[...DEFAULT_THEME.colors.red, ...DEFAULT_THEME.colors.green, ...theme.colors.blue, ...DEFAULT_THEME.colors.yellow, ...DEFAULT_THEME.colors.gray]}
                 swatchesPerRow={10}
@@ -529,6 +635,10 @@ export default function Seatmap({
                   )
                 }
               />
+            </Flex>
+
+            <Flex display={areaVal.type == "box" ? "none" : undefined} mt={10}>
+              <Switch label="Tampilkan Code Seat" checked={areaVal.is_show_code !== false} onChange={(e) => setAreaVal({ is_show_code: e.currentTarget.checked })} />
             </Flex>
 
             <Flex gap={10} align="center" mt={10} justify="end">
@@ -546,6 +656,8 @@ export default function Seatmap({
           ref={canvasWrap}
           bg="transparent"
           pos="relative"
+          w="100%"
+          h="100%"
           style={{
             scale: `${scale * 100}%`,
             transform: `translate(${canvasPos[0]}px,${canvasPos[1]}px)`,
@@ -555,7 +667,7 @@ export default function Seatmap({
           <Box className={`absolute top-2/4 left-2/4 w-[2px] h-[999vh] bg-grey/10 -translate-y-2/4 -translate-x-2/4`} />
           <Box className={`absolute top-2/4 left-2/4 w-[999vw] h-[2px] bg-grey/10 -translate-y-2/4 -translate-x-2/4`} />
 
-          <Box className={`absolute z-30 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4`}>
+          <Box className={`absolute z-30 top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4 seat-container`}>
             {data.map((e, i) => (
               // <Tooltip label={e.text} position="bottom" bg="gray.1" c="gray.8" key={i} withArrow>
               <Box
@@ -571,6 +683,57 @@ export default function Seatmap({
                 ref={(el) => changeRef(i, el)}
                 key={i}
               >
+                <Flex display={i == selected ? undefined : "none"} className={`absolute top-0 left-0 w-full h-full pointer-events-none`} justify="center" align="center">
+                  <ActionIcon
+                    className="pointer-events-auto !absolute -top-14 bg-white text-grey hover:!bg-primary-base hover:!text-white transition-colors border border-light-grey shadow-sm"
+                    variant="transparent"
+                    size="xs"
+                    radius="xl"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleNudge(0, -1);
+                    }}
+                  >
+                    <Icon icon="icon-park-outline:up-one" />
+                  </ActionIcon>
+                  <ActionIcon
+                    className="pointer-events-auto !absolute -bottom-14 bg-white text-grey hover:!bg-primary-base hover:!text-white transition-colors border border-light-grey shadow-sm"
+                    variant="transparent"
+                    size="xs"
+                    radius="xl"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleNudge(0, 1);
+                    }}
+                  >
+                    <Icon icon="icon-park-outline:down-one" />
+                  </ActionIcon>
+                  <ActionIcon
+                    className="pointer-events-auto !absolute -left-14 bg-white text-grey hover:!bg-primary-base hover:!text-white transition-colors border border-light-grey shadow-sm"
+                    variant="transparent"
+                    size="xs"
+                    radius="xl"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleNudge(-1, 0);
+                    }}
+                  >
+                    <Icon icon="icon-park-outline:left-one" />
+                  </ActionIcon>
+                  <ActionIcon
+                    className="pointer-events-auto !absolute -right-14 bg-white text-grey hover:!bg-primary-base hover:!text-white transition-colors border border-light-grey shadow-sm"
+                    variant="transparent"
+                    size="xs"
+                    radius="xl"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleNudge(1, 0);
+                    }}
+                  >
+                    <Icon icon="icon-park-outline:right-one" />
+                  </ActionIcon>
+                </Flex>
+
                 <Flex display={i == selected ? undefined : "none"} className={`tooltipx absolute bottom-[-38px] !pt-[20px] !pl-[20px] right-0 hvr`} gap={5}>
                   {onFinishSelectSeat && (
                     <Button className={`btnSelectAll`} onClick={() => handleSelectAllSeat(i)} bg="gray.1" c="gray.6" size="xs" display={e.type == "seat" ? undefined : "none"}>
@@ -596,18 +759,18 @@ export default function Seatmap({
                 </Flex>
                 {/* <Text size="sm" c="gray">{e.prefix}1 - {e.prefix}{(e?.col ?? 0) * (e?.row ?? 0)}</Text> */}
 
-                {e.type == "seat" && (
-                  <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-left-[30px]" : "-left-[15px]"}`} gap={5}>
+                {e.type == "seat" && e.is_show_code !== false && (
+                  <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-left-[40px]" : "-left-[25px]"}`} gap={5}>
                     <Text fw={600} size="sm" c="gray.8">
-                      {e.prefix}
+                      {`${e.prefix ?? ""}${e.seat_label ?? ""}`}
                     </Text>
                   </Flex>
                 )}
 
-                {e.type == "seat" && (
-                  <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-right-[30px]" : "-right-[15px]"}`} gap={5}>
+                {e.type == "seat" && e.is_show_code !== false && (
+                  <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-right-[40px]" : "-right-[25px]"}`} gap={5}>
                     <Text fw={600} size="sm" c="gray.8">
-                      {e.prefix}
+                      {`${e.prefix ?? ""}${e.seat_label ?? ""}`}
                     </Text>
                   </Flex>
                 )}
@@ -634,10 +797,19 @@ export default function Seatmap({
 
                     {e.type == "seat" && (
                       <Stack h="100%" align="center" justify="center" gap={5} p={10}>
-                        {e.text && (
-                          <Text size="xs" c="gray">
-                            {e.text}
-                          </Text>
+                        {(e.text || e.label_seat) && (
+                          <Stack gap={0} align="center" className="absolute bottom-full mb-2 w-full left-0 pointer-events-none">
+                            {e.text && (
+                              <Text size="xs" fw={700} c="gray.8" className="uppercase">
+                                {e.text}
+                              </Text>
+                            )}
+                            {e.label_seat && (
+                              <Text size="xs" c="gray">
+                                {e.label_seat}
+                              </Text>
+                            )}
+                          </Stack>
                         )}
                         <Stack gap={3} w="100%" h="100%" justify="space-between">
                           {(e.seat ?? []).map((x, r) => (
@@ -741,7 +913,7 @@ export default function Seatmap({
       </Card>
     </div>
   );
-}
+});
 
 const SeatBox = ({ active, color }: { active: boolean; color?: string }) => {
   return (

@@ -22,16 +22,23 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
 
             {data.type == 'seat' && (
                 <Stack h="100%" align="center" justify="center" gap={5} p={10}>
-                    {data.text && <Text size="xs" c="gray">{data.text}</Text>}
+                    {(data.seat_label || data.text) && (
+                        <Stack gap={0} align="center" className="absolute bottom-full mb-2 w-full left-0 pointer-events-none">
+                            {data.text && <Text size="xs" fw={700} c="gray.8" className="uppercase">{data.text}</Text>}
+                            {data.seat_label && <Text size="xs" c="gray">{data.seat_label}</Text>}
+                        </Stack>
+                    )}
                     <Stack gap={5} w="100%" h="100%" justify="space-between">
-                        {chunk((Array((data?.col ?? 1) * (data?.row ?? 1)).fill(data?.prefix).map((e, i) => (`${e}${i + 1}`)) ?? []), (data?.col ?? 1)).map((e, r) => (
+                        {chunk((Array((data?.col ?? 1) * (data?.row ?? 1)).fill(0).map((_, i) => (`${data?.prefix ?? ""}${data?.seat_label ?? ""}${i + (data?.starting_seat ?? 1)}`)) ?? []), (data?.col ?? 1)).map((e, r) => (
                             <Flex gap={5} w="100%" h="100%" justify="space-between" key={r}>
                                 {e.map((e, c) => (
                                     <Box w="100%" h="100%" key={c} className={`rounded-md bg-grey/50`}>
                                         <Center w="100%" h="100%">
-                                            <Text size="xs" c="white" className={`uppercase`}>
-                                                {e}
-                                            </Text>
+                                            {data.is_show_code !== false && (
+                                                <Text size="xs" c="white" className={`uppercase`}>
+                                                    {e}
+                                                </Text>
+                                            )}
                                         </Center>
                                     </Box>
                                 ))}
