@@ -29,7 +29,7 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
                         </Stack>
                     )}
                     <Stack gap={5} w="100%" h="100%" justify="space-between">
-                        {chunk((Array((data?.col ?? 1) * (data?.row ?? 1)).fill(0).map((_, i) => (`${data?.prefix ?? ""}${data?.seat_label ?? ""}${i + (data?.starting_seat ?? 1)}`)) ?? []), (data?.col ?? 1)).map((e, r) => (
+                        {chunk((Array((data?.col ?? 1) * (data?.row ?? 1)).fill(0).map((_, i) => (`${data.is_show_code !== false ? data?.prefix ?? "" : ""}${i + (data?.starting_seat ?? 1)}`)) ?? []), (data?.col ?? 1)).map((e, r) => (
                             <Flex gap={5} w="100%" h="100%" justify="space-between" key={r}>
                                 {e.map((e, c) => (
                                     <Box w="100%" h="100%" key={c} className={`rounded-md bg-grey/50`}>

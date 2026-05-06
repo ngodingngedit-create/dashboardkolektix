@@ -456,7 +456,7 @@ export default forwardRef(function Seatmap({
       const seat = chunk(
         Array((e.row ?? 1) * (e.col ?? 1))
           .fill(0)
-          .map((_, i) => `${e.prefix ?? ""}${e.seat_label ?? ""}${i + (e?.starting_seat ?? 1)}`) ?? [],
+          .map((_, i) => `${e.is_show_code !== false ? e.prefix ?? "" : ""}${i + (e?.starting_seat ?? 1)}`) ?? [],
         e.col ?? 1
       );
       return { ...e, seat, type: e?.type ?? "seat" };
@@ -559,7 +559,21 @@ export default forwardRef(function Seatmap({
             <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined}>
               <NumberInput withAsterisk hideControls label="Jumlah Kolom" placeholder="Isi Jumlah Kolom" {...areaProps("col")} />
               <NumberInput withAsterisk hideControls label="Jumlah Baris" placeholder="Isi Jumlah Baris" {...areaProps("row")} />
-              <TextInput withAsterisk mt={5} label="Code Seat" placeholder="Isi Code Seat" {...areaProps("prefix")} />
+              <TextInput 
+                mt={5} 
+                label={
+                  <Flex align="center" gap={5} wrap="nowrap">
+                    <Text size="sm" fw={500} style={{ whiteSpace: "nowrap" }}>Code Seat <span style={{ color: "red" }}>*</span></Text>
+                    <Switch 
+                      size="xs" 
+                      checked={areaVal.is_show_code !== false} 
+                      onChange={(e) => setAreaVal({ is_show_code: e.currentTarget.checked })} 
+                    />
+                  </Flex>
+                } 
+                placeholder="Isi Code Seat" 
+                {...areaProps("prefix")} 
+              />
               <TextInput mt={5} label="Label Code" placeholder="Isi Label Code" {...areaProps("seat_label")} />
               <NumberInput hideControls withAsterisk mt={5} label="Starting Seat" placeholder="Isi Starting Seat" defaultValue={1} {...areaProps("starting_seat")} />
             </Flex>
@@ -637,9 +651,6 @@ export default forwardRef(function Seatmap({
               />
             </Flex>
 
-            <Flex display={areaVal.type == "box" ? "none" : undefined} mt={10}>
-              <Switch label="Tampilkan Code Seat" checked={areaVal.is_show_code !== false} onChange={(e) => setAreaVal({ is_show_code: e.currentTarget.checked })} />
-            </Flex>
 
             <Flex gap={10} align="center" mt={10} justify="end">
               {typeof modalArea == "number" && modalArea != 0 && (
@@ -762,7 +773,7 @@ export default forwardRef(function Seatmap({
                 {e.type == "seat" && e.is_show_code !== false && (
                   <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-left-[40px]" : "-left-[25px]"}`} gap={5}>
                     <Text fw={600} size="sm" c="gray.8">
-                      {`${e.prefix ?? ""}${e.seat_label ?? ""}`}
+                      {`${e.seat_label ?? ""}`}
                     </Text>
                   </Flex>
                 )}
@@ -770,7 +781,7 @@ export default forwardRef(function Seatmap({
                 {e.type == "seat" && e.is_show_code !== false && (
                   <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!e.background ? "-right-[40px]" : "-right-[25px]"}`} gap={5}>
                     <Text fw={600} size="sm" c="gray.8">
-                      {`${e.prefix ?? ""}${e.seat_label ?? ""}`}
+                      {`${e.seat_label ?? ""}`}
                     </Text>
                   </Flex>
                 )}
@@ -778,7 +789,7 @@ export default forwardRef(function Seatmap({
                 <Guide guidekey="guide-create-seatmap" opened={i == 2} text="Posisikan area sesuai yang diinginkan" order={2}>
                   <Box
                     onMouseDown={() => handleMouse.boxDown(i)}
-                    bg={e.background ?? "none"}
+                    bg={e.background ?? "transparent"}
                     style={{
                       borderRadius: `${e.radius?.[0] ?? 5}px ${e.radius?.[1] ?? 5}px ${e.radius?.[2] ?? 5}px ${e.radius?.[3] ?? 5}px`,
                     }}
