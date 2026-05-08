@@ -14,6 +14,7 @@ import {
   Card,
   Flex,
   LoadingOverlay,
+  PasswordInput,
   Stack,
   Text,
   TextInput,
@@ -27,6 +28,7 @@ import {
   faArrowLeft,
   faArrowsRotate,
   faIdCard,
+  faKey,
   faPencil,
   faPlus,
   faSave,
@@ -92,6 +94,11 @@ interface LegalRecord {
   type: string;
   status: 'active' | 'inactive';
   is_snk: boolean;
+}
+
+interface FormResetPasswordProps {
+  email: string;
+  password: string;
 }
 
 type FormType = 'ktp' | 'npwp' | null;
@@ -471,12 +478,34 @@ const ProfileCreator = () => {
     return result;
   }, [npwpList, searchNpwp, sortNpwp]);
 
+  // ── Tab 3: Reset Password ──────────────────────────────────────────────────
+  const resetPasswordForm = useForm<FormResetPasswordProps>({
+    initialValues: { email: '', password: '' },
+    validate: {
+      password: (v) => (v.length < 6 ? 'Password minimal 6 karakter' : null),
+    },
+  });
+
+  const handleSubmitResetPassword = (values: FormResetPasswordProps) => {
+    setLoading.append('resetpassword');
+    Post('setup-passoword', values)
+      .then(() => {
+        notifications.show({ title: 'Berhasil', message: 'Password berhasil diperbarui', color: 'green' });
+        resetPasswordForm.setFieldValue('password', '');
+      })
+      .catch((err) => {
+        notifications.show({ title: 'Gagal', message: err?.response?.data?.message || 'Gagal memperbarui password', color: 'red' });
+      })
+      .finally(() => setLoading.filter((e) => e !== 'resetpassword'));
+  };
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (userData) {
       const creatorId = userData.has_creator?.id ?? 0;
       getProfileData();
       getLegalData(creatorId);
+      resetPasswordForm.setFieldValue('email', userData.email || '');
     }
   }, [userData]);
 
@@ -991,6 +1020,54 @@ const ProfileCreator = () => {
     </Stack>
   );
 
+  const renderResetPasswordForm = () => (
+    <Stack gap={25} maw={600} mx="auto">
+      <Stack gap={0}>
+        <Title order={2} size="h3">Reset Password</Title>
+        <Text size="sm" c="gray">Ubah password akun Anda di sini</Text>
+      </Stack>
+
+      <Card withBorder padding="xl" radius="md" shadow="sm">
+        <form id="reset-password-form" onSubmit={resetPasswordForm.onSubmit(handleSubmitResetPassword)}>
+          <Stack gap="lg">
+            <TextInput
+              label="Email"
+              placeholder="Email Anda"
+              readOnly
+              disabled
+              {...resetPasswordForm.getInputProps('email')}
+              leftSection={<Text size="xs" c="dimmed">@</Text>}
+            />
+            <PasswordInput
+              label="Password Baru"
+              placeholder="Masukkan password baru"
+              required
+              {...resetPasswordForm.getInputProps('password')}
+              leftSection={<FontAwesomeIcon icon={faKey} size="xs" />}
+            />
+          </Stack>
+        </form>
+      </Card>
+
+      {/* Sticky Footer for Reset Password */}
+      <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
+        <Flex justify="flex-end">
+          <Button
+            type="submit"
+            form="reset-password-form"
+            color="blue"
+            size="md"
+            style={{ minWidth: 200 }}
+            loading={loading.includes('resetpassword')}
+            leftSection={!loading.includes('resetpassword') && <FontAwesomeIcon icon={faSave} />}
+          >
+            Update Password
+          </Button>
+        </Flex>
+      </Box>
+    </Stack>
+  );
+
   // ══════════════════════════════════════════════════════════════════════════
   // MAIN RENDER
   // ══════════════════════════════════════════════════════════════════════════
@@ -1020,6 +1097,14 @@ const ProfileCreator = () => {
           <div className="p-5 pb-[100px] min-h-screen bg-[#fcfcfc]">
             <LoadingOverlay visible={loading.includes('submitlegal')} overlayProps={{ blur: 2 }} />
             {activeForm === 'ktp' ? renderKTPForm() : activeForm === 'npwp' ? renderNPWPForm() : renderLegalList()}
+          </div>
+        </Tab>
+
+        {/* ── Tab 3: Reset Password ── */}
+        <Tab key="reset-password" title="Reset Password">
+          <div className="p-5 pb-[100px] min-h-[500px] bg-[#fcfcfc]">
+            <LoadingOverlay visible={loading.includes('resetpassword')} overlayProps={{ blur: 2 }} />
+            {renderResetPasswordForm()}
           </div>
         </Tab>
       </Tabs>

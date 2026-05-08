@@ -17,6 +17,7 @@ import { Guide } from "@/components/Guide";
 import { notifications } from "@mantine/notifications";
 import { Context } from "@/pages/dashboard/create-event";
 import { useRouter } from "next/router";
+import useLoggedUser from "@/utils/useLoggedUser";
 
 interface ModalProps {
   isOpen: boolean;
@@ -102,6 +103,18 @@ export default function ModalCreateTicket({
   const { seatmapData } = useContext(Context);
   const router = useRouter();
   const { slug } = router.query;
+  const loggedUser = useLoggedUser();
+
+  const hasSeatmapPermission = useMemo(() => {
+    return loggedUser?.permissions?.some(p => p.module_id === 8) || false;
+  }, [loggedUser]);
+
+  // If user doesn't have seatmap permission, force category to Festival
+  useEffect(() => {
+    if (!hasSeatmapPermission && form.ticket_category === "Seated") {
+      setForm({ ...form, ticket_category: "Festival" });
+    }
+  }, [hasSeatmapPermission, form.ticket_category]);
 
   useEffect(() => {
     setAddSeatMap(!!eventId);
@@ -118,9 +131,14 @@ export default function ModalCreateTicket({
     if (typeof openForm == "number") {
       setForm(ticket[openForm]);
     } else {
-      setForm(defaultForm);
+      setForm({
+        ...defaultForm,
+        event_schedule_date: endDate || null,
+        ticket_end: endDate || null,
+        ending_time: eventEndTime || "00:00",
+      });
     }
-  }, [openForm]);
+  }, [openForm, endDate, eventEndTime]);
 
   useEffect(() => {
     if (!!slug) setAddSeatMap(true);
@@ -342,7 +360,15 @@ export default function ModalCreateTicket({
                 </Button>
 
                 <Guide text="Buat Seatmap untuk mengatur posisi seat" guidekey="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
-                  <Button w="100%" display={addSeatMap ? "none" : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className={`shrink-0`}>
+                  <Button 
+                    w="100%" 
+                    display={addSeatMap ? "none" : undefined} 
+                    variant="outline" 
+                    size="md" 
+                    onClick={() => setAddSeatMap(true)} 
+                    className={`shrink-0`}
+                    disabled={!hasSeatmapPermission}
+                  >
                     Buat Seatmap
                   </Button>
                 </Guide>
@@ -381,14 +407,20 @@ export default function ModalCreateTicket({
                       </Radio>
                       <Radio
                         classNames={{
-                          base: "opacity-50 md:!opacity-100 pointer-events-none md:!pointer-events-auto data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1",
+                          base: `${!hasSeatmapPermission ? 'opacity-50 cursor-not-allowed' : ''} data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1`,
                         }}
                         value="Seated"
+                        isDisabled={!hasSeatmapPermission}
                       >
                         Seat
                       </Radio>
                     </div>
                   </RadioGroup>
+                  {!hasSeatmapPermission && (
+                    <Text size="xs" color="red" fw={500} mt={-4}>
+                      * Jika ingin membuka seatmap, hubungi admin kolektix
+                    </Text>
+                  )}
 
                   <RadioGroup
                     label={
@@ -614,6 +646,7 @@ export default function ModalCreateTicket({
             <Box className={`flex-grow`} display={openSeatMap ? undefined : "none"}>
               <Seatmap
                 ref={seatmapRef}
+                editable={hasSeatmapPermission}
                 fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
                 unavailSeat={unavailSeat}
                 selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}

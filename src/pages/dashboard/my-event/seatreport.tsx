@@ -4,10 +4,25 @@ import axios from "axios";
 import { useDebouncedValue } from "@mantine/hooks";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get } from "@/utils/REST";
-import { Select, TextInput, Card, Flex, Stack, Text, Title, Loader, Tooltip, Pagination as MantinePagination } from "@mantine/core";
+import { Select, TextInput, Card, Flex, Stack, Text, Title, Loader, Tooltip, Pagination as MantinePagination, Badge, Box, Divider, Button, Group, ActionIcon } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair, faFileExcel, faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
+import moment from "moment";
+
+// Style helpers for consistency with report.tsx
+const headerStyle = (active = false, dir = "asc"): React.CSSProperties => ({
+  padding: '12px 14px',
+  textAlign: 'left',
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#777',
+  whiteSpace: 'nowrap',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  cursor: 'pointer',
+});
 
 interface Identity {
   id: number;
@@ -81,23 +96,28 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
   const [selectedTicketName, setSelectedTicketName] = useState<string | null>(null);
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>("invoice");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [seatViewMode, setSeatViewMode] = useState<"grid" | "table">("grid");
+
+  const handleSort = (col: string) => {
+    if (sortBy === col) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortDir("asc");
+    }
+  };
+
   const selectedEventData = useMemo(() => {
     return events.find((e) => String(e.id) === selectedEventId);
   }, [events, selectedEventId]);
 
   // Determine if we should use list mode (Festival) vs grid mode (Seated)
   const isFestival = useMemo(() => {
-    const categoryTickets = selectedEventData?.has_event_ticket?.filter(
-      (t) => selectedCategory === "all" || t.ticket_category === selectedCategory
-    );
-
-    const hasAnySeats = categoryTickets?.some(
-      (t) => (t.available_seat_number && t.available_seat_number.trim() !== "") || 
-             (t.taken_seat_number && t.taken_seat_number.trim() !== "")
-    );
-
-    return !hasAnySeats;
-  }, [selectedCategory, selectedEventData]);
+    return selectedCategory === "festival";
+  }, [selectedCategory]);
 
   // 1. Initial Load: Fetch Events (Only used if need to manually refresh, mostly handled by SSR now)
   const fetchEvents = async (creatorId: number) => {
@@ -127,8 +147,8 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       const params: any = { 
         creator_id: creatorId,
         event_id: eventId,
-        page: pageNum,
-        per_page: 500
+        page: 1,
+        per_page: 999999 // Fetch all for local filtering/sorting standard
       };
       
       if (searchStr) {
@@ -183,64 +203,67 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     setSeatPage(1);
   }, [selectedEventId, debouncedSearch, selectedTicketName]);
 
-  // Extract all broad categories from THE SELECTED EVENT'S TICKETS AND TRANSACTIONS
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
+  // Group categories into broader 'seated' and 'festival' groups
+  const categoryGroups = useMemo(() => {
+    const seated = new Set<string>();
+    const festival = new Set<string>();
     
     selectedEventData?.has_event_ticket?.forEach((t) => {
-      if (t.ticket_category) cats.add(t.ticket_category);
+      const hasSeats = (t.available_seat_number && t.available_seat_number.trim() !== "") || 
+                      (t.taken_seat_number && t.taken_seat_number.trim() !== "");
+      if (hasSeats) {
+        seated.add(t.ticket_category);
+      } else {
+        festival.add(t.ticket_category);
+      }
     });
 
-    transactions.forEach((trx) => {
-      trx.tickets?.forEach((t) => {
-        if (t.has_event_ticket?.ticket_category) cats.add(t.has_event_ticket.ticket_category);
-      });
-    });
+    return {
+      seated: Array.from(seated),
+      festival: Array.from(festival)
+    };
+  }, [selectedEventData]);
 
-    return Array.from(cats);
-  }, [selectedEventData, transactions]);
+  const categories = useMemo(() => {
+    const list = [];
+    if (categoryGroups.seated.length > 0) list.push("seated");
+    if (categoryGroups.festival.length > 0) list.push("festival");
+    return list;
+  }, [categoryGroups]);
 
   // Auto-select and validate category + ticket name
   useEffect(() => {
     if (categories.length > 0) {
-      // 1. Validate Category
-      if (!selectedCategory || !categories.includes(selectedCategory) || selectedCategory === "all") {
+      if (!selectedCategory || !categories.includes(selectedCategory)) {
         setSelectedCategory(categories[0]);
-        setSelectedTicketName(null); // Reset when category changes
+        setSelectedTicketName(null);
         setSelectedSeat(null);
       }
     }
   }, [categories, selectedCategory]);
 
-  // Extract ticket types matching the selected category
+  // Extract ticket types matching the selected group (Seated or Festival)
   const ticketTypesInCategory = useMemo(() => {
-    if (!selectedCategory || selectedCategory === "all") return [];
+    const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
+    if (targetCategories.length === 0) return [];
     
     const names = new Set<string>();
     
-    // Check master data
     selectedEventData?.has_event_ticket?.forEach(t => {
-      if (t.ticket_category === selectedCategory) names.add(t.name);
-    });
-    
-    // Check transactions (failsafe)
-    transactions.forEach(trx => {
-      trx.tickets?.forEach(t => {
-        const cat = t.has_event_ticket?.ticket_category || t.ticket_category;
-        const name = t.has_event_ticket?.name || t.ticket_category;
-        if (cat === selectedCategory && name) names.add(name);
-      });
+      if (targetCategories.includes(t.ticket_category)) names.add(t.name);
     });
     
     return Array.from(names);
-  }, [selectedCategory, selectedEventData, transactions]);
+  }, [selectedCategory, categoryGroups, selectedEventData]);
 
-  // Default to first ticket name when types change
+  // We keep selectedTicketName as null (All) by default now to show more data
   useEffect(() => {
-    if (ticketTypesInCategory.length > 0 && !selectedTicketName) {
-      setSelectedTicketName(ticketTypesInCategory[0]);
+    if (ticketTypesInCategory.length > 0 && !selectedTicketName && isFestival) {
+      // For festival, we might want to default to the first one ONLY if requested, 
+      // but for standard view, showing all is better.
+      // setSelectedTicketName(ticketTypesInCategory[0]); 
     }
-  }, [ticketTypesInCategory, selectedTicketName]);
+  }, [ticketTypesInCategory, selectedTicketName, isFestival]);
 
   // Extract all statuses from transactions
   const statuses = useMemo(() => {
@@ -305,9 +328,11 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const allSeats = useMemo(() => {
     const seatsSet = new Set<string>();
     
-    // 1. Add seats from event specification (usually for seated)
+    // 1. Add seats from event specification
+    const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
+    
     selectedEventData?.has_event_ticket?.forEach((t) => {
-      if (selectedCategory !== "all" && t.ticket_category !== selectedCategory) return;
+      if (!targetCategories.includes(t.ticket_category)) return;
 
       const available = t.available_seat_number?.split(",") || [];
       const taken = t.taken_seat_number?.split(",") || [];
@@ -322,7 +347,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     Object.keys(seatMap).forEach((seat) => {
       const ticketInfo = seatMap[seat];
       const tCategory = ticketInfo.ticket.has_event_ticket?.ticket_category || ticketInfo.ticket.ticket_category;
-      if (selectedCategory !== "all" && tCategory !== selectedCategory) return;
+      if (!targetCategories.includes(tCategory)) return;
       seatsSet.add(seat);
     });
     
@@ -351,22 +376,61 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   }, [allSeats, seatMap, searchQuery, selectedStatus]);
 
   // Handle Festival Table Filtering and Pagination
-  const itemsPerPage = 500;
-  const filteredFestivalTransactions = useMemo(() => {
-    if (!isFestival) return [];
-    return transactions.filter(trx => {
+  const itemsPerPage = 10;
+  // Final processed data for the table (Festival mode)
+  const processedTransactions = useMemo(() => {
+    // Only return empty if it's seated mode AND we are in grid view
+    if (!isFestival && seatViewMode === "grid") return [];
+    
+    let list = transactions.filter(trx => {
+      // 1. Ticket Name Filter (Quick Filter)
       const matchTicket = !selectedTicketName || trx.tickets.some(t => (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName);
+      
+      // 2. Broad Group Filter (Seated vs Festival)
+      const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
+      const matchCategory = trx.tickets.some(t => targetCategories.includes(t.has_event_ticket?.ticket_category || t.ticket_category));
+      
+      // 3. Status Filter
       const matchStatus = selectedStatus === "all" || trx.payment_status === selectedStatus;
-      return matchTicket && matchStatus;
-    });
-  }, [transactions, selectedTicketName, selectedStatus, isFestival]);
+      
+      // 4. Search Filter
+      const search = debouncedSearch.toLowerCase();
+      const matchSearch = !search || 
+        trx.invoice_no.toLowerCase().includes(search) ||
+        trx.has_user?.name?.toLowerCase().includes(search) ||
+        trx.has_user?.email?.toLowerCase().includes(search);
 
-  const totalFestivalPages = Math.ceil(filteredFestivalTransactions.length / itemsPerPage);
+      return matchTicket && matchCategory && matchStatus && matchSearch;
+    });
+
+    // Apply Sorting
+    if (sortBy) {
+      list.sort((a: any, b: any) => {
+        let valA, valB;
+        if (sortBy === 'invoice') { valA = a.invoice_no; valB = b.invoice_no; }
+        else if (sortBy === 'nama') { valA = a.has_user?.name || ""; valB = b.has_user?.name || ""; }
+        else if (sortBy === 'email') { valA = a.has_user?.email || ""; valB = b.has_user?.email || ""; }
+        else if (sortBy === 'status') { valA = a.payment_status; valB = b.payment_status; }
+        else { valA = a[sortBy] || ""; valB = b[sortBy] || ""; }
+
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
+
+        if (valA < valB) return sortDir === "asc" ? -1 : 1;
+        if (valA > valB) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [transactions, selectedTicketName, selectedCategory, selectedStatus, debouncedSearch, isFestival, seatViewMode, sortBy, sortDir]);
+
+  const totalFestivalPages = Math.ceil(processedTransactions.length / itemsPerPage);
   
   const paginatedFestivalTransactions = useMemo(() => {
     const start = (seatPage - 1) * itemsPerPage;
-    return filteredFestivalTransactions.slice(start, start + itemsPerPage);
-  }, [filteredFestivalTransactions, seatPage]);
+    return processedTransactions.slice(start, start + itemsPerPage);
+  }, [processedTransactions, seatPage]);
 
   const selectedSeatInfo = selectedSeat ? seatMap[selectedSeat] : null;
 
@@ -393,56 +457,73 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
         </Text>
       </Stack>
 
-      {/* Standard Filter Bar */}
+      {/* Standard Global Filter Bar */}
       <Card withBorder radius="md" p="md" shadow="sm">
-        <Flex gap="md" align="flex-end" wrap="wrap">
+        <Flex justify="flex-end" align="center" wrap="wrap" gap="md">
           <Select
-            label="Pilih Event"
-            placeholder="Pilih Event"
             value={selectedEventId}
+            data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
             onChange={(val) => {
               if (val) {
                 setSelectedEventId(val);
                 setSelectedSeat(null);
                 setSelectedCategory("all");
                 setSelectedStatus("all");
+                setSearchQuery("");
               }
             }}
-            data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
-            style={{ flex: 1, minWidth: 200 }}
+            placeholder="Pilih Event"
+            style={{ width: 220 }}
             searchable
+            clearable
+            size="sm"
           />
 
           <Select
-            label="Category Ticket"
-            placeholder="Pilih Category"
+            placeholder="Category Ticket"
             value={selectedCategory}
-            onChange={(val) => setSelectedCategory(val || categories[0])}
+            onChange={(val) => {
+               setSelectedCategory(val || categories[0]);
+               setSelectedTicketName(null);
+            }}
             data={categories.map(cat => ({ 
               value: cat, 
-              label: cat.toLowerCase() === "seated" ? "Seatmap" : cat 
+              label: cat === "seated" ? "Seatmap" : "Festival" 
             }))}
-            style={{ flex: 1, minWidth: 180 }}
+            style={{ width: 180 }}
+            size="sm"
           />
 
           <Select
-            label="Status"
             placeholder="Semua Status"
             value={selectedStatus}
             onChange={(val) => setSelectedStatus(val || "all")}
             data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
-            style={{ flex: 1, minWidth: 150 }}
-            leftSection={<FontAwesomeIcon icon={faFilter} size="xs" />}
+            style={{ width: 160 }}
+            leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
+            size="sm"
           />
 
           <TextInput
-            label="Cari Nama / Seat"
-            placeholder="Cari..."
+            placeholder="Cari Nama / Invoice / Seat..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
-            style={{ flex: 1.5, minWidth: 250 }}
+            leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+            style={{ width: 250 }}
+            size="sm"
           />
+
+          <Tooltip label="Refresh Data">
+            <ActionIcon
+              variant="light"
+              color="gray"
+              onClick={() => users?.has_creator?.id && fetchTransactions(users.has_creator.id, selectedEventId, 1, debouncedSearch)}
+              size="lg"
+              radius="xl"
+            >
+              <FontAwesomeIcon icon={faArrowsRotate} />
+            </ActionIcon>
+          </Tooltip>
         </Flex>
       </Card>
 
@@ -454,20 +535,20 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
            </div>
         )}
         
-        {/* Left Column: Seat List (25%) */}
-        <div className="w-full md:w-1/4 flex flex-col gap-4">
-          <div className="bg-white rounded-2xl border border-light-grey overflow-hidden shadow-sm flex flex-col h-[70vh]">
-            <div className="bg-white border-b border-light-grey p-4 text-dark font-bold flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <FontAwesomeIcon icon={isFestival ? faTicket : faChair} className="text-primary-base text-sm" />
-                  <span>{isFestival ? "Tiket Festival" : "Seat Number"}</span>
+        {/* Left Column: Seat List (Visible in Grid mode) */}
+        {!isFestival && (
+          <div className="w-full md:w-1/4 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl border border-light-grey overflow-hidden shadow-sm flex flex-col h-[70vh]">
+              <div className="bg-white border-b border-light-grey p-4 text-dark font-bold flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faChair} className="text-primary-base text-sm" />
+                    <span>Seat Number</span>
+                  </div>
+                  {selectedSeat && (
+                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" title="Seat Selected"></div>
+                  )}
                 </div>
-                {selectedSeat && (
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" title="Seat Selected"></div>
-                )}
-              </div>
-              {!isFestival && (
                 <div className="flex items-center gap-4 text-xs font-normal mt-1">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm bg-grey border border-grey"></div>
@@ -478,20 +559,66 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                     <span className="text-grey">Tersedia</span>
                   </div>
                 </div>
-              )}
+              </div>
+              <div className="flex-grow overflow-y-auto p-2 scrollbar-hide">
+                {filteredSeats.length > 0 ? (
+                  <div className="grid grid-cols-5 gap-2">
+                    {filteredSeats.map((seat) => {
+                      const isBought = !!seatMap[seat];
+                      const isSelected = selectedSeat === seat;
+                      return (
+                        <button
+                          key={seat}
+                          onClick={() => {
+                            setSelectedSeat(seat);
+                            setSeatViewMode("grid");
+                          }}
+                          className={`
+                            transition-all duration-200 border p-3 rounded-lg text-sm font-medium
+                            ${
+                              isSelected
+                                ? "bg-primary-base text-white border-primary-base shadow-md transform scale-105 z-10"
+                                : isBought
+                                ? "bg-grey text-white border-grey hover:bg-dark-grey hover:border-dark-grey"
+                                : "bg-white text-primary-base border-light-grey hover:border-primary-base"
+                            }
+                          `}
+                        >
+                          <span className="truncate flex-1">{seat}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-grey gap-2 text-center p-4">
+                    <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-20" />
+                    <p className="text-sm font-medium">Tidak ada seat ditemukan untuk filter ini</p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex-grow overflow-y-auto p-2 scrollbar-hide">
-              {isFestival ? (
-                /* FESTIVAL MODE: List of Ticket Names */
+          </div>
+        )}
+
+        {/* Festival Mode Left Column (Always visible in Festival) */}
+        {isFestival && (
+          <div className="w-full md:w-1/4 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl border border-light-grey overflow-hidden shadow-sm flex flex-col h-[70vh]">
+              <div className="bg-white border-b border-light-grey p-4 text-dark font-bold flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faTicket} className="text-primary-base text-sm" />
+                    <span>Tiket Festival</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-grow overflow-y-auto p-2 scrollbar-hide">
                 <div className="flex flex-col gap-2">
                   {ticketTypesInCategory.length > 0 ? (
                     ticketTypesInCategory.map((tName) => {
                       const isSelected = selectedTicketName === tName;
-                      // Calculate total sold for this specific ticket name from the current transaction list
-                      // This ensures the count is always accurate regardless of master data state
                       const countBought = transactions.reduce((acc, trx) => {
                         const matchingTickets = trx.tickets.filter(t => (t.has_event_ticket?.name || t.ticket_category) === tName);
-                        // Using qty_ticket if available, else counting items
                         const qtyBought = matchingTickets.reduce((q, t) => q + (t.qty_ticket || 1), 0);
                         return acc + qtyBought;
                       }, 0);
@@ -501,7 +628,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                           key={tName}
                           onClick={() => {
                             setSelectedTicketName(tName);
-                            setSelectedSeat(null); // Back to table view
+                            setSelectedSeat(null);
                           }}
                           className={`
                             transition-all duration-200 border p-3 text-left w-full flex justify-between items-center rounded-xl font-medium text-sm
@@ -524,130 +651,181 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                     </div>
                   )}
                 </div>
-              ) : (
-                /* SEATED MODE: Original Grid/List of individual seats */
-                filteredSeats.length > 0 ? (
-                  <div className="grid grid-cols-5 gap-2">
-                    {filteredSeats.map((seat) => {
-                      const isBought = !!seatMap[seat];
-                      const isSelected = selectedSeat === seat;
-                      return (
-                        <button
-                          key={seat}
-                          onClick={() => setSelectedSeat(seat)}
-                          className={`
-                            transition-all duration-200 border p-3 rounded-lg text-sm font-medium
-                            ${
-                              isSelected
-                                ? "bg-primary-base text-white border-primary-base shadow-md transform scale-105 z-10"
-                                : isBought
-                                ? "bg-grey text-white border-grey hover:bg-dark-grey hover:border-dark-grey"
-                                : "bg-white text-primary-base border-light-grey hover:border-primary-base"
-                            }
-                          `}
-                        >
-                          <span className="truncate flex-1">{seat}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-grey gap-2 text-center p-4">
-                    <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-20" />
-                    <p className="text-sm font-medium">Tidak ada seat ditemukan untuk filter ini</p>
-                  </div>
-                )
-              )}
-            </div>
-            {isFestival && (
+              </div>
               <div className="p-3 border-t border-light-grey bg-white text-center">
                 <Text size="xs" c="dimmed">Menampilkan jenis tiket tersedia</Text>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-
-        {/* Right Column: Buyer Details (75%) */}
-        <div className="w-full md:w-3/4">
+        )}
+        
+        {/* Right Column: Buyer Details / Table (Fills remaining space) */}
+        <div className={`w-full md:w-3/4`}>
           <div className="bg-white rounded-2xl border border-light-grey shadow-sm min-h-[70vh] flex flex-col overflow-hidden">
             <div className="bg-white border-b border-light-grey p-4 flex justify-between items-center">
               <div className="flex items-center gap-4">
-                {isFestival && selectedSeat && (
+                {selectedSeat && (
                   <button 
                     onClick={() => setSelectedSeat(null)}
-                    className="text-dark hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-light-grey px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-dark hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-light-grey px-3 py-1.5 rounded-lg transition-colors mr-2"
                   >
-                    <FontAwesomeIcon icon={faChevronRight} className="rotate-180" />
+                    <FontAwesomeIcon icon={faChevronRight} className="rotate-180" size="xs" />
                     Kembali
                   </button>
                 )}
                 <h2 className="text-xl font-bold text-dark flex items-center gap-2">
                   <FontAwesomeIcon icon={faIdBadge} className="text-primary-base" />
-                  {isFestival && !selectedSeat ? `Daftar Transaksi: ${selectedTicketName}` : "Laporan Pemesan"}
+                  {(isFestival || seatViewMode === "table") && !selectedSeat ? `Daftar Transaksi: ${selectedTicketName || 'Semua'}` : "Laporan Pemesan"}
                   {selectedSeat && <span className="text-primary-base ml-2">[{selectedSeat}]</span>}
                 </h2>
               </div>
+              {!isFestival && (
+                <Select
+                  size="xs"
+                  value={seatViewMode}
+                  onChange={(val) => {
+                    setSeatViewMode(val as "grid" | "table");
+                    if (val === "table") setSelectedSeat(null);
+                  }}
+                  data={[
+                    { value: "grid", label: "Seat" },
+                    { value: "table", label: "Tabel" }
+                  ]}
+                  style={{ width: 100 }}
+                />
+              )}
             </div>
 
+            {/* Quick Filter inside Card */}
+            {(isFestival || seatViewMode === "table") && !selectedSeat && (
+              <div className="px-4 py-3 bg-gray-50 border-b border-light-grey flex justify-between items-center gap-4">
+                <Text size="sm" fw={600} c="dimmed">Filter Cepat:</Text>
+                <Flex gap="sm" align="center">
+                  <Select
+                    placeholder="Semua Tiket"
+                    value={selectedTicketName}
+                    onChange={(val) => setSelectedTicketName(val)}
+                    data={ticketTypesInCategory.map(t => ({ value: t, label: t }))}
+                    size="xs"
+                    style={{ width: 180 }}
+                    clearable
+                  />
+                  <Select
+                    placeholder="Semua Status"
+                    value={selectedStatus}
+                    onChange={(val) => setSelectedStatus(val || "all")}
+                    data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
+                    size="xs"
+                    style={{ width: 140 }}
+                  />
+                </Flex>
+              </div>
+            )}
+
             <div className="p-6 flex-grow overflow-y-auto bg-[#fafafa]/50">
-              {isFestival && !selectedSeat ? (
+              {(isFestival || seatViewMode === "table") && !selectedSeat ? (
                 /* FESTIVAL MODE: Table of Transactions */
                 <div className="space-y-4">
                   <div className="bg-white rounded-xl border border-light-grey overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
+                      <table className="min-w-full w-max text-left text-sm">
                         <thead>
-                          <tr className="bg-primary-light border-b border-light-grey text-primary-dark">
-                            <th className="p-4 font-bold">Invoice</th>
-                            <th className="p-4 font-bold">Nama Pemesan</th>
-                            <th className="p-4 font-bold">Jenis Tiket</th>
-                            <th className="p-4 font-bold">Email</th>
-                            <th className="p-4 font-bold">Status</th>
-                            <th className="p-4 font-bold text-center">Aksi</th>
+                          <tr style={{ backgroundColor: "#f5f7fa", borderBottom: "2px solid #e8e8e8" }}>
+                            <th onClick={() => handleSort('invoice')} style={headerStyle(sortBy === 'invoice', sortDir)}>
+                              INVOICE {sortBy === 'invoice' && (sortDir === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th onClick={() => handleSort('nama')} style={headerStyle(sortBy === 'nama', sortDir)}>
+                              NAMA PEMESAN {sortBy === 'nama' && (sortDir === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th style={headerStyle()}>JENIS TIKET</th>
+                            <th style={headerStyle()}>NO. SEAT</th>
+                            <th onClick={() => handleSort('email')} style={headerStyle(sortBy === 'email', sortDir)}>
+                              EMAIL {sortBy === 'email' && (sortDir === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th onClick={() => handleSort('status')} style={headerStyle(sortBy === 'status', sortDir)}>
+                              STATUS {sortBy === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th style={{ ...headerStyle(), textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>AKSI</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
-                          {transactions.map((trx) => {
+                          {paginatedFestivalTransactions.map((trx) => {
                                // Find the specific seat identifier for this transaction to use as the selection key
                                const seatId = Object.keys(seatMap).find(k => seatMap[k].transaction.id === trx.id);
-                              
+                               
                               return (
-                                <tr key={trx.id} className="hover:bg-primary-light/10 transition-colors">
-                                  <td className="p-4 font-mono font-semibold text-primary-base">{trx.invoice_no}</td>
-                                  <td className="p-4 font-medium text-dark">{trx.has_user?.name || "-"}</td>
-                                  <td className="p-4 font-medium text-primary-base">
+                                <tr 
+                                  key={trx.id} 
+                                  className="hover:bg-primary-light/10 transition-colors"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => seatId && setSelectedSeat(seatId)}
+                                >
+                                  <td className="p-4 font-mono font-semibold text-primary-base whitespace-nowrap">{trx.invoice_no}</td>
+                                  <td className="p-4 font-medium text-dark whitespace-nowrap">{trx.has_user?.name || "-"}</td>
+                                  <td className="p-4 font-medium text-primary-base whitespace-nowrap">
+                                    <Badge variant="light" size="sm">
+                                      {trx.tickets
+                                        .filter(t => !selectedTicketName || (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName)
+                                        .map(t => t.has_event_ticket?.name || t.ticket_category)
+                                        .join(", ")}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-4 font-bold text-primary-base whitespace-nowrap">
                                     {trx.tickets
-                                      .filter(t => !selectedTicketName || (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName)
-                                      .map(t => t.has_event_ticket?.name || t.ticket_category)
-                                      .join(", ")}
+                                      .map(t => {
+                                        if (typeof t.seatnumber_ticket === 'string') {
+                                          try {
+                                            const parsed = JSON.parse(t.seatnumber_ticket);
+                                            return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+                                          } catch {
+                                            return t.seatnumber_ticket;
+                                          }
+                                        }
+                                        return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
+                                      })
+                                      .filter(Boolean)
+                                      .join(", ") || "-"}
                                   </td>
-                                  <td className="p-4 text-grey">{trx.has_user?.email || "-"}</td>
-                                  <td className="p-4">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${
-                                      trx.payment_status?.toLowerCase() === 'verified' || trx.payment_status?.toLowerCase() === 'success' ? 'bg-green-500' :
-                                      trx.payment_status?.toLowerCase() === 'expired' ? 'bg-red-500' : 'bg-yellow-500'
-                                    }`}>
-                                      {trx.payment_status}
-                                    </span>
+                                  <td className="p-4 text-grey whitespace-nowrap">{trx.has_user?.email || "-"}</td>
+                                  <td className="p-4 whitespace-nowrap">
+                                    <Badge
+                                      size="sm"
+                                      variant="filled"
+                                      color={
+                                        trx.payment_status?.toLowerCase() === 'verified' || trx.payment_status?.toLowerCase() === 'success' ? 'green' :
+                                        trx.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
+                                      }
+                                    >
+                                      <span className="whitespace-nowrap">{trx.payment_status}</span>
+                                    </Badge>
                                   </td>
-                                  <td className="p-4 text-center">
+                                  <td className="p-4 text-center sticky right-0 bg-white z-10 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">
                                     <Tooltip label="View Detail" withArrow position="top">
-                                      <button 
-                                        onClick={() => seatId && setSelectedSeat(seatId)}
-                                        className="bg-primary-base text-white w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-dark transition-colors shadow-sm mx-auto"
+                                      <ActionIcon 
+                                        variant="light" 
+                                        color="blue"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          seatId && setSelectedSeat(seatId);
+                                        }}
                                       >
                                         <FontAwesomeIcon icon={faEye} size="sm" />
-                                      </button>
+                                      </ActionIcon>
                                     </Tooltip>
                                   </td>
                                 </tr>
                               );
                           })}
-                          {transactions.length === 0 && (
+                          {paginatedFestivalTransactions.length === 0 && (
                             <tr>
-                              <td colSpan={6} className="p-10 text-center text-grey">
-                                <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-10 mb-2 block mx-auto" />
-                                Tidak ada transaksi untuk jenis tiket ini.
+                              <td colSpan={7} className="p-16">
+                                <Flex direction="column" align="center" justify="center" gap="xs">
+                                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-1">
+                                    <FontAwesomeIcon icon={faTicket} size="2x" className="text-gray-200" />
+                                  </div>
+                                  <Text fw={600} c="gray.5" size="sm">Tidak ada transaksi ditemukan</Text>
+                                  <Text c="gray.4" size="xs">Coba gunakan kata kunci lain atau sesuaikan filter Anda</Text>
+                                </Flex>
                               </td>
                             </tr>
                           )}
@@ -658,7 +836,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                   {/* Pagination for the table */}
                   <div className="flex justify-center pt-4">
                     <MantinePagination 
-                      total={Math.max(1, apiTotalPages)} 
+                      total={Math.max(1, totalFestivalPages)} 
                       value={seatPage}  
                       onChange={setSeatPage} 
                       color="blue" 

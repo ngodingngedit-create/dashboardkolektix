@@ -1248,16 +1248,18 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
 import moment from "moment";
+import Cookies from "js-cookie";
 import { EticketListResponse, EventListResponse, TransactionListResponse, TransactionStatusResponse, EventData } from "./type";
 import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 // Definisikan tipe untuk metode pembayaran
@@ -1288,6 +1290,21 @@ const Merch = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionListResponse | null>(null);
+
+  // State untuk Edit Pemesan
+  const [editPemesanModalOpen, setEditPemesanModalOpen] = useState(false);
+  const [selectedIdentity, setSelectedIdentity] = useState<any>(null);
+  const [editIdentityForm, setEditIdentityForm] = useState({
+    full_name: "",
+    email: "",
+    no_telp: "",
+    nik: "",
+  });
+
+  // State untuk Check-in Manual
+  const [isCheckinModalOpen, setIsCheckinModalOpen] = useState(false);
+  const [selectedCheckin, setSelectedCheckin] = useState<any>(null);
+  const [checkingIn, setCheckingIn] = useState(false);
 
   // State untuk pagination SERVER SIDE
   const [currentPage, setCurrentPage] = useState(1);
@@ -1533,6 +1550,79 @@ const Merch = () => {
     };
   };
 
+  const handleEditPemesan = (item: any) => {
+    setSelectedIdentity(item.identity);
+    setEditIdentityForm({
+      full_name: item.nama,
+      email: item.email,
+      no_telp: item.telepon,
+      nik: item.nik,
+    });
+    setEditPemesanModalOpen(true);
+  };
+
+  const handleSavePemesan = async () => {
+    if (!selectedIdentity) return;
+
+    setLoading.append("savePemesan");
+    try {
+      // Assuming PUT endpoint for identity update
+      await axios.put(`${config.wsUrl}transaction-identity/${selectedIdentity.id}`, editIdentityForm);
+
+      notifications.show({
+        title: "Berhasil",
+        message: "Data pemesan berhasil diperbarui",
+        color: "green",
+      });
+
+      setEditPemesanModalOpen(false);
+      loadEventData(); // Refresh data
+    } catch (error: any) {
+      console.error("Error saving pemesan:", error);
+      notifications.show({
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal memperbarui data pemesan",
+        color: "red",
+      });
+    } finally {
+      setLoading.filter((e) => e != "savePemesan");
+    }
+  };
+
+  const handleManualCheckin = async () => {
+    if (!selectedCheckin) return;
+    setCheckingIn(true);
+    try {
+      const response = await axios.post(`${config.wsUrl}event/scan-eticket`, {
+        qr_code: selectedCheckin.qr_code
+      }, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('token')}`
+        }
+      });
+
+      if (response.data?.success || response.data?.status === 200 || response.data?.status === true) {
+        notifications.show({
+          title: "Berhasil",
+          message: "Check-in manual berhasil dilakukan",
+          color: "green"
+        });
+        setIsCheckinModalOpen(false);
+        loadEventData(); // Refresh data
+      } else {
+        throw new Error(response.data?.message || "Gagal melakukan check-in manual");
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: "Gagal",
+        message: error.response?.data?.message || error.message || "Terjadi kesalahan",
+        color: "red"
+      });
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const loadEventData = async () => {
     if (!selectedEvent) {
       return;
@@ -1740,17 +1830,50 @@ const Merch = () => {
   const processedPemesanData = useMemo(() => {
     if (!Array.isArray(allDataList)) return [];
 
-    let result = allDataList
-      ?.filter((e) => e.payment_status == "Verified")
-      .flatMap((e) => e.identities || [])
-      .filter((id) => id.is_pemesan == 1)
+    let result = filteredDataList
+      .flatMap((e) => {
+        // Collect all seat numbers from tickets in this transaction
+        const seats = (e.tickets || [])
+          .map((t: any) => {
+            if (t.seatnumber_ticket) {
+              try {
+                // Check if it's a JSON string
+                if (typeof t.seatnumber_ticket === 'string' && (t.seatnumber_ticket.startsWith('[') || t.seatnumber_ticket.startsWith('{'))) {
+                  const parsed = JSON.parse(t.seatnumber_ticket);
+                  return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+                }
+                return t.seatnumber_ticket;
+              } catch {
+                return t.seatnumber_ticket;
+              }
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join(", ");
+
+        // Get identity - try to find is_pemesan, fallback to first identity
+        const identities = e.identities || [];
+        const pemesanIdentity = identities.find((id) => id.is_pemesan == 1) || identities[0];
+
+        if (!pemesanIdentity) return [];
+
+        return [{
+          ...pemesanIdentity,
+          seat_number: seats || "-",
+          transaction: e // Keep reference to transaction for editing if needed
+        }];
+      })
       .map((e, index) => ({
+        id: e.id, // Database ID
         no: index + 1,
         nik: e.nik || "-",
         nama: e.full_name || "-",
         email: e.email || "-",
         telepon: e.no_telp || "-",
+        seat_number: e.seat_number,
         tanggal: moment(e.created_at).format("HH:mm:ss DD MMM YYYY"),
+        identity: e, // Full identity object
       }));
 
     if (sortBy) {
@@ -1767,22 +1890,55 @@ const Merch = () => {
     }
 
     return result;
-  }, [allDataList, sortBy, sortDir]);
+  }, [filteredDataList, sortBy, sortDir]);
 
-  // Proses data untuk tabel checkin
+  // Proses data untuk tabel checkin - Sekarang mendetail per e-ticket/peserta
   const processedCheckinData = useMemo(() => {
-    if (!Array.isArray(dataListEticket)) return [];
+    if (!Array.isArray(filteredDataList)) return [];
 
-    let result = dataListEticket
-      ?.filter((e) => Boolean(e.is_checkin))
-      .map((e, index) => ({
-        no: index + 1,
-        eticket: e.eticket_number || "-",
-        waktu: moment(e.checkin_date).format("HH:mm:ss DD MMM YYYY"),
-      }));
+    let list: any[] = [];
+    let absoluteRowNum = 1;
+
+    filteredDataList.forEach((trans) => {
+      if (trans.etickets && trans.etickets.length > 0) {
+        // Gunakan payload etickets jika ada
+        trans.etickets.forEach((eticket, index) => {
+          // Cari identitas yang sesuai dengan tiket ini (biasanya urut)
+          const identity = trans.identities?.[index];
+          list.push({
+            no: absoluteRowNum++,
+            nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+            telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+            email: identity?.email || (trans.has_user as any)?.email || "-",
+            status_checkin: eticket.is_checkin === 1,
+            invoice: trans.invoice_no,
+            qr_code: eticket.eticket_number,
+            waktu: eticket.checkin_date ? moment(eticket.checkin_date).format("HH:mm:ss DD MMM YYYY") : "-"
+          });
+        });
+      } else {
+        // Fallback ke logic tickets
+        trans.tickets?.forEach((ticket) => {
+          const qty = parseInt(String(ticket.qty_ticket)) || 1;
+          for (let i = 0; i < qty; i++) {
+            const identity = trans.identities?.[i];
+            list.push({
+              no: absoluteRowNum++,
+              nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+              telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+              email: identity?.email || (trans.has_user as any)?.email || "-",
+              status_checkin: ticket.ticket_checkin_status === 1,
+              invoice: trans.invoice_no,
+              qr_code: ticket.etiket_number,
+              waktu: "-" // Biasanya tidak ada di level ticket payload ini
+            });
+          }
+        });
+      }
+    });
 
     if (sortBy) {
-      result.sort((a: any, b: any) => {
+      list.sort((a: any, b: any) => {
         let valA = a[sortBy] ?? "";
         let valB = b[sortBy] ?? "";
         if (typeof valA === "string") valA = valA.toLowerCase();
@@ -1794,8 +1950,8 @@ const Merch = () => {
       });
     }
 
-    return result;
-  }, [dataListEticket, sortBy, sortDir]);
+    return list.map((item, index) => ({ ...item, no: index + 1 }));
+  }, [filteredDataList, sortBy, sortDir]);
 
   const salesStatistics = useMemo(() => {
     const totalTickets = allDataList.reduce((sum, transaction) => {
@@ -1939,108 +2095,102 @@ const Merch = () => {
             >
               Data Pemesan
             </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${selectedTab === "checkin" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
-                }`}
-              onClick={() => setSelectedTab("checkin")}
-            >
-              Data Checkin
-            </button>
+
           </div>
         </div>
+
+        {/* Global Filter Bar */}
+        <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+          <SegmentedControl
+            value={transactionSegment}
+            onChange={(e) => setTransactionSegment(e)}
+            data={[
+              { label: "All", value: "all" },
+              { label: "Online", value: "online" },
+              { label: "Offline", value: "offline" },
+            ]}
+            radius="xl"
+            color="#0b387c"
+            size="sm"
+          />
+
+          <Flex gap={8} align="center" wrap="wrap">
+            <Button
+              onClick={exportToExcel}
+              color="green"
+              variant="filled"
+              leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+              disabled={!allDataList || allDataList.length === 0}
+              size="sm"
+            >
+              Export Excel
+            </Button>
+
+            <Select
+              value={selectedEvent ? String(selectedEvent) : null}
+              data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
+              onChange={(e) => {
+                if (e) {
+                  const selectedId = parseInt(e);
+                  setSelectedEvent(selectedId);
+                  setSelectedTicket("all");
+                  setSelectedStatus("all");
+                  setTransactionSegment("all");
+                  setSearchValue("");
+                  setCurrentPage(1);
+                  const selectedEventData = eventList.find(event => event.id === selectedId);
+                  if (selectedEventData?.slug) setSlug(selectedEventData.slug);
+                }
+              }}
+              placeholder={loading.includes("fetchEvents") ? "Loading..." : "Pilih Event"}
+              style={{ width: 190 }}
+              disabled={loading.includes("fetchEvents")}
+              nothingFoundMessage="Tidak ada event"
+              searchable
+              clearable
+              size="sm"
+            />
+
+            <Select
+              value={selectedTicket}
+              data={availableTickets}
+              onChange={(value) => { if (value) setSelectedTicket(value); }}
+              placeholder="Pilih Tiket"
+              style={{ width: 155 }}
+              disabled={availableTickets.length <= 1}
+              size="sm"
+            />
+
+            <Select
+              placeholder="Semua Status"
+              value={selectedStatus}
+              onChange={(value) => value && setSelectedStatus(value)}
+              data={[
+                { value: "all", label: "Semua Status" },
+                ...(transactionStatus?.map((status) => ({
+                  value: String(status.id),
+                  label: status.name,
+                })) || []),
+              ]}
+              style={{ width: 165 }}
+              leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
+              size="sm"
+            />
+
+            <Input
+              placeholder="Cari nama atau invoice..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              style={{ width: 220 }}
+              leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+              size="sm"
+            />
+          </Flex>
+        </Flex>
 
         {/* Tab Content - Data Penjualan */}
         {selectedTab === "transaksi" && (
           <div className="pt-2">
-            {/* Filter Bar inside the tab content */}
-            <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
-              <SegmentedControl
-                value={transactionSegment}
-                onChange={(e) => setTransactionSegment(e)}
-                data={[
-                  { label: "All", value: "all" },
-                  { label: "Online", value: "online" },
-                  { label: "Offline", value: "offline" },
-                ]}
-                radius="xl"
-                color="#0b387c"
-                size="sm"
-              />
-
-              <Flex gap={8} align="center" wrap="wrap">
-                <Button
-                  onClick={exportToExcel}
-                  color="green"
-                  variant="filled"
-                  leftSection={<FontAwesomeIcon icon={faFileExcel} />}
-                  disabled={!allDataList || allDataList.length === 0}
-                  size="sm"
-                >
-                  Export Excel
-                </Button>
-
-                <Select
-                  value={selectedEvent ? String(selectedEvent) : null}
-                  data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
-                  onChange={(e) => {
-                    if (e) {
-                      const selectedId = parseInt(e);
-                      setSelectedEvent(selectedId);
-                      setSelectedTicket("all");
-                      setSelectedStatus("all");
-                      setTransactionSegment("all");
-                      setSearchValue("");
-                      setCurrentPage(1);
-                      const selectedEventData = eventList.find(event => event.id === selectedId);
-                      if (selectedEventData?.slug) setSlug(selectedEventData.slug);
-                    }
-                  }}
-                  placeholder={loading.includes("fetchEvents") ? "Loading..." : "Pilih Event"}
-                  style={{ width: 190 }}
-                  disabled={loading.includes("fetchEvents")}
-                  nothingFoundMessage="Tidak ada event"
-                  searchable
-                  clearable
-                  size="sm"
-                />
-
-                <Select
-                  value={selectedTicket}
-                  data={availableTickets}
-                  onChange={(value) => { if (value) setSelectedTicket(value); }}
-                  placeholder="Pilih Tiket"
-                  style={{ width: 155 }}
-                  disabled={availableTickets.length <= 1}
-                  size="sm"
-                />
-
-                <Select
-                  placeholder="Semua Status"
-                  value={selectedStatus}
-                  onChange={(value) => value && setSelectedStatus(value)}
-                  data={[
-                    { value: "all", label: "Semua Status" },
-                    ...(transactionStatus?.map((status) => ({
-                      value: String(status.id),
-                      label: status.name,
-                    })) || []),
-                  ]}
-                  style={{ width: 165 }}
-                  leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
-                  size="sm"
-                />
-
-                <Input
-                  placeholder="Cari nama atau invoice..."
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  style={{ width: 220 }}
-                  leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-                  size="sm"
-                />
-              </Flex>
-            </Flex>
-
             {/* TABLE TRANSAKSI DENGAN SCROLL */}
             <Box style={{ overflowX: 'auto', position: 'relative' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
@@ -2126,8 +2276,10 @@ const Merch = () => {
                     <th onClick={() => handleSort('nik')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. IDENTITAS <span style={{ opacity: sortBy === 'nik' ? 1 : 0.3 }}>{sortBy === 'nik' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA PEMESAN <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('seat_number')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SEAT NUMBER <span style={{ opacity: sortBy === 'seat_number' ? 1 : 0.3 }}>{sortBy === 'seat_number' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2138,13 +2290,21 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.nik}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600} c="blue">{item.seat_number}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.telepon}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" c="dimmed">{item.tanggal}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                          <Tooltip label="Edit Pemesan" withArrow position="top">
+                            <ActionIcon color="blue" variant="light" onClick={() => handleEditPemesan(item)}>
+                              <FontAwesomeIcon icon={faPencil} size="sm" />
+                            </ActionIcon>
+                          </Tooltip>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Tidak ada data pemesan</Text>
                       </td>
                     </tr>
@@ -2155,40 +2315,7 @@ const Merch = () => {
           </div>
         )}
 
-        {/* Tab Content - Data Checkin */}
-        {selectedTab === "checkin" && (
-          <div className="pt-4">
-            {/* TABLE CHECKIN DENGAN SCROLL */}
-            <Box style={{ overflowX: 'auto', position: 'relative' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('eticket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ETICKET <span style={{ opacity: sortBy === 'eticket' ? 1 : 0.3 }}>{sortBy === 'eticket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('waktu')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>WAKTU CHECKIN <span style={{ opacity: sortBy === 'waktu' ? 1 : 0.3 }}>{sortBy === 'waktu' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {processedCheckinData.length > 0 ? (
-                    processedCheckinData.map((item: any, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}><Text size="sm" c="dimmed" fw={500}>{item.no}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.eticket}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" c="dimmed">{item.waktu}</Text></td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text>Tidak ada data checkin</Text>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </Box>
-          </div>
-        )}
+
       </Card>
 
       {/* Modal View Detail Transaksi */}
@@ -2202,105 +2329,145 @@ const Merch = () => {
           </Flex>
         }
         size="lg"
-        radius="md"
+        radius="lg"
         styles={{
           header: { backgroundColor: "#0b387c", color: "white", padding: "15px 20px" },
-          body: { padding: "20px" },
+          body: { padding: "24px", backgroundColor: "#fcfcfc" },
           close: { color: "white" },
         }}
       >
         {selectedTransaction && (
-          <Stack gap="lg">
-            {/* Informasi Utama */}
-            <div>
-              <Text fw={700} size="sm" mb="md" c="dimmed" tt="uppercase">Informasi Transaksi</Text>
-              <Stack gap="xs">
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">No. Invoice</Text>
-                  <Text fw={600} size="sm">{selectedTransaction.invoice_no}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Status</Text>
+          <Stack gap="xl">
+            {/* Informasi Transaksi Card */}
+            <Card withBorder radius="md" p={0} shadow="xs">
+              <div className="bg-gray-50/50 p-4 border-b border-light-grey flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <FontAwesomeIcon icon={faInfoCircle} size="sm" />
+                </div>
+                <Text fw={700} size="sm" c="dark">Informasi Transaksi</Text>
+              </div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                <Stack gap={2}>
+                  <Text size="xs" c="dimmed" fw={500}>No. Invoice</Text>
+                  <Flex align="center" gap="xs">
+                    <Text fw={700} size="sm" className="font-mono">{selectedTransaction.invoice_no}</Text>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedTransaction.invoice_no || "");
+                        notifications.show({
+                          title: "Berhasil",
+                          message: "Nomor invoice berhasil disalin",
+                          color: "green",
+                          icon: <FontAwesomeIcon icon={faCheckCircle} />,
+                          autoClose: 2000,
+                        });
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faCopy} size="xs" />
+                    </ActionIcon>
+                  </Flex>
+                </Stack>
+                <Stack gap={2}>
+                  <Text size="xs" c="dimmed" fw={500}>Status</Text>
                   <Badge
                     size="sm"
+                    variant="light"
                     color={transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.bgcolor}
-                    radius="sm"
+                    radius="xl"
+                    leftSection={<FontAwesomeIcon icon={faCheckCircle} size="xs" />}
+                    px="sm"
+                    py="md"
                   >
                     {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
                   </Badge>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Waktu Transaksi</Text>
-                  <Text size="sm">{selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY, HH:mm") : "-"}</Text>
-                </Flex>
-              </Stack>
-            </div>
-
-            <Divider size="xs" variant="dashed" />
-
-            {/* Informasi Pembeli */}
-            <div>
-              <Text fw={700} size="sm" mb="md" c="dimmed" tt="uppercase">Informasi Pembeli</Text>
-              <Stack gap="xs">
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Nama</Text>
-                  <Text size="sm" fw={500}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Email</Text>
-                  <Text size="sm" fw={500}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Tipe Transaksi</Text>
-                  <Text size="sm" fw={500} className="capitalize">{selectedTransaction.type_transaction}</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text size="sm" c="dimmed">Metode Pembayaran</Text>
+                </Stack>
+                <Stack gap={2}>
+                  <Text size="xs" c="dimmed" fw={500}>Waktu Transaksi</Text>
+                  <Text size="sm" fw={600}>
+                    {selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY, HH:mm") : "-"}
+                  </Text>
+                </Stack>
+                <Stack gap={2}>
+                  <Text size="xs" c="dimmed" fw={500}>Metode Pembayaran</Text>
                   {selectedTransaction.payment_method ? (
                     (() => {
                       const paymentMethodInfo = getPaymentMethod(selectedTransaction.payment_method);
                       return (
-                        <Text size="sm" fw={500}>{paymentMethodInfo?.label || selectedTransaction.payment_method.payment_name || "-"}</Text>
+                        <Text size="sm" fw={700}>{paymentMethodInfo?.label || selectedTransaction.payment_method.payment_name || "-"}</Text>
                       );
                     })()
-                  ) : <Text size="sm">-</Text>}
+                  ) : <Text size="sm" fw={600}>-</Text>}
+                </Stack>
+              </div>
+            </Card>
+
+            {/* Informasi Pembeli Card */}
+            <Card withBorder radius="md" p={0} shadow="xs">
+              <div className="bg-gray-50/50 p-4 border-b border-light-grey flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <FontAwesomeIcon icon={faUser} size="sm" />
+                </div>
+                <Text fw={700} size="sm" c="dark">Informasi Pembeli</Text>
+              </div>
+              <div className="divide-y divide-light-grey">
+                <Flex justify="space-between" align="center" p="md">
+                  <Flex align="center" gap="sm">
+                    <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
+                    <Text size="sm" c="dimmed">Nama</Text>
+                  </Flex>
+                  <Text size="sm" fw={700}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
                 </Flex>
-              </Stack>
-            </div>
+                <Flex justify="space-between" align="center" p="md">
+                  <Flex align="center" gap="sm">
+                    <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
+                    <Text size="sm" c="dimmed">Email</Text>
+                  </Flex>
+                  <Text size="sm" fw={700}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
+                </Flex>
+                <Flex justify="space-between" align="center" p="md">
+                  <Flex align="center" gap="sm">
+                    <FontAwesomeIcon icon={faGlobe} size="xs" className="text-gray-400" />
+                    <Text size="sm" c="dimmed">Tipe Transaksi</Text>
+                  </Flex>
+                  <Text size="sm" fw={700} className="capitalize">{selectedTransaction.type_transaction}</Text>
+                </Flex>
+              </div>
+            </Card>
 
-            <Divider size="xs" variant="dashed" />
-
-            {/* Ringkasan Pembayaran */}
-            <div className="bg-gray-50 p-4 rounded-lg">
+            {/* Total Pembayaran Box */}
+            <Card radius="md" p="md" bg="gray.0" withBorder style={{ borderColor: '#e9ecef' }}>
               <Flex justify="space-between" align="center">
-                <Text fw={700} size="sm">Total Pembayaran</Text>
-                <Text fw={800} size="xl" c="blue">
+                <Text fw={700} size="sm" c="dimmed">Total Pembayaran</Text>
+                <Text fw={700} size="xl" c="dark">
                   Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
                 </Text>
               </Flex>
-            </div>
+            </Card>
 
             {/* Detail Item (Accordion) */}
             <Accordion variant="separated" radius="md" chevron={<FontAwesomeIcon icon={faChevronDown} />}>
               {selectedTransaction.tickets && selectedTransaction.tickets.length > 0 && (
-                <Accordion.Item value="tickets">
-                  <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} />}>
+                <Accordion.Item value="tickets" style={{ border: '1px solid #f0f0f0' }}>
+                  <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} color="#3b82f6" />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={600} size="sm">Detail Tiket</Text>
-                      <Badge size="sm" color="blue" variant="light">{selectedTransaction.tickets.length} item</Badge>
+                      <Text fw={700} size="sm">Detail Tiket</Text>
+                      <Badge size="xs" color="blue" variant="filled" radius="sm">{selectedTransaction.tickets.length} ITEM</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <Stack gap="xs">
                       {selectedTransaction.tickets.map((ticket, index) => (
-                        <div key={index} className="p-3 border rounded-md bg-white">
+                        <div key={index} className="p-3 bg-white">
                           <Flex justify="space-between" align="start" mb={4}>
-                            <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
-                            <Text fw={600} size="sm">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
+                            <Text fw={700} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                            <Text fw={700} size="sm">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
                           </Flex>
                           <Flex justify="space-between" align="center">
-                            <Text size="xs" c="dimmed">Qty: {ticket.qty_ticket} tiket</Text>
-                            <Text size="xs" fw={600}>Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" c="dimmed" fw={500}>Qty: {ticket.qty_ticket} tiket</Text>
+                            <Text size="xs" fw={700} c="blue.7">Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
                           </Flex>
                         </div>
                       ))}
@@ -2310,29 +2477,29 @@ const Merch = () => {
               )}
 
               {selectedTransaction.transaction_merches && selectedTransaction.transaction_merches.length > 0 && (
-                <Accordion.Item value="merch">
-                  <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} />}>
+                <Accordion.Item value="merch" style={{ border: '1px solid #f0f0f0' }}>
+                  <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} color="#10b981" />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={600} size="sm">Detail Merchandise</Text>
-                      <Badge size="sm" color="green" variant="light">{selectedTransaction.transaction_merches.length} item</Badge>
+                      <Text fw={700} size="sm">Detail Merchandise</Text>
+                      <Badge size="xs" color="green" variant="filled" radius="sm">{selectedTransaction.transaction_merches.length} ITEM</Badge>
                     </Flex>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <Stack gap="xs">
                       {selectedTransaction.transaction_merches.map((merch: any, index: number) => (
-                        <div key={index} className="p-3 border rounded-md bg-white">
+                        <div key={index} className="p-3 bg-white">
                           <Flex justify="space-between" align="start" mb={4}>
                             <div>
-                              <Text fw={600} size="sm">Merch {index + 1}</Text>
+                              <Text fw={700} size="sm">Merch {index + 1}</Text>
                               {merch.product_variant?.varian_name && (
-                                <Text size="xs" c="blue">{merch.product_variant.varian_name}</Text>
+                                <Text size="xs" c="blue" fw={600}>{merch.product_variant.varian_name}</Text>
                               )}
                             </div>
-                            <Text fw={600} size="sm">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Text>
+                            <Text fw={700} size="sm">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Text>
                           </Flex>
                           <Flex justify="space-between" align="center">
-                            <Text size="xs" c="dimmed">Qty: {merch.qty} pcs</Text>
-                            <Text size="xs" fw={600}>Subtotal: Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" c="dimmed" fw={500}>Qty: {merch.qty} pcs</Text>
+                            <Text size="xs" fw={700} c="green.7">Subtotal: Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
                           </Flex>
                         </div>
                       ))}
@@ -2341,8 +2508,146 @@ const Merch = () => {
                 </Accordion.Item>
               )}
             </Accordion>
+
+            {/* Footer Buttons */}
+            <Flex gap="md" mt="md">
+              <Button
+                variant="outline"
+                color="blue"
+                fullWidth
+                radius="md"
+                h={44}
+                leftSection={<FontAwesomeIcon icon={faDownload} />}
+              >
+                Unduh Invoice
+              </Button>
+              <Button
+                variant="filled"
+                color="blue"
+                fullWidth
+                radius="md"
+                h={44}
+                leftSection={<FontAwesomeIcon icon={faPrint} />}
+              >
+                Cetak Tiket
+              </Button>
+            </Flex>
           </Stack>
         )}
+      </Modal>
+
+      {/* Modal Edit Pemesan */}
+      <Modal
+        opened={editPemesanModalOpen}
+        onClose={() => setEditPemesanModalOpen(false)}
+        title={
+          <Flex align="center" gap="sm">
+            <FontAwesomeIcon icon={faPencil} color="white" />
+            <Text fw={600} size="md" c="white">Edit Data Pemesan</Text>
+          </Flex>
+        }
+        radius="md"
+        styles={{
+          header: { backgroundColor: "#0b387c", color: "white", padding: "15px 20px" },
+          body: { padding: "20px" },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Nama Lengkap"
+            placeholder="Masukkan nama lengkap"
+            value={editIdentityForm.full_name}
+            onChange={(e) => setEditIdentityForm({ ...editIdentityForm, full_name: e.target.value })}
+            required
+          />
+          <TextInput
+            label="Email"
+            placeholder="Masukkan email"
+            value={editIdentityForm.email}
+            onChange={(e) => setEditIdentityForm({ ...editIdentityForm, email: e.target.value })}
+            required
+          />
+          <TextInput
+            label="No. Telepon"
+            placeholder="Masukkan nomor telepon"
+            value={editIdentityForm.no_telp}
+            onChange={(e) => setEditIdentityForm({ ...editIdentityForm, no_telp: e.target.value })}
+            required
+          />
+          <TextInput
+            label="NIK"
+            placeholder="Masukkan NIK"
+            value={editIdentityForm.nik}
+            onChange={(e) => setEditIdentityForm({ ...editIdentityForm, nik: e.target.value })}
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="outline" onClick={() => setEditPemesanModalOpen(false)} disabled={loading.includes("savePemesan")}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleSavePemesan}
+              loading={loading.includes("savePemesan")}
+              leftSection={<FontAwesomeIcon icon={faSave} />}
+              bg="#0b387c"
+            >
+              Simpan Perubahan
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Modal Konfirmasi Check-in Manual */}
+      <Modal
+        opened={isCheckinModalOpen}
+        onClose={() => setIsCheckinModalOpen(false)}
+        title={
+          <Flex align="center" gap="sm">
+            <FontAwesomeIcon icon={faQrcode} color="white" />
+            <Text fw={600} size="md" c="white">Konfirmasi Check-in Manual</Text>
+          </Flex>
+        }
+        radius="md"
+        styles={{
+          header: { backgroundColor: "#0b387c", color: "white", padding: "15px 20px" },
+          body: { padding: "20px" },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="md">
+          <Text size="sm">Apakah Anda yakin ingin melakukan check-in manual untuk peserta berikut?</Text>
+
+          <Box p="md" bg="gray.0" style={{ borderRadius: 8, border: '1px solid #eef0f2' }}>
+            <Stack gap={8}>
+              <Flex justify="space-between" align="center">
+                <Text size="sm" fw={600} c="dimmed">Nama:</Text>
+                <Text size="sm" fw={700}>{selectedCheckin?.nama}</Text>
+              </Flex>
+              <Flex justify="space-between" align="center">
+                <Text size="sm" fw={600} c="dimmed">Invoice:</Text>
+                <Text size="sm" fw={700} className="font-mono">{selectedCheckin?.invoice}</Text>
+              </Flex>
+              <Flex justify="space-between" align="center">
+                <Text size="sm" fw={600} c="dimmed">Kode Tiket:</Text>
+                <Text size="sm" fw={700} c="blue" className="font-mono">{selectedCheckin?.qr_code}</Text>
+              </Flex>
+            </Stack>
+          </Box>
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="outline" onClick={() => setIsCheckinModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleManualCheckin}
+              loading={checkingIn}
+              bg="#0b387c"
+            >
+              Konfirmasi Check-in
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
     </div>
   );

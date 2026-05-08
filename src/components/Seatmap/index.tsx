@@ -493,7 +493,7 @@ export default forwardRef(function Seatmap({
           </Button>
         </Flex>
 
-        <Flex className={`!absolute top-4 right-4 z-50`} gap={10}>
+        <Flex className={`!absolute top-4 right-4 z-50`} gap={10} display={editable ? undefined : "none"}>
           <Guide guidekey="guide-create-seatmap" text="Tombol untuk menambah area seat" order={1}>
             <Flex gap={10}>
               <Tooltip label="Tambah Teks" position="bottom" withArrow>
@@ -796,7 +796,7 @@ export default forwardRef(function Seatmap({
                     h="100%"
                     className={`${!!e.background ? "shadow-lg" : ""}`}
                   >
-                    <Box onClick={!onFinishSelectSeat ? () => handleSelect(i) : undefined} className={`absolute w-full h-full left-0 top-0 z-20`} />
+                    <Box onClick={!onFinishSelectSeat && editable ? () => handleSelect(i) : undefined} className={`absolute w-full h-full left-0 top-0 z-20`} />
 
                     {e.type == "box" && (
                       <Center h="100%">
