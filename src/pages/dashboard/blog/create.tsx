@@ -40,7 +40,7 @@ export default function Create() {
             method: 'POST',
             data: {
                 ...form.values,
-                creator_id: user?.id ?? 1,
+                creator_id: user?.has_creator?.id ?? 1,
             },
             before: () => setLoading.append('submitdata'),
             success: () => {

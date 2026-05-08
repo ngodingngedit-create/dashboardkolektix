@@ -77,7 +77,7 @@ export default function Edit() {
             method: 'POST', 
             data: {
                 ...form.values,
-                creator_id: user?.id ?? blog?.creator_id ?? 1,
+                creator_id: user?.has_creator?.id ?? blog?.creator_id ?? 1,
                 _method: 'PUT'
             },
             before: () => setLoading.append('submitdata'),
