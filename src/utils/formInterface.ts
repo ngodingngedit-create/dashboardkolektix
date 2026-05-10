@@ -24,6 +24,10 @@ export interface EventTicket {
   promo_price?: number;
   is_bundling?: number;
   bundling_qty?: number;
+  is_soldout?: number;
+  is_finish?: number;
+  is_ready?: number;
+  is_fullbook?: number;
 }
 
 export interface FormEvent {

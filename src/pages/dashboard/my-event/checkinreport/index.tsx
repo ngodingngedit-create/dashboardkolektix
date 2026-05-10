@@ -1,5 +1,6 @@
 import { Badge, Flex, Select, Stack, Text, Title, Card, Box, Input, Pagination, Button, Modal, Group } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
+import { useSidebar } from "@/components/SidebarComponent";
 import { useListState } from "@mantine/hooks";
 import { EventListResponse, TransactionListResponse } from "../type";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -11,6 +12,7 @@ import { faSearch, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { notifications } from "@mantine/notifications";
 
 const CheckinReport = () => {
+  const { collapse } = useSidebar();
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [eventList, setEventList] = useState<EventListResponse[]>([]);
@@ -540,7 +542,7 @@ const CheckinReport = () => {
             backgroundColor: 'white', 
             borderTop: '1px solid #f0f0f0',
             padding: '16px 40px',
-            zIndex: 10001, // Higher than Mantine Modal backdrop
+            zIndex: 1000, // Lower than sidebar z-[1100] but higher than typical overlays
             boxShadow: '0 -4px 15px rgba(0,0,0,0.1)',
             display: 'flex',
             justifyContent: 'flex-end',
@@ -566,8 +568,9 @@ const CheckinReport = () => {
         }
         @media (min-width: 768px) {
           .checkin-sticky-footer {
-            /* Adjusted to match the collapsed sidebar width in the screenshot */
-            left: 65px; 
+            /* Adjusted to match the sidebar width */
+            left: ${collapse ? '280px' : '65px'}; 
+            transition: left 0.3s ease-in-out 150ms;
           }
         }
       `}} />

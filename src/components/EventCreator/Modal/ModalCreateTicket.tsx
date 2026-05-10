@@ -70,6 +70,10 @@ export default function ModalCreateTicket({
     promo_price: 0,
     is_bundling: 0,
     bundling_qty: 0,
+    is_soldout: 0,
+    is_finish: 0,
+    is_ready: 0,
+    is_fullbook: 0,
   };
   const {
     values: form,
@@ -601,6 +605,44 @@ export default function ModalCreateTicket({
                       )}
                     </div>
                   </div>
+              {router.pathname.includes("/admin/") && (
+                <>
+                  <div className="grid grid-cols-1 gap-2 my-2">
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Sold Out</span>}
+                        checked={Number(form.is_soldout) === 1}
+                        onChange={(event) => setForm({ ...form, is_soldout: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 my-2">
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Finish</span>}
+                        checked={Number(form.is_finish) === 1}
+                        onChange={(event) => setForm({ ...form, is_finish: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                    </div>
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Ready</span>}
+                        checked={Number(form.is_ready) === 1}
+                        onChange={(event) => setForm({ ...form, is_ready: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 my-2">
+                    <div className="p-3 border border-light-grey rounded-lg">
+                      <Checkbox
+                        label={<span className="font-small text-sm text-grey">Fullbook</span>}
+                        checked={Number(form.is_fullbook) === 1}
+                        onChange={(event) => setForm({ ...form, is_fullbook: event.currentTarget.checked ? 1 : 0 })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
                   <InputField
                     error={Boolean(errors["description"])}
                     type="textarea"

@@ -26,6 +26,19 @@ import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import { defaultSeatmapData } from "@/components/Seatmap";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
+const option = [
+  { key: 1, label: "1 Tiket" },
+  { key: 2, label: "2 Tiket" },
+  { key: 3, label: "3 Tiket" },
+  { key: 4, label: "4 Tiket" },
+  { key: 5, label: "5 Tiket" },
+  { key: 6, label: "6 Tiket" },
+  { key: 7, label: "7 Tiket" },
+  { key: 8, label: "8 Tiket" },
+  { key: 9, label: "9 Tiket" },
+  { key: 10, label: "10 Tiket" },
+];
+
 interface ErrorResponse {
   name?: string[];
   tag?: string[];
@@ -91,6 +104,9 @@ const EditEventAdmin = () => {
     save_as_draft: false,
     is_promo: 0,
     is_bundling: 0,
+    is_assistant: false,
+    is_profession: false,
+    is_company: false,
     tickets: [],
     // Admin specific
     slug: "",
@@ -100,6 +116,9 @@ const EditEventAdmin = () => {
     ppn_type: "percentage",
     ppn: 0,
     starting_price: 1000,
+    is_insurance: 0,
+    insurance_required: 0,
+    insurance_amount: null,
   });
 
   const defaultTicket: EventTicket = {
@@ -118,6 +137,10 @@ const EditEventAdmin = () => {
     promo_price: 0,
     is_bundling: 0,
     bundling_qty: 0,
+    is_soldout: 0,
+    is_finish: 0,
+    is_ready: 0,
+    is_fullbook: 0,
   };
 
   const [error, setError] = useState<ErrorResponse>({});
@@ -191,8 +214,15 @@ const EditEventAdmin = () => {
           is_email: !!data.is_email,
           is_noidentity: !!data.is_noidentity,
           is_gender: !!data.is_gender,
+          is_assistant: !!data.is_assistant,
+          is_profession: !!data.is_profession,
+          is_company: !!data.is_company,
+          max_buy_ticket: data.max_buy_ticket || 1,
           one_email_ticket: !!data.one_email_ticket || data.one_email_ticket === "1",
           one_id_one_ticket: !!data.one_id_one_ticket || data.one_id_one_ticket === "1",
+          is_insurance: data.is_insurance || 0,
+          insurance_required: data.insurance_required || 0,
+          insurance_amount: data.insurance_amount || null,
         });
 
         setTicket(
@@ -224,8 +254,14 @@ const EditEventAdmin = () => {
       is_email: form.is_email ? 1 : 0,
       is_noidentity: form.is_noidentity ? 1 : 0,
       is_gender: form.is_gender ? 1 : 0,
+      is_assistant: form.is_assistant ? 1 : 0,
+      is_profession: form.is_profession ? 1 : 0,
+      is_company: form.is_company ? 1 : 0,
       one_email_ticket: form.one_email_ticket ? "1" : "0",
       one_id_one_ticket: form.one_id_one_ticket ? "1" : "0",
+      is_insurance: form.is_insurance ? 1 : 0,
+      insurance_required: form.insurance_required ? 1 : 0,
+      insurance_amount: form.insurance_amount,
       tickets: ticket.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
       seatmap: ticket.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
     };
@@ -417,15 +453,84 @@ const EditEventAdmin = () => {
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {["is_name", "is_email", "is_phone_number", "is_noidentity", "is_birthdate", "is_gender"].map((field) => (
-                        <Checkbox
-                          key={field}
-                          isSelected={form[field]}
-                          onChange={(e: any) => setForm({ ...form, [field]: e.target.checked })}
+                      <Checkbox color="default" isSelected={form.is_name} classNames={{ label: "text-sm" }} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked })}>
+                        Nama Lengkap
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_email} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked })}>
+                        Email
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_phone_number} onChange={(e: any) => setForm({ ...form, is_phone_number: e.target.checked })}>
+                        No. Handphone
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_noidentity} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked })}>
+                        No. KTP
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_birthdate} onChange={(e: any) => setForm({ ...form, is_birthdate: e.target.checked })}>
+                        Tanggal Lahir
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_gender} onChange={(e: any) => setForm({ ...form, is_gender: e.target.checked })}>
+                        Jenis Kelamin
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_assistant} onChange={(e: any) => setForm({ ...form, is_assistant: e.target.checked })}>
+                        Asisten
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_profession} onChange={(e: any) => setForm({ ...form, is_profession: e.target.checked })}>
+                        Profesi
+                      </Checkbox>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_company} onChange={(e: any) => setForm({ ...form, is_company: e.target.checked })}>
+                        Perusahaan
+                      </Checkbox>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
+                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                    <h3 className="text-medium font-semibold">Pengaturan Tiket</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between">
+                        <div>
+                          <p>Jumlah maks. tiket dalam 1 transaksi</p>
+                          <p className="text-grey text-xs">Jumlah maksimal tiket yang dapat dibeli dalam 1 transaksi</p>
+                        </div>
+                        <Select
+                          variant="underlined"
+                          className="w-32 md:w-40 lg:w-24"
+                          aria-label="Options"
+                          size="sm"
+                          defaultSelectedKeys={form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []}
+                          onChange={(e: any) => setForm({ ...form, max_buy_ticket: Number(e.target.value) })}
+                          selectedKeys={form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []}
+                          classNames={{
+                            listbox: "text-dark max-h-40 overflow-auto",
+                            popoverContent: "w-full sm:w-48 md:w-56 lg:w-64",
+                          }}
                         >
-                          {field.replace("is_", "").replace("noidentity", "No. KTP").replace("birthdate", "Tgl Lahir").replace("phone_number", "No. HP").toUpperCase()}
-                        </Checkbox>
-                      ))}
+                          {option.map((item) => (
+                            <SelectItem key={item.key}>{item.label}</SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                      <div className="flex justify-between">
+                        <div>
+                          <p>1 akun email untuk 1 kali transaksi</p>
+                          <p className="text-grey text-xs">1 akun email hanya dapat melakukan 1 kali transaksi pembelian tiket</p>
+                        </div>
+                        <div>
+                          <Switch size="sm" isSelected={form.one_email_ticket} onChange={(e: any) => setForm({ ...form, one_email_ticket: e.target.checked })} />
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div>
+                          <p>1 tiket untuk 1 data pemesan</p>
+                          <p className="text-grey text-xs">Data setiap tiket tidak boleh sama</p>
+                        </div>
+                        <div>
+                          <Switch size="sm" isSelected={form.one_id_one_ticket} onChange={(e: any) => setForm({ ...form, one_id_one_ticket: e.target.checked })} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -493,6 +598,39 @@ const EditEventAdmin = () => {
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
                       <InputField label="Maks Penggunaan Voucher" type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
+                    </MantineGrid.Col>
+                    <MantineGrid.Col span={12}>
+                      <div className="flex flex-col gap-4 p-4 border border-primary-light-200 rounded-lg bg-chat/50 mt-2">
+                        <div className="flex items-center gap-4">
+                          <Checkbox
+                            isSelected={form.is_insurance === 1}
+                            onChange={(e: any) => setForm({ ...form, is_insurance: e.target.checked ? 1 : 0, insurance_required: e.target.checked ? form.insurance_required : 0, insurance_amount: e.target.checked ? form.insurance_amount : null })}
+                          >
+                            Aktifkan Asuransi
+                          </Checkbox>
+                          {form.is_insurance === 1 && (
+                            <Checkbox
+                              isSelected={form.insurance_required === 1}
+                              onChange={(e: any) => setForm({ ...form, insurance_required: e.target.checked ? 1 : 0 })}
+                            >
+                              Wajib Asuransi
+                            </Checkbox>
+                          )}
+                        </div>
+                        {form.is_insurance === 1 && (
+                          <div className="max-w-xs">
+                            <InputField
+                              label="Biaya Asuransi"
+                              type="num"
+                              fullWidth
+                              noShadow
+                              placeholder="Masukan biaya asuransi"
+                              value={form.insurance_amount}
+                              onChange={(e: any) => setForm({ ...form, insurance_amount: Number(e.target.value) })}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </MantineGrid.Col>
                   </MantineGrid>
                 </div>

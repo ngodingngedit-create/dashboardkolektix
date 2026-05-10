@@ -1574,7 +1574,7 @@
 
 // export default SidebarComponent;
 
-import React, { ReactNode, useEffect, useState, useMemo } from "react";
+import React, { ReactNode, useEffect, useState, useMemo, createContext, useContext } from "react";
 import Link from "next/link";
 import Logo from "../../assets/images/logo-creator-white.png";
 import LogoSquare from "../../assets/images/logosquare.png";
@@ -1629,6 +1629,9 @@ import axios from "axios";
 import { useClickOutside } from "@mantine/hooks";
 import { Flex, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
+
+export const SidebarContext = createContext<{ collapse: boolean }>({ collapse: false });
+export const useSidebar = () => useContext(SidebarContext);
 
 interface SaldoData {
   status: boolean;
@@ -2192,7 +2195,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div>
+    <SidebarContext.Provider value={{ collapse }}>
+      <div>
       <div className="flex max-w-[100vw] !overflow-x-hidden">
         <nav
           ref={outsideClick}
@@ -2472,6 +2476,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         </div>
       </div>
     </div>
+    </SidebarContext.Provider>
   );
 };
 
