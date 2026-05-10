@@ -127,6 +127,10 @@ const CreateEvent = () => {
     promo_price: 0,
     is_bundling: 0,
     bundling_qty: 0,
+    is_soldout: 0,
+    is_finish: 0,
+    is_ready: 0,
+    is_fullbook: 0,
   };
   const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);

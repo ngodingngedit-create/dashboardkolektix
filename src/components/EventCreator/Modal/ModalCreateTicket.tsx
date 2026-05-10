@@ -605,8 +605,6 @@ export default function ModalCreateTicket({
                       )}
                     </div>
                   </div>
-              {router.pathname.includes("/admin/") && (
-                <>
                   <div className="grid grid-cols-1 gap-2 my-2">
                     <div className="p-3 border border-light-grey rounded-lg">
                       <Checkbox
@@ -641,8 +639,6 @@ export default function ModalCreateTicket({
                       />
                     </div>
                   </div>
-                </>
-              )}
                   <InputField
                     error={Boolean(errors["description"])}
                     type="textarea"
