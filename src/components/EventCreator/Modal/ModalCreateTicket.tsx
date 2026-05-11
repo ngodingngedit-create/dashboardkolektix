@@ -18,6 +18,7 @@ import { notifications } from "@mantine/notifications";
 import { Context } from "@/pages/dashboard/create-event";
 import { useRouter } from "next/router";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { formatPrice, parsePrice } from "@/utils/useFormattedPrice";
 
 interface ModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ interface ModalProps {
   eventEndTime?: string; // ✅ Tambah ini
   onSuccess?(): void;
   startDate?: string | null;
+  isAdmin?: boolean;
 }
 
 export default function ModalCreateTicket({
@@ -51,6 +53,7 @@ export default function ModalCreateTicket({
   eventEndTime, // ✅ Destructure props
   onSuccess,
   startDate,
+  isAdmin,
 }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: "",
@@ -74,6 +77,7 @@ export default function ModalCreateTicket({
     is_finish: 0,
     is_ready: 0,
     is_fullbook: 0,
+    is_ots: 0,
   };
   const {
     values: form,
@@ -104,7 +108,7 @@ export default function ModalCreateTicket({
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
-  const { seatmapData } = useContext(Context);
+  const { seatmapData, eventData } = useContext(Context);
   const router = useRouter();
   const { slug } = router.query;
   const loggedUser = useLoggedUser();
@@ -137,12 +141,13 @@ export default function ModalCreateTicket({
     } else {
       setForm({
         ...defaultForm,
-        event_schedule_date: endDate || null,
-        ticket_end: endDate || null,
-        ending_time: eventEndTime || "00:00",
+        ...data,
+        event_schedule_date: data.event_schedule_date || eventData?.start_date || endDate || null,
+        ticket_end: data.ticket_end || endDate || null,
+        ending_time: data.ending_time || eventEndTime || "00:00",
       });
     }
-  }, [openForm, endDate, eventEndTime]);
+  }, [openForm, data, eventData, endDate, eventEndTime]);
 
   useEffect(() => {
     if (!!slug) setAddSeatMap(true);
@@ -192,9 +197,9 @@ export default function ModalCreateTicket({
     }
   };
 
-  useEffect(() => {
-    setForm({ ...data });
-  }, [data]);
+  // useEffect(() => {
+  //   setForm({ ...data });
+  // }, [data]);
 
   const openSeatMap = useMemo(() => {
     return addSeatMap; // && (ticket.some(e => e.ticket_category == 'Seated') || (form.ticket_category == 'Seated'));
@@ -345,6 +350,9 @@ export default function ModalCreateTicket({
                           ticketEnd={e.ticket_end}
                           description={e.description}
                           name={e.name}
+                          qty={e.qty}
+                          sold={e.ticket_sold ?? e.sold_qty ?? 0}
+                          isAdmin={isAdmin}
                           onEdit={() => {
                             setIdx(e?.id);
                             setOpenForm(i);
@@ -353,6 +361,10 @@ export default function ModalCreateTicket({
                           onSelectSeatButton={e.ticket_category == "Seated" && onSelectSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
                           seatColor={e.seat_color}
                           onSelectSeatColor={onSelectSeat == i ? (e) => setTicket(ticket?.map((z, _i) => (i == _i ? { ...z, seat_color: e } : z))) : undefined}
+                          isSoldout={e.is_soldout}
+                          isFinish={e.is_finish}
+                          isReady={e.is_ready}
+                          isFullbook={e.is_fullbook}
                         />
                       </Box>
                     </UnstyledButton>
@@ -376,6 +388,18 @@ export default function ModalCreateTicket({
                     Buat Seatmap
                   </Button>
                 </Guide>
+                <Button 
+                  w="100%" 
+                  variant="light" 
+                  size="md" 
+                  onClick={() => {
+                    setIdx(undefined);
+                    setIsOpen(false);
+                  }}
+                  className={`shrink-0`}
+                >
+                  Tutup
+                </Button>
               </Stack>
             </Card>
 
@@ -390,9 +414,16 @@ export default function ModalCreateTicket({
                 <>
                   <RadioGroup
                     label={
-                      <p className="">
-                        Kategori Tiket<span className="text-danger"> *</span>
-                      </p>
+                      <div className="flex justify-between items-center w-full">
+                        <p className="m-0">
+                          Kategori Tiket<span className="text-danger"> *</span>
+                        </p>
+                        {!hasSeatmapPermission && (
+                          <Text size="10px" color="red" fw={500} className="italic">
+                            * Fitur seatmap silahkan menghubungi admin
+                          </Text>
+                        )}
+                      </div>
                     }
                     className="gap-1 w-full"
                     size="md"
@@ -420,11 +451,6 @@ export default function ModalCreateTicket({
                       </Radio>
                     </div>
                   </RadioGroup>
-                  {!hasSeatmapPermission && (
-                    <Text size="xs" color="red" fw={500} mt={-4}>
-                      * Jika ingin membuka seatmap, hubungi admin kolektix
-                    </Text>
-                  )}
 
                   <RadioGroup
                     label={
@@ -529,13 +555,13 @@ export default function ModalCreateTicket({
                     <InputField
                       className={`${form.ticket_type == "Gratis" ? "hidden" : ""}`}
                       error={Boolean(errors["price"])}
-                      type="num"
+                      type="text"
                       label="Harga Tiket"
                       required
                       disabled={form.ticket_type === "Gratis"}
                       fullWidth
-                      value={form.price > 0 && form.price}
-                      onChange={(e: any) => setForm({ ...form, price: e.target.value })}
+                      value={formatPrice(form.price)}
+                      onChange={(e: any) => setForm({ ...form, price: parsePrice(e.target.value) })}
                       placeholder="Masukan Harga"
                     />
                     <InputField
@@ -568,12 +594,12 @@ export default function ModalCreateTicket({
                             onChange={(e: any) => setForm({ ...form, promo_title: e.target.value })}
                           />
                           <InputField
-                            type="num"
+                            type="text"
                             label="Harga Promo"
                             placeholder="Harga Promo"
                             fullWidth
-                            value={form.promo_price || ""}
-                            onChange={(e: any) => setForm({ ...form, promo_price: e.target.value })}
+                            value={formatPrice(form.promo_price || 0)}
+                            onChange={(e: any) => setForm({ ...form, promo_price: parsePrice(e.target.value) })}
                           />
                         </div>
                       )}
@@ -605,40 +631,53 @@ export default function ModalCreateTicket({
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-2 my-2">
-                    <div className="p-3 border border-light-grey rounded-lg">
-                      <Checkbox
-                        label={<span className="font-small text-sm text-grey">Sold Out</span>}
-                        checked={Number(form.is_soldout) === 1}
-                        onChange={(event) => setForm({ ...form, is_soldout: event.currentTarget.checked ? 1 : 0 })}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 my-2">
-                    <div className="p-3 border border-light-grey rounded-lg">
-                      <Checkbox
-                        label={<span className="font-small text-sm text-grey">Finish</span>}
-                        checked={Number(form.is_finish) === 1}
-                        onChange={(event) => setForm({ ...form, is_finish: event.currentTarget.checked ? 1 : 0 })}
-                      />
-                    </div>
-                    <div className="p-3 border border-light-grey rounded-lg">
-                      <Checkbox
-                        label={<span className="font-small text-sm text-grey">Ready</span>}
-                        checked={Number(form.is_ready) === 1}
-                        onChange={(event) => setForm({ ...form, is_ready: event.currentTarget.checked ? 1 : 0 })}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 my-2">
-                    <div className="p-3 border border-light-grey rounded-lg">
-                      <Checkbox
-                        label={<span className="font-small text-sm text-grey">Fullbook</span>}
-                        checked={Number(form.is_fullbook) === 1}
-                        onChange={(event) => setForm({ ...form, is_fullbook: event.currentTarget.checked ? 1 : 0 })}
-                      />
-                    </div>
-                  </div>
+                  {isAdmin && (
+                    <>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Sold Out</span>}
+                            checked={Number(form.is_soldout) === 1}
+                            onChange={(event) => setForm({ ...form, is_soldout: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Finish</span>}
+                            checked={Number(form.is_finish) === 1}
+                            onChange={(event) => setForm({ ...form, is_finish: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Ready</span>}
+                            checked={Number(form.is_ready) === 1}
+                            onChange={(event) => setForm({ ...form, is_ready: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Fullbook</span>}
+                            checked={Number(form.is_fullbook) === 1}
+                            onChange={(event) => setForm({ ...form, is_fullbook: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Is OTS (On The Spot)</span>}
+                            checked={Number(form.is_ots) === 1}
+                            onChange={(event) => setForm({ ...form, is_ots: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <InputField
                     error={Boolean(errors["description"])}
                     type="textarea"

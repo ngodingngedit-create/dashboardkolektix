@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair, faFileExcel, faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import moment from "moment";
+import * as XLSX from "xlsx";
 
 // Style helpers for consistency with report.tsx
 const headerStyle = (active = false, dir = "asc"): React.CSSProperties => ({
@@ -108,6 +109,47 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       setSortBy(col);
       setSortDir("asc");
     }
+  };
+
+  const handleExportExcel = () => {
+    if (processedTransactions.length === 0) {
+      notifications.show({
+        title: "Gagal Export",
+        message: "Tidak ada data untuk di-export",
+        color: "red",
+      });
+      return;
+    }
+
+    const exportData = processedTransactions.map((trx, index) => ({
+      "NO": index + 1,
+      "INVOICE": trx.invoice_no,
+      "NAMA PEMESAN": trx.has_user?.name || "-",
+      "EMAIL": trx.has_user?.email || "-",
+      "JENIS TIKET": trx.tickets
+        .map(t => t.has_event_ticket?.name || t.ticket_category)
+        .join(", "),
+      "NO. SEAT": trx.tickets
+        .map(t => {
+           if (typeof t.seatnumber_ticket === 'string') {
+              try {
+                const parsed = JSON.parse(t.seatnumber_ticket);
+                return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+              } catch {
+                return t.seatnumber_ticket;
+              }
+           }
+           return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
+        })
+        .filter(Boolean)
+        .join(", ") || "-",
+      "STATUS": trx.payment_status
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Daftar Transaksi");
+    XLSX.writeFile(workbook, `Laporan_Transaksi_${selectedEventData?.name || 'Event'}.xlsx`);
   };
 
   const selectedEventData = useMemo(() => {
@@ -681,7 +723,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
               </div>
               {!isFestival && (
                 <Select
-                  size="xs"
+                  size="sm"
                   value={seatViewMode}
                   onChange={(val) => {
                     setSeatViewMode(val as "grid" | "table");
@@ -691,7 +733,21 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                     { value: "grid", label: "Seat" },
                     { value: "table", label: "Tabel" }
                   ]}
-                  style={{ width: 100 }}
+                  style={{ width: 130 }}
+                  rightSectionProps={{ style: { color: '#F5FAFF' } }}
+                  styles={{
+                    input: {
+                      backgroundColor: '#194E9E',
+                      color: '#F5FAFF',
+                      borderColor: '#194E9E',
+                      fontWeight: 800,
+                      borderRadius: '100px',
+                      '&::placeholder': {
+                        color: '#F5FAFF',
+                        opacity: 0.7,
+                      },
+                    },
+                  }}
                 />
               )}
             </div>
@@ -718,6 +774,16 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                     size="xs"
                     style={{ width: 140 }}
                   />
+                  <Button
+                    variant="filled"
+                    color="green"
+                    leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+                    onClick={handleExportExcel}
+                    size="xs"
+                    radius="md"
+                  >
+                    Export Excel
+                  </Button>
                 </Flex>
               </div>
             )}
@@ -731,6 +797,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                       <table className="min-w-full w-max text-left text-sm">
                         <thead>
                           <tr style={{ backgroundColor: "#f5f7fa", borderBottom: "2px solid #e8e8e8" }}>
+                            <th style={headerStyle()}>NO</th>
                             <th onClick={() => handleSort('invoice')} style={headerStyle(sortBy === 'invoice', sortDir)}>
                               INVOICE {sortBy === 'invoice' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
@@ -749,7 +816,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
-                          {paginatedFestivalTransactions.map((trx) => {
+                          {paginatedFestivalTransactions.map((trx, index) => {
                                // Find the specific seat identifier for this transaction to use as the selection key
                                const seatId = Object.keys(seatMap).find(k => seatMap[k].transaction.id === trx.id);
                                
@@ -760,6 +827,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                                   style={{ cursor: 'pointer' }}
                                   onClick={() => seatId && setSelectedSeat(seatId)}
                                 >
+                                  <td className="p-4 font-medium text-dark">{(seatPage - 1) * itemsPerPage + index + 1}</td>
                                   <td className="p-4 font-mono font-semibold text-primary-base whitespace-nowrap">{trx.invoice_no}</td>
                                   <td className="p-4 font-medium text-dark whitespace-nowrap">{trx.has_user?.name || "-"}</td>
                                   <td className="p-4 font-medium text-primary-base whitespace-nowrap">
@@ -818,7 +886,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                           })}
                           {paginatedFestivalTransactions.length === 0 && (
                             <tr>
-                              <td colSpan={7} className="p-16">
+                              <td colSpan={8} className="p-16">
                                 <Flex direction="column" align="center" justify="center" gap="xs">
                                   <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-1">
                                     <FontAwesomeIcon icon={faTicket} size="2x" className="text-gray-200" />

@@ -21,6 +21,7 @@ import { Get, Put } from "@/utils/REST";
 import { formatDate } from "@/utils/useFormattedDate";
 import { toast } from "react-toastify";
 import Button from "@/components/Button";
+import { formatPrice, parsePrice } from "@/utils/useFormattedPrice";
 import React from "react";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import { defaultSeatmapData } from "@/components/Seatmap";
@@ -331,7 +332,7 @@ const EditEventAdmin = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
               {image ? (
-                <Image src={image} alt="image" className="object-cover" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
+                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
               ) : (
                 <>
                   <Image src={imagePlus} alt="image-plus" />
@@ -439,8 +440,15 @@ const EditEventAdmin = () => {
                           ticketEnd={el.ticket_end}
                           description={el.description}
                           name={el.name}
+                          qty={el.qty}
+                          sold={el.ticket_sold ?? el.sold_qty ?? 0}
                           onEdit={() => onEditTicket(el, index)}
                           onDelete={() => deleteTicket(index)}
+                          isSoldout={el.is_soldout}
+                          isFinish={el.is_finish}
+                          isReady={el.is_ready}
+                          isFullbook={el.is_fullbook}
+                          isAdmin={true}
                         />
                       ))
                     )}
@@ -594,7 +602,7 @@ const EditEventAdmin = () => {
                       />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Starting Price" type="num" fullWidth noShadow value={form.starting_price} onChange={(e: any) => setForm({ ...form, starting_price: Number(e.target.value) })} />
+                      <InputField label="Starting Price" type="text" fullWidth noShadow value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
                       <InputField label="Maks Penggunaan Voucher" type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
@@ -625,8 +633,8 @@ const EditEventAdmin = () => {
                               fullWidth
                               noShadow
                               placeholder="Masukan biaya asuransi"
-                              value={form.insurance_amount}
-                              onChange={(e: any) => setForm({ ...form, insurance_amount: Number(e.target.value) })}
+                              value={formatPrice(form.insurance_amount || 0)}
+                              onChange={(e: any) => setForm({ ...form, insurance_amount: parsePrice(e.target.value) })}
                             />
                           </div>
                         )}
@@ -666,6 +674,7 @@ const EditEventAdmin = () => {
           endDate={form.end_date}
           eventStartTime={form.start_time}
           eventEndTime={form.end_time}
+          isAdmin={true}
         />
       </Context.Provider>
     </>

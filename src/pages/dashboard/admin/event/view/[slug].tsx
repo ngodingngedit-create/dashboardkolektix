@@ -707,6 +707,9 @@ const AdminEventDetailView = () => {
                             price={el.price}
                             description={el.description}
                             name={el.name}
+                            qty={el.qty}
+                            sold={el.ticket_sold ?? el.sold_qty ?? 0}
+                            isAdmin={true}
                             onEdit={() => onEditTicket(el, index)}
                           />
                         </div>
@@ -993,8 +996,8 @@ const AdminEventDetailView = () => {
       />
       <InvitationDetailModal invitation={selectedInvitation} isOpen={isInvitationModalOpen} onClose={closeInvitationModal} />
       <Context.Provider value={{ seatmapData: seatmap, setSeatmapData: setSeatmap, ticket, eventData: data, seatmapOpen, setSeatmapOpen, setTicket }}>
-        <ModalCreateTicket onSuccess={getData} isOpen={addTicket} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} startDate={data.start_date} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
-        <ModalEditTicket onSuccess={getData} isOpen={isEditTicketModalOpen} setIsOpen={setIsEditTicketModalOpen} ticket={ticket} setTicket={setTicket} startDate={data.start_date} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} />
+        <ModalCreateTicket onSuccess={getData} isOpen={addTicket} setIsOpen={showAddTicket} ticket={ticket} setTicket={setTicket} startDate={data.start_date} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} isAdmin={true} />
+        <ModalEditTicket onSuccess={getData} isOpen={isEditTicketModalOpen} setIsOpen={setIsEditTicketModalOpen} ticket={ticket} setTicket={setTicket} startDate={data.start_date} data={editTicketData} setIdx={setIdxTicket} idx={idxTicket} eventId={data.id} endDate={data.end_date} isAdmin={true} />
       </Context.Provider>
     </>
   ) : (

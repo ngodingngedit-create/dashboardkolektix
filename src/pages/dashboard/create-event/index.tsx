@@ -62,9 +62,11 @@ export const Context = createContext<{
   seatmapData: SeatmapData[];
   setSeatmapData?: UseListStateHandlers<SeatmapData>;
   ticket: EventTicket[];
+  eventData?: FormEvent | null;
 }>({
   seatmapData: [],
   ticket: [],
+  eventData: null,
 });
 
 const CreateEvent = () => {
@@ -331,6 +333,7 @@ const CreateEvent = () => {
   const onAddTicket = () => {
     setEditTicket({
       ...defaultForm,
+      event_schedule_date: form.start_date,
     });
     // console.log(editTicket);
     setIdxTicket(undefined);
@@ -377,7 +380,7 @@ const CreateEvent = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/jpeg, image/png, image/gif" />
               {image ? (
-                <Image src={image} alt="image" className="object-cover" width={0} height={0} style={{ width: "100%", height: "100%" }} />
+                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} />
               ) : (
                 <>
                   <Image src={imagePlus} alt="image-plus" />
@@ -497,6 +500,13 @@ const CreateEvent = () => {
                             name={el.name}
                             onEdit={() => onEditTicket(el, index)}
                             onDelete={() => deleteTicket(index)}
+                            isSoldout={el.is_soldout}
+                            isFinish={el.is_finish}
+                            isReady={el.is_ready}
+                            isFullbook={el.is_fullbook}
+                            qty={el.qty}
+                            sold={el.ticket_sold ?? el.sold_qty ?? 0}
+                            isAdmin={false}
                           />
                         </div>
                       ))}
@@ -684,7 +694,7 @@ const CreateEvent = () => {
       <ModalTime isOpen={showTime} setIsOpen={setShowTime} form={form} setForm={setForm} />
       <ModalTicket isOpen={showTicket} setIsOpen={setShowTicket} form={form} setForm={setForm} />
       <ModalLocation isOpen={showLocation} setIsOpen={setShowLocation} form={form} setForm={setForm} />
-      <Context.Provider value={{ seatmapData, setSeatmapData, ticket }}>
+      <Context.Provider value={{ seatmapData, setSeatmapData, ticket, eventData: form }}>
         <ModalCreateTicket
           isOpen={addTicket}
           endDate={form.end_date}
@@ -698,6 +708,7 @@ const CreateEvent = () => {
           eventId={eventId ?? undefined}
           eventStartTime={form.start_time}
           eventEndTime={form.end_time}
+          isAdmin={false}
         />
       </Context.Provider>
     </>

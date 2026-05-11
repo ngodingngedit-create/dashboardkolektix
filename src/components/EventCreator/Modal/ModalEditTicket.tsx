@@ -16,6 +16,7 @@ import { Guide } from "@/components/Guide";
 import { notifications } from "@mantine/notifications";
 import { Context } from "@/pages/dashboard/create-event";
 import { useRouter } from "next/router";
+import useLoggedUser from "@/utils/useLoggedUser";
 
 interface ModalProps {
   isOpen: boolean;
@@ -32,9 +33,10 @@ interface ModalProps {
   eventEndTime?: string;
   onSuccess?(): void;
   startDate?: string | null;
+  isAdmin?: boolean;
 }
 
-export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, endDate, data, idx, setIdx, eventId, addTicketModal, eventStartTime, eventEndTime, onSuccess, startDate }: ModalProps) {
+export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, endDate, data, idx, setIdx, eventId, addTicketModal, eventStartTime, eventEndTime, onSuccess, startDate, isAdmin }: ModalProps) {
   const defaultForm: EventTicket = {
     ticket_type: "",
     ticket_category_id: 1,
@@ -53,6 +55,11 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
     promo_price: 0,
     is_bundling: 0,
     bundling_qty: 0,
+    is_soldout: 0,
+    is_finish: 0,
+    is_ready: 0,
+    is_fullbook: 0,
+    is_ots: 0,
   };
   const {
     values: form,
@@ -79,9 +86,22 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
   const [openForm, setOpenForm] = useState<number | null>();
   const [selected, setSelected] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
+  const { eventData } = useContext(Context);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { slug } = router.query;
+  const loggedUser = useLoggedUser();
+
+  const hasSeatmapPermission = useMemo(() => {
+    return loggedUser?.permissions?.some(p => p.module_id === 8) || false;
+  }, [loggedUser]);
+
+  // If user doesn't have seatmap permission, force category to Festival
+  useEffect(() => {
+    if (!hasSeatmapPermission && form.ticket_category === "Seated") {
+      setForm({ ...form, ticket_category: "Festival" });
+    }
+  }, [hasSeatmapPermission, form.ticket_category]);
 
   const refetchTickets = async () => {
     try {
@@ -112,17 +132,23 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
       console.log("Setting form with ticket data:", ticket[openForm]);
       setForm(ticket[openForm]);
     } else {
-      setForm(defaultForm);
+      setForm({
+        ...defaultForm,
+        ...data,
+        event_schedule_date: data.event_schedule_date || eventData?.start_date || endDate || null,
+        ticket_end: data.ticket_end || endDate || null,
+        ending_time: data.ending_time || eventEndTime || "00:00",
+      });
     }
-  }, [openForm]);
+  }, [openForm, data, eventData, endDate, eventEndTime]);
 
   // ATAU bisa langsung set dari data prop:
-  useEffect(() => {
-    if (isOpen && data && data.id) {
-      console.log("Setting form from data prop:", data);
-      setForm({ ...data });
-    }
-  }, [isOpen, data]);
+  // useEffect(() => {
+  //   if (isOpen && data && data.id) {
+  //     console.log("Setting form from data prop:", data);
+  //     setForm({ ...data });
+  //   }
+  // }, [isOpen, data]);
 
   const submitTicket = async () => {
     console.log("=== SUBMIT TICKET ===");
@@ -267,11 +293,14 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                           key={i}
                           type={e.ticket_type}
                           category={e.ticket_category}
+                          isAdmin={isAdmin}
                           price={e.price}
                           ticketDate={e.ticket_date}
                           ticketEnd={e.ticket_end}
                           description={e.description}
                           name={e.name}
+                          qty={e.qty}
+                          sold={e.ticket_sold ?? e.sold_qty ?? 0}
                           onEdit={() => {
                             setIdx(e?.id);
                             setOpenForm(i);
@@ -285,6 +314,18 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
 
                 <Button variant="light" size="md" onClick={() => setOpenForm(null)} rightSection={<Icon icon="uiw:plus" />} className="shrink-0">
                   Tambah Tiket
+                </Button>
+                <Button 
+                  w="100%" 
+                  variant="light" 
+                  size="md" 
+                  onClick={() => {
+                    setIdx(undefined);
+                    setIsOpen(false);
+                  }}
+                  className={`shrink-0`}
+                >
+                  Tutup
                 </Button>
               </Stack>
             </Card>
@@ -300,9 +341,16 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                 <>
                   <RadioGroup
                     label={
-                      <p className="">
-                        Kategori Tiket<span className="text-danger"> *</span>
-                      </p>
+                      <div className="flex justify-between items-center w-full">
+                        <p className="m-0">
+                          Kategori Tiket<span className="text-danger"> *</span>
+                        </p>
+                        {!hasSeatmapPermission && (
+                          <Text size="10px" color="red" fw={500} className="italic">
+                            * Fitur seatmap silahkan menghubungi admin
+                          </Text>
+                        )}
+                      </div>
                     }
                     className="gap-1 w-full"
                     size="md"
@@ -321,9 +369,10 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                       </Radio>
                       <Radio
                         classNames={{
-                          base: "opacity-50 md:!opacity-100 pointer-events-none md:!pointer-events-auto data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1",
+                          base: `${!hasSeatmapPermission ? 'opacity-50 cursor-not-allowed' : ''} data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-md pr-6 border-2 border-primary-light-200 max-w-full rounded-lg ml-0.5 mr-3 my-1`,
                         }}
                         value="Seated"
+                        isDisabled={!hasSeatmapPermission}
                       >
                         Seat
                       </Radio>
@@ -501,6 +550,53 @@ export default function ModalEditTicket({ isOpen, setIsOpen, ticket, setTicket, 
                       )}
                     </div>
                   </div>
+                  {isAdmin && (
+                    <>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Sold Out</span>}
+                            checked={Number(form.is_soldout) === 1}
+                            onChange={(event) => setForm({ ...form, is_soldout: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Finish</span>}
+                            checked={Number(form.is_finish) === 1}
+                            onChange={(event) => setForm({ ...form, is_finish: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Ready</span>}
+                            checked={Number(form.is_ready) === 1}
+                            onChange={(event) => setForm({ ...form, is_ready: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Fullbook</span>}
+                            checked={Number(form.is_fullbook) === 1}
+                            onChange={(event) => setForm({ ...form, is_fullbook: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 my-2">
+                        <div className="p-3 border border-light-grey rounded-lg">
+                          <Checkbox
+                            label={<span className="font-small text-sm text-grey">Is OTS (On The Spot)</span>}
+                            checked={Number(form.is_ots) === 1}
+                            onChange={(event) => setForm({ ...form, is_ots: event.currentTarget.checked ? 1 : 0 })}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <InputField
                     error={Boolean(errors["description"])}
                     type="textarea"

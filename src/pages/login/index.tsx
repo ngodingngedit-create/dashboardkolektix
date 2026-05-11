@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Logo from "@images/kolektix logo tansparant-blue.png";
-import LogoWhite from "@images/kolektix.gif";
+import LogoWhite from "@images/newkolektix.gif";
 import OTPInput from "react-otp-input";
 import { faMessage } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";

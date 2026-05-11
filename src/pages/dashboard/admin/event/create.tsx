@@ -22,6 +22,7 @@ import { Get, Post } from "@/utils/REST";
 import { formatDate } from "@/utils/useFormattedDate";
 import { toast } from "react-toastify";
 import Button from "@/components/Button";
+import { formatPrice, parsePrice } from "@/utils/useFormattedPrice";
 import React from "react";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import { defaultSeatmapData } from "@/components/Seatmap";
@@ -262,7 +263,7 @@ const CreateEventAdmin = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
               {image ? (
-                <Image src={image} alt="image" className="object-cover" width={0} height={0} style={{ width: "100%", height: "100%" }} />
+                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} />
               ) : (
                 <>
                   <Image src={imagePlus} alt="image-plus" />
@@ -371,8 +372,15 @@ const CreateEventAdmin = () => {
                           ticketEnd={el.ticket_end}
                           description={el.description}
                           name={el.name}
+                          qty={el.qty}
+                          sold={el.ticket_sold ?? el.sold_qty ?? 0}
                           onEdit={() => onEditTicket(el, index)}
                           onDelete={() => deleteTicket(index)}
+                          isSoldout={el.is_soldout}
+                          isFinish={el.is_finish}
+                          isReady={el.is_ready}
+                          isFullbook={el.is_fullbook}
+                          isAdmin={true}
                         />
                       ))
                     )}
@@ -500,7 +508,7 @@ const CreateEventAdmin = () => {
                       <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Admin Fee" type="num" fullWidth value={form.admin_fee} onChange={(e: any) => setForm({ ...form, admin_fee: Number(e.target.value) })} />
+                      <InputField label="Admin Fee" type="text" fullWidth value={formatPrice(form.admin_fee)} onChange={(e: any) => setForm({ ...form, admin_fee: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
                       <InputField label="Admin Fee Plus" type="text" fullWidth value={form.admin_fee_plus} onChange={(e: any) => setForm({ ...form, admin_fee_plus: e.target.value })} />
@@ -509,7 +517,7 @@ const CreateEventAdmin = () => {
                       <InputField label="PPN (%)" type="num" fullWidth value={form.ppn} onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Starting Price" type="num" fullWidth value={form.starting_price} onChange={(e: any) => setForm({ ...form, starting_price: Number(e.target.value) })} />
+                      <InputField label="Starting Price" type="text" fullWidth value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
                       <InputField label="Maks Penggunaan Voucher" type="num" fullWidth value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
@@ -539,8 +547,8 @@ const CreateEventAdmin = () => {
                               type="num"
                               fullWidth
                               placeholder="Masukan biaya asuransi"
-                              value={form.insurance_amount}
-                              onChange={(e: any) => setForm({ ...form, insurance_amount: Number(e.target.value) })}
+                              value={formatPrice(form.insurance_amount || 0)}
+                              onChange={(e: any) => setForm({ ...form, insurance_amount: parsePrice(e.target.value) })}
                             />
                           </div>
                         )}
@@ -579,6 +587,7 @@ const CreateEventAdmin = () => {
           endDate={form.end_date}
           eventStartTime={form.start_time}
           eventEndTime={form.end_time}
+          isAdmin={true}
         />
       </Context.Provider>
     </>

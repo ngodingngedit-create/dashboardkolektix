@@ -120,18 +120,20 @@ const EventCardCreator = ({ liveReportLink, shareLink, slug, title, date, locati
         event_status_id &&
         (event_status_id === 3 ? (
           <div className="border-t-1.5 border-dashed border-primary-light-200 grid grid-cols-2 justify-items-center w-full p-3 gap-x-2">
-            <Button label="Lihat Detail" color="primary" fullWidth className="col-span-2 mb-2" onClick={() => router.push(`/dashboard/my-event/${slug}`)} />
+            <Button label="Lihat Detail" color="primary" fullWidth className="mb-2 text-xs" onClick={() => router.push(`/dashboard/my-event/${slug}`)} />
+            <Button label="Edit" color="secondary" fullWidth className="mb-2 text-xs" onClick={() => router.push(`/dashboard/edit-event/${slug}`)} />
             <Button label="Check In" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/checkin`)} />
             <Button label="Penjualan" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/report`)} />
           </div>
         ) : event_status_id === 2 ? (
           <div className="border-t-1.5 border-dashed border-primary-light-200 grid grid-cols-2 justify-items-center w-full p-3 gap-x-2">
             <Button label="Publish" color="primary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event/checkin/${slug}`)} />
-            <Button label="Edit" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/my-event//${slug}`)} />
+            <Button label="Edit" color="secondary" fullWidth className="text-xs" onClick={() => router.push(`/dashboard/edit-event/${slug}`)} />
           </div>
         ) : (
           <div className="border-t-1.5 border-dashed border-primary-light-200 grid grid-cols-2 justify-items-center w-full p-3 gap-x-2">
-            <Button label="Lihat Detail" color="primary" fullWidth className="col-span-2 mb-2" onClick={() => router.push(`/dashboard/my-event/${slug}`)} />
+            <Button label="Lihat Detail" color="primary" fullWidth className="mb-2 text-xs" onClick={() => router.push(`/dashboard/my-event/${slug}`)} />
+            <Button label="Edit" color="secondary" fullWidth className="mb-2 text-xs" onClick={() => router.push(`/dashboard/edit-event/${slug}`)} />
           </div>
         ))}
     </div>

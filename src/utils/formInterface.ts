@@ -28,6 +28,9 @@ export interface EventTicket {
   is_finish?: number;
   is_ready?: number;
   is_fullbook?: number;
+  ticket_sold?: number;
+  sold_qty?: number;
+  is_ots?: number;
 }
 
 export interface FormEvent {
