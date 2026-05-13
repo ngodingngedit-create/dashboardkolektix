@@ -14,6 +14,7 @@ export interface EventTicket {
   price: number;
   description: string;
   available_seat?: string[];
+  taken_seat?: string[];
   seat_color?: string;
   seat_number?: string[];
   subtotal_price?: number;

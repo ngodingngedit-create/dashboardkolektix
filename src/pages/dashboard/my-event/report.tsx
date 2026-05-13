@@ -1340,9 +1340,10 @@ const Merch = () => {
     if (selectedEvent && eventList.length > 0) {
       const currentEvent = eventList.find((e) => e.id === selectedEvent);
       if (currentEvent?.has_event_ticket?.length) {
-        const ticketsArray = currentEvent.has_event_ticket.map((ticket) => ({
-          value: ticket.name,
-          label: ticket.name,
+        const ticketNames = Array.from(new Set(currentEvent.has_event_ticket.map((ticket) => ticket.name)));
+        const ticketsArray = ticketNames.map((name) => ({
+          value: name,
+          label: name,
         }));
         setAvailableTickets([{ value: "all", label: "Semua Tiket" }, ...ticketsArray]);
       } else {

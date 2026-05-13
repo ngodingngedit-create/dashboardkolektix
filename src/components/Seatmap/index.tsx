@@ -42,6 +42,7 @@ import { Guide } from "../Guide";
 type ComponentProps = {
   editable?: boolean;
   selected?: string[];
+  soldSeat?: string[];
   onSelect?: (data?: string[]) => void;
   unavailSeat?: string[];
   onSelectAll?: (data?: string[]) => void;
@@ -64,6 +65,7 @@ export default forwardRef(function Seatmap({
   onEdit = true,
   editable = true,
   selected: selectedSeat,
+  soldSeat,
   onSelect: setSelectedSeat,
   unavailSeat,
   onSelectAll,
@@ -356,7 +358,7 @@ export default forwardRef(function Seatmap({
     },
     seatDown: (seatnumber: string, index: number) => {
       if (onFinishSelectSeat) {
-        if (onEdit && !unavailSeat?.includes(seatnumber)) {
+        if (onEdit && !unavailSeat?.includes(seatnumber) && !soldSeat?.includes(seatnumber)) {
           setIsDragSelect([seatnumber]);
         } else if (!onEdit && onSeatClick) {
           onSeatClick(seatnumber);
@@ -370,7 +372,7 @@ export default forwardRef(function Seatmap({
       handleSelectSeat(isDragSelect ?? [], undefined, !selectedSeat?.includes(isDragSelect ? isDragSelect[0] : ""));
     },
     seatEnter: (seatnumber: string, index: number) => {
-      if (isDragSelect !== undefined && onEdit && !unavailSeat?.includes(seatnumber)) {
+      if (isDragSelect !== undefined && onEdit && !unavailSeat?.includes(seatnumber) && !soldSeat?.includes(seatnumber)) {
         // setIsDragSelect(seatnumber, index, isDragSelect !== undefined);
         setIsDragSelect([...isDragSelect, seatnumber]);
       }
@@ -843,7 +845,11 @@ export default forwardRef(function Seatmap({
                                                                                 {z}
                                                                             </Text>
                                                                         </Center> */}
-                                    <SeatBox active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} color={e.seatcolor} />
+                                    <SeatBox 
+                                      active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
+                                      color={e.seatcolor} 
+                                      sold={soldSeat?.includes(z)}
+                                    />
                                   </Box>
                                 </Tooltip>
                               ))}
@@ -926,12 +932,13 @@ export default forwardRef(function Seatmap({
   );
 });
 
-const SeatBox = ({ active, color }: { active: boolean; color?: string }) => {
+const SeatBox = ({ active, color, sold }: { active: boolean; color?: string; sold?: boolean }) => {
+  const bgColor = sold ? "#666666" : active ? (color ?? "#194e9e") : "gray.2";
   return (
     <>
-      <Box className={`relative z-10 rounded-sm mt-[5px] border ${active ? "border-[#fafafa30]" : " border-[#d0d0d0]"}`} bg={active ? color ?? "#194e9e" : "gray.2"} h="calc(100% - 7px)"></Box>
+      <Box className={`relative z-10 rounded-sm mt-[5px] border ${active || sold ? "border-[#fafafa30]" : " border-[#d0d0d0]"}`} bg={bgColor} h="calc(100% - 7px)"></Box>
 
-      <Box className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active ? "" : "border border-[#d0d0d0]"}`} bg={active ? color ?? "#194e9e" : "gray.2"} h="calc(100% - 5px)" />
+      <Box className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active || sold ? "" : "border border-[#d0d0d0]"}`} bg={bgColor} h="calc(100% - 5px)" />
     </>
   );
 };  

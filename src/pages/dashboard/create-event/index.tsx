@@ -133,6 +133,7 @@ const CreateEvent = () => {
     is_finish: 0,
     is_ready: 0,
     is_fullbook: 0,
+    taken_seat: [],
   };
   const [error, setError] = useState<ErrorResponse>({});
   const [image, setImage] = useState<string | null>(null);
@@ -196,6 +197,7 @@ const CreateEvent = () => {
           (res.data.has_event_ticket as EventTicket[]).map((e: any) => ({
             ...e,
             available_seat: e.available_seat_number ? e.available_seat_number.split(",") : [],
+            taken_seat: e.taken_seat_number ? e.taken_seat_number.split(",") : [],
           }))
         );
         setEventId(res.data.id);

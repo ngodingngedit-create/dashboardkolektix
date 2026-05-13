@@ -78,6 +78,7 @@ export default function ModalCreateTicket({
     is_ready: 0,
     is_fullbook: 0,
     is_ots: 0,
+    taken_seat: [],
   };
   const {
     values: form,
@@ -287,6 +288,10 @@ export default function ModalCreateTicket({
 
     return result;
   }, [ticket, onSelectSeat, hoveredTicket]);
+  
+  const soldSeats = useMemo(() => {
+    return ticket.reduce<string[]>((acc, t) => [...acc, ...(t.taken_seat ?? [])], []);
+  }, [ticket]);
 
   useEffect(() => {
     console.log("FORM", form);
@@ -732,6 +737,7 @@ export default function ModalCreateTicket({
                 onEdit={onSelectSeat !== undefined}
                 onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
                 onSeatClick={handleSeatClick}
+                soldSeat={soldSeats}
               />
             </Box>
           </Flex>

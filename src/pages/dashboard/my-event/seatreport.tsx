@@ -492,7 +492,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       {/* Header Title - Standard like Report Event */}
       <Stack gap={2} mb="xl">
         <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-          Sales Report
+          Full Report
         </Title>
         <Text size="sm" c="dimmed">
           Laporan penjualan dan data pemesan per kategori tiket atau nomor kursi.

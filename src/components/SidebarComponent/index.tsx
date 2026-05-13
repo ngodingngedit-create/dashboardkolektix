@@ -1651,7 +1651,7 @@ type SidebarData = {
   iconify?: string;
   link?: string;
   role: UserProps["role"];
-  submenu?: Omit<SidebarData, "submenu">;
+  submenu?: SidebarData;
   visible?: boolean; // ✅ Tambah ini
 }[];
 
@@ -1819,10 +1819,32 @@ const sidebarData: SidebarData = [
         role: "Creator",
       },
       {
-        id: 1,
+        id: 100,
         name: "Sales Report",
         iconify: "carbon:flag",
-        link: "/dashboard/my-event/seatreport",
+        role: "Creator",
+        submenu: [
+          {
+            id: 101,
+            name: "Full Report",
+            iconify: "carbon:document",
+            link: "/dashboard/my-event/seatreport",
+            role: "Creator",
+          },
+          {
+            id: 102,
+            name: "Seatmap Report",
+            iconify: "hugeicons:chair-01",
+            link: "/dashboard/my-event/fullseatmap",
+            role: "Creator",
+          },
+        ],
+      },
+      {
+        id: 103,
+        name: "Down Payment Report",
+        iconify: "carbon:wallet",
+        link: "/dashboard/my-event/dpreport",
         role: "Creator",
       },
       {
@@ -2197,149 +2219,191 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarContext.Provider value={{ collapse }}>
       <div>
-      <div className="flex max-w-[100vw] !overflow-x-hidden">
-        <nav
-          ref={outsideClick}
-          className={`
+        <div className="flex max-w-[100vw] !overflow-x-hidden">
+          <nav
+            ref={outsideClick}
+            className={`
                         fixed md:relative shrink-0
                         flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
                         overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-[1100]
                         ${collapse ? "w-[280px]" : "w-0 md:w-[65px]"}
                     `}
-        >
-          <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "" : "overflow-y-hidden"}`}>
-            <li className={`${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
-              <Link href="/dashboard" className="flex items-center justify-center">
-                {collapse ? (
-                  <Image src={Logo} alt="Logo" className="w-1/2" />
-                ) : (
-                  <Image src={LogoSquare} alt="Logo" className={` ${collapse ? "opacity-0" : "opacity-100 "} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />
-                )}
-              </Link>
-            </li>
-            <li className="border border-[#1b3a6a] border-x-0 border-t-0 p-2 mb-3 mt-2">
-              <div className="flex items-center gap-3 px-3 [&_*]:!text-white w-full">
-                <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
-                {visible && (
-                  <>
-                    <div className={`w-full ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `}>
-                      <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name || userData.has_creator?.name_event_organizer : userData?.name}</p>
-                      <p className="text-[10px] ">{role}</p>
-                    </div>
-                    <div>
-                      {hasCreator && role != "Staff" && (
-                        <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `} onClick={() => setIsPop(!pop)}>
-                          <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? "rotate-0" : "rotate-180"}  ${collapse ? "opacity-100" : "opacity-0"} transition-transform delay-100 ease-in-out duration-200 text-white`} />
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className={`${(collapse ? pop : true) ? "opacity-0 h-0" : "opacity-100"} ${role == "Staff" ? "!hidden" : ""} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
-                <div className="flex justify-between mb-2">
-                  <Flex align="center" gap={7}>
-                    <Icon icon="hugeicons:money-03" />
-                    <p className="text-sm">Saldo</p>
-                  </Flex>
-                  {/* <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p> */}
-                  <p className="text-sm ">Rp.{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</p>
+          >
+            <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "" : "overflow-y-hidden"}`}>
+              <li className={`${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
+                <Link href="/dashboard" className="flex items-center justify-center">
+                  {collapse ? (
+                    <Image src={Logo} alt="Logo" className="w-1/2" />
+                  ) : (
+                    <Image src={LogoSquare} alt="Logo" className={` ${collapse ? "opacity-0" : "opacity-100 "} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />
+                  )}
+                </Link>
+              </li>
+              <li className="border border-[#1b3a6a] border-x-0 border-t-0 p-2 mb-3 mt-2">
+                <div className="flex items-center gap-3 px-3 [&_*]:!text-white w-full">
+                  <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                  {visible && (
+                    <>
+                      <div className={`w-full ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `}>
+                        <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name || userData.has_creator?.name_event_organizer : userData?.name}</p>
+                        <p className="text-[10px] ">{role}</p>
+                      </div>
+                      <div>
+                        {hasCreator && role != "Staff" && (
+                          <button className={`bg-[#1b3a6a] w-8 h-8 rounded-md ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `} onClick={() => setIsPop(!pop)}>
+                            <FontAwesomeIcon icon={faChevronCircleDown} className={`${pop ? "rotate-0" : "rotate-180"}  ${collapse ? "opacity-100" : "opacity-0"} transition-transform delay-100 ease-in-out duration-200 text-white`} />
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <Flex align="center" gap={7}>
-                    {/* <Icon icon="ph:money-wavy" />
+                <div className={`${(collapse ? pop : true) ? "opacity-0 h-0" : "opacity-100"} ${role == "Staff" ? "!hidden" : ""} transition-all delay-100 ease-in-out duration-200 p-4 [&_*]:!text-white`}>
+                  <div className="flex justify-between mb-2">
+                    <Flex align="center" gap={7}>
+                      <Icon icon="hugeicons:money-03" />
+                      <p className="text-sm">Saldo</p>
+                    </Flex>
+                    {/* <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p> */}
+                    <p className="text-sm ">Rp.{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <Flex align="center" gap={7}>
+                      {/* <Icon icon="ph:money-wavy" />
                     <p className="text-sm">Kredit</p> */}
-                  </Flex>
-                  {/* <p className="text-sm ">Rp.0</p> */}
-                </div>
-                <div className="items-center">
-                  <Link href={"/dashboard/withdraw"}>
-                    <button
-                      className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
-                      onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
-                    >
-                      Detail
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </li>
-
-            <>
-              {filteredSidebarData.map((el) => (
-                <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? "!opacity-0" : ""}`} key={el.id}>
-                  <li key={el.id} className={`${router.pathname === el.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px]  text-primary-light-200"} list-none transition-transform-colors`}>
-                    {el.link ? (
-                      <Link href={el.link} className="" onClick={handleItemClick}>
-                        <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
-                          <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
-                          {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{el.name}</p>}
-                        </div>
-                      </Link>
-                    ) : (
-                      <div
-                        onClick={() => {
-                          toggleSubmenu(el.id);
-                          setCollapse(true);
-                        }}
-                        className="cursor-pointer"
+                    </Flex>
+                    {/* <p className="text-sm ">Rp.0</p> */}
+                  </div>
+                  <div className="items-center">
+                    <Link href={"/dashboard/withdraw"}>
+                      <button
+                        className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
+                        onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
                       >
-                        <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
-                          <div className="flex items-center">
-                            <div className="w-5 h-5 flex justify-center items-center">
-                              <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
-                            </div>
+                        Detail
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </li>
+
+              <>
+                {filteredSidebarData.map((el) => (
+                  <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? "!opacity-0" : ""}`} key={el.id}>
+                    <li key={el.id} className={`${router.pathname === el.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px]  text-primary-light-200"} list-none transition-transform-colors`}>
+                      {el.link ? (
+                        <Link href={el.link} className="" onClick={handleItemClick}>
+                          <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
+                            <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
                             {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{el.name}</p>}
                           </div>
-                          {el.submenu && visible && (
-                            <button>
-                              <FontAwesomeIcon icon={faChevronLeft} className={`${openMenu[el.id] ? "-rotate-90" : ""} transition-transform`} />
-                            </button>
-                          )}
+                        </Link>
+                      ) : (
+                        <div
+                          onClick={() => {
+                            toggleSubmenu(el.id);
+                            setCollapse(true);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex px-5 items-center justify-between hover:bg-[#1b3a6a] py-3">
+                            <div className="flex items-center">
+                              <div className="w-5 h-5 flex justify-center items-center">
+                                <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
+                              </div>
+                              {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{el.name}</p>}
+                            </div>
+                            {el.submenu && visible && (
+                              <button>
+                                <FontAwesomeIcon icon={faChevronLeft} className={`${openMenu[el.id] ? "-rotate-90" : ""} transition-transform`} />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {el.submenu && (
-                      <ul className={`${openMenu[el.id] && visible ? "max-h-[1000px] mb-3" : "max-h-0"} ml-[10px] transition-all duration-300 ease-in-out overflow-hidden`}>
-                        {el.submenu
-                          .filter((subEl) => subEl.role === role)
-                          .map((subEl, i) => (
-                            <li
-                              key={i}
-                              className={`list-none ${openMenu[el.id] && visible ? "visible opacity-100" : "invisible opacity-0"} ${router.pathname === subEl.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200"
-                                } py-3 transition-transform-colors-opacity`}
-                            >
-                              <Link href={subEl.link ?? "#"} onClick={handleItemClick}>
-                                <div className="flex px-5 items-center">
-                                  <div className="w-5 h-5 flex justify-center items-center">
-                                    {subEl.iconify ? <Icon icon={subEl.iconify ?? ""} className={`h-5 w-5 text-white`} /> : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
-                                  </div>
-                                  {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{subEl.name}</p>}
-                                </div>
-                              </Link>
-                            </li>
-                          ))}
-                      </ul>
-                    )}
-                  </li>
-                </Tooltip>
-              ))}
-            </>
-          </ul>
-          <button onClick={() => setCollapse(!collapse)} className="sticky bottom-0 pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] text-primary-light-200 py-4 text-sm transition-transform-colors w-full">
-            <div className="flex items-center justify-center px-5">
-              {visible && <p className={`${collapse ? "w-full" : "w-0 hidden"} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
-              <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? "rotate-0" : "rotate-180"} transition-all ease-in-out`} />
-            </div>
-          </button>
-        </nav>
-        <div className="w-full overflow-x-hidden">
-          <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
-            <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Burgers isOpen={collapse} setIsOpen={setCollapse} />
-                {/* <h3>
+                      )}
+                      {el.submenu && (
+                        <ul className={`${openMenu[el.id] && visible ? "max-h-[1000px] mb-3" : "max-h-0"} ml-[10px] transition-all duration-300 ease-in-out overflow-hidden`}>
+                          {el.submenu
+                            .filter((subEl) => subEl.role === role)
+                            .map((subEl, i) => (
+                              <li
+                                key={i}
+                                className={`list-none ${openMenu[el.id] && visible ? "visible opacity-100" : "invisible opacity-0"} ${router.pathname === subEl.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px] hover:bg-[#1b3a6a] text-primary-light-200"
+                                  } py-3 transition-transform-colors-opacity`}
+                              >
+                                {subEl.submenu ? (
+                                  <>
+                                    <div
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        toggleSubmenu(subEl.id);
+                                      }}
+                                      className="cursor-pointer flex px-5 items-center justify-between"
+                                    >
+                                      <div className="flex items-center">
+                                        <div className="w-5 h-5 flex justify-center items-center">
+                                          {subEl.iconify ? <Icon icon={subEl.iconify ?? ""} className={`h-5 w-5 text-white`} /> : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
+                                        </div>
+                                        {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{subEl.name}</p>}
+                                      </div>
+                                      {visible && (
+                                        <FontAwesomeIcon
+                                          icon={faChevronLeft}
+                                          className={`${openMenu[subEl.id] ? "-rotate-90" : ""} transition-transform text-white text-[10px]`}
+                                        />
+                                      )}
+                                    </div>
+                                    <ul className={`${openMenu[subEl.id] && visible ? "max-h-[500px] mt-2 mb-2" : "max-h-0"} ml-[30px] pl-5 border-l border-white/10 transition-all duration-300 ease-in-out overflow-hidden`}>
+                                      {subEl.submenu
+                                        .filter((ss) => ss.role === role)
+                                        .map((ss, j) => (
+                                          <li key={j} className={`list-none py-2 ${router.pathname === ss.link ? "text-white" : "text-primary-light-200 hover:text-white"}`}>
+                                            <Link href={ss.link ?? "#"} onClick={handleItemClick}>
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-4 h-4 flex justify-center items-center opacity-80">
+                                                  {ss.iconify ? <Icon icon={ss.iconify} className="h-4 w-4" /> : ss.icon && <FontAwesomeIcon icon={ss.icon} className="w-4 h-4" />}
+                                                </div>
+                                                {visible && <p className="text-[13px] font-medium">{ss.name}</p>}
+                                              </div>
+                                            </Link>
+                                          </li>
+                                        ))}
+                                    </ul>
+                                  </>
+                                ) : (
+                                  <Link href={subEl.link ?? "#"} onClick={handleItemClick}>
+                                    <div className="flex px-5 items-center">
+                                      <div className="w-5 h-5 flex justify-center items-center">
+                                        {subEl.iconify ? <Icon icon={subEl.iconify ?? ""} className={`h-5 w-5 text-white`} /> : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
+                                      </div>
+                                      {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{subEl.name}</p>}
+                                    </div>
+                                  </Link>
+                                )}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
+                    </li>
+                  </Tooltip>
+                ))}
+              </>
+            </ul>
+            <button onClick={() => setCollapse(!collapse)} className="sticky bottom-0 pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] text-primary-light-200 py-4 text-sm transition-transform-colors w-full">
+              <div className="flex items-center justify-center px-5">
+                {visible && <p className={`${collapse ? "w-full" : "w-0 hidden"} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? "rotate-0" : "rotate-180"} transition-all ease-in-out`} />
+              </div>
+            </button>
+          </nav>
+          <div className="w-full overflow-x-hidden">
+            <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
+              <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Burgers isOpen={collapse} setIsOpen={setCollapse} />
+                  {/* <h3>
                                     {route === '/dashboard'
                                         ? 'Dashboard'
                                         : route === '/dashboard/my-ticket'
@@ -2362,120 +2426,120 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                         ? 'Pesan'
                                         : ''}
                                 </h3> */}
-              </div>
-              <div className="!overflow-x-hidden flex-grow">
-                <Flex gap={8} align="center" justify="end">
-                  <Fade isShowing={showNotifications}>
-                    <div
-                      className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? "opacity-100" : "opacity-0"}`}
-                      role="menu"
-                      aria-orientation="vertical"
-                      aria-labelledby="user-menu-button"
-                      tabIndex={-1}
-                    >
-                      {hasNotification ? (
-                        <>
-                          <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                            Your Profile
-                          </Link>
-                          <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
-                            Settings
-                          </Link>
-                          <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
-                            Sign out
-                          </Link>
-                        </>
-                      ) : (
-                        <div className="p-3">
-                          <p className="text-dark text-sm">Belum ada notifikasi</p>
-                        </div>
-                      )}
-                    </div>
-                  </Fade>
-                  <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard")}>
-                    <FontAwesomeIcon icon={faHome} />
-                  </button>
-                  <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
-                    <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
-                  </button>
-                  {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
-                    <Button label="Buat Event" startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
-                  ) : (
-                    role === "Creator" && (
-                      <>
-                        <Button label="Edit" color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
-                        <Button label="Preview" color="primary" startIcon={faEye} className="mr-0" onClick={() => {
-                          if (window.location.hostname === "dashboard.kolektix.com") {
-                            window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
-                          } else {
-                            window.open(`${window.location.origin}/event/${params.slug}`, '_blank');
-                          }
-                        }} />
-                      </>
-                    )
-                  )}
-                  <div>
-                    <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
-                      <button
-                        type="button"
-                        className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around"
-                        id="user-menu-button"
-                        aria-expanded="false"
-                        aria-haspopup="true"
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                      >
-                        <FontAwesomeIcon icon={faBars} className="text-primary-base" />
-                        <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
-                      </button>
-                    </div>
-                    <Fade isShowing={showUserMenu}>
+                </div>
+                <div className="!overflow-x-hidden flex-grow">
+                  <Flex gap={8} align="center" justify="end">
+                    <Fade isShowing={showNotifications}>
                       <div
-                        ref={outsideClickMenu}
-                        className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? "opacity-100" : "opacity-0"}`}
+                        className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? "opacity-100" : "opacity-0"}`}
                         role="menu"
                         aria-orientation="vertical"
                         aria-labelledby="user-menu-button"
                         tabIndex={-1}
                       >
-                        <Stack px={15} py={10} gap={5}>
-                          <Text size="sm" c="gray.8" fw={600}>
-                            Hi, {users?.name}
-                          </Text>
-                          <Text size="xs" c="gray" mt={-3}>
-                            {users?.email}
-                          </Text>
-                        </Stack>
-
-
-                        {!["Staff", "Admin"].includes(role ?? "") && (
+                        {hasNotification ? (
                           <>
-                            <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                              <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                              Transaksi
+                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                              Your Profile
                             </Link>
-
-                            <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                              <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                              Bookmark
+                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
+                              Settings
+                            </Link>
+                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
+                              Sign out
                             </Link>
                           </>
+                        ) : (
+                          <div className="p-3">
+                            <p className="text-dark text-sm">Belum ada notifikasi</p>
+                          </div>
                         )}
-
-                        <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
-                          <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
-                          Keluar
-                        </button>
                       </div>
                     </Fade>
-                  </div>
-                </Flex>
+                    <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard")}>
+                      <FontAwesomeIcon icon={faHome} />
+                    </button>
+                    <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
+                      <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
+                    </button>
+                    {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
+                      <Button label="Buat Event" startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
+                    ) : (
+                      role === "Creator" && (
+                        <>
+                          <Button label="Edit" color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
+                          <Button label="Preview" color="primary" startIcon={faEye} className="mr-0" onClick={() => {
+                            if (window.location.hostname === "dashboard.kolektix.com") {
+                              window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
+                            } else {
+                              window.open(`${window.location.origin}/event/${params.slug}`, '_blank');
+                            }
+                          }} />
+                        </>
+                      )
+                    )}
+                    <div>
+                      <div className="bg-white rounded-full px-2 py-1.5 w-20 border border-primary-light-200">
+                        <button
+                          type="button"
+                          className="w-full relative flex max-w-xs items-center rounded-full text-sm justify-around"
+                          id="user-menu-button"
+                          aria-expanded="false"
+                          aria-haspopup="true"
+                          onClick={() => setShowUserMenu(!showUserMenu)}
+                        >
+                          <FontAwesomeIcon icon={faBars} className="text-primary-base" />
+                          <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
+                        </button>
+                      </div>
+                      <Fade isShowing={showUserMenu}>
+                        <div
+                          ref={outsideClickMenu}
+                          className={`absolute right-2 z-10 mt-5 w-48 origin-top-right divide-y divide-primary-light-200 rounded-md bg-white shadow-lg transition-opacity duration-200 ${showUserMenu ? "opacity-100" : "opacity-0"}`}
+                          role="menu"
+                          aria-orientation="vertical"
+                          aria-labelledby="user-menu-button"
+                          tabIndex={-1}
+                        >
+                          <Stack px={15} py={10} gap={5}>
+                            <Text size="sm" c="gray.8" fw={600}>
+                              Hi, {users?.name}
+                            </Text>
+                            <Text size="xs" c="gray" mt={-3}>
+                              {users?.email}
+                            </Text>
+                          </Stack>
+
+
+                          {!["Staff", "Admin"].includes(role ?? "") && (
+                            <>
+                              <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+                                Transaksi
+                              </Link>
+
+                              <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
+                                <FontAwesomeIcon icon={faBookmark} className="mr-2" />
+                                Bookmark
+                              </Link>
+                            </>
+                          )}
+
+                          <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
+                            <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
+                            Keluar
+                          </button>
+                        </div>
+                      </Fade>
+                    </div>
+                  </Flex>
+                </div>
               </div>
+              <div className="max-w-[100vw] overflow-x-hidden">{children}</div>
             </div>
-            <div className="max-w-[100vw] overflow-x-hidden">{children}</div>
           </div>
         </div>
       </div>
-    </div>
     </SidebarContext.Provider>
   );
 };
