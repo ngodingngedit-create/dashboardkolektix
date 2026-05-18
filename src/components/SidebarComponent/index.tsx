@@ -1844,8 +1844,23 @@ const sidebarData: SidebarData = [
         id: 103,
         name: "Down Payment Report",
         iconify: "carbon:wallet",
-        link: "/dashboard/my-event/dpreport",
         role: "Creator",
+        submenu: [
+          {
+            id: 103,
+            name: "Report Downpayment",
+            iconify: "carbon:document",
+            link: "/dashboard/my-event/dpreport",
+            role: "Creator",
+          },
+          {
+            id: 104,
+            name: "Setup Downpayment",
+            iconify: "hugeicons:chair-01",
+            link: "/dashboard/my-event/setup-dpreport",
+            role: "Creator",
+          },
+        ],
       },
       {
         id: 1,
@@ -1967,6 +1982,14 @@ const sidebarData: SidebarData = [
         role: "Creator",
       },
     ],
+  },
+  {
+    id: 11,
+    // moduleId: 7,
+    name: "Talenta",
+    icon: faStar,
+    role: "Creator",
+    link: "/dashboard/talenta"
   },
   {
     id: 10,

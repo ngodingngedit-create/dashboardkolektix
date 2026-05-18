@@ -108,7 +108,11 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               weight: parseInt(data.weight ?? "0"),
               description: data.description ?? "",
               image: data.product_image.map((e) => e.image_url),
-              store_location_id: (data as any).store_location_id ?? null,
+              store_location_id: (data as any).store_location_id
+                ? Number((data as any).store_location_id)
+                : ((data as any).has_store_location?.id
+                  ? Number((data as any).has_store_location.id)
+                  : null),
               variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
               variant: productVarian.map((e: any) => {
                 const parts = (e.varian_name || "").split(" - ");
@@ -259,7 +263,15 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   const handleSave = async (isDraft: boolean = false) => {
     const valid = form.validate();
     var product_id: number | null = null;
-    if (valid.hasErrors) return;
+    if (valid.hasErrors) {
+      console.log("Validation errors:", valid.errors);
+      notifications.show({
+        title: "Validasi Gagal",
+        message: "Periksa kembali inputan Anda. Beberapa data tidak valid.",
+        color: "red",
+      });
+      return;
+    }
 
     setLoading.append("save");
     const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
@@ -474,7 +486,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         value: String(s.id),
                         label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
                       }))}
-                      value={form.values.store_location_id ? String(form.values.store_location_id) : null}
+                      value={form.values.store_location_id !== null && form.values.store_location_id !== undefined ? String(form.values.store_location_id) : null}
                       onChange={(v) => form.setFieldValue("store_location_id", v ? Number(v) : null)}
                       disabled={storeLocations.length === 0}
                     />

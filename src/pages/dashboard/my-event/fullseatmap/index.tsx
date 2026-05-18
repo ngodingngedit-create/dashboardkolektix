@@ -295,7 +295,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
         >
           <Box
             className={`relative z-10 rounded-sm mt-[5px] border ${isBought ? "border-[#fafafa30]" : " border-[#d0d0d0]"}`}
-            bg={isBought ? (areaColor || "#666666") : "gray.2"}
+            bg={isBought ? (areaColor || "#adb5bd") : "gray.2"}
             h="calc(100% - 7px)"
             style={{
               boxShadow: isHighlighted ? '0 0 8px rgba(0,0,0,0.4)' : 'none',
@@ -311,7 +311,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
           <Box
             className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${isBought ? "" : "border border-[#d0d0d0]"}`}
-            bg={isBought ? (areaColor || "#666666") : "gray.2"}
+            bg={isBought ? (areaColor || "#adb5bd") : "gray.2"}
             h="calc(100% - 5px)"
           />
         </Box>
@@ -403,11 +403,11 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
         <div className="absolute top-4 left-4 z-40 bg-white/90 backdrop-blur p-3 rounded-lg border border-light-grey shadow-sm space-y-2">
           <Text size="xs" fw={700} mb={4}>Legenda:</Text>
           <Flex align="center" gap={8}>
-            <Box w={12} h={12} bg="gray.3" className="rounded-sm border border-gray-400" />
+            <Box w={12} h={12} bg="gray.2" className="rounded-sm border border-gray-400" />
             <Text size="xs">Tersedia</Text>
           </Flex>
           <Flex align="center" gap={8}>
-            <Box w={12} h={12} bg="gray.6" className="rounded-sm" />
+            <Box w={12} h={12} bg="gray.5" className="rounded-sm" />
             <Text size="xs">Terjual</Text>
           </Flex>
           <Flex align="center" gap={8}>
@@ -541,6 +541,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     </div>
   );
 };
+
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { req } = context;

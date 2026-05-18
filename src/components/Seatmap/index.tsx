@@ -933,7 +933,7 @@ export default forwardRef(function Seatmap({
 });
 
 const SeatBox = ({ active, color, sold }: { active: boolean; color?: string; sold?: boolean }) => {
-  const bgColor = sold ? "#666666" : active ? (color ?? "#194e9e") : "gray.2";
+  const bgColor = sold ? "#adb5bd" : active ? (color ?? "#194e9e") : "gray.2";
   return (
     <>
       <Box className={`relative z-10 rounded-sm mt-[5px] border ${active || sold ? "border-[#fafafa30]" : " border-[#d0d0d0]"}`} bg={bgColor} h="calc(100% - 7px)"></Box>

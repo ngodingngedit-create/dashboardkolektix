@@ -2237,11 +2237,11 @@ export default function MerchDetail() {
             title: 'Status Pengiriman',
             width: 140,
             render: (item: any) => (
-                    <Flex justify="center" w="100%">
-                        <Badge color="gray" variant="filled" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
-                            Siap Dikirim
-                        </Badge>
-                    </Flex>
+                <Flex justify="center" w="100%">
+                    <Badge color="gray" variant="filled" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                        Siap Dikirim
+                    </Badge>
+                </Flex>
             )
         },
         {
@@ -2320,7 +2320,7 @@ export default function MerchDetail() {
 
     const productPrice = data ? parsePrice(data.price) : 0;
     const maxTableHeight = 400;
-    
+
     // Logic for storefront URL based on environment
     const getStorefrontUrl = () => {
         if (typeof window === 'undefined') return '';

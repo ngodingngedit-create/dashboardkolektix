@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip, Portal, Transition } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
@@ -9,9 +9,20 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faSearch, faFileExcel, faMoneyBillWave, faReceipt, faInfoCircle, faCalendarDays, faUser, faEnvelope, faGlobe, faWallet } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faSearch, faFileExcel, faMoneyBillWave, faReceipt, faInfoCircle, faCalendarDays, faUser, faEnvelope, faGlobe, faWallet, faSort, faSortUp, faSortDown } from "@fortawesome/free-solid-svg-icons";
 
 const DPReport = () => {
+  const getSuccessUrl = (invoice: string) => {
+    const host = window.location.hostname;
+    let baseUrl = "https://kolektix.com";
+    if (host.includes("localhost")) {
+      baseUrl = "http://localhost:3001";
+    } else if (host.includes("kolektix.my.id")) {
+      baseUrl = "https://kolektix.my.id";
+    }
+    return `${baseUrl}/success-downpayment/${invoice}`;
+  };
+
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<DownpaymentData[]>([]);
   const [eventList, setEventList] = useState<EventListResponse[]>([]);
@@ -20,6 +31,12 @@ const DPReport = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedDP, setSelectedDP] = useState<DownpaymentData | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({
+    key: "created_at",
+    direction: "desc",
+  });
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedTicket, setSelectedTicket] = useState<string>("all");
   const user = useLoggedUser();
 
   // State untuk pagination
@@ -31,8 +48,10 @@ const DPReport = () => {
   }, []);
 
   useDidUpdate(() => {
-    fetchEvents();
-  }, [isr]);
+    if (user?.has_creator?.id) {
+      fetchEvents();
+    }
+  }, [isr, user]);
 
   useEffect(() => {
     if (isr) {
@@ -43,11 +62,12 @@ const DPReport = () => {
   const fetchEvents = async () => {
     setLoading.append("fetchEvents");
     try {
-      const response = await axios.get(`${config.wsUrl}event`);
+      const creatorId = user?.has_creator?.id;
+      if (!creatorId) return;
+      
+      const response = await axios.get(`${config.wsUrl}event-by-creator/${creatorId}`);
       if (response.data?.data && Array.isArray(response.data.data)) {
-        const creatorIdNumber = Number(user?.has_creator?.id);
-        const filteredEvents = response.data.data.filter((e: any) => Number(e.creator_id) === creatorIdNumber);
-        setEventList(filteredEvents);
+        setEventList(response.data.data);
       }
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -81,16 +101,92 @@ const DPReport = () => {
     }
   };
 
-  const filteredData = useMemo(() => {
-    if (!searchValue) return allDataList;
-    const q = searchValue.toLowerCase();
-    return allDataList.filter((item) => {
-      const dpNo = item.downpayment_no?.toLowerCase() || "";
-      const pemesan = item.identities?.find(id => id.is_pemesan === 1)?.full_name?.toLowerCase() || "";
-      const email = item.identities?.find(id => id.is_pemesan === 1)?.email?.toLowerCase() || "";
-      return dpNo.includes(q) || pemesan.includes(q) || email.includes(q);
+  const availableTickets = useMemo(() => {
+    const tickets = new Set<string>();
+    allDataList.forEach(item => {
+      item.tickets?.forEach(t => {
+        if (t.code) tickets.add(t.code);
+      });
     });
-  }, [allDataList, searchValue]);
+    return ["all", ...Array.from(tickets)];
+  }, [allDataList]);
+
+  const filteredData = useMemo(() => {
+    let data = [...allDataList];
+
+    // Status Filter
+    if (selectedStatus !== "all") {
+      data = data.filter(item => item.payment_status === selectedStatus);
+    }
+
+    // Ticket Filter
+    if (selectedTicket !== "all") {
+      data = data.filter(item => item.tickets?.some(t => t.code === selectedTicket));
+    }
+
+    // Search Filter
+    if (searchValue) {
+      const q = searchValue.toLowerCase();
+      data = data.filter((item) => {
+        const dpNo = item.downpayment_no?.toLowerCase() || "";
+        const pemesan = item.identities?.find(id => id.is_pemesan === 1)?.full_name?.toLowerCase() || "";
+        const email = item.identities?.find(id => id.is_pemesan === 1)?.email?.toLowerCase() || "";
+        return dpNo.includes(q) || pemesan.includes(q) || email.includes(q);
+      });
+    }
+
+    // Sorting
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        let v1: any, v2: any;
+        if (sortConfig.key === 'downpayment_no') {
+          v1 = a.downpayment_no || "";
+          v2 = b.downpayment_no || "";
+        } else if (sortConfig.key === 'pemesan') {
+          v1 = a.identities?.find(id => id.is_pemesan === 1)?.full_name || "";
+          v2 = b.identities?.find(id => id.is_pemesan === 1)?.full_name || "";
+        } else if (sortConfig.key === 'email') {
+          v1 = a.identities?.find(id => id.is_pemesan === 1)?.email || "";
+          v2 = b.identities?.find(id => id.is_pemesan === 1)?.email || "";
+        } else if (sortConfig.key === 'grandtotal') {
+          v1 = a.grandtotal || 0;
+          v2 = b.grandtotal || 0;
+        } else if (sortConfig.key === 'ticket_name') {
+          v1 = a.tickets?.[0]?.code || "";
+          v2 = b.tickets?.[0]?.code || "";
+        } else if (sortConfig.key === 'payment_status') {
+          v1 = a.payment_status || "";
+          v2 = b.payment_status || "";
+        } else if (sortConfig.key === 'created_at') {
+          v1 = new Date(a.created_at).getTime();
+          v2 = new Date(b.created_at).getTime();
+        } else {
+          v1 = (a as any)[sortConfig.key] || "";
+          v2 = (b as any)[sortConfig.key] || "";
+        }
+
+        if (v1 < v2) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (v1 > v2) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return data;
+  }, [allDataList, selectedStatus, selectedTicket, searchValue, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return <FontAwesomeIcon icon={faSort} size="xs" style={{ marginLeft: 8, opacity: 0.3 }} />;
+    return sortConfig.direction === 'asc' 
+      ? <FontAwesomeIcon icon={faSortUp} size="xs" style={{ marginLeft: 8, color: '#228be6' }} />
+      : <FontAwesomeIcon icon={faSortDown} size="xs" style={{ marginLeft: 8, color: '#228be6' }} />;
+  };
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -137,54 +233,97 @@ const DPReport = () => {
           <Title order={1} size="h2">Down Payment Report</Title>
           <Text size="sm" c="gray">Kelola dan pantau transaksi Down Payment event Anda</Text>
         </Stack>
-        <Group>
-          <Select
-            placeholder="Pilih Event"
-            data={[{ value: "all", label: "Semua Event" }, ...eventList.map(e => ({ value: String(e.id), label: e.name }))]}
-            value={String(selectedEvent)}
-            onChange={(val) => setSelectedEvent(val as any)}
-            style={{ width: 250 }}
-            searchable
-            clearable={false}
-          />
-          <Button 
-            onClick={exportToExcel} 
-            color="green" 
-            leftSection={<FontAwesomeIcon icon={faFileExcel} />}
-            disabled={filteredData.length === 0}
-          >
-            Export Excel
-          </Button>
-        </Group>
       </Flex>
 
-      <Card withBorder p={0}>
-        <Box p="md" style={{ borderBottom: '1px solid #eee' }}>
-          <Flex gap="md" align="center">
-            <TextInput
-              placeholder="Cari No. DP, Nama, atau Email..."
-              leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              style={{ flexGrow: 1 }}
-            />
-          </Flex>
-        </Box>
+      <Flex justify="flex-end" gap="sm" align="center" wrap="wrap">
+        <Button 
+          onClick={exportToExcel} 
+          variant="filled"
+          color="green"
+          leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+          disabled={filteredData.length === 0}
+          radius="xl"
+          size="sm"
+        >
+          Export Excel
+        </Button>
+        
+        <Select
+          placeholder="Pilih Event"
+          data={[{ value: "all", label: "Semua Event" }, ...eventList.map(e => ({ value: String(e.id), label: e.name }))]}
+          value={String(selectedEvent)}
+          onChange={(val) => setSelectedEvent(val as any)}
+          w={200}
+          size="sm"
+          radius="md"
+          searchable
+        />
 
+        <Select
+          placeholder="Semua Tiket"
+          data={availableTickets.map(t => ({ value: t, label: t === 'all' ? 'Semua Tiket' : t }))}
+          value={selectedTicket}
+          onChange={(val) => setSelectedTicket(val || 'all')}
+          w={150}
+          size="sm"
+          radius="md"
+        />
+
+        <Select
+          placeholder="Semua Status"
+          data={[
+            { value: "all", label: "Semua Status" },
+            { value: "Paid", label: "Paid" },
+            { value: "Partial Paid", label: "Partial Paid" },
+            { value: "Pending", label: "Pending" },
+            { value: "Expired", label: "Expired" },
+            { value: "Unpaid", label: "Unpaid" },
+            { value: "Canceled", label: "Canceled" },
+          ]}
+          value={selectedStatus}
+          onChange={(val) => setSelectedStatus(val || 'all')}
+          w={150}
+          size="sm"
+          radius="md"
+        />
+
+        <TextInput
+          placeholder="Cari nama atau invoice..."
+          leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          w={220}
+          size="sm"
+          radius="md"
+        />
+      </Flex>
+
+      <Card withBorder p={0} radius="md" style={{ overflow: 'hidden' }}>
         <Box className="overflow-x-auto">
-          <Table verticalSpacing="sm" highlightOnHover>
-            <thead className="bg-gray-50">
+          <Table verticalSpacing="md" highlightOnHover withRowBorders>
+            <thead style={{ backgroundColor: '#f8f9fa' }}>
               <tr>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">No</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">No. DP</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Pemesan</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Event</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">Tiket</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Total</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Terbayar</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Sisa</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">Status</th>
-                <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-center">Aksi</th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase">NO</th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('downpayment_no')}>
+                  NO. INVOICE {getSortIcon('downpayment_no')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('pemesan')}>
+                  NAMA {getSortIcon('pemesan')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('email')}>
+                  EMAIL {getSortIcon('email')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('ticket_name')}>
+                  NAMA TIKET {getSortIcon('ticket_name')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase text-right cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('grandtotal')}>
+                  HARGA TIKET {getSortIcon('grandtotal')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase text-center">METODE PEMBAYARAN</th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('payment_status')}>
+                  STATUS {getSortIcon('payment_status')}
+                </th>
+                <th style={{ padding: '16px' }} className="text-xs font-bold text-gray-500 uppercase text-center">ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -203,33 +342,66 @@ const DPReport = () => {
               ) : (
                 paginatedData.map((item, idx) => {
                   const pemesan = item.identities?.find(id => id.is_pemesan === 1) || item.identities?.[0];
+                  const ticketNames = item.tickets?.map(t => t.code).filter(Boolean);
+                  const displayTicketName = ticketNames.length > 1 
+                    ? `${ticketNames[0]} (+${ticketNames.length - 1})` 
+                    : ticketNames[0] || "-";
+
                   return (
-                    <tr key={item.id}>
-                      <td className="px-4">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                      <td className="px-4 font-mono text-xs font-bold text-blue-600">{item.downpayment_no}</td>
-                      <td className="px-4">
+                    <tr key={item.id} style={{ transition: 'background-color 0.2s' }}>
+                      <td style={{ padding: '16px' }} className="text-sm">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
+                      <td style={{ padding: '16px' }} className="text-sm font-semibold">
+                        <Text 
+                          component="a" 
+                          href={getSuccessUrl(item.downpayment_no)} 
+                          target="_blank" 
+                          variant="text" 
+                          c="blue" 
+                          style={{ cursor: 'pointer', textDecoration: 'none' }}
+                          className="hover:underline"
+                        >
+                          {item.downpayment_no}
+                        </Text>
+                      </td>
+                      <td style={{ padding: '16px' }}>
                         <Text size="sm" fw={500}>{pemesan?.full_name || "-"}</Text>
-                        <Text size="xs" c="gray">{pemesan?.email || "-"}</Text>
                       </td>
-                      <td className="px-4">
-                        <Text size="sm" className="line-clamp-1">{item.event?.name || "-"}</Text>
+                      <td style={{ padding: '16px' }}>
+                        <Text size="sm">{pemesan?.email || "-"}</Text>
                       </td>
-                      <td className="px-4 text-center">{item.total_qty}</td>
-                      <td className="px-4 text-right">Rp {item.grandtotal.toLocaleString("id-ID")}</td>
-                      <td className="px-4 text-right text-green-600 font-medium">Rp {item.paid_amount.toLocaleString("id-ID")}</td>
-                      <td className="px-4 text-right text-red-600 font-medium">Rp {item.remaining_amount.toLocaleString("id-ID")}</td>
-                      <td className="px-4 text-center">
+                      <td style={{ padding: '16px' }}>
+                        <Tooltip label={ticketNames.join(", ")} disabled={ticketNames.length <= 1}>
+                          <Text size="sm" className="line-clamp-1">{displayTicketName}</Text>
+                        </Tooltip>
+                      </td>
+                      <td style={{ padding: '16px' }} className="text-right text-sm fw-semibold">Rp {item.grandtotal.toLocaleString("id-ID")}</td>
+                      <td style={{ padding: '16px' }} className="text-center">
+                        <Text size="sm" className="uppercase">
+                          {(item.payment_method?.toLowerCase().includes('xendit') || String(item.payment_method) === '4') ? 'QRIS' : (item.payment_method || "-")}
+                        </Text>
+                      </td>
+                      <td style={{ padding: '16px' }} className="text-center">
                         <Badge 
-                          color={item.payment_status === "Paid" ? "green" : item.payment_status === "Partial Paid" ? "blue" : "gray"}
+                          color={
+                            item.payment_status === "Paid" ? "green" : 
+                            item.payment_status === "Partial Paid" ? "blue" : 
+                            item.payment_status === "Pending" ? "yellow" : 
+                            item.payment_status === "Expired" ? "red" : 
+                            item.payment_status === "Unpaid" ? "orange" : 
+                            "gray"
+                          }
                           variant="light"
+                          radius="sm"
+                          size="sm"
                         >
                           {item.payment_status}
                         </Badge>
                       </td>
-                      <td className="px-4 text-center">
+                      <td style={{ padding: '16px' }} className="text-center">
                         <ActionIcon 
                           color="blue" 
-                          variant="light" 
+                          variant="subtle" 
+                          radius="md"
                           onClick={() => {
                             setSelectedDP(item);
                             setViewModalOpen(true);
@@ -259,107 +431,251 @@ const DPReport = () => {
       <Modal
         opened={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
-        title={<Text fw={700}>Detail Down Payment - {selectedDP?.downpayment_no}</Text>}
-        size="lg"
+        title={<Text size="xl">Detail Down Payment</Text>}
+        size="xl"
+        radius="lg"
+        padding={0}
+        styles={{
+          header: { borderBottom: '1px solid #eee', padding: '20px 24px' },
+          content: { overflow: 'hidden' }
+        }}
       >
         {selectedDP && (
-          <Stack gap="md">
-            <div className="grid grid-cols-2 gap-4">
-              <Box p="sm" className="bg-gray-50 rounded-lg">
-                <Text size="xs" c="gray" fw={700} tt="uppercase">Informasi Pemesan</Text>
-                <Divider my={5} />
-                <Group gap="xs" mt={5}>
-                  <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
-                  <Text size="sm" fw={600}>{selectedDP.identities?.find(id => id.is_pemesan === 1)?.full_name || "-"}</Text>
-                </Group>
-                <Group gap="xs" mt={3}>
-                  <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
-                  <Text size="sm">{selectedDP.identities?.find(id => id.is_pemesan === 1)?.email || "-"}</Text>
-                </Group>
-              </Box>
-              <Box p="sm" className="bg-gray-50 rounded-lg">
-                <Text size="xs" c="gray" fw={700} tt="uppercase">Informasi Event</Text>
-                <Divider my={5} />
-                <Text size="sm" fw={600} className="line-clamp-1">{selectedDP.event?.name}</Text>
-                <Text size="xs" c="gray">{moment(selectedDP.event?.start_date).format("DD MMM YYYY")}</Text>
-              </Box>
-            </div>
+          <>
+            <Box p="xl" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <Stack gap="xl">
+                {/* Header Section */}
+                <Flex justify="space-between" align="flex-start" wrap="wrap" gap="md">
+                  <Box>
+                    <Text size="sm" c="gray" tt="uppercase">No. Invoice</Text>
+                    <Text size="lg" c="blue">{selectedDP.downpayment_no}</Text>
+                  </Box>
+                  <Box className="text-right">
+                    <Text size="sm" c="gray" tt="uppercase">Status Transaksi</Text>
+                    <Badge 
+                      color={
+                        selectedDP.payment_status === "Paid" ? "green" : 
+                        selectedDP.payment_status === "Partial Paid" ? "blue" : 
+                        selectedDP.payment_status === "Pending" ? "yellow" : 
+                        "gray"
+                      }
+                      variant="filled"
+                      size="lg"
+                      radius="sm"
+                    >
+                      {selectedDP.payment_status}
+                    </Badge>
+                  </Box>
+                </Flex>
 
-            <Box>
-              <Text size="xs" c="gray" fw={700} tt="uppercase">Daftar Tiket</Text>
-              <Table variant="simple" mt="xs" withColumnBorders withTableBorder>
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th>Tiket</th>
-                    <th className="text-center">Qty</th>
-                    <th className="text-right">Harga</th>
-                    <th className="text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedDP.tickets.map((t) => (
-                    <tr key={t.id}>
-                      <td className="text-xs font-bold">{t.code}</td>
-                      <td className="text-center text-xs">{t.qty_ticket}</td>
-                      <td className="text-right text-xs">Rp {t.price.toLocaleString("id-ID")}</td>
-                      <td className="text-right text-xs font-semibold">Rp {t.subtotal_price.toLocaleString("id-ID")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Box>
+                <Divider style={{ borderColor: '#eee' }} />
 
-            <Box>
-              <Text size="xs" c="gray" fw={700} tt="uppercase">Jadwal Cicilan</Text>
-              <Accordion variant="separated" mt="xs">
-                {selectedDP.installments.map((inst) => (
-                  <Accordion.Item key={inst.id} value={inst.title}>
-                    <Accordion.Control>
-                      <Flex justify="space-between" align="center" w="100%" pr="md">
-                        <Text size="sm" fw={600}>{inst.title} ({inst.percentage}%)</Text>
-                        <Badge color={inst.payment_status === "Paid" ? "green" : "orange"} size="sm">
-                          {inst.payment_status}
-                        </Badge>
-                      </Flex>
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <Stack gap="xs">
-                        <Flex justify="space-between">
-                          <Text size="xs" c="gray">Jumlah Tagihan:</Text>
-                          <Text size="xs" fw={700}>Rp {inst.grandtotal.toLocaleString("id-ID")}</Text>
-                        </Flex>
-                        <Flex justify="space-between">
-                          <Text size="xs" c="gray">Jatuh Tempo:</Text>
-                          <Text size="xs">{moment(inst.due_date).format("DD MMMM YYYY")}</Text>
-                        </Flex>
-                        {inst.payment_status === "Paid" && (
-                          <Flex justify="space-between">
-                            <Text size="xs" c="gray">Metode Pembayaran:</Text>
-                            <Text size="xs" className="uppercase">{inst.payment_channel || "-"}</Text>
+                {/* Information Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Box p="md" className="rounded-xl border" style={{ borderColor: '#eee', backgroundColor: '#fcfcfc' }}>
+                    <Flex align="center" gap="sm" mb="md">
+                      <Box className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <FontAwesomeIcon icon={faUser} size="sm" />
+                      </Box>
+                      <Text>Informasi Pemesan</Text>
+                    </Flex>
+                    <Stack gap="xs">
+                      <Box>
+                        <Text size="xs" c="gray">Nama Lengkap</Text>
+                        <Text>{selectedDP.identities?.find(id => id.is_pemesan === 1)?.full_name || "-"}</Text>
+                      </Box>
+                      <Box>
+                        <Text size="xs" c="gray">Email</Text>
+                        <Text>{selectedDP.identities?.find(id => id.is_pemesan === 1)?.email || "-"}</Text>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                  <Box p="md" className="rounded-xl border" style={{ borderColor: '#eee', backgroundColor: '#fcfcfc' }}>
+                    <Flex align="center" gap="sm" mb="md">
+                      <Box className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                        <FontAwesomeIcon icon={faCalendarDays} size="sm" />
+                      </Box>
+                      <Text>Informasi Event</Text>
+                    </Flex>
+                    <Stack gap="xs">
+                      <Box>
+                        <Text size="xs" c="gray">Nama Event</Text>
+                        <Text className="line-clamp-1">{selectedDP.event?.name}</Text>
+                      </Box>
+                      <Box>
+                        <Text size="xs" c="gray">Tanggal Event</Text>
+                        <Text>{moment(selectedDP.event?.start_date).format("DD MMMM YYYY")}</Text>
+                      </Box>
+                    </Stack>
+                  </Box>
+                </div>
+
+                {/* Tickets Table */}
+                <Box>
+                  <Text mb="xs" size="sm" c="gray" tt="uppercase">Daftar Tiket</Text>
+                  <Box className="overflow-hidden rounded-xl border" style={{ borderColor: '#eee' }}>
+                    <Table variant="simple" verticalSpacing="sm">
+                      <thead style={{ backgroundColor: '#f8f9fa' }}>
+                        <tr>
+                          <th className="text-xs py-3 pl-4 text-gray-500">TIKET</th>
+                          <th className="text-xs py-3 text-center text-gray-500">QTY</th>
+                          <th className="text-xs py-3 text-right text-gray-500">HARGA</th>
+                          <th className="text-xs py-3 text-right pr-4 text-gray-500">SUBTOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedDP.tickets.map((t) => (
+                          <tr key={t.id} className="border-t" style={{ borderColor: '#eee' }}>
+                            <td className="py-3 pl-4">
+                              <Text size="xs">{t.code}</Text>
+                            </td>
+                            <td className="py-3 text-center">
+                              <Text size="xs">{t.qty_ticket}</Text>
+                            </td>
+                            <td className="py-3 text-right">
+                              <Text size="xs">Rp {t.price.toLocaleString("id-ID")}</Text>
+                            </td>
+                            <td className="py-3 text-right pr-4">
+                              <Text size="xs">Rp {t.subtotal_price.toLocaleString("id-ID")}</Text>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </Box>
+                </Box>
+
+                {/* Installments Section */}
+                <Box>
+                  <Text mb="xs" size="sm" c="gray" tt="uppercase">Jadwal Cicilan</Text>
+                  <Accordion variant="separated" radius="md">
+                    {selectedDP.installments.map((inst, index) => (
+                      <Accordion.Item key={inst.id} value={inst.title} className="border mb-2" style={{ borderColor: '#eee' }}>
+                        <Accordion.Control>
+                          <Flex justify="space-between" align="center" w="100%" pr="md">
+                            <Group gap="xs">
+                              <Box className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px]">
+                                {index + 1}
+                              </Box>
+                              <Text size="sm">{inst.title} ({inst.percentage}%)</Text>
+                            </Group>
+                            <Badge 
+                              color={inst.payment_status === "Paid" ? "green" : inst.payment_status === "Pending" ? "yellow" : "orange"} 
+                              size="sm"
+                              variant="dot"
+                            >
+                              {inst.payment_status}
+                            </Badge>
                           </Flex>
-                        )}
-                        {inst.payment_status === "Pending" && inst.xendit_url && (
-                          <Button 
-                            component="a" 
-                            href={inst.xendit_url} 
-                            target="_blank" 
-                            size="xs" 
-                            variant="light" 
-                            fullWidth
-                            mt={5}
-                          >
-                            Buka Link Pembayaran
-                          </Button>
-                        )}
-                      </Stack>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                ))}
-              </Accordion>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <Box p="md" className="bg-gray-50 rounded-lg">
+                            <div className="grid grid-cols-2 gap-y-3">
+                              <Box>
+                                <Text size="xs" c="gray">Jumlah Tagihan</Text>
+                                <Text size="sm">Rp {inst.grandtotal.toLocaleString("id-ID")}</Text>
+                              </Box>
+                              <Box className="text-right">
+                                <Text size="xs" c="gray">Jatuh Tempo</Text>
+                                <Text size="sm">{moment(inst.due_date).format("DD MMM YYYY")}</Text>
+                              </Box>
+                              {inst.payment_status === "Paid" && (
+                                <div className="col-span-2">
+                                  <Text size="xs" c="gray">Metode Pembayaran</Text>
+                                  <Text size="sm" className="uppercase">{inst.payment_channel || "-"}</Text>
+                                </div>
+                              )}
+                            </div>
+                            {inst.payment_status === "Pending" && inst.xendit_url && (
+                              <Button 
+                                component="a" 
+                                href={inst.xendit_url} 
+                                target="_blank" 
+                                size="sm" 
+                                variant="filled" 
+                                color="blue"
+                                fullWidth
+                                mt="md"
+                                radius="md"
+                              >
+                                Bayar Sekarang
+                              </Button>
+                            )}
+                          </Box>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    ))}
+                  </Accordion>
+                </Box>
+
+                {/* Footer Summary */}
+                <Box p="lg" className="rounded-2xl border" style={{ borderColor: '#eee', backgroundColor: '#fcfcfc' }}>
+                  <Flex justify="space-between" align="center">
+                    <Box>
+                      <Text size="xs" c="gray" tt="uppercase">Grand Total Transaksi</Text>
+                      <Text size="xl" fw={500}>Rp {selectedDP.grandtotal.toLocaleString("id-ID")}</Text>
+                    </Box>
+                    <Box className="text-right">
+                      <Text size="xs" c="gray" tt="uppercase">Terbayar</Text>
+                      <Text size="lg" fw={500} c="green.6">Rp {selectedDP.paid_amount.toLocaleString("id-ID")}</Text>
+                    </Box>
+                  </Flex>
+                </Box>
+              </Stack>
             </Box>
-          </Stack>
+          </>
         )}
       </Modal>
+
+      {/* Floating Sticky Footer - Truly outside the modal box */}
+      <Portal>
+        <Transition mounted={viewModalOpen} transition="slide-up" duration={400} timingFunction="ease">
+          {(styles) => (
+            <Box 
+              style={{ 
+                ...styles, 
+                position: 'fixed', 
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                height: '80px',
+                backgroundColor: '#fff',
+                borderTop: '1px solid #eee',
+                zIndex: 1000, 
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 32px',
+                boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
+              }}
+            >
+              <Flex justify="flex-end" align="center" gap="xl" w="100%">
+                <Text 
+                  style={{ cursor: 'pointer' }} 
+                  onClick={() => setViewModalOpen(false)}
+                  c="gray.7"
+                  size="sm"
+                >
+                  Tutup
+                </Text>
+                <Button 
+                  radius="md" 
+                  color="blue" 
+                  leftSection={<FontAwesomeIcon icon={faEye} />}
+                  onClick={() => {
+                    if (selectedDP) {
+                      window.open(getSuccessUrl(selectedDP.downpayment_no), "_blank");
+                    }
+                  }}
+                  style={{ height: '44px' }}
+                >
+                  Lihat Invoice Lengkap
+                </Button>
+              </Flex>
+            </Box>
+          )}
+        </Transition>
+      </Portal>
     </div>
   );
 };
