@@ -1955,8 +1955,12 @@ const Merch = () => {
   }, [filteredDataList, sortBy, sortDir]);
 
   const salesStatistics = useMemo(() => {
-    const totalTickets = allDataList.reduce((sum, transaction) => {
-      if (transaction.payment_status === "Verified" && transaction.tickets) {
+    const validTransactions = allDataList.filter((t: any) => 
+      t.transaction_status_id === 2
+    );
+
+    const totalTicketsPaid = validTransactions.reduce((sum, transaction) => {
+      if (transaction.tickets) {
         return sum + transaction.tickets.reduce((ticketSum: any, ticket: any) => ticketSum + (ticket.qty_ticket || 1), 0);
       }
       return sum;
@@ -1967,8 +1971,9 @@ const Merch = () => {
 
     return {
       pendingTransactions,
-      totalTickets,
-      totalTransactions: allDataList.length,
+      totalTicketsPaid,
+      totalTransactions: validTransactions.length,
+      totalTransactionsAll: allDataList.length,
       totalCheckin,
     };
   }, [allDataList, eventData, dataListEticket]);
@@ -2060,15 +2065,15 @@ const Merch = () => {
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Tiket</h3>
-            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTickets} tiket</p>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Tiket Paid</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTicketsPaid} tiket</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalCheckin} checkin</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Transaksi</h3>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Transaksi Paid</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
           </div>
         </Flex>

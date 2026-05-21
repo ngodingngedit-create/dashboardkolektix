@@ -26,6 +26,10 @@ const CheckinReport = () => {
   const [selectedCheckin, setSelectedCheckin] = useState<any>(null);
   const [checkingIn, setCheckingIn] = useState(false);
 
+  // Filter state for tickets
+  const [selectedTicket, setSelectedTicket] = useState<string>("all");
+  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
+
   // Table state matching report.tsx standard
   const [searchValue, setSearchValue] = useState("");
   const [sortBy, setSortBy] = useState<string>("no");
@@ -50,6 +54,22 @@ const CheckinReport = () => {
       getData();
     }
   }, [selectedEvent, reportType]);
+
+  useEffect(() => {
+    if (selectedEvent && eventList.length > 0) {
+      const currentEvent = eventList.find((e) => e.id === selectedEvent);
+      if (currentEvent?.has_event_ticket?.length) {
+        const ticketNames = Array.from(new Set(currentEvent.has_event_ticket.map((ticket: any) => ticket.name)));
+        const ticketsArray = ticketNames.map((name) => ({
+          value: name,
+          label: name,
+        }));
+        setAvailableTickets([{ value: "all", label: "Semua Tiket" }, ...ticketsArray]);
+      } else {
+        setAvailableTickets([{ value: "all", label: "Semua Tiket" }]);
+      }
+    }
+  }, [selectedEvent, eventList]);
 
   const getEvent = async () => {
     setLoading.append("getevent");
@@ -121,7 +141,7 @@ const CheckinReport = () => {
 
         if (response.data?.data && Array.isArray(response.data.data)) {
           const verifiedData = response.data.data.filter((t: any) =>
-            t.payment_status?.toLowerCase() === 'verified' || t.transaction_status_id === 2
+            t.transaction_status_id === 2
           );
           setAllDataList(verifiedData);
         }
@@ -191,18 +211,19 @@ const CheckinReport = () => {
       allDataList.forEach((trans) => {
         if (trans.etickets && trans.etickets.length > 0) {
           // Prioritize new etickets payload
-          trans.etickets.forEach((eticket, index) => {
-            const identity = trans.identities?.[index];
-            list.push({
-              no: absoluteRowNum++,
-              nama: identity?.full_name || (trans.has_user as any)?.name || "-",
-              telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
-              email: identity?.email || (trans.has_user as any)?.email || "-",
-              status_checkin: eticket.is_checkin === 1,
-              invoice: trans.invoice_no,
-              qr_code: eticket.eticket_number // Used for manual check-in
+            trans.etickets.forEach((eticket, index) => {
+              const identity = trans.identities?.[index];
+              list.push({
+                no: absoluteRowNum++,
+                nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+                telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+                email: identity?.email || (trans.has_user as any)?.email || "-",
+                status_checkin: eticket.is_checkin === 1,
+                invoice: trans.invoice_no,
+                qr_code: eticket.eticket_number, // Used for manual check-in
+                ticket_name: trans.tickets?.[index]?.has_event_ticket?.name || "-"
+              });
             });
-          });
         } else {
           // Fallback to previous logic
           trans.tickets?.forEach((ticket) => {
@@ -216,7 +237,8 @@ const CheckinReport = () => {
                 email: identity?.email || (trans.has_user as any)?.email || "-",
                 status_checkin: ticket.ticket_checkin_status === 1,
                 invoice: trans.invoice_no,
-                qr_code: ticket.etiket_number // Used for manual check-in
+                qr_code: ticket.etiket_number, // Used for manual check-in
+                ticket_name: ticket.has_event_ticket?.name || "-"
               });
             }
           });
@@ -231,13 +253,14 @@ const CheckinReport = () => {
             telepon: detail.phone || "-",
             email: detail.email || "-",
             status_checkin: detail.checkin_status === 1,
-            invoice: detail.invitation_number // In invitation mode, we show invitation number
+            invoice: detail.invitation_number, // In invitation mode, we show invitation number
+            ticket_name: "-"
           });
         });
       });
     }
 
-    // Filtering
+    // Filtering by Search
     if (searchValue) {
       const lowerSearch = searchValue.toLowerCase();
       list = list.filter(item =>
@@ -246,6 +269,11 @@ const CheckinReport = () => {
         item.email?.toLowerCase().includes(lowerSearch) ||
         item.invoice?.toLowerCase().includes(lowerSearch)
       );
+    }
+
+    // Filtering by Ticket
+    if (selectedTicket !== "all") {
+      list = list.filter(item => item.ticket_name === selectedTicket);
     }
 
     // Sorting
@@ -263,7 +291,7 @@ const CheckinReport = () => {
 
     // Re-assign display row numbers based on current sort
     return list.map((item, index) => ({ ...item, displayNo: index + 1 }));
-  }, [allDataList, searchValue, sortBy, sortDir]);
+  }, [allDataList, searchValue, sortBy, sortDir, selectedTicket, invitationData, reportType]);
 
   // Pagination logic
   const totalItems = processedData.length;
@@ -329,7 +357,7 @@ const CheckinReport = () => {
             <Flex gap="md" align="center">
               {/* Stats Cards */}
               <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-                <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL {reportType === "eticket" ? "E-TICKET" : "INVITATION"}</Text>
+                <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL {reportType === "eticket" ? "TIKET PAID" : "INVITATION"}</Text>
                 <Text size="lg" fw={700}>{stats.total}</Text>
               </Card>
               <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
@@ -352,6 +380,23 @@ const CheckinReport = () => {
                 disabled={loading.includes("getevent")}
                 searchable
                 style={{ width: 220 }}
+                radius="md"
+                styles={{
+                  input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
+                }}
+              />
+              <Select
+                value={selectedTicket}
+                onChange={(val) => {
+                  if (val) {
+                    setSelectedTicket(val);
+                    setCurrentPage(1);
+                  }
+                }}
+                data={availableTickets}
+                placeholder="Pilih Tiket"
+                disabled={availableTickets.length <= 1 || reportType === "invitation"}
+                style={{ width: 180 }}
                 radius="md"
                 styles={{
                   input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
