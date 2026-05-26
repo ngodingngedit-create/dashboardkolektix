@@ -1983,13 +1983,36 @@ const sidebarData: SidebarData = [
       },
     ],
   },
+  // {
+  //   id: 11,
+  //   // moduleId: 7,
+  //   name: "Talenta",
+  //   icon: faStar,
+  //   role: "Creator",
+  //   link: "/dashboard/talenta"
+  // },
   {
     id: 11,
     // moduleId: 7,
     name: "Talenta",
     icon: faStar,
     role: "Creator",
-    link: "/dashboard/talenta"
+    submenu: [
+      {
+        id: 1,
+        name: "Daftar Talenta",
+        icon: faStar,
+        link: "/dashboard/talenta",
+        role: "Creator",
+      },
+      {
+        id: 1,
+        name: "Transaksi Talenta",
+        iconify: "icon-park-outline:transaction",
+        link: "/dashboard/talenta-transaction",
+        role: "Creator",
+      },
+    ],
   },
   {
     id: 10,

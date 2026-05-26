@@ -9,7 +9,7 @@ import Button from '@/components/Button';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import React from 'react';
-import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Checkbox, NumberInput, MultiSelect, Switch, ActionIcon, Divider, Group, FileInput, Tabs } from '@mantine/core';
+import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Checkbox, NumberInput, MultiSelect, Switch, ActionIcon, Divider, Group, FileInput, Tabs, Badge, Grid } from '@mantine/core';
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -156,6 +156,7 @@ const Talenta = () => {
   const [category, setCategory] = useState<TalentCategoryList[]>();
   const [skillsList, setSkillsList] = useState<TalentSkillList[]>();
   const [formState, setFormState] = useState<"store" | "update">("store");
+  const [isEditMode, setIsEditMode] = useState<boolean>(true);
   const user = useLoggedUser();
 
   useEffect(() => {
@@ -204,6 +205,7 @@ const Talenta = () => {
             banners: talent.banners || [],
           });
           setFormState('update');
+          setIsEditMode(false);
         }
         setLoading(false);
       })
@@ -326,15 +328,83 @@ const Talenta = () => {
         <div className='w-full pt-8 px-4 sm:px-6 md:px-8 text-dark mb-10'>
 
           {/* Header Section */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-800">Profil Talenta Saya</h1>
-            <p className="text-sm text-gray-500 mt-1">Kelola data profil, keahlian, dan portofolio Anda sebagai talenta</p>
+          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Profil Talenta Saya</h1>
+              <p className="text-sm text-gray-500 mt-1">Kelola data profil, keahlian, dan portofolio Anda sebagai talenta</p>
+            </div>
+            {formState === 'update' && (
+              <div>
+                {!isEditMode ? (
+                  <Button label="Edit Profil Talenta" color="secondary" className="px-6 h-10" onClick={() => setIsEditMode(true)} />
+                ) : (
+                  <Button label="Batal Edit" color="secondary" className="px-6 h-10 bg-red-500 text-white hover:bg-red-600 border-none" onClick={() => setIsEditMode(false)} />
+                )}
+              </div>
+            )}
           </div>
 
           <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
 
             {/* Form Container */}
             <div className='lg:col-span-12'>
+              {!isEditMode ? (
+                <Card withBorder shadow="sm" p="xl" radius="md" className="bg-white">
+                  <div className="flex flex-col md:flex-row gap-8">
+                    <div className="w-full md:w-1/3 flex flex-col items-center text-center">
+                      <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm mb-4">
+                        <img src={typeof form.values.image === 'string' ? form.values.image : 'https://placehold.co/400x400?text=No+Photo'} alt="Profile" className="w-full h-full object-cover" />
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-800">{form.values.name || '-'}</h2>
+                      <p className="text-gray-500 font-medium mb-1">{form.values.email}</p>
+                      <p className="text-gray-500 text-sm mb-2">{form.values.phone}</p>
+                      <Badge color="blue" variant="light" size="lg" className="mt-1 mb-4" tt="uppercase">
+                        {category?.find(c => c.id === form.values.talenta_category_id)?.name || 'Talenta'}
+                      </Badge>
+                      
+                      <div className="flex gap-2 mt-2 flex-wrap justify-center">
+                        {form.values.skills.map((skillId, idx) => {
+                          const skillName = skillsList?.find(s => s.id === Number(skillId))?.name || skillId;
+                          return <Badge key={idx} color="gray" variant="outline">{skillName}</Badge>;
+                        })}
+                      </div>
+                    </div>
+                    <div className="w-full md:w-2/3 flex flex-col gap-6">
+                      <div>
+                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">Bio Singkat</Text>
+                        <Text size="md" fw={500} c="dark.8">{form.values.bio || '-'}</Text>
+                      </div>
+                      <div>
+                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">Deskripsi Lengkap</Text>
+                        <Text size="md" className="whitespace-pre-wrap">{form.values.description || '-'}</Text>
+                      </div>
+                      <Divider />
+                      <Grid>
+                        <Grid.Col span={6}>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Lokasi Domisili</Text>
+                          <Text size="md" fw={500}>{form.values.location || '-'}</Text>
+                        </Grid.Col>
+                        <Grid.Col span={6}>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Tahun Pengalaman</Text>
+                          <Text size="md" fw={500}>{form.values.experience_year ? `${form.values.experience_year} Tahun` : '-'}</Text>
+                        </Grid.Col>
+                        <Grid.Col span={12}>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Ekspektasi Gaji</Text>
+                          <Text size="md" fw={500} c="green.7">Rp {Number(form.values.expected_salary || 0).toLocaleString('id-ID')} / {form.values.salary_status}</Text>
+                        </Grid.Col>
+                        <Grid.Col span={6}>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Ketersediaan</Text>
+                          <Text size="md" fw={500}>{form.values.is_available ? 'Tersedia' : 'Tidak Tersedia'}</Text>
+                        </Grid.Col>
+                        <Grid.Col span={6}>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Status Verifikasi</Text>
+                          <Text size="md" fw={500}>{form.values.is_verified ? 'Terverifikasi' : 'Belum Diverifikasi'}</Text>
+                        </Grid.Col>
+                      </Grid>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
               <Tabs defaultValue="informasi-dasar" variant="outline" classNames={{ root: 'w-full', panel: 'pt-6' }}>
                 <Tabs.List>
                   <Tabs.Tab value="informasi-dasar">Informasi Dasar</Tabs.Tab>
@@ -838,22 +908,25 @@ const Talenta = () => {
                   </Stack>
                 </Tabs.Panel>
               </Tabs>
+              )}
             </div>
           </div>
         </div>
 
         {/* Sticky Action Footer */}
-        <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-6 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-          <div className="w-full flex justify-end">
-            <Button
-              label='Simpan Profil'
-              color='primary'
-              className='w-full md:w-auto px-8 h-10 text-dark font-semibold disabled:bg-gray-400 disabled:text-gray-400 disabled:opacity-50'
-              onClick={postTalentData}
-              disabled={loading}
-            />
-          </div>
-        </Box>
+        {isEditMode && (
+          <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-6 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+            <div className="w-full flex justify-end">
+              <Button
+                label={formState === 'update' ? 'Perbarui Profil' : 'Simpan Profil'}
+                color='primary'
+                className='w-full md:w-auto px-8 h-10 text-dark font-semibold disabled:bg-gray-400 disabled:text-gray-400 disabled:opacity-50'
+                onClick={postTalentData}
+                disabled={loading}
+              />
+            </div>
+          </Box>
+        )}
       </div>
       <ToastContainer />
     </>
