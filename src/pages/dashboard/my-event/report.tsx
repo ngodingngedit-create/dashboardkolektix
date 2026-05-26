@@ -1979,61 +1979,77 @@ const Merch = () => {
   }, [allDataList, eventData, dataListEticket]);
 
   const exportToExcel = () => {
-    if (!allDataList || allDataList.length === 0) {
-      alert("Tidak ada data untuk diexport");
-      return;
-    }
-
     try {
-      const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Metode Pembayaran", "Status"];
-      const csvRows = [
-        headers.join(","),
-        ...allDataList.map((item, index) => {
-          let pemesanIdentity = null;
-          if (item.identities && item.identities.length > 0) {
-            pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
-          }
+      let csvRows: string[] = [];
+      const timestamp = new Date().toISOString().split("T")[0];
+      const eventName = eventList?.find((e) => e.id === selectedEvent)?.name || "event";
+      let downloadFileName = `report-${eventName}-${timestamp}.csv`;
 
-          let ticketName = "-";
-          let ticketPrice = 0;
-
-          if (item.tickets && item.tickets.length > 0) {
-            const ticketNames = item.tickets.map((ticket) => {
-              return ticket.has_event_ticket?.name || "-";
-            });
-            ticketName = ticketNames.join(", ");
-            ticketPrice = item.tickets.reduce((sum: number, ticket: any) => {
-              return sum + (ticket.price || 0) * (ticket.qty_ticket || 1);
-            }, 0);
-          }
-
-          const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
-          const paymentMethodInfo = getPaymentMethod(item.payment_method);
-          const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-          const globalIndex = index + 1;
-
-          return [
-            globalIndex,
-            `"${pemesanIdentity?.full_name || "-"}"`,
-            `"${pemesanIdentity?.email || "-"}"`,
-            `"${item.invoice_no}"`,
-            `"${ticketName}"`,
-            ticketPrice,
-            `"${paymentMethodText}"`,
-            `"${statusText}"`
-          ].join(",");
-        }),
-      ];
+      if (selectedTab === "transaksi") {
+        if (!filteredDataList || filteredDataList.length === 0) {
+          alert("Tidak ada data untuk diexport");
+          return;
+        }
+        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Metode Pembayaran", "Status"];
+        csvRows = [
+          headers.join(","),
+          ...filteredDataList.map((item, index) => {
+            let pemesanIdentity = null;
+            if (item.identities && item.identities.length > 0) {
+              pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
+            }
+            let ticketName = "-";
+            let ticketPrice = 0;
+            if (item.tickets && item.tickets.length > 0) {
+              ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
+              ticketPrice = item.tickets.reduce((sum: number, ticket: any) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
+            }
+            const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
+            const paymentMethodInfo = getPaymentMethod(item.payment_method);
+            const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ticketPrice, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+          }),
+        ];
+        downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;
+      } else if (selectedTab === "pemesan") {
+        if (!processedPemesanData || processedPemesanData.length === 0) {
+          alert("Tidak ada data untuk diexport");
+          return;
+        }
+        const headers = ["No", "No. Identitas (NIK)", "Nama Pemesan", "Email", "No. Telepon", "Nomor Kursi", "Tanggal Dibuat"];
+        csvRows = [
+          headers.join(","),
+          ...processedPemesanData.map((item, index) => {
+            return [index + 1, `"${item.nik || "-"}"`, `"${item.nama || "-"}"`, `"${item.email || "-"}"`, `"${item.telepon || "-"}"`, `"${item.seat_number || "-"}"`, `"${item.tanggal || "-"}"`].join(",");
+          }),
+        ];
+        downloadFileName = `report-pemesan-${eventName}-${timestamp}.csv`;
+      } else if (selectedTab === "checkin") {
+        if (!processedCheckinData || processedCheckinData.length === 0) {
+          alert("Tidak ada data untuk diexport");
+          return;
+        }
+        const headers = ["No", "Nama", "Telepon", "Email", "Status Checkin", "No. Invoice", "QR Code/Eticket", "Waktu Checkin"];
+        csvRows = [
+          headers.join(","),
+          ...processedCheckinData.map((item, index) => {
+            const statusCheckinText = item.status_checkin ? "Sudah Checkin" : "Belum Checkin";
+            return [index + 1, `"${item.nama || "-"}"`, `"${item.telepon || "-"}"`, `"${item.email || "-"}"`, `"${statusCheckinText}"`, `"${item.invoice || "-"}"`, `"${item.qr_code || "-"}"`, `"${item.waktu || "-"}"`].join(",");
+          }),
+        ];
+        downloadFileName = `report-checkin-${eventName}-${timestamp}.csv`;
+      } else {
+        alert("Tab tidak didukung untuk export");
+        return;
+      }
 
       const csvContent = csvRows.join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const timestamp = new Date().toISOString().split("T")[0];
-      const eventName = eventList.find((e) => e.id === selectedEvent)?.name || "event";
-
+      
       link.href = url;
-      link.download = `report-${eventName}-${timestamp}.csv`;
+      link.download = downloadFileName;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
