@@ -626,7 +626,12 @@ const CreateEvent = () => {
                       value={form?.description}
                       placeholder="Ketik Deskripsi"
                       modules={{
-                        toolbar: [[{ header: "1" }], ["bold", "italic", "underline", "strike"], [{ list: "bullet" }]],
+                        toolbar: [
+                          [{ font: ['', 'poppins', 'helvetica', 'roboto', 'georgia', 'arial', 'courier'] }],
+                          [{ header: "1" }],
+                          ["bold", "italic", "underline", "strike"],
+                          [{ list: "bullet" }],
+                        ],
                         clipboard: {
                           // toggle to add extra line breaks when pasting HTML:
                           matchVisual: false,
@@ -649,7 +654,12 @@ const CreateEvent = () => {
                       value={form?.term_condition}
                       placeholder="Ketik Syarat & Ketentuan"
                       modules={{
-                        toolbar: [[{ header: "1" }], ["bold", "italic", "underline", "strike"], [{ list: "bullet" }]],
+                        toolbar: [
+                          [{ font: ['', 'poppins', 'helvetica', 'roboto', 'georgia', 'arial', 'courier'] }],
+                          [{ header: "1" }],
+                          ["bold", "italic", "underline", "strike"],
+                          [{ list: "bullet" }],
+                        ],
                         clipboard: {
                           // toggle to add extra line breaks when pasting HTML:
                           matchVisual: false,

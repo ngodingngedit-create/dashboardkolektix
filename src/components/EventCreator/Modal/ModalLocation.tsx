@@ -10,7 +10,7 @@ import {
 } from '@nextui-org/react';
 import { FormEvent } from '@/utils/formInterface';
 import InputField from '@/components/Input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 
 interface ModalProps {
@@ -31,6 +31,21 @@ export default function ModalLocation({ isOpen, setIsOpen, form, setForm }: Moda
     location_city: form.location_city,
     location_map: form.location_map,
   });
+
+  // Sync state lokal setiap kali modal dibuka ulang
+  useEffect(() => {
+    if (isOpen) {
+      const method = form.organization_method !== '' ? form.organization_method : 'Offline';
+      setEventType(method);
+      setLocationForm({
+        organization_method: form.organization_method,
+        location_name: form.location_name,
+        location_address: form.location_address,
+        location_city: form.location_city,
+        location_map: form.location_map,
+      });
+    }
+  }, [isOpen]);
 
   const onSubmit = () => {
     setForm({ ...form, ...locationForm });

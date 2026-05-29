@@ -275,7 +275,7 @@ const Merch = () => {
         }
 
         return () => {
-            stopScanner();
+            destroyScanner();
         };
     }, [selected]);
 
@@ -293,22 +293,23 @@ const Merch = () => {
 
     const startScanner = async () => {
         try {
-            stopScanner();
             setCamError(false);
 
             if (!videoRef.current) return;
 
-            qrScanner.current = new QrScanner(
-                videoRef.current,
-                (result) => {
-                    handleFetchQRCode(result.data);
-                },
-                {
-                    maxScansPerSecond: 2,
-                    highlightScanRegion: false,
-                    highlightCodeOutline: false,
-                }
-            );
+            if (!qrScanner.current) {
+                qrScanner.current = new QrScanner(
+                    videoRef.current,
+                    (result) => {
+                        handleFetchQRCode(result.data);
+                    },
+                    {
+                        maxScansPerSecond: 2,
+                        highlightScanRegion: false,
+                        highlightCodeOutline: false,
+                    }
+                );
+            }
 
             await qrScanner.current?.start();
             setIsScanning(true);
@@ -319,6 +320,12 @@ const Merch = () => {
     };
 
     const stopScanner = () => {
+        if (qrScanner.current) {
+            qrScanner.current.stop();
+        }
+    };
+
+    const destroyScanner = () => {
         if (qrScanner.current) {
             qrScanner.current.stop();
             qrScanner.current.destroy();
@@ -414,16 +421,16 @@ const Merch = () => {
                 headers: { lgntkn: 'true' },
                 success: (data: any) => {
                     const message = data?.message || (activeTab === 'ticket' ? 'Check-in berhasil' : 'Validasi berhasil');
-                    const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('check-in') || message.toLowerCase().includes('already');
+                    const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
                     const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
 
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: data?.data?.eticket_number || data?.data?.invitation_code || code,
-                        buyer_name: data?.data?.has_event_ticket?.name || data?.data?.guest_name || 'Pengunjung',
-                        event_name: data?.data?.event_name || 'Event',
-                        category_ticket: data?.data?.ticket_category || data?.data?.invitation_type || 'Regular',
-                        total_qty: data?.data?.quantity || '1',
+                        buyer_name: data?.buyer_name || data?.data?.has_identity?.full_name || data?.data?.guest_name || 'Pengunjung',
+                        event_name: data?.data?.has_event?.name || data?.data?.event_name || 'Event',
+                        category_ticket: data?.data?.has_event_ticket ? `${data.data.has_event_ticket.ticket_category} - ${data.data.has_event_ticket.name}` : (data?.data?.ticket_category || data?.data?.invitation_type || 'Regular'),
+                        total_qty: data?.data?.has_transaction?.total_qty || data?.data?.quantity || '1',
                         scan_date: scanDateTime,
                         status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
                         message: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : message,
@@ -436,13 +443,13 @@ const Merch = () => {
                 },
                 error: (err) => {
                     const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
-                    const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('check-in') || errorMessage.toLowerCase().includes('already');
+                    const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('already');
                     const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid') || errorMessage.toLowerCase().includes('invalid');
 
                     const newScan: ScanItem = {
                         id: Date.now(),
                         invoice_no: code,
-                        buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || 'N/A') : 'N/A',
+                        buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || err?.response?.data?.data?.has_identity?.full_name || 'N/A') : 'N/A',
                         event_name: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
                         category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
                         total_qty: '0',
