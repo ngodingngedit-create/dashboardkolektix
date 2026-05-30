@@ -937,6 +937,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
         payment_method_id: paymentMethodId,
         courier: courierPayload,
         address: addressPayload,
+        is_pickup_instore: 1,
+        is_delivery: 0,
       };
 
       if (paymentMethod.includes("Cash") || paymentMethod === "Cash") {
