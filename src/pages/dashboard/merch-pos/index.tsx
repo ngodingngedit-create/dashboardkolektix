@@ -904,7 +904,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
     }));
 
     const creatorId = user?.has_creator?.id ?? 0;
-    const courierPayload = { main: "-", type: "-", price: 0 };
+    const courierPayload = { main: "jne", type: "reg", price: 10000 };
     const addressPayload = {
       id: null,
       is_main_address: 1,
