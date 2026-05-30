@@ -1710,6 +1710,7 @@ const sidebarData: SidebarData = [
   { id: 6, name: "Tracking Update", icon: faMap, role: "Admin", link: "/dashboard/admin/trackcheck" },
   { id: 6, name: "Update Resi", icon: faIdBadge, role: "Admin", link: "/dashboard/admin/resi" },
   { id: 6, name: "Venue", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/venue" },
+  { id: 6, name: "Slider", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/slider" },
   // { id: 6, name: "Lowongan", icon: faBriefcase, role: "Admin", link: "/dashboard/admin/vacancy" },
   // { id: 6, name: "Talenta", icon: faStar, role: "Admin", link: "/dashboard/admin/talenta" },
   {
