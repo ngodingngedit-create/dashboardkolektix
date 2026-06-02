@@ -217,11 +217,16 @@
 
 // export default Merch;
 
-import { AspectRatio, Button, Card, Flex, LoadingOverlay, Stack, Text, Tabs } from '@mantine/core';
+import { AspectRatio, Button, Card, Flex, LoadingOverlay, Stack, Text, Tabs, Select } from '@mantine/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import QrScanner from 'qr-scanner';
 import fetch from '@/utils/fetch';
+import axios from 'axios';
+import config from '@/Config';
+import Cookies from 'js-cookie';
+import useLoggedUser from '@/utils/useLoggedUser';
+import { useSidebar } from '@/components/SidebarComponent';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTicket,
@@ -253,6 +258,7 @@ interface ScanItem {
 }
 
 const Merch = () => {
+    const { collapse } = useSidebar();
     const videoRef = useRef<HTMLVideoElement>(null);
     let qrScanner = useRef<QrScanner | null>(null);
 
@@ -266,6 +272,134 @@ const Merch = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [currentScanData, setCurrentScanData] = useState<any>(null);
     const [isAutoInputActive, setIsAutoInputActive] = useState(false);
+
+    // New states for Event Selection & Stats
+    const user = useLoggedUser();
+    const [eventList, setEventList] = useState<any[]>([]);
+    const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+    const [stats, setStats] = useState({ total: 0, checkin: 0 });
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            getEvent();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (selectedEvent) {
+            getStats();
+        }
+    }, [selectedEvent, activeTab]);
+
+    const getEvent = async () => {
+        try {
+            let fullEvents: any[] = [];
+            let currentPageNum = 1;
+            let lastPage = 1;
+
+            const response = await axios.get(`${config.wsUrl}event?page=${currentPageNum}`, {
+                headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+            });
+
+            if (response.data?.data && Array.isArray(response.data.data)) {
+                fullEvents = [...response.data.data];
+                if (response.data.pagination) {
+                    lastPage = response.data.pagination.last_page || 1;
+                    for (let page = 2; page <= lastPage; page++) {
+                        const nextRes = await axios.get(`${config.wsUrl}event?page=${page}`, {
+                            headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+                        });
+                        if (nextRes.data?.data && Array.isArray(nextRes.data.data)) {
+                            fullEvents = [...fullEvents, ...nextRes.data.data];
+                        }
+                    }
+                }
+            }
+
+            if (fullEvents.length > 0) {
+                const creatorId = user?.has_creator?.id;
+                const filtered = creatorId
+                    ? fullEvents.filter((e) => String(e.creator_id) === String(creatorId))
+                    : [];
+
+                setEventList(filtered);
+                if (filtered.length > 0 && !selectedEvent) {
+                    setSelectedEvent(filtered[0].id);
+                }
+            }
+        } catch (error) {
+            console.error("Fetch Event error:", error);
+        }
+    };
+
+    const getStats = async () => {
+        if (!selectedEvent) return;
+        setIsLoadingStats(true);
+        setStats({ total: 0, checkin: 0 });
+
+        try {
+            if (activeTab === 'ticket') {
+                const params = new URLSearchParams({
+                    event_id: selectedEvent.toString(),
+                    page: "1",
+                    per_page: "999999",
+                });
+
+                const response = await axios.get(`${config.wsUrl}list-transaction-by-event?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+                });
+
+                if (response.data?.data && Array.isArray(response.data.data)) {
+                    const verifiedData = response.data.data.filter((t: any) => t.transaction_status_id === 2);
+                    
+                    let total = 0;
+                    let checkin = 0;
+                    
+                    verifiedData.forEach((trans: any) => {
+                        if (trans.etickets && trans.etickets.length > 0) {
+                            trans.etickets.forEach((eticket: any) => {
+                                total++;
+                                if (eticket.is_checkin === 1) checkin++;
+                            });
+                        } else {
+                            trans.tickets?.forEach((ticket: any) => {
+                                const qty = parseInt(String(ticket.qty_ticket)) || 1;
+                                total += qty;
+                                for (let i = 0; i < qty; i++) {
+                                    if (ticket.ticket_checkin_status === 1) checkin++;
+                                }
+                            });
+                        }
+                    });
+                    
+                    setStats({ total, checkin });
+                }
+            } else {
+                const response = await axios.get(`${config.wsUrl}invitations/event/${selectedEvent}`, {
+                    params: { with_details: true },
+                    headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+                });
+
+                const data = Array.isArray(response.data) ? response.data : response.data.data || [];
+                let total = 0;
+                let checkin = 0;
+
+                data.forEach((invGroup: any) => {
+                    invGroup.event_invitation_detail?.forEach((detail: any) => {
+                        total++;
+                        if (detail.checkin_status === 1) checkin++;
+                    });
+                });
+
+                setStats({ total, checkin });
+            }
+        } catch (error) {
+            console.error("API Error:", error);
+        } finally {
+            setIsLoadingStats(false);
+        }
+    };
 
     useEffect(() => {
         if (selected === 'qr') {
@@ -463,7 +597,10 @@ const Merch = () => {
                     setCurrentScanData(newScan);
                     setShowSuccessModal(true);
                 },
-                complete: () => setLoading(undefined)
+                complete: () => {
+                    setLoading(undefined);
+                    if (selectedEvent) getStats();
+                }
             });
         } catch (error) {
             console.error('Error:', error);
@@ -492,7 +629,43 @@ const Merch = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header and Tabs */}
-            <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex justify-end items-center shadow-sm">
+            <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <div className="flex flex-col w-full sm:w-auto">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">Pilih Event</span>
+                        <Select
+                            value={selectedEvent ? String(selectedEvent) : null}
+                            onChange={(val) => {
+                                if (val) {
+                                    setSelectedEvent(parseInt(val));
+                                }
+                            }}
+                            data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
+                            placeholder={eventList.length === 0 ? "Memuat event..." : "Pilih Event"}
+                            disabled={eventList.length === 0}
+                            searchable
+                            style={{ width: 220 }}
+                            radius="md"
+                            styles={{
+                                input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
+                            }}
+                        />
+                    </div>
+
+                    {selectedEvent && (
+                        <div className="flex gap-3">
+                            <div className="flex flex-col items-center bg-gray-50 border border-light-grey rounded-md px-3 py-1">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total {activeTab === 'ticket' ? 'Tiket Paid' : 'Invitation'}</span>
+                                <span className="text-sm font-bold text-gray-800">{isLoadingStats ? '...' : stats.total}</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-green-50 border border-green-200 rounded-md px-3 py-1">
+                                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Total Checkin</span>
+                                <span className="text-sm font-bold text-green-700">{isLoadingStats ? '...' : stats.checkin}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="flex w-full md:w-auto rounded-md overflow-hidden border border-primary-light-200 bg-gray-50">
                     <button
                         className={`flex-1 md:w-32 py-1.5 md:py-2 text-center text-sm font-medium flex items-center justify-center gap-2 transition-colors ${activeTab === 'ticket'
@@ -524,10 +697,10 @@ const Merch = () => {
             </div>
 
             <div className="w-full">
-                <div className="flex flex-col lg:flex-row">
+                <div className="flex flex-col lg:flex-row-reverse">
                     {/* Bagian Scanner */}
-                    <div className="lg:w-1/2">
-                        <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-0 sm:p-6 m-0 sm:m-4 overflow-hidden relative">
+                    <div className="lg:w-[60%]">
+                        <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-0 sm:p-6 m-0 sm:m-4 overflow-hidden relative min-h-[500px] lg:min-h-[calc(100vh-200px)] flex flex-col">
                             <div className="flex items-center gap-2 mb-4 p-6 sm:p-0">
                                 <FontAwesomeIcon
                                     icon={activeTab === 'ticket' ? faTicket : faEnvelope}
@@ -644,14 +817,31 @@ const Merch = () => {
                                                     : 'Masukkan kode undangan untuk divalidasi oleh scanner'}
                                             </p>
                                         </div>
-                                        <Button
-                                            type="submit"
-                                            disabled={!manualInput.trim() || loading === 'scan'}
-                                            fullWidth
-                                            className="!bg-primary !text-white !py-2 !rounded-lg !font-medium"
-                                        >
-                                            {loading === 'scan' ? 'Memproses...' : 'Scan / Validasi'}
-                                        </Button>
+                                        {!showSuccessModal && (
+                                            <div 
+                                                className="checkin-sticky-footer"
+                                                style={{ 
+                                                    position: 'fixed', 
+                                                    bottom: 0, 
+                                                    right: 0,
+                                                    backgroundColor: 'white', 
+                                                    borderTop: '1px solid #f0f0f0',
+                                                    padding: '16px 40px',
+                                                    zIndex: 999,
+                                                    boxShadow: '0 -4px 15px rgba(0,0,0,0.1)',
+                                                    display: 'flex',
+                                                    justifyContent: 'flex-end',
+                                                }}
+                                            >
+                                                <Button
+                                                    type="submit"
+                                                    disabled={!manualInput.trim() || loading === 'scan'}
+                                                    className="!bg-primary !text-white !py-2 !rounded-lg !font-medium w-full md:w-auto md:min-w-[160px]"
+                                                >
+                                                    {loading === 'scan' ? 'Memproses...' : 'Scan / Validasi'}
+                                                </Button>
+                                            </div>
+                                        )}
                                     </form>
                                 )}
                             </div>
@@ -659,7 +849,7 @@ const Merch = () => {
                             {/* Modal Success - Integrated within scanner area */}
                             {showSuccessModal && currentScanData && (
                                 <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
-                                    <div className="bg-white p-6 rounded-xl text-center max-w-md w-full animate-fadeIn shadow-2xl">
+                                    <div className="bg-white p-6 rounded-xl text-center max-w-lg w-full animate-fadeIn shadow-2xl">
                                         <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${
                                             currentScanData.status === 'success' ? 'bg-green-100' : 
                                             (currentScanData.status === 'warning' ? 'bg-yellow-100' : 'bg-red-500')
@@ -711,18 +901,16 @@ const Merch = () => {
                                             </p>
                                         )}
 
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex gap-3 justify-center mt-6">
                                             <Button
                                                 onClick={() => setShowSuccessModal(false)}
-                                                fullWidth
-                                                className="!bg-gray-100 !text-gray-700 !py-2 !rounded-lg hover:!bg-gray-200 uppercase text-xs font-bold tracking-wider"
+                                                className="!bg-gray-100 !text-gray-700 !py-2 !rounded-lg hover:!bg-gray-200 uppercase text-xs font-bold tracking-wider flex-1"
                                             >
                                                 Tutup
                                             </Button>
                                             <Button
                                                 onClick={handleScanAgain}
-                                                fullWidth
-                                                className="!bg-primary !text-white !py-2 !rounded-lg shadow-md uppercase text-xs font-bold tracking-wider"
+                                                className="!bg-primary !text-white !py-2 !rounded-lg shadow-md uppercase text-xs font-bold tracking-wider flex-1"
                                             >
                                                 Scan Ulang
                                             </Button>
@@ -761,7 +949,7 @@ const Merch = () => {
                     </div>
 
                     {/* Bagian Riwayat Scan */}
-                    <div className="lg:w-1/2">
+                    <div className="lg:w-[40%]">
                         <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-6 m-4 h-full min-h-[calc(100vh-200px)] relative">
                             <div className="flex items-center justify-between mb-5">
                                 <div className="flex items-center gap-2">
@@ -867,6 +1055,20 @@ const Merch = () => {
                 </div>
             </div>
 
+
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .checkin-sticky-footer {
+                    left: 0;
+                }
+                @media (min-width: 768px) {
+                    .checkin-sticky-footer {
+                        left: ${collapse ? '280px' : '65px'}; 
+                        transition: left 0.3s ease-in-out 150ms;
+                    }
+                }
+            `}} />
         </div>
     );
 };

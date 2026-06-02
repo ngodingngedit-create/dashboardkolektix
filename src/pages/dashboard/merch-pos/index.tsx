@@ -137,6 +137,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [printBillLoading, setPrintBillLoading] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionItem | null>(null);
   const [openDetailModal, setOpenDetailModal] = useState(false);
+  const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // State untuk pagination produk
   const [productPage, setProductPage] = useState(1);
@@ -865,6 +867,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
     const email = (custValue.email ?? "").toString().trim();
     const phone = (custValue.phone ?? "").toString().trim();
     const address = (custValue.address ?? "").toString().trim();
+    const isPickupInStore = (selectedList ?? []).length > 0 ? 1 : 0;
+    const isDelivery = (selectedList ?? []).length > 0 ? 1 : 0;
 
     if (!name && !email && !phone && !address) {
       const randomId = Math.floor(100000 + Math.random() * 900000);
@@ -961,8 +965,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
               message: "Pembayaran Cash berhasil diproses",
               color: "green",
             });
-
-            handlePrintBill();
           },
           complete: () => setLoading.filter((e) => e != "checkout"),
           error: (err) => {
@@ -1005,8 +1007,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
               data?.data?.invoice_url;
 
             if (invoiceUrl) {
-              // Direct langsung menuju Xendit
-              window.location.href = invoiceUrl;
+              setPaymentIframeUrl(invoiceUrl);
+              setShowPaymentModal(true);
               return;
             }
 
@@ -1082,10 +1084,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
       complete: () => setLoading.filter((e) => e != "submit"),
       error: (err) => {
         next();
-        notifications.show({
-          message: err?.response?.data?.message ?? "Terjadi Kesalahan",
-          color: "red",
-        });
       },
     });
   };
@@ -1150,6 +1148,32 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
   return (
     <Stack className={`md:!p-[20px_30px] h-screen flex flex-col`}>
+      <Modal
+        opened={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPaymentIframeUrl(null);
+          setSelected([]);
+          getTransactions();
+          setActiveTab("transactions");
+        }}
+        size="xl"
+        title="Selesaikan Pembayaran"
+        centered
+        styles={{
+          body: { padding: 0, height: "80vh", minHeight: "500px" }
+        }}
+      >
+        {paymentIframeUrl && (
+          <iframe
+            src={paymentIframeUrl}
+            style={{ width: "100%", height: "100%", border: "none" }}
+            title="Pembayaran"
+            allow="payment"
+          />
+        )}
+      </Modal>
+
       <Modal title="Data Pembeli" opened={openCustForm} onClose={handleCustomerSave} closeOnClickOutside={false} centered>
         <Stack gap={15}>
           <Button

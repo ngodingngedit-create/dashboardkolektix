@@ -180,6 +180,8 @@ interface MerchandiseTransactionData {
   shipping_address?: ShippingAddress | string;
   status_name?: string;
   payment_method?: string;
+  payment_method_id?: number;
+  payment_status_id?: number;
   notes?: string;
   latest_manifest?: {
     id: number;
@@ -854,6 +856,8 @@ const MerchandiseTransaction: React.FC = () => {
           shipping_address: shippingAddress,
           status_name: item.transaction_status?.name || "-",
           payment_method: item.payment_method || "-",
+          payment_method_id: item.payment_method_id,
+          payment_status_id: item.payment_status_id,
           notes: item.notes || "-",
           latest_manifest: item.latest_manifest || null,
         };
@@ -1341,7 +1345,7 @@ const MerchandiseTransaction: React.FC = () => {
 
   const totalPriceAllFiltered = useMemo(
     () => filtered.reduce((sum, item) => {
-      if (item.transaction_status_id === 2) {
+      if (item.transaction_status_id === 2 && item.payment_status_id !== 5 && item.payment_method_id !== 5) {
         return sum + (Number(item.total_price) || 0);
       }
       return sum;
@@ -1677,6 +1681,7 @@ const MerchandiseTransaction: React.FC = () => {
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('customer_name')}>Customer {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('product_name')}>Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>Total {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Metode Bayar</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('transaction_status_id')}>Status Bayar {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status Kirim</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
@@ -1735,6 +1740,13 @@ const MerchandiseTransaction: React.FC = () => {
                                                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                                                     <Text size="sm" fw={600}>
                                                         <NumberFormatter prefix="Rp " value={Number(item.total_price)} thousandSeparator="." decimalSeparator="," />
+                                                    </Text>
+                                                </td>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                                                    <Text size="sm" fw={600}>
+                                                        {(item.payment_status_id === 4 || item.payment_method_id === 4) ? 'QRIS' : 
+                                                         (item.payment_status_id === 5 || item.payment_method_id === 5) ? 'Cash' : 
+                                                         (item.payment_method && item.payment_method !== '-' ? item.payment_method : '-')}
                                                     </Text>
                                                 </td>
                                                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>

@@ -35,7 +35,12 @@ interface InvoiceData {
         main?: string;
         type?: string;
         tracking_number?: string | null;
+        resi_no?: string | null;
+        courier_company?: string;
+        courier_service?: string;
         etd?: string;
+        etd_time?: string;
+        delivery_id?: string;
     };
     payment_status?: string;
 }
@@ -94,12 +99,12 @@ export default function ResiUpdateForm({
 
                 // Set initial values from existing courier data if any
                 form.setValues({
-                    courier_company: data.courier?.main || "",
-                    courier_service: data.courier?.type || "",
-                    resi_no: data.courier?.tracking_number || "",
+                    courier_company: data.courier?.main || data.courier?.courier_company || "",
+                    courier_service: data.courier?.type || data.courier?.courier_service || "",
+                    resi_no: data.courier?.resi_no || data.courier?.tracking_number || "",
                     etd: data.courier?.etd || "",
-                    etd_time: "", // We don't have separate time from API usually, can leave empty or parse from etd
-                    delivery_id: "",
+                    etd_time: data.courier?.etd_time || "", // We don't have separate time from API usually, can leave empty or parse from etd
+                    delivery_id: data.courier?.delivery_id || "",
                 });
             }
         } catch (err) {
@@ -124,12 +129,12 @@ export default function ResiUpdateForm({
                 courier_company: values.courier_company,
                 courier_service: values.courier_service,
                 etd: values.etd,
-                etd_time: values.etd_time,
+                etd_time: values.etd_time ? (values.etd_time.split(':').length === 2 ? `${values.etd_time}:00` : values.etd_time) : "00:00:00",
                 delivery_id: values.delivery_id,
             };
 
             await fetch({
-                url: `order-product-invoice/${invoiceNo}`,
+                url: `order-product/courier/${invoiceNo}`,
                 method: "POST",
                 data: submitData,
                 before: () => { },
@@ -239,7 +244,7 @@ export default function ResiUpdateForm({
                                                 </ThemeIcon>
                                                 <Box>
                                                     <Text size="xs" c="dimmed">No. Resi</Text>
-                                                    <Text size="sm" fw={600}>{invoiceData.courier?.tracking_number || "-"}</Text>
+                                                    <Text size="sm" fw={600}>{invoiceData.courier?.resi_no || invoiceData.courier?.tracking_number || "-"}</Text>
                                                 </Box>
                                             </Group>
                                         </Grid.Col>
