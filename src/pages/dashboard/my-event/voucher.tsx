@@ -121,21 +121,22 @@ const VoucherPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
-    fetchEvents();
     fetchVouchers(1);
   }, []);
 
-  const fetchEvents = async () => {
+  useEffect(() => {
+    if (user?.has_creator?.id) {
+      fetchEvents(user.has_creator.id);
+    }
+  }, [user]);
+
+  const fetchEvents = async (creatorId: number) => {
     setLoading.append("events");
     try {
-      const response = await axios.get(`${config.wsUrl}event`);
-      if (response.data && Array.isArray(response.data)) {
-        const userEvents = response.data.filter((e: Event) => {
-          const creatorId = e.creator_id || e.creator?.id || e.user_id || e.user?.id;
-          const userId = user?.has_creator?.id;
-          return creatorId ? parseInt(creatorId.toString()) === userId : true;
-        });
-        setEvents(userEvents.length > 0 ? userEvents : response.data.slice(0, 5));
+      const response = await axios.get(`${config.wsUrl}event-by-creator/${creatorId}`);
+      const eventData = response.data?.data || response.data;
+      if (Array.isArray(eventData)) {
+        setEvents(eventData);
       }
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -242,7 +243,7 @@ const VoucherPage = () => {
       return;
     }
     const payload = {
-      event_id: formData.event_id,
+      event_id: formData.event_id.toString(),
       code: formData.code,
       discount: formData.discount,
       type: formData.type,
