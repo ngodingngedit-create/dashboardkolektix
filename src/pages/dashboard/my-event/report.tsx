@@ -1248,7 +1248,7 @@
 
 // export default Merch;
 
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip, Menu } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
@@ -1978,7 +1978,7 @@ const Merch = () => {
     };
   }, [allDataList, eventData, dataListEticket]);
 
-  const exportToExcel = () => {
+  const exportToExcel = (exportStatus?: string) => {
     try {
       let csvRows: string[] = [];
       const timestamp = new Date().toISOString().split("T")[0];
@@ -1986,14 +1986,40 @@ const Merch = () => {
       let downloadFileName = `report-${eventName}-${timestamp}.csv`;
 
       if (selectedTab === "transaksi") {
-        if (!filteredDataList || filteredDataList.length === 0) {
+        let exportData = filteredDataList;
+        
+        if (exportStatus !== undefined) {
+           let result = [...allDataList];
+           if (transactionSegment !== "all") {
+             result = result.filter(e => e.type_transaction === transactionSegment);
+           }
+           if (selectedTicket !== "all") {
+             result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
+           }
+           if (exportStatus !== "all") {
+             result = result.filter(e => String(e.transaction_status_id) === exportStatus);
+           }
+           if (searchValue) {
+             const q = searchValue.toLowerCase();
+             result = result.filter(e => {
+               const inv = e.invoice_no?.toLowerCase() || "";
+               const iden = e.identities?.find((id) => id.is_pemesan == 1) || e.identities?.[0];
+               const email = iden?.email?.toLowerCase() || "";
+               const name = iden?.full_name?.toLowerCase() || "";
+               return inv.includes(q) || email.includes(q) || name.includes(q);
+             });
+           }
+           exportData = result;
+        }
+
+        if (!exportData || exportData.length === 0) {
           alert("Tidak ada data untuk diexport");
           return;
         }
         const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Metode Pembayaran", "Status"];
         csvRows = [
           headers.join(","),
-          ...filteredDataList.map((item, index) => {
+          ...exportData.map((item, index) => {
             let pemesanIdentity = null;
             if (item.identities && item.identities.length > 0) {
               pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
@@ -2137,16 +2163,44 @@ const Merch = () => {
           />
 
           <Flex gap={8} align="center" wrap="wrap">
-            <Button
-              onClick={exportToExcel}
-              color="green"
-              variant="filled"
-              leftSection={<FontAwesomeIcon icon={faFileExcel} />}
-              disabled={!allDataList || allDataList.length === 0}
-              size="sm"
-            >
-              Export Excel
-            </Button>
+            {selectedTab === "transaksi" ? (
+              <Menu shadow="md" width={200} position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    color="green"
+                    variant="filled"
+                    leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+                    disabled={!allDataList || allDataList.length === 0}
+                    size="sm"
+                  >
+                    Export Excel
+                  </Button>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>Pilih Status Transaksi</Menu.Label>
+                  <Menu.Item onClick={() => exportToExcel("all")}>
+                    Semua Status
+                  </Menu.Item>
+                  {transactionStatus?.map((status) => (
+                    <Menu.Item key={status.id} onClick={() => exportToExcel(String(status.id))}>
+                      {status.name}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <Button
+                onClick={() => exportToExcel()}
+                color="green"
+                variant="filled"
+                leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+                disabled={!allDataList || allDataList.length === 0}
+                size="sm"
+              >
+                Export Excel
+              </Button>
+            )}
 
             <Select
               value={selectedEvent ? String(selectedEvent) : null}

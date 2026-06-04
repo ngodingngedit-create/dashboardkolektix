@@ -213,15 +213,19 @@ const StockManagement = () => {
     setLoading.append("getdata");
     try {
       const res: any = await Get("stock-management", { creator_id: creatorId });
-      if (res?.data) {
-        const raw = Array.isArray(res.data) ? res.data : res.data.data || [];
-        // Filter client-side as a safeguard to ensure only movements for this creator's products are shown
-        const filtered = raw.filter((h: any) => {
-            const prodCreatorId = h.product?.creator_id || h.creator_id;
-            return String(prodCreatorId) === String(creatorId);
-        });
-        setHistoryData(filtered);
+      let raw: any[] = [];
+      if (Array.isArray(res)) {
+        raw = res;
+      } else if (res && Array.isArray(res.data)) {
+        raw = res.data;
+      } else if (res && res.data && Array.isArray(res.data.data)) {
+        raw = res.data.data;
+      } else if (res && res.result && Array.isArray(res.result.data)) {
+        raw = res.result.data;
+      } else if (res && Array.isArray(res.result)) {
+        raw = res.result;
       }
+      setHistoryData(raw);
     } catch (e) {
       console.error("Failed to fetch history:", e);
     } finally {

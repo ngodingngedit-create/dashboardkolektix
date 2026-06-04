@@ -152,8 +152,8 @@ export const Context = createContext<{
   ticket: [],
   eventData: null,
   seatmapOpen: undefined,
-  setSeatmapOpen: () => {},
-  setTicket: () => {},
+  setSeatmapOpen: () => { },
+  setTicket: () => { },
 });
 
 const MyEventDetail = () => {
@@ -235,7 +235,7 @@ const MyEventDetail = () => {
       console.log("Page:", pageNumber);
       console.log("Filter:", transactionFilter);
       console.log("Search value:", searchValue);
-      
+
       const params = new URLSearchParams({
         event_id: data.id.toString(),
         page: pageNumber.toString(),
@@ -264,7 +264,7 @@ const MyEventDetail = () => {
       console.log("API Response:", result);
       console.log("Response data:", result?.data);
       console.log("Response pagination:", result?.pagination);
-      
+
       if (result?.data && Array.isArray(result.data)) {
         // Map data ke format yang sesuai dengan interface
         const mappedData: TransactionItem[] = result.data.map((item: any) => ({
@@ -276,7 +276,7 @@ const MyEventDetail = () => {
           has_user: item.has_user,
           identities: item.identities
         }));
-        
+
         setTransactionData(mappedData);
         setGrandTotal(result.grand_total || 0);
         setTransactionPagination(result.pagination || {
@@ -331,7 +331,7 @@ const MyEventDetail = () => {
 
     const filtered = transactionData.filter((item) => {
       const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
-      
+
       // Cek email dari has_user atau identities
       const userEmail = item.has_user?.email?.toLowerCase() || "";
       const identityEmail = item.identities?.[0]?.email?.toLowerCase() || "";
@@ -542,7 +542,7 @@ const MyEventDetail = () => {
       method: "GET",
       data: {},
       success: ({ data }) => data && setInvitationCategory(data),
-      error: () => {},
+      error: () => { },
     });
   };
 
@@ -686,7 +686,7 @@ const MyEventDetail = () => {
       event_id: data?.id?.toString() || '',
       download: 'true'
     });
-    
+
     window.open(`${config.wsUrl}list-transaction-by-event?${params.toString()}`);
   };
 
@@ -726,7 +726,7 @@ const MyEventDetail = () => {
       case 3:
         return "bg-danger";
       case 4:
-        return "bg-secondary";
+        return "bg-grey";
       default:
         return "";
     }
@@ -1102,9 +1102,9 @@ const MyEventDetail = () => {
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
                           <Input type="text" placeholder="Search by Invoice or Email" value={filterValue} onChange={onSearchChange} />
-                          <select 
-                            onChange={onTransactionRowsPerPageChange} 
-                            value={transactionRowsPerPage} 
+                          <select
+                            onChange={onTransactionRowsPerPageChange}
+                            value={transactionRowsPerPage}
                             className="border border-light-grey p-2 rounded-md w-full md:w-auto"
                           >
                             <option value={2}>2</option>
@@ -1123,109 +1123,109 @@ const MyEventDetail = () => {
                         </div>
 
                         {transactionLoading ? (
-  <div className="flex justify-center py-10">
-    <Spinner size="lg" />
-  </div>
-) : filteredTransactionItems.length === 0 ? (
-  <div className="text-center py-10">
-    <p className="text-gray-500">No transactions found</p>
-  </div>
-) : (
-  <Table
-    aria-label="Transaction Table"
-    isHeaderSticky
-    bottomContentPlacement="outside"
-    classNames={{
-      wrapper: "max-h-[382px]",
-    }}
-    topContentPlacement="outside"
-    bottomContent={
-      transactionPagination.total > 0 ? (
-        <Pagination
-          className="items-center"
-          page={transactionPagination.current_page}
-          total={transactionPagination.last_page}
-          onChange={onTransactionPageChange}
-          showControls
-          showShadow
-        />
-      ) : null
-    }
-  >
-    <TableHeader>
-      <TableColumn className="font-bold text-sm">No</TableColumn>
-      <TableColumn className="font-bold text-sm">Email</TableColumn>
-      <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-      <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-      <TableColumn className="font-bold text-sm">Status</TableColumn>
-      <TableColumn className="font-bold text-sm">Type</TableColumn>
-      <TableColumn className="font-bold text-sm">Aksi</TableColumn>
-    </TableHeader>
-    <TableBody 
-      items={filteredTransactionItems}
-      emptyContent="No transactions found"
-    >
-      {filteredTransactionItems.map((item: TransactionItem, index: number) => {
-        const userEmail = item?.has_user?.email;
-        const identityEmail = item?.identities?.[0]?.email;
-        const email = userEmail || identityEmail || "-";
-        
-        // Hitung nomor urut berdasarkan page dan index di page
-        const itemNumber = (transactionPagination.current_page - 1) * transactionPagination.per_page + index + 1;
-        
-        return (
-          <TableRow key={item.id}>
-            <TableCell className="border-b-1 text-sm">
-              {itemNumber}
-            </TableCell>
-            <TableCell className="border-b-1 text-sm">{email}</TableCell>
-            <TableCell className="border-b-1 text-sm">{item.invoice_no}</TableCell>
-            <TableCell className="border-b-1 text-sm">
-              {item.created_at ? new Date(item.created_at).toLocaleDateString("en-GB", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }) : "-"}
-            </TableCell>
-            <TableCell className="border-b-1">
-              <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item.transaction_status_id)}`}>
-                {getStatusText(item.transaction_status_id)}
-              </span>
-            </TableCell>
-            <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-            <TableCell className="border-b-1 flex items-center">
-              <Tooltip label="Kirim Ulang">
-                <button
-                  disabled={sendingEmails[String(item.id)]}
-                  className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  onClick={() => {
-                    if (email && email !== "-") {
-                      sendETicket(item.invoice_no, email, item.id);
-                    } else {
-                      notifications.show({
-                        title: "Error",
-                        message: "Email tidak tersedia untuk pengguna ini.",
-                        color: "red",
-                        position: "top-right",
-                      });
-                    }
-                  }}
-                >
-                  {sendingEmails[String(item.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
-                </button>
-              </Tooltip>
-              <Tooltip label="Lihat Detail">
-                <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={() => openDetailModal(item, ticket)}>
-                  <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
-                </button>
-              </Tooltip>
-            </TableCell>
-          </TableRow>
-        );
-      })}
-    </TableBody>
-  </Table>
-)}
+                          <div className="flex justify-center py-10">
+                            <Spinner size="lg" />
+                          </div>
+                        ) : filteredTransactionItems.length === 0 ? (
+                          <div className="text-center py-10">
+                            <p className="text-gray-500">No transactions found</p>
+                          </div>
+                        ) : (
+                          <Table
+                            aria-label="Transaction Table"
+                            isHeaderSticky
+                            bottomContentPlacement="outside"
+                            classNames={{
+                              wrapper: "max-h-[382px]",
+                            }}
+                            topContentPlacement="outside"
+                            bottomContent={
+                              transactionPagination.total > 0 ? (
+                                <Pagination
+                                  className="items-center"
+                                  page={transactionPagination.current_page}
+                                  total={transactionPagination.last_page}
+                                  onChange={onTransactionPageChange}
+                                  showControls
+                                  showShadow
+                                />
+                              ) : null
+                            }
+                          >
+                            <TableHeader>
+                              <TableColumn className="font-bold text-sm">No</TableColumn>
+                              <TableColumn className="font-bold text-sm">Email</TableColumn>
+                              <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
+                              <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
+                              <TableColumn className="font-bold text-sm">Status</TableColumn>
+                              <TableColumn className="font-bold text-sm">Type</TableColumn>
+                              <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+                            </TableHeader>
+                            <TableBody
+                              items={filteredTransactionItems}
+                              emptyContent="No transactions found"
+                            >
+                              {filteredTransactionItems.map((item: TransactionItem, index: number) => {
+                                const userEmail = item?.has_user?.email;
+                                const identityEmail = item?.identities?.[0]?.email;
+                                const email = userEmail || identityEmail || "-";
+
+                                // Hitung nomor urut berdasarkan page dan index di page
+                                const itemNumber = (transactionPagination.current_page - 1) * transactionPagination.per_page + index + 1;
+
+                                return (
+                                  <TableRow key={item.id}>
+                                    <TableCell className="border-b-1 text-sm">
+                                      {itemNumber}
+                                    </TableCell>
+                                    <TableCell className="border-b-1 text-sm">{email}</TableCell>
+                                    <TableCell className="border-b-1 text-sm">{item.invoice_no}</TableCell>
+                                    <TableCell className="border-b-1 text-sm">
+                                      {item.created_at ? new Date(item.created_at).toLocaleDateString("en-GB", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      }) : "-"}
+                                    </TableCell>
+                                    <TableCell className="border-b-1">
+                                      <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item.transaction_status_id)}`}>
+                                        {getStatusText(item.transaction_status_id)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
+                                    <TableCell className="border-b-1 flex items-center">
+                                      <Tooltip label="Kirim Ulang">
+                                        <button
+                                          disabled={sendingEmails[String(item.id)]}
+                                          className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                          onClick={() => {
+                                            if (email && email !== "-") {
+                                              sendETicket(item.invoice_no, email, item.id);
+                                            } else {
+                                              notifications.show({
+                                                title: "Error",
+                                                message: "Email tidak tersedia untuk pengguna ini.",
+                                                color: "red",
+                                                position: "top-right",
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          {sendingEmails[String(item.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
+                                        </button>
+                                      </Tooltip>
+                                      <Tooltip label="Lihat Detail">
+                                        <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={() => openDetailModal(item, ticket)}>
+                                          <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
+                                        </button>
+                                      </Tooltip>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        )}
                       </div>
                     </div>
                   </div>

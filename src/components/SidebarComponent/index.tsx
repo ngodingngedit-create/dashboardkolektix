@@ -1932,11 +1932,26 @@ const sidebarData: SidebarData = [
         role: "Creator",
       },
       {
-        id: 6,
-        name: "Stock Management",
+        id: 103,
+        name: "Stock Management ",
         icon: faBox,
-        link: "/dashboard/stockmanagement",
         role: "Creator",
+        submenu: [
+          {
+            id: 103,
+            name: "Stock Movement by List",
+            iconify: "solar:checklist-bold",
+            link: "/dashboard/stockmanagement",
+            role: "Creator",
+          },
+          {
+            id: 104,
+            name: "Update Stock By Scan",
+            iconify: "lucide:scan",
+            link: "/dashboard/stockmanagement/scanner",
+            role: "Creator",
+          },
+        ],
       },
       {
         id: 7,

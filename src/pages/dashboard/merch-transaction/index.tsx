@@ -381,6 +381,7 @@ const MerchandiseTransaction: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [filterValue, setFilterValue] = useState<string>("");
 
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
 
@@ -543,7 +544,7 @@ const MerchandiseTransaction: React.FC = () => {
     if (!item.latest_manifest) {
       return {
         text: "Belum Terkirim",
-        color: "red",
+        color: "yellow",
       };
     }
 
@@ -1274,6 +1275,10 @@ const MerchandiseTransaction: React.FC = () => {
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
 
+    if (paymentStatusFilter && paymentStatusFilter !== "all") {
+      result = result.filter(item => String(item.transaction_status_id) === paymentStatusFilter);
+    }
+
     if (filterValue) {
       result = result.filter((item) =>
         (item.invoice_no ?? "")
@@ -1317,7 +1322,7 @@ const MerchandiseTransaction: React.FC = () => {
     }
 
     return result;
-  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter]);
+  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter, paymentStatusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
 
@@ -1362,10 +1367,11 @@ const MerchandiseTransaction: React.FC = () => {
     let count = 0;
     if (filterValue) count++;
     if (selectedProduct && selectedProduct !== "all") count++;
+    if (paymentStatusFilter && paymentStatusFilter !== "all") count++;
     if (variantFilter) count++;
     if (dateFilter) count++;
     return count;
-  }, [filterValue, selectedProduct, variantFilter, dateFilter]);
+  }, [filterValue, selectedProduct, variantFilter, dateFilter, paymentStatusFilter]);
 
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     const successfulRows = rows.filter(item => item.transaction_status_id === 2);
@@ -1638,6 +1644,20 @@ const MerchandiseTransaction: React.FC = () => {
                     </Group>
                             <Group gap="sm">
                                 <MantineSelect
+                                    placeholder="Status Bayar"
+                                    data={[
+                                        { value: 'all', label: 'Semua Status' },
+                                        { value: '1', label: 'Pending' },
+                                        { value: '2', label: 'Success' },
+                                        { value: '3', label: 'Failed' },
+                                        { value: '4', label: 'Expired' },
+                                    ]}
+                                    value={paymentStatusFilter}
+                                    onChange={(val) => { setPaymentStatusFilter(val || 'all'); setPage(1); }}
+                                    style={{ width: 140 }}
+                                    size="sm"
+                                />
+                                <MantineSelect
                                     placeholder="Filter Produk"
                                     data={[
                                         { value: 'all', label: 'Semua Produk' },
@@ -1831,15 +1851,16 @@ const MerchandiseTransaction: React.FC = () => {
       <NextUIModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        size="full"
+        size="5xl"
         scrollBehavior="inside"
         classNames={{
-          base: 'bg-white',
-          backdrop: 'backdrop-blur-sm',
-          header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
+          wrapper: 'z-[9999]',
+          base: 'bg-white m-4 rounded-xl',
+          backdrop: 'backdrop-blur-sm z-[9998]',
+          header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] rounded-t-xl sticky top-0 z-10',
           body: 'p-0',
-          footer: 'border-t border-primary-light-200 px-6 py-4 bg-gray-50',
-          closeButton: 'text-white hover:bg-white/20',
+          footer: 'border-t border-primary-light-200 px-6 py-4 bg-gray-50 rounded-b-xl',
+          closeButton: 'text-white hover:bg-white/20 right-4',
         }}
       >
         <ModalContent>
