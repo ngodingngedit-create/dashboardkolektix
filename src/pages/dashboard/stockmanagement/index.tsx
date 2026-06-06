@@ -97,9 +97,9 @@ const StockManagement = () => {
   const [selectedProductFilter, setSelectedProductFilter] = useState("all");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalHistoryCount, setTotalHistoryCount] = useState(0);
   const [sortBy, setSortBy] = useState<string>("date");
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>("desc");
-  const [tableState, setTableState] = useState<{ page: number; perPage: number }>({ page: 1, perPage: 10 });
 
   const productOptions = useMemo(() => {
     if (!allProductsData) return [];
@@ -109,57 +109,8 @@ const StockManagement = () => {
     }));
   }, [allProductsData]);
 
-  const filteredHistory = useMemo(() => {
-    return historyData.filter((h) => {
-      const productName = h.variant
-        ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}`
-        : h.product?.product_name || h.product || "-";
-
-      const matchesSearch =
-        productName.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
-        (h.reference_type || h.reference || "").toLowerCase().includes(historySearchQuery.toLowerCase());
-
-      const matchesProduct =
-        selectedProductFilter === "all" ||
-        h.product_id?.toString() === selectedProductFilter ||
-        h.product?.id?.toString() === selectedProductFilter;
-
-    return matchesSearch && matchesProduct;
-    });
-  }, [historyData, historySearchQuery, selectedProductFilter]);
-
-  const sortedHistory = useMemo(() => {
-    let result = [...filteredHistory];
-    if (sortBy && sortDir) {
-      result.sort((a, b) => {
-        let valA: any = "";
-        let valB: any = "";
-        
-        if (sortBy === 'date') {
-          valA = new Date(a.created_at || a.date || "").getTime();
-          valB = new Date(b.created_at || b.date || "").getTime();
-        } else if (sortBy === 'reference') {
-          valA = (a.reference_type || a.reference || "").toLowerCase();
-          valB = (b.reference_type || b.reference || "").toLowerCase();
-        } else if (sortBy === 'product') {
-          valA = (a.variant ? `${a.product?.product_name || "-"} - ${a.variant.varian_name}` : a.product?.product_name || a.product || "-").toLowerCase();
-          valB = (b.variant ? `${b.product?.product_name || "-"} - ${b.variant.varian_name}` : b.product?.product_name || b.product || "-").toLowerCase();
-        }
-
-        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
-        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return result;
-  }, [filteredHistory, sortBy, sortDir]);
-
-  const pagedHistory = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return sortedHistory.slice(start, start + rowsPerPage);
-  }, [sortedHistory, currentPage, rowsPerPage]);
-
-  const totalPages = Math.ceil(sortedHistory.length / rowsPerPage);
+  const pagedHistory = historyData;
+  const totalPages = Math.ceil(totalHistoryCount / rowsPerPage);
 
   const handleSort = (key: string) => {
     if (sortBy === key) {
@@ -186,9 +137,19 @@ const StockManagement = () => {
   useEffect(() => {
     if (user?.has_creator?.id) {
       fetchProducts(user.has_creator.id);
-      fetchHistory(user.has_creator.id);
     }
   }, [user]);
+
+  // Server-side fetching hook for History
+  useEffect(() => {
+    const creatorId = user?.has_creator?.id;
+    if (creatorId) {
+      const delayDebounceFn = setTimeout(() => {
+        fetchHistory(creatorId);
+      }, 500);
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [user, currentPage, rowsPerPage, historySearchQuery, selectedProductFilter, sortBy, sortDir]);
 
   // Client-side filtering with debounce
   useEffect(() => {
@@ -212,20 +173,30 @@ const StockManagement = () => {
   const fetchHistory = async (creatorId: number) => {
     setLoading.append("getdata");
     try {
-      const res: any = await Get("stock-management", { creator_id: creatorId });
-      let raw: any[] = [];
-      if (Array.isArray(res)) {
-        raw = res;
-      } else if (res && Array.isArray(res.data)) {
-        raw = res.data;
-      } else if (res && res.data && Array.isArray(res.data.data)) {
-        raw = res.data.data;
-      } else if (res && res.result && Array.isArray(res.result.data)) {
-        raw = res.result.data;
-      } else if (res && Array.isArray(res.result)) {
-        raw = res.result;
+      const params: any = { 
+        creator_id: creatorId, 
+        page: currentPage, 
+        per_page: rowsPerPage 
+      };
+      if (historySearchQuery) params.search = historySearchQuery;
+      if (selectedProductFilter && selectedProductFilter !== "all") params.product_id = selectedProductFilter;
+      if (sortBy) {
+        params.sort_by = sortBy;
+        params.sort_dir = sortDir || 'desc';
       }
-      setHistoryData(raw);
+
+      const res: any = await Get("stock-bycreator", params);
+      
+      if (res && res.data && Array.isArray(res.data.data)) {
+        setHistoryData(res.data.data);
+        setTotalHistoryCount(res.data.total || 0);
+      } else if (res && Array.isArray(res.data)) {
+        setHistoryData(res.data);
+        setTotalHistoryCount(res.data.length);
+      } else {
+        setHistoryData([]);
+        setTotalHistoryCount(0);
+      }
     } catch (e) {
       console.error("Failed to fetch history:", e);
     } finally {
@@ -400,7 +371,8 @@ const StockManagement = () => {
       await fetch({
         url: "stock-management/stock-movement",
         method: "POST",
-        data: { products: productsPayload, created_by: user?.name || user?.has_creator?.name || "system" },
+        data: { products: productsPayload, created_by: user?.name || user?.has_creator?.name || "system", creator_id: user?.has_creator?.id },
+        headers: { "Content-Type": "application/json" },
         before: () => { },
         success: () => {
           notifications.show({ title: "Sukses", message: "Perubahan stock berhasil disimpan!", color: "green" });
@@ -477,8 +449,8 @@ const StockManagement = () => {
           </Group>
         </Flex>
         <Text size="xs" c="dimmed">
-          Menampilkan {Math.min((currentPage - 1) * rowsPerPage + 1, sortedHistory.length)}-
-          {Math.min(currentPage * rowsPerPage, sortedHistory.length)} dari {sortedHistory.length} data
+          Menampilkan {Math.min((currentPage - 1) * rowsPerPage + 1, totalHistoryCount)}-
+          {Math.min(currentPage * rowsPerPage, totalHistoryCount)} dari {totalHistoryCount} data
         </Text>
       </Stack>
 
@@ -606,9 +578,9 @@ const StockManagement = () => {
         </Box>
       </Card>
       
-      {sortedHistory.length > 0 && (
+      {totalHistoryCount > 0 && (
         <Flex justify="space-between" align="center" mt="md">
-          <Text size="xs" c="dimmed">Total {sortedHistory.length} riwayat</Text>
+          <Text size="xs" c="dimmed">Total {totalHistoryCount} riwayat</Text>
           <Pagination 
             value={currentPage} 
             onChange={setCurrentPage} 

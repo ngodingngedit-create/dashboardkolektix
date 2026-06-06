@@ -14,6 +14,9 @@ import { toast } from "react-toastify";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get, Post, Put, Delete } from "@/utils/REST";
 import { Project, UserMember, Label, Issue } from "@/types/issuemanagement";
+import axios from "axios";
+import config from "@/Config";
+import Cookies from "js-cookie";
 import moment from "moment";
 
 // --- Sub-components ---
@@ -698,6 +701,113 @@ const BoardSection = ({ formData, setFormData, readOnly }: { formData: Project, 
 
 // --- Main Page Component ---
 
+const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, handleSubmit }: any) => {
+    return (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-white pb-32">
+            <div className="w-full space-y-10">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-800 mb-2">Task Details</h1>
+                    <p className="text-slate-400 text-sm">Lengkapi rincian task Anda di bawah ini</p>
+                </div>
+
+                <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
+                    <CardBody className="p-8">
+                        <div className="grid grid-cols-1 gap-x-10 gap-y-8">
+                            <Input
+                                label="Task Name *"
+                                placeholder="e.g. Mobile Ticketing Platform"
+                                labelPlacement="outside"
+                                value={formData.name || ""}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                variant="bordered"
+                                className="bg-white"
+                                isDisabled={isReadOnly}
+                                classNames={{
+                                    label: "text-slate-700 font-bold mb-2",
+                                    inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
+                                }}
+                            />
+                            <div className="col-span-1">
+                                <Textarea
+                                    label="Description"
+                                    placeholder="Describe the purpose of this task..."
+                                    labelPlacement="outside"
+                                    value={formData.description || ""}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    variant="bordered"
+                                    className="bg-white"
+                                    isDisabled={isReadOnly}
+                                    classNames={{
+                                        label: "text-slate-700 font-bold mb-2",
+                                        inputWrapper: "border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
+                                    }}
+                                    minRows={3}
+                                />
+                            </div>
+                        </div>
+
+                        <Divider className="my-10" />
+                        <div className="grid grid-cols-1 gap-12">
+                            <MembersSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
+                            <Divider />
+                            <LabelsSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
+                            <Divider />
+                            <div className="space-y-4">
+                                 <h3 className="text-lg font-bold text-slate-800">Initial Board Structure</h3>
+                                 <p className="text-xs text-slate-500">Board ini akan dibuat secara otomatis dengan kolom-kolom berikut</p>
+                                 <div className="flex gap-2">
+                                     {formData.board.lists.map((l: any, i: number) => (
+                                         <Chip key={i} variant="flat" className="bg-slate-50 text-slate-600 border border-light-grey font-bold">{l.name}</Chip>
+                                     ))}
+                                 </div>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+            </div>
+
+            {/* Sticky Footer for Form */}
+            {!isReadOnly && (
+                <div 
+                    style={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: 'white',
+                        padding: '16px 40px',
+                        borderTop: '1px solid #e9ecef',
+                        boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
+                        zIndex: 40,
+                    }}
+                >
+                    <div className="flex justify-end gap-4 px-10">
+                        <Button 
+                            variant="flat" 
+                            color="default" 
+                            radius="lg"
+                            startContent={<Icon icon="mdi:close" width={18} />}
+                            onClick={() => setViewMode('BOARD')}
+                            className="px-8 font-bold text-slate-600 h-11"
+                        >
+                            Batal
+                        </Button>
+                        <Button 
+                            color="primary" 
+                            radius="lg"
+                            startContent={<Icon icon="mdi:check" width={18} />}
+                            onClick={handleSubmit}
+                            className="bg-blue-600 px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
+                        >
+                            Simpan Task
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const IssueManagement = () => {
     const router = useRouter();
     const loggedUser = useLoggedUser();
@@ -733,9 +843,17 @@ const IssueManagement = () => {
     const fetchProjects = async () => {
         setLoading(true);
         try {
-            const res: any = await Get("projects", {});
-            if (res && res.success && res.data && Array.isArray(res.data.data)) {
-                const data = res.data.data;
+            const token = Cookies.get("token");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const res: any = await axios.get(`${config.wsUrl}my-projects`, { headers });
+            const responseData = res.data;
+            
+            let data = [];
+            if (responseData && responseData.success) {
+                if (responseData.data && Array.isArray(responseData.data.data)) data = responseData.data.data;
+                else if (Array.isArray(responseData.data)) data = responseData.data;
+                else if (Array.isArray(responseData)) data = responseData;
+                
                 setProjects(data);
                 if (data.length > 0 && !selectedProject) {
                     handleSelectProject(data[0]);
@@ -752,9 +870,12 @@ const IssueManagement = () => {
         setLoading(true);
         setSelectedProject(project);
         try {
-            const res: any = await Get(`projects/${project.slug_url}/full`, {});
-            if (res && res.success && res.data) {
-                const fullData = res.data;
+            const token = Cookies.get("token");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const res: any = await axios.get(`${config.wsUrl}projects/${project.slug_url}/full`, { headers });
+            const responseData = res.data;
+            if (responseData && responseData.success && responseData.data) {
+                const fullData = responseData.data;
                 const mappedData: Project = {
                     id: fullData.id,
                     slug_url: fullData.slug_url,
@@ -825,127 +946,6 @@ const IssueManagement = () => {
         }
     };
 
-    const ProjectFormSection = ({ formData, setFormData, isReadOnly }: any) => {
-        return (
-            <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-white">
-                <div className="w-full space-y-10">
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-800 mb-2">Task Details</h1>
-                        <p className="text-slate-400 text-sm">Lengkapi rincian task Anda di bawah ini</p>
-                    </div>
-
-                    <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
-                        <CardBody className="p-8">
-                            <div className="grid grid-cols-2 gap-x-10 gap-y-8">
-                                <Input
-                                    label="Task Name *"
-                                    placeholder="e.g. Mobile Ticketing Platform"
-                                    labelPlacement="outside"
-                                    value={formData.name || ""}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    variant="bordered"
-                                    className="bg-white"
-                                    isDisabled={isReadOnly}
-                                    classNames={{
-                                        label: "text-slate-700 font-bold mb-2",
-                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
-                                    }}
-                                />
-                                <Input
-                                    label="Creator ID *"
-                                    placeholder="ID"
-                                    labelPlacement="outside"
-                                    value={formData.creator_id?.toString() || ""}
-                                    onChange={(e) => setFormData({ ...formData, creator_id: parseInt(e.target.value) || 0 })}
-                                    variant="bordered"
-                                    className="bg-white"
-                                    isDisabled={isReadOnly}
-                                    classNames={{
-                                        label: "text-slate-700 font-bold mb-2",
-                                        inputWrapper: "h-12 border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
-                                    }}
-                                />
-                                <div className="col-span-2">
-                                    <Textarea
-                                        label="Description"
-                                        placeholder="Describe the purpose of this task..."
-                                        labelPlacement="outside"
-                                        value={formData.description || ""}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        variant="bordered"
-                                        className="bg-white"
-                                        isDisabled={isReadOnly}
-                                        classNames={{
-                                            label: "text-slate-700 font-bold mb-2",
-                                            inputWrapper: "border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl"
-                                        }}
-                                        minRows={3}
-                                    />
-                                </div>
-                            </div>
-
-                            <Divider className="my-10" />
-                            <div className="grid grid-cols-1 gap-12">
-                                <MembersSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
-                                <Divider />
-                                <LabelsSection formData={formData} setFormData={setFormData} readOnly={isReadOnly} />
-                                <Divider />
-                                <div className="space-y-4">
-                                     <h3 className="text-lg font-bold text-slate-800">Initial Board Structure</h3>
-                                     <p className="text-xs text-slate-500">Board ini akan dibuat secara otomatis dengan kolom-kolom berikut</p>
-                                     <div className="flex gap-2">
-                                         {formData.board.lists.map((l: any, i: number) => (
-                                             <Chip key={i} variant="flat" className="bg-slate-50 text-slate-600 border border-light-grey font-bold">{l.name}</Chip>
-                                         ))}
-                                     </div>
-                                </div>
-                            </div>
-                        </CardBody>
-                    </Card>
-                </div>
-
-                {/* Sticky Footer for Form */}
-                {!isReadOnly && (
-                    <div 
-                        style={{
-                            position: 'fixed',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            backgroundColor: 'white',
-                            padding: '16px 40px',
-                            borderTop: '1px solid #e9ecef',
-                            boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
-                            zIndex: 40,
-                        }}
-                    >
-                        <div className="flex justify-end gap-4 px-10">
-                            <Button 
-                                variant="flat" 
-                                color="default" 
-                                radius="lg"
-                                startContent={<Icon icon="mdi:close" width={18} />}
-                                onClick={() => setViewMode('BOARD')}
-                                className="px-8 font-bold text-slate-600 h-11"
-                            >
-                                Batal
-                            </Button>
-                            <Button 
-                                color="primary" 
-                                radius="lg"
-                                startContent={<Icon icon="mdi:check" width={18} />}
-                                onClick={handleSubmit}
-                                className="bg-blue-600 px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
-                            >
-                                Simpan Task
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
         <div className="fixed inset-0 top-[65px] left-0 md:left-[65px] hvr:md:left-[280px] bg-white flex transition-all duration-300 overflow-hidden">
             <WorkspaceSidebar 
@@ -975,6 +975,8 @@ const IssueManagement = () => {
                                 formData={formData} 
                                 setFormData={setFormData} 
                                 isReadOnly={isReadOnly} 
+                                setViewMode={setViewMode}
+                                handleSubmit={handleSubmit}
                             />
                         ) : (
                             <BoardSection 

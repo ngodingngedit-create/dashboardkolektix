@@ -310,11 +310,11 @@ const CreateEvent = () => {
       }
 
       // Validasi ukuran file
-      // const maxSizeInMB = 2;
-      // if (file.size / 1024 / 1024 > maxSizeInMB) {
-      //   alert('Ukuran file harus lebih kecil dari 2MB.');
-      //   return;
-      // }
+      const maxSizeInMB = 3;
+      if (file.size / 1024 / 1024 > maxSizeInMB) {
+        toast.error("Ukuran gambar tidak boleh lebih dari 3 mb");
+        return;
+      }
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -387,7 +387,7 @@ const CreateEvent = () => {
                 <>
                   <Image src={imagePlus} alt="image-plus" />
                   <h3 className="font-semibold text-medium text-center">Unggah gambar/poster/banner</h3>
-                  <p className="text-grey text-center text-sm px-8">Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb</p>
+                  <p className="text-grey text-center text-sm px-8">Direkomendasikan ukuran 350px x 1080px dan maksimal 3 mb</p>
                 </>
               )}
             </label>

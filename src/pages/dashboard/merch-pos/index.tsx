@@ -943,6 +943,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
         address: addressPayload,
         is_pickup_instore: 1,
         is_delivery: 0,
+        is_pos: 1
       };
 
       if (paymentMethod.includes("Cash") || paymentMethod === "Cash") {

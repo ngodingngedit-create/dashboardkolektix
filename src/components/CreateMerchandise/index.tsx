@@ -112,7 +112,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 ? Number((data as any).store_location_id)
                 : ((data as any).has_store_location?.id
                   ? Number((data as any).has_store_location.id)
-                  : null),
+                  : ((data as any).location_id ? Number((data as any).location_id) : null)),
               variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
               variant: productVarian.map((e: any) => {
                 const parts = (e.varian_name || "").split(" - ");
@@ -308,7 +308,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         discount: 0,
         add_to_flash_sale: 0,
         is_product_varian: is_variant ? 1 : 0,
-        store_location_id: store_location_id ?? null,
+        store_location_id: store_location_id !== null ? Number(store_location_id) : null,
         product_variant: is_variant
           ? JSON.stringify(
             variant.map((e) => ({

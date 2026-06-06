@@ -43,6 +43,8 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import axios from "axios";
 import config from "@/Config";
+import Cookies from "js-cookie";
+import { notifications } from "@mantine/notifications";
 
 // Types
 interface Voucher {
@@ -158,7 +160,10 @@ const VoucherPage = () => {
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (user?.has_creator?.id) params.append("user_id", user.has_creator.id.toString());
 
-      const response = await axios.get(`${config.wsUrl}vouchers?${params.toString()}`);
+      const token = Cookies.get("token");
+      const response = await axios.get(`${config.wsUrl}vouchers-bycreator?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const responseData = response.data;
 
       if (Array.isArray(responseData)) {
@@ -239,7 +244,7 @@ const VoucherPage = () => {
 
   const handleSaveVoucher = async () => {
     if (!formData.event_id || !formData.code) {
-      alert("Lengkapi data yang diperlukan");
+      notifications.show({ title: "Peringatan", message: "Lengkapi data yang diperlukan", color: "yellow" });
       return;
     }
     const payload = {
@@ -252,20 +257,24 @@ const VoucherPage = () => {
       max_use: formData.max_use,
       stock: formData.stock,
       status: formData.status,
+      ...(!formData.id && user?.has_creator?.id ? { creator_id: user.has_creator.id } : {}),
     };
     setLoading.append("save");
     try {
+      const token = Cookies.get("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
       if (formData.id) {
-        await axios.put(`${config.wsUrl}vouchers/${formData.id}`, payload);
-        alert("Voucher berhasil diperbarui");
+        await axios.put(`${config.wsUrl}vouchers/${formData.id}`, payload, { headers });
+        notifications.show({ title: "Sukses", message: "Voucher berhasil diperbarui", color: "green" });
       } else {
-        await axios.post(`${config.wsUrl}vouchers`, payload);
-        alert("Voucher berhasil dibuat");
+        await axios.post(`${config.wsUrl}vouchers`, payload, { headers });
+        notifications.show({ title: "Sukses", message: "Voucher berhasil dibuat", color: "green" });
       }
       setIsFormVisible(false);
       fetchVouchers(formData.id ? pagination.current_page : 1);
     } catch (error: any) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      notifications.show({ title: "Error", message: `Error: ${error.response?.data?.message || error.message}`, color: "red" });
     } finally {
       setLoading.filter((e) => e !== "save");
     }
@@ -275,12 +284,14 @@ const VoucherPage = () => {
     if (!voucherToDelete) return;
     setLoading.append("delete");
     try {
-      await axios.delete(`${config.wsUrl}vouchers/${voucherToDelete}`);
-      alert("Voucher berhasil dihapus");
+      const token = Cookies.get("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.delete(`${config.wsUrl}vouchers/${voucherToDelete}`, { headers });
+      notifications.show({ title: "Sukses", message: "Voucher berhasil dihapus", color: "green" });
       setDeleteModalOpen(false);
       fetchVouchers(pagination.current_page);
     } catch (error: any) {
-      alert(error.response?.data?.message || "Gagal menghapus voucher");
+      notifications.show({ title: "Error", message: error.response?.data?.message || "Gagal menghapus voucher", color: "red" });
     } finally {
       setLoading.filter((e) => e !== "delete");
     }

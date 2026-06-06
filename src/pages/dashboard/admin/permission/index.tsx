@@ -85,6 +85,7 @@ export default function KelolaPermission() {
   const [pagination, setPagination] = useState<any>(null);
   const [roles, setRoles] = useState<any[]>([]);
   const [modules, setModules] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
   // State untuk form & tampilan
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -110,11 +111,7 @@ export default function KelolaPermission() {
     },
 
     validate: {
-      user_id: (value) => {
-        if (!value) return "User ID harus diisi";
-        if (isNaN(Number(value))) return "User ID harus berupa angka";
-        return null;
-      },
+      user_id: (value) => (!value ? "User harus dipilih" : null),
       role_id: (value) => (!value ? "Role harus dipilih" : null),
       module_id: (value) => (!value ? "Module harus dipilih" : null),
     },
@@ -124,7 +121,30 @@ export default function KelolaPermission() {
     getData();
     getRoles();
     getModules();
+    getUsers();
   }, []);
+
+  const getUsers = async () => {
+    try {
+      await fetch({
+        url: "creator",
+        method: "GET",
+        data: {},
+        before: () => setLoading.append("getusers"),
+        success: (response) => {
+          if (response && response.data) {
+            const usersData = Array.isArray(response.data.data) ? response.data.data : Array.isArray(response.data) ? response.data : [];
+            const uniqueUsers = Array.from(new Map(usersData.map((user: any) => {
+              const val = (user.user_id || user.id).toString();
+              return [val, { value: val, label: user.name || user.email || "Unknown" }];
+            })).values());
+            setUsers(uniqueUsers);
+          }
+        },
+        complete: () => setLoading.filter((e) => e !== "getusers"),
+      });
+    } catch (error) { console.error(error); }
+  };
 
   const getData = async (params?: string) => {
     if (!loading.includes("getdata")) {
@@ -167,7 +187,11 @@ export default function KelolaPermission() {
         success: (response) => {
           if (response && response.data) {
             const rolesData = Array.isArray(response.data.data) ? response.data.data : Array.isArray(response.data) ? response.data : [];
-            setRoles(rolesData.map((role: any) => ({ value: role.id.toString(), label: role.name })));
+            const uniqueRoles = Array.from(new Map(rolesData.map((role: any) => {
+              const val = role.id.toString();
+              return [val, { value: val, label: role.name }];
+            })).values());
+            setRoles(uniqueRoles);
           }
         },
         complete: () => setLoading.filter((e) => e !== "getroles"),
@@ -177,22 +201,28 @@ export default function KelolaPermission() {
 
   const getModules = async () => {
     try {
-      const response = await fetch({
+      await fetch({
         url: "modules",
         method: "GET",
         data: {},
         before: () => setLoading.append("getmodules"),
-      });
-      let modulesData = [];
-      if (Array.isArray(response)) modulesData = response;
-      else if (response && Array.isArray(response.data)) modulesData = response.data;
-      else if (response && response.data && Array.isArray(response.data.data)) modulesData = response.data.data;
+        success: (response) => {
+          let modulesData = [];
+          if (Array.isArray(response)) modulesData = response;
+          else if (response && Array.isArray(response.data)) modulesData = response.data;
+          else if (response && response.data && Array.isArray(response.data.data)) modulesData = response.data.data;
 
-      if (modulesData.length > 0) {
-        setModules(modulesData.map((module: any) => ({ value: module.id.toString(), label: module.module_name || module.name })));
-      }
+          if (modulesData.length > 0) {
+            const uniqueModules = Array.from(new Map(modulesData.map((module: any) => {
+              const val = module.id.toString();
+              return [val, { value: val, label: module.module_name || module.name }];
+            })).values());
+            setModules(uniqueModules);
+          }
+        },
+        complete: () => setLoading.filter((e) => e !== "getmodules"),
+      });
     } catch (error) { console.error(error); }
-    finally { setLoading.filter((e) => e !== "getmodules"); }
   };
 
   const handleAddClick = () => {
@@ -322,7 +352,7 @@ export default function KelolaPermission() {
           <LoadingOverlay visible={loading.includes("submit")} />
           <Grid>
             <Grid.Col span={6}>
-              <NumberInput label="User ID" placeholder="ID User" required min={1} {...form.getInputProps("user_id")} variant="filled" />
+              <Select label="User" placeholder="Pilih user" data={users} searchable required {...form.getInputProps("user_id")} variant="filled" />
             </Grid.Col>
             <Grid.Col span={6}>
               <Select label="Role" placeholder="Pilih role" data={roles} searchable required {...form.getInputProps("role_id")} variant="filled" />
