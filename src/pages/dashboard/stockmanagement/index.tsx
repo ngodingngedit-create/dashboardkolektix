@@ -227,7 +227,7 @@ const StockManagement = () => {
         });
       }
 
-      const filtered = allProducts.filter((p: any) => !p.creator_id || String(p.creator_id) === String(creatorId));
+      const filtered = allProducts.filter((p: any) => (!p.creator_id || String(p.creator_id) === String(creatorId)) && p.product_status_id === 2);
       setAllProductsData(filtered);
       setProductsData(filtered);
     } catch (error) {
