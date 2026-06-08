@@ -34,6 +34,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   price: z.number().min(0, { message: '"Wajib Diisi' }),
   description: z.string().min(1, { message: '"Wajib Diisi' }),
   image: z.array(z.any()).min(1, { message: "Masukan minimal satu gambar" }),
+  size_chart: z.array(z.any()).optional().nullable(),
   variant_name: z.number().optional().nullable(),
   store_location_id: z.number().nullable().optional(),
   variant: z
@@ -74,6 +75,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   const [slug, setSlug] = useState<string>("");
 
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
+  const [sizeChartList, setSizeChartList] = useState<MerchandiseShowResponse["product_size_chart"]>();
   const [loading, setLoading] = useListState<string>();
   const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
   const [storeLocations, setStoreLocations] = useState<StoreLocationOption[]>([]);
@@ -97,6 +99,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
             setSlug(data.slug || "");
 
             setImageList(data.product_image);
+            if (data.product_size_chart) {
+              setSizeChartList(data.product_size_chart);
+            }
 
             const productVarian = (data as any).productVarian || (data as any).product_varian || [];
             form.setValues({
@@ -107,7 +112,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               stock: data.qty ?? 0,
               weight: parseInt(data.weight ?? "0"),
               description: data.description ?? "",
-              image: data.product_image.map((e) => e.image_url),
+              image: data.product_image?.map((e) => e.image_url) || [],
+              size_chart: data.product_size_chart?.map((e) => e.image_url) || [],
               store_location_id: (data as any).store_location_id
                 ? Number((data as any).store_location_id)
                 : ((data as any).has_store_location?.id
@@ -191,6 +197,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       price: 0,
       description: "",
       image: [],
+      size_chart: [],
       variant_name: 0,
       variant: [],
       status: true,
@@ -274,7 +281,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     }
 
     setLoading.append("save");
-    const { name, description, price, sku, image, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
+    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
 
     try {
       const base64Images = await Promise.all(
@@ -291,6 +298,20 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         })
       );
 
+      const base64SizeCharts = await Promise.all(
+        (size_chart || []).map(async (e) => {
+          if (e instanceof Blob) {
+            return await fileToBase64(e);
+          }
+          try {
+            return await getBase64FromUrl(e);
+          } catch (err) {
+            console.error("Failed to convert size_chart to base64:", e, err);
+            return sizeChartList?.find((z) => e == z.image_url)?.image ?? e;
+          }
+        })
+      );
+
       const requestData: any = {
         _method: Boolean(id) ? "PUT" : undefined,
         product_name: name,
@@ -298,6 +319,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         sku,
         price: price ?? 99999,
         image: base64Images as string[],
+        size_chart: base64SizeCharts as string[],
         product_status_id: isDraft ? 1 : status == undefined ? 2 : status ? 2 : 3,
         creator_id: user?.has_creator?.id ?? 0,
         qty: stock ?? 0,
@@ -378,6 +400,28 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     [form]
   );
 
+  const handleSizeChartChange = useCallback(
+    (files: File[] | null) => {
+      if (files) {
+        form.setValues((prev) => ({
+          ...prev,
+          size_chart: [...(prev.size_chart ?? []), ...files],
+        }));
+      }
+    },
+    [form]
+  );
+
+  const handleSizeChartDelete = useCallback(
+    (idx: number) => {
+      form.setValues((prev) => ({
+        ...prev,
+        size_chart: (prev.size_chart ?? []).filter((_, z) => z !== idx),
+      }));
+    },
+    [form]
+  );
+
   return (
     <div className="bg-white rounded-[8px] w-full">
       <div className="flex flex-col w-full">
@@ -431,6 +475,27 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                             />
                           );
                         })()}
+                      </Box>
+                    </InputWrapper>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">
+                      Size Chart
+                    </h4>
+                    <p className="text-grey mt-[5px]">Panduan ukuran produk (opsional)</p>
+                  </div>
+                  <div className="flex-grow overflow-x-auto">
+                    <InputWrapper error={form.errors.size_chart}>
+                      <Box pb={10}>
+                        <ImageInputMultiple
+                          value={form.values.size_chart}
+                          onChange={handleSizeChartChange}
+                          onDelete={handleSizeChartDelete}
+                          floattext={"Size Chart"}
+                        />
                       </Box>
                     </InputWrapper>
                   </div>

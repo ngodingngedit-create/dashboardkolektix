@@ -1036,7 +1036,7 @@ const Merch: React.FC = () => {
       labels: { confirm: "Hapus", cancel: "Batal" },
       onConfirm: () => {
         setLoading((prev) => [...prev, `delete${id}`]);
-        Delete(`product/${slug}`, {})
+        Delete(`product/${id}`, {})
           .then(() => {
             setMerchList((prev) => prev.filter((e) => e.id !== id));
           })

@@ -180,6 +180,7 @@ interface MerchandiseTransactionData {
   shipping_address?: ShippingAddress | string;
   status_name?: string;
   payment_method?: string;
+  payment_method_custom?: string;
   payment_method_id?: number;
   payment_status_id?: number;
   notes?: string;
@@ -388,6 +389,7 @@ const MerchandiseTransaction: React.FC = () => {
   const [variantFilter, setVariantFilter] = useState<string>("");
   const [variantOptions, setVariantOptions] = useState<FilterOption[]>([]);
 
+  const [transactionStatuses, setTransactionStatuses] = useState<{id: number, name: string, bgcolor?: string}[]>([]);
   const [page, setPage] = useState<number>(1);
   const [selectedTab, setSelectedTab] = useState<string>("transaksi");
   const [loadingCreators, setLoadingCreators] = useState<boolean>(false);
@@ -511,6 +513,15 @@ const MerchandiseTransaction: React.FC = () => {
   };
 
   const getStatusInfo = (statusId?: number) => {
+    const foundStatus = transactionStatuses.find((s) => s.id === statusId);
+    if (foundStatus) {
+      return { 
+        text: foundStatus.name, 
+        color: foundStatus.bgcolor || "blue",
+        isHex: !!foundStatus.bgcolor?.startsWith('#')
+      };
+    }
+
     switch (statusId) {
       case 1:
         return {
@@ -519,7 +530,7 @@ const MerchandiseTransaction: React.FC = () => {
         };
       case 2:
         return {
-          text: "SUCCESS",
+          text: "PAID",
           color: "green",
         };
       case 3:
@@ -531,6 +542,11 @@ const MerchandiseTransaction: React.FC = () => {
         return {
           text: "EXPIRED",
           color: "gray",
+        };
+      case 5:
+        return {
+          text: "REFUND",
+          color: "pink",
         };
       default:
         return {
@@ -799,6 +815,17 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
+  const getTransactionStatuses = async () => {
+    try {
+      const res: any = await Get("transaction-statuses", {});
+      if (res?.data) {
+        setTransactionStatuses(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transaction statuses:", err);
+    }
+  };
+
   const getData = async () => {
     setLoading(true);
     setError(null);
@@ -857,6 +884,7 @@ const MerchandiseTransaction: React.FC = () => {
           shipping_address: shippingAddress,
           status_name: item.transaction_status?.name || "-",
           payment_method: item.payment_method || "-",
+          payment_method_custom: item.payment_method_custom,
           payment_method_id: item.payment_method_id,
           payment_status_id: item.payment_status_id,
           notes: item.notes || "-",
@@ -1248,7 +1276,7 @@ const MerchandiseTransaction: React.FC = () => {
   };
 
   useEffect(() => {
-    Promise.all([getData(), getCreators()]);
+    Promise.all([getData(), getCreators(), getTransactionStatuses()]);
   }, []);
 
   const dataWithCreatorNames = useMemo(() => {
@@ -1647,10 +1675,7 @@ const MerchandiseTransaction: React.FC = () => {
                                     placeholder="Status Bayar"
                                     data={[
                                         { value: 'all', label: 'Semua Status' },
-                                        { value: '1', label: 'Pending' },
-                                        { value: '2', label: 'Success' },
-                                        { value: '3', label: 'Failed' },
-                                        { value: '4', label: 'Expired' },
+                                        ...transactionStatuses.map(s => ({ value: String(s.id), label: s.name }))
                                     ]}
                                     value={paymentStatusFilter}
                                     onChange={(val) => { setPaymentStatusFilter(val || 'all'); setPage(1); }}
@@ -1696,15 +1721,15 @@ const MerchandiseTransaction: React.FC = () => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>#</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('customer_name')}>Customer {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('product_name')}>Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>Total {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Metode Bayar</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('transaction_status_id')}>Status Bayar {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status Kirim</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', right: 270, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('transaction_status_id')}>Status Bayar {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', minWidth: 150, position: 'sticky', right: 120, backgroundColor: '#f5f7fa', zIndex: 2 }}>Status Kirim</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 3, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)', minWidth: 120 }}>
                                             <Flex align="center" gap="xs">
                                                 <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
                                                 <Checkbox
@@ -1740,10 +1765,10 @@ const MerchandiseTransaction: React.FC = () => {
                                         const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                                         return (
                                             <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
                                                     <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
                                                     <Text size="sm" fw={600}>{item.invoice_no}</Text>
                                                     <Text size="xs" c="dimmed">{formatDate(item.order_date)}</Text>
                                                 </td>
@@ -1766,20 +1791,29 @@ const MerchandiseTransaction: React.FC = () => {
                                                     <Text size="sm" fw={600}>
                                                         {(item.payment_status_id === 4 || item.payment_method_id === 4) ? 'QRIS' : 
                                                          (item.payment_status_id === 5 || item.payment_method_id === 5) ? 'Cash' : 
-                                                         (item.payment_method && item.payment_method !== '-' ? item.payment_method : '-')}
+                                                         (item.payment_method_custom || item.payment_method || '-')}
                                                     </Text>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                                    <Badge color={statusInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', right: 270, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
+                                                    <Badge 
+                                                        color={statusInfo.isHex ? undefined : statusInfo.color} 
+                                                        variant="filled" 
+                                                        style={{ 
+                                                            fontWeight: 600, 
+                                                            width: '100%', 
+                                                            minWidth: 'max-content',
+                                                            ...(statusInfo.isHex ? { backgroundColor: statusInfo.color, color: '#fff', border: 'none' } : {})
+                                                        }}
+                                                    >
                                                         {statusInfo.text}
                                                     </Badge>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', right: 120, backgroundColor: 'white', zIndex: 1 }}>
                                                     <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                                                         {shippingInfo.text}
                                                     </Badge>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 2, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)', minWidth: 120 }}>
                                                     <Flex align="center" gap="xs">
                                                         <Tooltip label="Detail Invoice">
                                                             <ActionIcon 

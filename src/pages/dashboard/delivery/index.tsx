@@ -873,7 +873,7 @@ const DeliveryPage: React.FC = () => {
         const shippingAddress = item.address || item.shipping_address || "-";
 
         return {
-          resi_no: item.courier?.tracking_number || "-",
+          resi_no: item.courier?.resi_no || item.courier?.tracking_number || "-",
           courier_name: item.courier?.courier_company || item.courier?.main || "-",
           ongkir: Number(item.courier?.price) || 0,
           id: item.id || 0,
@@ -1737,14 +1737,13 @@ const DeliveryPage: React.FC = () => {
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>#</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('customer_name')}>Customer <SortIcon col="customer_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('product_name')}>Produk <SortIcon col="product_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('resi_no')}>Resi <SortIcon col="resi_no" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('ongkir')}>Ongkir <SortIcon col="ongkir" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('shipping_address')}>Alamat Tujuan <SortIcon col="shipping_address" /></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Dikirim Dari</th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
                       <Flex align="center" gap="xs">
@@ -1781,10 +1780,10 @@ const DeliveryPage: React.FC = () => {
                     const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                     return (
                       <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
                           <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                         </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
                           <Text
                             size="sm"
                             fw={600}
@@ -1821,9 +1820,6 @@ const DeliveryPage: React.FC = () => {
                           <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
                             {formatShippingAddress((item as any).address || item.shipping_address)}
                           </Text>
-                        </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                          <Text size="sm">Warehouse Kita</Text>
                         </td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }}>
                           <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>

@@ -13,6 +13,9 @@ import {
     Badge,
     Loader,
     Center,
+    Modal,
+    ActionIcon,
+    Tooltip,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -31,6 +34,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Get } from "@/utils/REST";
 import fetch from "@/utils/fetch";
+import useLoggedUser from "@/utils/useLoggedUser";
 
 interface ManifestItem {
     id: number;
@@ -117,13 +121,20 @@ export default function TrackingUpdateForm({
     const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
     const [loadingInvoice, setLoadingInvoice] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [trackingStatuses, setTrackingStatuses] = useState<{value: string, label: string}[]>([]);
+    const [trackingStatusData, setTrackingStatusData] = useState<any[]>([]);
+    const [loadingStatuses, setLoadingStatuses] = useState(false);
+    const [showStatusInfo, setShowStatusInfo] = useState(false);
+    const user = useLoggedUser();
+    const [locations, setLocations] = useState<{value: string, label: string}[]>([]);
+    const [loadingLocations, setLoadingLocations] = useState(false);
 
     const form = useForm<TrackingFormValues>({
         initialValues: {
             tracking_status_id: null,
             status_name: "",
             description: "",
-            location: "Warehouse Jakarta",
+            location: "",
             courier_time: new Date().toISOString().slice(0, 19).replace("T", " "),
             pic_name: "system",
         },
@@ -136,8 +147,57 @@ export default function TrackingUpdateForm({
 
     useEffect(() => {
         if (invoiceNo) fetchInvoice();
+        fetchTrackingStatuses();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [invoiceNo]);
+
+    useEffect(() => {
+        if (user?.has_creator?.id) fetchLocations(user.has_creator.id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
+
+    const fetchLocations = async (creatorId: number) => {
+        setLoadingLocations(true);
+        try {
+            const creatorRes: any = await Get("creator", {});
+            const creators: any[] = creatorRes?.data ?? [];
+            const matched = creators.find((c: any) => c.id === creatorId);
+
+            if (matched?.slug_url) {
+                const res: any = await Get(`store-locations/creator/${matched.slug_url}`, {});
+                if (res?.data) {
+                    const options = res.data.map((loc: any) => ({
+                        value: loc.store_name || loc.city || loc.full_address,
+                        label: loc.store_name || loc.city || loc.full_address
+                    }));
+                    setLocations(options);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to fetch locations", err);
+        } finally {
+            setLoadingLocations(false);
+        }
+    };
+
+    const fetchTrackingStatuses = async () => {
+        setLoadingStatuses(true);
+        try {
+            const res: any = await Get('tracking-status', {});
+            if (res?.data) {
+                setTrackingStatusData(res.data);
+                const options = res.data.map((s: any) => ({
+                    value: String(s.id),
+                    label: `${s.id} - ${s.title}`
+                }));
+                setTrackingStatuses(options);
+            }
+        } catch (err) {
+            console.error("Failed to fetch tracking statuses", err);
+        } finally {
+            setLoadingStatuses(false);
+        }
+    };
 
     const fetchInvoice = async () => {
         setLoadingInvoice(true);
@@ -348,25 +408,35 @@ export default function TrackingUpdateForm({
                                 </div>
                             )}
 
-                            <Select
-                                withAsterisk
-                                label="Status Tracking"
-                                placeholder="Pilih status tracking"
-                                data={[
-                                    { value: "1", label: "1 - Dalam Proses" },
-                                    { value: "2", label: "2 - Dalam Perjalanan" },
-                                    { value: "3", label: "3 - Telah Diterima" },
-                                    { value: "4", label: "4 - Gagal Dikirim" },
-                                ]}
-                                size="sm"
-                                searchable
-                                clearable
-                                {...form.getInputProps("tracking_status_id")}
-                            />
+                            <Group align="flex-end" gap="xs">
+                                <Select
+                                    withAsterisk
+                                    label="Status Tracking"
+                                    placeholder="Pilih status tracking"
+                                    data={trackingStatuses}
+                                    disabled={loadingStatuses}
+                                    size="sm"
+                                    searchable
+                                    clearable
+                                    {...form.getInputProps("tracking_status_id")}
+                                    style={{ flex: 1 }}
+                                />
+                                <Tooltip label="Lihat Deskripsi Status">
+                                    <ActionIcon 
+                                        variant="light" 
+                                        color="blue" 
+                                        size="lg" 
+                                        mb={2} 
+                                        onClick={() => setShowStatusInfo(true)}
+                                    >
+                                        <Icon icon="mdi:information-outline" width={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
 
                             <TextInput
                                 withAsterisk
-                                label="Nama Status"
+                                label="Judul"
                                 placeholder="Contoh: Telah diterima oleh pemesan"
                                 size="sm"
                                 {...form.getInputProps("status_name")}
@@ -384,10 +454,14 @@ export default function TrackingUpdateForm({
 
                             <Divider />
 
-                            <TextInput
+                            <Select
                                 label="Lokasi"
-                                placeholder="Contoh: Warehouse Jakarta"
+                                placeholder="Pilih Lokasi"
+                                data={locations}
+                                disabled={loadingLocations}
                                 size="sm"
+                                searchable
+                                clearable
                                 leftSection={<FontAwesomeIcon icon={faLocationDot} className="h-3.5 w-3.5 text-gray-400" />}
                                 {...form.getInputProps("location")}
                             />
@@ -443,6 +517,25 @@ export default function TrackingUpdateForm({
                     </Button>
                 </Group>
             </div>
+
+            <Modal
+                opened={showStatusInfo}
+                onClose={() => setShowStatusInfo(false)}
+                title={<Text fw={700}>Informasi Status Tracking</Text>}
+                size="md"
+            >
+                <Stack gap="sm">
+                    {trackingStatusData.map((s) => (
+                        <Box key={s.id} p="sm" bg="gray.0" style={{ borderRadius: 8, border: '1px solid #f1f3f5' }}>
+                            <Text fw={600} size="sm" c="blue.7">{s.id} - {s.title}</Text>
+                            <Text size="xs" c="dimmed" mt={4}>{s.description || "Tidak ada deskripsi"}</Text>
+                        </Box>
+                    ))}
+                    {trackingStatusData.length === 0 && !loadingStatuses && (
+                        <Text size="sm" c="dimmed" ta="center" py="md">Tidak ada data status</Text>
+                    )}
+                </Stack>
+            </Modal>
         </div>
     );
 }

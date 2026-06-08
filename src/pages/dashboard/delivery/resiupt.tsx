@@ -27,6 +27,7 @@ interface InvoiceData {
     order_date?: string;
     address?: {
         nama_penerima?: string;
+        address_detail?: string;
     };
     created_at?: string;
     courier?: {
@@ -41,6 +42,7 @@ interface InvoiceData {
         etd?: string;
         etd_time?: string;
         delivery_id?: string;
+        price?: string | number;
     };
     payment_status?: string;
 }
@@ -206,6 +208,10 @@ export default function ResiUpdateForm({
                                         <Text size="sm" fw={500}>
                                             {invoiceData.address?.nama_penerima || invoiceData.customer_name || "-"}
                                         </Text>
+                                        <Text size="xs" c="dimmed" mt="sm" mb={4}>Alamat Penerima</Text>
+                                        <Text size="sm" fw={500}>
+                                            {invoiceData.address?.address_detail || "-"}
+                                        </Text>
                                     </Box>
 
                                     <Divider my="sm" />
@@ -213,7 +219,7 @@ export default function ResiUpdateForm({
                                     <Text fw={600} size="sm">Detail Pengiriman Saat Ini</Text>
 
                                     <Grid>
-                                        <Grid.Col span={12}>
+                                        <Grid.Col span={6}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="blue" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:box-minimalistic-bold" />
@@ -225,7 +231,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={12}>
+                                        <Grid.Col span={6}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="teal" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:tag-horizontal-bold" />
@@ -237,7 +243,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={12}>
+                                        <Grid.Col span={6}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="orange" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:barcode-bold" />
@@ -249,7 +255,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={12}>
+                                        <Grid.Col span={6}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="grape" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:calendar-date-bold" />
@@ -257,6 +263,20 @@ export default function ResiUpdateForm({
                                                 <Box>
                                                     <Text size="xs" c="dimmed">ETD (Estimasi)</Text>
                                                     <Text size="sm" fw={500}>{invoiceData.courier?.etd || "-"}</Text>
+                                                </Box>
+                                            </Group>
+                                        </Grid.Col>
+
+                                        <Grid.Col span={12}>
+                                            <Group gap="xs" wrap="nowrap" align="flex-start">
+                                                <ThemeIcon variant="light" color="pink" size="md" radius="xl" className="mt-1">
+                                                    <Icon icon="solar:wallet-bold" />
+                                                </ThemeIcon>
+                                                <Box>
+                                                    <Text size="xs" c="dimmed">Biaya Kurir</Text>
+                                                    <Text size="sm" fw={500}>
+                                                        {invoiceData.courier?.price ? `Rp ${Number(invoiceData.courier.price).toLocaleString('id-ID')}` : "-"}
+                                                    </Text>
                                                 </Box>
                                             </Group>
                                         </Grid.Col>

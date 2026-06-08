@@ -6,6 +6,7 @@ type MerchandiseState = {
     weight: number;
     description: string;
     image: (Blob | string)[];
+    size_chart: (Blob | string)[];
     status: boolean;
     variant_name: number;
     is_variant: boolean;
@@ -53,6 +54,13 @@ type MerchandiseShowResponse = {
     created_at: string,
     updated_at: null | string
     product_image: {
+        id: number;
+        product_id: number;
+        name: string;
+        image: string;
+        image_url: string;
+    }[];
+    product_size_chart?: {
         id: number;
         product_id: number;
         name: string;
@@ -107,6 +115,7 @@ type MerchandiseStoreRequest = {
     is_product_varian: 1 | 0;
     store_location_id?: number | null;
     image: string[];
+    size_chart?: string[];
     product_variant: VariantStoreRequest[] | string;
 };
 
