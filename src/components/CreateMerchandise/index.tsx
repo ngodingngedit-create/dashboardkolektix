@@ -37,6 +37,14 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   size_chart: z.array(z.any()).optional().nullable(),
   variant_name: z.number().optional().nullable(),
   store_location_id: z.number().nullable().optional(),
+  is_delivery: z.boolean().nullable().optional(),
+  is_pickup_instore: z.boolean().nullable().optional(),
+  is_preorder: z.boolean().nullable().optional(),
+  pickup_store_id: z.number().nullable().optional(),
+  preorder_date_start: z.any().nullable().optional(),
+  preorder_start_time: z.any().nullable().optional(),
+  preorder_date_end: z.any().nullable().optional(),
+  preorder_end_time: z.any().nullable().optional(),
   variant: z
     .array(
       z.object({
@@ -73,6 +81,7 @@ const getBase64FromUrl = async (url: string): Promise<string> => {
 export default function CreateMerchandise({ onClose, id }: Readonly<ComponentProps>) {
   const [merchId, setMerchId] = useState<number>();
   const [slug, setSlug] = useState<string>("");
+  const [slugUrl, setSlugUrl] = useState<string>("");
 
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
   const [sizeChartList, setSizeChartList] = useState<MerchandiseShowResponse["product_size_chart"]>();
@@ -94,9 +103,10 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       Get(`product/${id}`, {})
         .then((res: any) => {
           if (res.data) {
-            const data = res.data as MerchandiseShowResponse;
+            const data = res.data as MerchandiseShowResponse & { slug_url?: string };
             setMerchId(data.id);
             setSlug(data.slug || "");
+            setSlugUrl(data.slug_url || "");
 
             setImageList(data.product_image);
             if (data.product_size_chart) {
@@ -119,6 +129,14 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 : ((data as any).has_store_location?.id
                   ? Number((data as any).has_store_location.id)
                   : ((data as any).location_id ? Number((data as any).location_id) : null)),
+              is_delivery: Boolean((data as any).is_delivery),
+              is_pickup_instore: Boolean((data as any).is_pickup_instore),
+              is_preorder: Boolean((data as any).is_preorder),
+              pickup_store_id: (data as any).pickup_store_id ? Number((data as any).pickup_store_id) : null,
+              preorder_date_start: (data as any).preorder_date_start ? String((data as any).preorder_date_start).split("T")[0] : null,
+              preorder_start_time: (data as any).preorder_start_time ? String((data as any).preorder_start_time) : null,
+              preorder_date_end: (data as any).preorder_date_end ? String((data as any).preorder_date_end).split("T")[0] : null,
+              preorder_end_time: (data as any).preorder_end_time ? String((data as any).preorder_end_time) : null,
               variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
               variant: productVarian.map((e: any) => {
                 const parts = (e.varian_name || "").split(" - ");
@@ -202,6 +220,14 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       variant: [],
       status: true,
       store_location_id: null,
+      is_delivery: false,
+      is_pickup_instore: false,
+      is_preorder: false,
+      pickup_store_id: null,
+      preorder_date_start: null,
+      preorder_start_time: null,
+      preorder_date_end: null,
+      preorder_end_time: null,
     },
     validate: zodResolver(storeSchema),
   });
@@ -281,7 +307,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     }
 
     setLoading.append("save");
-    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id } = form.values;
+    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id, is_delivery, is_pickup_instore, is_preorder, pickup_store_id, preorder_date_start, preorder_start_time, preorder_date_end, preorder_end_time } = form.values;
 
     try {
       const base64Images = await Promise.all(
@@ -331,6 +357,14 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         add_to_flash_sale: 0,
         is_product_varian: is_variant ? 1 : 0,
         store_location_id: store_location_id !== null ? Number(store_location_id) : null,
+        is_delivery: is_delivery ? 1 : 0,
+        is_pickup_instore: is_pickup_instore ? 1 : 0,
+        is_preorder: is_preorder ? 1 : 0,
+        pickup_store_id: pickup_store_id !== null ? Number(pickup_store_id) : null,
+        preorder_date_start: preorder_date_start || null,
+        preorder_start_time: preorder_start_time || null,
+        preorder_date_end: preorder_date_end || null,
+        preorder_end_time: preorder_end_time || null,
         product_variant: is_variant
           ? JSON.stringify(
             variant.map((e) => ({
@@ -348,7 +382,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       };
 
       const resProduct: any = await Post(
-        Boolean(id) ? `product/${merchId || id}` : "product",
+        Boolean(id) ? `product/${slugUrl || id}` : "product",
         requestData
       );
       product_id = resProduct.data.id as number;
@@ -539,24 +573,115 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
                 <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
                   <div className="min-w-[250px] shrink-0">
-                    <h4 className="text-[16px] font-[500]">Lokasi Toko</h4>
-                    <p className="text-grey mt-[5px] text-[13px]">Gudang/lokasi asal produk ini</p>
+                    <h4 className="text-[16px] font-[500]">Pengiriman</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Produk bisa dikirim ke pembeli</p>
                   </div>
                   <div className="flex-grow">
-                    <Select
-                      placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi toko"}
-                      searchable
-                      clearable
-                      data={storeLocations.map((s) => ({
-                        value: String(s.id),
-                        label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
-                      }))}
-                      value={form.values.store_location_id !== null && form.values.store_location_id !== undefined ? String(form.values.store_location_id) : null}
-                      onChange={(v) => form.setFieldValue("store_location_id", v ? Number(v) : null)}
-                      disabled={storeLocations.length === 0}
+                    <Switch color="#0B387C" checked={form.values.is_delivery} onChange={(e) => form.setFieldValue("is_delivery", e.currentTarget.checked)} label="Aktifkan Pengiriman" />
+                  </div>
+                </div>
+
+                {form.values.is_delivery && (
+                  <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                    <div className="min-w-[250px] shrink-0">
+                      <h4 className="text-[16px] font-[500]">Lokasi Toko</h4>
+                      <p className="text-grey mt-[5px] text-[13px]">Gudang/lokasi asal produk ini</p>
+                    </div>
+                    <div className="flex-grow">
+                      <Select
+                        placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi toko"}
+                        searchable
+                        clearable
+                        data={storeLocations.map((s) => ({
+                          value: String(s.id),
+                          label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
+                        }))}
+                        value={form.values.store_location_id !== null && form.values.store_location_id !== undefined ? String(form.values.store_location_id) : null}
+                        onChange={(v) => form.setFieldValue("store_location_id", v ? Number(v) : null)}
+                        disabled={storeLocations.length === 0}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">Pickup In Store</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Pembeli dapat mengambil produk di toko</p>
+                  </div>
+                  <div className="flex-grow">
+                    <Switch color="#0B387C" checked={form.values.is_pickup_instore} onChange={(e) => form.setFieldValue("is_pickup_instore", e.currentTarget.checked)} label="Aktifkan Pickup In Store" />
+                  </div>
+                </div>
+
+                {form.values.is_pickup_instore && (
+                  <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                    <div className="min-w-[250px] shrink-0">
+                      <h4 className="text-[16px] font-[500]">Lokasi Pickup</h4>
+                      <p className="text-grey mt-[5px] text-[13px]">Pilih toko untuk pengambilan barang</p>
+                    </div>
+                    <div className="flex-grow">
+                      <Select
+                        placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi pickup"}
+                        searchable
+                        clearable
+                        data={storeLocations.map((s) => ({
+                          value: String(s.id),
+                          label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
+                        }))}
+                        value={form.values.pickup_store_id !== null && form.values.pickup_store_id !== undefined ? String(form.values.pickup_store_id) : null}
+                        onChange={(v) => form.setFieldValue("pickup_store_id", v ? Number(v) : null)}
+                        disabled={storeLocations.length === 0}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">Pre-Order</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Produk ini menggunakan sistem PO</p>
+                  </div>
+                  <div className="flex-grow">
+                    <Switch
+                      color="#0B387C"
+                      checked={form.values.is_preorder}
+                      onChange={(e) => {
+                        const isChecked = e.currentTarget.checked;
+                        form.setFieldValue("is_preorder", isChecked);
+                        if (isChecked) {
+                          form.setFieldValue("is_pickup_instore", true);
+                        }
+                      }}
+                      label="Aktifkan Pre-Order"
                     />
                   </div>
                 </div>
+
+                {form.values.is_preorder && (
+                  <div className="flex flex-col gap-[15px]">
+                    <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                      <div className="min-w-[250px] shrink-0">
+                        <h4 className="text-[16px] font-[500]">Masa Pre-Order</h4>
+                        <p className="text-grey mt-[5px] text-[13px]">Mulai pre-order</p>
+                      </div>
+                      <div className="flex-grow flex gap-[10px]">
+                        <TextInput type="date" value={form.values.preorder_date_start ? String(form.values.preorder_date_start) : ""} onChange={(e) => form.setFieldValue("preorder_date_start", e.target.value)} />
+                        <TextInput type="time" value={form.values.preorder_start_time ? String(form.values.preorder_start_time) : ""} onChange={(e) => form.setFieldValue("preorder_start_time", e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                      <div className="min-w-[250px] shrink-0">
+                        <h4 className="text-[16px] font-[500]"></h4>
+                        <p className="text-grey mt-[5px] text-[13px]">Akhir pre-order</p>
+                      </div>
+                      <div className="flex-grow flex gap-[10px]">
+                        <TextInput type="date" value={form.values.preorder_date_end ? String(form.values.preorder_date_end) : ""} onChange={(e) => form.setFieldValue("preorder_date_end", e.target.value)} />
+                        <TextInput type="time" value={form.values.preorder_end_time ? String(form.values.preorder_end_time) : ""} onChange={(e) => form.setFieldValue("preorder_end_time", e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

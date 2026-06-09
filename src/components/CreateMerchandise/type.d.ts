@@ -11,6 +11,14 @@ type MerchandiseState = {
     variant_name: number;
     is_variant: boolean;
     store_location_id: number | null;
+    is_delivery: boolean;
+    is_pickup_instore: boolean;
+    is_preorder: boolean;
+    pickup_store_id: number | null;
+    preorder_date_start: string | null;
+    preorder_start_time: string | null;
+    preorder_date_end: string | null;
+    preorder_end_time: string | null;
     variant: {
         id?: number;
         name: string;
@@ -45,6 +53,14 @@ type MerchandiseShowResponse = {
     max_purchase_quantity: number,
     low_quantity_warning: number,
     add_to_flash_sale: 1 | 0,
+    is_delivery?: number,
+    is_pickup_instore?: number,
+    is_preorder?: number,
+    pickup_store_id?: number | null,
+    preorder_date_start?: string | null,
+    preorder_start_time?: string | null,
+    preorder_date_end?: string | null,
+    preorder_end_time?: string | null,
     discount?: string,
     discount_start_date?: string,
     discount_end_date?: string,
@@ -114,6 +130,14 @@ type MerchandiseStoreRequest = {
     description: string;
     is_product_varian: 1 | 0;
     store_location_id?: number | null;
+    is_delivery: number;
+    is_pickup_instore: number;
+    is_preorder: number;
+    pickup_store_id?: number | null;
+    preorder_date_start?: string | null;
+    preorder_start_time?: string | null;
+    preorder_date_end?: string | null;
+    preorder_end_time?: string | null;
     image: string[];
     size_chart?: string[];
     product_variant: VariantStoreRequest[] | string;
