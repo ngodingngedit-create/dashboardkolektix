@@ -396,6 +396,7 @@ const DeliveryPage: React.FC = () => {
 
   const [variantFilter, setVariantFilter] = useState<string>("");
   const [variantOptions, setVariantOptions] = useState<FilterOption[]>([]);
+  const [trackingStatuses, setTrackingStatuses] = useState<any[]>([]);
 
   const [page, setPage] = useState<number>(1);
   const [selectedTab, setSelectedTab] = useState<string>("transaksi");
@@ -542,6 +543,17 @@ const DeliveryPage: React.FC = () => {
   };
 
 
+  const getTrackingStatuses = async () => {
+    try {
+      const res: any = await Get("tracking-status", {});
+      if (res?.data) {
+        setTrackingStatuses(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch tracking statuses:", err);
+    }
+  };
+
   const getStatusInfo = (statusId?: number) => {
     switch (statusId) {
       case 1:
@@ -575,12 +587,20 @@ const DeliveryPage: React.FC = () => {
   const getShippingStatusInfo = (item: MerchandiseTransactionData) => {
     if (!item.latest_manifest) {
       return {
-        text: "Belum Terkirim",
-        color: "red",
+        text: "Menunggu Penjual",
+        color: "yellow",
       };
     }
 
-    const statusDelivery = item.latest_manifest.tracking_status?.status_delivery || item.latest_manifest.status_name || "UNKNOWN";
+    let statusDelivery = item.latest_manifest.tracking_status?.status_delivery || item.latest_manifest.status_name || "UNKNOWN";
+    
+    if (item.latest_manifest.tracking_status_id) {
+      const matched = trackingStatuses.find((t: any) => t.id === item.latest_manifest?.tracking_status_id);
+      if (matched && matched.title) {
+        statusDelivery = matched.title;
+      }
+    }
+
     const lowerStatus = statusDelivery.toLowerCase();
     
     // Determine color based on status_delivery
@@ -1282,7 +1302,7 @@ const DeliveryPage: React.FC = () => {
   };
 
   useEffect(() => {
-    Promise.all([getData(), getCreators()]);
+    Promise.all([getData(), getCreators(), getTrackingStatuses()]);
   }, []);
 
   const dataWithCreatorNames = useMemo(() => {
