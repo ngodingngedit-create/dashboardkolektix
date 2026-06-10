@@ -1560,12 +1560,25 @@ export default function MerchDetail() {
     // State untuk Table Header Sort
     const [tableSortField, setTableSortField] = useState<string | null>(null);
     const [tableSortDir, setTableSortDir] = useState<'asc' | 'desc'>('asc');
+    const [trackingStatuses, setTrackingStatuses] = useState<any[]>([]);
 
     useEffect(() => {
         if (slug) {
             getData();
         }
+        fetchTrackingStatuses();
     }, [slug]);
+
+    const fetchTrackingStatuses = async () => {
+        try {
+            const res: any = await Get("tracking-status", {});
+            if (res.data) {
+                setTrackingStatuses(res.data);
+            }
+        } catch (error) {
+            console.error("Error fetching tracking statuses:", error);
+        }
+    };
 
     // Effect untuk update pagination ketika filteredTransactions berubah
     useEffect(() => {
@@ -1737,13 +1750,15 @@ export default function MerchDetail() {
                         customer_phone: item.address?.phone || item.customer_phone || item.phone || "-",
                         shipping_address: item.shipping_address || "-",
                         status_name: statusInfo.text,
-                        payment_method: item.payment_method || "-",
+                        payment_method: item.payment_method_custom || item.payment_method || "-",
+                        payment_method_custom: item.payment_method_custom,
                         notes: item.notes || "-",
                         product_id: productId,
                         product_variant: productVariant || '-',
                         courier: item.courier || item.shipping_courier,
                         courier_service: item.courier_service || item.shipping_service,
                         shipping_cost: item.shipping_cost || item.ongkos_kirim,
+                        latest_manifest: item.latest_manifest,
                     };
 
                     allTransactionsData.push(transaction);
@@ -2236,21 +2251,47 @@ export default function MerchDetail() {
             accessor: 'shipping_status',
             title: 'Status Pengiriman',
             width: 140,
-            render: (item: any) => (
-                <Flex justify="center" w="100%">
-                    <Badge color="gray" variant="filled" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
-                        Siap Dikirim
-                    </Badge>
-                </Flex>
-            )
+            render: (item: any) => {
+                const latestManifest = item.latest_manifest;
+                let statusLabel = "Menunggu Penjual";
+                let badgeColor = "yellow";
+
+                if (latestManifest && latestManifest.tracking_status_id) {
+                    const statusObj = trackingStatuses.find((s: any) => s.id === latestManifest.tracking_status_id);
+                    if (statusObj) {
+                        statusLabel = statusObj.title;
+                        if (statusLabel.toLowerCase().includes("delivered") || statusLabel.toLowerCase().includes("selesai")) {
+                            badgeColor = "green";
+                        } else if (statusLabel.toLowerCase().includes("process") || statusLabel.toLowerCase().includes("menuju")) {
+                            badgeColor = "blue";
+                        } else {
+                            badgeColor = "gray";
+                        }
+                    } else {
+                        statusLabel = latestManifest.status || "Menunggu Penjual";
+                        badgeColor = "gray";
+                    }
+                }
+
+                return (
+                    <Flex justify="center" w="100%">
+                        <Badge color={badgeColor} variant="filled" size="md" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
+                            {statusLabel}
+                        </Badge>
+                    </Flex>
+                );
+            }
         },
         {
             accessor: 'payment_method',
             title: 'Metode Pembayaran',
             width: 140,
-            render: (item: any) => (
-                <Text ta="center" size="sm">{String(formatPaymentMethod(item.payment_method) || '-')}</Text>
-            )
+            render: (item: any) => {
+                const methodToDisplay = item.payment_method_custom || item.payment_method || '-';
+                return (
+                    <Text ta="center" size="sm">{String(formatPaymentMethod(methodToDisplay))}</Text>
+                );
+            }
         },
         {
             accessor: 'actions',
@@ -2439,17 +2480,18 @@ export default function MerchDetail() {
                     <SimpleGrid cols={{ base: 1, md: 2 }} spacing={30}>
                         {/* Header Produk */}
                         <Flex gap={30} align="start">
-                            <AspectRatio ratio={1} maw={180} w="100%">
+                            <AspectRatio ratio={1} maw={220} w="100%">
                                 <Image
                                     radius={10}
                                     src={imageList?.[0]?.image_url}
                                     bg="gray.1"
                                     alt={data?.product_name || 'produk'}
+                                    style={{ objectFit: 'cover', height: '100%', width: '100%' }}
                                 />
                             </AspectRatio>
 
                             <Stack gap={0} flex={1}>
-                                <Text size="xs" c="gray" mb={5}>
+                                <Text size="xs" c="gray" mb={2}>
                                     Dibuat pada {data?.created_at ? moment(data.created_at).format('DD MMMM YYYY') : '-'}
                                 </Text>
                                 <Flex gap={10} align="center">
@@ -2464,22 +2506,22 @@ export default function MerchDetail() {
                                         </ActionIcon>
                                     </Tooltip>
                                 </Flex>
-                                <Flex gap={8} align="center" mt={5}>
-                                    <Text fw={600} size="lg">
+                                <Flex gap={8} align="center" mt={4}>
+                                    <Text fw={600} size="md">
                                         {formatRupiah(productPrice)}
                                     </Text>
                                     <Divider orientation="vertical" mx={10} />
-                                    <Icon icon="solar:star-bold" className="text-yellow-500 text-[20px]" />
-                                    <Text fw={500}>{data?.average_star ? parseFloat(data.average_star).toFixed(1) : '0.0'}</Text>
+                                    <Icon icon="solar:star-bold" className="text-yellow-500 text-[16px]" />
+                                    <Text fw={500} size="sm">{data?.average_star ? parseFloat(data.average_star).toFixed(1) : '0.0'}</Text>
                                 </Flex>
-                                <Stack gap={4} mt={15}>
+                                <Stack gap={4} mt={10}>
                                     <Text size="sm" fw={600} c="gray.7">
                                         Total Terjual: {data?.total_sold || 0} unit
                                     </Text>
                                     <Text size="xs" fw={500} c="dimmed">
                                         Varian Terjual:
                                     </Text>
-                                    <Group gap={8}>
+                                    <Group gap={6}>
                                         {productVariants.length > 0 ? (
                                             productVariants.map((v, i) => (
                                                 <Badge
@@ -2493,9 +2535,28 @@ export default function MerchDetail() {
                                                 </Badge>
                                             ))
                                         ) : (
-                                            <Text size="xs" c="dimmed italic">Belum ada varian terjual</Text>
+                                            <Text size="xs" c="dimmed" fs="italic">Belum ada varian terjual</Text>
                                         )}
                                     </Group>
+
+                                    <Stack gap={2} mt={8}>
+                                        <Text size="xs" fw={500} c="gray.7">Halaman Produk</Text>
+                                        <Flex align="center" gap={4}>
+                                            <Box bg="gray.1" px={10} py={4} style={{ borderRadius: '6px', maxWidth: '200px', overflow: 'hidden' }}>
+                                                <Text size="xs" c="gray.8" truncate>{productUrl}</Text>
+                                            </Box>
+                                            <Tooltip label="Salin Link">
+                                                <ActionIcon variant="transparent" c="blue" onClick={() => navigator.clipboard.writeText(productUrl)}>
+                                                    <Icon icon="solar:copy-linear" width={18} />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                            <Tooltip label="Buka Halaman">
+                                                <ActionIcon variant="transparent" c="blue" component="a" href={productUrl} target="_blank">
+                                                    <Icon icon="iconamoon:send-light" width={18} />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                        </Flex>
+                                    </Stack>
                                 </Stack>
                             </Stack>
                         </Flex>
