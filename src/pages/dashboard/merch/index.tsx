@@ -1286,7 +1286,8 @@ const Merch: React.FC = () => {
                           ) : (
                             filtered.map((item, i) => {
                               const safeId = String(item.id ?? i);
-                              const safeSlug = String((item as any).slug_url || item.slug || "");
+                              const safeSlug = String(item.slug || "");
+                              const safeSlugUrl = String((item as any).slug_url || item.slug || "");
 
                               // Gunakan fungsi getProductSku untuk mendapatkan SKU
                               const safeSku = getProductSku(item);
@@ -1324,10 +1325,10 @@ const Merch: React.FC = () => {
                                       <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${safeSlug}`}>
                                         <Icon icon="akar-icons:eye" className="text-[24px]" />
                                       </ActionIcon>
-                                      <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(String(item.slug))}>
+                                      <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
                                         <Icon icon="akar-icons:edit" className="text-[24px]" />
                                       </ActionIcon>
-                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, safeSlug)}>
+                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, safeSlugUrl)}>
                                         <Icon icon="uiw:delete" className="text-[18px]" />
                                       </ActionIcon>
                                     </div>
