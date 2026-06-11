@@ -1734,6 +1734,7 @@ const Merch = () => {
 
       let ticketName = "-";
       let ticketPrice = 0;
+      let ticketDomisili = "-";
 
       if (transaction.tickets?.length) {
         ticketName = transaction.tickets
@@ -1741,6 +1742,13 @@ const Merch = () => {
           .join(", ");
         ticketPrice = transaction.tickets.reduce((sum, ticket) =>
           sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
+      }
+
+      if (transaction.identities?.length) {
+        const domisilis = transaction.identities
+          .map((identity: any) => identity.domisili)
+          .filter(Boolean);
+        ticketDomisili = domisilis.length > 0 ? domisilis.filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(", ") : "-";
       }
 
       const paymentMethodInfo = getPaymentMethod(transaction.payment_method);
@@ -1752,6 +1760,7 @@ const Merch = () => {
         invoice: transaction.invoice_no || "-",
         tiket: ticketName,
         harga: `Rp ${ticketPrice.toLocaleString("id-ID")}`,
+        domisili: ticketDomisili,
         payment: paymentMethodInfo ? (
           <Box style={{ display: 'flex', justifyContent: 'center' }}>
             <Badge
@@ -2016,7 +2025,7 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Metode Pembayaran", "Status"];
+        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
         csvRows = [
           headers.join(","),
           ...exportData.map((item, index) => {
@@ -2026,14 +2035,19 @@ const Merch = () => {
             }
             let ticketName = "-";
             let ticketPrice = 0;
+            let ticketDomisili = "-";
             if (item.tickets && item.tickets.length > 0) {
               ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
               ticketPrice = item.tickets.reduce((sum: number, ticket: any) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
             }
+            if (item.identities && item.identities.length > 0) {
+              const domisilis = item.identities.map((identity: any) => identity.domisili).filter(Boolean);
+              ticketDomisili = domisilis.length > 0 ? domisilis.filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(", ") : "-";
+            }
             const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
             const paymentMethodInfo = getPaymentMethod(item.payment_method);
             const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ticketPrice, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
           }),
         ];
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;
@@ -2278,6 +2292,7 @@ const Merch = () => {
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS</th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>ACTION</th>
@@ -2286,7 +2301,7 @@ const Merch = () => {
                 <tbody>
                   {loading.includes("loadData") ? (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Loading...</Text>
                       </td>
                     </tr>
@@ -2299,6 +2314,7 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm">{item.tiket}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.harga}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.domisili}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.payment}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.status}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)' }}>{item.action}</td>
@@ -2306,7 +2322,7 @@ const Merch = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Tidak ada data</Text>
                       </td>
                     </tr>

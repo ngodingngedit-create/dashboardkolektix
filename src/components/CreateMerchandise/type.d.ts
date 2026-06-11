@@ -19,6 +19,13 @@ type MerchandiseState = {
     preorder_start_time: string | null;
     preorder_date_end: string | null;
     preorder_end_time: string | null;
+    is_promo: boolean;
+    promo_title: string | null;
+    promo_price: number | null;
+    promo_start_date: string | null;
+    promo_end_date: string | null;
+    promo_start_time: string | null;
+    promo_end_time: string | null;
     variant: {
         id?: number;
         name: string;
@@ -28,6 +35,13 @@ type MerchandiseState = {
         stock?: number;
         status?: boolean;
         sub_name?: string;
+        is_promo?: boolean;
+        promo_title?: string | null;
+        promo_price?: number | null;
+        promo_start_date?: string | null;
+        promo_end_date?: string | null;
+        promo_start_time?: string | null;
+        promo_end_time?: string | null;
     }[];
 };
 
@@ -61,6 +75,13 @@ type MerchandiseShowResponse = {
     preorder_start_time?: string | null,
     preorder_date_end?: string | null,
     preorder_end_time?: string | null,
+    is_promo?: number,
+    promo_title?: string | null,
+    promo_price?: number | null,
+    promo_start_date?: string | null,
+    promo_end_date?: string | null,
+    promo_start_time?: string | null,
+    promo_end_time?: string | null,
     discount?: string,
     discount_start_date?: string,
     discount_end_date?: string,
@@ -95,23 +116,15 @@ type MerchandiseShowResponse = {
         product_variant_category: {
             id: number;
             varian_name: string;
-        }
+        };
+        is_promo?: number;
+        promo_title?: string | null;
+        promo_price?: string | null;
+        promo_start_date?: string | null;
+        promo_end_date?: string | null;
+        promo_start_time?: string | null;
+        promo_end_time?: string | null;
     }[];
-
-    // buying_price: string,
-    // selling_price: string,
-    // variation_price: string,
-    // status: number,
-    // order: number,
-    // can_purchasable: number,
-    // refundable: number,
-    // description: string,
-    // shipping_and_return: string,
-    // offer_start_date: string,
-    // offer_end_date: string,
-    // is_product_quantity_multiply: number,
-    // editor_type: string,
-    // editor_id: number,
 };
 
 type MerchandiseStoreRequest = {
@@ -138,6 +151,13 @@ type MerchandiseStoreRequest = {
     preorder_start_time?: string | null;
     preorder_date_end?: string | null;
     preorder_end_time?: string | null;
+    is_promo?: number;
+    promo_title?: string | null;
+    promo_price?: number | null;
+    promo_start_date?: string | null;
+    promo_end_date?: string | null;
+    promo_start_time?: string | null;
+    promo_end_time?: string | null;
     image: string[];
     size_chart?: string[];
     product_variant: VariantStoreRequest[] | string;
@@ -152,6 +172,13 @@ type VariantStoreRequest = {
     stock_qty: number;
     varian_category_id: number;
     status_product: "active" | "inactive";
+    is_promo?: number;
+    promo_title?: string | null;
+    promo_price?: number | null;
+    promo_start_date?: string | null;
+    promo_end_date?: string | null;
+    promo_start_time?: string | null;
+    promo_end_time?: string | null;
 };
 
 type VariantCategoryListResponse = {

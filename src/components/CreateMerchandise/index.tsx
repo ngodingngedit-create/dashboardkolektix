@@ -4,7 +4,7 @@ import Image from "next/image";
 //import ImageInput from '../ImageInput.tsx';
 import ImageInputMultiple from "../ImageInputMultiple.tsx";
 import { useForm, zodResolver } from "@mantine/form";
-import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from "@mantine/core";
+import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import InputEditor from "@/components/Input/InputEditor";
 import { Get, Post, Put } from "@/utils/REST";
@@ -45,6 +45,13 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   preorder_start_time: z.any().nullable().optional(),
   preorder_date_end: z.any().nullable().optional(),
   preorder_end_time: z.any().nullable().optional(),
+  is_promo: z.boolean().nullable().optional(),
+  promo_title: z.string().nullable().optional(),
+  promo_price: z.number().nullable().optional(),
+  promo_start_date: z.any().nullable().optional(),
+  promo_start_time: z.any().nullable().optional(),
+  promo_end_date: z.any().nullable().optional(),
+  promo_end_time: z.any().nullable().optional(),
   variant: z
     .array(
       z.object({
@@ -55,6 +62,13 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
         weight: z.number({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         status: z.boolean().nullable().optional(),
         sub_name: z.string().optional().nullable(),
+        is_promo: z.boolean().nullable().optional(),
+        promo_title: z.string().nullable().optional(),
+        promo_price: z.number().nullable().optional(),
+        promo_start_date: z.any().nullable().optional(),
+        promo_start_time: z.any().nullable().optional(),
+        promo_end_date: z.any().nullable().optional(),
+        promo_end_time: z.any().nullable().optional(),
       })
     )
     .optional()
@@ -82,6 +96,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   const [merchId, setMerchId] = useState<number>();
   const [slug, setSlug] = useState<string>("");
   const [slugUrl, setSlugUrl] = useState<string>("");
+  const [activePromoVariant, setActivePromoVariant] = useState<number | null>(null);
 
   const [imageList, setImageList] = useState<MerchandiseShowResponse["product_image"]>();
   const [sizeChartList, setSizeChartList] = useState<MerchandiseShowResponse["product_size_chart"]>();
@@ -133,10 +148,17 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               is_pickup_instore: Boolean((data as any).is_pickup_instore),
               is_preorder: Boolean((data as any).is_preorder),
               pickup_store_id: (data as any).pickup_store_id ? Number((data as any).pickup_store_id) : null,
-              preorder_date_start: (data as any).preorder_date_start ? String((data as any).preorder_date_start).split("T")[0] : null,
+              preorder_date_start: (data as any).preorder_date_start ? String((data as any).preorder_date_start).split("T")[0].split(" ")[0] : null,
               preorder_start_time: (data as any).preorder_start_time ? String((data as any).preorder_start_time) : null,
-              preorder_date_end: (data as any).preorder_date_end ? String((data as any).preorder_date_end).split("T")[0] : null,
+              preorder_date_end: (data as any).preorder_date_end ? String((data as any).preorder_date_end).split("T")[0].split(" ")[0] : null,
               preorder_end_time: (data as any).preorder_end_time ? String((data as any).preorder_end_time) : null,
+              is_promo: Boolean((data as any).is_promo),
+              promo_title: (data as any).promo_title ?? null,
+              promo_price: (data as any).promo_price ? Number((data as any).promo_price) : null,
+              promo_start_date: (data as any).promo_start_date ? String((data as any).promo_start_date).split("T")[0].split(" ")[0] : null,
+              promo_start_time: (data as any).promo_start_time ? String((data as any).promo_start_time) : null,
+              promo_end_date: (data as any).promo_end_date ? String((data as any).promo_end_date).split("T")[0].split(" ")[0] : null,
+              promo_end_time: (data as any).promo_end_time ? String((data as any).promo_end_time) : null,
               variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
               variant: productVarian.map((e: any) => {
                 const parts = (e.varian_name || "").split(" - ");
@@ -164,6 +186,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                   weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : 0,
                   status: true,
                   sub_name: sub_name,
+                  is_promo: Boolean(e.is_promo),
+                  promo_title: e.promo_title ?? null,
+                  promo_price: e.promo_price ? Number(e.promo_price) : null,
+                  promo_start_date: e.promo_start_date ? String(e.promo_start_date).split("T")[0].split(" ")[0] : null,
+                  promo_start_time: e.promo_start_time ? String(e.promo_start_time) : null,
+                  promo_end_date: e.promo_end_date ? String(e.promo_end_date).split("T")[0].split(" ")[0] : null,
+                  promo_end_time: e.promo_end_time ? String(e.promo_end_time) : null,
                 };
               }),
             });
@@ -228,6 +257,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
       preorder_start_time: null,
       preorder_date_end: null,
       preorder_end_time: null,
+      is_promo: false,
+      promo_title: null,
+      promo_price: null,
+      promo_start_date: null,
+      promo_start_time: null,
+      promo_end_date: null,
+      promo_end_time: null,
     },
     validate: zodResolver(storeSchema),
   });
@@ -307,7 +343,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     }
 
     setLoading.append("save");
-    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id, is_delivery, is_pickup_instore, is_preorder, pickup_store_id, preorder_date_start, preorder_start_time, preorder_date_end, preorder_end_time } = form.values;
+    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id, is_delivery, is_pickup_instore, is_preorder, pickup_store_id, preorder_date_start, preorder_start_time, preorder_date_end, preorder_end_time, is_promo, promo_title, promo_price, promo_start_date, promo_start_time, promo_end_date, promo_end_time } = form.values;
 
     try {
       const base64Images = await Promise.all(
@@ -362,9 +398,16 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         is_preorder: is_preorder ? 1 : 0,
         pickup_store_id: pickup_store_id !== null ? Number(pickup_store_id) : null,
         preorder_date_start: preorder_date_start || null,
-        preorder_start_time: preorder_start_time || null,
+        preorder_start_time: preorder_date_start && preorder_start_time ? `${preorder_date_start} ${preorder_start_time.length === 5 ? preorder_start_time + ":00" : preorder_start_time}` : null,
         preorder_date_end: preorder_date_end || null,
-        preorder_end_time: preorder_end_time || null,
+        preorder_end_time: preorder_date_end && preorder_end_time ? `${preorder_date_end} ${preorder_end_time.length === 5 ? preorder_end_time + ":00" : preorder_end_time}` : null,
+        is_promo: is_promo ? 1 : 0,
+        promo_title: promo_title || null,
+        promo_price: promo_price !== null && promo_price !== undefined ? Number(promo_price) : null,
+        promo_start_date: promo_start_date || null,
+        promo_start_time: promo_start_time ? `${promo_start_time.length === 5 ? promo_start_time + ":00" : promo_start_time}` : null,
+        promo_end_date: promo_end_date || null,
+        promo_end_time: promo_end_time ? `${promo_end_time.length === 5 ? promo_end_time + ":00" : promo_end_time}` : null,
         product_variant: is_variant
           ? JSON.stringify(
             variant.map((e) => ({
@@ -376,6 +419,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               stock_qty: Number(e.stock ?? 0),
               varian_category_id: variant_name,
               status_product: e.status ? "active" : "inactive",
+              is_promo: e.is_promo ? 1 : 0,
+              promo_title: e.promo_title || null,
+              promo_price: e.promo_price !== null && e.promo_price !== undefined ? Number(e.promo_price) : null,
+              promo_start_date: e.promo_start_date || null,
+              promo_start_time: e.promo_start_time ? `${e.promo_start_time.length === 5 ? e.promo_start_time + ":00" : e.promo_start_time}` : null,
+              promo_end_date: e.promo_end_date || null,
+              promo_end_time: e.promo_end_time ? `${e.promo_end_time.length === 5 ? e.promo_end_time + ":00" : e.promo_end_time}` : null,
             })) satisfies VariantStoreRequest[]
           )
           : "[]",
@@ -685,6 +735,72 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               </div>
             </div>
 
+            <div className="border border-[#E2EDFF] rounded-[8px] p-[16px]">
+              <div className="flex flex-col gap-[20px]">
+                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">Promo Produk</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Aktifkan harga promo khusus</p>
+                  </div>
+                  <div className="flex-grow">
+                    <Switch
+                      color="#0B387C"
+                      checked={form.values.is_promo}
+                      onChange={(e) => form.setFieldValue("is_promo", e.currentTarget.checked)}
+                      label="Aktifkan Promo"
+                    />
+                  </div>
+                </div>
+
+                {form.values.is_promo && (
+                  <div className="flex flex-col gap-[15px]">
+                    <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                      <div className="min-w-[250px] shrink-0">
+                        <h4 className="text-[16px] font-[500]">Detail Promo</h4>
+                        <p className="text-grey mt-[5px] text-[13px]">Judul dan harga promo</p>
+                      </div>
+                      <div className="flex-grow flex flex-col gap-[10px]">
+                        <TextInput
+                          placeholder="Judul Promo (Contoh: Flash Sale)"
+                          value={form.values.promo_title || ""}
+                          onChange={(e) => form.setFieldValue("promo_title", e.target.value)}
+                        />
+                        <NumberInput
+                          placeholder="Harga Promo"
+                          value={form.values.promo_price || ""}
+                          onChange={(val) => form.setFieldValue("promo_price", val as number)}
+                          hideControls
+                          decimalSeparator=","
+                          thousandSeparator="."
+                          prefix="Rp "
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                      <div className="min-w-[250px] shrink-0">
+                        <h4 className="text-[16px] font-[500]">Masa Promo</h4>
+                        <p className="text-grey mt-[5px] text-[13px]">Mulai promo</p>
+                      </div>
+                      <div className="flex-grow flex gap-[10px]">
+                        <TextInput type="date" value={form.values.promo_start_date ? String(form.values.promo_start_date) : ""} onChange={(e) => form.setFieldValue("promo_start_date", e.target.value)} />
+                        <TextInput type="time" value={form.values.promo_start_time ? String(form.values.promo_start_time) : ""} onChange={(e) => form.setFieldValue("promo_start_time", e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                      <div className="min-w-[250px] shrink-0">
+                        <h4 className="text-[16px] font-[500]"></h4>
+                        <p className="text-grey mt-[5px] text-[13px]">Akhir promo</p>
+                      </div>
+                      <div className="flex-grow flex gap-[10px]">
+                        <TextInput type="date" value={form.values.promo_end_date ? String(form.values.promo_end_date) : ""} onChange={(e) => form.setFieldValue("promo_end_date", e.target.value)} />
+                        <TextInput type="time" value={form.values.promo_end_time ? String(form.values.promo_end_time) : ""} onChange={(e) => form.setFieldValue("promo_end_time", e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <Switch checked={form.values.is_variant} onChange={(e) => form.setFieldValue("is_variant", e.target.checked)} label="Gunakan Varian Produk" />
 
             <div className={`${form.values.is_variant ? "hidden" : ""} border border-[#E2EDFF] rounded-[8px]`}>
@@ -781,6 +897,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                 weight: form.values.variant[i]?.weight ?? 0,
                                 status: form.values.variant[i] ? form.values.variant[i].status : true,
                                 sub_name: form.values.variant[i]?.sub_name ?? "",
+                                is_promo: form.values.variant[i]?.is_promo ?? false,
+                                promo_title: form.values.variant[i]?.promo_title ?? null,
+                                promo_price: form.values.variant[i]?.promo_price ?? null,
+                                promo_start_date: form.values.variant[i]?.promo_start_date ?? null,
+                                promo_start_time: form.values.variant[i]?.promo_start_time ?? null,
+                                promo_end_date: form.values.variant[i]?.promo_end_date ?? null,
+                                promo_end_time: form.values.variant[i]?.promo_end_time ?? null,
                               })),
                             })
                           }
@@ -806,6 +929,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Berat</Table.Th>
                         <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">{!Boolean(id) ? "Stok" : "Stok Awal"}</Table.Th>
                         <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Aktif</Table.Th>
+                        <Table.Th className="text-[12px] font-[700] text-[#777] uppercase tracking-wider">Promo</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -864,6 +988,17 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                           </Table.Td>
                           <Table.Td>
                             <Switch color="#0B387C" checked={form.values.variant[i].status} onChange={(e) => form.setFieldValue(`variant.${i}.status`, e.target.checked)} error={form.errors[`variant.${i}.status`]} />
+                          </Table.Td>
+                          <Table.Td>
+                            <Button
+                              variant="light"
+                              color={form.values.variant[i].is_promo ? "green" : "gray"}
+                              size="xs"
+                              onClick={() => setActivePromoVariant(i)}
+                              leftSection={<Icon icon="mdi:tag" />}
+                            >
+                              Atur Promo
+                            </Button>
                           </Table.Td>
                         </Table.Tr>
                       ))}
@@ -941,6 +1076,80 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
           </div>
         </div>
       </div>
+
+      <Modal
+        opened={activePromoVariant !== null}
+        onClose={() => setActivePromoVariant(null)}
+        title={`Atur Promo Varian - ${activePromoVariant !== null ? form.values.variant[activePromoVariant]?.name : ""}`}
+        size="lg"
+      >
+        {activePromoVariant !== null && form.values.variant[activePromoVariant] && (
+          <div className="flex flex-col gap-[20px]">
+            <Switch
+              color="#0B387C"
+              checked={form.values.variant[activePromoVariant].is_promo}
+              onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.is_promo`, e.currentTarget.checked)}
+              label="Aktifkan Promo Khusus Varian"
+            />
+            {form.values.variant[activePromoVariant].is_promo && (
+              <div className="flex flex-col gap-[15px]">
+                <TextInput
+                  label="Judul Promo"
+                  placeholder="Contoh: Flash Sale Varian"
+                  value={form.values.variant[activePromoVariant].promo_title || ""}
+                  onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.promo_title`, e.target.value)}
+                />
+                <NumberInput
+                  label="Harga Promo"
+                  placeholder="Harga Promo"
+                  value={form.values.variant[activePromoVariant].promo_price || ""}
+                  onChange={(val) => form.setFieldValue(`variant.${activePromoVariant}.promo_price`, val as number)}
+                  hideControls
+                  decimalSeparator=","
+                  thousandSeparator="."
+                  prefix="Rp "
+                />
+                <div className="flex gap-[10px]">
+                  <TextInput
+                    label="Tgl Mulai"
+                    type="date"
+                    value={form.values.variant[activePromoVariant].promo_start_date ? String(form.values.variant[activePromoVariant].promo_start_date) : ""}
+                    onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.promo_start_date`, e.target.value)}
+                    className="flex-1"
+                  />
+                  <TextInput
+                    label="Waktu Mulai"
+                    type="time"
+                    value={form.values.variant[activePromoVariant].promo_start_time ? String(form.values.variant[activePromoVariant].promo_start_time) : ""}
+                    onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.promo_start_time`, e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex gap-[10px]">
+                  <TextInput
+                    label="Tgl Berakhir"
+                    type="date"
+                    value={form.values.variant[activePromoVariant].promo_end_date ? String(form.values.variant[activePromoVariant].promo_end_date) : ""}
+                    onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.promo_end_date`, e.target.value)}
+                    className="flex-1"
+                  />
+                  <TextInput
+                    label="Waktu Berakhir"
+                    type="time"
+                    value={form.values.variant[activePromoVariant].promo_end_time ? String(form.values.variant[activePromoVariant].promo_end_time) : ""}
+                    onChange={(e) => form.setFieldValue(`variant.${activePromoVariant}.promo_end_time`, e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+            <Button color="#0B387C" onClick={() => setActivePromoVariant(null)} fullWidth mt="md">
+              Tutup & Simpan
+            </Button>
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 }
