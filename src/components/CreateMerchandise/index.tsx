@@ -86,6 +86,17 @@ const fileToBase64 = (file: File | Blob): Promise<string> => {
 };
 
 const getBase64FromUrl = async (url: string): Promise<string> => {
+  try {
+    // Try fetching directly from the client first
+    const res = await fetch(url);
+    if (res.ok) {
+      const blob = await res.blob();
+      return await fileToBase64(blob);
+    }
+  } catch (clientErr) {
+    console.warn("Client-side fetch failed, trying proxy...", clientErr);
+  }
+
   const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
   if (!response.ok) throw new Error("Failed to fetch image via proxy");
   const data = await response.json();

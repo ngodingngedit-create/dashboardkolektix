@@ -11,7 +11,9 @@ export default async function handler(
   }
 
   try {
-    const response = await fetch(url);
+    // Fix for Node 18+ fetch IPv6 resolution issue with localhost
+    const fetchUrl = url.replace('localhost', '127.0.0.1');
+    const response = await fetch(fetchUrl);
     
     if (!response.ok) {
       return res.status(response.status).json({ error: 'Failed to fetch image' });

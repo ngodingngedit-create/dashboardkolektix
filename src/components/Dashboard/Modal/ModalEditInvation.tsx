@@ -1,4 +1,4 @@
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem } from "@nextui-org/react";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -26,6 +26,20 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [category, setCategory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const response = await axios.get(`${config.wsUrl}invitation-category`);
+        const data = response.data?.data || response.data || [];
+        setCategory(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching category:", error);
+      }
+    };
+    fetchCategory();
+  }, []);
 
   useEffect(() => {
     if (item) {
@@ -109,13 +123,19 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
         <ModalBody>
           <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
             <div className="flex flex-wrap gap-4">
-              <Input
+              <Select
                 className="flex-1 min-w-[30%]"
-                label={<span className="text-dark">Invitation Category ID</span>}
-                value={String(formData.invitation_cat_id)}
+                label={<span className="text-dark">Invitation Category</span>}
+                selectedKeys={formData.invitation_cat_id ? [String(formData.invitation_cat_id)] : []}
                 onChange={(e) => setFormData({ ...formData, invitation_cat_id: e.target.value })}
                 labelPlacement="outside"
-              />
+              >
+                {category.map((e: any) => (
+                  <SelectItem key={String(e.id)} textValue={e.name}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </Select>
               <Input
                 className="flex-1 min-w-[30%]"
                 label={<span className="text-dark">Invitation Title</span>}

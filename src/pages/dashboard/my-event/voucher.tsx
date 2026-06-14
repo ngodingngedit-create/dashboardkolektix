@@ -62,6 +62,7 @@ interface Voucher {
   status?: number;
   created_at: string;
   updated_at: string;
+  slug_url?: string;
   module_id?: number | null;
   event?: {
     id: number;
@@ -115,6 +116,7 @@ const VoucherPage = () => {
 
   const [formData, setFormData] = useState({
     id: null as number | null,
+    slug_url: "",
     module_id: 1,
     event_id: "",
     product_id: "",
@@ -132,6 +134,7 @@ const VoucherPage = () => {
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [moduleFilter, setModuleFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchVouchers(1);
@@ -198,6 +201,7 @@ const VoucherPage = () => {
       if (eventFilter !== "all") params.append("event_id", eventFilter);
       if (typeFilter !== "all") params.append("type", typeFilter);
       if (statusFilter !== "all") params.append("status", statusFilter);
+      if (moduleFilter !== "all") params.append("module_id", moduleFilter);
       if (user?.has_creator?.id) params.append("user_id", user.has_creator.id.toString());
 
       const token = Cookies.get("token");
@@ -236,12 +240,13 @@ const VoucherPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => fetchVouchers(1), 500);
     return () => clearTimeout(timer);
-  }, [searchTerm, eventFilter, typeFilter, statusFilter]);
+  }, [searchTerm, eventFilter, typeFilter, statusFilter, moduleFilter]);
 
   const handleCreateClick = () => {
     setVoucherTargetType("event");
     setFormData({
       id: null,
+      slug_url: "",
       module_id: 1,
       event_id: events.length > 0 ? events[0].id.toString() : "",
       product_id: products.length > 0 ? products[0].id.toString() : "",
@@ -262,6 +267,7 @@ const VoucherPage = () => {
     setVoucherTargetType(voucher.product_id ? "product" : "event");
     setFormData({
       id: voucher.id,
+      slug_url: voucher.slug_url || "",
       module_id: voucher.module_id || (voucher.product_id ? 2 : 1),
       event_id: voucher.event_id?.toString() || "",
       product_id: voucher.product_id?.toString() || "",
@@ -313,7 +319,7 @@ const VoucherPage = () => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
       if (formData.id) {
-        await axios.put(`${config.wsUrl}vouchers/${formData.id}`, payload, { headers });
+        await axios.put(`${config.wsUrl}vouchers/${formData.slug_url || formData.id}`, payload, { headers });
         notifications.show({ title: "Sukses", message: "Voucher berhasil diperbarui", color: "green" });
       } else {
         await axios.post(`${config.wsUrl}vouchers`, payload, { headers });
@@ -361,7 +367,7 @@ const VoucherPage = () => {
     let result = [...vouchers];
 
     // Frontend Filtering for better UX
-    if (searchTerm || eventFilter !== "all" || typeFilter !== "all" || statusFilter !== "all") {
+    if (searchTerm || eventFilter !== "all" || typeFilter !== "all" || statusFilter !== "all" || moduleFilter !== "all") {
       result = result.filter((v) => {
         // Search Filter (Code and Event Name)
         const matchesSearch = !searchTerm || 
@@ -394,7 +400,13 @@ const VoucherPage = () => {
           else if (statusFilter === "expired") matchesStatus = bStat === "Kadaluarsa";
         }
 
-        return matchesSearch && matchesEvent && matchesType && matchesStatus;
+        // Module Filter
+        const matchesModule = moduleFilter === "all" || 
+          (moduleFilter === "1" && !!v.event_id && !v.product_id) || 
+          (moduleFilter === "2" && !!v.product_id) ||
+          (v.module_id?.toString() === moduleFilter);
+
+        return matchesSearch && matchesEvent && matchesType && matchesStatus && matchesModule;
       });
     }
 
@@ -458,11 +470,12 @@ const VoucherPage = () => {
       <Card withBorder p="md" radius="md" shadow="sm">
         <Flex gap="md" align="center" wrap="wrap">
           <TextInput placeholder="Cari kode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
+          <Select placeholder="Semua Modul" value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: "Semua Modul" }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 140 }} />
           <Select placeholder="Semua Event" value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: "Semua Event" }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
           <Select placeholder="Semua Tipe" value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: "Semua Tipe" }, { value: "persentase", label: "Persentase" }, { value: "nominal", label: "Nominal" }]} style={{ width: 140 }} />
           <Select placeholder="Semua Status" value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: "Semua Status" }, { value: "active", label: "Aktif" }, { value: "inactive", label: "Nonaktif" }, { value: "expired", label: "Kadaluarsa" }]} style={{ width: 140 }} />
           <Button variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
-          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); fetchVouchers(1); }}>Reset</Button>
+          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>Reset</Button>
         </Flex>
       </Card>
 
