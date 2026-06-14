@@ -62,10 +62,16 @@ interface Voucher {
   status?: number;
   created_at: string;
   updated_at: string;
+  module_id?: number | null;
   event?: {
     id: number;
     name: string;
   };
+}
+
+interface ModuleItem {
+  id: number;
+  module_name: string;
 }
 
 interface Event {
@@ -89,6 +95,7 @@ const VoucherPage = () => {
   const [loading, setLoading] = useListState<string>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     current_page: 1,
     last_page: 1,
@@ -102,11 +109,15 @@ const VoucherPage = () => {
   const [voucherToDelete, setVoucherToDelete] = useState<number | null>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [voucherTargetType, setVoucherTargetType] = useState<"event" | "product">("event");
+  const [products, setProducts] = useState<any[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'code', direction: 'asc' });
 
   const [formData, setFormData] = useState({
     id: null as number | null,
+    module_id: 1,
     event_id: "",
+    product_id: "",
     code: "",
     discount: 0,
     type: "persentase" as "persentase" | "nominal",
@@ -124,13 +135,27 @@ const VoucherPage = () => {
 
   useEffect(() => {
     fetchVouchers(1);
+    fetchModules();
   }, []);
 
   useEffect(() => {
     if (user?.has_creator?.id) {
       fetchEvents(user.has_creator.id);
+      fetchProducts(user.has_creator.id);
     }
   }, [user]);
+
+  const fetchModules = async () => {
+    try {
+      const response = await axios.get(`${config.wsUrl}modules`);
+      const moduleData = response.data?.data || response.data;
+      if (Array.isArray(moduleData)) {
+        setModules(moduleData);
+      }
+    } catch (error) {
+      console.error("Error fetching modules:", error);
+    }
+  };
 
   const fetchEvents = async (creatorId: number) => {
     setLoading.append("events");
@@ -144,6 +169,21 @@ const VoucherPage = () => {
       console.error("Error fetching events:", error);
     } finally {
       setLoading.filter((e) => e !== "events");
+    }
+  };
+
+  const fetchProducts = async (creatorId: number) => {
+    setLoading.append("products");
+    try {
+      const response = await axios.get(`${config.wsUrl}product?creator_id=${creatorId}`);
+      const productData = response.data?.data || response.data;
+      if (Array.isArray(productData)) {
+        setProducts(productData);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading.filter((e) => e !== "products");
     }
   };
 
@@ -199,9 +239,12 @@ const VoucherPage = () => {
   }, [searchTerm, eventFilter, typeFilter, statusFilter]);
 
   const handleCreateClick = () => {
+    setVoucherTargetType("event");
     setFormData({
       id: null,
+      module_id: 1,
       event_id: events.length > 0 ? events[0].id.toString() : "",
+      product_id: products.length > 0 ? products[0].id.toString() : "",
       code: "",
       discount: 0,
       type: "persentase",
@@ -216,9 +259,12 @@ const VoucherPage = () => {
   };
 
   const handleEditClick = (voucher: Voucher) => {
+    setVoucherTargetType(voucher.product_id ? "product" : "event");
     setFormData({
       id: voucher.id,
+      module_id: voucher.module_id || (voucher.product_id ? 2 : 1),
       event_id: voucher.event_id?.toString() || "",
+      product_id: voucher.product_id?.toString() || "",
       code: voucher.code,
       discount: voucher.discount,
       type: voucher.type,
@@ -243,12 +289,14 @@ const VoucherPage = () => {
   };
 
   const handleSaveVoucher = async () => {
-    if (!formData.event_id || !formData.code) {
+    if ((formData.module_id === 1 && !formData.event_id) || (formData.module_id === 2 && !formData.product_id) || !formData.code) {
       notifications.show({ title: "Peringatan", message: "Lengkapi data yang diperlukan", color: "yellow" });
       return;
     }
     const payload = {
-      event_id: formData.event_id.toString(),
+      module_id: formData.module_id,
+      event_id: formData.module_id === 1 ? formData.event_id.toString() : null,
+      product_id: formData.module_id === 2 ? Number(formData.product_id) : null,
       code: formData.code,
       discount: formData.discount,
       type: formData.type,
@@ -504,7 +552,16 @@ const VoucherPage = () => {
         <Card withBorder padding="xl" radius="md" shadow="sm">
           <Stack gap="xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select label="Event" data={events.map(e => ({ value: e.id.toString(), label: e.name }))} value={formData.event_id} onChange={v => setFormData({ ...formData, event_id: v || "" })} required />
+              <Select label="Modul Voucher" data={modules.filter(m => m.id === 1 || m.id === 2).map(m => ({ value: m.id.toString(), label: m.module_name }))} value={formData.module_id?.toString()} onChange={v => {
+                const newModuleId = Number(v) || 1;
+                setFormData({ ...formData, module_id: newModuleId });
+                setVoucherTargetType(newModuleId === 2 ? "product" : "event");
+              }} />
+              {formData.module_id === 1 ? (
+                <Select label="Event" data={events.map(e => ({ value: e.id.toString(), label: e.name }))} value={formData.event_id} onChange={v => setFormData({ ...formData, event_id: v || "" })} required />
+              ) : (
+                <Select label="Produk" data={products.map(p => ({ value: p.id.toString(), label: p.product_name || p.name }))} value={formData.product_id} onChange={v => setFormData({ ...formData, product_id: v || "" })} required />
+              )}
               <TextInput label="Kode Voucher" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required />
               <Select label="Tipe" data={[{ value: "persentase", label: "Persen (%)" }, { value: "nominal", label: "Nominal (Rp)" }]} value={formData.type} onChange={v => setFormData({ ...formData, type: v as any })} />
               <NumberInput label="Diskon" value={formData.discount} onChange={v => setFormData({ ...formData, discount: Number(v) })} required />
@@ -554,7 +611,7 @@ const VoucherPage = () => {
           <Stack gap="md">
             <div className="grid grid-cols-2 gap-4">
               <div><Text size="xs" c="dimmed">Kode</Text><Text fw={700}>{selectedVoucher.code}</Text></div>
-              <div><Text size="xs" c="dimmed">Event</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id}</Text></div>
+              <div><Text size="xs" c="dimmed">{selectedVoucher.product_id ? "Produk" : "Event"}</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id || selectedVoucher.product_id}</Text></div>
             </div>
             <Alert color="blue" icon={<FontAwesomeIcon icon={faInfoCircle} />}>Berlaku: {moment(selectedVoucher.date_start).format("DD/MM/YY")} - {moment(selectedVoucher.date_end).format("DD/MM/YY")}</Alert>
             <Button fullWidth variant="light" onClick={() => setViewModalOpen(false)}>Tutup</Button>

@@ -140,6 +140,11 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  // State untuk modal pembayaran cash
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashReceived, setCashReceived] = useState<number | "">("");
+  const [cashCheckoutPayload, setCashCheckoutPayload] = useState<any>(null);
+
   // State untuk pagination produk
   const [productPage, setProductPage] = useState(1);
   const [productTotalPages, setProductTotalPages] = useState(1);
@@ -952,40 +957,9 @@ export default function Index({ }: Readonly<ComponentProps>) {
           status: "completed",
         };
 
-        await fetch<any, any>({
-          url: "order-product",
-          method: "POST",
-          data: cashPayload,
-          before: () => setLoading.append("checkout"),
-          success: async ({ data }) => {
-            console.log("Cash payment success:", data);
-
-            await handleSave();
-
-            notifications.show({
-              message: "Pembayaran Cash berhasil diproses",
-              color: "green",
-            });
-          },
-          complete: () => setLoading.filter((e) => e != "checkout"),
-          error: (err) => {
-            console.error("Cash payment error:", err);
-
-            if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
-              notifications.show({
-                color: "red",
-                message: "Produk sudah habis stok",
-              });
-              return;
-            }
-
-            const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
-            notifications.show({ message: msg, color: "red" });
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        setCashCheckoutPayload(cashPayload);
+        setCashReceived("");
+        setShowCashModal(true);
       } else {
         const qrisPayload = {
           ...payload,
@@ -1046,6 +1020,46 @@ export default function Index({ }: Readonly<ComponentProps>) {
       notifications.show({ message: "Terjadi kesalahan tak terduga saat checkout.", color: "red" });
       setLoading.filter((e) => e != "checkout");
     }
+  };
+
+  const confirmCashCheckout = async () => {
+    if (!cashCheckoutPayload) return;
+    
+    await fetch<any, any>({
+      url: "order-product",
+      method: "POST",
+      data: cashCheckoutPayload,
+      before: () => setLoading.append("checkout"),
+      success: async ({ data }) => {
+        console.log("Cash payment success:", data);
+
+        await handleSave();
+
+        setShowCashModal(false);
+        notifications.show({
+          message: "Pembayaran Cash berhasil diproses",
+          color: "green",
+        });
+      },
+      complete: () => setLoading.filter((e) => e != "checkout"),
+      error: (err) => {
+        console.error("Cash payment error:", err);
+
+        if (err?.response?.data?.out_of_stock || err?.response?.out_of_stock) {
+          notifications.show({
+            color: "red",
+            message: "Produk sudah habis stok",
+          });
+          return;
+        }
+
+        const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
+        notifications.show({ message: msg, color: "red" });
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   };
 
   const handleSave = async () => {
@@ -1173,6 +1187,71 @@ export default function Index({ }: Readonly<ComponentProps>) {
             allow="payment"
           />
         )}
+      </Modal>
+
+      <Modal
+        opened={showCashModal}
+        onClose={() => setShowCashModal(false)}
+        title={
+          <Flex align="center" gap={10}>
+            <div className="bg-primary-base/10 p-1.5 rounded-lg">
+              <Icon icon="ph:money-wavy" className="text-primary-base text-base" />
+            </div>
+            <Text fw={700} size="sm" c="#0B387C">Pembayaran Cash</Text>
+          </Flex>
+        }
+        centered
+        closeOnClickOutside={false}
+      >
+        <Stack gap={15}>
+          <Card withBorder p={14} radius="md" className="bg-primary-base/5 border-primary-base/20">
+            <Flex justify="space-between" align="center">
+              <Text fw={600} c="#0B387C">Total Tagihan</Text>
+              <Text fw={800} size="lg" c="#0B387C">
+                <NumberFormatter prefix="Rp " value={handleSummary.total} thousandSeparator="." />
+              </Text>
+            </Flex>
+          </Card>
+
+          <NumberInput
+            label="Uang Diterima"
+            placeholder="Masukkan jumlah uang"
+            value={cashReceived}
+            onChange={(val) => setCashReceived(val as number)}
+            prefix="Rp "
+            thousandSeparator="."
+            size="md"
+            min={0}
+            hideControls
+            styles={{ input: { fontSize: '18px', fontWeight: 600 } }}
+            data-autofocus
+          />
+
+          <Card withBorder p={14} radius="md" className="bg-gray-50">
+            <Flex justify="space-between" align="center">
+              <Text fw={600} c="gray.7">Kembalian</Text>
+              <Text fw={800} size="lg" c={Number(cashReceived) >= handleSummary.total ? "green.6" : "red.6"}>
+                <NumberFormatter 
+                  prefix="Rp " 
+                  value={Math.max(0, Number(cashReceived) - handleSummary.total)} 
+                  thousandSeparator="." 
+                />
+              </Text>
+            </Flex>
+          </Card>
+
+          <Button 
+            onClick={confirmCashCheckout} 
+            loading={loading.includes("checkout") || loading.includes("submit")}
+            disabled={Number(cashReceived) < handleSummary.total || cashReceived === ""}
+            size="md"
+            fullWidth
+            mt={10}
+            rightSection={<Icon icon="uiw:check" />}
+          >
+            Selesaikan Pembayaran
+          </Button>
+        </Stack>
       </Modal>
 
       <Modal title="Data Pembeli" opened={openCustForm} onClose={handleCustomerSave} closeOnClickOutside={false} centered>

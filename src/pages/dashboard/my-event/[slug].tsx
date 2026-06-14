@@ -17,7 +17,7 @@ import TicketContainer from "@/components/TicketContainer";
 import ModalCreateTicket from "@/components/EventCreator/Modal/ModalCreateTicket";
 import ModalEditTicket from "@/components/EventCreator/Modal/ModalEditTicket";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faPaperPlane, faPlus, faMoneyBillTransfer, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faPaperPlane, faPlus, faMoneyBillTransfer, faArrowLeft, faPencil } from "@fortawesome/free-solid-svg-icons";
 import * as XLSX from "xlsx";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
@@ -578,6 +578,9 @@ const MyEventDetail = () => {
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedEvent(null);
+    if (data?.id) {
+      getInvitationEventData(data.id);
+    }
   };
 
   const openDetailModal = (item: any, ticket: any) => {
@@ -881,7 +884,7 @@ const MyEventDetail = () => {
           <h1 className="text-dark m-0">Detail Event</h1>
         </div>
         <div className="flex flex-col md:flex-row lg:flex gap-2">
-          <div className="max-w-[300px]">
+          <div className="w-full md:max-w-[300px]">
             <EventCardCreator
               key={data.id}
               eventStatus={data.has_event_status.name}
@@ -1175,25 +1178,25 @@ const MyEventDetail = () => {
 
                                 return (
                                   <TableRow key={item.id}>
-                                    <TableCell className="border-b-1 text-sm">
+                                    <TableCell className="border-b-1 border-light-grey text-sm">
                                       {itemNumber}
                                     </TableCell>
-                                    <TableCell className="border-b-1 text-sm">{email}</TableCell>
-                                    <TableCell className="border-b-1 text-sm">{item.invoice_no}</TableCell>
-                                    <TableCell className="border-b-1 text-sm">
+                                    <TableCell className="border-b-1 border-light-grey text-sm">{email}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey text-sm">{item.invoice_no}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey text-sm">
                                       {item.created_at ? new Date(item.created_at).toLocaleDateString("en-GB", {
                                         year: "numeric",
                                         month: "long",
                                         day: "numeric",
                                       }) : "-"}
                                     </TableCell>
-                                    <TableCell className="border-b-1">
+                                    <TableCell className="border-b-1 border-light-grey">
                                       <span className={`px-2 py-1 rounded-md text-white ${getStatusClass(item.transaction_status_id)}`}>
                                         {getStatusText(item.transaction_status_id)}
                                       </span>
                                     </TableCell>
-                                    <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-                                    <TableCell className="border-b-1 flex items-center">
+                                    <TableCell className="border-b-1 border-light-grey text-sm">{item.type_transaction}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey flex items-center">
                                       <Tooltip label="Kirim Ulang">
                                         <button
                                           disabled={sendingEmails[String(item.id)]}
@@ -1277,17 +1280,22 @@ const MyEventDetail = () => {
 
                                 return (
                                   <TableRow key={item?.id}>
-                                    <TableCell className="border-b-1">{(page - 1) * rowsPerPage + filteredEventItems.indexOf(item) + 1}</TableCell>
-                                    <TableCell className="border-b-1">{item?.invitation_title}</TableCell>
-                                    <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
-                                    <TableCell className="border-b-1">{item?.total_qty}</TableCell>
-                                    <TableCell className="border-b-1">
+                                    <TableCell className="border-b-1 border-light-grey">{(page - 1) * rowsPerPage + filteredEventItems.indexOf(item) + 1}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey">{item?.invitation_title}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey">{item?.total_qty}</TableCell>
+                                    <TableCell className="border-b-1 border-light-grey">
                                       {(() => {
                                         const statusId = item?.event_invitation_status?.id ?? null;
                                         return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
                                       })()}
                                     </TableCell>
-                                    <TableCell className="border-b-1 flex items-center gap-2">
+                                    <TableCell className="border-b-1 border-light-grey flex items-center gap-2">
+                                      <Tooltip label="Edit Invitation">
+                                        <button className="w-10 h-10 flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-md p-2" onClick={() => openEditModal(item)}>
+                                          <FontAwesomeIcon icon={faPencil} className="text-white text-sm" />
+                                        </button>
+                                      </Tooltip>
                                       <Tooltip label="Kirim Invitation">
                                         <button
                                           disabled={sendingInvitations[String(item?.id)] || emailCount === 0}
@@ -2515,15 +2523,15 @@ export default MyEventDetail;
 //                           <TableBody items={items}>
 //                             {(item) => (
 //                               <TableRow key={item?.id}>
-//                                 <TableCell className="border-b-1 text-sm">
+//                                 <TableCell className="border-b-1 border-light-grey text-sm">
 //                                   {_.indexOf(
 //                                     items.map((e) => e?.id),
 //                                     item?.id,
 //                                   ) + 1}
 //                                 </TableCell>
-//                                 <TableCell className="border-b-1 text-sm">{item?.has_user?.email}</TableCell>
-//                                 <TableCell className="border-b-1 text-sm">{item?.invoice_no}</TableCell>
-//                                 <TableCell className="border-b-1 text-sm">
+//                                 <TableCell className="border-b-1 border-light-grey text-sm">{item?.has_user?.email}</TableCell>
+//                                 <TableCell className="border-b-1 border-light-grey text-sm">{item?.invoice_no}</TableCell>
+//                                 <TableCell className="border-b-1 border-light-grey text-sm">
 //                                   {item?.created_at &&
 //                                     new Date(item.created_at).toLocaleDateString("en-GB", {
 //                                       year: "numeric",
@@ -2531,7 +2539,7 @@ export default MyEventDetail;
 //                                       day: "numeric",
 //                                     })}
 //                                 </TableCell>
-//                                 <TableCell className="border-b-1">
+//                                 <TableCell className="border-b-1 border-light-grey">
 //                                   {(() => {
 //                                     const statusId = findTransactionStatus(item.invoice_no);
 
@@ -2539,8 +2547,8 @@ export default MyEventDetail;
 //                                   })()}
 //                                 </TableCell>
 
-//                                 <TableCell className="border-b-1 text-sm">{item.type_transaction}</TableCell>
-//                                 <TableCell className="border-b-1 flex items-center">
+//                                 <TableCell className="border-b-1 border-light-grey text-sm">{item.type_transaction}</TableCell>
+//                                 <TableCell className="border-b-1 border-light-grey flex items-center">
 //                                   <Tooltip label="Kirim Ulang">
 //                                     <button
 //                                       disabled={sendingEmails[String(item?.id)]}
@@ -2616,22 +2624,22 @@ export default MyEventDetail;
 //                             <TableBody items={eventItems}>
 //                               {(item) => (
 //                                 <TableRow key={item?.id}>
-//                                   <TableCell className="border-b-1">
+//                                   <TableCell className="border-b-1 border-light-grey">
 //                                     {_.indexOf(
 //                                       eventItems.map((e) => e?.id),
 //                                       item?.id,
 //                                     ) + 1}
 //                                   </TableCell>
-//                                   <TableCell className="border-b-1">{item?.invitation_title}</TableCell>
-//                                   <TableCell className="border-b-1">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
-//                                   <TableCell className="border-b-1">{item?.total_qty}</TableCell>
-//                                   <TableCell className="border-b-1">
+//                                   <TableCell className="border-b-1 border-light-grey">{item?.invitation_title}</TableCell>
+//                                   <TableCell className="border-b-1 border-light-grey">{invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-"}</TableCell>
+//                                   <TableCell className="border-b-1 border-light-grey">{item?.total_qty}</TableCell>
+//                                   <TableCell className="border-b-1 border-light-grey">
 //                                     {(() => {
 //                                       const statusId = item?.invitation_status ?? 1;
 //                                       return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
 //                                     })()}
 //                                   </TableCell>
-//                                   <TableCell className="border-b-1 flex items-center gap-2">
+//                                   <TableCell className="border-b-1 border-light-grey flex items-center gap-2">
 //                                     <Tooltip label="Kirim Invitation">
 //                                       <button
 //                                         disabled={isSendingInvitation}

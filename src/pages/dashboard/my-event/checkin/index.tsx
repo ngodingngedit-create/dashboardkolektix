@@ -277,6 +277,8 @@ const Merch = () => {
     const user = useLoggedUser();
     const [eventList, setEventList] = useState<any[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+    const [selectedTicket, setSelectedTicket] = useState<string>('all');
+    const [ticketList, setTicketList] = useState<{value: string, label: string}[]>([]);
     const [stats, setStats] = useState({ total: 0, checkin: 0 });
     const [isLoadingStats, setIsLoadingStats] = useState(false);
 
@@ -288,9 +290,26 @@ const Merch = () => {
 
     useEffect(() => {
         if (selectedEvent) {
+            const ev = eventList.find(e => e.id === selectedEvent);
+            if (ev && ev.has_event_ticket) {
+                const uniqueTickets = new Map();
+                ev.has_event_ticket.forEach((t: any) => {
+                    const tName = t.name || t.ticket_category;
+                    if (tName) uniqueTickets.set(tName, tName);
+                });
+                setTicketList(Array.from(uniqueTickets.values()).map(v => ({ value: v, label: v })));
+            } else {
+                setTicketList([]);
+            }
+            setSelectedTicket('all');
+        }
+    }, [selectedEvent, eventList]);
+
+    useEffect(() => {
+        if (selectedEvent) {
             getStats();
         }
-    }, [selectedEvent, activeTab]);
+    }, [selectedEvent, activeTab, selectedTicket]);
 
     const getEvent = async () => {
         try {
@@ -359,11 +378,17 @@ const Merch = () => {
                     verifiedData.forEach((trans: any) => {
                         if (trans.etickets && trans.etickets.length > 0) {
                             trans.etickets.forEach((eticket: any) => {
+                                const tName = eticket.has_event_ticket?.name || eticket.ticket_category || eticket.category_ticket;
+                                if (selectedTicket !== 'all' && tName !== selectedTicket) return;
+
                                 total++;
                                 if (eticket.is_checkin === 1) checkin++;
                             });
                         } else {
                             trans.tickets?.forEach((ticket: any) => {
+                                const tName = ticket.has_event_ticket?.name || ticket.ticket_category;
+                                if (selectedTicket !== 'all' && tName !== selectedTicket) return;
+
                                 const qty = parseInt(String(ticket.qty_ticket)) || 1;
                                 total += qty;
                                 for (let i = 0; i < qty; i++) {
@@ -651,6 +676,26 @@ const Merch = () => {
                             }}
                         />
                     </div>
+
+                    {activeTab === 'ticket' && selectedEvent && (
+                        <div className="flex flex-col w-full sm:w-auto">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">Pilih Tiket</span>
+                            <Select
+                                value={selectedTicket}
+                                onChange={(val) => {
+                                    setSelectedTicket(val || 'all');
+                                }}
+                                data={[{value: 'all', label: 'Semua Tiket'}, ...ticketList]}
+                                disabled={ticketList.length === 0}
+                                searchable
+                                style={{ width: 180 }}
+                                radius="md"
+                                styles={{
+                                    input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {selectedEvent && (
                         <div className="flex gap-3">

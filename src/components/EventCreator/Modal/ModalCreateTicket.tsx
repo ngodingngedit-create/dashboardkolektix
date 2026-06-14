@@ -193,7 +193,7 @@ export default function ModalCreateTicket({
           });
           setIsOpen(false);
         },
-        error: () => {},
+        error: () => { },
       });
     }
   };
@@ -288,7 +288,7 @@ export default function ModalCreateTicket({
 
     return result;
   }, [ticket, onSelectSeat, hoveredTicket]);
-  
+
   const soldSeats = useMemo(() => {
     return ticket.reduce<string[]>((acc, t) => [...acc, ...(t.taken_seat ?? [])], []);
   }, [ticket]);
@@ -381,22 +381,22 @@ export default function ModalCreateTicket({
                 </Button>
 
                 <Guide text="Buat Seatmap untuk mengatur posisi seat" guidekey="guide-create-seatmap" order={0} opened={openForm === undefined && ticket.length > 0 && !addSeatMap}>
-                  <Button 
-                    w="100%" 
-                    display={addSeatMap ? "none" : undefined} 
-                    variant="outline" 
-                    size="md" 
-                    onClick={() => setAddSeatMap(true)} 
+                  <Button
+                    w="100%"
+                    display={addSeatMap ? "none" : undefined}
+                    variant="outline"
+                    size="md"
+                    onClick={() => setAddSeatMap(true)}
                     className={`shrink-0`}
                     disabled={!hasSeatmapPermission}
                   >
                     Buat Seatmap
                   </Button>
                 </Guide>
-                <Button 
-                  w="100%" 
-                  variant="light" 
-                  size="md" 
+                <Button
+                  w="100%"
+                  variant="light"
+                  size="md"
                   onClick={() => {
                     setIdx(undefined);
                     setIsOpen(false);
@@ -743,11 +743,11 @@ export default function ModalCreateTicket({
           </Flex>
 
           <Flex gap={15} display={ticket.length > 0 && addSeatMap ? undefined : "none"} ml="auto">
-            <Button 
-              className={`shrink-0 h-fit`} 
-              w="fit-content" 
-              size="md" 
-              variant="outline" 
+            <Button
+              className={`shrink-0 h-fit`}
+              w="fit-content"
+              size="md"
+              variant="outline"
               leftSection={<Icon icon="uiw:download" />}
               onClick={handleDownload}
               loading={downloading}

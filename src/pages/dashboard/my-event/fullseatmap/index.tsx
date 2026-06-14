@@ -17,7 +17,8 @@ import {
   Box,
   Button,
   ActionIcon,
-  Center
+  Center,
+  Modal
 } from "@mantine/core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -29,11 +30,13 @@ import {
   faMinus,
   faInfoCircle,
   faUser,
-  faTicket
+  faTicket,
+  faDownload
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react";
 import chunk from "@/utils/chunk";
 import { SeatmapData } from "@/utils/formInterface";
+import { toPng } from 'html-to-image';
 
 // Interfaces copied from seatreport.tsx for consistency
 interface Identity {
@@ -98,6 +101,10 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingTrx, setLoadingTrx] = useState(false);
+  
+  const [selectedSeatTrx, setSelectedSeatTrx] = useState<Transaction | null>(null);
+  const [selectedSeatTicket, setSelectedSeatTicket] = useState<Ticket | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [selectedEventId, setSelectedEventId] = useState<string>(initialEvents && initialEvents.length > 0 ? String(initialEvents[0].id) : "");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -134,7 +141,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventData]);
 
-  // Fetch Transactions (like seatreport.tsx)
+  // Fetch Transactions (fetch all in background)
   const fetchTransactions = async (creatorId: number, eventId: string) => {
     if (!eventId || eventId === "all") {
       setTransactions([]);
@@ -164,19 +171,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventId, users]);
 
-  const takenSeatsFromAPI = useMemo(() => {
-    const seats = new Set<string>();
-    selectedEventData?.has_event_ticket?.forEach(t => {
-      if (t.taken_seat_number) {
-        t.taken_seat_number.split(",").forEach(s => {
-          if (s.trim()) seats.add(s.trim());
-        });
-      }
-    });
-    return seats;
-  }, [selectedEventData]);
-
-  // Process transactions into a seat map for easy lookup
+  // Process transactions into a seat map for quick local lookup
   const seatToBuyerMap = useMemo(() => {
     const map: Record<string, { transaction: Transaction; ticket: Ticket }> = {};
     transactions.forEach((trx) => {
@@ -206,6 +201,32 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     });
     return map;
   }, [transactions]);
+
+  // Fetch specific transaction detail from local map
+  const fetchSeatTransactionDetail = (seatNumber: string) => {
+    const info = seatToBuyerMap[seatNumber];
+    if (info) {
+      setSelectedSeatTrx(info.transaction);
+      setSelectedSeatTicket(info.ticket);
+      setIsModalOpen(true);
+    } else {
+      console.warn("Transaction detail for seat not found locally");
+    }
+  };
+
+  const takenSeatsFromAPI = useMemo(() => {
+    const seats = new Set<string>();
+    selectedEventData?.has_event_ticket?.forEach(t => {
+      if (t.taken_seat_number) {
+        t.taken_seat_number.split(",").forEach(s => {
+          if (s.trim()) seats.add(s.trim());
+        });
+      }
+    });
+    return seats;
+  }, [selectedEventData]);
+
+
 
   // Handle Zoom and Pan (similar to Seatmap component)
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -249,44 +270,40 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   // Renderer for individual seats
   const renderSeat = (seatNumber: string, areaColor?: string, areaTicketName?: string) => {
-    const buyerInfo = seatToBuyerMap[seatNumber];
     const isBought = takenSeatsFromAPI.has(seatNumber);
 
+    // Remove strip (-) from seat code for display
+    const displaySeatNumber = seatNumber.replace(/-/g, "");
+
     // Highlight logic
-    const isMatchedCategory = selectedCategory === "all" || (buyerInfo && buyerInfo.ticket.has_event_ticket?.name === selectedCategory);
-    const isMatchedSearch = !debouncedSearch ||
-      seatNumber.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      buyerInfo?.transaction?.has_user?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      buyerInfo?.transaction?.invoice_no?.toLowerCase().includes(debouncedSearch.toLowerCase());
+    const isMatchedSearch = !debouncedSearch || displaySeatNumber.toLowerCase().includes(debouncedSearch.toLowerCase());
+    
+    // Category match doesn't apply to individual seats now without transaction data, 
+    // unless we assume areaTicketName is the category.
+    const isMatchedCategory = selectedCategory === "all" || areaTicketName === selectedCategory;
 
     const isHighlighted = (selectedCategory !== "all" && isMatchedCategory) || (debouncedSearch && isMatchedSearch);
 
     // Dim seats that don't match if something is selected/searched
     const isDimmed = (selectedCategory !== "all" || debouncedSearch) && !isHighlighted;
 
-    const tooltipContent = buyerInfo ? (
+    const tooltipContent = isBought ? (
       <Stack gap={2}>
-        <Text size="xs" fw={700}>Seat: {seatNumber}</Text>
-        <Text size="xs">Pembeli: {buyerInfo.transaction.has_user?.name}</Text>
-        <Text size="xs">Invoice: {buyerInfo.transaction.invoice_no}</Text>
-        <Text size="xs">Tiket: {buyerInfo.ticket.has_event_ticket?.name}</Text>
-      </Stack>
-    ) : isBought ? (
-      <Stack gap={2}>
-        <Text size="xs" fw={700}>Seat: {seatNumber}</Text>
+        <Text size="xs" fw={700}>Seat: {displaySeatNumber}</Text>
         <Text size="xs" c="orange">Terjual</Text>
+        <Text size="xs" c="dimmed">Klik untuk detail</Text>
       </Stack>
     ) : (
-      <Text size="xs">Seat: {seatNumber} (Tersedia)</Text>
+      <Text size="xs">Seat: {displaySeatNumber} (Tersedia)</Text>
     );
 
     return (
       <Tooltip label={tooltipContent} key={seatNumber} withArrow position="top">
         <Box
-          onMouseEnter={() => { }}
+          onClick={() => isBought && fetchSeatTransactionDetail(seatNumber)}
           w={20}
           h={25}
-          className={`rounded-md overflow-hidden relative z-40 transition-all duration-200`}
+          className={`rounded-md overflow-hidden relative z-40 transition-all duration-200 ${isBought ? "cursor-pointer" : ""}`}
           style={{
             opacity: isDimmed ? 0.2 : 1,
             transform: isHighlighted ? 'scale(1.1)' : 'scale(1)',
@@ -304,7 +321,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           >
             <Center className="h-full">
               <Text size="6px" fw={700} c={isBought ? "white" : "gray.6"} className="uppercase">
-                {seatNumber}
+                {displaySeatNumber}
               </Text>
             </Center>
           </Box>
@@ -370,7 +387,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
             <ActionIcon
               variant="light"
               color="gray"
-              onClick={() => users?.has_creator?.id && fetchTransactions(users.has_creator.id, selectedEventId)}
+              onClick={() => window.location.reload()}
               size="lg"
               radius="xl"
             >
@@ -410,14 +427,28 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
             <Box w={12} h={12} bg="gray.5" className="rounded-sm" />
             <Text size="xs">Terjual</Text>
           </Flex>
-          <Flex align="center" gap={8}>
-            <div className="w-3 h-3 border-2 border-white bg-blue-600 rounded-sm shadow-[0_0_5px_rgba(0,0,0,0.3)]" />
-            <Text size="xs">Terpilih (Highlight)</Text>
-          </Flex>
         </div>
 
         {/* Controls */}
         <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+          <Tooltip label="Download Seatmap" position="left">
+            <ActionIcon color="white" bg="white" variant="default" onClick={() => {
+              if (canvasWrapRef.current) {
+                toPng(canvasWrapRef.current, { cacheBust: true })
+                  .then((dataUrl) => {
+                    const link = document.createElement('a');
+                    link.download = `seatmap-${selectedEventData?.name || 'event'}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                  })
+                  .catch((err) => {
+                    console.error('Error downloading image', err);
+                  });
+              }
+            }}>
+              <FontAwesomeIcon icon={faDownload} className="text-gray-600" />
+            </ActionIcon>
+          </Tooltip>
           <ActionIcon color="white" bg="white" variant="default" onClick={() => setScale(s => Math.min(s + 0.2, 5))}>
             <FontAwesomeIcon icon={faPlus} className="text-gray-600" />
           </ActionIcon>
@@ -538,6 +569,36 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           </Center>
         </Card>
       )}
+
+      {/* Detail Modal */}
+      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detail Transaksi Kursi" centered>
+        {selectedSeatTrx && selectedSeatTicket ? (
+          <Stack gap="sm">
+            <Box>
+              <Text size="sm" c="dimmed">Nomor Kursi</Text>
+              <Text fw={700}>{selectedSeatTicket.seatnumber_ticket}</Text>
+            </Box>
+            <Box>
+              <Text size="sm" c="dimmed">Nama Pembeli</Text>
+              <Text fw={700}>{selectedSeatTrx.has_user?.name || '-'}</Text>
+            </Box>
+            <Box>
+              <Text size="sm" c="dimmed">Email Pembeli</Text>
+              <Text fw={700}>{selectedSeatTrx.has_user?.email || '-'}</Text>
+            </Box>
+            <Box>
+              <Text size="sm" c="dimmed">Nomor Invoice</Text>
+              <Text fw={700}>{selectedSeatTrx.invoice_no}</Text>
+            </Box>
+            <Box>
+              <Text size="sm" c="dimmed">Kategori Tiket</Text>
+              <Text fw={700}>{selectedSeatTicket.has_event_ticket?.name || selectedSeatTicket.ticket_category}</Text>
+            </Box>
+          </Stack>
+        ) : (
+          <Text>Data tidak ditemukan.</Text>
+        )}
+      </Modal>
     </div>
   );
 };
