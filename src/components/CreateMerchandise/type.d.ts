@@ -117,6 +117,8 @@ type MerchandiseShowResponse = {
             id: number;
             varian_name: string;
         };
+        is_active?: number;
+        status_product?: "active" | "inactive";
         is_promo?: number;
         promo_title?: string | null;
         promo_price?: string | null;
@@ -172,6 +174,7 @@ type VariantStoreRequest = {
     stock_qty: number;
     varian_category_id: number;
     status_product: "active" | "inactive";
+    is_active: number;
     is_promo?: number;
     promo_title?: string | null;
     promo_price?: number | null;

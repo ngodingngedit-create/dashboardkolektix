@@ -4,7 +4,7 @@ import Image from "next/image";
 //import ImageInput from '../ImageInput.tsx';
 import ImageInputMultiple from "../ImageInputMultiple.tsx";
 import { useForm, zodResolver } from "@mantine/form";
-import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput } from "@mantine/core";
+import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import InputEditor from "@/components/Input/InputEditor";
 import { Get, Post, Put } from "@/utils/REST";
@@ -74,6 +74,30 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     .optional()
     .nullable(),
   status: z.boolean().nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.is_promo && !data.is_variant) {
+    if (data.promo_price === null || data.promo_price === undefined || (data.promo_price as any) === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Wajib Diisi",
+        path: ["promo_price"],
+      });
+    }
+  }
+
+  if (data.is_variant && data.variant) {
+    data.variant.forEach((v: any, index: number) => {
+      if (v.is_promo) {
+        if (v.promo_price === null || v.promo_price === undefined || (v.promo_price as any) === "") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Wajib Diisi",
+            path: ["variant", index, "promo_price"],
+          });
+        }
+      }
+    });
+  }
 });
 
 const fileToBase64 = (file: File | Blob): Promise<string> => {
@@ -195,7 +219,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                   stock: Number(stock_awal ?? 0),
                   price: parseInt(e.price ?? "0"),
                   weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : 0,
-                  status: true,
+                  status: e.is_active !== undefined ? e.is_active === 1 : (e.status_product !== "inactive"),
                   sub_name: sub_name,
                   is_promo: Boolean(e.is_promo),
                   promo_title: e.promo_title ?? null,
@@ -346,8 +370,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
     if (valid.hasErrors) {
       console.log("Validation errors:", valid.errors);
       notifications.show({
-        title: "Validasi Gagal",
-        message: "Periksa kembali inputan Anda. Beberapa data tidak valid.",
+        title: "Gagal Simpan",
+        message: `Gagal ${Boolean(id) ? "menyimpan perubahan" : "membuat"} produk. Pastikan semua data yang dibutuhkan sudah lengkap.`,
         color: "red",
       });
       return;
@@ -430,6 +454,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               stock_qty: Number(e.stock ?? 0),
               varian_category_id: variant_name,
               status_product: e.status ? "active" : "inactive",
+              is_active: e.status ? 1 : 0,
               is_promo: e.is_promo ? 1 : 0,
               promo_title: e.promo_title || null,
               promo_price: e.promo_price !== null && e.promo_price !== undefined ? Number(e.promo_price) : null,
@@ -767,7 +792,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                   <div className="flex flex-col gap-[15px]">
                     <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
                       <div className="min-w-[250px] shrink-0">
-                        <h4 className="text-[16px] font-[500]">Detail Promo</h4>
+                        <h4 className="text-[16px] font-[500]">Detail Promo <span className="text-red-400">*</span></h4>
                         <p className="text-grey mt-[5px] text-[13px]">Judul dan harga promo</p>
                       </div>
                       <div className="flex-grow flex flex-col gap-[10px]">
@@ -780,10 +805,18 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                           placeholder="Harga Promo"
                           value={form.values.promo_price || ""}
                           onChange={(val) => form.setFieldValue("promo_price", val as number)}
+                          error={form.errors.promo_price}
                           hideControls
                           decimalSeparator=","
                           thousandSeparator="."
                           prefix="Rp "
+                          rightSection={
+                            <Tooltip label="Harga promo ini untuk harga coret/diskon" withArrow position="top">
+                              <div className="flex items-center">
+                                <Icon icon="mdi:information-outline" className="text-gray-400 text-lg cursor-help" />
+                              </div>
+                            </Tooltip>
+                          }
                         />
                       </div>
                     </div>
@@ -812,7 +845,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               </div>
             </div>
 
-            <Switch checked={form.values.is_variant} onChange={(e) => form.setFieldValue("is_variant", e.target.checked)} label="Gunakan Varian Produk" />
+            <Switch checked={form.values.is_variant} disabled={Boolean(id) && form.values.variant.length > 0} onChange={(e) => form.setFieldValue("is_variant", e.target.checked)} label="Gunakan Varian Produk" />
 
             <div className={`${form.values.is_variant ? "hidden" : ""} border border-[#E2EDFF] rounded-[8px]`}>
               <Flex align="center" justify="space-between" className={`p-[12px_16px] border-b border-[#E2EDFF]`}>
@@ -897,27 +930,39 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                       return (
                         <TagsInput
                           w="100%"
+                          readOnly={Boolean(id)}
                           value={form.values.variant.map((e) => e.name)}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (Boolean(id) && e.length < form.values.variant.length) {
+                              notifications.show({
+                                title: "Peringatan",
+                                message: "Varian produk tidak boleh dihapus saat sedang melakukan update.",
+                                color: "red",
+                              });
+                              return;
+                            }
                             form.setValues({
-                              variant: e.map((val, i) => ({
-                                name: val,
-                                sku: form.values.variant[i]?.sku ?? "",
-                                stock: form.values.variant[i]?.stock ?? 0,
-                                price: form.values.variant[i]?.price ?? 0,
-                                weight: form.values.variant[i]?.weight ?? 0,
-                                status: form.values.variant[i] ? form.values.variant[i].status : true,
-                                sub_name: form.values.variant[i]?.sub_name ?? "",
-                                is_promo: form.values.variant[i]?.is_promo ?? false,
-                                promo_title: form.values.variant[i]?.promo_title ?? null,
-                                promo_price: form.values.variant[i]?.promo_price ?? null,
-                                promo_start_date: form.values.variant[i]?.promo_start_date ?? null,
-                                promo_start_time: form.values.variant[i]?.promo_start_time ?? null,
-                                promo_end_date: form.values.variant[i]?.promo_end_date ?? null,
-                                promo_end_time: form.values.variant[i]?.promo_end_time ?? null,
-                              })),
+                              variant: e.map((val) => {
+                                const existing = form.values.variant.find(v => v.name === val);
+                                return {
+                                  name: val,
+                                  sku: existing?.sku ?? "",
+                                  stock: existing?.stock ?? 0,
+                                  price: existing?.price ?? 0,
+                                  weight: existing?.weight ?? 0,
+                                  status: existing ? existing.status : true,
+                                  sub_name: existing?.sub_name ?? "",
+                                  is_promo: existing?.is_promo ?? false,
+                                  promo_title: existing?.promo_title ?? null,
+                                  promo_price: existing?.promo_price ?? null,
+                                  promo_start_date: existing?.promo_start_date ?? null,
+                                  promo_start_time: existing?.promo_start_time ?? null,
+                                  promo_end_date: existing?.promo_end_date ?? null,
+                                  promo_end_time: existing?.promo_end_time ?? null,
+                                };
+                              }),
                             })
-                          }
+                          }}
                           placeholder={tagsPlaceholder}
                         />
                       );
@@ -1112,13 +1157,22 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                 />
                 <NumberInput
                   label="Harga Promo"
+                  withAsterisk
                   placeholder="Harga Promo"
                   value={form.values.variant[activePromoVariant].promo_price || ""}
                   onChange={(val) => form.setFieldValue(`variant.${activePromoVariant}.promo_price`, val as number)}
+                  error={form.errors[`variant.${activePromoVariant}.promo_price`]}
                   hideControls
                   decimalSeparator=","
                   thousandSeparator="."
                   prefix="Rp "
+                  rightSection={
+                    <Tooltip label="Harga promo ini untuk harga coret/diskon" withArrow position="top">
+                      <div className="flex items-center">
+                        <Icon icon="mdi:information-outline" className="text-gray-400 text-lg cursor-help" />
+                      </div>
+                    </Tooltip>
+                  }
                 />
                 <div className="flex gap-[10px]">
                   <TextInput
