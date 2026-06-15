@@ -1315,7 +1315,11 @@ const Merch: React.FC = () => {
                                     <NumberFormatter value={safePrice} prefix="Rp " />
                                   </TableCell>
 
-                                  <TableCell>{stock ?? 0}</TableCell>
+                                  <TableCell>
+                                    <Link href="/dashboard/stockmanagement?action=create" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                      {stock ?? 0}
+                                    </Link>
+                                  </TableCell>
 
                                   <TableCell className="whitespace-nowrap">{String(location)}</TableCell>
 

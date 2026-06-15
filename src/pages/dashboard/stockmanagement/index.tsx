@@ -135,6 +135,15 @@ const StockManagement = () => {
   const user = useLoggedUser();
 
   useEffect(() => {
+    if (router.isReady && router.query.action === "create") {
+      setIsFormVisible(true);
+      // Clean up the URL to prevent reopening on refresh
+      const { action, ...rest } = router.query;
+      router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query]);
+
+  useEffect(() => {
     if (user?.has_creator?.id) {
       fetchProducts(user.has_creator.id);
     }

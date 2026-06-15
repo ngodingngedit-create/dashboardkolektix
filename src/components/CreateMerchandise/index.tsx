@@ -4,7 +4,7 @@ import Image from "next/image";
 //import ImageInput from '../ImageInput.tsx';
 import ImageInputMultiple from "../ImageInputMultiple.tsx";
 import { useForm, zodResolver } from "@mantine/form";
-import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput, Tooltip } from "@mantine/core";
+import { ActionIcon, Box, Button, Card, Checkbox, Divider, Flex, InputWrapper, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Table, TagsInput, Text, TextInput, Tooltip, LoadingOverlay } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import InputEditor from "@/components/Input/InputEditor";
 import { Get, Post, Put } from "@/utils/REST";
@@ -55,6 +55,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
   variant: z
     .array(
       z.object({
+        id: z.number().optional().nullable(),
         name: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         sku: z.string({ message: 'Wajib Diisi' }).min(1, { message: 'Wajib Diisi' }),
         stock: z.number({ message: 'Wajib Diisi' }).min(0, { message: 'Wajib Diisi' }),
@@ -150,6 +151,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
 
   const getData = () => {
     if (id) {
+      setLoading.append("getdata");
       Get(`product/${id}`, {})
         .then((res: any) => {
           if (res.data) {
@@ -543,7 +545,8 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
   );
 
   return (
-    <div className="bg-white rounded-[8px] w-full">
+    <div className="bg-white rounded-[8px] w-full relative">
+      <LoadingOverlay visible={loading.includes("getdata")} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
       <div className="flex flex-col w-full">
 
         <div className="sticky top-0 bg-white z-30 border-b border-light-grey pb-4 px-[20px] pt-[20px]">
@@ -927,26 +930,41 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                     {(() => {
                       const selectedCategoryName = variantCategory?.find((e) => e.id === form.values.variant_name)?.varian_name;
                       const tagsPlaceholder = selectedCategoryName ? `Masukkan Nama ${selectedCategoryName}` : `Masukan Nama Varian`;
+                      const existingVariantCount = form.values.variant.filter(v => (v as any).id).length;
                       return (
-                        <TagsInput
-                          w="100%"
-                          readOnly={Boolean(id)}
-                          value={form.values.variant.map((e) => e.name)}
-                          onChange={(e) => {
-                            if (Boolean(id) && e.length < form.values.variant.length) {
-                              notifications.show({
-                                title: "Peringatan",
-                                message: "Varian produk tidak boleh dihapus saat sedang melakukan update.",
-                                color: "red",
-                              });
-                              return;
+                        <>
+                          <style>{`
+                            .variant-tags-input .mantine-Pill-root:nth-of-type(-n+${existingVariantCount}) {
+                              padding-right: 14px !important;
+                              padding-left: 14px !important;
                             }
-                            form.setValues({
-                              variant: e.map((val) => {
-                                const existing = form.values.variant.find(v => v.name === val);
-                                return {
-                                  name: val,
-                                  sku: existing?.sku ?? "",
+                            .variant-tags-input .mantine-Pill-root:nth-of-type(-n+${existingVariantCount}) .mantine-Pill-remove {
+                              display: none !important;
+                            }
+                          `}</style>
+                          <TagsInput
+                            className="variant-tags-input"
+                            w="100%"
+                            value={form.values.variant.map((e) => e.name)}
+                            onChange={(e) => {
+                              const existingVariants = form.values.variant.filter(v => (v as any).id);
+                              const hasAllExisting = existingVariants.every(v => e.includes(v.name));
+                              
+                              if (Boolean(id) && !hasAllExisting) {
+                                notifications.show({
+                                  title: "Peringatan",
+                                  message: "Varian produk yang sudah ada sebelumnya tidak boleh dihapus.",
+                                  color: "red",
+                                });
+                                return;
+                              }
+                              form.setValues({
+                                variant: e.map((val) => {
+                                  const existing = form.values.variant.find(v => v.name === val);
+                                  return {
+                                    id: (existing as any)?.id,
+                                    name: val,
+                                    sku: existing?.sku ?? "",
                                   stock: existing?.stock ?? 0,
                                   price: existing?.price ?? 0,
                                   weight: existing?.weight ?? 0,
@@ -965,6 +983,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                           }}
                           placeholder={tagsPlaceholder}
                         />
+                        </>
                       );
                     })()}
                   </Flex>
