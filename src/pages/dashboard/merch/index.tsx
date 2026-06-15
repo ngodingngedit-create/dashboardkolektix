@@ -1316,7 +1316,7 @@ const Merch: React.FC = () => {
                                   </TableCell>
 
                                   <TableCell>
-                                    <Link href="/dashboard/stockmanagement?action=create" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                    <Link href={`/dashboard/stockmanagement?action=create&productName=${encodeURIComponent(String(item.product_name || ''))}`} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
                                       {stock ?? 0}
                                     </Link>
                                   </TableCell>

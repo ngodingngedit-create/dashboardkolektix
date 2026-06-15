@@ -133,12 +133,16 @@ const StockManagement = () => {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
   const user = useLoggedUser();
+  const [autoSelectProduct, setAutoSelectProduct] = useState<string | null>(null);
 
   useEffect(() => {
     if (router.isReady && router.query.action === "create") {
       setIsFormVisible(true);
+      if (router.query.productName) {
+        setAutoSelectProduct(router.query.productName as string);
+      }
       // Clean up the URL to prevent reopening on refresh
-      const { action, ...rest } = router.query;
+      const { action, productName, ...rest } = router.query;
       router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true });
     }
   }, [router.isReady, router.query]);
@@ -276,6 +280,13 @@ const StockManagement = () => {
       setSelectedVariantId(null);
     }
   };
+
+  useEffect(() => {
+    if (autoSelectProduct && productsData.length > 0) {
+      handleProductOptionSubmit(autoSelectProduct);
+      setAutoSelectProduct(null);
+    }
+  }, [autoSelectProduct, productsData]);
 
   const handleVariantSelect = (variantId: string | null) => {
     if (!variantId || !pendingBaseProduct) return;
