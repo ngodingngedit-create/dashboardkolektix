@@ -23,7 +23,8 @@ import {
   ScrollArea,
   Tabs,
   Stack,
-  Pagination
+  Pagination,
+  Tooltip
 } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -57,12 +58,12 @@ const REFERENCE_TYPE_DIRECTION: Record<string, "add" | "reduce"> = {
 };
 
 const REFERENCE_TYPE_OPTIONS = [
-  { value: "restock_supplier", label: "Restock dari Supplier" },
-  { value: "produksi_internal", label: "Hasil Produksi Internal" },
-  { value: "order", label: "Pesanan Customer" },
-  { value: "return_customer", label: "Retur dari Customer" },
-  { value: "return_supplier", label: "Retur ke Supplier" },
-  { value: "damaged", label: "Barang Rusak/Hilang" },
+  { value: "restock_supplier", label: "restock_supplier" },
+  { value: "produksi_internal", label: "produksi_internal" },
+  { value: "order", label: "order" },
+  { value: "return_customer", label: "return_customer" },
+  { value: "return_supplier", label: "return_supplier" },
+  { value: "damaged", label: "damaged" },
 ];
 
 interface SelectedProduct {
@@ -134,6 +135,56 @@ const StockManagement = () => {
 
   const user = useLoggedUser();
   const [autoSelectProduct, setAutoSelectProduct] = useState<string | null>(null);
+  const [editModeId, setEditModeId] = useState<number | null>(null);
+
+  const selectedVariantKeys = selectedProducts.map(p => p.id).join(",");
+  const [variantHistoryData, setVariantHistoryData] = useState<any[]>([]);
+  const [fetchingVariantHistory, setFetchingVariantHistory] = useState(false);
+
+  useEffect(() => {
+    if (!selectedVariantKeys) {
+      setVariantHistoryData([]);
+      return;
+    }
+    
+    const fetchVariantHistories = async () => {
+      setFetchingVariantHistory(true);
+      try {
+        const productIds = Array.from(new Set(selectedProducts.map(p => p.product_id)));
+        const allHistories: any[] = [];
+        for (const pid of productIds) {
+          const res: any = await Get("stock-bycreator", {
+            creator_id: user?.has_creator?.id,
+            product_id: pid,
+            per_page: 50 
+          });
+          const data = res?.data?.data || res?.data || [];
+          if (Array.isArray(data)) {
+            allHistories.push(...data);
+          }
+        }
+        
+        const filtered = allHistories.filter(h => {
+          return selectedProducts.some(sp => 
+            String(sp.product_id) === String(h.product_id) && 
+            (sp.variant_id == null ? h.product_varian_id == null : String(sp.variant_id) === String(h.product_varian_id))
+          );
+        });
+        
+        filtered.sort((a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime());
+        setVariantHistoryData(filtered);
+      } catch (e) {
+        console.error("Failed to fetch variant history:", e);
+      } finally {
+        setFetchingVariantHistory(false);
+      }
+    };
+    
+    if (user?.has_creator?.id) {
+      fetchVariantHistories();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVariantKeys, user?.has_creator?.id]);
 
   useEffect(() => {
     if (router.isReady && router.query.action === "create") {
@@ -340,6 +391,46 @@ const StockManagement = () => {
     });
   };
 
+  const addEditProductToTable = (h: any) => {
+    const baseProduct = h.product || allProductsData.find((p) => p.id === h.product_id);
+    if (!baseProduct) return;
+    const variantData = h.variant;
+
+    const rowId = `${baseProduct.id}-${h.product_varian_id ?? "base"}-edit`;
+    const displayName = variantData
+      ? `${baseProduct.product_name} - ${variantData.varian_name || variantData.name}`
+      : baseProduct.product_name;
+    const sku = variantData ? variantData.sku || "-" : baseProduct.sku || "-";
+
+    let alterationNum = h.qty;
+    if (alterationNum === undefined || alterationNum === null) {
+      if (typeof h.alteration === 'string') {
+        alterationNum = Number(h.alteration.replace(/\D/g, ""));
+      } else {
+        alterationNum = Number(h.alteration);
+      }
+    }
+
+    const stock = variantData
+      ? variantData.stock_summary?.sisa_stock ?? variantData.stock_qty ?? variantData.stock ?? 0
+      : baseProduct.qty ?? 0;
+
+    setSelectedProducts([
+      {
+        id: rowId,
+        product_id: baseProduct.id,
+        variant_id: h.product_varian_id,
+        product_name: displayName,
+        sku,
+        initial_stock: stock,
+        qty: Math.abs(alterationNum) || 0,
+        referenceType: h.reference_type || h.reference || "restock_supplier",
+        notes: h.notes || "",
+        creator_name: baseProduct.creator?.name || String(baseProduct.creator_id || '-'),
+      }
+    ]);
+  };
+
   const handleRemoveProduct = (id: string) => {
     setSelectedProducts(selectedProducts.filter((p) => p.id !== id));
   };
@@ -386,17 +477,21 @@ const StockManagement = () => {
       return;
     }
 
+    const url = editModeId ? `stock-management/stock-movement/${editModeId}` : "stock-management/stock-movement";
+    const method = editModeId ? "PUT" : "POST";
+
     setSubmitting(true);
     try {
       await fetch({
-        url: "stock-management/stock-movement",
-        method: "POST",
+        url,
+        method,
         data: { products: productsPayload, created_by: user?.name || user?.has_creator?.name || "system", creator_id: user?.has_creator?.id },
         headers: { "Content-Type": "application/json" },
         before: () => { },
         success: () => {
           notifications.show({ title: "Sukses", message: "Perubahan stock berhasil disimpan!", color: "green" });
           setSelectedProducts([]);
+          setEditModeId(null);
           setIsFormVisible(false);
           if (user?.has_creator?.id) {
             fetchProducts(user.has_creator.id);
@@ -560,8 +655,9 @@ const StockManagement = () => {
                             variant="subtle"
                             color="blue"
                             onClick={() => {
-                              if (h && h.product) {
-                                handleProductOptionSubmit(h.product.product_name);
+                              if (h && (h.product || h.product_id)) {
+                                setEditModeId(h.id);
+                                addEditProductToTable(h);
                                 setIsFormVisible(true);
                               }
                             }}
@@ -680,7 +776,32 @@ const StockManagement = () => {
                 Stok Awal
               </TableColumn>
               <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold" style={{ minWidth: 210, padding: "12px 16px" }}>
-                Jenis Referensi
+                <Flex align="center" gap={6}>
+                  Jenis Referensi
+                  <Tooltip
+                    label={
+                      <div style={{ padding: 4 }}>
+                        <Text size="sm" fw={600} mb={4}>Keterangan Referensi:</Text>
+                        <ul style={{ paddingLeft: 16, margin: 0, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <li><b>restock_supplier</b>: Stok bertambah (Pembelian dari supplier)</li>
+                          <li><b>produksi_internal</b>: Stok bertambah (Produksi sendiri)</li>
+                          <li><b>order</b>: Stok berkurang (Penjualan)</li>
+                          <li><b>return_customer</b>: Stok bertambah (Dikembalikan pembeli)</li>
+                          <li><b>return_supplier</b>: Stok berkurang (Dikembalikan ke supplier)</li>
+                          <li><b>damaged</b>: Stok berkurang (Penyesuaian stok)</li>
+                        </ul>
+                      </div>
+                    }
+                    position="top"
+                    withArrow
+                    multiline
+                    w={320}
+                  >
+                    <ActionIcon size="xs" radius="xl" variant="light" color="blue" style={{ cursor: "help" }}>
+                      <Text size="xs" fw={700} style={{ fontStyle: "italic" }}>i</Text>
+                    </ActionIcon>
+                  </Tooltip>
+                </Flex>
               </TableColumn>
               <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold" style={{ minWidth: 200, padding: "12px 16px" }}>
                 Catatan
@@ -813,13 +934,71 @@ const StockManagement = () => {
         </ScrollArea>
       </Box>
 
+      {/* Variant History section */}
+      {selectedProducts.length > 0 && (
+        <Box mt="xl" mb="xl">
+          <Flex align="center" gap="sm" mb="md">
+            <Icon icon="solar:history-bold-duotone" className="text-blue-500" width={24} />
+            <Title order={4} className="text-gray-800">Riwayat Terakhir Varian Terpilih</Title>
+          </Flex>
+          <Box className="rounded-xl overflow-hidden border border-light-grey shadow-sm" bg="white">
+            <ScrollArea h={300}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: 'sticky', top: 0, background: '#f8f9fa', zIndex: 1 }}>
+                  <tr>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#4b5563', borderBottom: '1px solid #e5e7eb' }}>Tanggal</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#4b5563', borderBottom: '1px solid #e5e7eb' }}>Produk/Varian</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#4b5563', borderBottom: '1px solid #e5e7eb' }}>Referensi</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', color: '#4b5563', borderBottom: '1px solid #e5e7eb' }}>Perubahan</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#4b5563', borderBottom: '1px solid #e5e7eb' }}>Catatan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fetchingVariantHistory ? (
+                    <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center' }}><Text c="dimmed">Memuat riwayat...</Text></td></tr>
+                  ) : variantHistoryData.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center' }}><Text c="dimmed">Belum ada riwayat untuk varian ini.</Text></td></tr>
+                  ) : (
+                    variantHistoryData.map((h, i) => {
+                      const dir = getDirection(h.reference_type || h.reference);
+                      const alterationNum = h.qty || (typeof h.alteration === 'string' ? h.alteration.replace(/\D/g, "") : h.alteration) || 0;
+                      const dateObj = new Date(h.created_at || h.date || "");
+                      const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "-";
+                      const productName = h.variant ? `${h.product?.product_name || "-"} - ${h.variant.varian_name}` : h.product?.product_name || h.product || "-";
+                      
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: h.id === editModeId ? '#ebfbee' : 'transparent' }}>
+                          <td style={{ padding: '12px 16px' }}><Text size="sm">{dateStr}</Text></td>
+                          <td style={{ padding: '12px 16px' }}><Text size="sm" fw={500}>{productName}</Text></td>
+                          <td style={{ padding: '12px 16px' }}><Badge variant="light" color="gray" size="sm">{h.reference_type || h.reference}</Badge></td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm">
+                              {(dir === "reduce" ? "-" : "+") + alterationNum}
+                            </Badge>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}><Text size="sm" c="dimmed">{h.notes || "-"}</Text></td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </ScrollArea>
+          </Box>
+        </Box>
+      )}
+
       {/* Unified Floating Footer - Fixed Position */}
       <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
         <Flex justify="flex-end" gap="md">
           <Button
             variant="subtle"
             color="gray"
-            onClick={() => setIsFormVisible(false)}
+            onClick={() => {
+              setIsFormVisible(false);
+              setEditModeId(null);
+              setSelectedProducts([]);
+            }}
             leftSection={<Icon icon="mdi:close" />}
           >
             Batal
@@ -851,16 +1030,35 @@ const StockManagement = () => {
 
           {/* Header */}
           <Flex justify="space-between" align="center">
-            <div>
-              <Title order={2} className="text-gray-900 font-semibold mb-1">
-                {isFormVisible ? "Buat Stock Movement" : "Stock Movement"}
-              </Title>
-              <Text c="dimmed" size="sm">
-                {isFormVisible
-                  ? "Tambah data pergerakan stok produk dan varian baru."
-                  : "Kelola dan perbarui ketersediaan stock produk dan varian secara langsung."}
-              </Text>
-            </div>
+            <Flex gap="md" align="flex-start">
+              {isFormVisible && (
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  radius="xl"
+                  onClick={() => {
+                    setIsFormVisible(false);
+                    setEditModeId(null);
+                    setSelectedProducts([]);
+                  }}
+                  mt={4}
+                  className="hover:bg-gray-200 transition-colors"
+                >
+                  <Icon icon="akar-icons:arrow-left" width={24} />
+                </ActionIcon>
+              )}
+              <div>
+                <Title order={2} className="text-gray-900 font-semibold mb-1">
+                  {isFormVisible ? (editModeId ? "Edit Stock Movement" : "Buat Stock Movement") : "Stock Movement"}
+                </Title>
+                <Text c="dimmed" size="sm">
+                  {isFormVisible
+                    ? "Tambah data pergerakan stok produk dan varian baru."
+                    : "Kelola dan perbarui ketersediaan stock produk dan varian secara langsung."}
+                </Text>
+              </div>
+            </Flex>
             {!isFormVisible && (
               <Button
                 variant="filled"
