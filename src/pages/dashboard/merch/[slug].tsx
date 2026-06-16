@@ -629,6 +629,8 @@
 
 import TableData from "@/components/TableData";
 import { Get } from "@/utils/REST";
+import fetch from "@/utils/fetch";
+import { notifications } from "@mantine/notifications";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
     Accordion,
@@ -653,7 +655,9 @@ import {
     Modal,
     Anchor,
     Pagination,
-    Checkbox
+    Checkbox,
+    NumberInput,
+    Textarea
 } from "@mantine/core";
 import {
     Modal as NextUIModal,
@@ -1544,6 +1548,18 @@ export default function MerchDetail() {
     // State untuk QR Code Modal
     const [qrOpened, { open: openQr, close: closeQr }] = useDisclosure(false);
 
+    // State for Stock Modal
+    const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+    const [selectedStockVariant, setSelectedStockVariant] = useState<any>(null);
+    const [stockQty, setStockQty] = useState<number>(0);
+    const [stockReferenceType, setStockReferenceType] = useState<string>("restock_supplier");
+    const [stockNotes, setStockNotes] = useState<string>("");
+    
+    // State for Variant Stock History
+    const [variantHistory, setVariantHistory] = useState<any[]>([]);
+    const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+    const [isSubmittingStock, setIsSubmittingStock] = useState(false);
+
     // State untuk Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -1577,6 +1593,97 @@ export default function MerchDetail() {
             }
         } catch (error) {
             console.error("Error fetching tracking statuses:", error);
+        }
+    };
+
+    const fetchVariantHistory = async (variantId: number | null, productId: number) => {
+        setIsFetchingHistory(true);
+        try {
+            const userStr = typeof window !== "undefined" ? localStorage.getItem('user') : null;
+            const parsedUser = userStr ? JSON.parse(userStr) : null;
+            const creatorId = parsedUser?.has_creator?.id;
+
+            const res: any = await Get("stock-bycreator", {
+                creator_id: creatorId,
+                product_id: productId,
+                per_page: 50
+            });
+            const resData = res?.data?.data || res?.data || [];
+            let histories = Array.isArray(resData) ? resData : [];
+
+            histories = histories.filter(h => {
+                const hVariantId = h.product_varian_id || h.variant_id;
+                return (variantId == null ? hVariantId == null : String(hVariantId) === String(variantId));
+            });
+
+            histories.sort((a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime());
+            setVariantHistory(histories);
+        } catch (error) {
+            console.error("Error fetching variant history:", error);
+        } finally {
+            setIsFetchingHistory(false);
+        }
+    };
+
+    const handleStockMovementSubmit = async () => {
+        if (!stockQty || stockQty <= 0) {
+            notifications.show({ title: "Error", message: "Qty harus lebih dari 0", color: "red" });
+            return;
+        }
+
+        setIsSubmittingStock(true);
+        try {
+            const userStr = typeof window !== "undefined" ? localStorage.getItem('user') : null;
+            const parsedUser = userStr ? JSON.parse(userStr) : null;
+            
+            const direction = ['restock_supplier', 'produksi_internal', 'return_customer'].includes(stockReferenceType) ? 'add' : 'reduce';
+
+            const payload = {
+                products: [
+                    {
+                        product_id: data.id,
+                        stocks: [
+                            {
+                                product_varian_id: selectedStockVariant.id,
+                                stock_status_id: direction === 'add' ? 2 : 3,
+                                qty: stockQty,
+                                reference_type: stockReferenceType,
+                                notes: stockNotes
+                            }
+                        ]
+                    }
+                ],
+                created_by: parsedUser?.name || parsedUser?.has_creator?.name || "system",
+                creator_id: parsedUser?.has_creator?.id || parsedUser?.id
+            };
+
+            await fetch({
+                url: "stock-management/stock-movement",
+                method: "POST",
+                data: payload,
+                headers: { "Content-Type": "application/json" },
+                before: () => { },
+                success: (response: any) => {
+                    if (response.status) {
+                        notifications.show({ title: "Berhasil", message: "Stok varian berhasil diupdate", color: "green" });
+                        setIsStockModalOpen(false);
+                        setStockQty(0);
+                        setStockNotes("");
+                        getData(); // Refresh the main merch data
+                    } else {
+                        notifications.show({ title: "Error", message: response.message || "Gagal mengupdate stok", color: "red" });
+                    }
+                },
+                error: (error: any) => {
+                    console.error("Error submitting stock:", error);
+                    notifications.show({ title: "Error", message: "Gagal mengupdate stok varian", color: "red" });
+                }
+            });
+        } catch (error) {
+            console.error("Stock submit exception:", error);
+            notifications.show({ title: "Error", message: "Terjadi kesalahan sistem", color: "red" });
+        } finally {
+            setIsSubmittingStock(false);
         }
     };
 
@@ -2624,8 +2731,8 @@ export default function MerchDetail() {
                                             <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
                                                 <thead>
                                                     <tr style={{ backgroundColor: '#f5f7fa', borderBottom: '2px solid #e8e8e8' }}>
-                                                        {['Varian', 'SKU', 'Harga', 'Stock Awal', 'Terjual', 'Paid', 'Pending', 'Expired', 'Sisa Stock'].map(col => (
-                                                            <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col}</th>
+                                                        {['Varian', 'SKU', 'Harga', 'Stock Awal', 'Terjual', 'Paid', 'Pending', 'Expired', 'Sisa Stock', 'Aksi'].map(col => (
+                                                            <th key={col} style={{ padding: '10px 16px', textAlign: col === 'Aksi' ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
@@ -2683,6 +2790,24 @@ export default function MerchDetail() {
                                                                     >
                                                                         {sisaStock}
                                                                     </Badge>
+                                                                </td>
+                                                                <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                                    <Tooltip label="Manajemen Stok">
+                                                                        <ActionIcon 
+                                                                            variant="light" 
+                                                                            color="blue" 
+                                                                            onClick={() => {
+                                                                                setSelectedStockVariant(v);
+                                                                                setStockQty(0);
+                                                                                setStockReferenceType("restock_supplier");
+                                                                                setStockNotes("");
+                                                                                setIsStockModalOpen(true);
+                                                                                fetchVariantHistory(v.id, data.id);
+                                                                            }}
+                                                                        >
+                                                                            <Icon icon="solar:pen-bold" width={16} />
+                                                                        </ActionIcon>
+                                                                    </Tooltip>
                                                                 </td>
                                                             </tr>
                                                         );
@@ -3335,6 +3460,116 @@ export default function MerchDetail() {
                     }}
                 </ModalContent>
             </NextUIModal>
+            {/* Modal Stock Movement */}
+            <Modal
+                opened={isStockModalOpen}
+                onClose={() => setIsStockModalOpen(false)}
+                title="Buat Stock Movement Varian"
+                size="xl"
+            >
+                <Stack gap="md">
+                    <Card p="md" withBorder>
+                        <Stack gap="sm">
+                            <TextInput 
+                                label="Nama Varian" 
+                                value={selectedStockVariant?.varian_name || selectedStockVariant?.name || selectedStockVariant?.variant_name || '-'} 
+                                readOnly 
+                                variant="filled"
+                            />
+                            <SimpleGrid cols={2}>
+                                <NumberInput 
+                                    label="Qty" 
+                                    placeholder="Masukkan kuantitas"
+                                    value={stockQty} 
+                                    onChange={(val) => setStockQty(typeof val === 'number' ? val : 0)} 
+                                    required
+                                    min={0}
+                                />
+                                <Select
+                                    label="Jenis Referensi"
+                                    placeholder="Pilih referensi"
+                                    data={[
+                                        { value: 'restock_supplier', label: 'Restock Supplier' },
+                                        { value: 'produksi_internal', label: 'Produksi Internal' },
+                                        { value: 'return_customer', label: 'Return Customer' },
+                                        { value: 'order', label: 'Order' },
+                                        { value: 'return_supplier', label: 'Return Supplier' },
+                                        { value: 'damaged', label: 'Damaged' },
+                                    ]}
+                                    value={stockReferenceType}
+                                    onChange={(val) => setStockReferenceType(val || 'restock_supplier')}
+                                />
+                            </SimpleGrid>
+                            <Textarea 
+                                label="Keterangan Tambahan" 
+                                placeholder="Masukkan keterangan (opsional)"
+                                value={stockNotes} 
+                                onChange={(e) => setStockNotes(e.currentTarget.value)} 
+                            />
+                            <Group justify="flex-end" mt="md">
+                                <Button variant="light" onClick={() => setIsStockModalOpen(false)}>Batal</Button>
+                                <Button 
+                                    onClick={handleStockMovementSubmit} 
+                                    loading={isSubmittingStock}
+                                >
+                                    Simpan Perubahan
+                                </Button>
+                            </Group>
+                        </Stack>
+                    </Card>
+
+                    <Title order={5} mt="md">Riwayat Terakhir Varian Terpilih</Title>
+                    {isFetchingHistory ? (
+                        <Text ta="center" c="dimmed">Memuat riwayat...</Text>
+                    ) : variantHistory.length === 0 ? (
+                        <Text ta="center" c="dimmed">Belum ada riwayat stock untuk varian ini.</Text>
+                    ) : (
+                        <Box style={{ maxHeight: 300, overflowY: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Tanggal</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Referensi</th>
+                                        <th style={{ padding: '8px', textAlign: 'center' }}>Perubahan</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {variantHistory.map((h, i) => {
+                                        const qty = h.qty || 0;
+                                        const status = h.stock_status_id || h.stock_status?.id;
+                                        const isAdd = status === 2;
+                                        const isReduce = status === 3;
+                                        const color = isAdd ? 'green' : (isReduce ? 'red' : 'gray');
+                                        const sign = isAdd ? '+' : (isReduce ? '-' : '');
+                                        
+                                        return (
+                                            <tr key={i} style={{ borderBottom: '1px solid #dee2e6' }}>
+                                                <td style={{ padding: '8px' }}>
+                                                    {moment(h.created_at || h.date).format('DD MMM YYYY HH:mm')}
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <Badge variant="light" color="blue" size="sm" styles={{ label: { textTransform: 'none' } }}>
+                                                        {h.reference_type || '-'}
+                                                    </Badge>
+                                                </td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>
+                                                    <Text fw={600} c={color}>{sign}{qty}</Text>
+                                                </td>
+                                                <td style={{ padding: '8px' }}>
+                                                    <Text size="xs" c="dimmed" lineClamp={2}>
+                                                        {h.notes || '-'}
+                                                    </Text>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </Box>
+                    )}
+                </Stack>
+            </Modal>
         </>
     )
 }

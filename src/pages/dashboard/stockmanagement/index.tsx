@@ -26,6 +26,8 @@ import {
   Pagination,
   Tooltip
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import moment from "moment";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
@@ -96,6 +98,8 @@ const StockManagement = () => {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [selectedProductFilter, setSelectedProductFilter] = useState("all");
+  const [selectedReferenceFilter, setSelectedReferenceFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<[Date | null, Date | null]>([null, null]);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalHistoryCount, setTotalHistoryCount] = useState(0);
@@ -213,7 +217,7 @@ const StockManagement = () => {
       }, 500);
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [user, currentPage, rowsPerPage, historySearchQuery, selectedProductFilter, sortBy, sortDir]);
+  }, [user, currentPage, rowsPerPage, historySearchQuery, selectedProductFilter, selectedReferenceFilter, dateRangeFilter, sortBy, sortDir]);
 
   // Client-side filtering with debounce
   useEffect(() => {
@@ -244,6 +248,11 @@ const StockManagement = () => {
       };
       if (historySearchQuery) params.search = historySearchQuery;
       if (selectedProductFilter && selectedProductFilter !== "all") params.product_id = selectedProductFilter;
+      if (selectedReferenceFilter && selectedReferenceFilter !== "all") params.reference_type = selectedReferenceFilter;
+      if (dateRangeFilter[0] && dateRangeFilter[1]) {
+        params.start_date = moment(dateRangeFilter[0]).format("YYYY-MM-DD");
+        params.end_date = moment(dateRangeFilter[1]).format("YYYY-MM-DD");
+      }
       if (sortBy) {
         params.sort_by = sortBy;
         params.sort_dir = sortDir || 'desc';
@@ -528,6 +537,29 @@ const StockManagement = () => {
           </Group>
 
           <Group gap="sm">
+            <DatePickerInput
+              type="range"
+              placeholder="Semua Tanggal"
+              value={dateRangeFilter}
+              onChange={(val) => {
+                setDateRangeFilter(val);
+                setCurrentPage(1);
+              }}
+              clearable
+              size="sm"
+              w={240}
+            />
+            <Select
+              placeholder="Semua Referensi"
+              data={[{ value: "all", label: "Semua Referensi" }, ...REFERENCE_TYPE_OPTIONS]}
+              value={selectedReferenceFilter}
+              onChange={(val) => {
+                setSelectedReferenceFilter(val || "all");
+                setCurrentPage(1);
+              }}
+              size="sm"
+              w={180}
+            />
             <Select
               placeholder="Semua Produk"
               data={[{ value: "all", label: "Semua Produk" }, ...productOptions]}
@@ -897,6 +929,7 @@ const StockManagement = () => {
                             w={100}
                             size="sm"
                             radius="md"
+                            disabled={editModeId !== null}
                             classNames={{
                               input: `text-center font-semibold ${dir === "add" ? "text-green-600" : "text-red-500"
                                 }`,
