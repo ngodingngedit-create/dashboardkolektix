@@ -50,23 +50,7 @@ import {
 } from "@nextui-org/react";
 import useLoggedUser from "@/utils/useLoggedUser";
 
-const REFERENCE_TYPE_DIRECTION: Record<string, "add" | "reduce"> = {
-  restock_supplier: "add",
-  produksi_internal: "add",
-  return_customer: "add",
-  order: "reduce",
-  return_supplier: "reduce",
-  damaged: "reduce",
-};
-
-const REFERENCE_TYPE_OPTIONS = [
-  { value: "restock_supplier", label: "restock_supplier" },
-  { value: "produksi_internal", label: "produksi_internal" },
-  { value: "order", label: "order" },
-  { value: "return_customer", label: "return_customer" },
-  { value: "return_supplier", label: "return_supplier" },
-  { value: "damaged", label: "damaged" },
-];
+// Removed static REFERENCE_TYPE_DIRECTION and REFERENCE_TYPE_OPTIONS
 
 interface SelectedProduct {
   id: string;
@@ -105,6 +89,35 @@ const StockManagement = () => {
   const [totalHistoryCount, setTotalHistoryCount] = useState(0);
   const [sortBy, setSortBy] = useState<string>("date");
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>("desc");
+  const [stockStatuses, setStockStatuses] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStockStatuses = async () => {
+      try {
+        const res: any = await Get("stock-status", {});
+        if (res?.data && Array.isArray(res.data)) {
+          setStockStatuses(res.data);
+        } else if (Array.isArray(res)) {
+          setStockStatuses(res);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchStockStatuses();
+  }, []);
+
+  const referenceTypeOptions = useMemo(() => {
+    return stockStatuses.map(s => ({ value: s.name, label: s.name }));
+  }, [stockStatuses]);
+
+  const getDirection = (refType: string) => {
+    const status = stockStatuses.find(s => s.name === refType);
+    if (status) {
+      return status.qty_type === "PLUS" ? "add" : "reduce";
+    }
+    return "add";
+  };
 
   const productOptions = useMemo(() => {
     if (!allProductsData) return [];
@@ -449,9 +462,7 @@ const StockManagement = () => {
       selectedProducts.map((p) => (p.id === id ? { ...p, [field]: val } : p))
     );
   };
-
-  const getDirection = (refType: string) => REFERENCE_TYPE_DIRECTION[refType] ?? "add";
-
+  // getDirection moved to top
   const handleSubmit = async () => {
     if (selectedProducts.length === 0) {
       notifications.show({ title: "Error", message: "Belum ada produk yang dipilih!", color: "red" });
@@ -552,7 +563,7 @@ const StockManagement = () => {
             />
             <Select
               placeholder="Semua Referensi"
-              data={[{ value: "all", label: "Semua Referensi" }, ...REFERENCE_TYPE_OPTIONS]}
+              data={[{ value: "all", label: "Semua Referensi" }, ...referenceTypeOptions]}
               value={selectedReferenceFilter}
               onChange={(val) => {
                 setSelectedReferenceFilter(val || "all");
@@ -820,21 +831,37 @@ const StockManagement = () => {
                   <Tooltip
                     label={
                       <div style={{ padding: 4 }}>
-                        <Text size="sm" fw={600} mb={4}>Keterangan Referensi:</Text>
-                        <ul style={{ paddingLeft: 16, margin: 0, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <li><b>restock_supplier</b>: Stok bertambah (Pembelian dari supplier)</li>
-                          <li><b>produksi_internal</b>: Stok bertambah (Produksi sendiri)</li>
-                          <li><b>order</b>: Stok berkurang (Penjualan)</li>
-                          <li><b>return_customer</b>: Stok bertambah (Dikembalikan pembeli)</li>
-                          <li><b>return_supplier</b>: Stok berkurang (Dikembalikan ke supplier)</li>
-                          <li><b>damaged</b>: Stok berkurang (Penyesuaian stok)</li>
-                        </ul>
+                        <Text size="sm" fw={600} mb={8}>Keterangan Referensi:</Text>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.3)' }}>
+                              <th style={{ textAlign: 'left', padding: '4px 8px' }}>Nama</th>
+                              <th style={{ textAlign: 'left', padding: '4px 8px' }}>Deskripsi</th>
+                              <th style={{ textAlign: 'center', padding: '4px 8px' }}>Tipe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stockStatuses.length > 0 ? stockStatuses.map((s) => (
+                              <tr key={s.id || s.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <td style={{ padding: '4px 8px', fontWeight: 600 }}>{s.name}</td>
+                                <td style={{ padding: '4px 8px' }}>{s.description}</td>
+                                <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                  <Badge size="xs" color={s.qty_type === 'PLUS' ? 'green' : 'red'}>{s.qty_type}</Badge>
+                                </td>
+                              </tr>
+                            )) : (
+                              <tr>
+                                <td colSpan={3} style={{ padding: '4px 8px', textAlign: 'center' }}>Memuat referensi...</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     }
                     position="top"
                     withArrow
                     multiline
-                    w={320}
+                    w={450}
                   >
                     <ActionIcon size="xs" radius="xl" variant="light" color="blue" style={{ cursor: "help" }}>
                       <Text size="xs" fw={700} style={{ fontStyle: "italic" }}>i</Text>
@@ -900,7 +927,7 @@ const StockManagement = () => {
                       {/* Jenis Referensi */}
                       <TableCell style={CELL_STYLE}>
                         <Select
-                          data={REFERENCE_TYPE_OPTIONS}
+                          data={referenceTypeOptions}
                           value={p.referenceType}
                           onChange={(val) =>
                             handleRowChange(p.id, "referenceType", val || "restock_supplier")
