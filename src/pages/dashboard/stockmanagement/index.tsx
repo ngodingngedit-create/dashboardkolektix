@@ -475,6 +475,7 @@ const StockManagement = () => {
         product_varian_id: p.variant_id,
         stock_status_id: direction === "add" ? 2 : 3,
         qty: p.qty,
+        qty_type: direction === "add" ? "PLUS" : "MINUS",
         reference_type: p.referenceType,
         notes: p.notes,
       });
@@ -627,6 +628,9 @@ const StockManagement = () => {
                 <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef' }}>
                   PERUBAHAN
                 </th>
+                <th style={{ padding: '14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef' }}>
+                  CATATAN
+                </th>
                 <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', position: 'sticky', right: 0, backgroundColor: '#f8f9fa', zIndex: 10, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)' }}>
                   AKSI
                 </th>
@@ -635,13 +639,13 @@ const StockManagement = () => {
             <tbody>
               {loading.includes("getdata") ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>
                     <Text c="dimmed" fw={500}>Memuat data...</Text>
                   </td>
                 </tr>
               ) : pagedHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>
                     <Text c="dimmed" fw={500}>Tidak ada data ditemukan</Text>
                   </td>
                 </tr>
@@ -680,6 +684,9 @@ const StockManagement = () => {
                         <Badge color={dir === "add" ? "green" : "red"} variant="light" radius="sm" size="md">
                           {(dir === "reduce" ? "-" : "+") + alterationNum}
                         </Badge>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <Text size="sm" c={h.notes ? "dark" : "dimmed"}>{h.notes || "-"}</Text>
                       </td>
                       <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', textAlign: 'center', borderLeft: '1px solid #f1f3f5' }}>
                         <Group gap={8} justify="center">
@@ -937,11 +944,15 @@ const StockManagement = () => {
                           />
                           {/* Normal flow result line */}
                           <div style={{ minHeight: 16, marginTop: 4, textAlign: "center" }}>
-                            {p.qty > 0 && (
+                            {editModeId !== null ? (
+                              <Text size="xs" c="red" style={{ fontSize: 10, fontStyle: 'italic', lineHeight: 1.2 }}>
+                                * Edit hanya untuk mengubah notes
+                              </Text>
+                            ) : p.qty > 0 ? (
                               <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
                                 → <strong style={{ color: "#374151" }}>{finalStock}</strong>
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </TableCell>
