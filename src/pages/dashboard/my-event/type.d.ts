@@ -60,6 +60,8 @@ export type TransactionListResponse = {
     full_name: string;
     email: string;
     no_telp: string;
+    size?: string;
+    address?: string;
     created_at: string;
     updated_at: string;
     deleted_at: null | string;

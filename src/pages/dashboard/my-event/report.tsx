@@ -1862,17 +1862,14 @@ const Merch = () => {
           .filter(Boolean)
           .join(", ");
 
-        // Get identity - try to find is_pemesan, fallback to first identity
+        // Get all identities
         const identities = e.identities || [];
-        const pemesanIdentity = identities.find((id) => id.is_pemesan == 1) || identities[0];
 
-        if (!pemesanIdentity) return [];
-
-        return [{
-          ...pemesanIdentity,
+        return identities.map(identity => ({
+          ...identity,
           seat_number: seats || "-",
           transaction: e // Keep reference to transaction for editing if needed
-        }];
+        }));
       })
       .map((e, index) => ({
         id: e.id, // Database ID
@@ -1882,6 +1879,8 @@ const Merch = () => {
         email: e.email || "-",
         telepon: e.no_telp || "-",
         seat_number: e.seat_number,
+        ukuran: e.size || "-",
+        alamat: e.address || "-",
         tanggal: moment(e.created_at).format("HH:mm:ss DD MMM YYYY"),
         identity: e, // Full identity object
       }));
@@ -2056,11 +2055,11 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "No. Identitas (NIK)", "Nama Pemesan", "Email", "No. Telepon", "Nomor Kursi", "Tanggal Dibuat"];
-        csvRows = [
+        const headers = ["No", "No. Identitas (NIK)", "Nama Pemesan", "Email", "No. Telepon", "Nomor Kursi", "Ukuran", "Alamat", "Tanggal Dibuat"];
+        const csvRows = [
           headers.join(","),
           ...processedPemesanData.map((item, index) => {
-            return [index + 1, `"${item.nik || "-"}"`, `"${item.nama || "-"}"`, `"${item.email || "-"}"`, `"${item.telepon || "-"}"`, `"${item.seat_number || "-"}"`, `"${item.tanggal || "-"}"`].join(",");
+            return [index + 1, `"${item.nik}"`, `"${item.nama}"`, `"${item.email}"`, `"${item.telepon}"`, `"${item.seat_number}"`, `"${item.ukuran}"`, `"${item.alamat}"`, `"${item.tanggal}"`].join(",");
           }),
         ];
         downloadFileName = `report-pemesan-${eventName}-${timestamp}.csv`;
@@ -2369,6 +2368,8 @@ const Merch = () => {
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA PEMESAN <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('seat_number')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SEAT NUMBER <span style={{ opacity: sortBy === 'seat_number' ? 1 : 0.3 }}>{sortBy === 'seat_number' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('ukuran')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>UKURAN <span style={{ opacity: sortBy === 'ukuran' ? 1 : 0.3 }}>{sortBy === 'ukuran' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('alamat')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ALAMAT <span style={{ opacity: sortBy === 'alamat' ? 1 : 0.3 }}>{sortBy === 'alamat' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTION</th>
@@ -2383,6 +2384,8 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600} c="blue">{item.seat_number}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.ukuran}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.alamat}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.telepon}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" c="dimmed">{item.tanggal}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center' }}>
