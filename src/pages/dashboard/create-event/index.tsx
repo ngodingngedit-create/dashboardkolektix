@@ -157,7 +157,6 @@ const CreateEvent = () => {
 
   useEffect(() => {
     getTagSuggestion();
-    getEventData();
   }, []);
 
   useEffect(() => {
@@ -172,6 +171,7 @@ const CreateEvent = () => {
   }, [router.query.addTiket]);
 
   const getEventData = () => {
+    if (!slug) return;
     setLoadingEvent(true);
     Get(`event/${slug}`, {})
       .then((res: any) => {
