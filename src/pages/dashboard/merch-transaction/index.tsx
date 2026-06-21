@@ -642,6 +642,10 @@ const MerchandiseTransaction: React.FC = () => {
       return `${variant.name}: ${variant.value}`;
     }
 
+    if (variant.varian_name) {
+      return variant.varian_name;
+    }
+
     if (typeof variant === 'string') {
       return variant;
     }
@@ -659,6 +663,10 @@ const MerchandiseTransaction: React.FC = () => {
 
     if (variant.name) {
       return variant.name;
+    }
+
+    if (variant.varian_name) {
+      return variant.varian_name;
     }
 
     return '';
@@ -684,9 +692,10 @@ const MerchandiseTransaction: React.FC = () => {
 
     data.forEach(item => {
       if (item.detail && Array.isArray(item.detail)) {
-        item.detail.forEach(detail => {
-          if (detail.variant) {
-            const variantDisplay = formatVariantDisplay(detail.variant);
+        item.detail.forEach((detail: any) => {
+          const itemVariant = detail.variant || detail.product_varian || detail.product_variant;
+          if (itemVariant) {
+            const variantDisplay = formatVariantDisplay(itemVariant);
             if (variantDisplay) {
               variantSet.add(variantDisplay);
             }
@@ -727,8 +736,8 @@ const MerchandiseTransaction: React.FC = () => {
           return d.product.sku;
         } else if (d?.sku && d.sku !== "0.000000" && d.sku !== "0") {
           return d.sku;
-        } else if (d?.variant?.sku) {
-          return d.variant.sku;
+        } else if ((d?.variant || d?.product_varian || d?.product_variant)?.sku) {
+          return (d.variant || d.product_varian || d.product_variant).sku;
         }
       }
     }
@@ -759,8 +768,9 @@ const MerchandiseTransaction: React.FC = () => {
       productName = "Produk";
     }
 
-    if (detail.variant) {
-      const variantInfo = formatVariantDisplay(detail.variant);
+    const itemVariant = detail.variant || detail.product_varian || detail.product_variant;
+    if (itemVariant) {
+      const variantInfo = formatVariantDisplay(itemVariant);
       if (variantInfo) {
         return `${productName} (${variantInfo})`;
       }
@@ -1072,8 +1082,9 @@ const MerchandiseTransaction: React.FC = () => {
     const productItems = invoice?.detail?.map((d: any) => {
       const productName = d.product?.product_name || 'Produk';
       let variantInfo = '';
-      if (d.variant) {
-        const variantDisplay = formatVariantDisplay(d.variant);
+      const itemVariant = d.variant || d.product_varian || d.product_variant;
+      if (itemVariant) {
+        const variantDisplay = formatVariantDisplay(itemVariant);
         if (variantDisplay) variantInfo = ` (${variantDisplay})`;
       }
       return `${d.qty}x ${productName}${variantInfo}`;
@@ -1349,9 +1360,10 @@ const MerchandiseTransaction: React.FC = () => {
       result = result.filter((item) => {
         if (!item.detail || !Array.isArray(item.detail)) return false;
 
-        return item.detail.some(detail => {
-          if (!detail.variant) return false;
-          const variantDisplay = formatVariantDisplay(detail.variant);
+        return item.detail.some((detail: any) => {
+          const itemVariant = detail.variant || detail.product_varian || detail.product_variant;
+          if (!itemVariant) return false;
+          const variantDisplay = formatVariantDisplay(itemVariant);
           return variantDisplay.toLowerCase().includes(variantFilter.toLowerCase());
         });
       });
@@ -1581,11 +1593,12 @@ const MerchandiseTransaction: React.FC = () => {
       <div className="space-y-2 max-w-xs">
         {details.map((detail, idx) => {
           const productName = detail.product?.product_name || detail.product_name || "Produk";
-          const hasVariant = detail.variant && Object.keys(detail.variant).length > 0;
+          const itemVariant = detail.variant || (detail as any).product_varian || (detail as any).product_variant;
+          const hasVariant = itemVariant && Object.keys(itemVariant).length > 0;
 
-          const variantName = hasVariant ? getVariantName(detail.variant) : '';
-          const variantValue = hasVariant ? getVariantValue(detail.variant) : '';
-          const variantDisplay = hasVariant ? formatVariantDisplay(detail.variant) : '';
+          const variantName = hasVariant ? getVariantName(itemVariant) : '';
+          const variantValue = hasVariant ? getVariantValue(itemVariant) : '';
+          const variantDisplay = hasVariant ? formatVariantDisplay(itemVariant) : '';
 
           return (
             <div key={idx} className="border-b border-gray-100 last:border-0 pb-1 last:pb-0">
@@ -1614,10 +1627,10 @@ const MerchandiseTransaction: React.FC = () => {
                     )}
                   </div>
 
-                  {detail.variant?.sku && (
+                  {itemVariant?.sku && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <FontAwesomeIcon icon={faBarcode} className="h-2.5 w-2.5" />
-                      <span>SKU: {detail.variant.sku}</span>
+                      <span>SKU: {itemVariant.sku}</span>
                     </div>
                   )}
                 </div>
@@ -2053,12 +2066,13 @@ const MerchandiseTransaction: React.FC = () => {
                                             let variantDisplay = '-';
                                             let variantName = '';
 
-                                            if (item.variant) {
-                                              const variantInfo = formatVariantDisplay(item.variant);
+                                            const itemVariant = item.variant || (item as any).product_varian || (item as any).product_variant;
+                                            if (itemVariant) {
+                                              const variantInfo = formatVariantDisplay(itemVariant);
                                               if (variantInfo) {
                                                 variantDisplay = variantInfo;
                                               }
-                                              variantName = getVariantName(item.variant);
+                                              variantName = getVariantName(itemVariant);
                                             }
 
                                             return (
