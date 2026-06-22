@@ -654,6 +654,10 @@ const DeliveryPage: React.FC = () => {
   const formatVariantDisplay = (variant: any): string => {
     if (!variant) return '';
 
+    if (variant.varian_name) {
+      return variant.varian_name;
+    }
+
     if (variant.variant_option && typeof variant.variant_option === 'object' && variant.variant_option !== null) {
       const option = variant.variant_option as { name?: string; value?: string };
       if (option.name && option.value) {
@@ -678,6 +682,10 @@ const DeliveryPage: React.FC = () => {
 
   const getVariantName = (variant: any): string => {
     if (!variant) return '';
+
+    if (variant.varian_name) {
+      return variant.varian_name;
+    }
 
     if (variant.variant_option && typeof variant.variant_option === 'object' && variant.variant_option !== null) {
       const option = variant.variant_option as { name?: string };
@@ -1935,7 +1943,7 @@ const DeliveryPage: React.FC = () => {
       <NextUIModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        size="full"
+        size="5xl"
         scrollBehavior="inside"
         classNames={{
           base: 'bg-white',
@@ -2088,6 +2096,9 @@ const DeliveryPage: React.FC = () => {
                                                 variantDisplay = variantInfo;
                                               }
                                               variantName = getVariantName(item.variant);
+                                            } else if ((item as any).variants && (item as any).variants.varian_name) {
+                                              variantDisplay = (item as any).variants.varian_name;
+                                              variantName = (item as any).variants.varian_name;
                                             }
 
                                             return (

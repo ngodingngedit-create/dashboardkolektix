@@ -837,6 +837,7 @@ export default forwardRef(function Seatmap({
                                     opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
                                     w={20}
                                     h={25}
+                                    style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
                                     key={c}
                                     className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
                                   >
@@ -945,7 +946,7 @@ const SeatBox = ({ active, color, sold, label }: { active: boolean; color?: stri
         )}
       </Box>
 
-      <Box className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active || sold ? "" : "border border-[#d0d0d0]"}`} bg={bgColor} h="calc(100% - 5px)" />
+      <Box className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active || sold ? "" : "border border-[#d0d0d0]"}`} bg={bgColor} />
     </>
   );
 };  
