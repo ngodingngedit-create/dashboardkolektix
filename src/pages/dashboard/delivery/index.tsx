@@ -2444,9 +2444,11 @@ const DeliveryPage: React.FC = () => {
                           selectedTransaction?.invoice_no &&
                           selectedTransaction.invoice_no !== '-'
                         ) {
-                          const baseUrl =
-                            process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
-                          const viewUrl = `${baseUrl}merch-invoice/${selectedTransaction.invoice_no}`;
+                          let baseUrl = window.location.origin;
+                          if (baseUrl.includes('dashboard.')) {
+                            baseUrl = baseUrl.replace('dashboard.', '');
+                          }
+                          const viewUrl = `${baseUrl}/merch-invoice/${selectedTransaction.invoice_no}`;
                           window.open(viewUrl, '_blank', 'noopener,noreferrer');
                         }
                       }}
