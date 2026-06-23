@@ -1278,6 +1278,8 @@ const Merch = () => {
   const [selectedEvent, setSelectedEvent] = useState<number>();
   const [selectedTicket, setSelectedTicket] = useState<string>("all");
   const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
+  const [selectedSession, setSelectedSession] = useState<string>("all");
+  const [availableSessions, setAvailableSessions] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Sesi" }]);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>([]);
   const [loading, setLoading] = useListState<string>();
   const [loadingEventData, setLoadingEventData] = useState(false);
@@ -1320,6 +1322,19 @@ const Merch = () => {
     totalRecords: 0,
     grandTotal: 0,
   });
+
+  useEffect(() => {
+    const sessions = new Set<string>();
+    allDataList.forEach((t) => {
+      t.tickets?.forEach((ticket: any) => {
+        if (ticket.event_session?.session_name) {
+          sessions.add(ticket.event_session.session_name);
+        }
+      });
+    });
+    const sessionArray = Array.from(sessions).map((s) => ({ value: s, label: s }));
+    setAvailableSessions([{ value: "all", label: "Semua Sesi" }, ...sessionArray]);
+  }, [allDataList]);
 
   useEffect(() => {
     setIsr(true);
@@ -1665,7 +1680,7 @@ const Merch = () => {
 
   useDidUpdate(() => {
     setCurrentPage(1);
-  }, [selectedTicket, selectedStatus, transactionSegment, searchValue]);
+  }, [selectedTicket, selectedSession, selectedStatus, transactionSegment, searchValue]);
 
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -1693,6 +1708,11 @@ const Merch = () => {
       result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
     }
 
+    // Filter by Session
+    if (selectedSession !== "all") {
+      result = result.filter(e => e.tickets?.some((t: any) => t.event_session?.session_name === selectedSession));
+    }
+
     // Filter by Status
     if (selectedStatus !== "all") {
       result = result.filter(e => String(e.transaction_status_id) === selectedStatus);
@@ -1711,7 +1731,7 @@ const Merch = () => {
     }
 
     return result;
-  }, [allDataList, transactionSegment, selectedTicket, selectedStatus, searchValue]);
+  }, [allDataList, transactionSegment, selectedTicket, selectedSession, selectedStatus, searchValue]);
 
   const itemsPerPageLocal = 20;
   const currentTotal = filteredDataList.length;
@@ -1735,6 +1755,7 @@ const Merch = () => {
       let ticketName = "-";
       let ticketPrice = 0;
       let ticketDomisili = "-";
+      let ticketSesi = "-";
 
       if (transaction.tickets?.length) {
         ticketName = transaction.tickets
@@ -1742,6 +1763,10 @@ const Merch = () => {
           .join(", ");
         ticketPrice = transaction.tickets.reduce((sum, ticket) =>
           sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
+        ticketSesi = transaction.tickets
+          .map((ticket) => ticket.event_session?.session_name || "-")
+          .filter((v, i, a) => a.indexOf(v) === i && v !== "-")
+          .join(", ") || "-";
       }
 
       if (transaction.identities?.length) {
@@ -1759,6 +1784,7 @@ const Merch = () => {
         email: pemesanIdentity?.email || "-",
         invoice: transaction.invoice_no || "-",
         tiket: ticketName,
+        sesi: ticketSesi,
         harga: `Rp ${ticketPrice.toLocaleString("id-ID")}`,
         domisili: ticketDomisili,
         payment: paymentMethodInfo ? (
@@ -2004,6 +2030,9 @@ const Merch = () => {
            if (selectedTicket !== "all") {
              result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
            }
+           if (selectedSession !== "all") {
+             result = result.filter(e => e.tickets?.some((t: any) => t.event_session?.session_name === selectedSession));
+           }
            if (exportStatus !== "all") {
              result = result.filter(e => String(e.transaction_status_id) === exportStatus);
            }
@@ -2024,7 +2053,7 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
+        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Sesi", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
         csvRows = [
           headers.join(","),
           ...exportData.map((item, index) => {
@@ -2033,10 +2062,12 @@ const Merch = () => {
               pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
             }
             let ticketName = "-";
+            let ticketSesi = "-";
             let ticketPrice = 0;
             let ticketDomisili = "-";
             if (item.tickets && item.tickets.length > 0) {
               ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
+              ticketSesi = item.tickets.map((ticket) => ticket.event_session?.session_name || "-").filter((v, i, a) => a.indexOf(v) === i && v !== "-").join(", ") || "-";
               ticketPrice = item.tickets.reduce((sum: number, ticket: any) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
             }
             if (item.identities && item.identities.length > 0) {
@@ -2046,7 +2077,7 @@ const Merch = () => {
             const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
             const paymentMethodInfo = getPaymentMethod(item.payment_method);
             const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, `"${ticketSesi}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
           }),
         ];
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;
@@ -2223,6 +2254,7 @@ const Merch = () => {
                   const selectedId = parseInt(e);
                   setSelectedEvent(selectedId);
                   setSelectedTicket("all");
+                  setSelectedSession("all");
                   setSelectedStatus("all");
                   setTransactionSegment("all");
                   setSearchValue("");
@@ -2247,6 +2279,16 @@ const Merch = () => {
               placeholder="Pilih Tiket"
               style={{ width: 155 }}
               disabled={availableTickets.length <= 1}
+              size="sm"
+            />
+
+            <Select
+              value={selectedSession}
+              data={availableSessions}
+              onChange={(value) => { if (value) setSelectedSession(value); }}
+              placeholder="Pilih Sesi"
+              style={{ width: 155 }}
+              disabled={availableSessions.length <= 1}
               size="sm"
             />
 
@@ -2290,6 +2332,7 @@ const Merch = () => {
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
@@ -2312,6 +2355,7 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm">{item.tiket}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.sesi}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.harga}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.domisili}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.payment}</td>

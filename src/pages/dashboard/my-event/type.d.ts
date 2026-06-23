@@ -110,6 +110,7 @@ export type TransactionListResponse = {
       ticket_sold: null | number;
       ticket_type: null | object; // Can define a specific structure if exists for ticket types.
     };
+    event_session?: any;
   }>;
   transaction_merches: Array<{
     id: number;
