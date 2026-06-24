@@ -36,7 +36,6 @@ import {
 import { Icon } from "@iconify/react";
 import chunk from "@/utils/chunk";
 import { SeatmapData } from "@/utils/formInterface";
-import { toPng } from 'html-to-image';
 
 // Interfaces copied from seatreport.tsx for consistency
 interface Identity {
@@ -108,6 +107,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   const [selectedEventId, setSelectedEventId] = useState<string>(initialEvents && initialEvents.length > 0 ? String(initialEvents[0].id) : "");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedSession, setSelectedSession] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
 
@@ -127,12 +127,16 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     try {
       const parsed = JSON.parse(selectedEventData.seatmap);
       return (Array.isArray(parsed) ? parsed : []).map((e: any) => {
-        const seat = chunk(
-          Array((e.row ?? 1) * (e.col ?? 1))
+        const validRow = Number.isInteger(Number(e.row)) ? Number(e.row) : 1;
+        const validCol = Number.isInteger(Number(e.col)) ? Number(e.col) : 1;
+        const startingSeat = Number.isInteger(Number(e.starting_seat)) ? Number(e.starting_seat) : 1;
+        
+        const seat = validCol > 0 ? chunk(
+          Array(Math.max(0, validRow * validCol))
             .fill(0)
-            .map((_, i) => `${e.is_show_code !== false ? e.prefix ?? "" : ""}${i + (e?.starting_seat ?? 1)}`) ?? [],
-          e.col ?? 1
-        );
+            .map((_, i) => `${e.is_show_code !== false ? e.prefix ?? "" : ""}${i + startingSeat}`),
+          validCol
+        ) : [];
         return { ...e, seat, type: e?.type ?? "seat" };
       });
     } catch (e) {
@@ -171,11 +175,39 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventId, users]);
 
+  const ticketNameToSessionName = useMemo(() => {
+    const map = new Map<string, string>();
+    transactions.forEach(trx => {
+      trx.tickets.forEach((t: any) => {
+        if (t.has_event_ticket?.name && t.event_session?.session_name) {
+          map.set(t.has_event_ticket.name, t.event_session.session_name);
+        }
+      });
+    });
+    return map;
+  }, [transactions]);
+
+  const availableSessions = useMemo(() => {
+    const sessions = new Set<string>();
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t: any) => {
+        if (t.event_session?.session_name) {
+          sessions.add(t.event_session.session_name);
+        }
+      });
+    });
+    return ["all", ...Array.from(sessions)];
+  }, [transactions]);
+
   // Process transactions into a seat map for quick local lookup
   const seatToBuyerMap = useMemo(() => {
     const map: Record<string, { transaction: Transaction; ticket: Ticket }> = {};
     transactions.forEach((trx) => {
-      trx.tickets.forEach((t) => {
+      trx.tickets.forEach((t: any) => {
+        if (selectedSession !== "all" && t.event_session?.session_name !== selectedSession) {
+          return;
+        }
+
         let seats: string[] = [];
         if (t.seatnumber_ticket) {
           try {
@@ -200,7 +232,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
       });
     });
     return map;
-  }, [transactions]);
+  }, [transactions, selectedSession]);
 
   // Fetch specific transaction detail from local map
   const fetchSeatTransactionDetail = (seatNumber: string) => {
@@ -216,15 +248,22 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   const takenSeatsFromAPI = useMemo(() => {
     const seats = new Set<string>();
-    selectedEventData?.has_event_ticket?.forEach(t => {
+    selectedEventData?.has_event_ticket?.forEach((t: any) => {
+      const sessionName = ticketNameToSessionName.get(t.name);
+      
+      if (selectedSession !== "all") {
+        if (sessionName && sessionName !== selectedSession) return;
+        if (!sessionName && !t.name?.includes(selectedSession)) return; // Fallback if no transactions
+      }
+
       if (t.taken_seat_number) {
-        t.taken_seat_number.split(",").forEach(s => {
+        String(t.taken_seat_number).split(",").forEach(s => {
           if (s.trim()) seats.add(s.trim());
         });
       }
     });
     return seats;
-  }, [selectedEventData]);
+  }, [selectedEventData, selectedSession, ticketNameToSessionName]);
 
 
 
@@ -264,9 +303,17 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   // Categories for filtering
   const ticketCategories = useMemo(() => {
-    const list = selectedEventData?.has_event_ticket?.map(t => t.name) || [];
+    const list: string[] = [];
+    selectedEventData?.has_event_ticket?.forEach((t: any) => {
+      const sessionName = ticketNameToSessionName.get(t.name);
+      if (selectedSession !== "all") {
+        if (sessionName && sessionName !== selectedSession) return;
+        if (!sessionName && !t.name?.includes(selectedSession)) return;
+      }
+      if (t.name) list.push(t.name);
+    });
     return ["all", ...list];
-  }, [selectedEventData]);
+  }, [selectedEventData, selectedSession, ticketNameToSessionName]);
 
   // Renderer for individual seats
   const renderSeat = (seatNumber: string, areaColor?: string, areaTicketName?: string) => {
@@ -353,13 +400,32 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           <Select
             value={selectedEventId}
             data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
-            onChange={(val) => val && setSelectedEventId(val)}
+            onChange={(val) => {
+              if (val) {
+                setSelectedEventId(val);
+                setSelectedSession("all");
+              }
+            }}
             placeholder="Pilih Event"
             style={{ width: 220 }}
             searchable
             clearable
             size="sm"
           />
+
+          {availableSessions.length > 1 && (
+            <Select
+              placeholder="Sesi"
+              value={selectedSession}
+              onChange={(val) => setSelectedSession(val || "all")}
+              data={availableSessions.map(sess => ({
+                value: sess,
+                label: sess === "all" ? "Semua Sesi" : sess
+              }))}
+              style={{ width: 180 }}
+              size="sm"
+            />
+          )}
 
           <Select
             placeholder="Kategori Tiket"
@@ -434,16 +500,18 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           <Tooltip label="Download Seatmap" position="left">
             <ActionIcon color="white" bg="white" variant="default" onClick={() => {
               if (canvasWrapRef.current) {
-                toPng(canvasWrapRef.current, { cacheBust: true })
-                  .then((dataUrl) => {
-                    const link = document.createElement('a');
-                    link.download = `seatmap-${selectedEventData?.name || 'event'}.png`;
-                    link.href = dataUrl;
-                    link.click();
-                  })
-                  .catch((err) => {
-                    console.error('Error downloading image', err);
-                  });
+                import('html-to-image').then(({ toPng }) => {
+                  toPng(canvasWrapRef.current!, { cacheBust: true })
+                    .then((dataUrl) => {
+                      const link = document.createElement('a');
+                      link.download = `seatmap-${selectedEventData?.name || 'event'}.png`;
+                      link.href = dataUrl;
+                      link.click();
+                    })
+                    .catch((err) => {
+                      console.error('Error downloading image', err);
+                    });
+                }).catch(err => console.error("Failed to load html-to-image", err));
               }
             }}>
               <FontAwesomeIcon icon={faDownload} className="text-gray-600" />
@@ -486,8 +554,8 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                 key={i}
                 className="absolute z-30"
                 style={{
-                  top: `${area.position[1]}px`,
-                  left: `${area.position[0]}px`,
+                  top: area.position ? `${area.position[1]}px` : '0px',
+                  left: area.position ? `${area.position[0]}px` : '0px',
                   width: area.size?.[0] ? `${area.size[0]}px` : 'auto',
                   height: area.size?.[1] ? `${area.size[1]}px` : 'auto',
                   transform: `rotate(${area.rotation ?? 0}deg)`,
