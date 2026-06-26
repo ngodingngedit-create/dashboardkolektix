@@ -1609,7 +1609,10 @@ import {
   faPercent,
   faGlobe,
   faStore,
-  faClock
+  faClock,
+  faBus,
+  faVanShuttle,
+  faRoute,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1745,6 +1748,36 @@ const sidebarData: SidebarData = [
         name: "Role",
         icon: faUser,
         link: "/dashboard/admin/role",
+        role: "Admin",
+      },
+    ],
+  },
+
+  {
+    id: 7,
+    name: "Shuttle Ajaks",
+    icon: faBus,
+    role: "Admin",
+    submenu: [
+      {
+        id: 1,
+        name: "Create Event Shuttle",
+        icon: faCalendar,
+        link: "/dashboard/admin/create-shuttle",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "List Bus",
+        icon: faVanShuttle,
+        link: "/dashboard/admin/bus",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "List Route",
+        icon: faRoute,
+        link: "/dashboard/admin/routebus",
         role: "Admin",
       },
     ],
