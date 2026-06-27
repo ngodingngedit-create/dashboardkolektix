@@ -289,20 +289,37 @@ const Merch = () => {
     }, [user]);
 
     useEffect(() => {
-        if (selectedEvent) {
-            const ev = eventList.find(e => e.id === selectedEvent);
-            if (ev && ev.has_event_ticket) {
-                const uniqueTickets = new Map();
-                ev.has_event_ticket.forEach((t: any) => {
-                    const tName = t.name || t.ticket_category;
-                    if (tName) uniqueTickets.set(tName, tName);
-                });
-                setTicketList(Array.from(uniqueTickets.values()).map(v => ({ value: v, label: v })));
-            } else {
-                setTicketList([]);
+        const fetchTickets = async () => {
+            if (selectedEvent) {
+                const ev = eventList.find(e => e.id === selectedEvent);
+                let tickets = ev?.has_event_ticket;
+
+                if (ev && !tickets && ev.slug) {
+                    try {
+                        const res = await axios.get(`${config.wsUrl}event-view-list-by-slug/${ev.slug}`);
+                        // Handle structure from event-view-list-by-slug
+                        const eventDetail = res.data?.data || res.data;
+                        tickets = eventDetail?.has_event_ticket;
+                    } catch (error) {
+                        console.error("Failed to fetch event tickets:", error);
+                    }
+                }
+
+                if (tickets && Array.isArray(tickets)) {
+                    const uniqueTickets = new Map();
+                    tickets.forEach((t: any) => {
+                        const tName = t.name || t.ticket_category;
+                        if (tName) uniqueTickets.set(tName, tName);
+                    });
+                    setTicketList(Array.from(uniqueTickets.values()).map(v => ({ value: v, label: v })));
+                } else {
+                    setTicketList([]);
+                }
+                setSelectedTicket('all');
             }
-            setSelectedTicket('all');
-        }
+        };
+
+        fetchTickets();
     }, [selectedEvent, eventList]);
 
     useEffect(() => {
@@ -312,12 +329,15 @@ const Merch = () => {
     }, [selectedEvent, activeTab, selectedTicket]);
 
     const getEvent = async () => {
+        const creatorId = user?.has_creator?.id;
+        if (!creatorId) return;
+
         try {
             let fullEvents: any[] = [];
             let currentPageNum = 1;
             let lastPage = 1;
 
-            const response = await axios.get(`${config.wsUrl}event?page=${currentPageNum}`, {
+            const response = await axios.get(`${config.wsUrl}event-by-creator/${creatorId}?page=${currentPageNum}`, {
                 headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
             });
 
@@ -326,7 +346,7 @@ const Merch = () => {
                 if (response.data.pagination) {
                     lastPage = response.data.pagination.last_page || 1;
                     for (let page = 2; page <= lastPage; page++) {
-                        const nextRes = await axios.get(`${config.wsUrl}event?page=${page}`, {
+                        const nextRes = await axios.get(`${config.wsUrl}event-by-creator/${creatorId}?page=${page}`, {
                             headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
                         });
                         if (nextRes.data?.data && Array.isArray(nextRes.data.data)) {
@@ -337,14 +357,9 @@ const Merch = () => {
             }
 
             if (fullEvents.length > 0) {
-                const creatorId = user?.has_creator?.id;
-                const filtered = creatorId
-                    ? fullEvents.filter((e) => String(e.creator_id) === String(creatorId))
-                    : [];
-
-                setEventList(filtered);
-                if (filtered.length > 0 && !selectedEvent) {
-                    setSelectedEvent(filtered[0].id);
+                setEventList(fullEvents);
+                if (!selectedEvent) {
+                    setSelectedEvent(fullEvents[0].id);
                 }
             }
         } catch (error) {
@@ -377,8 +392,8 @@ const Merch = () => {
                     
                     verifiedData.forEach((trans: any) => {
                         if (trans.etickets && trans.etickets.length > 0) {
-                            trans.etickets.forEach((eticket: any) => {
-                                const tName = eticket.has_event_ticket?.name || eticket.ticket_category || eticket.category_ticket;
+                            trans.etickets.forEach((eticket: any, index: number) => {
+                                const tName = eticket.has_event_ticket?.name || eticket.ticket_category || eticket.category_ticket || trans.tickets?.[index]?.has_event_ticket?.name || trans.tickets?.[index]?.ticket_category;
                                 if (selectedTicket !== 'all' && tName !== selectedTicket) return;
 
                                 total++;
