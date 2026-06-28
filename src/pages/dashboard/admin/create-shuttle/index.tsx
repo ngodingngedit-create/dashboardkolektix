@@ -2,8 +2,9 @@ import { Delete, Get, Post, Put } from "@/utils/REST";
 import {
   Card, Flex, ActionIcon, Group, Modal,
   Tooltip, Text, Badge, Pagination as PaginationM,
-  Button as ButtonM, Stack, TextInput, Textarea, Box, Switch, Select, NumberInput
+  Button as ButtonM, Stack, TextInput, Textarea, Box, Switch, NumberInput
 } from "@mantine/core";
+import { useListState } from "@mantine/hooks";
 import { Input } from "@nextui-org/react";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { notifications } from "@mantine/notifications";
@@ -11,6 +12,9 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { modals } from "@mantine/modals";
 import moment from "moment";
+import Seatmap, { defaultSeatmapData } from "@/components/Seatmap";
+import { SeatmapData } from "@/utils/formInterface";
+import { Context as CreateEventContext } from "@/pages/dashboard/create-event";
 
 const PER_PAGE = 10;
 
@@ -69,7 +73,7 @@ const emptyForm = {
   end_time: "12:00:00",
   is_active: 1,
   payment_method_custom: "QRIS,BCA,MANDIRI",
-  seatmap: '{"rows":10,"cols":4}',
+  seatmap: "",
   image_base64: "",
 };
 
@@ -93,6 +97,12 @@ export default function AdminCreateShuttle() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Seatmap editor state
+  const [seatmapData, setSeatmapData] = useListState<SeatmapData>(defaultSeatmapData);
+  const [seatmapModalOpen, setSeatmapModalOpen] = useState(false);
+  const [isFullscreenSeatmap, setIsFullscreenSeatmap] = useState(false);
+  const seatmapRef = useRef<any>(null);
 
   const handleSort = (col: string) => {
     if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -143,6 +153,7 @@ export default function AdminCreateShuttle() {
     setEditSlug(null);
     setForm({ ...emptyForm });
     setImagePreview(null);
+    setSeatmapData.setState(defaultSeatmapData);
     setOpened(true);
   };
 
@@ -167,10 +178,22 @@ export default function AdminCreateShuttle() {
         end_time: item.end_time || "12:00:00",
         is_active: item.is_active ?? 1,
         payment_method_custom: item.payment_method_custom || "",
-        seatmap: item.seatmap || '{"rows":10,"cols":4}',
+        seatmap: item.seatmap || "",
         image_base64: "",
       });
       setImagePreview(item.image_url || null);
+
+      // Parse & load seatmap into editor
+      if (item.seatmap) {
+        try {
+          const parsed = typeof item.seatmap === "string" ? JSON.parse(item.seatmap) : item.seatmap;
+          setSeatmapData.setState(Array.isArray(parsed) ? parsed : defaultSeatmapData);
+        } catch {
+          setSeatmapData.setState(defaultSeatmapData);
+        }
+      } else {
+        setSeatmapData.setState(defaultSeatmapData);
+      }
     } catch {
       notifications.show({ title: "Gagal", message: "Gagal mengambil detail shuttle.", color: "red" });
     } finally {
@@ -211,7 +234,9 @@ export default function AdminCreateShuttle() {
     }
     setIsSubmitting(true);
     try {
-      const payload: any = { ...form };
+      // Serialize seatmap data to JSON string for the POST/PUT payload
+      const seatmapJson = seatmapData.length > 0 ? JSON.stringify(seatmapData) : null;
+      const payload: any = { ...form, seatmap: seatmapJson };
       if (!payload.image_base64) delete payload.image_base64;
       if (isEdit && editSlug) {
         await Put(`shuttle/${editSlug}`, payload);
@@ -345,7 +370,10 @@ export default function AdminCreateShuttle() {
                       <Group gap="sm" wrap="nowrap">
                         <div style={{ width: 48, height: 48, borderRadius: 8, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
                           {item.image_url ? (
-                            <img src={item.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
                               <Icon icon="ph:bus" style={{ fontSize: 20, color: "#ccc" }} />
@@ -446,7 +474,10 @@ export default function AdminCreateShuttle() {
               onClick={() => fileInputRef.current?.click()}
             >
               {imagePreview ? (
-                <img src={imagePreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imagePreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </>
               ) : (
                 <Stack align="center" gap={4}>
                   <Icon icon="ph:image-square-duotone" style={{ fontSize: 36, color: "#aaa" }} />
@@ -550,15 +581,60 @@ export default function AdminCreateShuttle() {
             onChange={e => setForm(f => ({ ...f, payment_method_custom: e.target.value }))}
           />
 
-          <Textarea
-            label="Seatmap (JSON)"
-            placeholder={'{"rows":10,"cols":4}'}
-            value={form.seatmap}
-            onChange={e => setForm(f => ({ ...f, seatmap: e.target.value }))}
-            autosize
-            minRows={2}
-            ff="monospace"
-          />
+          {/* Seatmap Editor Section */}
+          <Box>
+            <Text size="xs" fw={700} c="gray.6" mb={6} className="uppercase">Denah Kursi (Seatmap)</Text>
+            <div
+              style={{
+                border: "1px solid #dee2e6",
+                borderRadius: 10,
+                overflow: "hidden",
+                background: "#f8f9fa",
+              }}
+            >
+              {/* Preview bar */}
+              <Flex
+                align="center"
+                justify="space-between"
+                p="sm"
+                style={{ borderBottom: "1px solid #dee2e6", background: "white" }}
+              >
+                <Flex align="center" gap={8}>
+                  <Icon icon="ph:map-trifold" style={{ fontSize: 18, color: "#0B387C" }} />
+                  <Text size="sm" fw={600} c="gray.7">
+                    {seatmapData.filter(a => a.type === "seat").length > 0
+                      ? `${seatmapData.filter(a => a.type === "seat").length} area kursi dikonfigurasi`
+                      : "Belum ada kursi dikonfigurasi"}
+                  </Text>
+                </Flex>
+                <ButtonM
+                  size="xs"
+                  variant="light"
+                  color="blue"
+                  leftSection={<Icon icon="ph:pencil-simple" />}
+                  onClick={() => setSeatmapModalOpen(true)}
+                >
+                  Buka Editor
+                </ButtonM>
+              </Flex>
+
+              {/* Mini preview of area names */}
+              {seatmapData.filter(a => a.type === "seat").length > 0 ? (
+                <Flex gap={6} p="sm" wrap="wrap">
+                  {seatmapData.filter(a => a.type === "seat").map((area, i) => (
+                    <Badge key={i} size="sm" variant="light" color="blue">
+                      {area.text || `Area ${i + 1}`}
+                      {area.row && area.col ? ` (${area.row * area.col} kursi)` : ""}
+                    </Badge>
+                  ))}
+                </Flex>
+              ) : (
+                <Flex align="center" justify="center" p="md">
+                  <Text size="xs" c="dimmed">Klik &quot;Buka Editor&quot; untuk membuat denah kursi shuttle</Text>
+                </Flex>
+              )}
+            </div>
+          </Box>
 
           <Group align="center">
             <Switch
@@ -583,6 +659,58 @@ export default function AdminCreateShuttle() {
         </Stack>
       </Modal>
 
+      {/* Seatmap Editor Modal — fullscreen */}
+      <Modal
+        opened={seatmapModalOpen}
+        onClose={() => setSeatmapModalOpen(false)}
+        title={
+          <Flex align="center" gap={8}>
+            <Icon icon="ph:map-trifold" style={{ fontSize: 18, color: "#0B387C" }} />
+            <Text fw={700} size="lg" c="#0B387C">Editor Denah Kursi Shuttle</Text>
+          </Flex>
+        }
+        size="xl"
+        fullScreen
+        padding={0}
+        radius={0}
+      >
+        <div style={{ height: "calc(100vh - 60px)", display: "flex", flexDirection: "column" }}>
+          {/* Wrap with the CreateEvent Context so the Seatmap component can read/write seatmapData */}
+          <CreateEventContext.Provider value={{ seatmapData, setSeatmapData, ticket: [] }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <Seatmap
+                ref={seatmapRef}
+                editable
+                fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
+              />
+            </div>
+          </CreateEventContext.Provider>
+
+          {/* Footer action bar */}
+          <Flex
+            justify="flex-end"
+            align="center"
+            gap={10}
+            p="md"
+            style={{ borderTop: "1px solid #dee2e6", background: "white", flexShrink: 0 }}
+          >
+            <ButtonM variant="subtle" color="gray" onClick={() => setSeatmapModalOpen(false)}>
+              Batal
+            </ButtonM>
+            <ButtonM
+              color="blue"
+              leftSection={<Icon icon="ph:check-bold" />}
+              onClick={() => {
+                notifications.show({ title: "Seatmap Disimpan", message: "Denah kursi berhasil dikonfigurasi.", color: "green" });
+                setSeatmapModalOpen(false);
+              }}
+            >
+              Simpan Seatmap
+            </ButtonM>
+          </Flex>
+        </div>
+      </Modal>
+
       {/* View Detail Modal */}
       <Modal
         opened={viewOpened}
@@ -597,6 +725,7 @@ export default function AdminCreateShuttle() {
           <Stack gap="md">
             {selectedItem.image_url && (
               <div style={{ borderRadius: 12, overflow: "hidden", height: 180 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={selectedItem.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             )}
@@ -644,6 +773,30 @@ export default function AdminCreateShuttle() {
                 ))}
               </Group>
             </div>
+            {selectedItem.seatmap && (
+              <div>
+                <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Denah Kursi</Text>
+                <Group gap={6} wrap="wrap">
+                  {(() => {
+                    try {
+                      const parsed = typeof selectedItem.seatmap === "string"
+                        ? JSON.parse(selectedItem.seatmap)
+                        : selectedItem.seatmap;
+                      return (Array.isArray(parsed) ? parsed : [])
+                        .filter((a: any) => a.type === "seat")
+                        .map((area: any, i: number) => (
+                          <Badge key={i} size="sm" variant="light" color="blue">
+                            {area.text || `Area ${i + 1}`}
+                            {area.row && area.col ? ` (${area.row * area.col} kursi)` : ""}
+                          </Badge>
+                        ));
+                    } catch {
+                      return <Text size="xs" c="dimmed">Tidak dapat membaca seatmap.</Text>;
+                    }
+                  })()}
+                </Group>
+              </div>
+            )}
             <Group justify="flex-end" mt="xs">
               <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>Tutup</ButtonM>
               <ButtonM

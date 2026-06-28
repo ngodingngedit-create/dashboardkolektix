@@ -125,7 +125,9 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const seatmapData = useMemo<SeatmapData[]>(() => {
     if (!selectedEventData?.seatmap) return [];
     try {
-      const parsed = JSON.parse(selectedEventData.seatmap);
+      const parsed = typeof selectedEventData.seatmap === 'string' 
+        ? JSON.parse(selectedEventData.seatmap) 
+        : selectedEventData.seatmap;
       return (Array.isArray(parsed) ? parsed : []).map((e: any) => {
         const validRow = Number.isInteger(Number(e.row)) ? Number(e.row) : 1;
         const validCol = Number.isInteger(Number(e.col)) ? Number(e.col) : 1;
@@ -355,6 +357,9 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
             opacity: isDimmed ? 0.2 : 1,
             transform: isHighlighted ? 'scale(1.1)' : 'scale(1)',
             zIndex: isHighlighted ? 100 : 1,
+            minWidth: "20px",
+            minHeight: "25px",
+            flexShrink: 0
           }}
         >
           <Box
@@ -552,7 +557,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
             {seatmapData.map((area, i) => (
               <Box
                 key={i}
-                className="absolute z-30"
+                className="absolute z-30 -translate-x-2/4 -translate-y-2/4"
                 style={{
                   top: area.position ? `${area.position[1]}px` : '0px',
                   left: area.position ? `${area.position[0]}px` : '0px',
