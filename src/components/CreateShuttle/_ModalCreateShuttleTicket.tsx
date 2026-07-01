@@ -11,6 +11,7 @@ import { notifications } from "@mantine/notifications";
 import { Context as CreateEventContext } from "@/pages/dashboard/create-event";
 import InputField from "@/components/Input";
 import { formatPrice, parsePrice } from "@/utils/useFormattedPrice";
+import { Get } from "@/utils/REST";
 
 export interface ShuttleTicket {
   id?: number;
@@ -30,6 +31,8 @@ export interface ShuttleTicket {
   available_seat_number?: string;
   available_seat?: string[];
   seat_color?: string;
+  dayIdx?: number;
+  sessionIdx?: number;
 }
 
 const emptyTicket: ShuttleTicket = {
@@ -37,30 +40,40 @@ const emptyTicket: ShuttleTicket = {
   description: "",
   qty: 0,
   price: "0",
-  trip_status_id: "SINGLETRIP",
+  trip_status_id: "1",
   operation_date: "",
   ticket_start_date: "",
-  ticket_start_time: "08:00:00",
+  ticket_start_time: "08:00",
   ticket_end_date: "",
-  ticket_end_time: "23:59:59",
+  ticket_end_time: "23:59",
   route_id: 1,
   ticket_category: "Festival",
   ticket_type: "Berbayar",
   available_seat: [],
   seat_color: "#194e9e",
+  dayIdx: 0,
+  sessionIdx: 0,
 };
+
+interface DayOption {
+  operation_date: string;
+  sessions: { name: string; departure_time: string }[];
+}
 
 interface ModalProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   ticket: ShuttleTicket[];
   setTicket: (tickets: ShuttleTicket[]) => void;
+  operationDays: DayOption[];
 }
 
-export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, setTicket }: ModalProps) {
+export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, setTicket, operationDays }: ModalProps) {
   const [openForm, setOpenForm] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<ShuttleTicket>(emptyTicket);
-  
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const [selectedSessionIdx, setSelectedSessionIdx] = useState(0);
+
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [isFullscreenSeatmap, setIsFullscreenSeatmap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number | undefined>();
@@ -69,11 +82,30 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
 
   const { seatmapData } = useContext(CreateEventContext);
 
+  const [routeList, setRouteList] = useState<{ id: number; origin_name: string }[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      Get("shuttleroutes", {}).then((res: any) => {
+        if (res?.data?.data) setRouteList(res.data.data);
+      }).catch(() => { });
+    }
+  }, [isOpen]);
+
+  // Track latest selected idx in refs so the useEffect is not stale
+  const selectedDayRef = useRef(selectedDayIdx);
+  const selectedSessionRef = useRef(selectedSessionIdx);
+  useEffect(() => { selectedDayRef.current = selectedDayIdx; }, [selectedDayIdx]);
+  useEffect(() => { selectedSessionRef.current = selectedSessionIdx; }, [selectedSessionIdx]);
+
   useEffect(() => {
     if (typeof openForm === "number") {
-      setForm(ticket[openForm]);
+      const t = ticket[openForm];
+      setForm(t);
+      setSelectedDayIdx(t.dayIdx ?? 0);
+      setSelectedSessionIdx(t.sessionIdx ?? 0);
     } else {
-      setForm({ ...emptyTicket });
+      setForm({ ...emptyTicket, dayIdx: selectedDayRef.current, sessionIdx: selectedSessionRef.current });
     }
   }, [openForm, ticket]);
 
@@ -131,9 +163,9 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
     return onSelectSeat === undefined
       ? []
       : ticket
-          .map((e) => e.available_seat || [])
-          .reduce<string[]>((c, n) => [...c, ...n], [])
-          .filter((e) => !ticket[onSelectSeat].available_seat?.includes(e));
+        .map((e) => e.available_seat || [])
+        .reduce<string[]>((c, n) => [...c, ...n], [])
+        .filter((e) => !ticket[onSelectSeat].available_seat?.includes(e));
   }, [onSelectSeat, ticket]);
 
   const allSeat = useMemo(() => {
@@ -181,28 +213,30 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                   </UnstyledButton>
                 ))}
               </Stack>
-              <Button variant="light" size="md" onClick={() => setOpenForm(undefined)} rightSection={<Icon icon="uiw:plus" />} className="shrink-0">
-                Tambah Tiket
-              </Button>
-              <Button w="100%" display={addSeatMap ? "none" : undefined} variant="outline" size="md" onClick={() => setAddSeatMap(true)} className="shrink-0">
-                Buat Seatmap
-              </Button>
-              <Button w="100%" variant="light" size="md" onClick={() => setIsOpen(false)} className="shrink-0">
-                Tutup
-              </Button>
+              <div className="flex flex-col gap-2 shrink-0 mt-auto">
+                <button onClick={() => setOpenForm(undefined)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-base text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm">
+                  <Icon icon="uiw:plus" className="text-base" /> Tambah Tiket
+                </button>
+                <button style={{ display: addSeatMap ? "none" : undefined }} onClick={() => setAddSeatMap(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-primary-light-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all">
+                  Buat Seatmap
+                </button>
+                <button onClick={() => setIsOpen(false)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all">
+                  Tutup
+                </button>
+              </div>
             </Stack>
           </Card>
 
           <div className={`${openForm !== undefined || ticket.length === 0 ? (isFullscreenSeatmap ? "hidden" : "flex") : "hidden"} h-full w-full ${openSeatMap ? "max-w-[370px]" : ""} overflow-auto flex-col gap-2 pb-4`}>
             <Flex display={ticket.length > 0 ? undefined : "none"}>
-              <Button onClick={() => setOpenForm(undefined)} px={0} fw={400} leftSection={<Icon icon="uiw:left" />} variant="transparent" color="gray">
-                Kembali
-              </Button>
+              <button onClick={() => setOpenForm(undefined)} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors py-1">
+                <Icon icon="uiw:left" className="text-base" /> Kembali
+              </button>
             </Flex>
 
             <RadioGroup label={<p>Kategori Tiket<span className="text-red-500"> *</span></p>} className="gap-1 w-full" size="md" color="primary" value={form.ticket_category} onChange={(e) => setForm({ ...form, ticket_category: e.target.value })}>
               <div className="grid grid-cols-2">
-                <Radio classNames={{ base: "data-[selected=true]:bg-primary-light-200 border-2 border-primary-light-200 rounded-lg p-2" }} value="Festival">Festival</Radio>
+                <Radio classNames={{ base: "data-[selected=true]:bg-primary-light-200 border-2 border-primary-light-200 rounded-lg p-2" }} value="Festival">Non-Seat</Radio>
                 <Radio classNames={{ base: "data-[selected=true]:bg-primary-light-200 border-2 border-primary-light-200 rounded-lg p-2" }} value="Seated">Seat</Radio>
               </div>
             </RadioGroup>
@@ -214,17 +248,69 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
               </div>
             </RadioGroup>
 
+            {/* Day & Session Selector */}
+            {operationDays.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 my-2 border border-primary-light-200 rounded-xl p-3 bg-blue-50/30">
+                <div>
+                  <Text size="sm" fw={500}>Hari Operasi <span className="text-red-500">*</span></Text>
+                  <select
+                    className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white mt-1"
+                    value={selectedDayIdx}
+                    onChange={(e) => {
+                      const dIdx = parseInt(e.target.value);
+                      setSelectedDayIdx(dIdx);
+                      setSelectedSessionIdx(0);
+                      setForm(prev => ({ ...prev, dayIdx: dIdx, sessionIdx: 0 }));
+                    }}
+                  >
+                    {operationDays.map((day, i) => (
+                      <option key={i} value={i}>
+                        Hari {i + 1} {day.operation_date ? `(${day.operation_date})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Text size="sm" fw={500}>Sesi <span className="text-red-500">*</span></Text>
+                  <select
+                    className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white mt-1"
+                    value={selectedSessionIdx}
+                    onChange={(e) => {
+                      const sIdx = parseInt(e.target.value);
+                      setSelectedSessionIdx(sIdx);
+                      setForm(prev => ({ ...prev, sessionIdx: sIdx }));
+                    }}
+                  >
+                    {operationDays[selectedDayIdx]?.sessions.map((s, i) => (
+                      <option key={i} value={i}>
+                        {s.name || `Sesi ${i + 1}`} {s.departure_time ? `(${s.departure_time})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             <InputField type="text" label="Nama Tiket" placeholder="Nama Tiket" required fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
 
             <div className="grid grid-cols-2 gap-2 my-2">
               <div className="flex flex-col gap-1">
                 <Text size="sm" fw={500}>Jenis Perjalanan</Text>
-                <select className="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white" value={form.trip_status_id} onChange={(e) => setForm({ ...form, trip_status_id: e.target.value })}>
-                  <option value="SINGLETRIP">Single Trip</option>
-                  <option value="ROUNDTRIP">Round Trip</option>
+                <select className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white" value={String(form.trip_status_id)} onChange={(e) => setForm({ ...form, trip_status_id: e.target.value })}>
+                  <option value="1">Pergi</option>
+                  <option value="2">Pulang</option>
+                  <option value="3">Pulang Pergi</option>
                 </select>
               </div>
-              <InputField type="text" label="Route ID" required fullWidth value={form.route_id?.toString() || ""} onChange={(e: any) => setForm({ ...form, route_id: e.target.value })} />
+              <div className="flex flex-col gap-1">
+                <Text size="sm" fw={500}>Rute <span className="text-red-500">*</span></Text>
+                <select className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white" value={form.route_id || ""} onChange={(e) => setForm({ ...form, route_id: e.target.value ? Number(e.target.value) : "" })}>
+                  <option value="">Pilih Rute</option>
+                  {routeList.map((r) => (
+                    <option key={r.id} value={r.id}>{r.origin_name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 my-2">
@@ -232,8 +318,10 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <p className="mb-1 text-grey text-sm">Tanggal Keberangkatan <span className="text-danger">*</span></p>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 text-sm shadow-sm border border-primary-light-200 focus:outline-primary-disabled rounded-lg"
+                  className="w-full px-3 py-2 text-sm shadow-sm border border-light-grey focus:outline-primary-disabled rounded-lg"
                   value={form.operation_date ? form.operation_date.substring(0, 10) : ""}
+                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
+                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
                   onChange={(e) => setForm({ ...form, operation_date: e.target.value })}
                 />
               </div>
@@ -244,8 +332,10 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <p className="mb-1 text-grey text-sm">Tgl Mulai Penjualan <span className="text-danger">*</span></p>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 text-sm shadow-sm border border-primary-light-200 focus:outline-primary-disabled rounded-lg"
+                  className="w-full px-3 py-2 text-sm shadow-sm border border-light-grey focus:outline-primary-disabled rounded-lg"
                   value={form.ticket_start_date ? form.ticket_start_date.substring(0, 10) : ""}
+                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
+                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
                   onChange={(e) => setForm({ ...form, ticket_start_date: e.target.value })}
                 />
               </div>
@@ -253,8 +343,10 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <p className="mb-1 text-grey text-sm">Tgl Berakhir Penjualan <span className="text-danger">*</span></p>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 text-sm shadow-sm border border-primary-light-200 focus:outline-primary-disabled rounded-lg"
+                  className="w-full px-3 py-2 text-sm shadow-sm border border-light-grey focus:outline-primary-disabled rounded-lg"
                   value={form.ticket_end_date ? form.ticket_end_date.substring(0, 10) : ""}
+                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
+                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
                   onChange={(e) => setForm({ ...form, ticket_end_date: e.target.value })}
                 />
               </div>
@@ -265,8 +357,10 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <p className="mb-1 text-grey text-sm">Jam Mulai Penjualan <span className="text-danger">*</span></p>
                 <input
                   type="time"
-                  className="w-full px-3 py-2 text-sm shadow-sm border border-primary-light-200 focus:outline-primary-disabled rounded-lg"
+                  className="w-full px-3 py-2 text-sm shadow-sm border border-light-grey focus:outline-primary-disabled rounded-lg"
                   value={form.ticket_start_time || "08:00"}
+                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
+                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
                   onChange={(e) => setForm({ ...form, ticket_start_time: e.target.value })}
                 />
               </div>
@@ -274,8 +368,10 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <p className="mb-1 text-grey text-sm">Jam Berakhir Penjualan <span className="text-danger">*</span></p>
                 <input
                   type="time"
-                  className="w-full px-3 py-2 text-sm shadow-sm border border-primary-light-200 focus:outline-primary-disabled rounded-lg"
+                  className="w-full px-3 py-2 text-sm shadow-sm border border-light-grey focus:outline-primary-disabled rounded-lg"
                   value={form.ticket_end_time || "23:59"}
+                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
+                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
                   onChange={(e) => setForm({ ...form, ticket_end_time: e.target.value })}
                 />
               </div>
@@ -288,8 +384,8 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
 
             <InputField type="textarea" label="Deskripsi" placeholder="Deskripsi Tiket" fullWidth value={form.description} onChange={(e: any) => setForm({ ...form, description: e.target.value })} />
 
-            <Flex justify="end" py={10} className="sticky bottom-[-15px] bg-white z-10">
-              <button className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2 flex items-center justify-center gap-2" onClick={handleSaveTicket}>
+            <Flex justify="end" py={10} className="sticky bottom-[-15px] bg-white z-10 border-t border-light-grey pt-4">
+              <button className="w-full sm:w-auto px-8 py-2.5 text-white bg-primary-base rounded-xl flex items-center justify-center gap-2 text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm" onClick={handleSaveTicket}>
                 <FontAwesomeIcon icon={openForm === undefined ? faPlus : faSave} />
                 {openForm === undefined ? "Tambah Tiket" : "Simpan Tiket"}
               </button>
@@ -315,3 +411,4 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
     </ModalM>
   );
 }
+
