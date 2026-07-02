@@ -8,6 +8,65 @@ type ComponentProps = {
 
 export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
 
+    const renderSeatGrid = () => {
+        const totalCol = data?.col ?? 1;
+        const totalRow = data?.row ?? 1;
+        const colsLeft = data?.cols_left ?? Math.floor(totalCol / 2);
+        const colsRight = totalCol - colsLeft;
+        const gapSize = data?.gap ?? 20;
+        const seatCodes = Array(totalCol * totalRow).fill(0).map((_, i) =>
+            `${data.is_show_code !== false ? data?.prefix ?? "" : ""}${i + (data?.starting_seat ?? 1)}`
+        );
+        const rows = chunk(seatCodes, totalCol);
+
+        return (
+            <Stack gap={5} w="100%" h="100%" justify="space-between">
+                {rows.map((rowSeats, r) => (
+                    <Flex gap={0} w="100%" h="100%" justify="center" align="center" key={r}>
+                        {/* Left seats: cols_left columns */}
+                        {rowSeats.slice(0, colsLeft).map((code, c) => (
+                            <Box
+                                w="100%"
+                                h="100%"
+                                key={`l-${c}`}
+                                className={`rounded-md bg-grey/50`}
+                                style={{ minWidth: 0, flex: 1 }}
+                            >
+                                <Center w="100%" h="100%">
+                                    {data.is_show_code !== false && (
+                                        <Text size="xs" c="white" className={`uppercase`}>
+                                            {code}
+                                        </Text>
+                                    )}
+                                </Center>
+                            </Box>
+                        ))}
+                        {/* Aisle / Gap between left and right sections */}
+                        <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
+                        {/* Right seats: remaining columns */}
+                        {rowSeats.slice(colsLeft).map((code, c) => (
+                            <Box
+                                w="100%"
+                                h="100%"
+                                key={`r-${c}`}
+                                className={`rounded-md bg-grey/50`}
+                                style={{ minWidth: 0, flex: 1 }}
+                            >
+                                <Center w="100%" h="100%">
+                                    {data.is_show_code !== false && (
+                                        <Text size="xs" c="white" className={`uppercase`}>
+                                            {code}
+                                        </Text>
+                                    )}
+                                </Center>
+                            </Box>
+                        ))}
+                    </Flex>
+                ))}
+            </Stack>
+        );
+    };
+
     return (
         <Box
             bg="gray.1"
@@ -28,23 +87,7 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
                             {data.seat_label && <Text size="xs" c="gray">{data.seat_label}</Text>}
                         </Stack>
                     )}
-                    <Stack gap={5} w="100%" h="100%" justify="space-between">
-                        {chunk((Array((data?.col ?? 1) * (data?.row ?? 1)).fill(0).map((_, i) => (`${data.is_show_code !== false ? data?.prefix ?? "" : ""}${i + (data?.starting_seat ?? 1)}`)) ?? []), (data?.col ?? 1)).map((e, r) => (
-                            <Flex gap={5} w="100%" h="100%" justify="space-between" key={r}>
-                                {e.map((e, c) => (
-                                    <Box w="100%" h="100%" key={c} className={`rounded-md bg-grey/50`}>
-                                        <Center w="100%" h="100%">
-                                            {data.is_show_code !== false && (
-                                                <Text size="xs" c="white" className={`uppercase`}>
-                                                    {e}
-                                                </Text>
-                                            )}
-                                        </Center>
-                                    </Box>
-                                ))}
-                            </Flex>
-                        ))}
-                    </Stack>
+                    {renderSeatGrid()}
                 </Stack>
             )}
 

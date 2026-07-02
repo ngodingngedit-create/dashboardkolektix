@@ -83,6 +83,8 @@ export type SeatmapData = {
   row?: number;
   prefix?: string;
   col?: number;
+  cols_left?: number;
+  gap?: number;
   position: [number, number];
   size?: [number, number];
   rotation?: number;

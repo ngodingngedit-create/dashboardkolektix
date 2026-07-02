@@ -161,6 +161,8 @@ export default forwardRef(function Seatmap({
         prefix: "",
         row: 0,
         col: 0,
+        cols_left: 2,
+        gap: 20,
         seat_label: "",
         is_show_code: true,
       });
@@ -547,22 +549,21 @@ export default forwardRef(function Seatmap({
               {...areaProps("type")}
             />
 
-            <Flex gap={15}>
-              <TextInput style={{ flex: 1 }} label="Label Area" placeholder="Isi Label Area" {...areaProps("text")} />
+            {/* Semua input seat dicampur dalam 3 kolom */}
+            <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 15 }}>
+              <TextInput label="Label Area" placeholder="Isi Label Area" {...areaProps("text")} />
               <TextInput 
-                style={{ flex: 1 }} 
                 display={areaVal?.type == "box" ? "none" : undefined}
                 label="Label Seat" 
                 placeholder="Isi Label Seat" 
                 {...areaProps("label_seat")} 
               />
-            </Flex>
-
-            <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined}>
-              <NumberInput withAsterisk hideControls label="Jumlah Kolom" placeholder="Isi Jumlah Kolom" {...areaProps("col")} />
-              <NumberInput withAsterisk hideControls label="Jumlah Baris" placeholder="Isi Jumlah Baris" {...areaProps("row")} />
-              <TextInput 
-                mt={5} 
+              <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Jumlah Kolom" placeholder="Total kolom" {...areaProps("col")} />
+              <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Jumlah Baris" placeholder="Total baris" {...areaProps("row")} />
+              <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Kolom Kiri" placeholder="Kiri lorong" description="Kiri lorong" {...areaProps("cols_left")} />
+              <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Lebar Lorong (px)" placeholder="20" description="Pixel" {...areaProps("gap")} />
+              <TextInput
+                display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined}
                 label={
                   <Flex align="center" gap={5} wrap="nowrap">
                     <Text size="sm" fw={500} style={{ whiteSpace: "nowrap" }}>Code Seat <span style={{ color: "red" }}>*</span></Text>
@@ -573,49 +574,48 @@ export default forwardRef(function Seatmap({
                     />
                   </Flex>
                 } 
-                placeholder="Isi Code Seat" 
+                placeholder="Contoh: A" 
                 {...areaProps("prefix")} 
               />
-              <TextInput mt={5} label="Label Code" placeholder="Isi Label Code" {...areaProps("seat_label")} />
-              <NumberInput hideControls withAsterisk mt={5} label="Starting Seat" placeholder="Isi Starting Seat" defaultValue={1} {...areaProps("starting_seat")} />
-            </Flex>
-
-            <InputWrapper label="Atur Radius" display={modalArea == 0 || areaVal?.type == "box" ? undefined : "none"}>
-              <Flex className={`[&>*]:flex-grow`} gap={15} display={modalArea == 0 || areaVal?.type == "box" ? undefined : "none"}>
-                <NumberInput
-                  hideControls
-                  leftSection={<Icon icon="bx:border-radius" className={`-rotate-90`} />}
-                  withAsterisk
-                  mt={5}
-                  value={areaVal.radius?.[0]}
-                  onChange={(e) => setAreaVal({ radius: [parseInt(e as string), areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
-                />
-                <NumberInput
-                  hideControls
-                  leftSection={<Icon icon="bx:border-radius" />}
-                  withAsterisk
-                  mt={5}
-                  value={areaVal.radius?.[1]}
-                  onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, parseInt(e as string), areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
-                />
-                <NumberInput
-                  hideControls
-                  leftSection={<Icon icon="bx:border-radius" className={`rotate-90`} />}
-                  withAsterisk
-                  mt={5}
-                  value={areaVal.radius?.[2]}
-                  onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, parseInt(e as string), areaVal.radius?.[3] ?? 5] })}
-                />
-                <NumberInput
-                  hideControls
-                  leftSection={<Icon icon="bx:border-radius" className={`rotate-180`} />}
-                  withAsterisk
-                  mt={5}
-                  value={areaVal.radius?.[3]}
-                  onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, parseInt(e as string)] })}
-                />
-              </Flex>
-            </InputWrapper>
+              <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} hideControls withAsterisk label="Starting Seat" placeholder="1" {...areaProps("starting_seat")} />
+              {/* Radius Sudut — hanya untuk box */}
+              <NumberInput
+                display={modalArea == 0 || areaVal?.type != "box" ? "none" : undefined}
+                hideControls
+                leftSection={<Icon icon="bx:border-radius" className={`-rotate-90`} />}
+                withAsterisk
+                label="Radius TL"
+                value={areaVal.radius?.[0]}
+                onChange={(e) => setAreaVal({ radius: [parseInt(e as string), areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
+              />
+              <NumberInput
+                display={modalArea == 0 || areaVal?.type != "box" ? "none" : undefined}
+                hideControls
+                leftSection={<Icon icon="bx:border-radius" />}
+                withAsterisk
+                label="Radius TR"
+                value={areaVal.radius?.[1]}
+                onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, parseInt(e as string), areaVal.radius?.[2] ?? 5, areaVal.radius?.[3] ?? 5] })}
+              />
+              <NumberInput
+                display={modalArea == 0 || areaVal?.type != "box" ? "none" : undefined}
+                hideControls
+                leftSection={<Icon icon="bx:border-radius" className={`rotate-90`} />}
+                withAsterisk
+                label="Radius BL"
+                value={areaVal.radius?.[2]}
+                onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, parseInt(e as string), areaVal.radius?.[3] ?? 5] })}
+              />
+              <NumberInput
+                display={modalArea == 0 || areaVal?.type != "box" ? "none" : undefined}
+                hideControls
+                leftSection={<Icon icon="bx:border-radius" className={`rotate-180`} />}
+                withAsterisk
+                label="Radius BR"
+                value={areaVal.radius?.[3]}
+                onChange={(e) => setAreaVal({ radius: [areaVal.radius?.[0] ?? 5, areaVal.radius?.[1] ?? 5, areaVal.radius?.[2] ?? 5, parseInt(e as string)] })}
+              />
+            </Box>
 
             <Flex className={`[&>*]:flex-grow`} gap={15}>
               <ColorInput
@@ -825,38 +825,60 @@ export default forwardRef(function Seatmap({
                           </Stack>
                         )}
                         <Stack gap={3} w="100%" h="100%" justify="space-between">
-                          {(e.seat ?? []).map((x, r) => (
-                            <Flex gap={3} w="100%" h="100%" justify="space-between" key={r}>
-                              {x.map((z, c) => (
-                                <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={c} fw={600}>
-                                  <Box
-                                    onMouseEnter={() => handleMouse.seatEnter(z, i)}
-                                    onMouseDown={() => handleMouse.seatDown(z, i)}
-                                    onMouseUp={() => handleMouse.seatUp()}
-                                    // onClick={() => onEdit && !unavailSeat?.includes(z) ? handleSelectSeat(z, i) : {}}
-                                    opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
-                                    w={20}
-                                    h={25}
-                                    style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
-                                    key={c}
-                                    className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
-                                  >
-                                    {/* <Center w="100%" h="100%">
-                                                                            <Text size="xs" c={getContrastColor(selectedSeat?.includes(z) ? e.seatcolor ?? '#194e9e' : 'gray.1')} className={`uppercase`}>
-                                                                                {z}
-                                                                            </Text>
-                                                                        </Center> */}
-                                    <SeatBox 
-                                      active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
-                                      color={e.seatcolor} 
-                                      sold={soldSeat?.includes(z)}
-                                      label={z}
-                                    />
-                                  </Box>
-                                </Tooltip>
-                              ))}
-                            </Flex>
-                          ))}
+                          {(e.seat ?? []).map((x, r) => {
+                            const colsLeft = e.cols_left ?? Math.floor((e.col ?? 1) / 2);
+                            const gapSize = e.gap ?? 20;
+                            return (
+                              <Flex gap={0} w="100%" h="100%" justify="center" align="center" key={r}>
+                                {/* Left seats */}
+                                {x.slice(0, colsLeft).map((z, c) => (
+                                  <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`l-${c}`} fw={600}>
+                                    <Box
+                                      onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                      onMouseDown={() => handleMouse.seatDown(z, i)}
+                                      onMouseUp={() => handleMouse.seatUp()}
+                                      opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                      w={20}
+                                      h={25}
+                                      style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
+                                      className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
+                                    >
+                                      <SeatBox 
+                                        active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
+                                        color={e.seatcolor} 
+                                        sold={soldSeat?.includes(z)}
+                                        label={z}
+                                      />
+                                    </Box>
+                                  </Tooltip>
+                                ))}
+                                {/* Aisle gap */}
+                                <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
+                                {/* Right seats */}
+                                {x.slice(colsLeft).map((z, c) => (
+                                  <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`r-${c}`} fw={600}>
+                                    <Box
+                                      onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                      onMouseDown={() => handleMouse.seatDown(z, i)}
+                                      onMouseUp={() => handleMouse.seatUp()}
+                                      opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                      w={20}
+                                      h={25}
+                                      style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
+                                      className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
+                                    >
+                                      <SeatBox 
+                                        active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
+                                        color={e.seatcolor} 
+                                        sold={soldSeat?.includes(z)}
+                                        label={z}
+                                      />
+                                    </Box>
+                                  </Tooltip>
+                                ))}
+                              </Flex>
+                            );
+                          })}
                         </Stack>
                       </Stack>
                     )}

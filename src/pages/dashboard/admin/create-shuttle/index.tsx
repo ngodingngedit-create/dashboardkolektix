@@ -44,16 +44,6 @@ const tableCellStyle: React.CSSProperties = {
   verticalAlign: "middle",
 };
 
-interface Session {
-  name: string;
-  departure_time: string;
-}
-
-interface OperationDay {
-  operation_date: string;
-  sessions: Session[];
-}
-
 interface ShuttleItem {
   id: number;
   slug: string;
@@ -76,7 +66,6 @@ interface ShuttleItem {
   is_email?: number;
   is_phone?: number;
   is_noidentity?: number;
-  operation_days?: OperationDay[];
 }
 
 const emptyForm = {
@@ -99,7 +88,6 @@ const emptyForm = {
   is_email: 1,
   is_phone: 1,
   is_noidentity: 0,
-  operation_days: [] as OperationDay[],
   tickets: [] as ShuttleTicket[],
 };
 
@@ -132,61 +120,6 @@ export default function AdminCreateShuttle() {
   const seatmapRef = useRef<any>(null);
 
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
-
-  // Operation day / session helpers
-  const handleAddDay = () => {
-    setForm(prev => ({
-      ...prev,
-      operation_days: [...prev.operation_days, { operation_date: "", sessions: [] }],
-    }));
-  };
-
-  const handleDeleteDay = (idx: number) => {
-    setForm(prev => ({
-      ...prev,
-      operation_days: prev.operation_days.filter((_, i) => i !== idx),
-    }));
-  };
-
-  const handleDayChange = (idx: number, field: keyof OperationDay, value: string) => {
-    setForm(prev => {
-      const newDays = [...prev.operation_days];
-      newDays[idx] = { ...newDays[idx], [field]: value };
-      return { ...prev, operation_days: newDays };
-    });
-  };
-
-  const handleAddSession = (dayIdx: number) => {
-    setForm(prev => {
-      const newDays = [...prev.operation_days];
-      const day = { ...newDays[dayIdx] };
-      day.sessions = [...day.sessions, { name: "", departure_time: "" }];
-      newDays[dayIdx] = day;
-      return { ...prev, operation_days: newDays };
-    });
-  };
-
-  const handleDeleteSession = (dayIdx: number, sessionIdx: number) => {
-    setForm(prev => {
-      const newDays = [...prev.operation_days];
-      const day = { ...newDays[dayIdx] };
-      day.sessions = day.sessions.filter((_, i) => i !== sessionIdx);
-      newDays[dayIdx] = day;
-      return { ...prev, operation_days: newDays };
-    });
-  };
-
-  const handleSessionChange = (dayIdx: number, sessionIdx: number, field: keyof Session, value: string) => {
-    setForm(prev => {
-      const newDays = [...prev.operation_days];
-      const day = { ...newDays[dayIdx] };
-      day.sessions = day.sessions.map((s, i) =>
-        i === sessionIdx ? { ...s, [field]: value } : s
-      );
-      newDays[dayIdx] = day;
-      return { ...prev, operation_days: newDays };
-    });
-  };
 
   // Memoized context value to prevent unnecessary consumer re-renders
   const contextValue = useMemo(() => ({
@@ -257,18 +190,12 @@ export default function AdminCreateShuttle() {
       const res: any = await Get(`shuttle/${slug}`, {});
       const item = res.data || res;
 
-      // Map operation_days from API response (already nested)
-      const operationDays: OperationDay[] = [];
+      // Flatten tickets from API response (tickets are nested under operation_days > sessions)
       const flatTickets: ShuttleTicket[] = [];
       if (item.operation_days && Array.isArray(item.operation_days)) {
-        item.operation_days.forEach((day: any, dayIdx: number) => {
-          const sessions: Session[] = [];
+        item.operation_days.forEach((day: any) => {
           if (day.sessions && Array.isArray(day.sessions)) {
-            day.sessions.forEach((session: any, sessionIdx: number) => {
-              sessions.push({
-                name: session.name || "",
-                departure_time: session.departure_time || "",
-              });
+            day.sessions.forEach((session: any) => {
               if (session.tickets && Array.isArray(session.tickets)) {
                 session.tickets.forEach((t: any) => {
                   flatTickets.push({
@@ -278,7 +205,6 @@ export default function AdminCreateShuttle() {
                     qty: t.qty || 0,
                     price: String(t.price || 0),
                     trip_status_id: String(t.trip_status_id || "1"),
-                    operation_date: t.operation_date ? t.operation_date.substring(0, 10) : "",
                     ticket_start_date: t.ticket_start_date ? t.ticket_start_date.substring(0, 10) : "",
                     ticket_start_time: t.ticket_start_time || "08:00",
                     ticket_end_date: t.ticket_end_date ? t.ticket_end_date.substring(0, 10) : "",
@@ -289,17 +215,11 @@ export default function AdminCreateShuttle() {
                     available_seat_number: t.available_seat_number || "",
                     available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
                     seat_color: t.seat_color || "#194e9e",
-                    dayIdx,
-                    sessionIdx,
                   });
                 });
               }
             });
           }
-          operationDays.push({
-            operation_date: day.operation_date ? day.operation_date.substring(0, 10) : "",
-            sessions,
-          });
         });
       }
 
@@ -323,7 +243,6 @@ export default function AdminCreateShuttle() {
         is_email: item.is_email ?? 1,
         is_phone: item.is_phone ?? 1,
         is_noidentity: item.is_noidentity ?? 0,
-        operation_days: operationDays,
         tickets: flatTickets,
       });
       setImagePreview(item.image_url || null);
@@ -377,62 +296,9 @@ export default function AdminCreateShuttle() {
       notifications.show({ title: "Validasi", message: "Nama shuttle wajib diisi.", color: "orange" });
       return;
     }
-    if (form.operation_days.length === 0) {
-      notifications.show({ title: "Validasi", message: "Minimal 1 hari operasi wajib diisi.", color: "orange" });
-      return;
-    }
-    for (let i = 0; i < form.operation_days.length; i++) {
-      const day = form.operation_days[i];
-      if (!day.operation_date) {
-        notifications.show({ title: "Validasi", message: `Hari ke-${i + 1}: tanggal operasi wajib diisi.`, color: "orange" });
-        return;
-      }
-      if (day.sessions.length === 0) {
-        notifications.show({ title: "Validasi", message: `Hari ke-${i + 1}: minimal 1 sesi wajib diisi.`, color: "orange" });
-        return;
-      }
-      for (let j = 0; j < day.sessions.length; j++) {
-        if (!day.sessions[j].name) {
-          notifications.show({ title: "Validasi", message: `Hari ke-${i + 1}, Sesi ke-${j + 1}: nama sesi wajib diisi.`, color: "orange" });
-          return;
-        }
-      }
-    }
     setIsSubmitting(true);
     try {
       const seatmapJson = seatmapData.length > 0 ? JSON.stringify(seatmapData) : null;
-      // --- Group flat tickets into operation_days structure ---
-      // Build the nested operation_days payload from form.operation_days + form.tickets
-      const transformedDays = form.operation_days.map((day, dayIdx) => {
-        const sessionTickets: ShuttleTicket[] = form.tickets.filter(t => t.dayIdx === dayIdx);
-        return {
-          operation_date: day.operation_date,
-          sessions: day.sessions.map((session, sessionIdx) => {
-            const sessTickets = sessionTickets.filter(t => t.sessionIdx === sessionIdx);
-            return {
-              name: session.name,
-              departure_time: session.departure_time,
-              tickets: sessTickets.map(t => ({
-                ...(t.id ? { id: t.id } : {}),
-                name: t.name,
-                description: t.description,
-                qty: t.qty,
-                price: parseInt(t.price) || 0,
-                trip_status_id: Number(t.trip_status_id) || 1,
-                route_id: t.route_id,
-                ticket_type: t.ticket_type,
-                ticket_category: t.ticket_category,
-                ticket_start_date: t.ticket_start_date,
-                ticket_start_time: t.ticket_start_time,
-                ticket_end_date: t.ticket_end_date,
-                ticket_end_time: t.ticket_end_time,
-                ...(t.available_seat_number ? { available_seat_number: t.available_seat_number } : {}),
-                ...(t.seat_color ? { seat_color: t.seat_color } : {}),
-              })),
-            };
-          }),
-        };
-      });
 
       const payload: any = {
         name: form.name,
@@ -449,7 +315,23 @@ export default function AdminCreateShuttle() {
         is_email: form.is_email,
         is_phone: form.is_phone,
         is_noidentity: form.is_noidentity,
-        operation_days: transformedDays,
+        tickets: form.tickets.map(t => ({
+          ...(t.id ? { id: t.id } : {}),
+          name: t.name,
+          description: t.description,
+          qty: t.qty,
+          price: parseInt(t.price) || 0,
+          trip_status_id: Number(t.trip_status_id) || 1,
+          route_id: t.route_id,
+          ticket_type: t.ticket_type,
+          ticket_category: t.ticket_category,
+          ticket_start_date: t.ticket_start_date,
+          ticket_start_time: t.ticket_start_time,
+          ticket_end_date: t.ticket_end_date,
+          ticket_end_time: t.ticket_end_time,
+          ...(t.available_seat_number ? { available_seat_number: t.available_seat_number } : {}),
+          ...(t.seat_color ? { seat_color: t.seat_color } : {}),
+        })),
       };
       if (form.image_base64) payload.image_base64 = form.image_base64;
 
@@ -603,95 +485,6 @@ export default function AdminCreateShuttle() {
                 }}
               >
                 <Tab key="info-tiket" title="Info Tiket">
-                  {/* Operation Days List */}
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
-                      <h3 className="text-medium font-semibold">Hari Operasi</h3>
-                      <button onClick={handleAddDay} className="text-sm font-semibold text-primary-base flex items-center gap-2">
-                        <Icon icon="ph:plus-bold" /> Tambah Hari
-                      </button>
-                    </div>
-                    <div className="p-5 flex flex-col gap-4">
-                      {form.operation_days.length === 0 ? (
-                        <Text size="sm" c="dimmed">Belum ada hari operasi. Klik &ldquo;Tambah Hari&rdquo; untuk menambahkan.</Text>
-                      ) : (
-                        form.operation_days.map((day, dayIdx) => (
-                          <div key={dayIdx} className="border border-primary-light-200 rounded-xl p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <input
-                                  type="date"
-                                  value={day.operation_date}
-                                  onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
-                                  onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
-                                  onChange={e => handleDayChange(dayIdx, "operation_date", e.target.value)}
-                                  className="w-full max-w-[200px] px-3 py-2 text-sm border border-primary-light-200 rounded-lg focus:outline-primary-disabled"
-                                />
-                              </div>
-                              <button onClick={() => handleDeleteDay(dayIdx)} className="text-red-500 hover:text-red-700">
-                                <Icon icon="ph:trash" />
-                              </button>
-                            </div>
-
-                            {/* Sessions */}
-                            <div className="pl-2 border-l-2 border-primary-light-200 ml-2 space-y-3">
-                              {day.sessions.length === 0 ? (
-                                <Text size="sm" c="dimmed" className="ml-2">Belum ada sesi.</Text>
-                              ) : (
-                                day.sessions.map((session, sessionIdx) => (
-                                  <div key={sessionIdx} className="ml-2 p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-xs font-semibold text-gray-500 uppercase">Sesi {sessionIdx + 1}</span>
-                                      <div className="flex gap-1">
-                                        <button onClick={() => { handleDeleteSession(dayIdx, sessionIdx); }} className="text-red-500 hover:text-red-700">
-                                          <Icon icon="ph:x-circle" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="text-xs text-gray-500">Nama Sesi</label>
-                                        <input
-                                          type="text"
-                                          value={session.name}
-                                          onChange={e => handleSessionChange(dayIdx, sessionIdx, "name", e.target.value)}
-                                          placeholder="Cth: Sesi 1"
-                                          className="w-full px-3 py-1.5 text-sm border border-primary-light-200 rounded-lg focus:outline-primary-disabled"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500">Jam Keberangkatan</label>
-                                        <input
-                                          type="time"
-                                          value={session.departure_time}
-                                          onFocus={e => { try { e.target.showPicker?.(); } catch { } }}
-                                          onClick={e => { try { e.currentTarget.showPicker?.(); } catch { } }}
-                                          onChange={e => handleSessionChange(dayIdx, sessionIdx, "departure_time", e.target.value)}
-                                          className="w-full px-3 py-1.5 text-sm border border-primary-light-200 rounded-lg focus:outline-primary-disabled"
-                                        />
-                                      </div>
-                                    </div>
-                                    {/* Ticket count badge */}
-                                    {(() => {
-                                      const cnt = form.tickets.filter(t => t.dayIdx === dayIdx && t.sessionIdx === sessionIdx).length; return cnt > 0 ? (
-                                        <div className="mt-2">
-                                          <Badge size="sm" variant="light" color="blue">{cnt} tiket</Badge>
-                                        </div>
-                                      ) : null;
-                                    })()}
-                                  </div>
-                                ))
-                              )}
-                              <button onClick={() => handleAddSession(dayIdx)} className="text-xs text-primary-base font-semibold flex items-center gap-1 ml-2">
-                                <Icon icon="ph:plus-bold" /> Tambah Sesi
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
                   {/* Flat Ticket List */}
                   <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
@@ -704,10 +497,8 @@ export default function AdminCreateShuttle() {
                       {form.tickets.length === 0 ? (
                         <Text size="sm" c="dimmed">Belum ada tiket. Klik &ldquo;Kelola Tiket&rdquo; untuk menambahkan.</Text>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           {form.tickets.map((t, tIdx) => {
-                            const day = form.operation_days[t.dayIdx ?? 0];
-                            const session = day?.sessions[t.sessionIdx ?? 0];
                             return (
                               <TicketContainer
                                 key={tIdx}
@@ -852,7 +643,6 @@ export default function AdminCreateShuttle() {
             setIsOpen={setTicketModalOpen}
             ticket={modalTickets}
             setTicket={handleSetTicket}
-            operationDays={form.operation_days}
           />
         </CreateEventContext.Provider>
 
