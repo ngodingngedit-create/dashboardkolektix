@@ -393,7 +393,8 @@ const Merch = () => {
                     verifiedData.forEach((trans: any) => {
                         if (trans.etickets && trans.etickets.length > 0) {
                             trans.etickets.forEach((eticket: any, index: number) => {
-                                const tName = eticket.has_event_ticket?.name || eticket.ticket_category || eticket.category_ticket || trans.tickets?.[index]?.has_event_ticket?.name || trans.tickets?.[index]?.ticket_category;
+                                const matchedTicket = trans.tickets?.find((t: any) => String(t.event_ticket_id) === String(eticket.event_ticket_id));
+                                const tName = matchedTicket?.has_event_ticket?.name || matchedTicket?.ticket_category || eticket.ticket_category || "-";
                                 if (selectedTicket !== 'all' && tName !== selectedTicket) return;
 
                                 total++;

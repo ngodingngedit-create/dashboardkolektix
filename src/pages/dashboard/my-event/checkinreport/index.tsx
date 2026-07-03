@@ -213,6 +213,7 @@ const CheckinReport = () => {
           // Prioritize new etickets payload
             trans.etickets.forEach((eticket, index) => {
               const identity = trans.identities?.[index];
+              const matchedTicket = trans.tickets?.find((t: any) => String(t.event_ticket_id) === String(eticket.event_ticket_id));
               list.push({
                 no: absoluteRowNum++,
                 nama: identity?.full_name || (trans.has_user as any)?.name || "-",
@@ -221,7 +222,7 @@ const CheckinReport = () => {
                 status_checkin: eticket.is_checkin === 1,
                 invoice: trans.invoice_no,
                 qr_code: eticket.eticket_number, // Used for manual check-in
-                ticket_name: trans.tickets?.[index]?.has_event_ticket?.name || "-"
+                ticket_name: matchedTicket?.has_event_ticket?.name || "-"
               });
             });
         } else {
