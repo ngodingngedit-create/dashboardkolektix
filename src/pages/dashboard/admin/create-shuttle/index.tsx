@@ -66,7 +66,28 @@ interface ShuttleItem {
   is_email?: number;
   is_phone?: number;
   is_noidentity?: number;
+  shuttle_id?: number;
+  shuttle_session_id?: number;
 }
+
+const emptyTicket: ShuttleTicket = {
+  name: "",
+  description: "",
+  qty: 0,
+  price: "0",
+  trip_status_id: "1",
+  ticket_start_date: "",
+  ticket_start_time: "08:00",
+  ticket_end_date: "",
+  ticket_end_time: "23:59",
+  route_id: 1,
+  ticket_category: "Festival",
+  ticket_type: "Berbayar",
+  available_seat: [],
+  seat_color: "#194e9e",
+  shuttle_id: 1,
+  shuttle_session_id: 1,
+};
 
 const emptyForm = {
   id: 0,
@@ -215,6 +236,8 @@ export default function AdminCreateShuttle() {
                     available_seat_number: t.available_seat_number || "",
                     available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
                     seat_color: t.seat_color || "#194e9e",
+                    shuttle_id: t.shuttle_id || 1,
+                    shuttle_session_id: t.shuttle_session_id || 1,
                   });
                 });
               }
@@ -302,7 +325,7 @@ export default function AdminCreateShuttle() {
 
       const payload: any = {
         name: form.name,
-        description: form.description,
+        description: form.description.replace(/<[^>]*>/g, ''),
         terms: form.terms,
         start_date: form.start_date,
         start_time: form.start_time,
@@ -331,9 +354,11 @@ export default function AdminCreateShuttle() {
           ticket_end_time: t.ticket_end_time,
           ...(t.available_seat_number ? { available_seat_number: t.available_seat_number } : {}),
           ...(t.seat_color ? { seat_color: t.seat_color } : {}),
+          shuttle_id: t.shuttle_id ?? form.id,
+          shuttle_session_id: t.shuttle_session_id ?? 1,
         })),
       };
-      if (form.image_base64) payload.image_base64 = form.image_base64;
+      if (form.image_base64) payload.image = form.image_base64;
 
       if (isEdit && form.id) {
         await Put(`shuttle/${form.id}`, payload);

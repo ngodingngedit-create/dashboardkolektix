@@ -8,7 +8,7 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faCheckCircle, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { notifications } from "@mantine/notifications";
 
 const CheckinReport = () => {
@@ -481,24 +481,39 @@ const CheckinReport = () => {
                         </Badge>
                       </td>
                       <td style={cellStyle()}>
-                        {!item.status_checkin && (
-                          <Button 
-                            size="compact-xs" 
-                            variant="light" 
-                            color="blue"
-                            leftSection={<FontAwesomeIcon icon={faCheckCircle} />}
-                            onClick={() => {
-                              setSelectedCheckin({
-                                ...item,
-                                invitation_number: item.invoice, // For invitation
-                                qr_code: item.qr_code // For eticket
-                              });
-                              setIsCheckinModalOpen(true);
-                            }}
-                          >
-                            Checkin Manual
-                          </Button>
-                        )}
+                        <Flex gap="md" align="center">
+                          {!item.status_checkin && (
+                            <FontAwesomeIcon 
+                              icon={faCheckCircle}
+                              className="text-blue-500 hover:text-blue-700 transition-colors"
+                              style={{ cursor: 'pointer', fontSize: '16px' }}
+                              title="Checkin Manual"
+                              onClick={() => {
+                                setSelectedCheckin({
+                                  ...item,
+                                  invitation_number: item.invoice,
+                                  qr_code: item.qr_code
+                                });
+                                setIsCheckinModalOpen(true);
+                              }}
+                            />
+                          )}
+                          {reportType === "eticket" && (
+                            <a
+                              href={`${config.wsUrl}transaction-document/${item.invoice}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Download Invoice"
+                              style={{ lineHeight: 0 }}
+                            >
+                              <FontAwesomeIcon 
+                                icon={faDownload}
+                                className="text-gray-400 hover:text-blue-600 transition-colors"
+                                style={{ fontSize: '16px' }}
+                              />
+                            </a>
+                          )}
+                        </Flex>
                       </td>
                     </tr>
                   ))

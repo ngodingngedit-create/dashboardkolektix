@@ -30,6 +30,8 @@ export interface ShuttleTicket {
   available_seat_number?: string;
   available_seat?: string[];
   seat_color?: string;
+  shuttle_id?: number;
+  shuttle_session_id?: number;
 }
 
 const emptyTicket: ShuttleTicket = {
@@ -47,6 +49,8 @@ const emptyTicket: ShuttleTicket = {
   ticket_type: "Berbayar",
   available_seat: [],
   seat_color: "#194e9e",
+  shuttle_id: 1,
+  shuttle_session_id: 1,
 };
 
 interface ModalProps {
@@ -79,9 +83,9 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
   }, [isOpen]);
 
   useEffect(() => {
-    if (typeof openForm === "number") {
+    if (typeof openForm === "number" && openForm >= 0) {
       const t = ticket[openForm];
-      setForm(t);
+      setForm(t || { ...emptyTicket });
     } else {
       setForm({ ...emptyTicket });
     }
@@ -99,7 +103,7 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
       newForm.available_seat_number = newForm.available_seat.join(",");
       newForm.qty = newForm.available_seat.length;
     }
-    if (typeof openForm === "number") {
+    if (typeof openForm === "number" && openForm >= 0) {
       setTicket(ticket.map((e, i) => (i === openForm ? newForm : e)));
     } else {
       setTicket([...ticket, newForm]);
@@ -192,7 +196,7 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 ))}
               </Stack>
               <div className="flex flex-col gap-2 shrink-0 mt-auto">
-                <button onClick={() => setOpenForm(undefined)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-base text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm">
+                <button onClick={() => setOpenForm(-1)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-base text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm">
                   <Icon icon="uiw:plus" className="text-base" /> Tambah Tiket
                 </button>
                 <button style={{ display: addSeatMap ? "none" : undefined }} onClick={() => setAddSeatMap(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-primary-light-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all">
