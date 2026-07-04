@@ -509,7 +509,7 @@ const CheckinReport = () => {
                             >
                               <FontAwesomeIcon 
                                 icon={faDownload}
-                                className="text-gray-400 hover:text-blue-600 transition-colors"
+                                className="text-blue-500 hover:text-blue-700 transition-colors"
                                 style={{ fontSize: '16px' }}
                               />
                             </a>

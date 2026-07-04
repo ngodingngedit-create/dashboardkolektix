@@ -85,7 +85,7 @@ export default function AdminBusManagement() {
 
   const [opened, setOpened] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editSlug, setEditSlug] = useState<string | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [viewOpened, setViewOpened] = useState(false);
   const [selectedItem, setSelectedItem] = useState<BusItem | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -137,14 +137,14 @@ export default function AdminBusManagement() {
 
   const handleOpenCreate = () => {
     setIsEdit(false);
-    setEditSlug(null);
+    setEditId(null);
     setForm({ ...emptyForm });
     setOpened(true);
   };
 
   const handleOpenEdit = (item: BusItem) => {
     setIsEdit(true);
-    setEditSlug(item.slug);
+    setEditId(item.id);
     setForm({
       plate_number: item.plate_number || "",
       operator_id: item.operator_id || 1,
@@ -171,8 +171,8 @@ export default function AdminBusManagement() {
     }
     setIsSubmitting(true);
     try {
-      if (isEdit && editSlug) {
-        await Put(`shuttlebuses/${editSlug}`, form);
+      if (isEdit && editId) {
+        await Put(`shuttlebuses/${editId}`, form);
         notifications.show({ title: "Berhasil", message: "Bus berhasil diupdate.", color: "green" });
       } else {
         await Post("shuttlebuses", form);

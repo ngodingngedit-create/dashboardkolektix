@@ -65,7 +65,7 @@ export default function AdminRouteManagement() {
 
   const [opened, setOpened] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editSlug, setEditSlug] = useState<string | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [viewOpened, setViewOpened] = useState(false);
   const [selectedItem, setSelectedItem] = useState<RouteItem | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -117,14 +117,14 @@ export default function AdminRouteManagement() {
 
   const handleOpenCreate = () => {
     setIsEdit(false);
-    setEditSlug(null);
+    setEditId(null);
     setForm({ ...emptyForm });
     setOpened(true);
   };
 
   const handleOpenEdit = async (item: RouteItem) => {
     setIsEdit(true);
-    setEditSlug(item.slug || String(item.id));
+    setEditId(item.id);
     setForm({
       route_name: item.route_name || "",
       origin_name: item.origin_name || "",
@@ -137,18 +137,14 @@ export default function AdminRouteManagement() {
   };
 
   const handleOpenView = async (item: RouteItem) => {
-    if (item.slug) {
-      setLoading(true);
-      try {
-        const res: any = await Get(`shuttleroutes/${item.slug}`, {});
-        setSelectedItem(res.data || res);
-      } catch {
-        setSelectedItem(item);
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    setLoading(true);
+    try {
+      const res: any = await Get(`shuttleroutes/${item.id}`, {});
+      setSelectedItem(res.data || res);
+    } catch {
       setSelectedItem(item);
+    } finally {
+      setLoading(false);
     }
     setViewOpened(true);
   };
@@ -160,8 +156,8 @@ export default function AdminRouteManagement() {
     }
     setIsSubmitting(true);
     try {
-      if (isEdit && editSlug) {
-        await Put(`shuttleroutes/${editSlug}`, form);
+      if (isEdit && editId) {
+        await Put(`shuttleroutes/${editId}`, form);
         notifications.show({ title: "Berhasil", message: "Rute berhasil diupdate.", color: "green" });
       } else {
         await Post("shuttleroutes", form);
@@ -298,7 +294,6 @@ export default function AdminRouteManagement() {
                     </td>
                     <td style={tableCellStyle}>
                       <Text size="sm" fw={700}>{item.route_name}</Text>
-                      {item.slug && <Text size="xs" c="dimmed" ff="monospace">{item.slug}</Text>}
                     </td>
                     <td style={tableCellStyle}>
                       <Group gap={6} wrap="nowrap" align="center">
