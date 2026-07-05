@@ -53,14 +53,20 @@ const emptyTicket: ShuttleTicket = {
   shuttle_session_id: 1,
 };
 
+export interface SessionOption {
+  value: string; // format: "dayIdx-sesIdx"
+  label: string;
+}
+
 interface ModalProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   ticket: ShuttleTicket[];
   setTicket: (tickets: ShuttleTicket[]) => void;
+  sessionOptions?: SessionOption[];
 }
 
-export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, setTicket }: ModalProps) {
+export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, setTicket, sessionOptions }: ModalProps) {
   const [openForm, setOpenForm] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<ShuttleTicket>(emptyTicket);
 
@@ -215,6 +221,31 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <Icon icon="uiw:left" className="text-base" /> Kembali
               </button>
             </Flex>
+
+            {sessionOptions && sessionOptions.length > 0 && (
+              <div className="flex flex-col gap-1 mb-2">
+                <Text size="sm" fw={500}>Sesi <span className="text-red-500">*</span></Text>
+                <select
+                  className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white"
+                  value={(() => {
+                    // Find the session option matching current shuttle_session_id
+                    const match = sessionOptions.find(opt => {
+                      const [, si] = opt.value.split("-").map(Number);
+                      return (si + 1) === form.shuttle_session_id;
+                    });
+                    return match?.value || sessionOptions[0]?.value || "";
+                  })()}
+                  onChange={(e) => {
+                    const [di, si] = e.target.value.split("-").map(Number);
+                    setForm({ ...form, shuttle_session_id: si + 1 });
+                  }}
+                >
+                  {sessionOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <RadioGroup label={<p>Kategori Tiket<span className="text-red-500"> *</span></p>} className="gap-1 w-full" size="md" color="primary" value={form.ticket_category} onChange={(e) => setForm({ ...form, ticket_category: e.target.value })}>
               <div className="grid grid-cols-2">

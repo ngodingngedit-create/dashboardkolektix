@@ -70,6 +70,20 @@ interface ShuttleItem {
   shuttle_session_id?: number;
 }
 
+interface ShuttleSession {
+  id?: number;
+  session_name: string;
+  session_start_time: string;
+  session_end_time: string;
+  tickets: ShuttleTicket[];
+}
+
+interface OperationDay {
+  id?: number;
+  day_name: string;
+  sessions: ShuttleSession[];
+}
+
 const emptyTicket: ShuttleTicket = {
   name: "",
   description: "",
@@ -87,6 +101,18 @@ const emptyTicket: ShuttleTicket = {
   seat_color: "#194e9e",
   shuttle_id: 1,
   shuttle_session_id: 1,
+};
+
+const emptySession: ShuttleSession = {
+  session_name: "",
+  session_start_time: "08:00",
+  session_end_time: "12:00",
+  tickets: [],
+};
+
+const emptyDay: OperationDay = {
+  day_name: "",
+  sessions: [],
 };
 
 const emptyForm = {
@@ -110,6 +136,7 @@ const emptyForm = {
   is_phone: 1,
   is_noidentity: 0,
   tickets: [] as ShuttleTicket[],
+  operation_days: [] as OperationDay[],
 };
 
 export default function AdminCreateShuttle() {
@@ -211,15 +238,19 @@ export default function AdminCreateShuttle() {
       const res: any = await Get(`shuttle/${slug}`, {});
       const item = res.data || res;
 
-      // Flatten tickets from API response (tickets are nested under operation_days > sessions)
+      // Preserve operation_days from API response
+      const loadedDays: OperationDay[] = [];
       const flatTickets: ShuttleTicket[] = [];
+
       if (item.operation_days && Array.isArray(item.operation_days)) {
         item.operation_days.forEach((day: any) => {
+          const sessions: ShuttleSession[] = [];
           if (day.sessions && Array.isArray(day.sessions)) {
             day.sessions.forEach((session: any) => {
+              const sessionTickets: ShuttleTicket[] = [];
               if (session.tickets && Array.isArray(session.tickets)) {
                 session.tickets.forEach((t: any) => {
-                  flatTickets.push({
+                  const ticket: ShuttleTicket = {
                     id: t.id,
                     name: t.name || "",
                     description: t.description || "",
@@ -238,11 +269,25 @@ export default function AdminCreateShuttle() {
                     seat_color: t.seat_color || "#194e9e",
                     shuttle_id: t.shuttle_id || 1,
                     shuttle_session_id: t.shuttle_session_id || 1,
-                  });
+                  };
+                  sessionTickets.push(ticket);
+                  flatTickets.push(ticket);
                 });
               }
+              sessions.push({
+                id: session.id,
+                session_name: session.session_name || "",
+                session_start_time: session.session_start_time || "08:00",
+                session_end_time: session.session_end_time || "12:00",
+                tickets: sessionTickets,
+              });
             });
           }
+          loadedDays.push({
+            id: day.id,
+            day_name: day.day_name || "",
+            sessions,
+          });
         });
       }
 
@@ -267,6 +312,7 @@ export default function AdminCreateShuttle() {
         is_phone: item.is_phone ?? 1,
         is_noidentity: item.is_noidentity ?? 0,
         tickets: flatTickets,
+        operation_days: loadedDays,
       });
       setImagePreview(item.image_url || null);
 
@@ -314,6 +360,77 @@ export default function AdminCreateShuttle() {
     reader.readAsDataURL(file);
   };
 
+  // ── Operation Days / Sessions helpers ──
+  const handleAddDay = () => {
+    setForm(prev => ({
+      ...prev,
+      operation_days: [...prev.operation_days, { ...emptyDay }],
+    }));
+  };
+
+  const updateDayName = (dayIdx: number, value: string) => {
+    setForm(prev => {
+      const days = [...prev.operation_days];
+      days[dayIdx] = { ...days[dayIdx], day_name: value };
+      return { ...prev, operation_days: days };
+    });
+  };
+
+  const removeDay = (dayIdx: number) => {
+    setForm(prev => ({
+      ...prev,
+      operation_days: prev.operation_days.filter((_, i) => i !== dayIdx),
+    }));
+  };
+
+  const addSession = (dayIdx: number) => {
+    setForm(prev => {
+      const days = [...prev.operation_days];
+      days[dayIdx] = {
+        ...days[dayIdx],
+        sessions: [...days[dayIdx].sessions, { ...emptySession }],
+      };
+      return { ...prev, operation_days: days };
+    });
+  };
+
+  const updateSessionField = (dayIdx: number, sesIdx: number, field: string, value: string) => {
+    setForm(prev => {
+      const days = [...prev.operation_days];
+      const sessions = [...days[dayIdx].sessions];
+      sessions[sesIdx] = { ...sessions[sesIdx], [field]: value };
+      days[dayIdx] = { ...days[dayIdx], sessions };
+      return { ...prev, operation_days: days };
+    });
+  };
+
+  const removeSession = (dayIdx: number, sesIdx: number) => {
+    setForm(prev => {
+      const days = [...prev.operation_days];
+      days[dayIdx] = {
+        ...days[dayIdx],
+        sessions: days[dayIdx].sessions.filter((_, i) => i !== sesIdx),
+      };
+      return { ...prev, operation_days: days };
+    });
+  };
+
+  // ── Derived session options for the ticket modal ──
+  const sessionOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = [];
+    form.operation_days.forEach((day, di) => {
+      day.sessions.forEach((ses, si) => {
+        const dayLabel = day.day_name || `Hari ${di + 1}`;
+        const sesLabel = ses.session_name || `Sesi ${si + 1}`;
+        opts.push({
+          value: `${di}-${si}`,
+          label: `${dayLabel} — ${sesLabel} (${ses.session_start_time?.substring(0,5)}-${ses.session_end_time?.substring(0,5)})`,
+        });
+      });
+    });
+    return opts;
+  }, [form.operation_days]);
+
   const handleSubmit = async () => {
     if (!form.name) {
       notifications.show({ title: "Validasi", message: "Nama shuttle wajib diisi.", color: "orange" });
@@ -323,6 +440,38 @@ export default function AdminCreateShuttle() {
     try {
       const seatmapJson = seatmapData.length > 0 ? JSON.stringify(seatmapData) : null;
 
+      // Build operation_days payload from state
+      const operationDaysPayload = form.operation_days.map((day) => ({
+        ...(day.id ? { id: day.id } : {}),
+        day_name: day.day_name,
+        sessions: day.sessions.map((ses) => ({
+          ...(ses.id ? { id: ses.id } : {}),
+          session_name: ses.session_name,
+          session_start_time: ses.session_start_time,
+          session_end_time: ses.session_end_time,
+          tickets: ses.tickets.map((t) => ({
+            ...(t.id ? { id: t.id } : {}),
+            name: t.name,
+            description: t.description,
+            qty: t.qty,
+            price: parseInt(t.price) || 0,
+            trip_status_id: Number(t.trip_status_id) || 1,
+            route_id: t.route_id,
+            ticket_type: t.ticket_type,
+            ticket_category: t.ticket_category,
+            ticket_start_date: t.ticket_start_date,
+            ticket_start_time: t.ticket_start_time,
+            ticket_end_date: t.ticket_end_date,
+            ticket_end_time: t.ticket_end_time,
+            ...(t.available_seat_number ? { available_seat_number: t.available_seat_number } : {}),
+            ...(t.seat_color ? { seat_color: t.seat_color } : {}),
+            shuttle_id: t.shuttle_id ?? form.id,
+            shuttle_session_id: t.shuttle_session_id ?? 1,
+          })),
+        })),
+      }));
+
+      // Fallback: if no operation_days defined, use flat tickets
       const payload: any = {
         name: form.name,
         description: form.description.replace(/<[^>]*>/g, ''),
@@ -338,7 +487,12 @@ export default function AdminCreateShuttle() {
         is_email: form.is_email,
         is_phone: form.is_phone,
         is_noidentity: form.is_noidentity,
-        tickets: form.tickets.map(t => ({
+      };
+
+      if (operationDaysPayload.length > 0) {
+        payload.operation_days = operationDaysPayload;
+      } else {
+        payload.tickets = form.tickets.map(t => ({
           ...(t.id ? { id: t.id } : {}),
           name: t.name,
           description: t.description,
@@ -356,8 +510,9 @@ export default function AdminCreateShuttle() {
           ...(t.seat_color ? { seat_color: t.seat_color } : {}),
           shuttle_id: t.shuttle_id ?? form.id,
           shuttle_session_id: t.shuttle_session_id ?? 1,
-        })),
-      };
+        }));
+      }
+
       if (form.image_base64) payload.image = form.image_base64;
 
       if (isEdit && form.id) {
@@ -402,7 +557,20 @@ export default function AdminCreateShuttle() {
   // Ticket modal state – proxies flat form.tickets
   const modalTickets = form.tickets;
   const handleSetTicket = (tickets: ShuttleTicket[]) => {
-    setForm(prev => ({ ...prev, tickets }));
+    setForm(prev => {
+      // Also sync tickets into operation_days sessions by shuttle_session_id
+      const days = prev.operation_days.map((day, di) => ({
+        ...day,
+        sessions: day.sessions.map((ses, si) => {
+          const sesIdx = si + 1; // shuttle_session_id is 1-based
+          return {
+            ...ses,
+            tickets: tickets.filter(t => t.shuttle_session_id === sesIdx),
+          };
+        }),
+      }));
+      return { ...prev, tickets, operation_days: days };
+    });
   };
   const handleOpenTicketModal = () => {
     setTicketModalOpen(true);
@@ -510,7 +678,133 @@ export default function AdminCreateShuttle() {
                 }}
               >
                 <Tab key="info-tiket" title="Info Tiket">
-                  {/* Flat Ticket List */}
+                  {/* ── Operation Days & Sessions ── */}
+                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto overflow-hidden">
+                    <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center bg-primary-light-200/30">
+                      <h3 className="text-medium font-semibold flex items-center gap-2">
+                        <Icon icon="ph:calendar-bold" className="text-primary-base" />
+                        Hari & Sesi Operasional
+                      </h3>
+                      <button onClick={handleAddDay} className="text-sm font-semibold text-primary-base flex items-center gap-1.5 hover:text-primary-dark transition-colors">
+                        <Icon icon="ph:plus-bold" /> Tambah Hari
+                      </button>
+                    </div>
+                    <div className="p-5">
+                      {form.operation_days.length === 0 ? (
+                        <div className="text-center py-6">
+                          <Icon icon="ph:calendar-blank" className="text-4xl text-gray-300 mx-auto mb-2" />
+                          <Text size="sm" c="dimmed">Belum ada hari operasional. Klik &ldquo;Tambah Hari&rdquo; untuk menambahkan.</Text>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          {form.operation_days.map((day, di) => (
+                            <div key={di} className="border border-primary-light-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                              {/* Day Header */}
+                              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-primary-light-200">
+                                <div className="flex-1 flex items-center gap-2">
+                                  <Icon icon="ph:sun-bold" className="text-amber-500 shrink-0" />
+                                  <input
+                                    type="text"
+                                    placeholder={`Nama hari ${di + 1} (contoh: Senin, Selasa, ...)`}
+                                    value={day.day_name}
+                                    onChange={(e) => updateDayName(di, e.target.value)}
+                                    className="flex-1 border border-light-grey rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => addSession(di)}
+                                  className="text-xs font-semibold text-primary-base flex items-center gap-1 hover:text-primary-dark transition-colors shrink-0"
+                                >
+                                  <Icon icon="ph:clock-plus-bold" /> Tambah Sesi
+                                </button>
+                                <button
+                                  onClick={() => removeDay(di)}
+                                  className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                  title="Hapus hari"
+                                >
+                                  <Icon icon="ph:trash-bold" className="text-lg" />
+                                </button>
+                              </div>
+
+                              {/* Sessions */}
+                              {day.sessions.length === 0 ? (
+                                <div className="px-4 py-3 text-sm text-gray-400 italic">
+                                  Belum ada sesi. Klik &ldquo;Tambah Sesi&rdquo;.
+                                </div>
+                              ) : (
+                                <div className="px-4 py-3 flex flex-col gap-3">
+                                  {day.sessions.map((ses, si) => (
+                                    <div key={si} className="flex items-center gap-3 bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
+                                      <Icon icon="ph:clock-bold" className="text-blue-500 shrink-0" />
+                                      <input
+                                        type="text"
+                                        placeholder={`Nama sesi ${si + 1} (contoh: Pagi, Siang, ...)`}
+                                        value={ses.session_name}
+                                        onChange={(e) => updateSessionField(di, si, "session_name", e.target.value)}
+                                        className="flex-1 border border-light-grey rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
+                                      />
+                                      <input
+                                        type="time"
+                                        value={ses.session_start_time?.substring(0, 5)}
+                                        onChange={(e) => updateSessionField(di, si, "session_start_time", e.target.value + ":00")}
+                                        className="w-[110px] border border-light-grey rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                      />
+                                      <span className="text-gray-400 text-sm">—</span>
+                                      <input
+                                        type="time"
+                                        value={ses.session_end_time?.substring(0, 5)}
+                                        onChange={(e) => updateSessionField(di, si, "session_end_time", e.target.value + ":00")}
+                                        className="w-[110px] border border-light-grey rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                      />
+                                      <button
+                                        onClick={() => removeSession(di, si)}
+                                        className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                        title="Hapus sesi"
+                                      >
+                                        <Icon icon="ph:x-bold" className="text-lg" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Tickets grouped under this day/session */}
+                              {day.sessions.map((ses, si) => {
+                                if (ses.tickets.length === 0) return null;
+                                return (
+                                  <div key={`tickets-${si}`} className="border-t border-primary-light-200 px-4 py-3">
+                                    <Text size="xs" fw={700} c="dimmed" className="uppercase mb-2 flex items-center gap-1">
+                                      <Icon icon="ph:ticket-bold" />
+                                      Tiket — {ses.session_name || `Sesi ${si + 1}`}
+                                    </Text>
+                                    <div className="grid grid-cols-1 gap-3">
+                                      {ses.tickets.map((t, tIdx) => (
+                                        <TicketContainer
+                                          key={tIdx}
+                                          type={t.ticket_type}
+                                          category={t.ticket_category}
+                                          price={Number(t.price)}
+                                          ticketDate={t.ticket_start_date}
+                                          ticketEnd={t.ticket_end_date}
+                                          description={t.description}
+                                          name={t.name}
+                                          qty={t.qty}
+                                          onEdit={() => { handleOpenTicketModal(); }}
+                                          seatColor={t.seat_color}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Flat Ticket List (legacy / fallback) ── */}
                   <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
                       <h3 className="text-medium font-semibold">Daftar Tiket</h3>
@@ -668,6 +962,7 @@ export default function AdminCreateShuttle() {
             setIsOpen={setTicketModalOpen}
             ticket={modalTickets}
             setTicket={handleSetTicket}
+            sessionOptions={sessionOptions}
           />
         </CreateEventContext.Provider>
 
