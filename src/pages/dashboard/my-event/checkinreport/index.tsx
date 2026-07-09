@@ -37,6 +37,8 @@ const CheckinReport = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  const [isLoadingRemaining, setIsLoadingRemaining] = useState(false);
+
   const user = useLoggedUser();
 
   useEffect(() => {
@@ -126,24 +128,68 @@ const CheckinReport = () => {
 
     try {
       if (reportType === "eticket") {
-        const params = new URLSearchParams({
+        // === LANGKAH 1: Fetch 20 data pertama dulu ===
+        const firstParams = new URLSearchParams({
           event_id: selectedEvent.toString(),
           page: "1",
-          per_page: "999999",
+          per_page: "20",
         });
 
-        const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
-        const response = await axios.get(apiUrl, {
+        const firstUrl = `${config.wsUrl}list-transaction-by-event?${firstParams.toString()}`;
+        const firstResponse = await axios.get(firstUrl, {
           headers: {
             'Authorization': `Bearer ${Cookies.get('token')}`
           }
         });
 
-        if (response.data?.data && Array.isArray(response.data.data)) {
-          const verifiedData = response.data.data.filter((t: any) =>
+        let allData: any[] = [];
+
+        if (firstResponse.data?.data && Array.isArray(firstResponse.data.data)) {
+          const verifiedFirst = firstResponse.data.data.filter((t: any) =>
             t.transaction_status_id === 2
           );
-          setAllDataList(verifiedData);
+          allData = [...verifiedFirst];
+
+          const pagination = firstResponse.data.pagination;
+          const totalRecords = pagination?.total || allData.length;
+
+          // Set 20 data pertama segera
+          setAllDataList([...allData]);
+
+          // Hapus loading biar user bisa liat & interaksi sama tabel
+          setLoading.filter((e) => e != "getdata");
+
+          // === LANGKAH 2: Kalau total <= 20, selesai ===
+          if (totalRecords <= 20) {
+            return;
+          }
+        } else {
+          setAllDataList([]);
+          setLoading.filter((e) => e != "getdata");
+          return;
+        }
+
+        // === LANGKAH 3: Fetch semua data sekaligus ===
+        setIsLoadingRemaining(true);
+
+        const allParams = new URLSearchParams({
+          event_id: selectedEvent.toString(),
+          page: "1",
+          per_page: "999999",
+        });
+
+        const allUrl = `${config.wsUrl}list-transaction-by-event?${allParams.toString()}`;
+        const allResponse = await axios.get(allUrl, {
+          headers: {
+            'Authorization': `Bearer ${Cookies.get('token')}`
+          }
+        });
+
+        if (allResponse.data?.data && Array.isArray(allResponse.data.data)) {
+          const verifiedAll = allResponse.data.data.filter((t: any) =>
+            t.transaction_status_id === 2
+          );
+          setAllDataList(verifiedAll);
         }
       } else {
         // Fetch Invitations
@@ -156,10 +202,12 @@ const CheckinReport = () => {
 
         const data = Array.isArray(response.data) ? response.data : response.data.data || [];
         setInvitationData(data);
+        setLoading.filter((e) => e != "getdata");
       }
     } catch (error: any) {
       console.error("API Error:", error);
     } finally {
+      setIsLoadingRemaining(false);
       setLoading.filter((e) => e != "getdata");
     }
   };
@@ -448,6 +496,95 @@ const CheckinReport = () => {
                       <Text fw={500} c="dimmed">Memuat data...</Text>
                     </td>
                   </tr>
+                ) : isLoadingRemaining ? (
+                  <>
+                    {pagedData.length > 0 ? (
+                      pagedData.map((item, idx) => (
+                        <tr
+                          key={idx}
+                          style={{ borderBottom: "1px solid #f0f0f0", transition: "background 0.2s" }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                        >
+                          <td style={cellStyle(true)}>
+                            <Text size="sm" c="dimmed" fw={500}>{item.displayNo}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Text size="sm" fw={600} className="font-mono">{item.invoice}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Text size="sm" fw={600} style={{ color: '#333' }}>{item.nama}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Text size="sm">{item.telepon}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Text size="sm" c="dimmed">{item.email}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Badge
+                              color={item.status_checkin ? "green" : "gray"}
+                              variant="light"
+                              size="sm"
+                              className="font-semibold px-3 py-1"
+                            >
+                              {item.status_checkin ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
+                            </Badge>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Flex gap="md" align="center">
+                              {!item.status_checkin && (
+                                <FontAwesomeIcon 
+                                  icon={faCheckCircle}
+                                  className="text-blue-500 hover:text-blue-700 transition-colors"
+                                  style={{ cursor: 'pointer', fontSize: '16px' }}
+                                  title="Checkin Manual"
+                                  onClick={() => {
+                                    setSelectedCheckin({
+                                      ...item,
+                                      invitation_number: item.invoice,
+                                      qr_code: item.qr_code
+                                    });
+                                    setIsCheckinModalOpen(true);
+                                  }}
+                                />
+                              )}
+                              {reportType === "eticket" && (
+                                <a
+                                  href={`${config.wsUrl}transaction-document/${item.invoice}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Download Invoice"
+                                  style={{ lineHeight: 0 }}
+                                >
+                                  <FontAwesomeIcon 
+                                    icon={faDownload}
+                                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                                    style={{ fontSize: '16px' }}
+                                  />
+                                </a>
+                              )}
+                            </Flex>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
+                          <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
+                        </td>
+                      </tr>
+                    )}
+                    {/* Loading overlay row for remaining data */}
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: "center", padding: "12px", backgroundColor: "#f8f9ff" }}>
+                        <Text size="sm" c="blue" fw={500}>
+                          <FontAwesomeIcon icon={faDownload} spin style={{ marginRight: 8 }} />
+                          Memuat sisa data...
+                        </Text>
+                      </td>
+                    </tr>
+                  </>
                 ) : pagedData.length > 0 ? (
                   pagedData.map((item, idx) => (
                     <tr

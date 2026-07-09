@@ -1283,6 +1283,7 @@ const Merch = () => {
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>([]);
   const [loading, setLoading] = useListState<string>();
   const [loadingEventData, setLoadingEventData] = useState(false);
+  const [isLoadingRemaining, setIsLoadingRemaining] = useState(false);
   const [transactionSegment, setTransactionSegment] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const user = useLoggedUser();
@@ -1646,30 +1647,76 @@ const Merch = () => {
 
     setLoading.append("loadData");
     setAllDataList([]);
+    setApiPaginationInfo({ totalRecords: 0, grandTotal: 0 });
 
     try {
-      const params = new URLSearchParams({
+      // === LANGKAH 1: Fetch 20 data pertama dulu ===
+      const firstParams = new URLSearchParams({
+        event_id: selectedEvent.toString(),
+        page: "1",
+        per_page: "20"
+      });
+
+      const firstUrl = `${config.wsUrl}list-transaction-by-event?${firstParams.toString()}`;
+      const firstResponse = await axios.get(firstUrl);
+
+      let allTransactions: TransactionListResponse[] = [];
+      let grandTotal = 0;
+
+      if (firstResponse.data?.data && Array.isArray(firstResponse.data.data)) {
+        allTransactions = [...firstResponse.data.data];
+        grandTotal = firstResponse.data.grand_total || 0;
+
+        const pagination = firstResponse.data.pagination;
+        const totalRecords = pagination?.total || allTransactions.length;
+
+        // Set 20 data pertama segera
+        setAllDataList([...allTransactions]);
+        setApiPaginationInfo({
+          totalRecords: allTransactions.length,
+          grandTotal: grandTotal,
+        });
+
+        // Hapus loading biar user bisa liat & interaksi sama tabel
+        setLoading.filter((e) => e != "loadData");
+
+        // === LANGKAH 2: Kalau total <= 20, selesai ===
+        if (totalRecords <= 20) {
+          return;
+        }
+      } else {
+        setAllDataList([]);
+        setLoading.filter((e) => e != "loadData");
+        return;
+      }
+
+      // === LANGKAH 3: Fetch semua data sekaligus ===
+      setIsLoadingRemaining(true);
+
+      const allParams = new URLSearchParams({
         event_id: selectedEvent.toString(),
         page: "1",
         per_page: "999999"
       });
 
-      const apiUrl = `${config.wsUrl}list-transaction-by-event?${params.toString()}`;
-      const response = await axios.get(apiUrl);
+      const allUrl = `${config.wsUrl}list-transaction-by-event?${allParams.toString()}`;
+      const allResponse = await axios.get(allUrl);
 
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        setAllDataList([...response.data.data]);
+      if (allResponse.data?.data && Array.isArray(allResponse.data.data)) {
+        allTransactions = [...allResponse.data.data];
+        grandTotal = allResponse.data.grand_total || grandTotal;
+
+        setAllDataList(allTransactions);
         setApiPaginationInfo({
-          totalRecords: response.data.data.length,
-          grandTotal: response.data.grand_total || 0,
+          totalRecords: allTransactions.length,
+          grandTotal: grandTotal,
         });
-      } else {
-        setAllDataList([]);
       }
     } catch (error: any) {
+      // Kalau error di fetch kedua, jangan clear data yang sudah keburu tampil
       console.error("API Error:", error);
-      setAllDataList([]);
     } finally {
+      setIsLoadingRemaining(false);
       setLoading.filter((e) => e != "loadData");
     }
   };
@@ -2375,9 +2422,14 @@ const Merch = () => {
             </Box>
 
             {filteredDataList.length > 0 && (
-              <Flex justify="space-between" align="center" mt="md">
+              <Flex justify="space-between" align="center" mt="md" wrap="wrap" gap="sm">
                 <Text size="sm" c="dimmed">
                   Menampilkan {((currentPage - 1) * itemsPerPageLocal) + 1} sampai {Math.min(currentPage * itemsPerPageLocal, currentTotal)} dari <strong>{currentTotal}</strong> transaksi
+                  {isLoadingRemaining && (
+                    <span style={{ color: '#228be6', marginLeft: 8 }}>
+                      • Memuat data selanjutnya...
+                    </span>
+                  )}
                   <br />
                   <small>
                     Halaman {currentPage} dari {lastPageLocal} | Total Keseluruhan: Rp {apiPaginationInfo.grandTotal.toLocaleString("id-ID")}

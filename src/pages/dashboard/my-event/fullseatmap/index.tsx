@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, memo, useDeferredValue, useCallback } from "react";
 import { GetServerSideProps } from "next";
 import axios from "axios";
-import { useDebouncedValue, useClickOutside } from "@mantine/hooks";
+import { useClickOutside } from "@mantine/hooks";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { Get } from "@/utils/REST";
 import {
@@ -94,6 +94,89 @@ interface Props {
   initialCreatorId: number | null;
 }
 
+// ─── React.memo SeatBox ───────────────────────────────────────────────────────
+interface SeatBoxProps {
+  seatNumber: string;
+  displaySeatNumber: string;
+  isBought: boolean;
+  areaColor?: string;
+  isDimmed: boolean;
+  isHighlighted: boolean;
+  onSeatClick: (seatNumber: string) => void;
+}
+
+const SeatBox = memo(function SeatBox({
+  seatNumber,
+  displaySeatNumber,
+  isBought,
+  areaColor,
+  isDimmed,
+  isHighlighted,
+  onSeatClick,
+}: SeatBoxProps) {
+  const bgColor = isBought ? (areaColor || "#adb5bd") : "#e9ecef";
+  const borderColor = isBought ? "rgba(250,250,250,0.18)" : "#d0d0d0";
+
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={() => isBought && onSeatClick(seatNumber)}
+      title={`Seat: ${displaySeatNumber}${isBought ? " (Terjual - Klik untuk detail)" : " (Tersedia)"}`}
+      w={20}
+      h={25}
+      className={`rounded-sm relative overflow-hidden transition-all duration-200 ${isBought ? "cursor-pointer" : "cursor-default"}`}
+      style={{
+        opacity: isDimmed ? 0.2 : 1,
+        transform: isHighlighted ? 'scale(1.1)' : 'scale(1)',
+        zIndex: isHighlighted ? 100 : 1,
+        minWidth: "20px",
+        minHeight: "25px",
+        flexShrink: 0,
+        padding: 0,
+        border: 'none',
+        background: 'transparent',
+        outline: isHighlighted ? '1.5px solid white' : 'none',
+        outlineOffset: '-1px',
+        boxShadow: isHighlighted ? '0 0 8px rgba(0,0,0,0.4)' : 'none',
+        contain: 'layout style paint',
+      }}
+    >
+      {/* Seat body */}
+      <Box
+        className="relative z-10 rounded-sm"
+        style={{
+          marginTop: '5px',
+          height: 'calc(100% - 10px)',
+          backgroundColor: bgColor,
+          border: `1px solid ${borderColor}`,
+          contain: 'strict',
+        }}
+      >
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '6px', fontWeight: 700, color: isBought ? 'white' : '#868e96', textTransform: 'uppercase', lineHeight: 1 }}>
+            {displaySeatNumber}
+          </span>
+        </div>
+      </Box>
+
+      {/* Top arch */}
+      <Box
+        className="absolute top-0 left-2/4 -translate-x-2/4 rounded-sm"
+        style={{
+          width: '70%',
+          height: '7px',
+          backgroundColor: bgColor,
+          border: isBought ? 'none' : `1px solid ${borderColor}`,
+          contain: 'strict',
+        }}
+      />
+    </Box>
+  );
+});
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const users = useLoggedUser();
   const [events, setEvents] = useState<EventData[]>(initialEvents || []);
@@ -109,7 +192,9 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSession, setSelectedSession] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
+
+  // useDeferredValue keeps the UI responsive while search updates lag behind
+  const deferredSearch = useDeferredValue(searchQuery);
 
   // Seatmap state
   const [scale, setScale] = useState(1);
@@ -147,7 +232,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventData]);
 
-  // Fetch Transactions (fetch all in background)
+  // Fetch Transactions
   const fetchTransactions = async (creatorId: number, eventId: string) => {
     if (!eventId || eventId === "all") {
       setTransactions([]);
@@ -204,9 +289,11 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   // Process transactions into a seat map for quick local lookup
   const seatToBuyerMap = useMemo(() => {
     const map: Record<string, { transaction: Transaction; ticket: Ticket }> = {};
+    const isSessionFiltered = selectedSession !== "all";
+
     transactions.forEach((trx) => {
       trx.tickets.forEach((t: any) => {
-        if (selectedSession !== "all" && t.event_session?.session_name !== selectedSession) {
+        if (isSessionFiltered && t.event_session?.session_name !== selectedSession) {
           return;
         }
 
@@ -228,16 +315,15 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
             if (typeof t.seatnumber_ticket === "string") seats = [t.seatnumber_ticket];
           }
         }
-        seats.forEach((s) => {
-          map[s] = { transaction: trx, ticket: t };
-        });
+        for (let i = 0; i < seats.length; i++) {
+          map[seats[i]] = { transaction: trx, ticket: t };
+        }
       });
     });
     return map;
   }, [transactions, selectedSession]);
 
-  // Fetch specific transaction detail from local map
-  const fetchSeatTransactionDetail = (seatNumber: string) => {
+  const fetchSeatTransactionDetail = useCallback((seatNumber: string) => {
     const info = seatToBuyerMap[seatNumber];
     if (info) {
       setSelectedSeatTrx(info.transaction);
@@ -246,30 +332,32 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     } else {
       console.warn("Transaction detail for seat not found locally");
     }
-  };
+  }, [seatToBuyerMap]);
 
   const takenSeatsFromAPI = useMemo(() => {
     const seats = new Set<string>();
+    const isSessionFiltered = selectedSession !== "all";
+
     selectedEventData?.has_event_ticket?.forEach((t: any) => {
       const sessionName = ticketNameToSessionName.get(t.name);
       
-      if (selectedSession !== "all") {
+      if (isSessionFiltered) {
         if (sessionName && sessionName !== selectedSession) return;
-        if (!sessionName && !t.name?.includes(selectedSession)) return; // Fallback if no transactions
+        if (!sessionName && !t.name?.includes(selectedSession)) return;
       }
 
       if (t.taken_seat_number) {
-        String(t.taken_seat_number).split(",").forEach(s => {
-          if (s.trim()) seats.add(s.trim());
-        });
+        const parts = String(t.taken_seat_number).split(",");
+        for (let i = 0; i < parts.length; i++) {
+          const s = parts[i].trim();
+          if (s) seats.add(s);
+        }
       }
     });
     return seats;
   }, [selectedEventData, selectedSession, ticketNameToSessionName]);
 
-
-
-  // Handle Zoom and Pan (similar to Seatmap component)
+  // Handle Zoom and Pan
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
     document.body.style.overflow = "hidden";
@@ -303,12 +391,13 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   };
 
-  // Categories for filtering
   const ticketCategories = useMemo(() => {
     const list: string[] = [];
+    const isSessionFiltered = selectedSession !== "all";
+
     selectedEventData?.has_event_ticket?.forEach((t: any) => {
       const sessionName = ticketNameToSessionName.get(t.name);
-      if (selectedSession !== "all") {
+      if (isSessionFiltered) {
         if (sessionName && sessionName !== selectedSession) return;
         if (!sessionName && !t.name?.includes(selectedSession)) return;
       }
@@ -317,76 +406,18 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     return ["all", ...list];
   }, [selectedEventData, selectedSession, ticketNameToSessionName]);
 
-  // Renderer for individual seats
-  const renderSeat = (seatNumber: string, areaColor?: string, areaTicketName?: string) => {
-    const isBought = takenSeatsFromAPI.has(seatNumber);
+  // Parse seat lookup condition once for all seats
+  const seatFilter = useMemo(() => {
+    const hasCategoryFilter = selectedCategory !== "all";
+    const hasSearch = deferredSearch !== "";
+    const lowerSearch = deferredSearch.toLowerCase();
+    return { hasCategoryFilter, hasSearch, lowerSearch };
+  }, [selectedCategory, deferredSearch]);
 
-    // Remove strip (-) from seat code for display
-    const displaySeatNumber = seatNumber.replace(/-/g, "");
-
-    // Highlight logic
-    const isMatchedSearch = !debouncedSearch || displaySeatNumber.toLowerCase().includes(debouncedSearch.toLowerCase());
-    
-    // Category match doesn't apply to individual seats now without transaction data, 
-    // unless we assume areaTicketName is the category.
-    const isMatchedCategory = selectedCategory === "all" || areaTicketName === selectedCategory;
-
-    const isHighlighted = (selectedCategory !== "all" && isMatchedCategory) || (debouncedSearch && isMatchedSearch);
-
-    // Dim seats that don't match if something is selected/searched
-    const isDimmed = (selectedCategory !== "all" || debouncedSearch) && !isHighlighted;
-
-    const tooltipContent = isBought ? (
-      <Stack gap={2}>
-        <Text size="xs" fw={700}>Seat: {displaySeatNumber}</Text>
-        <Text size="xs" c="orange">Terjual</Text>
-        <Text size="xs" c="dimmed">Klik untuk detail</Text>
-      </Stack>
-    ) : (
-      <Text size="xs">Seat: {displaySeatNumber} (Tersedia)</Text>
-    );
-
-    return (
-      <Tooltip label={tooltipContent} key={seatNumber} withArrow position="top">
-        <Box
-          onClick={() => isBought && fetchSeatTransactionDetail(seatNumber)}
-          w={20}
-          h={25}
-          className={`rounded-md overflow-hidden relative z-40 transition-all duration-200 ${isBought ? "cursor-pointer" : ""}`}
-          style={{
-            opacity: isDimmed ? 0.2 : 1,
-            transform: isHighlighted ? 'scale(1.1)' : 'scale(1)',
-            zIndex: isHighlighted ? 100 : 1,
-            minWidth: "20px",
-            minHeight: "25px",
-            flexShrink: 0
-          }}
-        >
-          <Box
-            className={`relative z-10 rounded-sm mt-[5px] border ${isBought ? "border-[#fafafa30]" : " border-[#d0d0d0]"}`}
-            bg={isBought ? (areaColor || "#adb5bd") : "gray.2"}
-            h="calc(100% - 7px)"
-            style={{
-              boxShadow: isHighlighted ? '0 0 8px rgba(0,0,0,0.4)' : 'none',
-              border: isHighlighted ? '1.5px solid white' : undefined
-            }}
-          >
-            <Center className="h-full">
-              <Text size="6px" fw={700} c={isBought ? "white" : "gray.6"} className="uppercase">
-                {displaySeatNumber}
-              </Text>
-            </Center>
-          </Box>
-
-          <Box
-            className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${isBought ? "" : "border border-[#d0d0d0]"}`}
-            bg={isBought ? (areaColor || "#adb5bd") : "gray.2"}
-            h="calc(100% - 5px)"
-          />
-        </Box>
-      </Tooltip>
-    );
-  };
+  // Memoized callback for seat click to stabilize reference
+  const handleSeatClick = useCallback((seatNumber: string) => {
+    fetchSeatTransactionDetail(seatNumber);
+  }, [fetchSeatTransactionDetail]);
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
@@ -538,19 +569,22 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           ref={canvasWrapRef}
           className="w-full h-full cursor-grab active:cursor-grabbing transition-all duration-75 relative overflow-hidden"
           onWheel={handleWheel}
+          style={{ contain: 'layout paint' }}
         >
           <Box
             className="absolute z-30 top-1/2 left-1/2"
             style={{
               transform: `translate(${canvasPos[0]}px, ${canvasPos[1]}px) translate(-50%, -50%) scale(${scale})`,
-              transformOrigin: 'center'
+              transformOrigin: 'center',
+              willChange: 'transform',
             }}
           >
             {/* Guide Grid lines */}
             <Box className="absolute opacity-10 pointer-events-none -translate-x-1/2 -translate-y-1/2 w-[4000px] h-[4000px]"
               style={{
                 backgroundImage: 'linear-gradient(to right, #ccc 1px, transparent 1px), linear-gradient(to bottom, #ccc 1px, transparent 1px)',
-                backgroundSize: '50px 50px'
+                backgroundSize: '50px 50px',
+                contain: 'layout paint',
               }}
             />
 
@@ -564,17 +598,19 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                   width: area.size?.[0] ? `${area.size[0]}px` : 'auto',
                   height: area.size?.[1] ? `${area.size[1]}px` : 'auto',
                   transform: `rotate(${area.rotation ?? 0}deg)`,
+                  contain: 'layout paint',
                 }}
               >
                 <Box
                   bg={area.background || "transparent"}
                   style={{
                     borderRadius: `${area.radius?.[0] ?? 5}px ${area.radius?.[1] ?? 5}px ${area.radius?.[2] ?? 5}px ${area.radius?.[3] ?? 5}px`,
+                    contain: 'layout paint',
                   }}
                   h="100%"
                   className={`${!!area.background ? "shadow-lg" : ""} relative`}
                 >
-                  {/* Area Label - Match Editor Logic */}
+                  {/* Area Label */}
                   {area.type === "seat" && (area.text || area.label_seat) && (
                     <Stack gap={0} align="center" className="absolute bottom-full mb-2 w-full left-0 pointer-events-none">
                       {area.text && (
@@ -590,7 +626,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                     </Stack>
                   )}
 
-                  {/* Left/Right Code Labels - Match Editor */}
+                  {/* Left/Right Code Labels */}
                   {area.type === "seat" && area.is_show_code !== false && (
                     <>
                       <Flex className={`absolute top-2/4 -translate-y-2/4 ${!!area.background ? "-left-[40px]" : "-left-[25px]"}`} gap={5}>
@@ -613,11 +649,38 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                       </Text>
                     </Center>
                   ) : (
-                    <Stack h="100%" align="center" justify="center" gap={5} p={10}>
-                      <Stack gap={3} w="100%" h="100%" justify="space-between">
+                    <Stack h="100%" align="center" justify="center" gap={5} p={10}
+                      style={{ contain: 'layout paint' }}
+                    >
+                      <Stack gap={3} w="100%" h="100%" justify="space-between"
+                        style={{ contain: 'layout style paint' }}
+                      >
                         {area.seat?.map((row, rIdx) => (
-                          <Flex key={rIdx} gap={3} w="100%" h="100%" justify="space-between">
-                            {row.map((seatCode) => renderSeat(seatCode, area.seatcolor, area.text))}
+                          <Flex key={rIdx} gap={3} w="100%" h="100%" justify="space-between"
+                            style={{ contain: 'layout style' }}
+                          >
+                            {row.map((seatCode) => {
+                              const isBought = takenSeatsFromAPI.has(seatCode);
+                              const displaySeatNumber = seatCode.replace(/-/g, "");
+
+                              const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
+                              const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                              const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
+                              const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
+
+                              return (
+                                <SeatBox
+                                  key={seatCode}
+                                  seatNumber={seatCode}
+                                  displaySeatNumber={displaySeatNumber}
+                                  isBought={isBought}
+                                  areaColor={area.seatcolor}
+                                  isDimmed={isDimmed}
+                                  isHighlighted={isHighlighted}
+                                  onSeatClick={handleSeatClick}
+                                />
+                              );
+                            })}
                           </Flex>
                         ))}
                       </Stack>
