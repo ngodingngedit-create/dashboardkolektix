@@ -256,6 +256,12 @@ export default function AdminCreateShuttle() {
                     description: t.description || "",
                     qty: t.qty || 0,
                     price: String(t.price || 0),
+                    prices: t.prices && t.prices.length > 0
+                      ? t.prices.map((p: any) => ({
+                          ticket_type_id: p.ticket_type_id,
+                          price: p.price,
+                        }))
+                      : [],
                     trip_status_id: String(t.trip_status_id || "1"),
                     ticket_start_date: t.ticket_start_date ? t.ticket_start_date.substring(0, 10) : "",
                     ticket_start_time: t.ticket_start_time || "08:00",
@@ -455,6 +461,12 @@ export default function AdminCreateShuttle() {
             description: t.description,
             qty: t.qty,
             price: parseInt(t.price) || 0,
+            prices: t.prices && t.prices.length > 0
+              ? t.prices.map((p: { ticket_type_id: number; price: number }) => ({
+                  ticket_type_id: p.ticket_type_id,
+                  price: p.price,
+                }))
+              : undefined,
             trip_status_id: Number(t.trip_status_id) || 1,
             route_id: t.route_id,
             ticket_type: t.ticket_type,
@@ -498,6 +510,12 @@ export default function AdminCreateShuttle() {
           description: t.description,
           qty: t.qty,
           price: parseInt(t.price) || 0,
+          prices: t.prices && t.prices.length > 0
+            ? t.prices.map((p: { ticket_type_id: number; price: number }) => ({
+                ticket_type_id: p.ticket_type_id,
+                price: p.price,
+              }))
+            : undefined,
           trip_status_id: Number(t.trip_status_id) || 1,
           route_id: t.route_id,
           ticket_type: t.ticket_type,
@@ -625,7 +643,7 @@ export default function AdminCreateShuttle() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tanggal & Waktu Mulai</label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> Tanggal & Waktu Mulai</label>
                     <input
                       type="datetime-local"
                       value={form.start_date && form.start_time ? `${form.start_date}T${form.start_time.substring(0, 5)}` : ""}
@@ -642,7 +660,7 @@ export default function AdminCreateShuttle() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Tanggal & Waktu Selesai</label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> Tanggal & Waktu Selesai</label>
                     <input
                       type="datetime-local"
                       value={form.end_date && form.end_time ? `${form.end_date}T${form.end_time.substring(0, 5)}` : ""}
@@ -679,33 +697,32 @@ export default function AdminCreateShuttle() {
               >
                 <Tab key="info-tiket" title="Info Tiket">
                   {/* ── Operation Days & Sessions ── */}
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto overflow-hidden">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center bg-primary-light-200/30">
+                  <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto overflow-hidden">
+                    <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center bg-primary-light-200/30">
                       <h3 className="text-medium font-semibold flex items-center gap-2">
                         <Icon icon="ph:calendar-bold" className="text-primary-base" />
-                        Hari & Sesi Operasional
+                        Tanggal & Sesi Operasional
                       </h3>
                       <button onClick={handleAddDay} className="text-sm font-semibold text-primary-base flex items-center gap-1.5 hover:text-primary-dark transition-colors">
-                        <Icon icon="ph:plus-bold" /> Tambah Hari
+                        <Icon icon="ph:plus-bold" /> Tambah Tanggal
                       </button>
                     </div>
                     <div className="p-5">
                       {form.operation_days.length === 0 ? (
                         <div className="text-center py-6">
                           <Icon icon="ph:calendar-blank" className="text-4xl text-gray-300 mx-auto mb-2" />
-                          <Text size="sm" c="dimmed">Belum ada hari operasional. Klik &ldquo;Tambah Hari&rdquo; untuk menambahkan.</Text>
+                          <Text size="sm" c="dimmed">Belum ada tanggal operasional. Klik &ldquo;Tambah Tanggal&rdquo; untuk menambahkan.</Text>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-4">
                           {form.operation_days.map((day, di) => (
-                            <div key={di} className="border border-primary-light-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                            <div key={di} className="border border-light-grey rounded-xl overflow-hidden bg-white shadow-sm">
                               {/* Day Header */}
-                              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-primary-light-200">
+                              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-light-grey">
                                 <div className="flex-1 flex items-center gap-2">
-                                  <Icon icon="ph:sun-bold" className="text-amber-500 shrink-0" />
+                                  <Icon icon="ph:calendar-dots-bold" className="text-primary-base shrink-0" />
                                   <input
-                                    type="text"
-                                    placeholder={`Nama hari ${di + 1} (contoh: Senin, Selasa, ...)`}
+                                    type="date"
                                     value={day.day_name}
                                     onChange={(e) => updateDayName(di, e.target.value)}
                                     className="flex-1 border border-light-grey rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -805,8 +822,8 @@ export default function AdminCreateShuttle() {
                   </div>
 
                   {/* ── Flat Ticket List (legacy / fallback) ── */}
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
+                    <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center">
                       <h3 className="text-medium font-semibold">Daftar Tiket</h3>
                       <button onClick={handleOpenTicketModal} className="text-sm font-semibold text-primary-base flex items-center gap-2">
                         <Icon icon="ph:plus-bold" /> Kelola Tiket
@@ -839,8 +856,8 @@ export default function AdminCreateShuttle() {
                     </div>
                   </div>
 
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
+                    <div className="border-b-2 border-light-grey px-4 py-3">
                       <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
                     </div>
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3">
@@ -853,8 +870,8 @@ export default function AdminCreateShuttle() {
                 </Tab>
 
                 <Tab key="detail" title="Detail Shuttle">
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="border-2 border-light-grey rounded-2xl my-5">
+                    <div className="border-b-2 border-light-grey px-4 py-3">
                       <h3 className="text-medium font-semibold">Deskripsi</h3>
                     </div>
                     <div className="p-5">
@@ -875,8 +892,8 @@ export default function AdminCreateShuttle() {
                     </div>
                   </div>
 
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="border-2 border-light-grey rounded-2xl my-5">
+                    <div className="border-b-2 border-light-grey px-4 py-3">
                       <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
                     </div>
                     <div className="p-5">
@@ -899,8 +916,8 @@ export default function AdminCreateShuttle() {
                 </Tab>
 
                 <Tab key="pengaturan" title="Pengaturan">
-                  <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                    <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
+                    <div className="border-b-2 border-light-grey px-4 py-3">
                       <h3 className="text-medium font-semibold">Status & Pembayaran</h3>
                     </div>
                     <div className="p-5 flex flex-col gap-4">
@@ -935,7 +952,7 @@ export default function AdminCreateShuttle() {
         </div>
 
         {/* Footer actions */}
-        <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
+        <div className="border-t border-light-grey fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
           <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
             <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
               <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0 font-bold">

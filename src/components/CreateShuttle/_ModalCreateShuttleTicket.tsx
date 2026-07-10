@@ -19,6 +19,7 @@ export interface ShuttleTicket {
   description: string;
   qty: number;
   price: string;
+  prices?: { ticket_type_id: number; price: number }[];
   trip_status_id: string;
   ticket_start_date: string;
   ticket_start_time: string;
@@ -49,6 +50,7 @@ const emptyTicket: ShuttleTicket = {
   ticket_type: "Berbayar",
   available_seat: [],
   seat_color: "#194e9e",
+  prices: [],
   shuttle_id: 1,
   shuttle_session_id: 1,
 };
@@ -337,6 +339,42 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
               <InputField className={`${form.ticket_type === "Gratis" ? "hidden" : ""}`} type="text" label="Harga Tiket" required disabled={form.ticket_type === "Gratis"} fullWidth value={formatPrice(form.price)} onChange={(e: any) => setForm({ ...form, price: String(parsePrice(e.target.value)) })} placeholder="Masukan Harga" />
               <InputField className={`${form.ticket_category === "Seated" ? "hidden" : ""}`} type="num" label="Jumlah Tiket" required fullWidth value={form.qty > 0 ? form.qty : ""} onChange={(e: any) => setForm({ ...form, qty: e.target.value })} placeholder="Masukan Jumlah" />
             </div>
+
+            {form.ticket_type === "Berbayar" && (
+              <div className="border border-light-grey rounded-lg p-3">
+                <Text size="sm" fw={600} className="mb-2">Harga per Tipe Tiket (opsional)</Text>
+                {[
+                  { id: 1, name: "Ticket Pergi" },
+                  { id: 2, name: "Ticket Pulang" },
+                  { id: 3, name: "Pulang Pergi" },
+                ].map((tt) => {
+                  const priceItem = (form.prices || []).find((p: any) => p.ticket_type_id === tt.id);
+                  return (
+                    <div key={tt.id} className="flex items-center gap-2 mb-2">
+                      <Text size="sm" className="w-28 shrink-0">{tt.name}</Text>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 text-sm border border-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Masukan Harga"
+                        value={priceItem?.price ? formatPrice(String(priceItem.price)) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const numericVal = parsePrice(val);
+                          const existing = form.prices || [];
+                          const filtered = existing.filter((p: any) => p.ticket_type_id !== tt.id);
+                          setForm({
+                            ...form,
+                            prices: numericVal > 0
+                              ? [...filtered, { ticket_type_id: tt.id, price: numericVal }]
+                              : filtered,
+                          });
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <InputField type="textarea" label="Deskripsi" placeholder="Deskripsi Tiket" fullWidth value={form.description} onChange={(e: any) => setForm({ ...form, description: e.target.value })} />
 
