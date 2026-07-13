@@ -217,12 +217,12 @@ const CheckinReport = () => {
     setCheckingIn(true);
     try {
       const isEticket = reportType === "eticket";
-      const url = isEticket ? "event/scan-eticket" : "invitations/checkin";
-      const payload = isEticket 
-        ? { qr_code: selectedCheckin.qr_code } 
-        : { invitation_number: selectedCheckin.invitation_number };
+      const url = isEticket ? "event/scan-eticket" : "event/scan-invitation";
+      const payload = isEticket
+        ? { qr_code: selectedCheckin.qr_code }
+        : { invitation_number: selectedCheckin.invitation_number, _token: Cookies.get('XSRF-TOKEN') };
 
-      const response = await axios.post(`${config.wsUrl}${url}`, payload, {
+      const response = await axios.post(isEticket ? `${config.wsUrl}${url}` : `${config.wsUrl}invitations/checkin`, payload, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('token')}`
         }
@@ -259,20 +259,20 @@ const CheckinReport = () => {
       allDataList.forEach((trans) => {
         if (trans.etickets && trans.etickets.length > 0) {
           // Prioritize new etickets payload
-            trans.etickets.forEach((eticket, index) => {
-              const identity = trans.identities?.[index];
-              const matchedTicket = trans.tickets?.find((t: any) => String(t.event_ticket_id) === String(eticket.event_ticket_id));
-              list.push({
-                no: absoluteRowNum++,
-                nama: identity?.full_name || (trans.has_user as any)?.name || "-",
-                telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
-                email: identity?.email || (trans.has_user as any)?.email || "-",
-                status_checkin: eticket.is_checkin === 1,
-                invoice: trans.invoice_no,
-                qr_code: eticket.eticket_number, // Used for manual check-in
-                ticket_name: matchedTicket?.has_event_ticket?.name || "-"
-              });
+          trans.etickets.forEach((eticket, index) => {
+            const identity = trans.identities?.[index];
+            const matchedTicket = trans.tickets?.find((t: any) => String(t.event_ticket_id) === String(eticket.event_ticket_id));
+            list.push({
+              no: absoluteRowNum++,
+              nama: identity?.full_name || (trans.has_user as any)?.name || "-",
+              telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
+              email: identity?.email || (trans.has_user as any)?.email || "-",
+              status_checkin: eticket.is_checkin === 1,
+              invoice: trans.invoice_no,
+              qr_code: eticket.eticket_number, // Used for manual check-in
+              ticket_name: matchedTicket?.has_event_ticket?.name || "-"
             });
+          });
         } else {
           // Fallback to previous logic
           trans.tickets?.forEach((ticket) => {
@@ -301,7 +301,7 @@ const CheckinReport = () => {
             nama: detail.fullname || "-",
             telepon: detail.phone || "-",
             email: detail.email || "-",
-            status_checkin: detail.checkin_status === 1,
+            status_checkin: detail.is_checkin === 1,
             invoice: detail.invitation_number, // In invitation mode, we show invitation number
             ticket_name: "-"
           });
@@ -523,18 +523,18 @@ const CheckinReport = () => {
                           </td>
                           <td style={cellStyle()}>
                             <Badge
-                              color={item.status_checkin ? "green" : "gray"}
+                              color={item.is_checkin === 1 ? "green" : "gray"}
                               variant="light"
                               size="sm"
                               className="font-semibold px-3 py-1"
                             >
-                              {item.status_checkin ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
+                              {item.is_checkin === 1 ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
                             </Badge>
                           </td>
                           <td style={cellStyle()}>
                             <Flex gap="md" align="center">
-                              {!item.status_checkin && (
-                                <FontAwesomeIcon 
+                              {item.is_checkin !== 1 && (
+                                <FontAwesomeIcon
                                   icon={faCheckCircle}
                                   className="text-blue-500 hover:text-blue-700 transition-colors"
                                   style={{ cursor: 'pointer', fontSize: '16px' }}
@@ -557,7 +557,7 @@ const CheckinReport = () => {
                                   title="Download Invoice"
                                   style={{ lineHeight: 0 }}
                                 >
-                                  <FontAwesomeIcon 
+                                  <FontAwesomeIcon
                                     icon={faDownload}
                                     className="text-blue-500 hover:text-blue-700 transition-colors"
                                     style={{ fontSize: '16px' }}
@@ -621,7 +621,7 @@ const CheckinReport = () => {
                       <td style={cellStyle()}>
                         <Flex gap="md" align="center">
                           {!item.status_checkin && (
-                            <FontAwesomeIcon 
+                            <FontAwesomeIcon
                               icon={faCheckCircle}
                               className="text-blue-500 hover:text-blue-700 transition-colors"
                               style={{ cursor: 'pointer', fontSize: '16px' }}
@@ -644,7 +644,7 @@ const CheckinReport = () => {
                               title="Download Invoice"
                               style={{ lineHeight: 0 }}
                             >
-                              <FontAwesomeIcon 
+                              <FontAwesomeIcon
                                 icon={faDownload}
                                 className="text-blue-500 hover:text-blue-700 transition-colors"
                                 style={{ fontSize: '16px' }}
@@ -699,7 +699,7 @@ const CheckinReport = () => {
               <Modal.Title><Text fw={700} size="sm">Konfirmasi Check-in Manual</Text></Modal.Title>
               <Modal.CloseButton />
             </Modal.Header>
-            
+
             <Modal.Body style={{ padding: '20px' }}>
               <Stack gap="sm">
                 <Text size="sm" c="dimmed">
@@ -731,13 +731,13 @@ const CheckinReport = () => {
 
       {/* Page-level Sticky Footer for Modal Actions */}
       {isCheckinModalOpen && (
-        <Box 
+        <Box
           className="checkin-sticky-footer"
-          style={{ 
-            position: 'fixed', 
-            bottom: 0, 
+          style={{
+            position: 'fixed',
+            bottom: 0,
             right: 0,
-            backgroundColor: 'white', 
+            backgroundColor: 'white',
             borderTop: '1px solid #f0f0f0',
             padding: '16px 40px',
             zIndex: 1000, // Lower than sidebar z-[1100] but higher than typical overlays

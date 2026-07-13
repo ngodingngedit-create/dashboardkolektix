@@ -8,6 +8,9 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import QrScanner from 'qr-scanner';
 import fetch from '@/utils/fetch';
 import { modals } from '@mantine/modals';
+import Cookies from 'js-cookie';
+import axios from 'axios';
+import config from '@/Config';
 
 const Merch = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -52,92 +55,62 @@ const Merch = () => {
 
         try {
             qrScanner.current?.stop();
-            fetch<{ invitation_number	: string }, any>({
-                method: 'POST',
-                url: 'invitations/checkin',
-                data: { invitation_number: barcode ?? code },
-                headers: { lgntkn: 'true' },
-                success: (data: any) => {
-                    if (data.success || data.status == 200 || data.status == true) {
-                        modals.open({
-                            radius: 15,
-                            centered: true,
-                            withCloseButton: false,
-                            onClose: closeModal,
-                            children: (
-                                <Stack p="10" gap={20} align="center" w="100%">
-                                    <Text ta="center" size="1.3rem"  fw={600}>
-                                        Checkin Berhasil
-                                    </Text>
-                                    <Icon icon="ix:success" className={`text-[128px] text-green-500`} />
-                                    <Card bg="gray.1" radius={10} px={25} w="100%">
-                                        <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
-                                            <Text ta="center">
-                                                {data?.data?.fullname ?? barcode}
-                                            </Text>
-                                        </Flex>
-                                    </Card>
-                                    <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                        Ulangi Scan
-                                    </Button>
-                                </Stack>
-                            )
-                        });
-                    } else {
-                        modals.open({
-                            radius: 15,
-                            centered: true,
-                            withCloseButton: false,
-                            onClose: closeModal,
-                            children: (
-                                <Stack p="10" gap={20} align="center" w="100%">
-                                    <Text ta="center" size="1.3rem" fw={600}>
-                                        Checkin Gagal
-                                    </Text>
-                                    <Icon icon="ix:error" className={`text-[128px] text-red-500`} />
-                                    <Card bg="gray.1" radius={10} px={25} w="100%">
-                                        <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
-                                            <Text ta="center" c="red">
-                                                {data?.data?.message ?? data?.message}
-                                            </Text>
-                                        </Flex>
-                                    </Card>
-                                    <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                        Ulangi Scan
-                                    </Button>
-                                </Stack>
-                            )
-                        });
-                    }
-                },
-                error: (err) => {
-                    modals.open({
-                        radius: 15,
-                        centered: true,
-                        withCloseButton: false,
-                        onClose: closeModal,
-                        children: (
-                            <Stack p="10" gap={20} align="center" w="100%">
-                                <Text ta="center" size="1.3rem" fw={600}>
-                                    Checkin Gagal
-                                </Text>
-                                <Icon icon="ix:error" className={`text-[128px] text-red-500`} />
-                                <Card bg="gray.1" radius={10} px={25} w="100%">
-                                    <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
-                                        <Text ta="center" c="red">
-                                            {err?.response?.data?.message ?? err?.message}
-                                        </Text>
-                                    </Flex>
-                                </Card>
-                                <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                    Ulangi Scan
-                                </Button>
-                            </Stack>
-                        )
-                    });
-                },
-                complete: () => setLoading(undefined)
+            const response = await axios.post(`${config.wsUrl}invitations/checkin`, { invitation_number: barcode ?? code, _token: Cookies.get('XSRF-TOKEN') }, {
+                headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
             });
+            const data = response.data;
+            if (data.success || data.status == 200 || data.status == true) {
+                modals.open({
+                    radius: 15,
+                    centered: true,
+                    withCloseButton: false,
+                    onClose: closeModal,
+                    children: (
+                        <Stack p="10" gap={20} align="center" w="100%">
+                            <Text ta="center" size="1.3rem" fw={600}>
+                                Validasi Berhasil
+                            </Text>
+                            <Icon icon="ix:success" className={`text-[128px] text-green-500`} />
+                            <Card bg="gray.1" radius={10} px={25} w="100%">
+                                <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
+                                    <Text ta="center">
+                                        {data?.data?.invitation_code}
+                                    </Text>
+                                </Flex>
+                            </Card>
+                            <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
+                                Ulangi Scan
+                            </Button>
+                        </Stack>
+                    )
+                });
+            } else {
+                modals.open({
+                    radius: 15,
+                    centered: true,
+                    withCloseButton: false,
+                    onClose: closeModal,
+                    children: (
+                        <Stack p="10" gap={20} align="center" w="100%">
+                            <Text ta="center" size="1.3rem" fw={600}>
+                                Validasi Gagal
+                            </Text>
+                            <Icon icon="ix:error" className={`text-[128px] text-red-500`} />
+                            <Card bg="gray.1" radius={10} px={25} w="100%">
+                                <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
+                                    <Text ta="center" c="red">
+                                        {data?.message || 'Terjadi kesalahan'}
+                                    </Text>
+                                </Flex>
+                            </Card>
+                            <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
+                                Ulangi Scan
+                            </Button>
+                        </Stack>
+                    )
+                });
+            }
+            setLoading(undefined);
         } catch (error) {
             // notifications.show({ title: 'Error', message: 'An error occurred while fetching barcode data.' });
             console.error('Error fetching barcode data:', error);

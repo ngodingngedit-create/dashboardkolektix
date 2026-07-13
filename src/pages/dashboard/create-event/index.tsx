@@ -201,7 +201,9 @@ const CreateEvent = () => {
           }))
         );
         setEventId(res.data.id);
-        setImage(res.data.image_base64 as string);
+        setImage(res.data.image_url || res.data.image_base64 as string);
+        console.log("Image data:", res.data.image_url, res.data.image_base64);
+        console.log("Full data:", res.data);
 
         const seatmap = res.data.seatmap ? JSON.parse(res.data.seatmap) : [];
         setSeatmapData.setState(seatmap);
@@ -382,7 +384,7 @@ const CreateEvent = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/jpeg, image/png, image/gif" />
               {image ? (
-                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} />
+                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
               ) : (
                 <>
                   <Image src={imagePlus} alt="image-plus" />
@@ -507,7 +509,7 @@ const CreateEvent = () => {
                             isReady={el.is_ready}
                             isFullbook={el.is_fullbook}
                             qty={el.qty}
-                            sold={el.ticket_sold ?? el.sold_qty ?? 0}
+                            sold={el.has_ordered_seatnumber?.filter((order: any) => order.payment_status?.toUpperCase() === "PAID").reduce((acc: number, order: any) => acc + (order.qty_ticket || 1), 0) || 0}
                             isAdmin={false}
                           />
                         </div>
@@ -520,13 +522,13 @@ const CreateEvent = () => {
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      <Checkbox color="default" isSelected={form.is_name} classNames={{ label: "text-sm" }} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked })}>
+                      <Checkbox color="default" isSelected={true} isDisabled classNames={{ label: "text-sm" }}>
                         Nama Lengkap
                       </Checkbox>
-                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_email} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked })}>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
                         Email
                       </Checkbox>
-                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_phone_number} onChange={(e: any) => setForm({ ...form, is_phone_number: e.target.checked })}>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
                         No. Handphone
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_noidentity} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked })}>

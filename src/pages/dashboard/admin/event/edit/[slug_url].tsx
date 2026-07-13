@@ -234,6 +234,8 @@ const EditEventAdmin = () => {
         );
 
         setImage(data.image_url || data.image_base64);
+        console.log("Image URL:", data.image_url);
+        console.log("Image Base64 exists:", !!data.image_base64);
 
         const seatmap = data.seatmap ? JSON.parse(data.seatmap) : [];
         setSeatmapData.setState(seatmap);
@@ -461,13 +463,13 @@ const EditEventAdmin = () => {
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      <Checkbox color="default" isSelected={form.is_name} classNames={{ label: "text-sm" }} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked })}>
+                      <Checkbox color="default" isSelected={true} isDisabled classNames={{ label: "text-sm" }}>
                         Nama Lengkap
                       </Checkbox>
-                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_email} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked })}>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
                         Email
                       </Checkbox>
-                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_phone_number} onChange={(e: any) => setForm({ ...form, is_phone_number: e.target.checked })}>
+                      <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
                         No. Handphone
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_noidentity} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked })}>

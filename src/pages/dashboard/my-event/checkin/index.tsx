@@ -278,7 +278,7 @@ const Merch = () => {
     const [eventList, setEventList] = useState<any[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
     const [selectedTicket, setSelectedTicket] = useState<string>('all');
-    const [ticketList, setTicketList] = useState<{value: string, label: string}[]>([]);
+    const [ticketList, setTicketList] = useState<{ value: string, label: string }[]>([]);
     const [stats, setStats] = useState({ total: 0, checkin: 0 });
     const [isLoadingStats, setIsLoadingStats] = useState(false);
 
@@ -386,10 +386,10 @@ const Merch = () => {
 
                 if (response.data?.data && Array.isArray(response.data.data)) {
                     const verifiedData = response.data.data.filter((t: any) => t.transaction_status_id === 2);
-                    
+
                     let total = 0;
                     let checkin = 0;
-                    
+
                     verifiedData.forEach((trans: any) => {
                         if (trans.etickets && trans.etickets.length > 0) {
                             trans.etickets.forEach((eticket: any, index: number) => {
@@ -413,7 +413,7 @@ const Merch = () => {
                             });
                         }
                     });
-                    
+
                     setStats({ total, checkin });
                 }
             } else {
@@ -452,7 +452,7 @@ const Merch = () => {
         return () => {
             destroyScanner();
         };
-    }, [selected]);
+    }, [selected, activeTab]);
 
     // Handle auto-input dari scanner dengan delay 3 detik
     useEffect(() => {
@@ -476,6 +476,7 @@ const Merch = () => {
                 qrScanner.current = new QrScanner(
                     videoRef.current,
                     (result) => {
+                        console.log("Active tab during scan:", activeTab);
                         handleFetchQRCode(result.data);
                     },
                     {
@@ -575,6 +576,7 @@ const Merch = () => {
     };
 
     const handleFetchQRCode = async (code: string) => {
+        console.log("handleFetchQRCode activeTab:", activeTab);
         if (loading === 'scan' || !isScanning) return;
 
         setLoading('scan');
@@ -587,64 +589,111 @@ const Merch = () => {
             // Different API endpoints for ticket and invitation
             const url = activeTab === 'ticket'
                 ? 'event/scan-eticket'
-                : 'invitations/checkin';
+                : 'event/scan-invitation';
 
-            await fetch<any, any>({
-                method: 'POST',
-                url: url,
-                data: activeTab === 'ticket' ? { qr_code: code } : { invitation_number: code },
-                headers: { lgntkn: 'true' },
-                success: (data: any) => {
-                    const message = data?.message || (activeTab === 'ticket' ? 'Check-in berhasil' : 'Validasi berhasil');
-                    const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
-                    const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
-
-                    const newScan: ScanItem = {
-                        id: Date.now(),
-                        invoice_no: data?.data?.eticket_number || data?.data?.invitation_code || code,
-                        buyer_name: data?.buyer_name || data?.data?.has_identity?.full_name || data?.data?.guest_name || 'Pengunjung',
-                        event_name: data?.data?.has_event?.name || data?.data?.event_name || 'Event',
-                        category_ticket: data?.data?.has_event_ticket ? `${data.data.has_event_ticket.ticket_category} - ${data.data.has_event_ticket.name}` : (data?.data?.ticket_category || data?.data?.invitation_type || 'Regular'),
-                        total_qty: data?.data?.has_transaction?.total_qty || data?.data?.quantity || '1',
-                        scan_date: scanDateTime,
-                        status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
-                        message: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : message,
-                        type: activeTab
-                    };
-
-                    setScanHistory(prev => [newScan, ...prev]);
-                    setCurrentScanData(newScan);
-                    setShowSuccessModal(true);
-                },
-                error: (err) => {
-                    const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
-                    const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('already');
-                    const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid') || errorMessage.toLowerCase().includes('invalid');
-
-                    const newScan: ScanItem = {
-                        id: Date.now(),
-                        invoice_no: code,
-                        buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || err?.response?.data?.data?.has_identity?.full_name || 'N/A') : 'N/A',
-                        event_name: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
-                        category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
-                        total_qty: '0',
-                        scan_date: scanDateTime,
-                        status: isAlreadyCheckedIn ? 'warning' : 'failed',
-                        message: isAlreadyCheckedIn ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : (isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage),
-                        type: activeTab
-                    };
-
-                    setScanHistory(prev => [newScan, ...prev]);
-                    setCurrentScanData(newScan);
-                    setShowSuccessModal(true);
-                },
-                complete: () => {
-                    setLoading(undefined);
-                    if (selectedEvent) getStats();
-                }
-            });
-        } catch (error) {
+            if (activeTab === 'ticket') {
+                await fetch<any, any>({
+                    method: 'POST',
+                    url: url,
+                    data: { qr_code: code },
+                    headers: { lgntkn: 'true' },
+                    success: (data: any) => {
+                        // ... existing success logic
+                        const message = data?.message || 'Check-in berhasil';
+                        const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
+                        const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
+                        const scanDateTime = new Date().toISOString();
+                        const newScan: ScanItem = {
+                            id: Date.now(),
+                            invoice_no: data?.data?.eticket_number || data?.data?.invitation_code || code,
+                            buyer_name: data?.buyer_name || data?.data?.has_identity?.full_name || data?.data?.guest_name || 'Pengunjung',
+                            event_name: data?.data?.has_event?.name || data?.data?.event_name || 'Event',
+                            category_ticket: data?.data?.has_event_ticket ? `${data.data.has_event_ticket.ticket_category} - ${data.data.has_event_ticket.name}` : (data?.data?.ticket_category || data?.data?.invitation_type || 'Regular'),
+                            total_qty: data?.data?.has_transaction?.total_qty || data?.data?.quantity || '1',
+                            scan_date: scanDateTime,
+                            status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
+                            message: isAlreadyCheckedIn ? 'Sudah Checkin' : message,
+                            type: activeTab
+                        };
+                        setScanHistory(prev => [newScan, ...prev]);
+                        setCurrentScanData(newScan);
+                        setShowSuccessModal(true);
+                    },
+                    error: (err) => {
+                        const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
+                        const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('already');
+                        const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid') || errorMessage.toLowerCase().includes('invalid');
+                        const scanDateTime = new Date().toISOString();
+                        const newScan: ScanItem = {
+                            id: Date.now(),
+                            invoice_no: code,
+                            buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || err?.response?.data?.data?.has_identity?.full_name || 'N/A') : 'N/A',
+                            event_name: isAlreadyCheckedIn ? 'Sudah Checkin' : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
+                            category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
+                            total_qty: '0',
+                            scan_date: scanDateTime,
+                            status: isAlreadyCheckedIn ? 'warning' : 'failed',
+                            message: isAlreadyCheckedIn ? 'Sudah Checkin' : (isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage),
+                            type: activeTab
+                        };
+                        setScanHistory(prev => [newScan, ...prev]);
+                        setCurrentScanData(newScan);
+                        setShowSuccessModal(true);
+                    },
+                    complete: () => {
+                        setLoading(undefined);
+                        if (selectedEvent) getStats();
+                    }
+                });
+            } else {
+                const response = await axios.post(`${config.wsUrl}invitations/checkin`, { invitation_number: code, _token: Cookies.get('XSRF-TOKEN') }, {
+                    headers: { 'Authorization': `Bearer ${Cookies.get('token')}` }
+                });
+                // Handle success/error similar to fetch success...
+                const data = response.data;
+                const message = data?.message || 'Validasi berhasil';
+                const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
+                const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
+                const scanDateTime = new Date().toISOString();
+                const newScan: ScanItem = {
+                    id: Date.now(),
+                    invoice_no: data?.data?.invitation_number || code,
+                    buyer_name: data?.data?.fullname || 'Pengunjung',
+                    event_name: data?.data?.event_invitation?.event?.name || 'Event',
+                    category_ticket: data?.data?.event_invitation?.invitation_title || 'Regular',
+                    total_qty: '1',
+                    scan_date: scanDateTime,
+                    status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
+                    message: isAlreadyCheckedIn ? 'Sudah Validasi' : message,
+                    type: activeTab
+                };
+                setScanHistory(prev => [newScan, ...prev]);
+                setCurrentScanData(newScan);
+                setShowSuccessModal(true);
+                setLoading(undefined);
+                if (selectedEvent) getStats();
+            }
+        } catch (error: any) {
             console.error('Error:', error);
+            if (error.response?.status === 409) {
+                const scanDateTime = new Date().toISOString();
+                const newScan: ScanItem = {
+                    id: Date.now(),
+                    invoice_no: code,
+                    buyer_name: 'N/A',
+                    event_name: 'Sudah Checkin',
+                    category_ticket: 'Warning',
+                    total_qty: '0',
+                    scan_date: scanDateTime,
+                    status: 'warning',
+                    message: 'Sudah Checkin',
+                    type: activeTab
+                };
+                setScanHistory(prev => [newScan, ...prev]);
+                setCurrentScanData(newScan);
+                setShowSuccessModal(true);
+            }
+            setLoading(undefined);
         }
     };
 
@@ -701,7 +750,7 @@ const Merch = () => {
                                 onChange={(val) => {
                                     setSelectedTicket(val || 'all');
                                 }}
-                                data={[{value: 'all', label: 'Semua Tiket'}, ...ticketList]}
+                                data={[{ value: 'all', label: 'Semua Tiket' }, ...ticketList]}
                                 disabled={ticketList.length === 0}
                                 searchable
                                 style={{ width: 180 }}
@@ -879,13 +928,13 @@ const Merch = () => {
                                             </p>
                                         </div>
                                         {!showSuccessModal && (
-                                            <div 
+                                            <div
                                                 className="checkin-sticky-footer"
-                                                style={{ 
-                                                    position: 'fixed', 
-                                                    bottom: 0, 
+                                                style={{
+                                                    position: 'fixed',
+                                                    bottom: 0,
                                                     right: 0,
-                                                    backgroundColor: 'white', 
+                                                    backgroundColor: 'white',
                                                     borderTop: '1px solid #f0f0f0',
                                                     padding: '16px 40px',
                                                     zIndex: 999,
@@ -911,25 +960,22 @@ const Merch = () => {
                             {showSuccessModal && currentScanData && (
                                 <div className="absolute inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center p-4 rounded-xl">
                                     <div className="bg-white p-6 rounded-xl text-center max-w-lg w-full animate-fadeIn shadow-2xl">
-                                        <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${
-                                            currentScanData.status === 'success' ? 'bg-green-100' : 
-                                            (currentScanData.status === 'warning' ? 'bg-yellow-100' : 'bg-red-500')
-                                        }`}>
+                                        <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${currentScanData.status === 'success' ? 'bg-green-100' :
+                                                (currentScanData.status === 'warning' ? 'bg-yellow-100' : 'bg-red-500')
+                                            }`}>
                                             <FontAwesomeIcon
                                                 icon={currentScanData.status === 'success' ? faCheck : (currentScanData.status === 'warning' ? faExclamation : faXmark)}
-                                                className={`text-2xl ${
-                                                    currentScanData.status === 'success' ? 'text-green-500' : 
-                                                    (currentScanData.status === 'warning' ? 'text-yellow-500' : 'text-white')
-                                                }`}
+                                                className={`text-2xl ${currentScanData.status === 'success' ? 'text-green-500' :
+                                                        (currentScanData.status === 'warning' ? 'text-yellow-500' : 'text-white')
+                                                    }`}
                                             />
                                         </div>
-                                        <p className={`font-semibold mb-2 text-lg ${
-                                            currentScanData.status === 'success' ? 'text-green-700' : 
-                                            (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')
-                                        }`}>
+                                        <p className={`font-semibold mb-2 text-lg ${currentScanData.status === 'success' ? 'text-green-700' :
+                                                (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')
+                                            }`}>
                                             {currentScanData.status === 'success'
-                                                ? (activeTab === 'ticket' ? 'Check-in Berhasil!' : 'Validasi Berhasil!')
-                                                : (currentScanData.status === 'warning' ? (activeTab === 'ticket' ? 'Sudah Checkin' : 'Sudah Validasi') : 'Gagal!')}
+                                                ? 'Berhasil Checkin!'
+                                                : (currentScanData.status === 'warning' ? 'Sudah Checkin' : 'Gagal!')}
                                         </p>
 
                                         <div className={`text-left mb-4 p-3 rounded-lg border ${currentScanData.status === 'success' ? 'bg-gray-50 border-light-grey' : (currentScanData.status === 'warning' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200')}`}>

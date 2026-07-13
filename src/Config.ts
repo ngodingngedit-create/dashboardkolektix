@@ -4,6 +4,7 @@ const config = {
   fileUrl: process.env.NEXT_PUBLIC_FILE_URL,
   barcodeUrl: process.env.NEXT_PUBLIC_BARCODE_URL,
   recaptchaKey: process.env.NEXT_PUBLIC_RECAPTCHA_KEY,
+  invitationUrl: process.env.NEXT_PUBLIC_URL_MERCH,
 };
 
 export default config;

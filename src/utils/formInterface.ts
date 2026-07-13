@@ -32,6 +32,17 @@ export interface EventTicket {
   ticket_sold?: number;
   sold_qty?: number;
   is_ots?: number;
+  is_address?: number;
+  is_size?: number;
+  has_ordered_seatnumber?: OrderedSeat[];
+}
+
+export interface OrderedSeat {
+  id: number;
+  transaction_id: string;
+  payment_status?: string;
+  transaction_status_id?: number;
+  qty_ticket?: number;
 }
 
 export interface FormEvent {

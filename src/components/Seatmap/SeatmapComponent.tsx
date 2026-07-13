@@ -20,17 +20,28 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
         const rows = chunk(seatCodes, totalCol);
 
         return (
-            <Stack gap={5} w="100%" h="100%" justify="space-between">
+            <Stack w="100%" h="100%" justify="space-between">
                 {rows.map((rowSeats, r) => (
-                    <Flex gap={0} w="100%" h="100%" justify="center" align="center" key={r}>
+                    <div 
+                        key={r}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${colsLeft}, 40px) ${gapSize}px repeat(${colsRight}, 40px)`,
+                            gap: '25px',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            width: '100%',
+                            border: '2px solid red'
+                        }}
+                    >
                         {/* Left seats: cols_left columns */}
                         {rowSeats.slice(0, colsLeft).map((code, c) => (
                             <Box
-                                w="100%"
-                                h="100%"
+                                w="40px"
+                                h="40px"
                                 key={`l-${c}`}
                                 className={`rounded-md bg-grey/50`}
-                                style={{ minWidth: 0, flex: 1 }}
+                                style={{ margin: '5px' }}
                             >
                                 <Center w="100%" h="100%">
                                     {data.is_show_code !== false && (
@@ -41,16 +52,16 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
                                 </Center>
                             </Box>
                         ))}
-                        {/* Aisle / Gap between left and right sections */}
-                        <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
+                        {/* Aisle */}
+                        <div />
                         {/* Right seats: remaining columns */}
                         {rowSeats.slice(colsLeft).map((code, c) => (
                             <Box
-                                w="100%"
-                                h="100%"
+                                w="40px"
+                                h="40px"
                                 key={`r-${c}`}
                                 className={`rounded-md bg-grey/50`}
-                                style={{ minWidth: 0, flex: 1 }}
+                                style={{ margin: '5px' }}
                             >
                                 <Center w="100%" h="100%">
                                     {data.is_show_code !== false && (
@@ -61,7 +72,7 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
                                 </Center>
                             </Box>
                         ))}
-                    </Flex>
+                    </div>
                 ))}
             </Stack>
         );
@@ -80,7 +91,7 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
             )}
 
             {data.type == 'seat' && (
-                <Stack h="100%" align="center" justify="center" gap={5} p={10}>
+                <Stack h="100%" align="center" justify="center" gap={20} p={20}>
                     {(data.seat_label || data.text) && (
                         <Stack gap={0} align="center" className="absolute bottom-full mb-2 w-full left-0 pointer-events-none">
                             {data.text && <Text size="xs" fw={700} c="gray.8" className="uppercase">{data.text}</Text>}

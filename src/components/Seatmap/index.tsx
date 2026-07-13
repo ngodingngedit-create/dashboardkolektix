@@ -829,7 +829,7 @@ export default forwardRef(function Seatmap({
                             const colsLeft = e.cols_left ?? Math.floor((e.col ?? 1) / 2);
                             const gapSize = e.gap ?? 20;
                             return (
-                              <Flex gap={0} w="100%" h="100%" justify="center" align="center" key={r}>
+                              <Flex gap={8} w="100%" h="100%" justify="center" align="center" key={r}>
                                 {/* Left seats */}
                                 {x.slice(0, colsLeft).map((z, c) => (
                                   <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`l-${c}`} fw={600}>
