@@ -403,7 +403,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
       }
       if (t.name) list.push(t.name);
     });
-    return ["all", ...list];
+    return ["all", ...Array.from(new Set(list))];
   }, [selectedEventData, selectedSession, ticketNameToSessionName]);
 
   // Parse seat lookup condition once for all seats
