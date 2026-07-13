@@ -11,8 +11,8 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
     const renderSeatGrid = () => {
         const totalCol = data?.col ?? 1;
         const totalRow = data?.row ?? 1;
-        const colsLeft = data?.cols_left ?? Math.floor(totalCol / 2);
-        const colsRight = totalCol - colsLeft;
+        const colsLeft = data?.cols_left;
+        const hasAisle = colsLeft !== undefined && colsLeft !== null && colsLeft > 0 && colsLeft < totalCol;
         const gapSize = data?.gap ?? 20;
         const seatCodes = Array(totalCol * totalRow).fill(0).map((_, i) =>
             `${data.is_show_code !== false ? data?.prefix ?? "" : ""}${i + (data?.starting_seat ?? 1)}`
@@ -26,52 +26,75 @@ export default function SeatmapComponent({ data }: Readonly<ComponentProps>) {
                         key={r}
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: `repeat(${colsLeft}, 40px) ${gapSize}px repeat(${colsRight}, 40px)`,
+                            gridTemplateColumns: hasAisle
+                                ? `repeat(${colsLeft}, 40px) ${gapSize}px repeat(${totalCol - colsLeft}, 40px)`
+                                : `repeat(${totalCol}, 40px)`,
                             gap: '25px',
                             justifyContent: 'center',
                             alignItems: 'center',
                             width: '100%',
-                            border: '2px solid red'
                         }}
                     >
-                        {/* Left seats: cols_left columns */}
-                        {rowSeats.slice(0, colsLeft).map((code, c) => (
-                            <Box
-                                w="40px"
-                                h="40px"
-                                key={`l-${c}`}
-                                className={`rounded-md bg-grey/50`}
-                                style={{ margin: '5px' }}
-                            >
-                                <Center w="100%" h="100%">
-                                    {data.is_show_code !== false && (
-                                        <Text size="xs" c="white" className={`uppercase`}>
-                                            {code}
-                                        </Text>
-                                    )}
-                                </Center>
-                            </Box>
-                        ))}
-                        {/* Aisle */}
-                        <div />
-                        {/* Right seats: remaining columns */}
-                        {rowSeats.slice(colsLeft).map((code, c) => (
-                            <Box
-                                w="40px"
-                                h="40px"
-                                key={`r-${c}`}
-                                className={`rounded-md bg-grey/50`}
-                                style={{ margin: '5px' }}
-                            >
-                                <Center w="100%" h="100%">
-                                    {data.is_show_code !== false && (
-                                        <Text size="xs" c="white" className={`uppercase`}>
-                                            {code}
-                                        </Text>
-                                    )}
-                                </Center>
-                            </Box>
-                        ))}
+                        {hasAisle ? (
+                            <>
+                                {/* Left seats: cols_left columns */}
+                                {rowSeats.slice(0, colsLeft).map((code, c) => (
+                                    <Box
+                                        w="40px"
+                                        h="40px"
+                                        key={`l-${c}`}
+                                        className={`rounded-md bg-grey/50`}
+                                        style={{ margin: '5px' }}
+                                    >
+                                        <Center w="100%" h="100%">
+                                            {data.is_show_code !== false && (
+                                                <Text size="xs" c="white" className={`uppercase`}>
+                                                    {code}
+                                                </Text>
+                                            )}
+                                        </Center>
+                                    </Box>
+                                ))}
+                                {/* Aisle */}
+                                <div />
+                                {/* Right seats: remaining columns */}
+                                {rowSeats.slice(colsLeft).map((code, c) => (
+                                    <Box
+                                        w="40px"
+                                        h="40px"
+                                        key={`r-${c}`}
+                                        className={`rounded-md bg-grey/50`}
+                                        style={{ margin: '5px' }}
+                                    >
+                                        <Center w="100%" h="100%">
+                                            {data.is_show_code !== false && (
+                                                <Text size="xs" c="white" className={`uppercase`}>
+                                                    {code}
+                                                </Text>
+                                            )}
+                                        </Center>
+                                    </Box>
+                                ))}
+                            </>
+                        ) : (
+                            rowSeats.map((code, c) => (
+                                <Box
+                                    w="40px"
+                                    h="40px"
+                                    key={c}
+                                    className={`rounded-md bg-grey/50`}
+                                    style={{ margin: '5px' }}
+                                >
+                                    <Center w="100%" h="100%">
+                                        {data.is_show_code !== false && (
+                                            <Text size="xs" c="white" className={`uppercase`}>
+                                                {code}
+                                            </Text>
+                                        )}
+                                    </Center>
+                                </Box>
+                            ))
+                        )}
                     </div>
                 ))}
             </Stack>

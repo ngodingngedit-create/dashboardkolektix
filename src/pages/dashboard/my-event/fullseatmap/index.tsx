@@ -183,7 +183,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingTrx, setLoadingTrx] = useState(false);
-  
+
   const [selectedSeatTrx, setSelectedSeatTrx] = useState<Transaction | null>(null);
   const [selectedSeatTicket, setSelectedSeatTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -210,14 +210,14 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const seatmapData = useMemo<SeatmapData[]>(() => {
     if (!selectedEventData?.seatmap) return [];
     try {
-      const parsed = typeof selectedEventData.seatmap === 'string' 
-        ? JSON.parse(selectedEventData.seatmap) 
+      const parsed = typeof selectedEventData.seatmap === 'string'
+        ? JSON.parse(selectedEventData.seatmap)
         : selectedEventData.seatmap;
       return (Array.isArray(parsed) ? parsed : []).map((e: any) => {
         const validRow = Number.isInteger(Number(e.row)) ? Number(e.row) : 1;
         const validCol = Number.isInteger(Number(e.col)) ? Number(e.col) : 1;
         const startingSeat = Number.isInteger(Number(e.starting_seat)) ? Number(e.starting_seat) : 1;
-        
+
         const seat = validCol > 0 ? chunk(
           Array(Math.max(0, validRow * validCol))
             .fill(0)
@@ -340,7 +340,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
     selectedEventData?.has_event_ticket?.forEach((t: any) => {
       const sessionName = ticketNameToSessionName.get(t.name);
-      
+
       if (isSessionFiltered) {
         if (sessionName && sessionName !== selectedSession) return;
         if (!sessionName && !t.name?.includes(selectedSession)) return;
@@ -655,34 +655,88 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                       <Stack gap={3} w="100%" h="100%" justify="space-between"
                         style={{ contain: 'layout style paint' }}
                       >
-                        {area.seat?.map((row, rIdx) => (
-                          <Flex key={rIdx} gap={3} w="100%" h="100%" justify="space-between"
-                            style={{ contain: 'layout style' }}
-                          >
-                            {row.map((seatCode) => {
-                              const isBought = takenSeatsFromAPI.has(seatCode);
-                              const displaySeatNumber = seatCode.replace(/-/g, "");
-
-                              const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
-                              const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
-                              const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
-                              const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
-
-                              return (
-                                <SeatBox
-                                  key={seatCode}
-                                  seatNumber={seatCode}
-                                  displaySeatNumber={displaySeatNumber}
-                                  isBought={isBought}
-                                  areaColor={area.seatcolor}
-                                  isDimmed={isDimmed}
-                                  isHighlighted={isHighlighted}
-                                  onSeatClick={handleSeatClick}
-                                />
-                              );
-                            })}
-                          </Flex>
-                        ))}
+                        {area.seat?.map((row, rIdx) => {
+                          const totalCol = area.col ?? row.length;
+                          const colsLeft = area.cols_left;
+                          const hasAisle = colsLeft !== undefined && colsLeft !== null && colsLeft > 0 && colsLeft < totalCol;
+                          const gapSize = area.gap ?? 20;
+                          return (
+                            <Flex key={rIdx} gap={0} w="100%" h="100%" justify="center" align="center" style={{ contain: 'layout style' }}>
+                              {hasAisle ? (
+                                <>
+                                  <Flex gap={3} justify="flex-end">
+                                    {row.slice(0, colsLeft).map((seatCode) => {
+                                      const isBought = takenSeatsFromAPI.has(seatCode);
+                                      const displaySeatNumber = seatCode.replace(/-/g, "");
+                                      const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
+                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                      const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
+                                      const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
+                                      return (
+                                        <SeatBox
+                                          key={seatCode}
+                                          seatNumber={seatCode}
+                                          displaySeatNumber={displaySeatNumber}
+                                          isBought={isBought}
+                                          areaColor={area.seatcolor}
+                                          isDimmed={isDimmed}
+                                          isHighlighted={isHighlighted}
+                                          onSeatClick={handleSeatClick}
+                                        />
+                                      );
+                                    })}
+                                  </Flex>
+                                  <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
+                                  <Flex gap={3} justify="flex-start">
+                                    {row.slice(colsLeft).map((seatCode) => {
+                                      const isBought = takenSeatsFromAPI.has(seatCode);
+                                      const displaySeatNumber = seatCode.replace(/-/g, "");
+                                      const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
+                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                      const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
+                                      const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
+                                      return (
+                                        <SeatBox
+                                          key={seatCode}
+                                          seatNumber={seatCode}
+                                          displaySeatNumber={displaySeatNumber}
+                                          isBought={isBought}
+                                          areaColor={area.seatcolor}
+                                          isDimmed={isDimmed}
+                                          isHighlighted={isHighlighted}
+                                          onSeatClick={handleSeatClick}
+                                        />
+                                      );
+                                    })}
+                                  </Flex>
+                                </>
+                              ) : (
+                                <Flex gap={3} justify="center">
+                                  {row.map((seatCode) => {
+                                    const isBought = takenSeatsFromAPI.has(seatCode);
+                                    const displaySeatNumber = seatCode.replace(/-/g, "");
+                                    const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
+                                    const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                    const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
+                                    const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
+                                    return (
+                                      <SeatBox
+                                        key={seatCode}
+                                        seatNumber={seatCode}
+                                        displaySeatNumber={displaySeatNumber}
+                                        isBought={isBought}
+                                        areaColor={area.seatcolor}
+                                        isDimmed={isDimmed}
+                                        isHighlighted={isHighlighted}
+                                        onSeatClick={handleSeatClick}
+                                      />
+                                    );
+                                  })}
+                                </Flex>
+                              )}
+                            </Flex>
+                          );
+                        })}
                       </Stack>
                     </Stack>
                   )}

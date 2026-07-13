@@ -175,7 +175,7 @@ const EditEventAdmin = () => {
         Get("creator", {})
       ]);
       setTagSuggestion((tagsRes as any).data.map((e: any) => e.name));
-      
+
       let creatorsData = [];
       if (Array.isArray((creatorsRes as any).data)) creatorsData = (creatorsRes as any).data;
       else if ((creatorsRes as any).data && Array.isArray((creatorsRes as any).data.data)) creatorsData = (creatorsRes as any).data.data;
@@ -594,13 +594,13 @@ const EditEventAdmin = () => {
                       </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField 
-                        label={form.ppn_type === "percentage" ? "PPN (%)" : "PPN (Nominal)"} 
-                        type="num" 
-                        fullWidth 
+                      <InputField
+                        label={form.ppn_type === "percentage" ? "PPN (%)" : "PPN (Nominal)"}
+                        type="num"
+                        fullWidth
                         noShadow
-                        value={form.ppn} 
-                        onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} 
+                        value={form.ppn}
+                        onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })}
                       />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>

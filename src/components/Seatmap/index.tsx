@@ -121,18 +121,18 @@ export default forwardRef(function Seatmap({
           filter: (node) => {
             const el = node as HTMLElement;
             if (!el.classList) return true;
-            
+
             // Filter out UI elements by class
-            const isUILayout = el.classList.contains('z-50') || 
-                               el.classList.contains('tooltipx') || 
-                               el.classList.contains('bg-grey/10') ||
-                               el.classList.contains('moveable-control-box') ||
-                               el.classList.contains('moveable-line') ||
-                               el.classList.contains('moveable-area');
-            
+            const isUILayout = el.classList.contains('z-50') ||
+              el.classList.contains('tooltipx') ||
+              el.classList.contains('bg-grey/10') ||
+              el.classList.contains('moveable-control-box') ||
+              el.classList.contains('moveable-line') ||
+              el.classList.contains('moveable-area');
+
             // Hide specific nudge/control containers if they don't have z-50
-            const isControl = el.classList.contains('mantine-ActionIcon-root') || 
-                             el.classList.contains('mantine-Button-root');
+            const isControl = el.classList.contains('mantine-ActionIcon-root') ||
+              el.classList.contains('mantine-Button-root');
 
             return !isUILayout && !(isControl && el.closest('.z-50') === null && !el.closest('.seat-container'));
           },
@@ -477,13 +477,13 @@ export default forwardRef(function Seatmap({
         className={`overflow-auto`}
         component={Center}
         bg="gray.3"
-        // style={{
-        //     backgroundSize: '40px 40px',
-        //     backgroundImage: `
-        //         linear-gradient(to right, grey 1px, transparent 1px),
-        //         linear-gradient(to bottom, grey 1px, transparent 1px);
-        //     `,
-        // }}
+      // style={{
+      //     backgroundSize: '40px 40px',
+      //     backgroundImage: `
+      //         linear-gradient(to right, grey 1px, transparent 1px),
+      //         linear-gradient(to bottom, grey 1px, transparent 1px);
+      //     `,
+      // }}
       >
         <Text className={`absolute top-4 left-2/4 -translate-x-2/4 z-50`} size="xs" c="gray">
           Seatmap Editor
@@ -552,11 +552,11 @@ export default forwardRef(function Seatmap({
             {/* Semua input seat dicampur dalam 3 kolom */}
             <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 15 }}>
               <TextInput label="Label Area" placeholder="Isi Label Area" {...areaProps("text")} />
-              <TextInput 
+              <TextInput
                 display={areaVal?.type == "box" ? "none" : undefined}
-                label="Label Seat" 
-                placeholder="Isi Label Seat" 
-                {...areaProps("label_seat")} 
+                label="Label Seat"
+                placeholder="Isi Label Seat"
+                {...areaProps("label_seat")}
               />
               <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Jumlah Kolom" placeholder="Total kolom" {...areaProps("col")} />
               <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} withAsterisk hideControls label="Jumlah Baris" placeholder="Total baris" {...areaProps("row")} />
@@ -567,15 +567,15 @@ export default forwardRef(function Seatmap({
                 label={
                   <Flex align="center" gap={5} wrap="nowrap">
                     <Text size="sm" fw={500} style={{ whiteSpace: "nowrap" }}>Code Seat <span style={{ color: "red" }}>*</span></Text>
-                    <Switch 
-                      size="xs" 
-                      checked={areaVal.is_show_code !== false} 
-                      onChange={(e) => setAreaVal({ is_show_code: e.currentTarget.checked })} 
+                    <Switch
+                      size="xs"
+                      checked={areaVal.is_show_code !== false}
+                      onChange={(e) => setAreaVal({ is_show_code: e.currentTarget.checked })}
                     />
                   </Flex>
-                } 
-                placeholder="Contoh: A" 
-                {...areaProps("prefix")} 
+                }
+                placeholder="Contoh: A"
+                {...areaProps("prefix")}
               />
               <NumberInput display={modalArea == 0 || areaVal?.type == "box" ? "none" : undefined} hideControls withAsterisk label="Starting Seat" placeholder="1" {...areaProps("starting_seat")} />
               {/* Radius Sudut — hanya untuk box */}
@@ -826,56 +826,84 @@ export default forwardRef(function Seatmap({
                         )}
                         <Stack gap={3} w="100%" h="100%" justify="space-between">
                           {(e.seat ?? []).map((x, r) => {
-                            const colsLeft = e.cols_left ?? Math.floor((e.col ?? 1) / 2);
+                            const totalCol = e.col ?? x.length;
+                            const colsLeft = e.cols_left;
+                            const hasAisle = colsLeft !== undefined && colsLeft !== null && colsLeft > 0 && colsLeft < totalCol;
                             const gapSize = e.gap ?? 20;
                             return (
                               <Flex gap={8} w="100%" h="100%" justify="center" align="center" key={r}>
-                                {/* Left seats */}
-                                {x.slice(0, colsLeft).map((z, c) => (
-                                  <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`l-${c}`} fw={600}>
-                                    <Box
-                                      onMouseEnter={() => handleMouse.seatEnter(z, i)}
-                                      onMouseDown={() => handleMouse.seatDown(z, i)}
-                                      onMouseUp={() => handleMouse.seatUp()}
-                                      opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
-                                      w={20}
-                                      h={25}
-                                      style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
-                                      className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
-                                    >
-                                      <SeatBox 
-                                        active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
-                                        color={e.seatcolor} 
-                                        sold={soldSeat?.includes(z)}
-                                        label={z}
-                                      />
-                                    </Box>
-                                  </Tooltip>
-                                ))}
-                                {/* Aisle gap */}
-                                <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
-                                {/* Right seats */}
-                                {x.slice(colsLeft).map((z, c) => (
-                                  <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`r-${c}`} fw={600}>
-                                    <Box
-                                      onMouseEnter={() => handleMouse.seatEnter(z, i)}
-                                      onMouseDown={() => handleMouse.seatDown(z, i)}
-                                      onMouseUp={() => handleMouse.seatUp()}
-                                      opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
-                                      w={20}
-                                      h={25}
-                                      style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
-                                      className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
-                                    >
-                                      <SeatBox 
-                                        active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))} 
-                                        color={e.seatcolor} 
-                                        sold={soldSeat?.includes(z)}
-                                        label={z}
-                                      />
-                                    </Box>
-                                  </Tooltip>
-                                ))}
+                                {hasAisle ? (
+                                  <>
+                                    {/* Left seats */}
+                                    {x.slice(0, colsLeft).map((z, c) => (
+                                      <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`l-${c}`} fw={600}>
+                                        <Box
+                                          onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                          onMouseDown={() => handleMouse.seatDown(z, i)}
+                                          onMouseUp={() => handleMouse.seatUp()}
+                                          opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                          w={20}
+                                          h={25}
+                                          style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
+                                          className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
+                                        >
+                                          <SeatBox
+                                            active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
+                                            color={e.seatcolor}
+                                            sold={soldSeat?.includes(z)}
+                                            label={z}
+                                          />
+                                        </Box>
+                                      </Tooltip>
+                                    ))}
+                                    {/* Aisle gap */}
+                                    <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
+                                    {/* Right seats */}
+                                    {x.slice(colsLeft).map((z, c) => (
+                                      <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={`r-${c}`} fw={600}>
+                                        <Box
+                                          onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                          onMouseDown={() => handleMouse.seatDown(z, i)}
+                                          onMouseUp={() => handleMouse.seatUp()}
+                                          opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                          w={20}
+                                          h={25}
+                                          style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
+                                          className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
+                                        >
+                                          <SeatBox
+                                            active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
+                                            color={e.seatcolor}
+                                            sold={soldSeat?.includes(z)}
+                                            label={z}
+                                          />
+                                        </Box>
+                                      </Tooltip>
+                                    ))}
+                                  </>
+                                ) : (
+                                  x.map((z, c) => (
+                                    <Tooltip label={`${z} ${soldSeat?.includes(z) ? '(Terjual)' : unavailSeat?.includes(z) ? '(Tidak Tersedia)' : '(Tersedia)'}`} key={c} fw={600}>
+                                      <Box
+                                        onMouseEnter={() => handleMouse.seatEnter(z, i)}
+                                        onMouseDown={() => handleMouse.seatDown(z, i)}
+                                        onMouseUp={() => handleMouse.seatUp()}
+                                        opacity={selectedSeat?.includes(z) || !unavailSeat?.includes(z) ? 1 : 0.3}
+                                        w={20}
+                                        h={25}
+                                        style={{ minWidth: "20px", minHeight: "25px", flexShrink: 0 }}
+                                        className={`rounded-md overflow-hidden relative z-40 cursor-pointer`}
+                                      >
+                                        <SeatBox
+                                          active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
+                                          color={e.seatcolor}
+                                          sold={soldSeat?.includes(z)}
+                                          label={z}
+                                        />
+                                      </Box>
+                                    </Tooltip>
+                                  ))
+                                )}
                               </Flex>
                             );
                           })}
