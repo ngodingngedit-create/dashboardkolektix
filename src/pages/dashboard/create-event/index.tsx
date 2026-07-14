@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, SetStateAction, Dispatch } from "react";
+import { useState, useEffect, useRef, createContext, SetStateAction, Dispatch } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -113,6 +113,59 @@ const CreateEvent = () => {
     is_merch: false,
     tickets: ticket,
   });
+  const syaratToolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = syaratToolbarRef.current;
+    if (!container) return;
+
+    const inject = () => {
+      const toolbar = container.querySelector('.ql-toolbar') as HTMLElement;
+      if (!toolbar || toolbar.querySelector('.btn-syarat-default')) return;
+
+      const setFormRef = (window as any).__setFormSyarat;
+      const formRef = (window as any).__formSyarat;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-syarat-default';
+      btn.title = 'Isi teks default';
+      btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:4px;background:transparent;color:#9ca3af;cursor:pointer;transition:all 0.2s;margin-left:auto;flex-shrink:0;';
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>';
+
+      btn.onmouseenter = () => { btn.style.color = '#0052CC'; btn.style.backgroundColor = '#e2eefe'; };
+      btn.onmouseleave = () => { btn.style.color = '#9ca3af'; btn.style.backgroundColor = 'transparent'; };
+      btn.onclick = () => {
+        if (setFormRef && formRef) {
+          setFormRef({
+            ...formRef,
+            term_condition: `<ol><li>Tiket yang sah hanya tiket yang dibeli melalui Kolektix.com atau kanal resmi yang ditunjuk oleh penyelenggara.</li><li>Setiap tiket hanya berlaku untuk satu orang dan hanya dapat digunakan sesuai dengan ketentuan yang berlaku pada acara.</li><li>Penyelenggara tidak bertanggung jawab atas pembelian tiket yang dilakukan melalui calo, pihak ketiga, marketplace, atau kanal penjualan yang tidak resmi.</li><li>Pengunjung wajib menunjukkan e-ticket yang valid dan dapat diminta untuk menunjukkan kartu identitas yang masih berlaku pada saat proses check-in atau penukaran tiket.</li><li>Tiket yang hilang, dicuri, rusak, atau disalahgunakan tidak dapat diganti, diterbitkan ulang, maupun dikembalikan dan sepenuhnya menjadi tanggung jawab pemilik tiket.</li><li>Penyelenggara berhak melakukan perubahan terhadap jadwal acara, susunan acara, tata letak venue, kapasitas penonton, lokasi, maupun informasi lain yang berkaitan dengan pelaksanaan acara apabila diperlukan.</li><li>Dalam keadaan kahar (force majeure) yang meliputi namun tidak terbatas pada bencana alam, kebakaran, pandemi, wabah penyakit, gangguan keamanan, kerusuhan, perang, tindakan pemerintah, atau keadaan lain di luar kendali penyelenggara, acara dapat ditunda, dipindahkan, diubah, atau dibatalkan tanpa pemberitahuan sebelumnya.</li><li>Apabila acara dibatalkan oleh penyelenggara, mekanisme dan jadwal pengembalian dana akan mengikuti kebijakan yang ditetapkan oleh penyelenggara. Pengembalian dana dapat dikenakan potongan biaya administrasi, biaya pembayaran, biaya perbankan, atau biaya lain yang telah timbul selama proses transaksi.</li><li>Penyelenggara tidak bertanggung jawab atas biaya transportasi, akomodasi, konsumsi, maupun biaya pribadi lainnya yang telah dikeluarkan oleh pengunjung sehubungan dengan perubahan, penundaan, atau pembatalan acara.</li><li>Pengunjung bertanggung jawab penuh atas keamanan dan keberadaan barang pribadi yang dibawa ke area acara. Kehilangan, kerusakan, atau pencurian barang pribadi bukan merupakan tanggung jawab penyelenggara.</li><li>Pengunjung wajib mematuhi seluruh peraturan yang berlaku di area acara. Penyelenggara berhak menolak masuk atau mengeluarkan pengunjung yang dianggap melanggar ketentuan acara tanpa kewajiban pengembalian dana.</li><li>Dengan melakukan pembelian tiket dan/atau menghadiri acara, pengunjung dianggap telah membaca, memahami, dan menyetujui seluruh syarat dan ketentuan yang berlaku.</li></ol>`
+          });
+        }
+      };
+
+      toolbar.style.cssText += 'display:flex!important;align-items:center;';
+      const spacer = document.createElement('span');
+      spacer.style.cssText = 'flex:1;';
+      toolbar.appendChild(spacer);
+      toolbar.appendChild(btn);
+    };
+
+    // Try immediately (in case Quill already loaded)
+    inject();
+
+    // Watch for toolbar to appear (Quill dynamic import)
+    const observer = new MutationObserver(() => inject());
+    observer.observe(container, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    (window as any).__formSyarat = form;
+    (window as any).__setFormSyarat = setForm;
+  });
+
   const defaultForm: EventTicket = {
     ticket_type: "",
     ticket_category_id: 1,
@@ -645,11 +698,11 @@ const CreateEvent = () => {
                 </div>
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex items-center justify-between">
+                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
                     {error?.term_condition && <p className="text-danger mt-1">{error?.term_condition}</p>}
                   </div>
-                  <div className="p-5">
+                  <div className="p-5" ref={syaratToolbarRef}>
                     <InputEditor
                       theme="snow"
                       onChange={(value: any) => setForm({ ...form, term_condition: value })}
@@ -663,7 +716,6 @@ const CreateEvent = () => {
                           [{ list: "bullet" }],
                         ],
                         clipboard: {
-                          // toggle to add extra line breaks when pasting HTML:
                           matchVisual: false,
                         },
                       }}

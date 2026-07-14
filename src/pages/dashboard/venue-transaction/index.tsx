@@ -81,6 +81,7 @@ export default function VenueTransaction() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [detailModalOpened, setDetailModalOpened] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<DataResponse | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -161,7 +162,7 @@ export default function VenueTransaction() {
     const statusStr = (item.payment_status || "").toLowerCase();
 
     if (statusId === 2 || statusStr.includes("paid") || statusStr.includes("success") || statusStr.includes("berhasil")) {
-      return { text: "Success", color: "green" };
+      return { text: "Paid", color: "green" };
     } else if (statusId === 1 || statusStr.includes("pending") || statusStr.includes("menunggu") || statusStr.includes("unpaid")) {
       return { text: "Pending", color: "yellow" };
     } else if (statusId === 3 || statusStr.includes("gagal") || statusStr.includes("failed") || statusStr.includes("cancel")) {
@@ -195,8 +196,15 @@ export default function VenueTransaction() {
       });
     }
 
+    if (statusFilter) {
+      result = result.filter((item) => {
+        const info = getStatusInfo(item);
+        return info.text.toLowerCase() === statusFilter.toLowerCase();
+      });
+    }
+
     return result;
-  }, [data, filterValue, dateFilter]);
+  }, [data, filterValue, dateFilter, statusFilter]);
 
   const stats = useMemo(() => {
     const successfulTrans = data.filter(item => {
@@ -293,6 +301,17 @@ export default function VenueTransaction() {
                   />
                 </Box>
 
+                {/* Filter status */}
+                <MantineSelect
+                  placeholder="Filter status"
+                  value={statusFilter}
+                  onChange={(val) => { setStatusFilter(val || ""); setPage(1); }}
+                  data={["Paid", "Pending", "Expired"]}
+                  style={{ width: 150 }}
+                  size="sm"
+                  clearable
+                />
+
                 {/* Searchbar */}
                 <MantineTextInput
                   placeholder="Cari event, venue, atau client..."
@@ -301,22 +320,7 @@ export default function VenueTransaction() {
                   onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
                   style={{ width: 280 }}
                   size="sm"
-                />                {/* Reset filter */}
-                <Tooltip label="Reset filter">
-                  <ActionIcon 
-                    variant="filled" 
-                    color="gray.1" 
-                    size="40px" 
-                    radius="xl"
-                    onClick={clearFilters}
-                    styles={{
-                      root: { color: '#495057' }
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faUndo} style={{ width: 16 }} />
-                  </ActionIcon>
-                </Tooltip>
-              </Flex>
+                />                </Flex>
             </Flex>
 
             {/* Info row */}
@@ -461,37 +465,9 @@ export default function VenueTransaction() {
                         whiteSpace: "nowrap",
                         textTransform: "uppercase",
                         letterSpacing: "0.04em",
-                      }}
-                    >
-                      Pax
-                    </th>
-                    <th
-                      style={{
-                        padding: "10px 14px",
-                        textAlign: "left",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        color: "#777",
-                        whiteSpace: "nowrap",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Ruangan
-                    </th>
-                    <th
-                      style={{
-                        padding: "10px 14px",
-                        textAlign: "left",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        color: "#777",
-                        whiteSpace: "nowrap",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
                         cursor: "pointer",
                         position: "sticky",
-                        right: 100, // Adjusted to make room for Action
+                        right: 48,
                         backgroundColor: "#f5f7fa",
                         zIndex: 2,
                         boxShadow: "-2px 0 5px rgba(0,0,0,0.06)",
@@ -524,7 +500,7 @@ export default function VenueTransaction() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={10} style={{ padding: "60px 14px", textAlign: "center" }}>
+                      <td colSpan={8} style={{ padding: "60px 14px", textAlign: "center" }}>
                         <Flex justify="center" align="center" gap="sm">
                           <div
                             className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
@@ -543,7 +519,7 @@ export default function VenueTransaction() {
                     </tr>
                   ) : paginatedItems.length === 0 ? (
                     <tr>
-                      <td colSpan={10} style={{ padding: "60px 14px", textAlign: "center" }}>
+                      <td colSpan={8} style={{ padding: "60px 14px", textAlign: "center" }}>
                         <Stack align="center" gap={8}>
                           <FontAwesomeIcon icon={faStore} style={{ width: 36, height: 36, color: "#adb5bd" }} />
                           <Text size="sm" c="dimmed" fw={500}>Tidak ada transaksi venue ditemukan</Text>
@@ -680,23 +656,13 @@ export default function VenueTransaction() {
                             </Flex>
                           </td>
 
-                          {/* Pax — from details, default '-' */}
-                          <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
-                            <Text size="sm" c="dimmed">-</Text>
-                          </td>
-
-                          {/* Ruangan — from details, default '-' */}
-                          <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
-                            <Text size="sm" c="dimmed">-</Text>
-                          </td>
-
                           {/* Status — sticky */}
                           <td
                             style={{
                               padding: "12px 14px",
                               whiteSpace: "nowrap",
                               position: "sticky",
-                              right: 100, // Matching header
+                              right: 48,
                               backgroundColor: "white",
                               zIndex: 1,
                               boxShadow: "-2px 0 5px rgba(0,0,0,0.07)",
@@ -895,13 +861,12 @@ export default function VenueTransaction() {
         >
           <Flex justify="flex-end" gap="md" maw={1400} mx="auto">
             <Button 
-              variant="outline" 
-              color="gray"
+              variant="default" 
               size="md"
               radius="md"
               onClick={() => setDetailModalOpened(false)}
               leftSection={<FontAwesomeIcon icon={faTimes} />}
-              style={{ minWidth: 120 }}
+              style={{ minWidth: 120, border: '1px solid #d1d5db' }}
             >
               Tutup
             </Button>

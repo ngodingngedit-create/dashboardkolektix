@@ -281,6 +281,7 @@ const Merch = () => {
     const [ticketList, setTicketList] = useState<{ value: string, label: string }[]>([]);
     const [stats, setStats] = useState({ total: 0, checkin: 0 });
     const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const handleFetchQRCodeRef = useRef<any>(null);
 
     useEffect(() => {
         if (user) {
@@ -452,7 +453,7 @@ const Merch = () => {
         return () => {
             destroyScanner();
         };
-    }, [selected, activeTab]);
+    }, [selected]);
 
     // Handle auto-input dari scanner dengan delay 3 detik
     useEffect(() => {
@@ -476,8 +477,7 @@ const Merch = () => {
                 qrScanner.current = new QrScanner(
                     videoRef.current,
                     (result) => {
-                        console.log("Active tab during scan:", activeTab);
-                        handleFetchQRCode(result.data);
+                        handleFetchQRCodeRef.current?.(result.data);
                     },
                     {
                         maxScansPerSecond: 2,
@@ -682,7 +682,7 @@ const Merch = () => {
                     invoice_no: code,
                     buyer_name: 'N/A',
                     event_name: 'Sudah Checkin',
-                    category_ticket: 'Warning',
+                    category_ticket: activeTab === 'invitation' ? 'Invitation' : 'Warning',
                     total_qty: '0',
                     scan_date: scanDateTime,
                     status: 'warning',
@@ -696,6 +696,10 @@ const Merch = () => {
             setLoading(undefined);
         }
     };
+
+    useEffect(() => {
+        handleFetchQRCodeRef.current = handleFetchQRCode;
+    }, [handleFetchQRCode]);
 
     const handleManualSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -785,6 +789,10 @@ const Merch = () => {
                             setActiveTab('ticket');
                             setShowSuccessModal(false);
                             setCurrentScanData(null);
+                            setIsScanning(true);
+                            if (selected === 'qr') {
+                                startScanner();
+                            }
                         }}
                     >
                         <FontAwesomeIcon icon={faTicket} className="text-xs" />
@@ -798,6 +806,10 @@ const Merch = () => {
                             setActiveTab('invitation');
                             setShowSuccessModal(false);
                             setCurrentScanData(null);
+                            setIsScanning(true);
+                            if (selected === 'qr') {
+                                startScanner();
+                            }
                         }}
                     >
                         <FontAwesomeIcon icon={faEnvelope} className="text-xs" />
