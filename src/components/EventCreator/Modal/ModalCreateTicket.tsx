@@ -108,6 +108,7 @@ export default function ModalCreateTicket({
   const [selected, setSelected] = useState<number>();
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
+  const [onSelectReservedSeat, setOnSelectReservedSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
   const [ticketSearch, setTicketSearch] = useState("");
   const { seatmapData, eventData } = useContext(Context);
@@ -176,6 +177,7 @@ export default function ModalCreateTicket({
           ...form,
           event_id: String(eventId),
           available_seat_number: form.available_seat?.join(","),
+          reserved_seat_number: form.reserved_seat?.join(","),
           seat_color: form.seat_color ?? "#194e9e",
         } as TicketPropsInputRequest,
         success: () => {
@@ -225,7 +227,20 @@ export default function ModalCreateTicket({
     setTicket(ticket.map((e, i) => (i == onSelectSeat ? { ...e, available_seat: data } : e)));
   };
 
+  const handleSelectReservedSeat = (data?: string[]) => {
+    setTicket(ticket.map((e, i) => (i == onSelectReservedSeat ? { ...e, reserved_seat: data } : e)));
+  };
+
   const handleSeatClick = (seatnumber: string) => {
+    if (onSelectReservedSeat !== undefined) {
+      // Mode reservasi: cari tiket yang punya reserved_seat ini
+      const ticketIdx = ticket.findIndex((t) => t.reserved_seat?.includes(seatnumber));
+      if (ticketIdx !== -1) {
+        setOnSelectReservedSeat(ticketIdx);
+      }
+      return;
+    }
+    // Mode seat biasa
     const ticketIdx = ticket.findIndex((t) => t.available_seat?.includes(seatnumber));
     if (ticketIdx !== -1) {
       setOnSelectSeat(ticketIdx);
@@ -274,19 +289,44 @@ export default function ModalCreateTicket({
   };
 
   const unavailSeat = useMemo(() => {
-    return onSelectSeat === undefined
-      ? []
-      : ticket
+    const activeIdx = onSelectSeat ?? onSelectReservedSeat;
+    if (activeIdx === undefined) return [];
+
+    if (onSelectSeat !== undefined) {
+      // Mode Pilih Seat: unavailable = reserved_seat semua tiket + available_seat tiket lain
+      const allReserved = ticket
+        .map((e) => e.reserved_seat)
+        .reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
+      const otherAvailable = ticket
+        .map((e, i) => i !== activeIdx ? (e.available_seat ?? []) : [])
+        .reduce<string[]>((c, n) => [...c, ...n], []);
+      return [...allReserved, ...otherAvailable]
+        .filter((e) => !ticket[activeIdx].available_seat?.includes(e));
+    }
+
+    if (onSelectReservedSeat !== undefined) {
+      // Mode Pilih Reservasi: unavailable = available_seat SEMUA tiket + reserved_seat tiket lain
+      const allAvailable = ticket
         .map((e) => e.available_seat)
-        .reduce<string[]>((c, n) => [...c, ...(n ?? [])], [])
-        .filter((e) => !ticket[onSelectSeat ?? 0].available_seat?.includes(e));
-  }, [onSelectSeat]);
+        .reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
+      const otherReserved = ticket
+        .filter((_, i) => i !== activeIdx)
+        .map((e) => e.reserved_seat)
+        .reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
+      return [...allAvailable, ...otherReserved]
+        .filter((e) => !ticket[activeIdx].reserved_seat?.includes(e));
+    }
+
+    return [];
+  }, [onSelectSeat, onSelectReservedSeat]);
 
   const allSeat = useMemo(() => {
-    const result = ticket.map((e) => e.available_seat).reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
+    const activeField: keyof EventTicket = onSelectSeat !== undefined ? 'available_seat' : onSelectReservedSeat !== undefined ? 'reserved_seat' : 'available_seat';
+    const result = ticket.map((e) => e[activeField] as string[] | undefined).reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
 
     if (hoveredTicket !== undefined) {
-      return result.filter((e) => ticket[hoveredTicket].available_seat?.includes(e));
+      const hoverField: keyof EventTicket = onSelectSeat !== undefined ? 'available_seat' : onSelectReservedSeat !== undefined ? 'reserved_seat' : 'available_seat';
+      return result.filter((e) => (ticket[hoveredTicket][hoverField] as string[] | undefined)?.includes(e));
     }
 
     return result;
@@ -360,7 +400,13 @@ export default function ModalCreateTicket({
 
                 <Stack gap={10} className={`overflow-y-auto h-full `}>
                   {filteredTickets.map((e, i) => (
-                    <UnstyledButton key={i} onClick={() => e.ticket_category == "Seated" && addSeatMap && setOnSelectSeat(i)}>
+                    <UnstyledButton key={i} onClick={(evt) => {
+                      // Jangan trigger Pilih Seat kalau klik di button aksi (Pilih Seat / Pilih Reservasi)
+                      if ((evt.target as HTMLElement).closest('button')) return;
+                      if (e.ticket_category == "Seated" && addSeatMap && onSelectReservedSeat === undefined) {
+                        setOnSelectSeat(i);
+                      }
+                    }}>
                       <Box onMouseEnter={() => setHoveredTicket(i)} onMouseLeave={() => setHoveredTicket(undefined)} className={`${onSelectSeat == i ? "!border !border-primary-base rounded-lg" : ""}`}>
                         <TicketContainer
                           key={i}
@@ -379,7 +425,8 @@ export default function ModalCreateTicket({
                             setOpenForm(i);
                           }}
                           onDelete={() => handleDeleteTicket(i)}
-                          onSelectSeatButton={e.ticket_category == "Seated" && onSelectSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
+                          onSelectSeatButton={e.ticket_category == "Seated" && onSelectSeat === undefined && onSelectReservedSeat === undefined && addSeatMap ? () => setOnSelectSeat(i) : undefined}
+                          onSelectReservedButton={e.ticket_category == "Seated" && onSelectSeat === undefined && onSelectReservedSeat === undefined && addSeatMap ? () => setOnSelectReservedSeat(i) : undefined}
                           seatColor={e.seat_color}
                           onSelectSeatColor={onSelectSeat == i ? (e) => setTicket(ticket?.map((z, _i) => (i == _i ? { ...z, seat_color: e } : z))) : undefined}
                           isSoldout={e.is_soldout}
@@ -743,13 +790,26 @@ export default function ModalCreateTicket({
                 editable={hasSeatmapPermission}
                 fullscreenState={[isFullscreenSeatmap, setIsFullscreenSeatmap]}
                 unavailSeat={unavailSeat}
-                selected={onSelectSeat !== undefined ? ticket[onSelectSeat].available_seat : allSeat}
-                onSelect={handleSelectSeat}
-                onSelectAll={handleSelectSeat}
-                onEdit={onSelectSeat !== undefined}
-                onFinishSelectSeat={onSelectSeat !== undefined ? () => setOnSelectSeat(undefined) : undefined}
+                selected={
+                  onSelectSeat !== undefined
+                    ? ticket[onSelectSeat].available_seat
+                    : onSelectReservedSeat !== undefined
+                    ? ticket[onSelectReservedSeat].reserved_seat
+                    : ticket.map((e) => e.available_seat ?? []).reduce<string[]>((c, n) => [...c, ...n], [])
+                }
+                onSelect={onSelectSeat !== undefined ? handleSelectSeat : onSelectReservedSeat !== undefined ? handleSelectReservedSeat : handleSelectSeat}
+                onSelectAll={onSelectSeat !== undefined ? handleSelectSeat : onSelectReservedSeat !== undefined ? handleSelectReservedSeat : handleSelectSeat}
+                onEdit={onSelectSeat !== undefined || onSelectReservedSeat !== undefined}
+                onFinishSelectSeat={
+                  onSelectSeat !== undefined
+                    ? () => setOnSelectSeat(undefined)
+                    : onSelectReservedSeat !== undefined
+                    ? () => setOnSelectReservedSeat(undefined)
+                    : undefined
+                }
                 onSeatClick={handleSeatClick}
                 soldSeat={soldSeats}
+                reservedSeat={ticket.map((e) => e.reserved_seat ?? []).reduce<string[]>((c, n) => [...c, ...n], [])}
               />
             </Box>
           </Flex>

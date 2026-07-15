@@ -39,6 +39,7 @@ export interface TicketProps {
   max_buy_ticket?: number;
   event_schedule_date: string | null;
   available_seat_number?: string;
+  reserved_seat_number?: string;
   seat_color?: string;
   ticket_category?: "Seated" | "Festival";
   has_ordered_seatnumber?: {
@@ -70,6 +71,7 @@ export type TicketPropsInputRequest = Pick<
   | "is_fullbook"
   | "event_schedule_date"
   | "available_seat_number"
+  | "reserved_seat_number"
   | "seat_color"
   | "ticket_category"
 >;

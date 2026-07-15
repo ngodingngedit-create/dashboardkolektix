@@ -17,6 +17,7 @@ interface TicketContainerProps {
   onDelete?: () => void;
   onEdit?: () => void;
   onSelectSeatButton?: () => void;
+  onSelectReservedButton?: () => void;
   onSelectSeatColor?: (color: string) => void;
   seatColor?: string;
   isSoldout?: number;
@@ -39,6 +40,7 @@ const TicketContainer = ({
   onDelete,
   onEdit,
   onSelectSeatButton,
+  onSelectReservedButton,
   onSelectSeatColor,
   seatColor,
   isSoldout,
@@ -70,6 +72,11 @@ const TicketContainer = ({
           {onSelectSeatButton && (
             <Button onClick={onSelectSeatButton} variant="light" size="xs">
               Pilih Seat
+            </Button>
+          )}
+          {onSelectReservedButton && (
+            <Button onClick={onSelectReservedButton} variant="light" size="xs" color="orange">
+              Pilih Reservasi
             </Button>
           )}
           {onSelectSeatColor && !onSelectSeatButton && (

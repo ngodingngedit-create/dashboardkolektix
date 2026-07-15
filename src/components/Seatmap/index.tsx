@@ -45,6 +45,7 @@ type ComponentProps = {
   soldSeat?: string[];
   onSelect?: (data?: string[]) => void;
   unavailSeat?: string[];
+  reservedSeat?: string[];
   onSelectAll?: (data?: string[]) => void;
   onEdit?: boolean;
   onFinishSelectSeat?: () => void;
@@ -68,6 +69,7 @@ export default forwardRef(function Seatmap({
   soldSeat,
   onSelect: setSelectedSeat,
   unavailSeat,
+  reservedSeat,
   onSelectAll,
   onSeatClick,
 }: Readonly<ComponentProps>, ref) {
@@ -851,6 +853,7 @@ export default forwardRef(function Seatmap({
                                             active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
                                             color={e.seatcolor}
                                             sold={soldSeat?.includes(z)}
+                                            reserved={reservedSeat?.includes(z)}
                                             label={z}
                                           />
                                         </Box>
@@ -875,6 +878,7 @@ export default forwardRef(function Seatmap({
                                             active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
                                             color={e.seatcolor}
                                             sold={soldSeat?.includes(z)}
+                                            reserved={reservedSeat?.includes(z)}
                                             label={z}
                                           />
                                         </Box>
@@ -898,6 +902,7 @@ export default forwardRef(function Seatmap({
                                           active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
                                           color={e.seatcolor}
                                           sold={soldSeat?.includes(z)}
+                                          reserved={reservedSeat?.includes(z)}
                                           label={z}
                                         />
                                       </Box>
@@ -984,8 +989,8 @@ export default forwardRef(function Seatmap({
   );
 });
 
-const SeatBox = ({ active, color, sold, label }: { active: boolean; color?: string; sold?: boolean; label?: string }) => {
-  const bgColor = sold ? "#adb5bd" : active ? (color ?? "#194e9e") : "gray.2";
+const SeatBox = ({ active, color, sold, reserved, label }: { active: boolean; color?: string; sold?: boolean; reserved?: boolean; label?: string }) => {
+  const bgColor = sold ? "#adb5bd" : reserved ? "#f59f00" : active ? (color ?? "#194e9e") : "gray.2";
   return (
     <>
       <Box className={`relative z-10 rounded-sm mt-[5px] border ${active || sold ? "border-[#fafafa30]" : " border-[#d0d0d0]"} flex items-center justify-center overflow-hidden`} bg={bgColor} h="calc(100% - 7px)">
