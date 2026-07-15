@@ -109,6 +109,7 @@ export default function ModalCreateTicket({
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [onSelectSeat, setOnSelectSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
+  const [ticketSearch, setTicketSearch] = useState("");
   const { seatmapData, eventData } = useContext(Context);
   const router = useRouter();
   const { slug } = router.query;
@@ -216,6 +217,8 @@ export default function ModalCreateTicket({
       setTicket([...ticket, form]);
     }
     setOpenForm(undefined);
+    setIdx(undefined);
+    setIsOpen(false);
   };
 
   const handleSelectSeat = (data?: string[]) => {
@@ -297,6 +300,19 @@ export default function ModalCreateTicket({
     console.log("FORM", form);
   }, [form]);
 
+  const filteredTickets = useMemo(() => {
+    if (!Array.isArray(ticket)) return [];
+    if (!ticketSearch) return ticket;
+    const lower = ticketSearch.toLowerCase().trim();
+    return ticket.filter((t) => {
+      return (
+        t.name?.toLowerCase().includes(lower) ||
+        t.ticket_type?.toLowerCase().includes(lower) ||
+        t.ticket_category?.toLowerCase().includes(lower)
+      );
+    });
+  }, [ticket, ticketSearch]);
+
   const seatmapRef = useRef<any>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -340,10 +356,10 @@ export default function ModalCreateTicket({
           <Flex gap={20} h="100%">
             <Card p={10} display={openForm === undefined && ticket.length > 0 && !isFullscreenSeatmap ? undefined : "none"} className={`w-full h-full ${openSeatMap ? "max-w-[370px]" : ""}`}>
               <Stack gap={15} h="100%">
-                <TextInput leftSection={<Icon icon="uiw:search" />} placeholder="Cari Tiket" />
+                <TextInput leftSection={<Icon icon="uiw:search" />} placeholder="Cari Tiket" value={ticketSearch} onChange={(e) => setTicketSearch(e.currentTarget.value)} />
 
                 <Stack gap={10} className={`overflow-y-auto h-full `}>
-                  {ticket.map((e, i) => (
+                  {filteredTickets.map((e, i) => (
                     <UnstyledButton key={i} onClick={() => e.ticket_category == "Seated" && addSeatMap && setOnSelectSeat(i)}>
                       <Box onMouseEnter={() => setHoveredTicket(i)} onMouseLeave={() => setHoveredTicket(undefined)} className={`${onSelectSeat == i ? "!border !border-primary-base rounded-lg" : ""}`}>
                         <TicketContainer
@@ -711,11 +727,7 @@ export default function ModalCreateTicket({
                 <button
                   className="w-[200px] ml-auto text-white bg-primary-dark rounded-full py-2 flex items-center justify-center gap-2"
                   onClick={() => {
-                    if (!!eventId) {
-                      submitTicket();
-                    } else {
-                      handleSaveTicket();
-                    }
+                    handleSaveTicket();
                     // step === 0 ? submitTicket() : setStep(1);
                   }}
                 >

@@ -48,9 +48,8 @@ const MyVenue = () => {
         cancelProps: { radius: 'xl' },
         onConfirm: async () => {
             await fetch({
-                url: `venue/${id}`, // adjust endpoint if needed
-                method: 'POST',
-                data: { _method: 'DELETE' },
+                url: `creator-data/venue/${id}`,
+                method: 'DELETE',
                 success: () => {
                     notifications.show({
                         title: 'Berhasil',
