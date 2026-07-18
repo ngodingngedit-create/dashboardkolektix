@@ -53,7 +53,7 @@ const TicketContainer = ({
 
   return (
     <div className="w-full bg-primary-light border-2 border-primary-light-200 rounded-xl">
-      <div className="p-4 border-2 border-b-primary-light-200 border-dashed border-x-0 border-t-0">
+      <div className="p-4">
         <Flex justify="space-between" wrap="wrap" gap={10} align="center">
           <Stack gap={0}>
             <p className="font-semibold capitalize">{name}</p>

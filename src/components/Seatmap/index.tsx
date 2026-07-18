@@ -51,6 +51,8 @@ type ComponentProps = {
   onFinishSelectSeat?: () => void;
   fullscreenState: [boolean, (state: boolean) => void];
   onSeatClick?: (seatnumber: string) => void;
+  availableSeat?: string[];
+  hoveredSeat?: string[];
 };
 
 export const defaultSeatmapData: SeatmapData[] = [
@@ -72,6 +74,8 @@ export default forwardRef(function Seatmap({
   reservedSeat,
   onSelectAll,
   onSeatClick,
+  availableSeat,
+  hoveredSeat,
 }: Readonly<ComponentProps>, ref) {
   const [isDragSelect, setIsDragSelect] = useState<string[]>();
   const [isCanvasMove, setIsCanvasMove] = useState(false);
@@ -851,7 +855,8 @@ export default forwardRef(function Seatmap({
                                         >
                                           <SeatBox
                                             active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
-                                            color={e.seatcolor}
+                                            hovered={hoveredSeat?.includes(z)}
+                                            color={availableSeat?.includes(z) ? "#194e9e" : e.seatcolor}
                                             sold={soldSeat?.includes(z)}
                                             reserved={reservedSeat?.includes(z)}
                                             label={z}
@@ -876,7 +881,8 @@ export default forwardRef(function Seatmap({
                                         >
                                           <SeatBox
                                             active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
-                                            color={e.seatcolor}
+                                            hovered={hoveredSeat?.includes(z)}
+                                            color={availableSeat?.includes(z) ? "#194e9e" : e.seatcolor}
                                             sold={soldSeat?.includes(z)}
                                             reserved={reservedSeat?.includes(z)}
                                             label={z}
@@ -900,7 +906,8 @@ export default forwardRef(function Seatmap({
                                       >
                                         <SeatBox
                                           active={Boolean(selectedSeat?.includes(z) || isDragSelect?.includes(z))}
-                                          color={e.seatcolor}
+                                          hovered={hoveredSeat?.includes(z)}
+                                          color={availableSeat?.includes(z) ? "#194e9e" : e.seatcolor}
                                           sold={soldSeat?.includes(z)}
                                           reserved={reservedSeat?.includes(z)}
                                           label={z}
@@ -989,19 +996,18 @@ export default forwardRef(function Seatmap({
   );
 });
 
-const SeatBox = ({ active, color, sold, reserved, label }: { active: boolean; color?: string; sold?: boolean; reserved?: boolean; label?: string }) => {
-  const bgColor = sold ? "#adb5bd" : reserved ? "#f59f00" : active ? (color ?? "#194e9e") : "gray.2";
+const SeatBox = ({ active, color, sold, reserved, label, hovered }: { active: boolean; color?: string; sold?: boolean; reserved?: boolean; label?: string; hovered?: boolean }) => {
+  const bgColor = sold ? "#adb5bd" : reserved ? "#f59f00" : active ? (color ?? "#194e9e") : (color ?? "gray.2");
   return (
     <>
       <Box className={`relative z-10 rounded-sm mt-[5px] border ${active || sold ? "border-[#fafafa30]" : " border-[#d0d0d0]"} flex items-center justify-center overflow-hidden`} bg={bgColor} h="calc(100% - 7px)">
         {label && (
-          <Text fw={700} c={active || sold ? "white" : "gray.7"} style={{ fontSize: '7px', lineHeight: 1, textAlign: 'center' }}>
-            {label}
-          </Text>
+          <Text fw={700} c={sold || reserved || active || color ? "white" : "gray.7"} style={{ fontSize: '7px', lineHeight: 1, textAlign: 'center' }}>{label}</Text>
         )}
       </Box>
 
+      {hovered && <Box className="absolute inset-0 rounded-sm border-2 border-[#194e9e] z-20 pointer-events-none" />}
       <Box className={`w-[calc(70%)] rounded-sm absolute top-0 left-2/4 -translate-x-2/4 h-[7px] ${active || sold ? "" : "border border-[#d0d0d0]"}`} bg={bgColor} />
     </>
   );
-};  
+};

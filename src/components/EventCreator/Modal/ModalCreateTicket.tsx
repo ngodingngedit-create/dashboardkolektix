@@ -321,15 +321,10 @@ export default function ModalCreateTicket({
   }, [onSelectSeat, onSelectReservedSeat]);
 
   const allSeat = useMemo(() => {
-    const activeField: keyof EventTicket = onSelectSeat !== undefined ? 'available_seat' : onSelectReservedSeat !== undefined ? 'reserved_seat' : 'available_seat';
-    const result = ticket.map((e) => e[activeField] as string[] | undefined).reduce<string[]>((c, n) => [...c, ...(n ?? [])], []);
+    if (hoveredTicket === undefined) return [];
 
-    if (hoveredTicket !== undefined) {
-      const hoverField: keyof EventTicket = onSelectSeat !== undefined ? 'available_seat' : onSelectReservedSeat !== undefined ? 'reserved_seat' : 'available_seat';
-      return result.filter((e) => (ticket[hoveredTicket][hoverField] as string[] | undefined)?.includes(e));
-    }
-
-    return result;
+    const hoverField: keyof EventTicket = onSelectSeat !== undefined ? 'available_seat' : onSelectReservedSeat !== undefined ? 'reserved_seat' : 'available_seat';
+    return (ticket[hoveredTicket][hoverField] as string[] | undefined) ?? [];
   }, [ticket, onSelectSeat, hoveredTicket]);
 
   const soldSeats = useMemo(() => {
@@ -809,6 +804,7 @@ export default function ModalCreateTicket({
                 }
                 onSeatClick={handleSeatClick}
                 soldSeat={soldSeats}
+                hoveredSeat={allSeat}
                 reservedSeat={ticket.map((e) => e.reserved_seat ?? []).reduce<string[]>((c, n) => [...c, ...n], [])}
               />
             </Box>

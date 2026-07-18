@@ -419,7 +419,7 @@ const EditEventAdmin = () => {
             >
               <Tab key="info" title="Info Tiket">
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Tiket</h3>
                     <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={onAddTicket}>
                       <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
@@ -458,7 +458,7 @@ const EditEventAdmin = () => {
                 </div>
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
                   </div>
                   <div className="p-5">
@@ -495,7 +495,7 @@ const EditEventAdmin = () => {
                 </div>
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Pengaturan Tiket</h3>
                   </div>
                   <div className="p-5">
@@ -548,7 +548,7 @@ const EditEventAdmin = () => {
 
               <Tab key="detail" title="Detail Event">
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="px-4 py-3">
                     <h3 className="text-medium font-semibold">Deskripsi</h3>
                   </div>
                   <div className="p-5">
@@ -556,7 +556,7 @@ const EditEventAdmin = () => {
                   </div>
                 </div>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3">
+                  <div className="px-4 py-3">
                     <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
                   </div>
                   <div className="p-5">

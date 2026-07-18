@@ -111,6 +111,7 @@ const CreateEvent = () => {
     is_company: false,
     is_kelas: false,
     is_merch: false,
+    is_session: 0,
     tickets: ticket,
   });
   const syaratToolbarRef = useRef<HTMLDivElement>(null);
@@ -208,6 +209,25 @@ const CreateEvent = () => {
   const [eventId, setEventId] = useState<number | null>(null);
   const [addTicketModal, setAddTicketModal] = useState(false);
 
+  // Sessions state
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [editSessionData, setEditSessionData] = useState<any>({
+    session_name: "",
+    session_date: "",
+    start_time: "",
+    end_time: "",
+    inventories: [],
+  });
+  const [editSessionIdx, setEditSessionIdx] = useState<number | undefined>(undefined);
+  const [sessionError, setSessionError] = useState("");
+
+  // Session ticket management
+  const [activeSessionIdx, setActiveSessionIdx] = useState<number | undefined>(undefined);
+  const [showSessionTicketModal, setShowSessionTicketModal] = useState(false);
+  const [sessionEditIdx, setSessionEditIdx] = useState<number | undefined>(undefined);
+  const [sessionEditData, setSessionEditData] = useState<EventTicket>({ ...defaultForm, seat_color: "#194e9e" });
+
   useEffect(() => {
     getTagSuggestion();
   }, []);
@@ -255,14 +275,42 @@ const CreateEvent = () => {
         );
         setEventId(res.data.id);
         setImage(res.data.image_url || res.data.image_base64 as string);
-        console.log("Image data:", res.data.image_url, res.data.image_base64);
-        console.log("Full data:", res.data);
+
+        // Load sessions if available (from 'sessions' key with 'inventories')
+        if (res.data.sessions && Array.isArray(res.data.sessions)) {
+          setSessions(
+            res.data.sessions.map((s: any) => ({
+              id: s.id,
+              session_name: s.session_name,
+              session_date: s.session_date,
+              start_time: s.start_time ? s.start_time.substring(0, 5) : s.start_time,
+              end_time: s.end_time ? s.end_time.substring(0, 5) : s.end_time,
+              inventories: (s.inventories || []).map((t: any) => ({
+                ...t,
+                id: t.id,
+                event_ticket_id: t.event_ticket_id,
+                ticket_type: t.ticket_type || "Berbayar",
+                ticket_category: t.ticket_category || "Festival",
+                ticket_date: t.ticket_date || t.start_date || null,
+                ticket_end: t.ticket_end || t.end_date || null,
+                available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
+                taken_seat: t.taken_seat_number ? t.taken_seat_number.split(",") : [],
+                seat_color: t.seat_color || "#194e9e",
+                name: t.ticket_name || t.name,
+                description: t.ticket_description || t.description,
+                qty: t.qty || 0,
+                price: t.price || 0,
+              })),
+              status: s.status ?? 1,
+            }))
+          );
+          setForm((prev: any) => ({ ...prev, is_session: 1 }));
+        }
 
         const seatmap = res.data.seatmap ? JSON.parse(res.data.seatmap) : [];
         setSeatmapData.setState(seatmap);
 
         setLoadingEvent(false);
-        console.log("res:", res);
       })
       .catch((err) => {
         console.log(err);
@@ -309,6 +357,20 @@ const CreateEvent = () => {
     setLoading(true); // Set loading ke true
     fetchMethod(eventId === null ? "event" : "event/" + eventId, {
       ...form,
+      is_session: form.is_session ? 1 : 0,
+      sessions: form.is_session ? sessions.map((ses) => ({
+        ...ses,
+        inventories: ses.inventories.map((inv: EventTicket) => ({
+          ...inv,
+          ticket_name: inv.name,
+          ticket_type: inv.ticket_type,
+          inventory_type: inv.ticket_category?.toUpperCase(),
+          ticket_category: inv.ticket_category,
+          available_seat_number: inv.available_seat?.join(","),
+          seat_color: inv.seat_color ?? "#194e9e",
+          ticket_description: inv.description,
+        })),
+      })) : [],
       tickets: form.tickets.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
       has_event_ticket: ticket.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
       seatmap: form.tickets.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
@@ -401,6 +463,88 @@ const CreateEvent = () => {
     let arr = [...ticket];
     arr.splice(idx, 1);
     setTicket(arr);
+  };
+
+  // Session handlers
+  const openAddSession = () => {
+    setEditSessionData({
+      session_name: "",
+      session_date: form.start_date || "",
+      start_time: "",
+      end_time: "",
+      inventories: [],
+    });
+    setEditSessionIdx(undefined);
+    setSessionError("");
+    setShowSessionModal(true);
+  };
+
+  const openEditSession = (session: any, idx: number) => {
+    setEditSessionData({ ...session });
+    setEditSessionIdx(idx);
+    setSessionError("");
+    setShowSessionModal(true);
+  };
+
+  const saveSession = () => {
+    if (!editSessionData.session_name.trim()) {
+      setSessionError("Nama sesi wajib diisi");
+      return;
+    }
+    if (!editSessionData.session_date) {
+      setSessionError("Tanggal sesi wajib diisi");
+      return;
+    }
+    if (!editSessionData.start_time || !editSessionData.end_time) {
+      setSessionError("Waktu mulai dan selesai wajib diisi");
+      return;
+    }
+    setSessionError("");
+
+    if (editSessionIdx !== undefined) {
+      const updated = [...sessions];
+      updated[editSessionIdx] = { ...editSessionData, status: editSessionData.status ?? 1 };
+      setSessions(updated);
+    } else {
+      setSessions([...sessions, { ...editSessionData, status: 1 }]);
+    }
+    setShowSessionModal(false);
+  };
+
+  const deleteSession = (idx: number) => {
+    const updated = sessions.filter((_: any, i: number) => i !== idx);
+    setSessions(updated);
+  };
+
+  // Session ticket handlers
+  const getSessionTickets = (sessionIdx: number): EventTicket[] => {
+    return sessions[sessionIdx]?.inventories || [];
+  };
+
+  const setSessionTickets = (sessionIdx: number, tickets: EventTicket[]) => {
+    const updated = [...sessions];
+    updated[sessionIdx] = { ...updated[sessionIdx], inventories: tickets };
+    setSessions(updated);
+  };
+
+  const openAddSessionTicket = (sessionIdx: number) => {
+    setActiveSessionIdx(sessionIdx);
+    setSessionEditData({ ...defaultForm, seat_color: "#194e9e" });
+    setSessionEditIdx(undefined);
+    setShowSessionTicketModal(true);
+  };
+
+  const openEditSessionTicket = (sessionIdx: number, ticketIdx: number, ticket: EventTicket) => {
+    setActiveSessionIdx(sessionIdx);
+    setSessionEditData({ ...ticket });
+    setSessionEditIdx(ticketIdx);
+    setShowSessionTicketModal(true);
+  };
+
+  const deleteSessionTicket = (sessionIdx: number, ticketIdx: number) => {
+    const tickets = getSessionTickets(sessionIdx);
+    tickets.splice(ticketIdx, 1);
+    setSessionTickets(sessionIdx, [...tickets]);
   };
 
   useEffect(() => {
@@ -529,7 +673,7 @@ const CreateEvent = () => {
             >
               <Tab key="info" title="Info Tiket">
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Tiket</h3>
                     <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={onAddTicket}>
                       <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
@@ -570,7 +714,7 @@ const CreateEvent = () => {
                   </div>
                 </div>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
                   </div>
                   <div className="p-5">
@@ -606,7 +750,7 @@ const CreateEvent = () => {
                   </div>
                 </div>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Pengaturan Tiket</h3>
                   </div>
                   <div className="p-5">
@@ -656,6 +800,129 @@ const CreateEvent = () => {
                   </div>
                 </div>
               </Tab>
+              <Tab key="sesi" title={<div className="flex items-center gap-2"><Icon icon="mdi:calendar-clock" /> Sesi</div>}>
+                <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
+                  <div className="px-4 py-3 flex justify-between items-center">
+                    <h3 className="text-medium font-semibold">Pengaturan Sesi</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-4 pb-4">
+                      <div>
+                        <p className="font-medium">Aktifkan Sesi</p>
+                        <p className="text-grey text-xs">Aktifkan pembagian sesi untuk event ini</p>
+                      </div>
+                      <Switch
+                        size="lg"
+                        isSelected={form.is_session === 1}
+                        onChange={(e: any) => setForm({ ...form, is_session: e.target.checked ? 1 : 0 })}
+                      />
+                    </div>
+
+                    {form.is_session === 1 && (
+                      <>
+                        <div className="flex justify-between items-center mt-4 mb-3">
+                          <p className="font-semibold text-sm">Daftar Sesi</p>
+                          <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={openAddSession}>
+                            <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
+                              <FontAwesomeIcon icon={faPlus} size="sm" />
+                            </button>
+                            <p>Tambah Sesi</p>
+                          </div>
+                        </div>
+
+                        {sessions.length === 0 ? (
+                          <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">Belum ada sesi. Tambah sesi untuk event ini.</Alert>
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            {sessions.map((ses, idx) => (
+                              <div
+                                key={idx}
+                                className="border border-primary-light-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-2 h-2 rounded-full bg-primary-base"></div>
+                                      <h4 className="font-semibold text-sm">{ses.session_name}</h4>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-xs text-grey ml-4">
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:calendar" width={14} />
+                                        <span>{ses.session_date || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:clock-start" width={14} />
+                                        <span>{ses.start_time || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:clock-end" width={14} />
+                                        <span>{ses.end_time || "-"}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => openEditSession(ses, idx)}
+                                      className="p-1.5 rounded-lg hover:bg-primary-light-100 text-grey hover:text-primary-base transition-colors"
+                                    >
+                                      <Icon icon="mdi:pencil" width={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteSession(idx)}
+                                      className="p-1.5 rounded-lg hover:bg-red-50 text-grey hover:text-red-500 transition-colors"
+                                    >
+                                      <Icon icon="mdi:trash-can-outline" width={16} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Session Inventories (Tickets) */}
+                                <div className="mt-3 pt-3">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <p className="text-xs font-semibold text-grey uppercase tracking-wider">Inventory Tiket</p>
+                                    <div
+                                      className="flex items-center gap-1.5 text-xs text-primary-dark cursor-pointer"
+                                      onClick={() => openAddSessionTicket(idx)}
+                                    >
+                                      <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
+                                        <FontAwesomeIcon icon={faPlus} size="xs" />
+                                      </button>
+                                      <p>Tambah Tiket</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    {(!ses.inventories || ses.inventories.length === 0) ? (
+                                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" classNames={{ root: "!p-3 !text-xs" }}>Belum ada tiket untuk sesi ini</Alert>
+                                    ) : (
+                                      ses.inventories.map((inv: EventTicket, invIdx: number) => (
+                                        <TicketContainer
+                                          key={invIdx}
+                                          type={inv.ticket_type}
+                                          category={inv.ticket_category}
+                                          price={inv.price}
+                                          ticketDate={inv.ticket_date}
+                                          ticketEnd={inv.ticket_end}
+                                          description={inv.description}
+                                          name={inv.name}
+                                          qty={inv.qty}
+                                          sold={0}
+                                          onEdit={() => openEditSessionTicket(idx, invIdx, inv)}
+                                          onDelete={() => deleteSessionTicket(idx, invIdx)}
+                                          isAdmin={false}
+                                        />
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Tab>
               <Tab
                 key="detail"
                 title={
@@ -670,7 +937,7 @@ const CreateEvent = () => {
                 }
               >
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Deskripsi</h3>
                     {error?.description && <p className="text-danger mt-1">{error?.description}</p>}
                   </div>
@@ -698,7 +965,7 @@ const CreateEvent = () => {
                 </div>
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
-                  <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
+                  <div className="px-4 py-3 flex justify-between items-center">
                     <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
                     {error?.term_condition && <p className="text-danger mt-1">{error?.term_condition}</p>}
                   </div>
@@ -777,6 +1044,90 @@ const CreateEvent = () => {
           isAdmin={false}
         />
       </Context.Provider>
+
+      {/* Session Ticket Modal */}
+      {showSessionTicketModal && activeSessionIdx !== undefined && (
+        <Context.Provider value={{ seatmapData, setSeatmapData, ticket: getSessionTickets(activeSessionIdx) }}>
+          <ModalCreateTicket
+            isOpen={showSessionTicketModal}
+            setIsOpen={setShowSessionTicketModal}
+            ticket={getSessionTickets(activeSessionIdx)}
+            setTicket={(tickets: EventTicket[]) => { setSessionTickets(activeSessionIdx, tickets); }}
+            data={sessionEditData}
+            setIdx={setSessionEditIdx}
+            idx={sessionEditIdx}
+            endDate={form.end_date}
+            eventStartTime={form.start_time}
+            eventEndTime={form.end_time}
+            isAdmin={false}
+          />
+        </Context.Provider>
+      )}
+
+      {/* Session Modal */}
+      {showSessionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold mb-4">{editSessionIdx !== undefined ? "Edit Sesi" : "Tambah Sesi"}</h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-sm font-medium text-dark">Nama Sesi</label>
+                <input
+                  type="text"
+                  className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
+                  value={editSessionData.session_name}
+                  onChange={(e) => setEditSessionData({ ...editSessionData, session_name: e.target.value })}
+                  placeholder="Contoh: Sesi 1, Sesi 2, dll"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-dark">Tanggal Sesi</label>
+                <input
+                  type="date"
+                  className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
+                  value={editSessionData.session_date}
+                  onChange={(e) => setEditSessionData({ ...editSessionData, session_date: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-dark">Waktu Mulai</label>
+                  <input
+                    type="time"
+                    className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
+                    value={editSessionData.start_time}
+                    onChange={(e) => setEditSessionData({ ...editSessionData, start_time: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-dark">Waktu Selesai</label>
+                  <input
+                    type="time"
+                    className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
+                    value={editSessionData.end_time}
+                    onChange={(e) => setEditSessionData({ ...editSessionData, end_time: e.target.value })}
+                  />
+                </div>
+              </div>
+              {sessionError && (
+                <p className="text-danger text-sm">{sessionError}</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button
+                color="secondary"
+                label="Batal"
+                onClick={() => setShowSessionModal(false)}
+              />
+              <Button
+                color="primary"
+                label={editSessionIdx !== undefined ? "Simpan" : "Tambah"}
+                onClick={saveSession}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

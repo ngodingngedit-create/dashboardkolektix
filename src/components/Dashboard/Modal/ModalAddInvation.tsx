@@ -1,5 +1,5 @@
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem } from "@nextui-org/react";
-import { useState, useEffect } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem, RadioGroup, Radio } from "@nextui-org/react";
+import { useState, useEffect, useRef } from "react";
 import fetch from "@/utils/fetch";
 import { useListState } from "@mantine/hooks";
 import { useForm, zodResolver } from "@mantine/form";
@@ -8,12 +8,19 @@ import ImageInput from "@/components/ImageInput.tsx";
 import { notifications } from "@mantine/notifications";
 import { Box, Checkbox, Flex, LoadingOverlay, Stack } from "@mantine/core";
 import { EventProps } from "@/utils/globalInterface";
+import { SeatmapData, EventTicket } from "@/utils/formInterface";
+import Seatmap from "@/components/Seatmap";
+import { Context as CreateEventContext } from "@/pages/dashboard/create-event";
+import { Icon } from "@iconify/react/dist/iconify.js";
 
 interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   eventId?: number;
   eventData?: EventProps;
+  ticket?: EventTicket[];
+  seatmap?: SeatmapData[];
+  setSeatmap?: any;
 }
 
 export type CategoryResponse = { id: number; name: string };
@@ -37,6 +44,9 @@ type InvitationStore<
   event_invitation_status?: {
     id: number;
   };
+  reserved_seat?: string[];
+  ticket_category?: string;
+  ticket_id?: number;
 };
 
 const isBrowser = typeof window !== "undefined";
@@ -59,9 +69,52 @@ export const invitationStoreSchema = z.object({
   image: z.instanceof(Blob).optional().nullable(),
 });
 
-const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalProps) => {
+const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket, seatmap: propSeatmap, setSeatmap: propSetSeatmap }: AddEventModalProps) => {
   const [loading, setLoading] = useListState<string>();
   const [category, setCategory] = useState<CategoryResponse[]>([]);
+
+  // Ticket type & seat selection
+  const [ticketType, setTicketType] = useState<"Festival" | "Seat">("Festival");
+  const [selectedTicketId, setSelectedTicketId] = useState<number | undefined>(undefined);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [showSeatPicker, setShowSeatPicker] = useState(false);
+  const [seatPickerFullscreen, setSeatPickerFullscreen] = useState(false);
+  const seatmapRef = useRef<any>(null);
+
+  // Get the selected ticket for seat reservations
+  const selectedTicket = propTicket?.find(t => t.id === selectedTicketId);
+
+  // Computed unavailable seats: collect from ALL tickets so seats from other ticket types can't be selected
+  // Handle both formats: formInterface (array[]) and API response (comma-separated string "_seat_number")
+  const parseSeats = (t: any, field: string): string[] => {
+    const val = t[field] || t[field.replace("_seat", "_seat_number")] || t[field.replace("_seat_number", "_seat")] || "";
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string" && val) return val.split(",").filter(Boolean);
+    return [];
+  };
+
+  // Get available seats per ticket so we can block seats from OTHER tickets
+  const allTicketAvailable = (propTicket || []).reduce<string[]>((acc, t) => {
+    return [...acc, ...parseSeats(t, "available_seat")];
+  }, []);
+  const selectedTicketSeats = parseSeats(selectedTicket || {}, "available_seat");
+  // Seats that belong to other tickets (even if available) should not be clickable
+  const otherTicketSeats = allTicketAvailable.filter(s => !selectedTicketSeats.includes(s));
+
+  // Collect reserved/taken from ALL tickets
+  const allTicketReserved = (propTicket || []).reduce<string[]>((acc, t) => {
+    return [...acc, ...parseSeats(t, "reserved_seat")];
+  }, []);
+  const allTicketTaken = (propTicket || []).reduce<string[]>((acc, t) => {
+    return [...acc, ...parseSeats(t, "taken_seat")];
+  }, []);
+
+  // existingReservedSeats = reserved seats from the SELECTED ticket only (for visual)
+  const existingReservedSeats = parseSeats(selectedTicket || {}, "reserved_seat");
+  const filteredReservedSeats = [...existingReservedSeats, ...selectedSeats];
+  // unavailSeats = all reserved/taken from ALL tickets + available seats from OTHER tickets
+  // Empty seats (not in any ticket) can still be picked
+  const unavailSeats = Array.from(new Set([...allTicketReserved, ...allTicketTaken, ...otherTicketSeats]));
 
   const form = useForm<InvitationStore>({
     initialValues: {
@@ -72,6 +125,9 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
       details: [{ fullname: "", email: "", phone: "" }],
       is_one_receiver: false,
       is_banner_image: true,
+      ticket_category: "Festival",
+      reserved_seat: [],
+      ticket_id: undefined,
     },
     validate: zodResolver(invitationStoreSchema),
     onValuesChange: (val) => {
@@ -82,6 +138,9 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
 
   useEffect(() => {
     form.reset();
+    setSelectedSeats([]);
+    setTicketType("Festival");
+    setSelectedTicketId(undefined);
   }, [isOpen]);
 
   useEffect(() => {
@@ -101,34 +160,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
     });
   };
 
-  // const handleSubmit = async () => {
-  //   const valid = form.validate();
-  //   if (valid.hasErrors) {
-  //     notifications.show({
-  //       position: "top-right",
-  //       color: "red",
-  //       message: "Lengkapi Terlebih dahulu Form Invitation",
-  //     });
-  //     return;
-  //   }
-
-  //   await fetch<InvitationStore<string>, any>({
-  //     url: "invitations",
-  //     method: "POST",
-  //     data: {
-  //       ...form.values,
-  //       details: JSON.stringify(form.values.is_one_receiver ? Array(form.values.total_qty).fill(form.values.details[0]) : form.values.details),
-  //     },
-  //     before: () => setLoading.append("submit"),
-  //     success: () => {
-  //       onClose();
-  //     },
-  //     complete: () => setLoading.filter((e) => e != "submit"),
-  //   });
-  // };
-
   const handleSubmit = async () => {
-  // 1. Validasi form dengan Mantine form
   const valid = form.validate();
   if (valid.hasErrors) {
     notifications.show({
@@ -136,38 +168,32 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
       color: "red",
       message: "Lengkapi Terlebih dahulu Form Invitation",
     });
-    return; // INI YANG HARUS DITAMBAHKIN!
+    return;
   }
 
-  // 2. Validasi tambahan untuk anti-spam
   const validationErrors: string[] = [];
   
-  // Validasi email format untuk semua details
   form.values.details.forEach((detail, index) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(detail.email)) {
       validationErrors.push(`Email ${index + 1} tidak valid: ${detail.email}`);
     }
     
-    // Validasi nomor telepon minimal 10 digit
     if (detail.phone.replace(/\D/g, '').length < 10) {
       validationErrors.push(`Nomor telepon ${index + 1} tidak valid`);
     }
   });
 
-  // Validasi jumlah invitation
   if (form.values.total_qty > 50) {
     validationErrors.push("Maksimal 50 invitation per kali input");
   }
 
-  // Validasi duplikasi email
   const emails = form.values.details.map(d => d.email.toLowerCase());
   const duplicateEmails = emails.filter((email, index) => emails.indexOf(email) !== index);
   if (duplicateEmails.length > 0) {
     validationErrors.push("Terdapat email yang duplikat");
   }
 
-  // 3. Jika ada validasi tambahan yang gagal
   if (validationErrors.length > 0) {
     notifications.show({
       position: "top-right",
@@ -175,31 +201,28 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
       title: "Validasi Gagal",
       message: validationErrors.join("\n"),
     });
-    return; // STOP di sini juga!
+    return;
   }
 
-  // 4. Rate limiting - cek waktu submit terakhir
   const lastSubmitKey = `last_submit_time_${eventId}`;
   const lastSubmitTime = localStorage.getItem(lastSubmitKey);
   const now = Date.now();
   
   if (lastSubmitTime) {
     const timeDiff = now - parseInt(lastSubmitTime);
-    if (timeDiff < 10000) { // Minimal 10 detik antar submit
+    if (timeDiff < 10000) {
       notifications.show({
         position: "top-right",
         color: "yellow",
         title: "Mohon Tunggu",
         message: "Silakan tunggu 10 detik sebelum menambah invitation baru",
       });
-      return; // STOP!
+      return;
     }
   }
 
-  // 5. Set waktu submit terakhir
   localStorage.setItem(lastSubmitKey, now.toString());
 
-  // 6. Log untuk debugging
   console.log('Submitting invitation:', {
     eventId: form.values.event_id,
     totalQty: form.values.total_qty,
@@ -207,9 +230,11 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
     timestamp: new Date().toISOString()
   });
 
-  // 7. Siapkan data dengan metadata anti-spam
   const submissionData = {
     ...form.values,
+    ticket_category: ticketType,
+    ticket_id: ticketType === "Seat" ? selectedTicketId : undefined,
+    reserved_seat: ticketType === "Seat" ? selectedSeats : [],
     details: JSON.stringify(
       form.values.is_one_receiver 
         ? Array(form.values.total_qty).fill(form.values.details[0]) 
@@ -226,14 +251,12 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
     }
   };
 
-  // 8. Kirim ke API
   await fetch<InvitationStore<string>, any>({
     url: "invitations",
     method: "POST",
     data: submissionData,
     before: () => setLoading.append("submit"),
     success: (response) => {
-      // Cek jika response ada message spam
       if (response.message?.includes('spam')) {
         notifications.show({
           position: "top-right",
@@ -244,15 +267,12 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
         return;
       }
       
-      // Jika sukses
       notifications.show({
         position: "top-right",
         color: "green",
         message: "Invitation berhasil ditambahkan",
       });
       onClose();
-      
-      // Reset form
       form.reset();
     },
     complete: () => setLoading.filter((e) => e != "submit"),
@@ -261,7 +281,6 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
       
       let errorMessage = "Gagal menambahkan invitation";
       
-      // Handle berbagai error
       if (error.response?.status === 429) {
         errorMessage = "Terlalu banyak permintaan. Silakan coba lagi nanti.";
       } else if (error.response?.status === 400) {
@@ -286,122 +305,262 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData }: AddEventModalPro
     }
   }, [form.values.total_qty]);
 
+  // Auto-select ticket if only one ticket with seat category exists
+  useEffect(() => {
+    if (ticketType === "Seat" && propTicket) {
+      const seatTickets = propTicket.filter(t => t.ticket_category === "Seated");
+      if (seatTickets.length === 1 && !selectedTicketId) {
+        setSelectedTicketId(seatTickets[0].id);
+      }
+    }
+  }, [ticketType, propTicket]);
+
+  // Filter tickets to only show "Seat" category tickets for seat reservation
+  const seatTickets = propTicket?.filter(t => 
+    t.ticket_category === "Seated"
+  ) || [];
+
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="2xl">
+    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size={showSeatPicker ? "5xl" : "2xl"}>
       <ModalContent>
-        <ModalHeader className="text-dark">Add New Invitation</ModalHeader>
-        <ModalBody>
-          <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
-            <Stack gap={10}>
-              <ImageInput
-                label="Gambar"
-                dimension={[300, 100]}
-                value={form.values.image ?? (form.values.is_banner_image ? eventData?.image_url : undefined)}
-                onChange={(e) => (form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined }))}
-              />
-              <Checkbox label="Gunakan Gambar Event" checked={form.values.is_banner_image} onChange={(e) => form.setValues({ is_banner_image: e.target.checked })} />
-            </Stack>
-            <div className="flex flex-wrap gap-4">
-              <Box className="flex-1 relative min-w-[30%]">
-                <Select
-                  isInvalid={Boolean(form.errors.invitation_cat_id)}
-                  description={form.errors.invitation_cat_id}
-                  label={<span className="text-dark">Invitation Category</span>}
-                  value={form.values.invitation_cat_id}
-                  onChange={(e) => form.setValues({ invitation_cat_id: category.find((_, i) => i == parseInt(e.target.value))?.id })}
-                  labelPlacement="outside" // Label di atas input
-                >
-                  {category.map((e, i) => (
-                    <SelectItem key={i} value={e.id}>
-                      {e.name}
-                    </SelectItem>
-                  ))}
-                </Select>
-                <LoadingOverlay visible={loading.includes("getcategory")} loaderProps={{ size: "md", color: "#194e9e" }} />
-              </Box>
-              <Input
-                isInvalid={Boolean(form.errors.invitation_title)}
-                description={form.errors.invitation_title}
-                className="flex-1 min-w-[30%]"
-                label={<span className="text-dark">Invitation Title</span>}
-                value={form.values.invitation_title}
-                onChange={(e) => form.setValues({ invitation_title: e.target.value })}
-                labelPlacement="outside" // Label di atas input
-              />
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Textarea
-                isInvalid={Boolean(form.errors.invitation_description)}
-                description={form.errors.invitation_description}
-                className="flex-1 min-w-[30%]"
-                label={<span className="text-dark">Invitation Description</span>}
-                value={form.values.invitation_description}
-                onChange={(e) => form.setValues({ invitation_description: e.target.value })}
-                labelPlacement="outside"
-                minRows={3}
-                maxRows={6}
-              />
-            </div>
-
-            <Flex className={`gap-[15px] md:gap-[30px]`} align="end">
-              <Input
-                isInvalid={Boolean(form.errors.total_qty)}
-                description={form.errors.total_qty}
-                min={1}
-                type="number"
-                className="flex-1 max-w-[20%]"
-                label={<span className="text-dark">Total Qty</span>}
-                value={String(form.values.total_qty)}
-                onChange={(e) => form.setValues({ total_qty: parseInt(e.target.value) })}
-                labelPlacement="outside" // Label di atas input
-              />
-              <Checkbox className={`md:mb-[10px]`} label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
-            </Flex>
-
-            {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
-              <div key={index} className="flex flex-wrap gap-4">
-                <Input
-                  isInvalid={Boolean(form.errors[`details.${index}.fullname`])}
-                  description={form.errors.details ? form.errors[`details.${index}.fullname`] : undefined}
-                  className="flex-1 min-w-[30%]"
-                  label={<span className="text-dark">{`Fullname ${index + 1}`}</span>}
-                  value={detail.fullname}
-                  onChange={(e) => form.setFieldValue(`details.${index}.fullname`, e.target.value)}
-                  labelPlacement="outside"
-                />
-                <Input
-                  isInvalid={Boolean(form.errors[`details.${index}.email`])}
-                  description={form.errors.details ? form.errors[`details.${index}.email`] : undefined}
-                  className="flex-1 min-w-[30%]"
-                  label={<span className="text-dark">{`Email ${index + 1}`}</span>}
-                  value={detail.email}
-                  onChange={(e) => form.setFieldValue(`details.${index}.email`, e.target.value)}
-                  labelPlacement="outside"
-                />
-                <Input
-                  isInvalid={Boolean(form.errors[`details.${index}.phone`])}
-                  description={form.errors.details ? form.errors[`details.${index}.phone`] : undefined}
-                  className="flex-1 min-w-[30%]"
-                  label={<span className="text-dark">{`Phone ${index + 1}`}</span>}
-                  value={detail.phone}
-                  onChange={(e) => form.setFieldValue(`details.${index}.phone`, e.target.value)}
-                  labelPlacement="outside"
-                />
+        {showSeatPicker ? (
+          <>
+            <ModalHeader className="text-dark">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowSeatPicker(false)}
+                    className="flex items-center gap-1.5 text-sm text-grey hover:text-dark transition-colors"
+                  >
+                    <Icon icon="mdi:arrow-left" width={18} />
+                    <span>Kembali</span>
+                  </button>
+                  <span>Pilih Kursi</span>
+                </div>
+                {selectedTicket && (
+                  <p className="text-sm font-normal text-grey">
+                    Tiket: <span className="font-medium text-dark">{selectedTicket.name}</span>
+                  </p>
+                )}
               </div>
-            ))}
-            {/* <Button onClick={addDetail} className="bg-secondary text-dark">
-              Tambah Penerima Invitation
-            </Button> */}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button onClick={handleSubmit} isLoading={loading.includes("submit")} className="bg-primary text-white">
-            Tambah Invitation
-          </Button>
-          <Button variant="flat" onPress={onClose}>
-            Close
-          </Button>
-        </ModalFooter>
+            </ModalHeader>
+            <ModalBody className="!p-0">
+              <div style={{ height: "calc(80vh - 100px)", display: "flex", flexDirection: "column" }}>
+                <CreateEventContext.Provider value={{ seatmapData: propSeatmap || [], setSeatmapData: propSetSeatmap || new Proxy({}, { get: () => () => {} }), ticket: propTicket || [] }}>
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    <Seatmap
+                      ref={seatmapRef}
+                      onFinishSelectSeat={() => {}}
+                      editable={false}
+                      onEdit={true}
+                      selected={selectedSeats}
+                      onSelect={(data?: string[]) => setSelectedSeats(data || [])}
+                      soldSeat={allTicketTaken}
+                      reservedSeat={filteredReservedSeats}
+                      availableSeat={selectedTicketSeats}
+                      unavailSeat={unavailSeats}
+                      fullscreenState={[seatPickerFullscreen, setSeatPickerFullscreen]}
+                    />
+                  </div>
+                </CreateEventContext.Provider>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <div className="flex justify-between items-center w-full">
+                <p className="text-sm text-grey">
+                  {selectedSeats.length > 0
+                    ? `${selectedSeats.length} kursi dipilih: ${selectedSeats.join(", ")}`
+                    : "Klik kursi untuk memilih"}
+                </p>
+                <div className="flex gap-3">
+                  <Button variant="flat" onPress={() => { setSelectedSeats([]); }}>
+                    Reset
+                  </Button>
+                  <Button className="bg-primary text-white" onPress={() => setShowSeatPicker(false)}>
+                    Simpan Kursi
+                  </Button>
+                </div>
+              </div>
+            </ModalFooter>
+          </>
+        ) : (
+          <>
+            <ModalHeader className="text-dark">Add New Invitation</ModalHeader>
+            <ModalBody>
+              <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+                <Stack gap={10}>
+                  <ImageInput
+                    label="Gambar"
+                    dimension={[300, 100]}
+                    value={form.values.image ?? (form.values.is_banner_image ? eventData?.image_url : undefined)}
+                    onChange={(e) => (form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined }))}
+                  />
+                  <Checkbox label="Gunakan Gambar Event" checked={form.values.is_banner_image} onChange={(e) => form.setValues({ is_banner_image: e.target.checked })} />
+                </Stack>
+
+                {/* Ticket Type Selector */}
+                <div className="border-2 border-primary-light-200 rounded-xl p-4">
+                  <p className="text-sm font-medium text-dark mb-3">Tipe Tiket</p>
+                  <RadioGroup
+                    value={ticketType}
+                    onValueChange={(val) => {
+                      setTicketType(val as "Festival" | "Seat");
+                      if (val === "Festival") {
+                        setSelectedSeats([]);
+                        setSelectedTicketId(undefined);
+                      }
+                    }}
+                    orientation="horizontal"
+                    className="gap-4"
+                  >
+                    <Radio value="Festival" description="Tiket tanpa kursi khusus">Festival</Radio>
+                    <Radio value="Seat" description="Tiket dengan kursi khusus">Seat</Radio>
+                  </RadioGroup>
+
+                  {ticketType === "Seat" && (
+                    <div className="mt-3 pt-3 border-t border-primary-light-200 flex flex-col gap-3">
+                      {/* Ticket name selector */}
+                      <div>
+                        <p className="text-sm font-medium mb-1">Nama Tiket</p>
+                        <Select
+                          aria-label="Pilih Tiket"
+                          placeholder="Pilih tiket untuk reservasi kursi"
+                          selectedKeys={selectedTicketId ? [String(selectedTicketId)] : []}
+                          onChange={(e) => setSelectedTicketId(Number(e.target.value))}
+                          size="sm"
+                          variant="bordered"
+                        >
+                          {propTicket?.filter(t => t.ticket_category === "Seated")
+                            .map((t) => (
+                              <SelectItem key={String(t.id)} value={String(t.id)}>
+                                {t.name}
+                              </SelectItem>
+                            )) as any}
+                        </Select>
+                      </div>
+
+                      {/* Seat selection */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Reservasi Kursi</p>
+                          <p className="text-xs text-grey">
+                            {selectedSeats.length > 0
+                              ? `${selectedSeats.length} kursi dipilih: ${selectedSeats.join(", ")}`
+                              : "Belum ada kursi dipilih"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowSeatPicker(true)}
+                          className="flex items-center gap-1.5 text-xs text-primary-base border border-primary-base rounded-lg px-3 py-1.5 hover:bg-primary-light-100 transition-colors"
+                        >
+                          <Icon icon="mdi:sofa" width={14} />
+                          <span>Pilih Kursi</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <Box className="flex-1 relative min-w-[30%]">
+                    <Select
+                      isInvalid={Boolean(form.errors.invitation_cat_id)}
+                      description={form.errors.invitation_cat_id}
+                      label={<span className="text-dark">Invitation Category</span>}
+                      value={form.values.invitation_cat_id}
+                      onChange={(e) => form.setValues({ invitation_cat_id: category.find((_, i) => i == parseInt(e.target.value))?.id })}
+                      labelPlacement="outside"
+                    >
+                      {category.map((e, i) => (
+                        <SelectItem key={i} value={e.id}>
+                          {e.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    <LoadingOverlay visible={loading.includes("getcategory")} loaderProps={{ size: "md", color: "#194e9e" }} />
+                  </Box>
+                  <Input
+                    isInvalid={Boolean(form.errors.invitation_title)}
+                    description={form.errors.invitation_title}
+                    className="flex-1 min-w-[30%]"
+                    label={<span className="text-dark">Invitation Title</span>}
+                    value={form.values.invitation_title}
+                    onChange={(e) => form.setValues({ invitation_title: e.target.value })}
+                    labelPlacement="outside"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <Textarea
+                    isInvalid={Boolean(form.errors.invitation_description)}
+                    description={form.errors.invitation_description}
+                    className="flex-1 min-w-[30%]"
+                    label={<span className="text-dark">Invitation Description</span>}
+                    value={form.values.invitation_description}
+                    onChange={(e) => form.setValues({ invitation_description: e.target.value })}
+                    labelPlacement="outside"
+                    minRows={3}
+                    maxRows={6}
+                  />
+                </div>
+
+                <Flex className={`gap-[15px] md:gap-[30px]`} align="end">
+                  <Input
+                    isInvalid={Boolean(form.errors.total_qty)}
+                    description={form.errors.total_qty}
+                    min={1}
+                    type="number"
+                    className="flex-1 max-w-[20%]"
+                    label={<span className="text-dark">Total Qty</span>}
+                    value={String(form.values.total_qty)}
+                    onChange={(e) => form.setValues({ total_qty: parseInt(e.target.value) })}
+                    labelPlacement="outside"
+                  />
+                  <Checkbox className={`md:mb-[10px]`} label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
+                </Flex>
+
+                {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
+                  <div key={index} className="flex flex-wrap gap-4">
+                    <Input
+                      isInvalid={Boolean(form.errors[`details.${index}.fullname`])}
+                      description={form.errors.details ? form.errors[`details.${index}.fullname`] : undefined}
+                      className="flex-1 min-w-[30%]"
+                      label={<span className="text-dark">{`Fullname ${index + 1}`}</span>}
+                      value={detail.fullname}
+                      onChange={(e) => form.setFieldValue(`details.${index}.fullname`, e.target.value)}
+                      labelPlacement="outside"
+                    />
+                    <Input
+                      isInvalid={Boolean(form.errors[`details.${index}.email`])}
+                      description={form.errors.details ? form.errors[`details.${index}.email`] : undefined}
+                      className="flex-1 min-w-[30%]"
+                      label={<span className="text-dark">{`Email ${index + 1}`}</span>}
+                      value={detail.email}
+                      onChange={(e) => form.setFieldValue(`details.${index}.email`, e.target.value)}
+                      labelPlacement="outside"
+                    />
+                    <Input
+                      isInvalid={Boolean(form.errors[`details.${index}.phone`])}
+                      description={form.errors.details ? form.errors[`details.${index}.phone`] : undefined}
+                      className="flex-1 min-w-[30%]"
+                      label={<span className="text-dark">{`Phone ${index + 1}`}</span>}
+                      value={detail.phone}
+                      onChange={(e) => form.setFieldValue(`details.${index}.phone`, e.target.value)}
+                      labelPlacement="outside"
+                    />
+                  </div>
+                ))}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={handleSubmit} isLoading={loading.includes("submit")} className="bg-primary text-white">
+                Tambah Invitation
+              </Button>
+              <Button variant="flat" onPress={onClose}>
+                Close
+              </Button>
+            </ModalFooter>
+          </>
+        )}
       </ModalContent>
     </Modal>
   );

@@ -1371,7 +1371,7 @@ const MyEventDetail = () => {
         </div>
       </div>
       <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-      <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} />
+      <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} ticket={ticket} seatmap={seatmap} setSeatmap={setSeatmap} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
       <TarikDanaModal
         isOpen={isModalOpen}

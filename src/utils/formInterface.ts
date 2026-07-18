@@ -85,6 +85,7 @@ export interface FormEvent {
   is_company?: boolean;
   is_kelas?: boolean;
   is_merch?: boolean;
+  is_session?: number;
   tickets: EventTicket[];
   seatmap?: string;
 }
