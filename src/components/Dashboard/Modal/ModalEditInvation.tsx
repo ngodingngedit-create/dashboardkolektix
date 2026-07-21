@@ -131,7 +131,20 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="4xl">
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={onClose}
+      classNames={{
+        wrapper: "justify-end p-0",
+        base: "h-screen max-h-screen m-0 !mr-0 rounded-l-xl rounded-r-none w-[70vw] max-w-[70vw]",
+      }}
+      motionProps={{
+        variants: {
+          enter: { x: 0, opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+          exit: { x: "100%", opacity: 0, transition: { duration: 0.2, ease: "easeIn" } },
+        },
+      }}
+    >
       <ModalContent>
         <ModalHeader className="text-dark">Edit Invitation</ModalHeader>
         <ModalBody>
