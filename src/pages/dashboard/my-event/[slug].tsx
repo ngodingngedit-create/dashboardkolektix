@@ -372,6 +372,17 @@ const MyEventDetail = () => {
   const sendInvitationEmail = useCallback(
     async (invitationItem: any) => {
       const invitationIdStr = String(invitationItem?.id);
+      const slug = invitationItem?.slug;
+
+      if (!slug) {
+        notifications.show({
+          title: "Gagal!",
+          message: "Slug invitation tidak ditemukan",
+          color: "red",
+          position: "top-right",
+        });
+        return;
+      }
 
       setSendingInvitations((prev) => ({
         ...prev,
@@ -379,74 +390,38 @@ const MyEventDetail = () => {
       }));
 
       try {
-        const payload = {
-          event_id: data?.id,
-          invitation_title: invitationItem?.invitation_title || "Undangan Event",
-          invitation_description: invitationItem?.invitation_description || "",
-          total_qty: invitationItem?.total_qty || 0,
-          details:
-            invitationItem?.event_invitation_detail?.map((detail: any) => ({
-              fullname: detail?.fullname || "",
-              email: detail?.email || "",
-              phone: detail?.phone || "",
-            })) || [],
-          is_one_receiver: invitationItem?.is_one_receiver === 1,
-          is_banner_image: invitationItem?.is_banner_event === 1,
-          invitation_cat_id: invitationItem?.invitation_cat_id || 17,
-        };
-
-        console.log("📤 Sending invitation payload:", payload);
+        console.log(`📤 Resending invitation for slug: ${slug}`);
 
         await fetch({
-          url: "invitations",
-          method: "POST",
-          data: payload,
-          success: (res) => {
-            console.log("✅ Invitation response:", res);
+          url: `invitations/${slug}/resend-all`,
+          method: "GET",
+          data: {},
+          success: (res: any) => {
+            console.log("✅ Resend invitation response:", res);
 
-            const isSuccess = res.success === true || res.success === "true" || res.message?.includes("success") || res.message?.includes("berhasil") || res.id !== undefined || res.data?.id !== undefined;
+            notifications.show({
+              title: "Berhasil!",
+              message: res.message || "Invitation berhasil dikirim",
+              color: "green",
+              position: "top-right",
+            });
 
-            if (isSuccess) {
-              notifications.show({
-                title: "Berhasil!",
-                message: `Invitation berhasil dikirim ke ${payload.details.length} penerima`,
-                color: "green",
-                position: "top-right",
-              });
-
-              setTimeout(() => {
-                getInvitationEventData(data?.id || 0);
-              }, 1000);
-            } else {
-              throw new Error("Tunggu beberapa menit dan coba refresh page.");
-            }
+            setTimeout(() => {
+              getInvitationEventData(data?.id || 0);
+            }, 1000);
           },
-          error: (error) => {
-            console.error("❌ Error in fetch:", error);
-            throw error;
+          error: (error: any) => {
+            console.error("❌ Error in resend fetch:", error);
+            notifications.show({
+              title: "Gagal!",
+              message: error?.message || "Gagal mengirim invitation",
+              color: "red",
+              position: "top-right",
+            });
           },
         });
-      } catch (error: any) {
-        console.error("❌ Error sending invitation:", error);
-
-        let errorMessage = "Gagal mengirim invitation. Silakan coba lagi.";
-
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        } else if (error.data?.message) {
-          errorMessage = error.data.message;
-        } else if (typeof error === "string") {
-          errorMessage = error;
-        }
-
-        notifications.show({
-          title: "Gagal!",
-          message: errorMessage,
-          color: "red",
-          position: "top-right",
-        });
+      } catch (error) {
+        console.error("❌ Error in resend:", error);
       } finally {
         setSendingInvitations((prev) => ({
           ...prev,
@@ -454,87 +429,8 @@ const MyEventDetail = () => {
         }));
       }
     },
-    [data?.id],
+    [data?.id, getInvitationEventData]
   );
-
-  const sendAllInvitations = async () => {
-    if (!data?.id || !Array.isArray(invitation) || invitation.length === 0) {
-      notifications.show({
-        title: "Peringatan",
-        message: "Tidak ada invitation yang bisa dikirim",
-        color: "yellow",
-        position: "top-right",
-      });
-      return;
-    }
-
-    setIsSendingInvitation(true);
-
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const invitationItem of invitation) {
-        if (!invitationItem?.id || !invitationItem?.event_invitation_detail) continue;
-
-        try {
-          const payload = {
-            event_id: data.id,
-            invitation_title: invitationItem.invitation_title || `Invitation ${invitationItem.id}`,
-            invitation_description: invitationItem.invitation_description || "",
-            total_qty: invitationItem.total_qty || 0,
-            details: invitationItem.event_invitation_detail
-              .map((detail: any) => ({
-                fullname: detail?.fullname || "",
-                email: detail?.email || "",
-                phone: detail?.phone || "",
-              }))
-              .filter((detail: any) => detail.email),
-            is_one_receiver: invitationItem.is_one_receiver === 1,
-            is_banner_image: invitationItem.is_banner_event === 1,
-            invitation_cat_id: invitationItem.invitation_cat_id || 17,
-          };
-
-          if (payload.details.length === 0) {
-            console.warn(`No email found for invitation ${invitationItem.id}`);
-            continue;
-          }
-
-          await fetch({
-            url: "invitations",
-            method: "POST",
-            data: payload,
-          });
-
-          successCount++;
-
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        } catch (error) {
-          console.error(`Error sending invitation ${invitationItem.id}:`, error);
-          errorCount++;
-        }
-      }
-
-      notifications.show({
-        title: "Selesai!",
-        message: `Berhasil mengirim ${successCount} invitation. Gagal: ${errorCount}`,
-        color: successCount > 0 ? "green" : "red",
-        position: "top-right",
-      });
-
-      getInvitationEventData(data.id);
-    } catch (error) {
-      console.error("Error in sendAllInvitations:", error);
-      notifications.show({
-        title: "Error",
-        message: "Terjadi kesalahan saat mengirim invitation",
-        color: "red",
-        position: "top-right",
-      });
-    } finally {
-      setIsSendingInvitation(false);
-    }
-  };
 
   const getInvitationCategory = async () => {
     await fetch<any, CategoryResponse[]>({
@@ -772,7 +668,7 @@ const MyEventDetail = () => {
     }
   };
 
-  const getInvitationEventData = async (id: string | number) => {
+  async function getInvitationEventData(id: string | number) {
     setLoading(true);
     try {
       const response = await axios.get(`${config.wsUrl}invitations/event/${id}`, {
@@ -790,7 +686,7 @@ const MyEventDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const filteredEventItems = useMemo(() => {
     if (!Array.isArray(invitation)) {
@@ -1251,15 +1147,6 @@ const MyEventDetail = () => {
                                 <FontAwesomeIcon icon={faPlus} className="text-white text-sm" />
                               </button>
                             </Tooltip>
-                            <Tooltip label="Kirim Semua Invitation">
-                              <button
-                                disabled={isSendingInvitation}
-                                className="w-10 h-10 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                onClick={sendAllInvitations}
-                              >
-                                {isSendingInvitation ? <Spinner size="sm" color="white" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
-                              </button>
-                            </Tooltip>
                           </div>
                         </div>
                         {loading ? (
@@ -1271,7 +1158,8 @@ const MyEventDetail = () => {
                               <TableColumn className="font-bold text-md">Judul Undangan</TableColumn>
                               <TableColumn className="font-bold text-md">Type</TableColumn>
                               <TableColumn className="font-bold text-md">Qty</TableColumn>
-                              <TableColumn className="font-bold text-md">Status</TableColumn>
+                              <TableColumn className="font-bold text-md">No. Kursi</TableColumn>
+                              <TableColumn className="font-bold text-md">Sesi</TableColumn>
                               <TableColumn className="font-bold text-md">Aksi</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
@@ -1286,8 +1174,18 @@ const MyEventDetail = () => {
                                     <TableCell className="border-b-1 border-light-grey">{item?.total_qty}</TableCell>
                                     <TableCell className="border-b-1 border-light-grey">
                                       {(() => {
-                                        const statusId = item?.event_invitation_status?.id ?? null;
-                                        return <span className={`px-2 py-1 rounded-md text-white ${getInvitationStatusClass(statusId)}`}>{getStatusTextInvitation(statusId)}</span>;
+                                        const seats = item?.event_invitation_detail
+                                          ?.map((d: any) => d.seat_number)
+                                          ?.filter(Boolean);
+                                        return seats && seats.length > 0 ? seats.join(", ") : "-";
+                                      })()}
+                                    </TableCell>
+                                    <TableCell className="border-b-1 border-light-grey">
+                                      {(() => {
+                                        const sessions = item?.event_invitation_detail
+                                          ?.map((d: any) => d.session)
+                                          ?.filter(Boolean);
+                                        return sessions && sessions.length > 0 ? Array.from(new Set(sessions)).join(", ") : "-";
                                       })()}
                                     </TableCell>
                                     <TableCell className="border-b-1 border-light-grey flex items-center gap-2">

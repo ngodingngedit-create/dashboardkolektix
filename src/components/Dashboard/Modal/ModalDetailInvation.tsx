@@ -162,6 +162,8 @@ interface EventInvitationDetail {
   fullname: string;
   email: string;
   phone: string;
+  seat_number?: string;
+  session?: string;
   // tambahkan properti lain sesuai kebutuhan
 }
 
@@ -380,34 +382,41 @@ const InvitationDetailModal = ({ invitation, isOpen, onClose }: { invitation: In
                     {data.event_invitation_detail && data.event_invitation_detail.length > 0 ? (
                       <Card className={``} p={0} radius={10} withBorder>
                         <ScrollArea h={400}>
-                          <Table
-                            w="100%"
-                            striped
-                            highlightOnHover
-                            data={{
-                              head: ["No", "Nama", "Email", "No. Telp", "E-ticket"],
-                              body: data.event_invitation_detail.map((e, i) => [
-                                i + 1,
-                                e.fullname || "-",
-                                e.email || "-",
-                                e.phone || "-",
-                                <ButtonM
-                                  key={i}
-                                  size="xs"
-                                  variant="light"
-                                  component={Link}
-                                  href={`${config["wsUrl"]}invitations/eticket/${e.id}`}
-                                  target="_blank"
-                                  onClick={(event) => {
-                                    // Optional: Log download
-                                    console.log("Downloading e-ticket for:", e.email);
-                                  }}
-                                >
-                                  Unduh
-                                </ButtonM>,
-                              ]),
-                            }}
-                          />
+                          {(() => {
+                            const hasSeatNumber = (data.event_invitation_detail ?? []).some((e: any) => e.seat_number);
+                            const hasSession = (data.event_invitation_detail ?? []).some((e: any) => e.session);
+                            return (
+                              <Table
+                                w="100%"
+                                striped
+                                highlightOnHover
+                                data={{
+                                  head: ["No", "Nama", "Email", "No. Telp", ...(hasSeatNumber ? ["No. Kursi"] : []), ...(hasSession ? ["Sesi"] : []), "E-ticket"],
+                                  body: data.event_invitation_detail.map((e, i) => [
+                                    i + 1,
+                                    e.fullname || "-",
+                                    e.email || "-",
+                                    e.phone || "-",
+                                    ...(hasSeatNumber ? [e.seat_number || "-"] : []),
+                                    ...(hasSession ? [e.session || "-"] : []),
+                                    <ButtonM
+                                      key={i}
+                                      size="xs"
+                                      variant="light"
+                                      component={Link}
+                                      href={`${config["wsUrl"]}invitations/eticket/${e.id}`}
+                                      target="_blank"
+                                      onClick={(event) => {
+                                        console.log("Downloading e-ticket for:", e.email);
+                                      }}
+                                    >
+                                      Unduh
+                                    </ButtonM>,
+                                  ]),
+                                }}
+                              />
+                            );
+                          })()}
                         </ScrollArea>
                       </Card>
                     ) : (

@@ -19,8 +19,10 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
     invitation_title: '',
     invitation_description: '',
     total_qty: 1,
+    is_seatnumber: false,
+    is_session: false,
     details: [
-      { id: '', invitation_number: '', fullname: '', email: '', phone: '' }
+      { id: '', invitation_number: '', fullname: '', email: '', phone: '', seat_number: '', session: '' }
     ],
     invitation_status: 1,
   });
@@ -51,13 +53,17 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
         invitation_title: item.invitation_title || '',
         invitation_description: item.invitation_description || '',
         total_qty: item.total_qty || 1,
+        is_seatnumber: item.is_seatnumber === 1 || item.is_seatnumber === true,
+        is_session: item.is_session === 1 || item.is_session === true,
         details: details.length > 0 ? details.map((d: any) => ({
           id: d.id || '',
           invitation_number: d.invitation_number || '',
           fullname: d.fullname || '',
           email: d.email || '',
-          phone: d.phone || ''
-        })) : [{ id: '', invitation_number: '', fullname: '', email: '', phone: '' }],
+          phone: d.phone || '',
+          seat_number: d.seat_number || '',
+          session: d.session || d.event_session?.session_name || d.session_name || ''
+        })) : [{ id: '', invitation_number: '', fullname: '', email: '', phone: '', seat_number: '', session: '' }],
         invitation_status: item.invitation_status || 1,
       });
     }
@@ -66,7 +72,7 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
   const addDetail = () => {
     setFormData({
       ...formData,
-      details: [...formData.details, { id: '', invitation_number: '', fullname: '', email: '', phone: '' }],
+      details: [...formData.details, { id: '', invitation_number: '', fullname: '', email: '', phone: '', seat_number: '', session: '' }],
       total_qty: formData.total_qty + 1
     });
   };
@@ -88,11 +94,19 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
       setIsLoading(true);
       const payload = {
         ...formData,
+        is_seatnumber: formData.is_seatnumber ? 1 : 0,
+        is_session: formData.is_session ? 1 : 0,
         invitation_code: formData.details[0]?.invitation_number || formData.details[0]?.id || formData.id || 'INV-000',
         fullname: formData.details[0]?.fullname || '',
         email: formData.details[0]?.email || '',
         qty: formData.total_qty,
-        details: JSON.stringify(formData.details)
+        details: JSON.stringify(
+          formData.details.map((d: any) => ({
+            ...d,
+            ...(formData.is_seatnumber ? { seat_number: d.seat_number || '' } : { seat_number: undefined }),
+            ...(formData.is_session ? { session: d.session || '' } : { session: undefined }),
+          }))
+        ),
       };
       
       await axios.put(`${config.wsUrl}invitations/${formData.id}`, payload);
@@ -117,7 +131,7 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="2xl">
+    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size="4xl">
       <ModalContent>
         <ModalHeader className="text-dark">Edit Invitation</ModalHeader>
         <ModalBody>
@@ -155,8 +169,28 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
               />
             </div>
             <h6 className="text-md font-semibold mt-4">Penerima Invitation</h6>
+            <div className="flex items-center gap-6 mb-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.is_seatnumber}
+                  onChange={(e) => setFormData({ ...formData, is_seatnumber: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                Sertakan Nomor Kursi
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.is_session}
+                  onChange={(e) => setFormData({ ...formData, is_session: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                Sertakan Sesi
+              </label>
+            </div>
             {formData.details.map((detail, index) => (
-              <div key={index} className="flex flex-wrap gap-4 items-end bg-gray-50 p-3 rounded-lg relative">
+            <div key={index} className="flex gap-3 items-end bg-gray-50 p-3 rounded-lg relative">
                 {formData.details.length > 1 && (
                   <button 
                     onClick={() => removeDetail(index)}
@@ -166,21 +200,41 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
                   </button>
                 )}
                 <Input
-                  className="flex-1 min-w-[30%]"
+                  className="flex-1 min-w-0"
                   label={<span className="text-dark">Fullname</span>}
                   value={detail.fullname || ''}
                   onChange={(e) => handleDetailChange(index, 'fullname', e.target.value)}
                   labelPlacement="outside"
                 />
                 <Input
-                  className="flex-1 min-w-[30%]"
+                  className="flex-1 min-w-0"
                   label={<span className="text-dark">Email</span>}
                   value={detail.email || ''}
                   onChange={(e) => handleDetailChange(index, 'email', e.target.value)}
                   labelPlacement="outside"
                 />
+                {formData.is_seatnumber && (
+                  <Input
+                    className="flex-1 min-w-0"
+                    label={<span className="text-dark">Seat Number</span>}
+                    placeholder="Contoh: A1, B2"
+                    value={detail.seat_number || ''}
+                    onChange={(e) => handleDetailChange(index, 'seat_number', e.target.value)}
+                    labelPlacement="outside"
+                  />
+                )}
+                {formData.is_session && (
+                  <Input
+                    className="flex-1 min-w-0"
+                    label={<span className="text-dark">Sesi</span>}
+                    placeholder="Contoh: Sesi 1, Sesi A"
+                    value={detail.session || ''}
+                    onChange={(e) => handleDetailChange(index, 'session', e.target.value)}
+                    labelPlacement="outside"
+                  />
+                )}
                 <Input
-                  className="flex-1 min-w-[30%]"
+                  className="flex-1 min-w-0"
                   label={<span className="text-dark">Phone</span>}
                   value={detail.phone || ''}
                   onChange={(e) => handleDetailChange(index, 'phone', e.target.value)}

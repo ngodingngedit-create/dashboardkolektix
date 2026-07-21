@@ -116,7 +116,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [discount, setDiscount] = useState(0);
   const [openSelect, setOpenSelect] = useState(false);
   const [openCustForm, setOpenCustForm] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("QRIS");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selected, setSelected] = useState<
     {
@@ -156,6 +156,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
     getInputProps: custProps,
     errors: custError,
     validate: custValidate,
+    setValues: custSetValues,
   } = useForm<CustomerData>({
     onValuesChange: (val) => {
       val.phone = String(val.phone ?? "").replace(/\D/g, "");
@@ -1024,7 +1025,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
   const confirmCashCheckout = async () => {
     if (!cashCheckoutPayload) return;
-    
+
     await fetch<any, any>({
       url: "order-product",
       method: "POST",
@@ -1231,17 +1232,17 @@ export default function Index({ }: Readonly<ComponentProps>) {
             <Flex justify="space-between" align="center">
               <Text fw={600} c="gray.7">Kembalian</Text>
               <Text fw={800} size="lg" c={Number(cashReceived) >= handleSummary.total ? "green.6" : "red.6"}>
-                <NumberFormatter 
-                  prefix="Rp " 
-                  value={Math.max(0, Number(cashReceived) - handleSummary.total)} 
-                  thousandSeparator="." 
+                <NumberFormatter
+                  prefix="Rp "
+                  value={Math.max(0, Number(cashReceived) - handleSummary.total)}
+                  thousandSeparator="."
                 />
               </Text>
             </Flex>
           </Card>
 
-          <Button 
-            onClick={confirmCashCheckout} 
+          <Button
+            onClick={confirmCashCheckout}
             loading={loading.includes("checkout") || loading.includes("submit")}
             disabled={Number(cashReceived) < handleSummary.total || cashReceived === ""}
             size="md"
@@ -1396,14 +1397,29 @@ export default function Index({ }: Readonly<ComponentProps>) {
         <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static overflow-hidden flex flex-col`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
           <Stack gap={20} h="100%" className="flex flex-col">
-            <div>
-              <Text fw={600} c="#0B387C">
-                Pilih Produk
-              </Text>
-              <TextInput value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} leftSection={<Icon icon="uiw:search" />} placeholder="Cari Produk" mt={10} />
-              <Text size="xs" c="gray.6" mt={5}>
-                Menampilkan produk untuk toko Anda
-              </Text>
+            <div className="flex justify-between items-center border-b border-light-grey pb-4">
+              <div>
+                <Text fw={700} size="lg" c="#0B387C">
+                  Pilih Produk
+                </Text>
+                <Text size="xs" c="gray.5">
+                  Menampilkan produk untuk toko Anda
+                </Text>
+              </div>
+              <TextInput
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                leftSection={<Icon icon="uiw:search" />}
+                placeholder="Cari Produk..."
+                className="w-64"
+                styles={{
+                  input: {
+                    backgroundColor: "#F0F4FA",
+                    border: "none",
+                    borderRadius: "10px",
+                  }
+                }}
+              />
             </div>
 
             <div className="overflow-y-auto flex-grow">
@@ -1412,217 +1428,154 @@ export default function Index({ }: Readonly<ComponentProps>) {
                   {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan untuk toko Anda"}
                 </Alert>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
-                  {merchList?.map((e, i) => (
-                    <UnstyledButton
-                      disabled={(e.stock ?? 0) <= 0}
-                      className={`${(e.stock ?? 0) <= 0 ? 'opacity-75 cursor-not-allowed' : 'hover:scale-[1.02] transition-transform duration-200'}`}
-                      key={i}
-                      onClick={() => e.raw && handleAddProduct(e.raw)}
-                    >
-                      <Card
-                        withBorder
-                        radius={8}
-                        className={`h-full ${(e.stock ?? 0) <= 0 ? "!bg-[#f5f5f5]" : "hover:!bg-[#fafafa] hover:shadow-md transition-all duration-200"}`}
-                        p={12}
-                      >
-                        <Stack gap={8} className="h-full">
-                          <div className="relative aspect-square overflow-hidden rounded-md bg-gray-100">
-                            <Image
-                              src={e.image}
-                              width="100%"
-                              height="100%"
-                              fit="cover"
-                              fallbackSrc="https://placehold.co/300x300/EBF4FF/0B387C?text=Produk"
-                              className="object-cover"
-                            />
-                            {e.stock <= 0 && (
-                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                <Text c="white" size="xs" fw={600}>
-                                  STOK HABIS
-                                </Text>
-                              </div>
-                            )}
-                          </div>
+                <div className="flex flex-col gap-0">
+                  {(() => {
+                    const formatPriceRange = (prices: number[]) => {
+                      if (!prices || prices.length === 0) return "";
+                      const formatted = prices.map(p => p >= 1000 ? `${p / 1000}k` : String(p));
+                      if (formatted.length === 1) return `Rp ${formatted[0]}`;
+                      return `Rp ${formatted[0]} - ${formatted[formatted.length - 1]}`;
+                    };
 
-                          <div className="flex-1">
-                            <Text size="sm" fw={500} lineClamp={2} className="text-gray-800 min-h-[40px]">
-                              {e.name}
-                            </Text>
+                    return merchList?.map((e, i) => {
+                      const isOutOfStock = (e.stock ?? 0) <= 0;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between py-3 border-b border-light-grey hover:bg-gray-50/50 transition-colors duration-150 px-2"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-14 h-14 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
+                              <Image
+                                src={e.image}
+                                width={56}
+                                height={56}
+                                fit="cover"
+                                fallbackSrc="https://placehold.co/100x100/EBF4FF/0B387C?text=Produk"
+                                className="object-cover"
+                              />
+                              {isOutOfStock && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                  <div className="bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">
+                                    HABIS
+                                  </div>
+                                </div>
+                              )}
+                            </div>
 
-                            <Text size="sm" fw={600} c="primary" className="mt-2">
-                              {(e?.price ?? []).map((z, i) => (
-                                <Box key={i} component="span">
-                                  {i !== 0 && <> - </>}
-                                  <NumberFormatter value={z} />
-                                </Box>
-                              ))}
-                            </Text>
-
-                            <div className="mt-2">
-                              {e.stock > 0 ? (
-                                <Text size="xs" c="green" className="flex items-center gap-1">
-                                  <Icon icon="uiw:check" className="text-xs" />
-                                  Stok: {e.stock}
+                            <div>
+                              <Text size="sm" fw={600} className="text-gray-800">
+                                {e.name}
+                              </Text>
+                              {isOutOfStock ? (
+                                <Text size="xs" c="red" className="font-medium">
+                                  Stok Habis
                                 </Text>
                               ) : (
-                                <Text size="xs" c="red" className="flex items-center gap-1">
-                                  <Icon icon="uiw:close" className="text-xs" />
-                                  Stok Habis
+                                <Text size="xs" c="green" className="font-medium">
+                                  Stok: {e.stock}
                                 </Text>
                               )}
                             </div>
                           </div>
 
-                          {(e.stock ?? 0) > 0 && (
+                          <div className="flex flex-col items-end gap-1.5">
+                            <Text size="sm" fw={700} className="text-primary-base">
+                              {formatPriceRange(e.price ?? [])}
+                            </Text>
                             <Button
-                              variant="light"
-                              color="primary"
+                              disabled={isOutOfStock}
+                              variant={isOutOfStock ? "filled" : "light"}
+                              color={isOutOfStock ? "gray" : "blue"}
                               size="xs"
-                              fullWidth
-                              className="mt-2"
-                              leftSection={<Icon icon="uiw:plus" />}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                e.raw && handleAddProduct(e.raw);
-                              }}
+                              radius="md"
+                              className={isOutOfStock ? "!bg-[#F0F2F5] !text-[#A0AEC0] cursor-not-allowed" : ""}
+                              onClick={() => !isOutOfStock && e.raw && handleAddProduct(e.raw)}
                             >
                               Tambah
                             </Button>
-                          )}
-                        </Stack>
-                      </Card>
-                    </UnstyledButton>
-                  ))}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </div>
 
-            <Stack gap={10} mt="auto">
-              {/* Pagination Controls */}
-              {productTotal > 0 && (
-                <Card withBorder p={10} radius={8} className="bg-gray-50">
-                  <Flex justify="space-between" align="center">
-                    <Text size="sm" c="gray.7">
-                      Halaman {productPage} dari {productTotalPages}
-                    </Text>
-                    <Text size="sm" c="gray.7">
-                      Total: {productTotal} produk
-                    </Text>
-                  </Flex>
+            {/* Pagination Controls */}
+            {productTotal > 0 && (
+              <div className="mt-auto pt-4 flex justify-between items-center">
+                <Text size="xs" className="text-gray-500 font-medium">
+                  Halaman {productPage} dari {productTotalPages} <span className="text-gray-300 mx-2">|</span> Total: {productTotal} produk
+                </Text>
 
-                  <Flex gap={10} mt={10} justify="center" align="center" wrap="wrap">
-                    <Button
-                      onClick={handlePrevPage}
-                      disabled={productPage <= 1 || loading.includes("getdata")}
-                      variant="light"
-                      size="sm"
-                      leftSection={<Icon icon="uiw:left" />}
-                      loading={loading.includes("getdata")}
-                    >
-                      Prev
-                    </Button>
+                <Flex gap={8} align="center">
+                  <Button
+                    onClick={handlePrevPage}
+                    disabled={productPage <= 1 || loading.includes("getdata")}
+                    variant="default"
+                    radius="xl"
+                    size="xs"
+                    className="border-gray-200 h-8 w-8 min-w-0 p-0 flex items-center justify-center"
+                  >
+                    <Icon icon="uiw:left" width={12} />
+                  </Button>
 
-                    {/* Page Numbers */}
-                    <Flex gap={5} align="center">
-                      {(() => {
-                        const pages = [];
-                        const maxVisible = 5;
+                  {(() => {
+                    const pages = [];
+                    const maxVisible = 5;
+                    let startPage = Math.max(1, productPage - Math.floor(maxVisible / 2));
+                    let endPage = Math.min(productTotalPages, startPage + maxVisible - 1);
 
-                        let startPage = Math.max(1, productPage - Math.floor(maxVisible / 2));
-                        let endPage = Math.min(productTotalPages, startPage + maxVisible - 1);
+                    if (endPage - startPage + 1 < maxVisible) {
+                      startPage = Math.max(1, endPage - maxVisible + 1);
+                    }
 
-                        if (endPage - startPage + 1 < maxVisible) {
-                          startPage = Math.max(1, endPage - maxVisible + 1);
-                        }
+                    for (let i = startPage; i <= endPage; i++) {
+                      const isActive = productPage === i;
+                      pages.push(
+                        <Button
+                          key={i}
+                          onClick={() => handlePageClick(i)}
+                          variant={isActive ? "filled" : "subtle"}
+                          color={isActive ? "blue" : "gray"}
+                          radius="xl"
+                          size="xs"
+                          className={`h-8 w-8 min-w-0 p-0 font-bold ${isActive ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+                    return pages;
+                  })()}
 
-                        if (startPage > 1) {
-                          pages.push(
-                            <Button
-                              key={1}
-                              onClick={() => handlePageClick(1)}
-                              variant="light"
-                              size="sm"
-                              px={10}
-                            >
-                              1
-                            </Button>
-                          );
-                          if (startPage > 2) {
-                            pages.push(
-                              <Text key="ellipsis1" size="sm" c="gray.5" mx={2}>
-                                ...
-                              </Text>
-                            );
-                          }
-                        }
+                  <Button
+                    onClick={handleNextPage}
+                    disabled={productPage >= productTotalPages || loading.includes("getdata")}
+                    variant="default"
+                    radius="md"
+                    size="xs"
+                    px={12}
+                    className="border-gray-200 h-8 text-[#0B387C] font-semibold"
+                  >
+                    Next <Icon icon="uiw:right" width={10} className="ml-1 inline" />
+                  </Button>
+                </Flex>
+              </div>
+            )}
 
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(
-                            <Button
-                              key={i}
-                              onClick={() => handlePageClick(i)}
-                              variant={productPage === i ? "filled" : "light"}
-                              color={productPage === i ? "blue" : "gray"}
-                              size="sm"
-                              px={10}
-                            >
-                              {i}
-                            </Button>
-                          );
-                        }
-
-                        if (endPage < productTotalPages) {
-                          if (endPage < productTotalPages - 1) {
-                            pages.push(
-                              <Text key="ellipsis2" size="sm" c="gray.5" mx={2}>
-                                ...
-                              </Text>
-                            );
-                          }
-                          pages.push(
-                            <Button
-                              key={productTotalPages}
-                              onClick={() => handlePageClick(productTotalPages)}
-                              variant="light"
-                              size="sm"
-                              px={10}
-                            >
-                              {productTotalPages}
-                            </Button>
-                          );
-                        }
-
-                        return pages;
-                      })()}
-                    </Flex>
-
-                    <Button
-                      onClick={handleNextPage}
-                      disabled={productPage >= productTotalPages || loading.includes("getdata")}
-                      variant="light"
-                      size="sm"
-                      rightSection={<Icon icon="uiw:right" />}
-                      loading={loading.includes("getdata")}
-                    >
-                      Next
-                    </Button>
-                  </Flex>
-                </Card>
-              )}
-
-              <Button
-                size="md"
-                onClick={() => setOpenSelect(!openSelect)}
-                rightSection={<Icon icon="uiw:right" />}
-                className={`shrink-0 md:!hidden`}
-                c="gray"
-                variant="light"
-              >
-                Tutup
-              </Button>
-            </Stack>
+            <Button
+              size="md"
+              onClick={() => setOpenSelect(!openSelect)}
+              rightSection={<Icon icon="uiw:right" />}
+              className={`shrink-0 md:!hidden`}
+              c="gray"
+              variant="light"
+            >
+              Tutup
+            </Button>
           </Stack>
         </Card>
 
@@ -1633,51 +1586,77 @@ export default function Index({ }: Readonly<ComponentProps>) {
               onChange={setActiveTab}
               classNames={{
                 root: "sticky top-0 z-10 bg-white",
-                tab: "data-[active=true]:bg-primary-base/10 data-[active=true]:text-primary-base py-3",
-                list: "border-b border-light-grey px-4",
+                list: "border-0 px-4 pt-3 pb-2 gap-0",
+                tab: `
+                  rounded-lg py-2 px-4 font-medium transition-all duration-200
+                  data-[active=true]:bg-white data-[active=true]:text-primary-base data-[active=true]:shadow-sm
+                  data-[active=false]:text-gray-500 data-[active=false]:hover:text-gray-700
+                  border-0
+                `,
+                tabLabel: "text-sm",
+              }}
+              styles={{
+                list: {
+                  backgroundColor: "#EEF2F8",
+                  borderRadius: 10,
+                  padding: "4px",
+                  border: "none",
+                  "&::before": { display: "none" },
+                },
+                tab: {
+                  border: "none",
+                  flex: 1,
+                  justifyContent: "center",
+                  "&[dataActive]": {
+                    backgroundColor: "white",
+                    color: "#0B387C",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                  },
+                },
               }}
             >
               <Tabs.List grow>
-                <Tabs.Tab value="order" leftSection={<Icon icon="uiw:shopping-cart" />}>
-                  Rincian Pesanan
+                <Tabs.Tab value="order" leftSection={<Icon icon="ph:lock-simple-bold" />}>
+                  Rincian
                 </Tabs.Tab>
-                <Tabs.Tab value="transactions" leftSection={<Icon icon="uiw:file-text" />}>
-                  Riwayat Transaksi
+                <Tabs.Tab value="transactions" leftSection={<Icon icon="ph:clipboard-text-bold" />}>
+                  Riwayat
                 </Tabs.Tab>
               </Tabs.List>
 
               <Tabs.Panel value="order" pt="md">
-                <Card p={20} className="h-auto">
-                  <Flex align="center" gap={10} mb={20}>
-                    <div className="bg-primary-base/10 p-2 rounded-lg">
-                      <Icon icon="uiw:shopping-cart" className="text-primary-base text-lg" />
+                <Card p={20} className="h-auto flex flex-col gap-4">
+                  <Flex align="center" gap={15} mb={5}>
+                    <div className="bg-[#EEF2F8] p-3 rounded-2xl flex items-center justify-center text-[#0B387C]">
+                      <Icon icon="ph:shopping-cart-bold" className="text-2xl" />
                     </div>
                     <div>
-                      <Text fw={700} size="lg" c="#0B387C">
+                      <Text fw={700} size="xl" className="text-[#0B387C]">
                         Rincian Pesanan
                       </Text>
-                      <Text size="xs" c="gray.6">
-                        {selectedList.length} item dipilih
+                      <Text size="xs" c="gray.5" className="font-medium">
+                        {selectedList.length} item dalam keranjang
                       </Text>
                     </div>
                   </Flex>
 
                   {selectedList.length === 0 ? (
-                    <Card withBorder radius={12} p={30} className="text-center bg-gray-50/50 border-dashed border-2">
-                      <div className="mb-4">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
-                          <Icon icon="uiw:shopping-cart" className="text-3xl text-gray-400" />
-                        </div>
-                        <Text c="gray.6" size="sm" mb={10}>
-                          Belum ada produk yang dipilih
-                        </Text>
+                    <div className="border border-dashed border-light-grey rounded-2xl p-10 flex flex-col items-center justify-center bg-white min-h-[220px] mb-2">
+                      <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center border border-light-grey mb-4">
+                        <Icon icon="ph:package" className="text-3xl text-gray-300" />
                       </div>
-                      <Button size="md" className="md:!hidden" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="filled" color="primary" radius="md" fullWidth>
+                      <Text fw={700} c="gray.6" className="text-center text-base mb-1">
+                        Belum ada produk yang dipilih
+                      </Text>
+                      <Text size="xs" c="gray.4" className="text-center font-medium">
+                        Silakan pilih produk dari panel kiri
+                      </Text>
+                      <Button size="md" className="md:!hidden mt-4" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="filled" color="primary" radius="md" fullWidth>
                         Tambah Produk
                       </Button>
-                    </Card>
+                    </div>
                   ) : (
-                    <ScrollArea h={300} scrollbarSize={6}>
+                    <ScrollArea h={240} scrollbarSize={6}>
                       <Stack gap={10}>
                         {selectedList.map((e, i) => (
                           <Card key={i} p={12} withBorder radius={10} className="hover:bg-gray-50/50 transition-all duration-200 group">
@@ -1708,7 +1687,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                                 </Flex>
 
                                 <Flex justify="space-between" align="center" mt={8}>
-                                  <div className="flex items-center gap=3">
+                                  <div className="flex items-center gap-3">
                                     <Text size="xs" c="gray.6">
                                       @ <NumberFormatter prefix="Rp " value={e.price} />
                                     </Text>
@@ -1758,55 +1737,111 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     </ScrollArea>
                   )}
 
-                  {selectedList.length > 0 && (
-                    <div className="mt-4">
-                      <Card withBorder radius={10} p={12} className="bg-gray-50/50">
-                        <Flex justify="space-between" align="center">
-                          <div>
-                            <Text size="sm" c="gray.7" fw={500}>
-                              Subtotal ({selectedList.length} item)
+                  {/* DATA PEMBELI Row */}
+                  <UnstyledButton
+                    onClick={() => {
+                      const randomId = Math.floor(100000 + Math.random() * 900000);
+                      const randomName = `Guest ${randomId}`;
+                      const randomEmail = `guest_${randomId}@mail.com`;
+                      const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
+                      const addrA = Math.floor(Math.random() * 101);
+                      const addrB = Math.floor(Math.random() * 101);
+                      const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
+
+                      custSetValues({
+                        name: randomName,
+                        email: randomEmail,
+                        phone: randomPhone,
+                        address: randomAddress
+                      });
+                    }}
+                    className="w-full border border-gray-100 hover:border-blue-200 hover:bg-blue-50/5 p-4 rounded-xl flex items-center justify-between transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#EEF2F8] flex items-center justify-center text-blue-600">
+                        <Icon icon="ph:user" width={20} />
+                      </div>
+                      <div className="text-left">
+                        <Text size="10px" fw={700} c="gray.4" className="tracking-wider uppercase">
+                          DATA PEMBELI
+                        </Text>
+                        <Text size="sm" fw={700} c="gray.8">
+                          {custValue.name || "Guest Customer"}
+                        </Text>
+                      </div>
+                    </div>
+                    <Badge variant="light" color="blue" size="sm" radius="md">
+                      Gunakan Guest
+                    </Badge>
+                  </UnstyledButton>
+
+                  {/* METODE PEMBAYARAN Row */}
+                  <UnstyledButton
+                    onClick={openSelectPayment}
+                    className="w-full border border-gray-100 hover:border-blue-200 hover:bg-blue-50/5 p-4 rounded-xl flex items-center justify-between transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#EEF2F8] flex items-center justify-center text-blue-600">
+                        <Icon icon="ph:wallet" width={20} />
+                      </div>
+                      <div className="text-left">
+                        <Text size="10px" fw={700} c="gray.4" className="tracking-wider uppercase">
+                          METODE PEMBAYARAN
+                        </Text>
+                        <Text size="sm" fw={700} c="gray.8">
+                          {(!paymentMethod || paymentMethod === "Pilih Metode Pembayaran" || paymentMethod === "Pilih Pembayaran") ? "QRIS" : (paymentMethod.toLowerCase().includes("cash") ? "Cash / Tunai" : paymentMethod)}
+                        </Text>
+                      </div>
+                    </div>
+                    <Icon icon="lucide:chevron-right" width={18} className="text-gray-400" />
+                  </UnstyledButton>
+
+                  {/* DISKON TAMBAHAN Row */}
+                  <Popover width={300} trapFocus position="bottom" withArrow shadow="md">
+                    <Popover.Target>
+                      <UnstyledButton className="w-full border border-gray-100 hover:border-blue-200 hover:bg-blue-50/5 p-4 rounded-xl flex items-center justify-between transition-all duration-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#EEF2F8] flex items-center justify-center text-blue-600">
+                            <Icon icon="ph:tag" width={20} />
+                          </div>
+                          <div className="text-left">
+                            <Text size="10px" fw={700} c="gray.4" className="tracking-wider uppercase">
+                              DISKON TAMBAHAN
                             </Text>
-                            <Text size="xs" c="gray.6">
-                              Total sebelum diskon
+                            <Text size="sm" fw={700} c="gray.8">
+                              {discount > 0 ? "Diskon Terpasang" : "Belum ada diskon"}
                             </Text>
                           </div>
-                          <Text size="md" fw={700} c="gray.8">
-                            <NumberFormatter prefix="Rp " value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} />
-                          </Text>
-                        </Flex>
-                      </Card>
-                    </div>
-                  )}
+                        </div>
+                        <div className="bg-gray-100 px-3 py-1 rounded-md text-sm font-bold text-gray-800">
+                          <NumberFormatter prefix="Rp " value={discount || 0} />
+                        </div>
+                      </UnstyledButton>
+                    </Popover.Target>
+                    <Popover.Dropdown p={12}>
+                      <NumberInput
+                        label="Masukkan Nominal Diskon"
+                        placeholder="Contoh: 10000"
+                        value={discount}
+                        onChange={(val) => setDiscount(typeof val === 'number' ? val : 0)}
+                        min={0}
+                        thousandSeparator="."
+                      />
+                    </Popover.Dropdown>
+                  </Popover>
+
+                  <div className="mt-2 pt-4 flex justify-between items-center">
+                    <Text size="sm" fw={600} className="text-gray-600">Subtotal</Text>
+                    <Text size="md" fw={700} className="text-gray-800">
+                      <NumberFormatter prefix="Rp " value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} />
+                    </Text>
+                  </div>
 
                   {selectedList.length > 0 && (
-                    <Button size="md" className="md:!hidden mt-4" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light" color="primary" radius="md" fullWidth>
+                    <Button size="md" className="md:!hidden mt-2" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light" color="primary" radius="md" fullWidth>
                       Tambah Produk Lain
                     </Button>
                   )}
-                </Card>
-
-                <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-                  <Flex gap={10} align="center" className={`overflow-x-auto [&>*]:!shrink-0`}>
-                    <Button onClick={() => setOpenCustForm(true)} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                      Data Pembeli
-                    </Button>
-
-                    <Button onClick={openSelectPayment} rightSection={<Icon icon="uiw:right" />} pos="relative" variant="light">
-                      Metode Pembayaran {paymentMethod ? `(${paymentMethod.toLowerCase().includes("cash") ? "Cash" : "QRIS"})` : ""}
-                    </Button>
-                  </Flex>
-                </Card>
-
-                <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
-                  <Flex gap={15} justify="space-between" align="center" wrap="wrap" mb={-5}>
-                    <Flex gap={7} align="center">
-                      <Icon icon="teenyicons:discount-outline" className={`text-primary-base`} />
-                      <Text size="sm" className={`!text-primary-base`}>
-                        Diskon Tambahan
-                      </Text>
-                    </Flex>
-                    <NumberInput prefix="Rp " hideControls placeholder="Masukan Diskon" value={discount} onChange={(e) => setDiscount(parseInt(e as string))} className={`[&_*]:!text-center`} />
-                  </Flex>
                 </Card>
 
                 <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
@@ -1843,167 +1878,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         },
                       }}
                     >
-                      <Accordion.Item value="customer">
-                        <Accordion.Control>
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                              <Icon icon="mdi:account-outline" className="text-sm" />
-                              <span className="text-sm">Data Pembeli</span>
-                            </div>
-                            <Button
-                              component="div"
-                              size="compact-xs"
-                              h={24}
-                              fz={11}
-                              px={8}
-                              variant={isGuest ? "filled" : "light"}
-                              color={isGuest ? "green" : "blue"}
-                              className="mr-2 rounded z-10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const safeChange = (propName: keyof CustomerData, value: string) => {
-                                  const p = custProps(propName as any) as any;
-                                  if (!p) return;
-                                  try {
-                                    if (typeof p.onChange === "function") {
-                                      p.onChange(value);
-                                      return;
-                                    }
-                                  } catch { }
-                                  try {
-                                    if (typeof p.onChange === "function") p.onChange({ target: { value } });
-                                  } catch { }
-                                };
-
-                                if (isGuest) {
-                                  safeChange("name", "");
-                                  safeChange("email", "");
-                                  safeChange("phone", "");
-                                  safeChange("address", "");
-                                  return;
-                                }
-
-                                const randomId = Math.floor(100000 + Math.random() * 900000);
-                                const randomName = `Guest ${randomId}`;
-                                const randomEmail = `guest_${randomId}@mail.com`;
-                                const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
-                                const addrA = Math.floor(Math.random() * 101);
-                                const addrB = Math.floor(Math.random() * 101);
-                                const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
-
-                                safeChange("name", randomName);
-                                safeChange("email", randomEmail);
-                                safeChange("phone", randomPhone);
-                                safeChange("address", randomAddress);
-                              }}
-                            >
-                              {isGuest ? "Guest Aktif" : "Gunakan Guest"}
-                            </Button>
-                          </div>
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                          <div className="space-y-3 pt-1">
-                            {custValue.name || custValue.email || custValue.phone || custValue.address ? (
-                              <>
-                                <div className="grid grid-cols-1 gap-2">
-                                  <div>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                      <Icon icon="mdi:account" className="text-xs" />
-                                      <span>Nama</span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.name || "-"}</div>
-                                  </div>
-
-                                  <div>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                      <Icon icon="mdi:email-outline" className="text-xs" />
-                                      <span>Email</span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.email || "-"}</div>
-                                  </div>
-
-                                  <div>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                      <Icon icon="mdi:phone-outline" className="text-xs" />
-                                      <span>No. Telp</span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded">{custValue.phone || "-"}</div>
-                                  </div>
-
-                                  <div>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                      <Icon icon="mdi:map-marker-outline" className="text-xs" />
-                                      <span>Alamat</span>
-                                    </div>
-                                    <div className="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-1.5 rounded whitespace-pre-wrap">{custValue.address || "-"}</div>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-end pt-1">
-                                  <Button variant="subtle" size="xs" color="blue" leftSection={<Icon icon="mdi:pencil" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
-                                    Edit
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-center py-3">
-                                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-2">
-                                  <Icon icon="mdi:account-question" className="text-lg text-gray-400" />
-                                </div>
-                                <p className="text-xs text-gray-500 mb-3">Belum ada data pembeli</p>
-                                <Button variant="light" color="blue" size="xs" leftSection={<Icon icon="mdi:plus" className="text-xs" />} onClick={() => setOpenCustForm(true)}>
-                                  Tambah Data
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </Accordion.Panel>
-                      </Accordion.Item>
-
-                      <Accordion.Item value="summary">
-                        <Accordion.Control>
-                          <div className="flex items-center gap-2">
-                            <Icon icon="mdi:receipt-text-outline" className="text-sm" />
-                            <span className="text-sm">Detail Pembayaran</span>
-                          </div>
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                          <div className="space-y-2 pt-1">
-                            {handleSummary.detail
-                              .filter((e) => Boolean(e[1]) || e[1] < 0)
-                              .map((e, i) => (
-                                <div key={i} className="flex items-center justify-between py-1">
-                                  <div className="flex items-center gap=1.5">
-                                    {e[0] === "Subtotal" && <Icon icon="mdi:cart-outline" className="text-xs text-gray-400" />}
-                                    {e[0] === "Diskon" && <Icon icon="mdi:tag-outline" className="text-xs text-gray-400" />}
-                                    {e[0] === "Admin" && <Icon icon="mdi:credit-card-outline" className="text-xs text-gray-400" />}
-                                    <span className="text-xs text-gray-600">{e[0]}</span>
-                                  </div>
-                                  <div className={`text-xs font-medium ${e[1] < 0 ? "text-red-500" : "text-gray-800"}`}>
-                                    <NumberFormatter prefix="Rp " value={e[1]} />
-                                  </div>
-                                </div>
-                              ))}
-
-                            <div className="pt-2 mt-2 border-t border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap=1.5">
-                                  <Icon icon="mdi:cash-multiple" className="text-sm text-primary-base" />
-                                  <span className="text-xs font-semibold text-primary-base">Total</span>
-                                </div>
-                                <div className="text-sm font-bold text-primary-base">
-                                  <NumberFormatter prefix="Rp " value={handleSummary.total} />
-                                </div>
-                              </div>
-
-                              {discount !== 0 && (
-                                <div className="mt-1 text-[10px] text-gray-500 text-right">{discount > 0 ? <span className="text-green-600">✓ Diskon diterapkan</span> : <span className="text-red-500">✗ Tanpa diskon</span>}</div>
-                              )}
-                            </div>
-                          </div>
-                        </Accordion.Panel>
-                      </Accordion.Item>
                     </Accordion>
 
                   </Stack>

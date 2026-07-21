@@ -30,6 +30,8 @@ type InvitationStore<
     fullname: string;
     email: string;
     phone: string;
+    seat_number?: string;
+    session?: string;
   }[]
 > = {
   event_id: number;
@@ -41,6 +43,8 @@ type InvitationStore<
   image?: Blob;
   is_one_receiver?: boolean;
   is_banner_image?: boolean;
+  is_seatnumber?: boolean | number;
+  is_session?: boolean | number;
   event_invitation_status?: {
     id: number;
   };
@@ -63,6 +67,8 @@ export const invitationStoreSchema = z.object({
         fullname: z.string().nonempty("Nama lengkap tidak boleh kosong."),
         email: z.string().email("Format email tidak valid."),
         phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
+        seat_number: z.string().optional(),
+        session: z.string().optional(),
       })
     )
     .nonempty("Detail tidak boleh kosong."),
@@ -122,9 +128,11 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
       invitation_title: "",
       invitation_description: "",
       total_qty: 1,
-      details: [{ fullname: "", email: "", phone: "" }],
+      details: [{ fullname: "", email: "", phone: "", seat_number: "", session: "" }],
       is_one_receiver: false,
       is_banner_image: true,
+      is_seatnumber: false,
+      is_session: false,
       ticket_category: "Festival",
       reserved_seat: [],
       ticket_id: undefined,
@@ -230,15 +238,25 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
     timestamp: new Date().toISOString()
   });
 
+  const detailsToSubmit = form.values.is_one_receiver
+    ? Array(form.values.total_qty).fill(form.values.details[0])
+    : form.values.details;
+
   const submissionData = {
     ...form.values,
+    is_seatnumber: form.values.is_seatnumber ? 1 : 0,
+    is_session: form.values.is_session ? 1 : 0,
     ticket_category: ticketType,
     ticket_id: ticketType === "Seat" ? selectedTicketId : undefined,
     reserved_seat: ticketType === "Seat" ? selectedSeats : [],
     details: JSON.stringify(
-      form.values.is_one_receiver 
-        ? Array(form.values.total_qty).fill(form.values.details[0]) 
-        : form.values.details
+      detailsToSubmit.map((d: any) => ({
+        fullname: d.fullname,
+        email: d.email,
+        phone: d.phone,
+        ...(form.values.is_seatnumber ? { seat_number: d.seat_number || "" } : {}),
+        ...(form.values.is_session ? { session: d.session || "" } : {}),
+      }))
     ),
     metadata: {
       source: 'dashboard_add_modal',
@@ -301,7 +319,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
 
   useEffect(() => {
     if (form.values.total_qty > 0) {
-      form.setValues({ details: Array(form.values.total_qty).fill({ fullname: "", email: "", phone: "" }) });
+      form.setValues({ details: Array(form.values.total_qty).fill({ fullname: "", email: "", phone: "", seat_number: "", session: "" }) });
     }
   }, [form.values.total_qty]);
 
@@ -321,7 +339,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
   ) || [];
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size={showSeatPicker ? "5xl" : "2xl"}>
+    <Modal isOpen={isOpen} onOpenChange={onClose} placement="top-center" size={showSeatPicker ? "5xl" : "4xl"}>
       <ModalContent>
         {showSeatPicker ? (
           <>
@@ -398,68 +416,71 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
                   <Checkbox label="Gunakan Gambar Event" checked={form.values.is_banner_image} onChange={(e) => form.setValues({ is_banner_image: e.target.checked })} />
                 </Stack>
 
-                {/* Ticket Type Selector */}
-                <div className="border-2 border-primary-light-200 rounded-xl p-4">
-                  <p className="text-sm font-medium text-dark mb-3">Tipe Tiket</p>
-                  <RadioGroup
-                    value={ticketType}
-                    onValueChange={(val) => {
-                      setTicketType(val as "Festival" | "Seat");
-                      if (val === "Festival") {
-                        setSelectedSeats([]);
-                        setSelectedTicketId(undefined);
-                      }
-                    }}
-                    orientation="horizontal"
-                    className="gap-4"
-                  >
-                    <Radio value="Festival" description="Tiket tanpa kursi khusus">Festival</Radio>
-                    <Radio value="Seat" description="Tiket dengan kursi khusus">Seat</Radio>
-                  </RadioGroup>
+                {/* Ticket Type Selector — hidden, tidak dihapus */}
+                <div className="hidden">
+                  <div className="border-2 border-primary-light-200 rounded-xl p-4">
+                    <p className="text-sm font-medium text-dark mb-3">Tipe Tiket</p>
+                    <RadioGroup
+                      value={ticketType}
+                      onValueChange={(val) => {
+                        setTicketType(val as "Festival" | "Seat");
+                        if (val === "Festival") {
+                          setSelectedSeats([]);
+                          setSelectedTicketId(undefined);
+                        }
+                      }}
+                      orientation="horizontal"
+                      className="gap-4"
+                    >
+                      <Radio value="Festival" description="Tiket tanpa kursi khusus">Festival</Radio>
+                      <Radio value="Seat" description="Tiket dengan kursi khusus">Seat</Radio>
+                    </RadioGroup>
 
-                  {ticketType === "Seat" && (
-                    <div className="mt-3 pt-3 border-t border-primary-light-200 flex flex-col gap-3">
-                      {/* Ticket name selector */}
-                      <div>
-                        <p className="text-sm font-medium mb-1">Nama Tiket</p>
-                        <Select
-                          aria-label="Pilih Tiket"
-                          placeholder="Pilih tiket untuk reservasi kursi"
-                          selectedKeys={selectedTicketId ? [String(selectedTicketId)] : []}
-                          onChange={(e) => setSelectedTicketId(Number(e.target.value))}
-                          size="sm"
-                          variant="bordered"
-                        >
-                          {propTicket?.filter(t => t.ticket_category === "Seated")
-                            .map((t) => (
-                              <SelectItem key={String(t.id)} value={String(t.id)}>
-                                {t.name}
-                              </SelectItem>
-                            )) as any}
-                        </Select>
-                      </div>
-
-                      {/* Seat selection */}
-                      <div className="flex items-center justify-between">
+                    {ticketType === "Seat" && (
+                      <div className="mt-3 pt-3 border-t border-primary-light-200 flex flex-col gap-3">
+                        {/* Ticket name selector */}
                         <div>
-                          <p className="text-sm font-medium">Reservasi Kursi</p>
-                          <p className="text-xs text-grey">
-                            {selectedSeats.length > 0
-                              ? `${selectedSeats.length} kursi dipilih: ${selectedSeats.join(", ")}`
-                              : "Belum ada kursi dipilih"}
-                          </p>
+                          <p className="text-sm font-medium mb-1">Nama Tiket</p>
+                          <Select
+                            aria-label="Pilih Tiket"
+                            placeholder="Pilih tiket untuk reservasi kursi"
+                            selectedKeys={selectedTicketId ? [String(selectedTicketId)] : []}
+                            onChange={(e) => setSelectedTicketId(Number(e.target.value))}
+                            size="sm"
+                            variant="bordered"
+                          >
+                            {propTicket?.filter(t => t.ticket_category === "Seated")
+                              .map((t) => (
+                                <SelectItem key={String(t.id)} value={String(t.id)}>
+                                  {t.name}
+                                </SelectItem>
+                              )) as any}
+                          </Select>
                         </div>
-                        <button
-                          onClick={() => setShowSeatPicker(true)}
-                          className="flex items-center gap-1.5 text-xs text-primary-base border border-primary-base rounded-lg px-3 py-1.5 hover:bg-primary-light-100 transition-colors"
-                        >
-                          <Icon icon="mdi:sofa" width={14} />
-                          <span>Pilih Kursi</span>
-                        </button>
+
+                        {/* Seat selection */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Reservasi Kursi</p>
+                            <p className="text-xs text-grey">
+                              {selectedSeats.length > 0
+                                ? `${selectedSeats.length} kursi dipilih: ${selectedSeats.join(", ")}`
+                                : "Belum ada kursi dipilih"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowSeatPicker(true)}
+                            className="flex items-center gap-1.5 text-xs text-primary-base border border-primary-base rounded-lg px-3 py-1.5 hover:bg-primary-light-100 transition-colors"
+                          >
+                            <Icon icon="mdi:sofa" width={14} />
+                            <span>Pilih Kursi</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
+
 
                 <div className="flex flex-wrap gap-4">
                   <Box className="flex-1 relative min-w-[30%]">
@@ -516,14 +537,16 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
                     labelPlacement="outside"
                   />
                   <Checkbox className={`md:mb-[10px]`} label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
+                  <Checkbox className={`md:mb-[10px]`} label="Sertakan Nomor Kursi" checked={!!form.values.is_seatnumber} onChange={(e) => form.setValues({ is_seatnumber: e.target.checked })} />
+                  <Checkbox className={`md:mb-[10px]`} label="Sertakan Sesi" checked={!!form.values.is_session} onChange={(e) => form.setValues({ is_session: e.target.checked })} />
                 </Flex>
 
                 {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
-                  <div key={index} className="flex flex-wrap gap-4">
+                  <div key={index} className="flex gap-3">
                     <Input
                       isInvalid={Boolean(form.errors[`details.${index}.fullname`])}
                       description={form.errors.details ? form.errors[`details.${index}.fullname`] : undefined}
-                      className="flex-1 min-w-[30%]"
+                      className="flex-1 min-w-0"
                       label={<span className="text-dark">{`Fullname ${index + 1}`}</span>}
                       value={detail.fullname}
                       onChange={(e) => form.setFieldValue(`details.${index}.fullname`, e.target.value)}
@@ -532,16 +555,36 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
                     <Input
                       isInvalid={Boolean(form.errors[`details.${index}.email`])}
                       description={form.errors.details ? form.errors[`details.${index}.email`] : undefined}
-                      className="flex-1 min-w-[30%]"
+                      className="flex-1 min-w-0"
                       label={<span className="text-dark">{`Email ${index + 1}`}</span>}
                       value={detail.email}
                       onChange={(e) => form.setFieldValue(`details.${index}.email`, e.target.value)}
                       labelPlacement="outside"
                     />
+                    {form.values.is_seatnumber && (
+                      <Input
+                        className="flex-1 min-w-0"
+                        label={<span className="text-dark">{`Seat Number ${index + 1}`}</span>}
+                        placeholder="Contoh: A1, B2"
+                        value={(detail as any).seat_number || ""}
+                        onChange={(e) => form.setFieldValue(`details.${index}.seat_number`, e.target.value)}
+                        labelPlacement="outside"
+                      />
+                    )}
+                    {form.values.is_session && (
+                      <Input
+                        className="flex-1 min-w-0"
+                        label={<span className="text-dark">{`Sesi ${index + 1}`}</span>}
+                        placeholder="Contoh: Sesi 1, Sesi A"
+                        value={(detail as any).session || ""}
+                        onChange={(e) => form.setFieldValue(`details.${index}.session`, e.target.value)}
+                        labelPlacement="outside"
+                      />
+                    )}
                     <Input
                       isInvalid={Boolean(form.errors[`details.${index}.phone`])}
                       description={form.errors.details ? form.errors[`details.${index}.phone`] : undefined}
-                      className="flex-1 min-w-[30%]"
+                      className="flex-1 min-w-0"
                       label={<span className="text-dark">{`Phone ${index + 1}`}</span>}
                       value={detail.phone}
                       onChange={(e) => form.setFieldValue(`details.${index}.phone`, e.target.value)}
