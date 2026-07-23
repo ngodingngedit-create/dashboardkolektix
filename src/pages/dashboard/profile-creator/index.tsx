@@ -313,11 +313,15 @@ const ProfileCreator = () => {
       .then((res: any) => {
         if (res.data) {
           setHasLegalData(true);
-          const record: LegalRecord = res.data;
-          if (record.no_identity) setKtpList([record]);
-          else setKtpList([]);
-          if (record.no_npwp) setNpwpList([record]);
-          else setNpwpList([]);
+          const records: LegalRecord[] = (Array.isArray(res.data) ? res.data : (res.data ? [res.data] : [])).map((r: any) => ({
+            ...r,
+            file_identity_url: r.file_identity_url || r.file_upload_url,
+            file_npwp_url: r.file_npwp_url || r.file_upload_url,
+          }));
+          const ktps = records.filter((r) => r.type === 'ktp');
+          const npwps = records.filter((r) => r.type === 'npwp');
+          setKtpList(ktps);
+          setNpwpList(npwps);
         } else {
           setKtpList([]);
           setNpwpList([]);
@@ -375,6 +379,7 @@ const ProfileCreator = () => {
       type: 'ktp',
       status: 'active',
       is_snk: true,
+      file_upload: fileBase64,
     };
     setLoading.append('submitlegal');
     try {
@@ -412,6 +417,7 @@ const ProfileCreator = () => {
       type: 'npwp',
       status: 'active',
       is_snk: true,
+      file_upload: fileBase64,
     };
     setLoading.append('submitlegal');
     try {
