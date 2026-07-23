@@ -247,6 +247,7 @@ interface TarikDanaModalProps {
   setIsOpen: (isOpen: boolean) => void;
   onSubmit?: () => void;
   eventSlug?: string | string[];
+  totalSaldo?: number;
 }
 
 type SubmitWithdraw = {
@@ -259,7 +260,7 @@ type SubmitWithdraw = {
   event_id?: number;
 };
 
-export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug }: TarikDanaModalProps) {
+export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug, totalSaldo = 0 }: TarikDanaModalProps) {
   const [loading, loadingHandlers] = useListState<string>([]);
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -369,22 +370,24 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
 
   // Hitung saldo yang tersedia untuk ditarik
   const calculateAvailableBalance = () => {
-    if (!eventData) {
-      console.log("⚠️ Event data not loaded yet");
-      return 0;
+    // Jika ada eventData (dari konteks event), hitung dari pendapatan event
+    if (eventData && eventData.event_name) {
+      const totalEarned = Number(eventData.total_pendapatan) || 0;
+      const totalWithdrawn = Number(eventData.total_withdraw) || 0;
+      const availableBalance = totalEarned;
+
+      console.log("💰 Event Balance Calculation:", {
+        totalEarned,
+        totalWithdrawn,
+        availableBalance,
+      });
+
+      return availableBalance > 0 ? availableBalance : 0;
     }
 
-    const totalEarned = Number(eventData.total_pendapatan) || 0;
-    const totalWithdrawn = Number(eventData.total_withdraw) || 0;
-    const availableBalance = totalEarned;
-
-    console.log("💰 Balance Calculation:", {
-      totalEarned,
-      totalWithdrawn,
-      availableBalance,
-    });
-
-    return availableBalance > 0 ? availableBalance : 0;
+    // Fallback: gunakan totalSaldo dari user (global withdraw)
+    console.log("💰 Using global totalSaldo:", totalSaldo);
+    return totalSaldo > 0 ? totalSaldo : 0;
   };
 
   // Fungsi untuk mengambil data bank
@@ -537,15 +540,15 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug 
                     <span className="text-sm font-medium text-gray-700">Saldo Tersedia:</span>
                     <span className={`text-lg font-bold ${availableBalance > 0 ? "text-green-600" : "text-red-600"}`}>{formatRupiah(availableBalance)}</span>
                   </div>
-                  {eventData ? (
+                  {eventData && eventData.event_name ? (
                     <p className="text-xs text-gray-500 mt-1">
                       Total Penjualan: {formatRupiah(eventData.total_price_sell || 0)} • Sudah Ditarik: {formatRupiah(eventData.total_withdraw || 0)}
                     </p>
-                  ) : (
+                  ) : eventSlug ? (
                     <p className="text-xs text-gray-500 mt-1">Memuat data saldo...</p>
-                  )}
+                  ) : null}
 
-                  {availableBalance <= 0 && eventData && <p className="text-xs text-red-600 mt-1">Tidak ada saldo yang bisa ditarik. Pastikan ada penjualan tiket.</p>}
+                  {availableBalance <= 0 && eventData && eventData.event_name && <p className="text-xs text-red-600 mt-1">Tidak ada saldo yang bisa ditarik. Pastikan ada penjualan tiket.</p>}
                 </div>
 
                 <h3 className="text-sm font-medium text-gray-700 mx-4">Tarik Dana ke</h3>

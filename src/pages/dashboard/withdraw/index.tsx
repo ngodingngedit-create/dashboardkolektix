@@ -332,7 +332,7 @@ const WithDraw = () => {
         </div>
       </div>
 
-      <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
+      <TarikDanaModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} totalSaldo={saldoData?.total_saldo || 0} />
       <TopUpModal isOpen={isDetailModalOpen} setIsOpen={setIsDetailModalOpen} />
 
       {/* Modal untuk detail transaksi - diatur supaya full width */}

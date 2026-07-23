@@ -342,9 +342,10 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
     <Modal
       isOpen={isOpen}
       onOpenChange={onClose}
+      scrollBehavior="inside"
       classNames={{
-        wrapper: "justify-end p-0",
-        base: "h-screen max-h-screen m-0 !mr-0 rounded-l-xl rounded-r-none w-[70vw] max-w-[70vw]",
+        wrapper: "justify-end p-0 overflow-hidden",
+        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-[50vw] max-w-[50vw]",
       }}
       motionProps={{
         variants: {
@@ -421,8 +422,8 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
               <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
                 <Stack gap={10}>
                   <ImageInput
-                    label="Gambar"
-                    dimension={[300, 100]}
+                    label="Banner"
+                    dimension={[700, 220]}
                     value={form.values.image ?? (form.values.is_banner_image ? eventData?.image_url : undefined)}
                     onChange={(e) => (form.values.is_banner_image ? undefined : form.setValues({ image: e ?? undefined }))}
                   />
@@ -608,12 +609,14 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button onClick={handleSubmit} isLoading={loading.includes("submit")} className="bg-primary text-white">
-                Tambah Invitation
-              </Button>
-              <Button variant="flat" onPress={onClose}>
-                Close
-              </Button>
+              <div className="flex justify-between items-center w-full">
+                <Button variant="flat" onPress={onClose}>
+                  Close
+                </Button>
+                <Button onClick={handleSubmit} isLoading={loading.includes("submit")} className="bg-primary text-white">
+                  Tambah Invitation
+                </Button>
+              </div>
             </ModalFooter>
           </>
         )}

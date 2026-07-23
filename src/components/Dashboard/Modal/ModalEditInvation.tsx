@@ -134,9 +134,10 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
     <Modal
       isOpen={isOpen}
       onOpenChange={onClose}
+      scrollBehavior="inside"
       classNames={{
-        wrapper: "justify-end p-0",
-        base: "h-screen max-h-screen m-0 !mr-0 rounded-l-xl rounded-r-none w-[70vw] max-w-[70vw]",
+        wrapper: "justify-end p-0 overflow-hidden",
+        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-[50vw] max-w-[50vw]",
       }}
       motionProps={{
         variants: {
@@ -261,12 +262,14 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button onClick={handleSubmit} isLoading={isLoading} className="bg-primary text-white">
-            Simpan Perubahan
-          </Button>
-          <Button variant="flat" onPress={onClose}>
-            Batal
-          </Button>
+          <div className="flex justify-between items-center w-full">
+            <Button variant="flat" onPress={onClose}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} isLoading={isLoading} className="bg-primary text-white">
+              Simpan Perubahan
+            </Button>
+          </div>
         </ModalFooter>
       </ModalContent>
     </Modal>
