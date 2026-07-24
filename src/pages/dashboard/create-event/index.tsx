@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, SetStateAction, Dispatch } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, SetStateAction, Dispatch } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -114,29 +114,32 @@ const CreateEvent = () => {
     is_session: 0,
     tickets: ticket,
   });
-  const syaratToolbarRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
 
-  useEffect(() => {
-    const container = syaratToolbarRef.current;
+  const syaratToolbarRef = useCallback((container: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
     if (!container) return;
 
     const inject = () => {
       const toolbar = container.querySelector('.ql-toolbar') as HTMLElement;
       if (!toolbar || toolbar.querySelector('.btn-syarat-default')) return;
 
-      const setFormRef = (window as any).__setFormSyarat;
-      const formRef = (window as any).__formSyarat;
-
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn-syarat-default';
-      btn.title = 'Isi teks default';
+      btn.title = 'S&K Kolektix';
       btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:4px;background:transparent;color:#9ca3af;cursor:pointer;transition:all 0.2s;margin-left:auto;flex-shrink:0;';
       btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>';
 
       btn.onmouseenter = () => { btn.style.color = '#0052CC'; btn.style.backgroundColor = '#e2eefe'; };
       btn.onmouseleave = () => { btn.style.color = '#9ca3af'; btn.style.backgroundColor = 'transparent'; };
       btn.onclick = () => {
+        const setFormRef = (window as any).__setFormSyarat;
+        const formRef = (window as any).__formSyarat;
         if (setFormRef && formRef) {
           setFormRef({
             ...formRef,
@@ -152,14 +155,11 @@ const CreateEvent = () => {
       toolbar.appendChild(btn);
     };
 
-    // Try immediately (in case Quill already loaded)
     inject();
 
-    // Watch for toolbar to appear (Quill dynamic import)
     const observer = new MutationObserver(() => inject());
     observer.observe(container, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
 
   useEffect(() => {
