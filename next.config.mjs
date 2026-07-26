@@ -10,7 +10,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
-
+      {
+        source: "/",
+        destination: "/login",
+        permanent: true,
+      },
       {
         source: "/event",
         destination: "/login",
