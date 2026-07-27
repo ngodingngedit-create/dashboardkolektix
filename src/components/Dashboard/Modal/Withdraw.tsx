@@ -206,6 +206,8 @@ import { notifications } from "@mantine/notifications";
 import Cookies from "js-cookie";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/router";
+import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
+import { Divider } from "@mantine/core";
 
 interface Bank {
   id: number;
@@ -671,6 +673,12 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug,
                       </div>
                     )}
                   </ScrollShadow>
+                </div>
+
+                {/* Riwayat Withdraw */}
+                <div className="mt-6 mx-4">
+                  <Divider label="Riwayat Penarikan Dana" labelPosition="center" mb="md" />
+                  <WithdrawHistoryList user_id={user?.id ?? 0} filterType="merchandise" />
                 </div>
               </ModalBody>
               <ModalFooter>

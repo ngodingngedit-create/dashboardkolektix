@@ -83,6 +83,7 @@ import { useParams } from "next/navigation";
 type ComponentProps = {
   user_id: number;
   setUpdate?: number;
+  filterType?: 'event' | 'merchandise' | 'all'; // Filter berdasarkan tipe withdraw
 };
 
 interface WithdrawHistory {
@@ -110,7 +111,7 @@ interface WithdrawHistory {
   deleted_at: string | null;
 }
 
-export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<ComponentProps>) {
+export default function WithdrawHistoryList({ user_id, setUpdate, filterType = 'all' }: Readonly<ComponentProps>) {
   const [list, setList] = useState<WithdrawHistory[] | undefined>(undefined);
   const [loading, setLoading] = useListState<string>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -192,10 +193,21 @@ export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<Com
         },
         before: () => setLoading.append("getdata"),
         success: (data) => {
-          // Filter berdasarkan user_id saja (karena event_id null)
-          const filtered = (data as WithdrawHistory[]).filter((e) => e.user_id === user_id);
+          // Filter berdasarkan user_id dan filterType
+          let filtered = (data as WithdrawHistory[]).filter((e) => e.user_id === user_id);
+          
+          // Filter tambahan berdasarkan tipe
+          if (filterType === 'merchandise') {
+            // Untuk merchandise: hanya tampilkan withdraw tanpa event_id (event_id null)
+            filtered = filtered.filter((e) => e.event_id == null);
+          } else if (filterType === 'event') {
+            // Untuk event: hanya tampilkan withdraw dengan event_id
+            filtered = filtered.filter((e) => e.event_id != null);
+          }
+          // Jika filterType === 'all', tampilkan semua
+          
           setList(filtered);
-          console.log("Withdraw Data for User:", user_id, filtered);
+          console.log(`Withdraw Data for User (${filterType}):`, user_id, filtered);
         },
         complete: () => setLoading.filter((e) => e != "getdata"),
       });
@@ -215,7 +227,15 @@ export default function WithdrawHistoryList({ user_id, setUpdate }: Readonly<Com
       className="transition-all"
     >
       <Stack gap={8}>
-        {list && list.length === 0 && <Alert radius={8}>Belum ada riwayat tarik dana terkait event</Alert>}
+        {list && list.length === 0 && (
+          <Alert radius={8}>
+            {filterType === 'merchandise' 
+              ? 'Belum ada riwayat tarik dana terkait produk' 
+              : filterType === 'event'
+              ? 'Belum ada riwayat tarik dana terkait event'
+              : 'Belum ada riwayat tarik dana'}
+          </Alert>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(1, minmax(0, 1fr))", gap: 12 }}>
           <style>{`

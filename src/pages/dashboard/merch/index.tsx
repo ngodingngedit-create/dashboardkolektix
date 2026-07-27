@@ -898,7 +898,7 @@
 // export default Merch;
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select, Pagination as MantinePagination } from "@mantine/core";
+import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select, Pagination as MantinePagination, Stack, Divider, Text } from "@mantine/core";
 import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
@@ -911,6 +911,7 @@ import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import { Get } from "@/utils/REST";
+import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 
 const PER_PAGE = 10;
 
@@ -925,6 +926,14 @@ const Merch: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [lastPage, setLastPage] = useState<number>(1);
 
+  // withdraw modal
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+
+  // total pendapatan dari transaksi merchandise
+  const [totalPendapatan, setTotalPendapatan] = useState<number>(0);
+  const [totalTransaksi, setTotalTransaksi] = useState<number>(0);
+  const [totalWithdrawn, setTotalWithdrawn] = useState<number>(0);
+
   const user = useLoggedUser();
   const tabStatus: [number, string][] = [
     [2, "Sedang Dijual"],
@@ -937,10 +946,115 @@ const Merch: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isRender) return;
+    if (!isRender || !user?.has_creator?.id) return;
     getData(page);
+    fetchTotalPendapatan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRender, page]);
+  }, [isRender, page, user?.has_creator?.id]);
+
+  const fetchTotalPendapatan = async () => {
+    const creatorId = user?.has_creator?.id;
+    
+    if (!creatorId) {
+      console.warn("fetchTotalPendapatan: No creator ID available");
+      return;
+    }
+
+    try {
+      console.log("Fetching total pendapatan for creator:", creatorId);
+      const res: any = await Get("order-bycreator", {});
+      console.log("order-bycreator response:", res);
+      
+      let allOrders = res?.data || [];
+      
+      // Filter orders that have at least one detail item belonging to this creator
+      const filteredData = allOrders.filter((item: any) => {
+        // Check if order has detail array
+        if (!item.detail || !Array.isArray(item.detail)) return false;
+        
+        // Check if any detail item belongs to this creator
+        return item.detail.some((detail: any) => {
+          const detailCreatorId = detail.creator_id || detail.product?.creator_id;
+          return detailCreatorId === creatorId;
+        });
+      });
+      
+      console.log("Filtered by creator:", filteredData.length, "items");
+      
+      // Filter for PAID transactions only
+      // transaction_status_id === 2 means paid/completed
+      // Exclude payment_status_id === 5 (refund) and payment_method_id === 5
+      const successfulOrders = filteredData.filter(
+        (item: any) => {
+          const isPaid = item.transaction_status_id === 2;
+          const notRefunded = item.payment_status_id !== 5;
+          const validPaymentMethod = item.payment_method_id !== 5;
+          
+          console.log(`Order ${item.invoice_no}:`, { 
+            transaction_status_id: item.transaction_status_id,
+            payment_status_id: item.payment_status_id,
+            payment_method_id: item.payment_method_id,
+            isPaid, notRefunded, validPaymentMethod
+          });
+          
+          return isPaid && notRefunded && validPaymentMethod;
+        }
+      );
+      
+      console.log("Paid/Successful orders:", successfulOrders.length, "items");
+      
+      // Calculate total pendapatan
+      // Sum only items that belong to this creator
+      const total = successfulOrders.reduce((sum: number, order: any) => {
+        const orderTotal = (order.detail || [])
+          .filter((detail: any) => {
+            const detailCreatorId = detail.creator_id || detail.product?.creator_id;
+            return detailCreatorId === creatorId;
+          })
+          .reduce((detailSum: number, detail: any) => {
+            const price = Number(detail.price) || 0;
+            const qty = Number(detail.qty) || 1;
+            return detailSum + (price * qty);
+          }, 0);
+        return sum + orderTotal;
+      }, 0);
+      
+      console.log("Total pendapatan (paid only):", total);
+      
+      setTotalPendapatan(total);
+      setTotalTransaksi(successfulOrders.length);
+      
+      // Fetch total withdrawn amount
+      fetchTotalWithdrawn();
+    } catch (err) {
+      console.error("Error fetching total pendapatan:", err);
+    }
+  };
+
+  const fetchTotalWithdrawn = async () => {
+    try {
+      const creatorId = user?.has_creator?.id;
+      if (!creatorId) return;
+
+      // Fetch withdraw history
+      const res: any = await Get("withdraw", {});
+      const withdrawals = res?.data || [];
+      
+      // Filter withdrawals for this creator and sum approved amounts
+      const totalWithdrawn = withdrawals
+        .filter((w: any) => {
+          // Check if withdrawal belongs to this creator
+          const withdrawCreatorId = w.creator_id || w.user?.has_creator?.id;
+          return withdrawCreatorId === creatorId && w.transaction_status_id === 2; // status 2 = approved/success
+        })
+        .reduce((sum: number, w: any) => sum + (Number(w.amount) || 0), 0);
+      
+      setTotalWithdrawn(totalWithdrawn);
+      console.log("Total withdrawn:", totalWithdrawn);
+    } catch (err) {
+      console.error("Error fetching total withdrawn:", err);
+    }
+  };
 
   const getData = (pageNum: number = 1) => {
     setLoading2(true);
@@ -1180,6 +1294,17 @@ const Merch: React.FC = () => {
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
+      {/* Withdraw Modal */}
+      <TarikDanaModal
+        isOpen={isWithdrawOpen}
+        setIsOpen={setIsWithdrawOpen}
+        totalSaldo={totalPendapatan - totalWithdrawn}
+        onSubmit={() => {
+          setIsWithdrawOpen(false);
+          fetchTotalPendapatan();
+        }}
+      />
+
       {modalCreate !== undefined ? (
         <CreateMerchandise
           id={modalCreate}
@@ -1190,18 +1315,55 @@ const Merch: React.FC = () => {
         />
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-[20px]">
+          {/* Header dengan stats */}
+          <Flex justify="space-between" align="center" wrap="wrap" gap="md">
             <Title order={1} size="h2">
               Produk Saya
             </Title>
-            <div className="flex gap-[10px] items-center"></div>
-
-            <Flex gap={10} align="center">
-              <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />} radius="xl" color="#0B387C">
+            <Flex gap="xl" align="center">
+              <Stack gap={4}>
+                <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Pendapatan</Text>
+                <Flex align="center" gap="xs">
+                  <Text size="xl" fw={700}>
+                    <NumberFormatter prefix="Rp " value={totalPendapatan} thousandSeparator="." decimalSeparator="," />
+                  </Text>
+                  <ActionIcon
+                    size="lg"
+                    radius="xl"
+                    color="#0B387C"
+                    variant="filled"
+                    onClick={() => setIsWithdrawOpen(true)}
+                  >
+                    <Icon icon="solar:wallet-money-bold" className="text-[20px]" />
+                  </ActionIcon>
+                </Flex>
+                <Flex gap="md" mt={4}>
+                  <Stack gap={0}>
+                    <Text size="xs" c="dimmed">Sudah Ditarik</Text>
+                    <Text size="xs" fw={600} c="red">
+                      <NumberFormatter prefix="Rp " value={totalWithdrawn} thousandSeparator="." decimalSeparator="," />
+                    </Text>
+                  </Stack>
+                  <Divider orientation="vertical" size="xs" />
+                  <Stack gap={0}>
+                    <Text size="xs" c="dimmed">Tersedia</Text>
+                    <Text size="xs" fw={600} c="green">
+                      <NumberFormatter prefix="Rp " value={totalPendapatan - totalWithdrawn} thousandSeparator="." decimalSeparator="," />
+                    </Text>
+                  </Stack>
+                </Flex>
+              </Stack>
+              <Divider orientation="vertical" />
+              <ButtonM
+                onClick={() => openCreateModal("")}
+                leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />}
+                radius="xl"
+                color="#0B387C"
+              >
                 Buat Produk
               </ButtonM>
             </Flex>
-          </div>
+          </Flex>
 
           <Tabs
             variant="solid"
