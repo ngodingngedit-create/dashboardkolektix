@@ -338,24 +338,48 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     const seats = new Set<string>();
     const isSessionFiltered = selectedSession !== "all";
 
-    selectedEventData?.has_event_ticket?.forEach((t: any) => {
-      const sessionName = ticketNameToSessionName.get(t.name);
-
-      if (isSessionFiltered) {
-        if (sessionName && sessionName !== selectedSession) return;
-        if (!sessionName && !t.name?.includes(selectedSession)) return;
-      }
-
-      if (t.taken_seat_number) {
-        const parts = String(t.taken_seat_number).split(",");
-        for (let i = 0; i < parts.length; i++) {
-          const s = parts[i].trim();
-          if (s) seats.add(s);
+    // Ambil taken seats dari transaksi yang sudah di-filter berdasarkan sesi
+    // Ini lebih akurat karena data transaksi memiliki informasi session yang jelas
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t: any) => {
+        // Filter berdasarkan sesi jika ada filter
+        if (isSessionFiltered && t.event_session?.session_name !== selectedSession) {
+          return;
         }
-      }
+
+        // Parse seat numbers dari transaksi
+        let seatNumbers: string[] = [];
+        if (t.seatnumber_ticket) {
+          try {
+            if (typeof t.seatnumber_ticket === "string") {
+              const str = t.seatnumber_ticket.trim();
+              if (str.startsWith("[") || str.startsWith("{")) {
+                const parsed = JSON.parse(str);
+                seatNumbers = Array.isArray(parsed) ? parsed : [String(parsed)];
+              } else {
+                seatNumbers = [str];
+              }
+            } else if (Array.isArray(t.seatnumber_ticket)) {
+              seatNumbers = t.seatnumber_ticket;
+            }
+          } catch (e) {
+            if (typeof t.seatnumber_ticket === "string") {
+              seatNumbers = [t.seatnumber_ticket];
+            }
+          }
+        }
+
+        // Tambahkan semua seat numbers ke set
+        seatNumbers.forEach(seat => {
+          if (seat && seat.trim()) {
+            seats.add(seat.trim());
+          }
+        });
+      });
     });
+
     return seats;
-  }, [selectedEventData, selectedSession, ticketNameToSessionName]);
+  }, [transactions, selectedSession]);
 
   // Handle Zoom and Pan
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {

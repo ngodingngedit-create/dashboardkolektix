@@ -1,4 +1,4 @@
-import { Badge, Flex, Select, Stack, Text, Title, Card, Box, Input, Pagination, Button, Modal, Group } from "@mantine/core";
+import { Badge, Flex, Select, Stack, Text, Title, Card, Box, Input, Pagination, Button, Modal, Group, TextInput } from "@mantine/core";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSidebar } from "@/components/SidebarComponent";
 import { useListState } from "@mantine/hooks";
@@ -415,8 +415,9 @@ const CheckinReport = () => {
               </Card>
             </Flex>
 
-            <Flex gap="sm" align="center">
+            <Flex gap="sm" align="flex-end">
               <Select
+                label="Pilih Event"
                 value={selectedEvent ? String(selectedEvent) : null}
                 onChange={(val) => {
                   if (val) {
@@ -425,16 +426,19 @@ const CheckinReport = () => {
                   }
                 }}
                 data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
-                placeholder={loading.includes("getevent") ? "Memuat list event..." : "Pilih Event"}
+                placeholder={loading.includes("getevent") ? "Memuat list event..." : "Pilih event untuk melihat laporan..."}
                 disabled={loading.includes("getevent")}
                 searchable
-                style={{ width: 220 }}
+                w={220}
                 radius="md"
+                size="sm"
                 styles={{
+                  label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 },
                   input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
                 }}
               />
               <Select
+                label="Filter Jenis Tiket"
                 value={selectedTicket}
                 onChange={(val) => {
                   if (val) {
@@ -443,24 +447,31 @@ const CheckinReport = () => {
                   }
                 }}
                 data={availableTickets}
-                placeholder="Pilih Tiket"
+                placeholder="Pilih jenis tiket..."
                 disabled={availableTickets.length <= 1 || reportType === "invitation"}
-                style={{ width: 180 }}
+                w={180}
                 radius="md"
+                size="sm"
                 styles={{
+                  label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 },
                   input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
                 }}
               />
-              <Input
-                placeholder="Cari Nama, Email, atau No. Telepon..."
+              <TextInput
+                label="Cari"
+                placeholder="Cari nama, email, atau no. telepon..."
                 value={searchValue}
-                onChange={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearchValue(e.target.value);
                   setCurrentPage(1);
                 }}
                 leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-                style={{ width: 280 }}
+                w={280}
                 radius="md"
+                size="sm"
+                styles={{
+                  label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 },
+                }}
               />
             </Flex>
           </Flex>

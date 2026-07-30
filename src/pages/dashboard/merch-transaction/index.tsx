@@ -1703,8 +1703,9 @@ const MerchandiseTransaction: React.FC = () => {
                             Export CSV ({filtered.length})
                         </MantineButton>
                     </Group>
-                            <Group gap="sm">
+                            <Group gap="sm" align="flex-end">
                                 <MantineSelect
+                                    label="Status Pembayaran"
                                     placeholder="Status Bayar"
                                     data={[
                                         { value: 'all', label: 'Semua Status' },
@@ -1712,10 +1713,14 @@ const MerchandiseTransaction: React.FC = () => {
                                     ]}
                                     value={paymentStatusFilter}
                                     onChange={(val) => { setPaymentStatusFilter(val || 'all'); setPage(1); }}
-                                    style={{ width: 140 }}
+                                    w={140}
                                     size="sm"
+                                    styles={{
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                    }}
                                 />
                                 <MantineSelect
+                                    label="Filter Produk"
                                     placeholder="Filter Produk"
                                     data={[
                                         { value: 'all', label: 'Semua Produk' },
@@ -1723,12 +1728,16 @@ const MerchandiseTransaction: React.FC = () => {
                                     ]}
                                     value={selectedProduct}
                                     onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
-                                    style={{ minWidth: 200 }}
+                                    w={200}
                                     size="sm"
                                     searchable
                                     clearable
+                                    styles={{
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                    }}
                                 />
                                 <MantineTextInput
+                                    label="Cari"
                                     placeholder="Cari invoice..."
                                     leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                                     value={filterValue}
@@ -1736,8 +1745,11 @@ const MerchandiseTransaction: React.FC = () => {
                                         setFilterValue(e.target.value);
                                         setPage(1);
                                     }}
-                                    style={{ width: 300 }}
+                                    w={300}
                                     size="sm"
+                                    styles={{
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                    }}
                                 />
                             </Group>
                         </Flex>

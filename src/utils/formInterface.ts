@@ -36,6 +36,11 @@ export interface EventTicket {
   is_address?: number;
   is_size?: number;
   has_ordered_seatnumber?: OrderedSeat[];
+  // Session fields (added when is_session is enabled)
+  session_name?: string;
+  session_date?: string;
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface OrderedSeat {

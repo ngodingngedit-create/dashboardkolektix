@@ -12,19 +12,6 @@ import Link from "next/link";
 import moment from "moment";
 import * as XLSX from "xlsx";
 
-// Style helpers for consistency with report.tsx
-const headerStyle = (active = false, dir = "asc"): React.CSSProperties => ({
-  padding: '12px 14px',
-  textAlign: 'left',
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#777',
-  whiteSpace: 'nowrap',
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-  cursor: 'pointer',
-});
-
 interface Identity {
   id: number;
   full_name: string;
@@ -131,15 +118,15 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
         .join(", "),
       "NO. SEAT": trx.tickets
         .map(t => {
-           if (typeof t.seatnumber_ticket === 'string') {
-              try {
-                const parsed = JSON.parse(t.seatnumber_ticket);
-                return Array.isArray(parsed) ? parsed.join(", ") : parsed;
-              } catch {
-                return t.seatnumber_ticket;
-              }
-           }
-           return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
+          if (typeof t.seatnumber_ticket === 'string') {
+            try {
+              const parsed = JSON.parse(t.seatnumber_ticket);
+              return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+            } catch {
+              return t.seatnumber_ticket;
+            }
+          }
+          return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
         })
         .filter(Boolean)
         .join(", ") || "-",
@@ -182,23 +169,23 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       setTransactions([]);
       return;
     }
-    
+
     try {
       setLoadingTrx(true);
-      
-      const params: any = { 
+
+      const params: any = {
         creator_id: creatorId,
         event_id: eventId,
         page: 1,
         per_page: 999999 // Fetch all for local filtering/sorting standard
       };
-      
+
       if (searchStr) {
         params.search = searchStr;
       }
 
       const res: any = await Get(`list-transaction-by-event`, params);
-      
+
       const listData = Array.isArray(res?.data) ? res.data : (res?.data?.data ? res.data.data : []);
       const paginationData = res?.pagination || res?.data?.pagination || null;
 
@@ -249,10 +236,10 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const categoryGroups = useMemo(() => {
     const seated = new Set<string>();
     const festival = new Set<string>();
-    
+
     selectedEventData?.has_event_ticket?.forEach((t) => {
-      const hasSeats = (t.available_seat_number && t.available_seat_number.trim() !== "") || 
-                      (t.taken_seat_number && t.taken_seat_number.trim() !== "");
+      const hasSeats = (t.available_seat_number && t.available_seat_number.trim() !== "") ||
+        (t.taken_seat_number && t.taken_seat_number.trim() !== "");
       if (hasSeats) {
         seated.add(t.ticket_category);
       } else {
@@ -288,13 +275,13 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const ticketTypesInCategory = useMemo(() => {
     const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
     if (targetCategories.length === 0) return [];
-    
+
     const names = new Set<string>();
-    
+
     selectedEventData?.has_event_ticket?.forEach(t => {
       if (targetCategories.includes(t.ticket_category)) names.add(t.name);
     });
-    
+
     return Array.from(names);
   }, [selectedCategory, categoryGroups, selectedEventData]);
 
@@ -369,16 +356,16 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   // All seat numbers for the sidebar: SOURCED FROM EVENT TICKETS + TRANSACTIONS
   const allSeats = useMemo(() => {
     const seatsSet = new Set<string>();
-    
+
     // 1. Add seats from event specification
     const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
-    
+
     selectedEventData?.has_event_ticket?.forEach((t) => {
       if (!targetCategories.includes(t.ticket_category)) return;
 
       const available = t.available_seat_number?.split(",") || [];
       const taken = t.taken_seat_number?.split(",") || [];
-      
+
       [...available, ...taken].forEach((s) => {
         const cleaned = s.trim();
         if (cleaned) seatsSet.add(cleaned);
@@ -392,8 +379,8 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       if (!targetCategories.includes(tCategory)) return;
       seatsSet.add(seat);
     });
-    
-    return Array.from(seatsSet).sort((a, b) => 
+
+    return Array.from(seatsSet).sort((a, b) =>
       a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
     );
   }, [selectedEventData, selectedCategory, seatMap]);
@@ -423,21 +410,21 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const processedTransactions = useMemo(() => {
     // Only return empty if it's seated mode AND we are in grid view
     if (!isFestival && seatViewMode === "grid") return [];
-    
+
     let list = transactions.filter(trx => {
       // 1. Ticket Name Filter (Quick Filter)
       const matchTicket = !selectedTicketName || trx.tickets.some(t => (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName);
-      
+
       // 2. Broad Group Filter (Seated vs Festival)
       const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
       const matchCategory = trx.tickets.some(t => targetCategories.includes(t.has_event_ticket?.ticket_category || t.ticket_category));
-      
+
       // 3. Status Filter
       const matchStatus = selectedStatus === "all" || trx.payment_status === selectedStatus;
-      
+
       // 4. Search Filter
       const search = debouncedSearch.toLowerCase();
-      const matchSearch = !search || 
+      const matchSearch = !search ||
         trx.invoice_no.toLowerCase().includes(search) ||
         trx.has_user?.name?.toLowerCase().includes(search) ||
         trx.has_user?.email?.toLowerCase().includes(search);
@@ -468,7 +455,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   }, [transactions, selectedTicketName, selectedCategory, selectedStatus, debouncedSearch, isFestival, seatViewMode, sortBy, sortDir]);
 
   const totalFestivalPages = Math.ceil(processedTransactions.length / itemsPerPage);
-  
+
   const paginatedFestivalTransactions = useMemo(() => {
     const start = (seatPage - 1) * itemsPerPage;
     return processedTransactions.slice(start, start + itemsPerPage);
@@ -489,120 +476,113 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header Title - Standard like Report Event */}
-      <Stack gap={2} mb="xl">
+      {/* Header Title */}
+      <Stack gap={2} mb="lg">
         <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
           Full Report
         </Title>
         <Text size="sm" c="dimmed">
-          Laporan penjualan dan data pemesan per kategori tiket atau nomor kursi.
+          Laporan penjualan dan data pemesan per kursi secara real-time.
         </Text>
       </Stack>
 
-      {/* Standard Global Filter Bar */}
+      {/* Filter Bar - New Design */}
       <Card withBorder radius="md" p="md" shadow="sm">
-        <Flex justify="flex-end" align="center" wrap="wrap" gap="md">
-          <Select
-            value={selectedEventId}
-            data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
-            onChange={(val) => {
-              if (val) {
-                setSelectedEventId(val);
-                setSelectedSeat(null);
-                setSelectedCategory("all");
-                setSelectedStatus("all");
-                setSearchQuery("");
-              }
-            }}
-            placeholder="Pilih Event"
-            style={{ width: 220 }}
-            searchable
-            clearable
-            size="sm"
-          />
-
-          <Select
-            placeholder="Category Ticket"
-            value={selectedCategory}
-            onChange={(val) => {
-               setSelectedCategory(val || categories[0]);
-               setSelectedTicketName(null);
-            }}
-            data={categories.map(cat => ({ 
-              value: cat, 
-              label: cat === "seated" ? "Seatmap" : "Festival" 
-            }))}
-            style={{ width: 180 }}
-            size="sm"
-          />
-
-          <Select
-            placeholder="Semua Status"
-            value={selectedStatus}
-            onChange={(val) => setSelectedStatus(val || "all")}
-            data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
-            style={{ width: 160 }}
-            leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
-            size="sm"
-          />
-
+        <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+          {/* Left: Search Bar */}
           <TextInput
-            placeholder="Cari Nama / Invoice / Seat..."
+            placeholder="Cari Nama, Invoice, atau Nomor Kursi..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-            style={{ width: 250 }}
+            style={{ minWidth: 320, flex: 1, maxWidth: 400 }}
             size="sm"
           />
 
-          <Tooltip label="Refresh Data">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              onClick={() => users?.has_creator?.id && fetchTransactions(users.has_creator.id, selectedEventId, 1, debouncedSearch)}
-              size="lg"
-              radius="xl"
-            >
-              <FontAwesomeIcon icon={faArrowsRotate} />
-            </ActionIcon>
-          </Tooltip>
+          {/* Right: Controls */}
+          <Flex align="center" gap="sm">
+            <Text size="sm" fw={600} c="dimmed">Pilih Event untuk Melihat Data Seatmap:</Text>
+            <Select
+              value={selectedEventId}
+              data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
+              onChange={(val) => {
+                if (val) {
+                  setSelectedEventId(val);
+                  setSelectedSeat(null);
+                  setSelectedCategory("all");
+                  setSelectedStatus("all");
+                  setSearchQuery("");
+                }
+              }}
+              placeholder="Pilih Event"
+              style={{ width: 200 }}
+              searchable
+              size="sm"
+            />
+
+            <Select
+              placeholder="Kategori Tiket"
+              value={selectedCategory}
+              onChange={(val) => {
+                setSelectedCategory(val || categories[0]);
+                setSelectedTicketName(null);
+              }}
+              data={categories.map(cat => ({ 
+                value: cat, 
+                label: cat === "seated" ? "Seatmap" : "Festival" 
+              }))}
+              style={{ width: 150 }}
+              size="sm"
+            />
+
+            <Select
+              placeholder="Semua Status"
+              value={selectedStatus}
+              onChange={(val) => setSelectedStatus(val || "all")}
+              data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
+              style={{ width: 160 }}
+              size="sm"
+            />
+          </Flex>
         </Flex>
       </Card>
 
       {/* Content Area */}
-      <div className="flex flex-col md:flex-row gap-6 relative">
+      <div className="flex flex-col md:flex-row gap-4 relative">
         {loadingTrx && (
-           <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center rounded-2xl">
-              <Loader size="md" />
-           </div>
+          <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center rounded-lg">
+            <Loader size="md" />
+          </div>
         )}
-        
+
         {/* Left Column: Seat List (Visible in Grid mode) */}
-        {!isFestival && (
-          <div className="w-full md:w-1/4 flex flex-col gap-4">
-            <div className="bg-white rounded-2xl border border-light-grey overflow-hidden shadow-sm flex flex-col h-[70vh]">
-              <div className="bg-white border-b border-light-grey p-4 text-dark font-bold flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faChair} className="text-primary-base text-sm" />
-                    <span>Seat Number</span>
-                  </div>
-                  {selectedSeat && (
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" title="Seat Selected"></div>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 text-xs font-normal mt-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm bg-grey border border-grey"></div>
-                    <span className="text-grey">Terisi</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm bg-white border border-light-grey"></div>
-                    <span className="text-grey">Tersedia</span>
-                  </div>
-                </div>
+        {!isFestival && seatViewMode === "grid" && (
+          <div className="w-full md:w-1/4 flex flex-col animate-in fade-in slide-in-from-left duration-300">
+            <Card withBorder radius="md" p={0} shadow="sm" className="h-[75vh] flex flex-col border-light-grey">
+              {/* Header */}
+              <div className="p-4 border-b border-light-grey">
+                <Title order={3} size="h4" className="font-bold text-[#1a1c1e]">
+                  Pilih Kursi
+                </Title>
+                <Text size="xs" c="dimmed" mt={4}>
+                  Pilih kursi untuk melihat detail transaksi
+                </Text>
+
+                {/* Legend */}
+                <Flex gap="md" mt="md" align="center">
+                  <Flex align="center" gap={6}>
+                    <div className="w-6 h-6 rounded border border-light-grey bg-white"></div>
+                    <Text size="xs" c="dimmed">Tersedia</Text>
+                  </Flex>
+                  <Flex align="center" gap={6}>
+                    <div className="w-6 h-6 rounded border border-light-grey bg-grey"></div>
+                    <Text size="xs" c="dimmed">Terisi</Text>
+                  </Flex>
+                </Flex>
               </div>
-              <div className="flex-grow overflow-y-auto p-2 scrollbar-hide">
+
+              {/* Seat Grid */}
+              <div className="flex-grow overflow-y-auto p-4">
                 {filteredSeats.length > 0 ? (
                   <div className="grid grid-cols-5 gap-2">
                     {filteredSeats.map((seat) => {
@@ -616,29 +596,28 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                             setSeatViewMode("grid");
                           }}
                           className={`
-                            transition-all duration-200 border p-3 rounded-lg text-sm font-medium
-                            ${
-                              isSelected
-                                ? "bg-primary-base text-white border-primary-base shadow-md transform scale-105 z-10"
-                                : isBought
-                                ? "bg-grey text-white border-grey hover:bg-dark-grey hover:border-dark-grey"
-                                : "bg-white text-primary-base border-light-grey hover:border-primary-base"
+                            transition-all duration-150 border p-2.5 rounded-md text-xs font-bold
+                            ${isSelected
+                              ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300"
+                              : isBought
+                                ? "bg-grey text-white border-light-grey"
+                                : "bg-white text-blue-600 border-light-grey hover:border-blue-400 hover:bg-blue-50"
                             }
                           `}
                         >
-                          <span className="truncate flex-1">{seat}</span>
+                          {seat}
                         </button>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-grey gap-2 text-center p-4">
-                    <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-20" />
-                    <p className="text-sm font-medium">Tidak ada seat ditemukan untuk filter ini</p>
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 text-center">
+                    <FontAwesomeIcon icon={faChair} size="3x" className="opacity-30" />
+                    <Text size="sm" fw={500} c="dimmed">Tidak ada kursi ditemukan</Text>
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
@@ -674,8 +653,8 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                           }}
                           className={`
                             transition-all duration-200 border p-3 text-left w-full flex justify-between items-center rounded-xl font-medium text-sm
-                            ${isSelected 
-                              ? "bg-primary-base text-white border-primary-base shadow-md" 
+                            ${isSelected
+                              ? "bg-primary-base text-white border-primary-base shadow-md"
                               : "bg-white text-dark border-light-grey hover:border-grey shadow-sm"}
                           `}
                         >
@@ -700,199 +679,188 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
             </div>
           </div>
         )}
-        
-        {/* Right Column: Buyer Details / Table (Fills remaining space) */}
-        <div className={`w-full md:w-3/4`}>
-          <div className="bg-white rounded-2xl border border-light-grey shadow-sm min-h-[70vh] flex flex-col overflow-hidden">
-            <div className="bg-white border-b border-light-grey p-4 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                {selectedSeat && (
-                  <button 
-                    onClick={() => setSelectedSeat(null)}
-                    className="text-dark hover:text-primary-dark font-bold text-sm flex items-center gap-2 border border-light-grey px-3 py-1.5 rounded-lg transition-colors mr-2"
-                  >
-                    <FontAwesomeIcon icon={faChevronRight} className="rotate-180" size="xs" />
-                    Kembali
-                  </button>
-                )}
-                <h2 className="text-xl font-bold text-dark flex items-center gap-2">
-                  <FontAwesomeIcon icon={faIdBadge} className="text-primary-base" />
-                  {(isFestival || seatViewMode === "table") && !selectedSeat ? `Daftar Transaksi: ${selectedTicketName || 'Semua'}` : "Laporan Pemesan"}
-                  {selectedSeat && <span className="text-primary-base ml-2">[{selectedSeat}]</span>}
-                </h2>
-              </div>
-              {!isFestival && (
-                <Select
-                  size="sm"
-                  value={seatViewMode}
-                  onChange={(val) => {
-                    setSeatViewMode(val as "grid" | "table");
-                    if (val === "table") setSelectedSeat(null);
-                  }}
-                  data={[
-                    { value: "grid", label: "Seat" },
-                    { value: "table", label: "Tabel" }
-                  ]}
-                  style={{ width: 130 }}
-                  rightSectionProps={{ style: { color: '#F5FAFF' } }}
-                  styles={{
-                    input: {
-                      backgroundColor: '#194E9E',
-                      color: '#F5FAFF',
-                      borderColor: '#194E9E',
-                      fontWeight: 800,
-                      borderRadius: '100px',
-                      '&::placeholder': {
-                        color: '#F5FAFF',
-                        opacity: 0.7,
-                      },
-                    },
-                  }}
-                />
-              )}
-            </div>
 
-            {/* Quick Filter inside Card */}
-            {(isFestival || seatViewMode === "table") && !selectedSeat && (
-              <div className="px-4 py-3 bg-gray-50 border-b border-light-grey flex justify-between items-center gap-4">
-                <Text size="sm" fw={600} c="dimmed">Filter Cepat:</Text>
-                <Flex gap="sm" align="center">
-                  <Select
-                    placeholder="Semua Tiket"
-                    value={selectedTicketName}
-                    onChange={(val) => setSelectedTicketName(val)}
-                    data={ticketTypesInCategory.map(t => ({ value: t, label: t }))}
-                    size="xs"
-                    style={{ width: 180 }}
-                    clearable
-                  />
-                  <Select
-                    placeholder="Semua Status"
-                    value={selectedStatus}
-                    onChange={(val) => setSelectedStatus(val || "all")}
-                    data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
-                    size="xs"
-                    style={{ width: 140 }}
-                  />
+        {/* Right Column: Buyer Details / Table (Fills remaining space) */}
+        <div className={`w-full transition-all duration-300 ease-in-out ${
+          !isFestival && seatViewMode === "grid" ? "md:w-3/4" : "md:w-full"
+        }`}>
+          <Card withBorder radius="md" p={0} shadow="sm" className="min-h-[75vh] flex flex-col border-light-grey">
+            {/* Header */}
+            <div className="p-4 border-b border-light-grey flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                {selectedSeat && (
+                  <ActionIcon
+                    variant="light"
+                    color="blue"
+                    size="lg"
+                    onClick={() => setSelectedSeat(null)}
+                    title="Kembali ke tabel"
+                  >
+                    <FontAwesomeIcon icon={faChevronRight} className="rotate-180" />
+                  </ActionIcon>
+                )}
+                <div>
+                  <Title order={3} size="h4" className="font-bold text-[#1a1c1e]">
+                    Rincian Laporan
+                  </Title>
+                  <Text size="xs" c="dimmed" mt={4}>
+                    {selectedSeat
+                      ? `Detail transaksi untuk kursi ${selectedSeat}`
+                      : "Pilih kursi untuk melihat detail transaksi"}
+                  </Text>
+                </div>
+              </div>
+              <Flex align="center" gap="sm">
+                {!isFestival && (
+                  <>
+                    <Text size="sm" fw={600} c="dimmed">Tampilan</Text>
+                    <Select
+                      size="sm"
+                      value={seatViewMode}
+                      onChange={(val) => {
+                        setSeatViewMode(val as "grid" | "table");
+                        if (val === "table") setSelectedSeat(null);
+                      }}
+                      data={[
+                        { value: "grid", label: "Seat" },
+                        { value: "table", label: "Tabel" }
+                      ]}
+                      style={{ width: 130 }}
+                    />
+                  </>
+                )}
+                {(isFestival || seatViewMode === "table") && (
                   <Button
                     variant="filled"
                     color="green"
+                    size="sm"
                     leftSection={<FontAwesomeIcon icon={faFileExcel} />}
                     onClick={handleExportExcel}
-                    size="xs"
-                    radius="md"
                   >
-                    Export Excel
+                    Export
                   </Button>
-                </Flex>
-              </div>
-            )}
+                )}
+              </Flex>
+            </div>
 
-            <div className="p-6 flex-grow overflow-y-auto bg-[#fafafa]/50">
+            {/* Content Area */}
+            <div className="p-6 flex-grow overflow-y-auto bg-gray-50/30">
               {(isFestival || seatViewMode === "table") && !selectedSeat ? (
                 /* FESTIVAL MODE: Table of Transactions */
                 <div className="space-y-4">
-                  <div className="bg-white rounded-xl border border-light-grey overflow-hidden shadow-sm">
+                  <div className="bg-white rounded-lg border border-light-grey overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="min-w-full w-max text-left text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: "#f5f7fa", borderBottom: "2px solid #e8e8e8" }}>
-                            <th style={headerStyle()}>NO</th>
-                            <th onClick={() => handleSort('invoice')} style={headerStyle(sortBy === 'invoice', sortDir)}>
+                          <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">NO</th>
+                            <th
+                              onClick={() => handleSort('invoice')}
+                              className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
+                            >
                               INVOICE {sortBy === 'invoice' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th onClick={() => handleSort('nama')} style={headerStyle(sortBy === 'nama', sortDir)}>
+                            <th
+                              onClick={() => handleSort('nama')}
+                              className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
+                            >
                               NAMA PEMESAN {sortBy === 'nama' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th style={headerStyle()}>JENIS TIKET</th>
-                            <th style={headerStyle()}>NO. SEAT</th>
-                            <th onClick={() => handleSort('email')} style={headerStyle(sortBy === 'email', sortDir)}>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">JENIS TIKET</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">NO. SEAT</th>
+                            <th
+                              onClick={() => handleSort('email')}
+                              className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
+                            >
                               EMAIL {sortBy === 'email' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th onClick={() => handleSort('status')} style={headerStyle(sortBy === 'status', sortDir)}>
+                            <th
+                              onClick={() => handleSort('status')}
+                              className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
+                            >
                               STATUS {sortBy === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th style={{ ...headerStyle(), textAlign: 'center', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>AKSI</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide text-center">AKSI</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
                           {paginatedFestivalTransactions.map((trx, index) => {
-                               // Find the specific seat identifier for this transaction to use as the selection key
-                               const seatId = Object.keys(seatMap).find(k => seatMap[k].transaction.id === trx.id);
-                               
-                              return (
-                                <tr 
-                                  key={trx.id} 
-                                  className="hover:bg-primary-light/10 transition-colors"
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => seatId && setSelectedSeat(seatId)}
-                                >
-                                  <td className="p-4 font-medium text-dark">{(seatPage - 1) * itemsPerPage + index + 1}</td>
-                                  <td className="p-4 font-mono font-semibold text-primary-base whitespace-nowrap">{trx.invoice_no}</td>
-                                  <td className="p-4 font-medium text-dark whitespace-nowrap">{trx.has_user?.name || "-"}</td>
-                                  <td className="p-4 font-medium text-primary-base whitespace-nowrap">
-                                    <Badge variant="light" size="sm">
-                                      {trx.tickets
-                                        .filter(t => !selectedTicketName || (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName)
-                                        .map(t => t.has_event_ticket?.name || t.ticket_category)
-                                        .join(", ")}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 font-bold text-primary-base whitespace-nowrap">
+                            // Find the specific seat identifier for this transaction to use as the selection key
+                            const seatId = Object.keys(seatMap).find(k => seatMap[k].transaction.id === trx.id);
+
+                            return (
+                              <tr
+                                key={trx.id}
+                                className="hover:bg-blue-50/50 transition-colors cursor-pointer"
+                                onClick={() => seatId && setSelectedSeat(seatId)}
+                              >
+                                <td className="py-3 px-4 font-medium text-gray-700">{(seatPage - 1) * itemsPerPage + index + 1}</td>
+                                <td className="py-3 px-4 font-mono font-semibold text-blue-600 whitespace-nowrap">{trx.invoice_no}</td>
+                                <td className="py-3 px-4 font-medium text-gray-900 whitespace-nowrap">{trx.has_user?.name || "-"}</td>
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <Badge variant="light" color="blue" size="sm">
                                     {trx.tickets
-                                      .map(t => {
-                                        if (typeof t.seatnumber_ticket === 'string') {
-                                          try {
-                                            const parsed = JSON.parse(t.seatnumber_ticket);
-                                            return Array.isArray(parsed) ? parsed.join(", ") : parsed;
-                                          } catch {
-                                            return t.seatnumber_ticket;
-                                          }
+                                      .filter(t => !selectedTicketName || (t.has_event_ticket?.name || t.ticket_category) === selectedTicketName)
+                                      .map(t => t.has_event_ticket?.name || t.ticket_category)
+                                      .join(", ")}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4 font-semibold text-blue-600 whitespace-nowrap">
+                                  {trx.tickets
+                                    .map(t => {
+                                      if (typeof t.seatnumber_ticket === 'string') {
+                                        try {
+                                          const parsed = JSON.parse(t.seatnumber_ticket);
+                                          return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+                                        } catch {
+                                          return t.seatnumber_ticket;
                                         }
-                                        return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
-                                      })
-                                      .filter(Boolean)
-                                      .join(", ") || "-"}
-                                  </td>
-                                  <td className="p-4 text-grey whitespace-nowrap">{trx.has_user?.email || "-"}</td>
-                                  <td className="p-4 whitespace-nowrap">
-                                    <Badge
-                                      size="sm"
-                                      variant="filled"
-                                      color={
-                                        trx.payment_status?.toLowerCase() === 'verified' || trx.payment_status?.toLowerCase() === 'success' ? 'green' :
-                                        trx.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
                                       }
+                                      return Array.isArray(t.seatnumber_ticket) ? t.seatnumber_ticket.join(", ") : t.seatnumber_ticket;
+                                    })
+                                    .filter(Boolean)
+                                    .join(", ") || "-"}
+                                </td>
+                                <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{trx.has_user?.email || "-"}</td>
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <Badge
+                                    size="sm"
+                                    variant="filled"
+                                    color={
+                                      trx.payment_status?.toLowerCase() === 'verified' || trx.payment_status?.toLowerCase() === 'success' ? 'green' :
+                                        trx.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
+                                    }
+                                  >
+                                    {trx.payment_status}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <Tooltip label="Lihat Detail" withArrow position="top">
+                                    <ActionIcon
+                                      variant="light"
+                                      color="blue"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        seatId && setSelectedSeat(seatId);
+                                      }}
                                     >
-                                      <span className="whitespace-nowrap">{trx.payment_status}</span>
-                                    </Badge>
-                                  </td>
-                                  <td className="p-4 text-center sticky right-0 bg-white z-10 shadow-[-2px_0_4px_rgba(0,0,0,0.06)]">
-                                    <Tooltip label="View Detail" withArrow position="top">
-                                      <ActionIcon 
-                                        variant="light" 
-                                        color="blue"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          seatId && setSelectedSeat(seatId);
-                                        }}
-                                      >
-                                        <FontAwesomeIcon icon={faEye} size="sm" />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  </td>
-                                </tr>
-                              );
+                                      <FontAwesomeIcon icon={faEye} size="xs" />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                </td>
+                              </tr>
+                            );
                           })}
                           {paginatedFestivalTransactions.length === 0 && (
                             <tr>
-                              <td colSpan={8} className="p-16">
-                                <Flex direction="column" align="center" justify="center" gap="xs">
-                                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-1">
-                                    <FontAwesomeIcon icon={faTicket} size="2x" className="text-gray-200" />
+                              <td colSpan={8} className="py-16">
+                                <Flex direction="column" align="center" justify="center" gap="md">
+                                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                                    <FontAwesomeIcon icon={faTicket} size="2x" className="text-gray-300" />
                                   </div>
-                                  <Text fw={600} c="gray.5" size="sm">Tidak ada transaksi ditemukan</Text>
-                                  <Text c="gray.4" size="xs">Coba gunakan kata kunci lain atau sesuaikan filter Anda</Text>
+                                  <Text fw={600} c="gray.6" size="sm">Belum ada kursi terpilih</Text>
+                                  <Text c="gray.5" size="xs">Silakan pilih nomor kursi pada panel kiri untuk memuat rincian data pemesan.</Text>
                                 </Flex>
                               </td>
                             </tr>
@@ -902,148 +870,155 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                     </div>
                   </div>
                   {/* Pagination for the table */}
-                  <div className="flex justify-center pt-4">
-                    <MantinePagination 
-                      total={Math.max(1, totalFestivalPages)} 
-                      value={seatPage}  
-                      onChange={setSeatPage} 
-                      color="blue" 
-                      size="sm" 
-                      siblings={1} 
-                    />
-                  </div>
+                  {paginatedFestivalTransactions.length > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <MantinePagination
+                        total={Math.max(1, totalFestivalPages)}
+                        value={seatPage}
+                        onChange={setSeatPage}
+                        color="blue"
+                        size="sm"
+                        siblings={1}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : selectedSeatInfo ? (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  {/* Summary Card */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-5 rounded-xl border border-light-grey shadow-sm space-y-4">
-                      <h3 className="text-sm font-bold text-grey uppercase tracking-wider flex items-center gap-2">
-                        <FontAwesomeIcon icon={faUser} className="text-primary-base" />
-                        Informasi Pemesan
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary-base">
-                            <FontAwesomeIcon icon={faUser} size="xs" />
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Informasi Pemesan Card */}
+                    <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
+                      <Stack gap="md">
+                        <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                          Informasi Pemesan
+                        </Text>
+                        <Divider color="light-grey" />
+                        <Stack gap="sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                              <FontAwesomeIcon icon={faUser} className="text-blue-600" size="sm" />
+                            </div>
+                            <div className="flex-1">
+                              <Text size="xs" c="dimmed">Nama Pemesan</Text>
+                              <Text size="sm" fw={600} c="dark">{selectedSeatInfo.transaction.has_user?.name || "-"}</Text>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-grey">Nama Pemesan</p>
-                            <p className="font-semibold text-dark">{selectedSeatInfo.transaction.has_user?.name || "-"}</p>
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                              <FontAwesomeIcon icon={faEnvelope} className="text-blue-600" size="sm" />
+                            </div>
+                            <div className="flex-1">
+                              <Text size="xs" c="dimmed">Email Pemesan</Text>
+                              <Text size="sm" fw={600} c="dark">{selectedSeatInfo.transaction.has_user?.email || "-"}</Text>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary-base">
-                            <FontAwesomeIcon icon={faEnvelope} size="xs" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-grey">Email Pemesan</p>
-                            <p className="font-semibold text-dark">{selectedSeatInfo.transaction.has_user?.email || "-"}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        </Stack>
+                      </Stack>
+                    </Card>
 
-                    <div className="bg-white p-5 rounded-xl border border-light-grey shadow-sm space-y-4">
-                      <h3 className="text-sm font-bold text-grey uppercase tracking-wider flex items-center gap-2">
-                        <FontAwesomeIcon icon={faFileInvoice} className="text-primary-base" />
-                        Detail Transaksi
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary-base">
-                            <FontAwesomeIcon icon={faChevronRight} size="xs" />
+                    {/* Detail Transaksi Card */}
+                    <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
+                      <Stack gap="md">
+                        <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                          Detail Transaksi
+                        </Text>
+                        <Divider color="light-grey" />
+                        <Stack gap="sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                              <FontAwesomeIcon icon={faFileInvoice} className="text-blue-600" size="sm" />
+                            </div>
+                            <div className="flex-1">
+                              <Text size="xs" c="dimmed">Invoice No</Text>
+                              <Link href={`/success/${selectedSeatInfo.transaction.invoice_no}`} className="text-blue-600 hover:underline font-semibold font-mono text-sm">
+                                {selectedSeatInfo.transaction.invoice_no}
+                              </Link>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-grey">Invoice No</p>
-                            <Link href={`/success/${selectedSeatInfo.transaction.invoice_no}`} className="text-primary-base hover:underline font-semibold font-mono">
-                              {selectedSeatInfo.transaction.invoice_no}
-                            </Link>
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                              <FontAwesomeIcon icon={faTicket} className="text-blue-600" size="sm" />
+                            </div>
+                            <div className="flex-1">
+                              <Text size="xs" c="dimmed">Status Pembayaran</Text>
+                              <Badge
+                                size="sm"
+                                variant="filled"
+                                color={
+                                  selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'verified' ||
+                                    selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'success' ? 'green' :
+                                    selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
+                                }
+                                mt={4}
+                              >
+                                {selectedSeatInfo.transaction.payment_status}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary-base">
-                            <FontAwesomeIcon icon={faChevronRight} size="xs" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-grey">Status Pembayaran</p>
-                            <span
-                              className={`
-                                inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white
-                                ${(() => {
-                                  const status = selectedSeatInfo.transaction.payment_status?.toLowerCase();
-                                  if (status === "verified" || status === "success") return "bg-green-500";
-                                  if (status === "expired") return "bg-red-500";
-                                  if (status === "pending") return "bg-yellow-500";
-                                  return "bg-gray-500";
-                                })()}
-                              `}
-                            >
-                              {selectedSeatInfo.transaction.payment_status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        </Stack>
+                      </Stack>
+                    </Card>
                   </div>
 
                   {/* Identities Table */}
-                  <div className="bg-white rounded-xl border border-light-grey overflow-hidden shadow-sm">
-                    <div className="bg-primary-light p-4 border-b border-light-grey">
-                      <h3 className="text-sm font-bold text-primary-base flex items-center gap-2">
-                        <FontAwesomeIcon icon={faUser} />
+                  <Card withBorder radius="md" p={0} shadow="sm" className="border-light-grey">
+                    <div className="p-4 border-b border-light-grey bg-blue-50/50">
+                      <Text size="sm" fw={700} c="blue.7">
                         Data Pemilik Tiket
-                      </h3>
+                      </Text>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead>
-                          <tr className="bg-white border-b border-light-grey text-grey">
-                            <th className="p-4 font-bold">Nama Lengkap</th>
-                            <th className="p-4 font-bold">Email</th>
-                            <th className="p-4 font-bold">No. Telp</th>
-                            <th className="p-4 font-bold">Tipe</th>
+                          <tr className="border-b border-light-grey bg-gray-50">
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Nama Lengkap</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Email</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">No. Telp</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Tipe</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
                           {selectedSeatInfo.transaction.identities
                             .filter((id) => id.is_pemesan === 1)
                             .map((id, idx) => (
-                            <tr key={idx} className="hover:bg-primary-light/30 transition-colors">
-                              <td className="p-4 font-medium text-dark">{id.full_name}</td>
-                              <td className="p-4 text-dark">{id.email}</td>
-                              <td className="p-4 text-dark">{id.no_telp || "-"}</td>
-                              <td className="p-4">
-                                {id.is_pemesan ? (
-                                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                                    Pemesan
-                                  </span>
-                                ) : (
-                                  <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                                    Peserta
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                              <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                                <td className="py-3 px-4 font-medium text-gray-900">{id.full_name}</td>
+                                <td className="py-3 px-4 text-gray-700">{id.email}</td>
+                                <td className="py-3 px-4 text-gray-700">{id.no_telp || "-"}</td>
+                                <td className="py-3 px-4">
+                                  {id.is_pemesan ? (
+                                    <Badge variant="light" color="blue" size="sm">
+                                      Pemesan
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="light" color="gray" size="sm">
+                                      Peserta
+                                    </Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
-                  </div>
+                  </Card>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-grey gap-4 text-center">
-                  <div className="w-24 h-24 rounded-full bg-primary-light flex items-center justify-center text-primary-base opacity-50">
-                    <FontAwesomeIcon icon={faSearch} size="3x" />
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4 text-center py-16">
+                  <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
+                    <FontAwesomeIcon icon={faChair} size="3x" className="text-blue-200" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-dark">Pilih {isFestival ? "Transaksi" : "Seat Number"}</h3>
-                    <p className="text-sm max-w-xs mx-auto">Klik salah satu {isFestival ? "transaksi" : "nomor kursi"} di sebelah kiri untuk melihat laporan data pembeli yang lengkap.</p>
+                    <Text size="lg" fw={700} c="gray.7">Pilih Kursi</Text>
+                    <Text size="sm" c="dimmed" mt="xs" className="max-w-xs mx-auto">
+                      Klik salah satu nomor kursi di sebelah kiri untuk melihat laporan data pembeli yang lengkap.
+                    </Text>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -1081,7 +1056,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       });
       let evData = res.data?.data;
       if (!Array.isArray(evData)) {
-          evData = Array.isArray(res.data) ? res.data : [];
+        evData = Array.isArray(res.data) ? res.data : [];
       }
       initialEvents = evData;
     } catch (e) {

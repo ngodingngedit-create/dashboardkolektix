@@ -111,6 +111,7 @@ export default function ModalCreateTicket({
   const [onSelectReservedSeat, setOnSelectReservedSeat] = useState<number>();
   const [hoveredTicket, setHoveredTicket] = useState<number>();
   const [ticketSearch, setTicketSearch] = useState("");
+  const [sessionMode, setSessionMode] = useState<'select' | 'new'>('new');
   const { seatmapData, eventData } = useContext(Context);
   const router = useRouter();
   const { slug } = router.query;
@@ -155,6 +156,16 @@ export default function ModalCreateTicket({
   useEffect(() => {
     if (!!slug) setAddSeatMap(true);
   }, [slug]);
+
+  // Auto-set sessionMode to 'select' when there are existing sessions
+  useEffect(() => {
+    const hasExistingSessions = ticket.some(t => t.session_name);
+    if (hasExistingSessions && eventData?.is_session === 1) {
+      setSessionMode('select');
+    } else {
+      setSessionMode('new');
+    }
+  }, [ticket, eventData?.is_session]);
 
   const submitTicket = async () => {
     console.log("submit ticket", form);
@@ -694,6 +705,124 @@ export default function ModalCreateTicket({
                       )}
                     </div>
                   </div>
+
+                  {/* Session Fields - Only show when is_session is enabled */}
+                  {eventData?.is_session === 1 && (
+                    <div className="grid grid-cols-1 gap-2 my-2">
+                      <div className="p-3 border border-blue-200 bg-blue-50/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Icon icon="mdi:calendar-clock" className="text-blue-600" width={20} />
+                          <span className="font-semibold text-sm text-blue-900">Informasi Sesi</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3">
+                          {/* Session Selector */}
+                          {(() => {
+                            // Get unique sessions from existing tickets
+                            const existingSessions = ticket
+                              .filter(t => t.session_name) // Only tickets with sessions
+                              .reduce((acc, t) => {
+                                const key = `${t.session_name}|${t.session_date}|${t.start_time}|${t.end_time}`;
+                                if (!acc.some(s => `${s.session_name}|${s.session_date}|${s.start_time}|${s.end_time}` === key)) {
+                                  acc.push({
+                                    session_name: t.session_name,
+                                    session_date: t.session_date,
+                                    start_time: t.start_time,
+                                    end_time: t.end_time
+                                  });
+                                }
+                                return acc;
+                              }, [] as Array<{ session_name?: string, session_date?: string, start_time?: string, end_time?: string }>);
+
+                            return (
+                              <>
+                                {existingSessions.length > 0 && (
+                                  <div className="flex gap-2 mb-2">
+                                    <Button
+                                      size="xs"
+                                      variant={sessionMode === 'select' ? 'filled' : 'light'}
+                                      onClick={() => setSessionMode('select')}
+                                    >
+                                      Pilih Sesi Sebelumnya
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      variant={sessionMode === 'new' ? 'filled' : 'light'}
+                                      onClick={() => setSessionMode('new')}
+                                    >
+                                      Buat Sesi Baru
+                                    </Button>
+                                  </div>
+                                )}
+
+                                {sessionMode === 'select' && existingSessions.length > 0 ? (
+                                  <select
+                                    className="w-full border-2 border-blue-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400"
+                                    value={form.session_name || ''}
+                                    onChange={(e) => {
+                                      const selected = existingSessions.find(s => s.session_name === e.target.value);
+                                      if (selected) {
+                                        setForm({
+                                          ...form,
+                                          session_name: selected.session_name,
+                                          session_date: selected.session_date,
+                                          start_time: selected.start_time,
+                                          end_time: selected.end_time
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <option value="">Pilih Sesi...</option>
+                                    {existingSessions.map((ses, idx) => (
+                                      <option key={idx} value={ses.session_name}>
+                                        {ses.session_name} - {ses.session_date} ({ses.start_time} - {ses.end_time})
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <>
+                                    <InputField
+                                      type="text"
+                                      label="Nama Sesi"
+                                      placeholder="Contoh: Sesi 1, Sesi Pagi, dll"
+                                      fullWidth
+                                      value={form.session_name || ""}
+                                      onChange={(e: any) => setForm({ ...form, session_name: e.target.value })}
+                                    />
+                                    <InputField
+                                      type="date"
+                                      label="Tanggal Sesi"
+                                      fullWidth
+                                      minDateVal={startDate ? startDate : undefined}
+                                      maxDateVal={endDate ? endDate : undefined}
+                                      value={form.session_date && form.session_date}
+                                      onChange={(e: any) => e && setForm({ ...form, session_date: e.toString() })}
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <InputField
+                                        type="time"
+                                        label="Waktu Mulai"
+                                        fullWidth
+                                        value={form.start_time && form.start_time}
+                                        onChange={(e: any) => e && setForm({ ...form, start_time: e.toString() })}
+                                      />
+                                      <InputField
+                                        type="time"
+                                        label="Waktu Selesai"
+                                        fullWidth
+                                        value={form.end_time && form.end_time}
+                                        onChange={(e: any) => e && setForm({ ...form, end_time: e.toString() })}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {isAdmin && (
                     <>
                       <div className="grid grid-cols-1 gap-2 my-2">
@@ -789,8 +918,8 @@ export default function ModalCreateTicket({
                   onSelectSeat !== undefined
                     ? ticket[onSelectSeat].available_seat
                     : onSelectReservedSeat !== undefined
-                    ? ticket[onSelectReservedSeat].reserved_seat
-                    : ticket.map((e) => e.available_seat ?? []).reduce<string[]>((c, n) => [...c, ...n], [])
+                      ? ticket[onSelectReservedSeat].reserved_seat
+                      : ticket.map((e) => e.available_seat ?? []).reduce<string[]>((c, n) => [...c, ...n], [])
                 }
                 onSelect={onSelectSeat !== undefined ? handleSelectSeat : onSelectReservedSeat !== undefined ? handleSelectReservedSeat : handleSelectSeat}
                 onSelectAll={onSelectSeat !== undefined ? handleSelectSeat : onSelectReservedSeat !== undefined ? handleSelectReservedSeat : handleSelectSeat}
@@ -799,8 +928,8 @@ export default function ModalCreateTicket({
                   onSelectSeat !== undefined
                     ? () => setOnSelectSeat(undefined)
                     : onSelectReservedSeat !== undefined
-                    ? () => setOnSelectReservedSeat(undefined)
-                    : undefined
+                      ? () => setOnSelectReservedSeat(undefined)
+                      : undefined
                 }
                 onSeatClick={handleSeatClick}
                 soldSeat={soldSeats}

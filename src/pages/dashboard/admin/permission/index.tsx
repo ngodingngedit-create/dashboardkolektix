@@ -4,6 +4,8 @@ import { Icon } from "@iconify/react";
 import { useListState, useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
+import { useRouter } from "next/router";
+import Cookies from "js-cookie";
 import moment from "moment";
 import fetch from "@/utils/fetch";
 
@@ -80,6 +82,7 @@ interface PermissionProps {
 }
 
 export default function KelolaPermission() {
+  const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<PermissionProps[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -116,6 +119,41 @@ export default function KelolaPermission() {
       module_id: (value) => (!value ? "Module harus dipilih" : null),
     },
   });
+
+  // Authentication check dengan bearer token
+  useEffect(() => {
+    const token = Cookies.get("token");
+    const userDataStr = Cookies.get("user_data");
+
+    // Cek apakah bearer token ada
+    if (!token) {
+      notifications.show({
+        title: "Unauthorized",
+        message: "Bearer token tidak ditemukan. Silakan login kembali.",
+        color: "red",
+      });
+      router.push("/login");
+      return;
+    }
+
+    // Cek apakah user adalah admin
+    let userData = null;
+    try {
+      userData = userDataStr ? JSON.parse(userDataStr) : null;
+    } catch (e) {
+      console.error("Error parsing user_data:", e);
+    }
+
+    if (!userData || userData.role !== "Admin") {
+      notifications.show({
+        title: "Access Denied",
+        message: "Anda tidak memiliki akses ke halaman ini. Hanya Admin yang diperbolehkan.",
+        color: "red",
+      });
+      router.push("/dashboard");
+      return;
+    }
+  }, [router]);
 
   useEffect(() => {
     getData();

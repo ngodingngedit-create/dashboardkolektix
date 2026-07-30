@@ -2036,7 +2036,7 @@ const Merch = () => {
   }, [filteredDataList, sortBy, sortDir]);
 
   const salesStatistics = useMemo(() => {
-    const validTransactions = allDataList.filter((t: any) => 
+    const validTransactions = allDataList.filter((t: any) =>
       t.transaction_status_id === 2
     );
 
@@ -2068,32 +2068,32 @@ const Merch = () => {
 
       if (selectedTab === "transaksi") {
         let exportData = filteredDataList;
-        
+
         if (exportStatus !== undefined) {
-           let result = [...allDataList];
-           if (transactionSegment !== "all") {
-             result = result.filter(e => e.type_transaction === transactionSegment);
-           }
-           if (selectedTicket !== "all") {
-             result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
-           }
-           if (selectedSession !== "all") {
-             result = result.filter(e => e.tickets?.some((t: any) => t.event_session?.session_name === selectedSession));
-           }
-           if (exportStatus !== "all") {
-             result = result.filter(e => String(e.transaction_status_id) === exportStatus);
-           }
-           if (searchValue) {
-             const q = searchValue.toLowerCase();
-             result = result.filter(e => {
-               const inv = e.invoice_no?.toLowerCase() || "";
-               const iden = e.identities?.find((id) => id.is_pemesan == 1) || e.identities?.[0];
-               const email = iden?.email?.toLowerCase() || "";
-               const name = iden?.full_name?.toLowerCase() || "";
-               return inv.includes(q) || email.includes(q) || name.includes(q);
-             });
-           }
-           exportData = result;
+          let result = [...allDataList];
+          if (transactionSegment !== "all") {
+            result = result.filter(e => e.type_transaction === transactionSegment);
+          }
+          if (selectedTicket !== "all") {
+            result = result.filter(e => e.tickets?.some((t: any) => t.has_event_ticket?.name === selectedTicket));
+          }
+          if (selectedSession !== "all") {
+            result = result.filter(e => e.tickets?.some((t: any) => t.event_session?.session_name === selectedSession));
+          }
+          if (exportStatus !== "all") {
+            result = result.filter(e => String(e.transaction_status_id) === exportStatus);
+          }
+          if (searchValue) {
+            const q = searchValue.toLowerCase();
+            result = result.filter(e => {
+              const inv = e.invoice_no?.toLowerCase() || "";
+              const iden = e.identities?.find((id) => id.is_pemesan == 1) || e.identities?.[0];
+              const email = iden?.email?.toLowerCase() || "";
+              const name = iden?.full_name?.toLowerCase() || "";
+              return inv.includes(q) || email.includes(q) || name.includes(q);
+            });
+          }
+          exportData = result;
         }
 
         if (!exportData || exportData.length === 0) {
@@ -2164,7 +2164,7 @@ const Merch = () => {
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      
+
       link.href = url;
       link.download = downloadFileName;
       link.style.display = "none";
@@ -2239,7 +2239,8 @@ const Merch = () => {
         </div>
 
         {/* Global Filter Bar */}
-        <Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+        <Flex justify="space-between" align="flex-end" mb="md" wrap="wrap" gap="sm">
+          {/* Online/Offline Filter - Left side */}
           <SegmentedControl
             value={transactionSegment}
             onChange={(e) => setTransactionSegment(e)}
@@ -2253,7 +2254,8 @@ const Merch = () => {
             size="sm"
           />
 
-          <Flex gap={8} align="center" wrap="wrap">
+          {/* Export Excel + Filters - Right side */}
+          <Flex gap={8} align="flex-end" wrap="wrap">
             {selectedTab === "transaksi" ? (
               <Menu shadow="md" width={200} position="bottom-end">
                 <Menu.Target>
@@ -2293,7 +2295,9 @@ const Merch = () => {
               </Button>
             )}
 
+            {/* Pilih Event Filter */}
             <Select
+              label="Pilih Event"
               value={selectedEvent ? String(selectedEvent) : null}
               data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
               onChange={(e) => {
@@ -2311,7 +2315,8 @@ const Merch = () => {
                 }
               }}
               placeholder={loading.includes("fetchEvents") ? "Loading..." : "Pilih Event"}
-              style={{ width: 190 }}
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={190}
               disabled={loading.includes("fetchEvents")}
               nothingFoundMessage="Tidak ada event"
               searchable
@@ -2319,27 +2324,35 @@ const Merch = () => {
               size="sm"
             />
 
+            {/* Filter Jenis Tiket */}
             <Select
+              label="Filter Jenis Tiket"
               value={selectedTicket}
               data={availableTickets}
               onChange={(value) => { if (value) setSelectedTicket(value); }}
-              placeholder="Pilih Tiket"
-              style={{ width: 155 }}
+              placeholder="Semua Tiket"
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={155}
               disabled={availableTickets.length <= 1}
               size="sm"
             />
 
+            {/* Filter Sesi */}
             <Select
+              label="Filter Sesi"
               value={selectedSession}
               data={availableSessions}
               onChange={(value) => { if (value) setSelectedSession(value); }}
-              placeholder="Pilih Sesi"
-              style={{ width: 155 }}
+              placeholder="Semua Sesi"
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={155}
               disabled={availableSessions.length <= 1}
               size="sm"
             />
 
+            {/* Filter Status Pembayaran */}
             <Select
+              label="Filter Status Pembayaran"
               placeholder="Semua Status"
               value={selectedStatus}
               onChange={(value) => value && setSelectedStatus(value)}
@@ -2350,16 +2363,20 @@ const Merch = () => {
                   label: status.name,
                 })) || []),
               ]}
-              style={{ width: 165 }}
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={165}
               leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
               size="sm"
             />
 
-            <Input
+            {/* Cari / Search */}
+            <TextInput
+              label="Cari"
               placeholder="Cari nama atau invoice..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              style={{ width: 220 }}
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={220}
               leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
               size="sm"
             />

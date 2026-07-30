@@ -36,12 +36,19 @@ async function fetch<ReqType = { [key: string]: string | Blob }, ResType = any>(
             }
         }
 
+        const token = Cookies.get('token');
+        
+        // Validasi bearer token sebelum melakukan request
+        if (!token) {
+            throw new Error('Bearer token tidak ditemukan. Silakan login kembali.');
+        }
+
         const response = await axios({
             ...axiosOptions,
             url: `${Config.wsUrl}${axiosOptions.url}`,
             data: data,
             headers: {
-                'Authorization': `Bearer ${Cookies.get('token')}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': axiosOptions.method == 'PUT' ? 'application/json' : 'multipart/form-data',
                 ...options.headers
             }
@@ -53,7 +60,22 @@ async function fetch<ReqType = { [key: string]: string | Blob }, ResType = any>(
             throw response;
         }
         return response.data;
-    } catch (err) {
+    } catch (err: any) {
+        // Handle 401 Unauthorized - token invalid atau expired
+        if (isAxiosError(err) && err.response?.status === 401) {
+            // Hapus token dan user data
+            Cookies.remove('token');
+            Cookies.remove('user_data');
+            
+            // Redirect ke login
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+            }
+            
+            if (error) error({ message: 'Sesi Anda telah berakhir. Silakan login kembali.' });
+            return;
+        }
+        
         if (error) error(err);
         if (invalid && isAxiosError(err)) invalid(err?.response?.data.invalid)
     } finally {
