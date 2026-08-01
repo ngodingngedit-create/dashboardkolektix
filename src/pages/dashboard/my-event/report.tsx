@@ -2100,7 +2100,7 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Sesi", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
+        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Sesi", "Nomor Kursi", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
         csvRows = [
           headers.join(","),
           ...exportData.map((item, index) => {
@@ -2110,12 +2110,32 @@ const Merch = () => {
             }
             let ticketName = "-";
             let ticketSesi = "-";
+            let ticketSeats = "-";
             let ticketPrice = 0;
             let ticketDomisili = "-";
             if (item.tickets && item.tickets.length > 0) {
               ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
               ticketSesi = item.tickets.map((ticket) => ticket.event_session?.session_name || "-").filter((v, i, a) => a.indexOf(v) === i && v !== "-").join(", ") || "-";
               ticketPrice = item.tickets.reduce((sum: number, ticket: any) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
+              
+              // Extract seat numbers
+              ticketSeats = item.tickets
+                .map((ticket: any) => {
+                  if (ticket.seatnumber_ticket) {
+                    try {
+                      if (typeof ticket.seatnumber_ticket === 'string' && (ticket.seatnumber_ticket.startsWith('[') || ticket.seatnumber_ticket.startsWith('{'))) {
+                        const parsed = JSON.parse(ticket.seatnumber_ticket);
+                        return Array.isArray(parsed) ? parsed.join(", ") : parsed;
+                      }
+                      return ticket.seatnumber_ticket;
+                    } catch {
+                      return ticket.seatnumber_ticket;
+                    }
+                  }
+                  return null;
+                })
+                .filter(Boolean)
+                .join(", ") || "-";
             }
             if (item.identities && item.identities.length > 0) {
               const domisilis = item.identities.map((identity: any) => identity.domisili).filter(Boolean);
@@ -2124,7 +2144,7 @@ const Merch = () => {
             const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
             const paymentMethodInfo = getPaymentMethod(item.payment_method);
             const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, `"${ticketSesi}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, `"${ticketSesi}"`, `"${ticketSeats}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
           }),
         ];
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;

@@ -766,6 +766,63 @@ const MyEventDetail = () => {
     XLSX.writeFile(workbook, `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`);
   };
 
+  const downloadInvitationExcel = () => {
+    if (!invitation || invitation.length === 0) {
+      toast.error("Tidak ada data invitation untuk diexport");
+      return;
+    }
+
+    const dataExcel: any[] = [];
+    
+    invitation.forEach((item, index) => {
+      const categoryName = invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-";
+      
+      if (item.event_invitation_detail && item.event_invitation_detail.length > 0) {
+        item.event_invitation_detail.forEach((detail: any) => {
+          dataExcel.push({
+            "No": index + 1,
+            "Judul Undangan": item?.invitation_title ?? "-",
+            "Kategori": categoryName,
+            "Nama Penerima": detail?.fullname ?? "-",
+            "Email": detail?.email ?? "-",
+            "No. Telp": detail?.phone ?? "-",
+            "Nomor Kursi": detail?.seat_number ?? "-",
+            "Sesi": detail?.session ?? "-",
+          });
+        });
+      } else {
+        dataExcel.push({
+          "No": index + 1,
+          "Judul Undangan": item?.invitation_title ?? "-",
+          "Kategori": categoryName,
+          "Nama Penerima": "-",
+          "Email": "-",
+          "No. Telp": "-",
+          "Nomor Kursi": "-",
+          "Sesi": "-",
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Invitation");
+    
+    worksheet["!cols"] = [
+      { wch: 5 },  // No
+      { wch: 25 }, // Judul Undangan
+      { wch: 15 }, // Kategori
+      { wch: 25 }, // Nama Penerima
+      { wch: 25 }, // Email
+      { wch: 15 }, // No. Telp
+      { wch: 15 }, // Nomor Kursi
+      { wch: 15 }  // Sesi
+    ];
+
+    XLSX.writeFile(workbook, `Data_Invitation_Event_${data?.name || "Event"}.xlsx`);
+  };
+
+
   return !loading && data ? (
     <>
       <div className="p-5">
@@ -1142,6 +1199,11 @@ const MyEventDetail = () => {
                             <option value={20}>20</option>
                           </select>
                           <div className="flex gap-2">
+                            <Tooltip label="Export Excel">
+                              <button className="w-10 h-10 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md p-2" onClick={downloadInvitationExcel}>
+                                <FontAwesomeIcon icon={faDownload} className="text-white text-sm" />
+                              </button>
+                            </Tooltip>
                             <Tooltip label="Tambah Invitation Baru">
                               <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={openAddModal}>
                                 <FontAwesomeIcon icon={faPlus} className="text-white text-sm" />

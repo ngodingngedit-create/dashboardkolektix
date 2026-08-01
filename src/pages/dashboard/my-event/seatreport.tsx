@@ -28,6 +28,7 @@ interface Ticket {
     ticket_category: string;
     available_seat_number: string;
     taken_seat_number: string;
+    reserved_seat_number?: string | null;
     name: string;
     sold_qty?: number;
     ticket_sold?: number;
@@ -51,12 +52,15 @@ interface Transaction {
 interface EventData {
   id: number;
   name: string;
+  slug?: string;
   seatmap?: string | null;
+  is_session?: number;
   has_event_ticket?: {
     id: number;
     ticket_category: string;
     available_seat_number: string | null;
     taken_seat_number: string | null;
+    reserved_seat_number?: string | null;
     name: string;
     sold_qty?: number;
     ticket_sold?: number;
@@ -83,6 +87,8 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
   const [selectedTicketName, setSelectedTicketName] = useState<string | null>(null);
+  const [eventDetail, setEventDetail] = useState<any>(null);
+  const [loadingEventDetail, setLoadingEventDetail] = useState(false);
 
   // Sorting state
   const [sortBy, setSortBy] = useState<string>("invoice");
@@ -227,6 +233,41 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventId, users, seatPage, debouncedSearch, isFestival]);
 
+  // Fetch event details to get reserved_seat_number
+  useEffect(() => {
+    if (selectedEventData?.slug) {
+      setLoadingEventDetail(true);
+      Get(`event/${selectedEventData.slug}`, {})
+        .then((res: any) => {
+          if (res?.data) {
+            setEventDetail(res.data);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching event detail:", err);
+        })
+        .finally(() => {
+          setLoadingEventDetail(false);
+        });
+    } else {
+      setEventDetail(null);
+    }
+  }, [selectedEventData?.slug]);
+
+  const parseSeatSession = (seat: string) => {
+    if (seat && seat.includes(":")) {
+      const parts = seat.split(":");
+      return {
+        session: parts[0],
+        seatName: parts.slice(1).join(":")
+      };
+    }
+    return {
+      session: null,
+      seatName: seat || ""
+    };
+  };
+
   // Reset page to 1 when event ID or search query changes
   useEffect(() => {
     setSeatPage(1);
@@ -237,9 +278,12 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     const seated = new Set<string>();
     const festival = new Set<string>();
 
-    selectedEventData?.has_event_ticket?.forEach((t) => {
+    // 1. From eventDetail/selectedEventData
+    const ticketsSource = eventDetail?.has_event_ticket || selectedEventData?.has_event_ticket;
+    ticketsSource?.forEach((t: any) => {
       const hasSeats = (t.available_seat_number && t.available_seat_number.trim() !== "") ||
-        (t.taken_seat_number && t.taken_seat_number.trim() !== "");
+        (t.taken_seat_number && t.taken_seat_number.trim() !== "") ||
+        (t.reserved_seat_number && t.reserved_seat_number.trim() !== "");
       if (hasSeats) {
         seated.add(t.ticket_category);
       } else {
@@ -247,11 +291,28 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       }
     });
 
+    // 2. From transactions
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t) => {
+        const ticketCategory = t.has_event_ticket;
+        if (ticketCategory) {
+          const hasSeats = (ticketCategory.available_seat_number && ticketCategory.available_seat_number.trim() !== "") ||
+            (ticketCategory.taken_seat_number && ticketCategory.taken_seat_number.trim() !== "") ||
+            (ticketCategory.reserved_seat_number && ticketCategory.reserved_seat_number.trim() !== "");
+          if (hasSeats) {
+            seated.add(ticketCategory.ticket_category);
+          } else {
+            festival.add(ticketCategory.ticket_category);
+          }
+        }
+      });
+    });
+
     return {
       seated: Array.from(seated),
       festival: Array.from(festival)
     };
-  }, [selectedEventData]);
+  }, [selectedEventData, eventDetail, transactions]);
 
   const categories = useMemo(() => {
     const list = [];
@@ -308,6 +369,17 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   // Process data into a map of seat -> transaction info
   const seatMap = useMemo(() => {
     const map: Record<string, { transaction: Transaction; ticket: Ticket }> = {};
+    const isSessionEvent = eventDetail?.is_session === 1 || selectedEventData?.is_session === 1;
+
+    const getSessionPrefix = (t: any) => {
+      if (!isSessionEvent) return "";
+      const sessionName = t.event_session?.session_name || t.session_name;
+      if (sessionName) {
+        const match = sessionName.match(/\d+/);
+        return match ? `${match[0]}:` : "";
+      }
+      return "";
+    };
 
     transactions.forEach((trx) => {
       trx.tickets.forEach((t) => {
@@ -341,8 +413,10 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
           seats.push(`${fallbackName} - ${trx.invoice_no} (#${t.id})`);
         }
 
+        const prefix = getSessionPrefix(t);
         seats.forEach((s) => {
-          map[s] = {
+          const seatKey = prefix + s.trim();
+          map[seatKey] = {
             transaction: trx,
             ticket: t,
           };
@@ -351,24 +425,97 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     });
 
     return map;
-  }, [transactions]);
+  }, [transactions, eventDetail, selectedEventData]);
+
+  const reservedSeatsSet = useMemo(() => {
+    const rSet = new Set<string>();
+    const isSessionEvent = eventDetail?.is_session === 1 || selectedEventData?.is_session === 1;
+
+    const getSessionPrefix = (t: any) => {
+      if (!isSessionEvent) return "";
+      const sessionName = t.event_session?.session_name || t.session_name;
+      if (sessionName) {
+        const match = sessionName.match(/\d+/);
+        return match ? `${match[0]}:` : "";
+      }
+      return "";
+    };
+
+    // 1. From eventDetail/selectedEventData
+    const ticketsSource = eventDetail?.has_event_ticket || selectedEventData?.has_event_ticket;
+    ticketsSource?.forEach((t: any) => {
+      const prefix = getSessionPrefix(t);
+      const reserved = t.reserved_seat_number?.split(",") || [];
+      reserved.forEach((s: any) => {
+        const cleaned = s.trim();
+        if (cleaned) rSet.add(prefix + cleaned);
+      });
+    });
+
+    // 2. From transactions
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t) => {
+        const prefix = getSessionPrefix(t);
+        const ticketCategory = t.has_event_ticket;
+        if (ticketCategory) {
+          const reserved = ticketCategory.reserved_seat_number?.split(",") || [];
+          reserved.forEach((s: any) => {
+            const cleaned = s.trim();
+            if (cleaned) rSet.add(prefix + cleaned);
+          });
+        }
+      });
+    });
+
+    return rSet;
+  }, [eventDetail, selectedEventData, transactions]);
 
   // All seat numbers for the sidebar: SOURCED FROM EVENT TICKETS + TRANSACTIONS
   const allSeats = useMemo(() => {
     const seatsSet = new Set<string>();
+    const isSessionEvent = eventDetail?.is_session === 1 || selectedEventData?.is_session === 1;
+
+    const getSessionPrefix = (t: any) => {
+      if (!isSessionEvent) return "";
+      const sessionName = t.event_session?.session_name || t.session_name;
+      if (sessionName) {
+        const match = sessionName.match(/\d+/);
+        return match ? `${match[0]}:` : "";
+      }
+      return "";
+    };
 
     // 1. Add seats from event specification
     const targetCategories = selectedCategory === "seated" ? categoryGroups.seated : categoryGroups.festival;
 
-    selectedEventData?.has_event_ticket?.forEach((t) => {
+    const ticketsSource = eventDetail?.has_event_ticket || selectedEventData?.has_event_ticket;
+
+    ticketsSource?.forEach((t: any) => {
       if (!targetCategories.includes(t.ticket_category)) return;
 
+      const prefix = getSessionPrefix(t);
       const available = t.available_seat_number?.split(",") || [];
       const taken = t.taken_seat_number?.split(",") || [];
+      const reserved = t.reserved_seat_number?.split(",") || [];
 
-      [...available, ...taken].forEach((s) => {
+      [...available, ...taken, ...reserved].forEach((s) => {
         const cleaned = s.trim();
-        if (cleaned) seatsSet.add(cleaned);
+        if (cleaned) seatsSet.add(prefix + cleaned);
+      });
+    });
+
+    // Also add reserved seats from transactions tickets has_event_ticket
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t) => {
+        const ticketCategory = t.has_event_ticket;
+        if (ticketCategory && targetCategories.includes(ticketCategory.ticket_category)) {
+          const prefix = getSessionPrefix(t);
+          const reserved = ticketCategory.reserved_seat_number?.split(",") || [];
+          reserved.forEach((s: any) => {
+            const cleaned = s.trim();
+            if (cleaned) seatsSet.add(prefix + cleaned);
+          });
+        }
       });
     });
 
@@ -380,10 +527,17 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
       seatsSet.add(seat);
     });
 
-    return Array.from(seatsSet).sort((a, b) =>
-      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
-    );
-  }, [selectedEventData, selectedCategory, seatMap]);
+    return Array.from(seatsSet).sort((a, b) => {
+      const parsedA = parseSeatSession(a);
+      const parsedB = parseSeatSession(b);
+      if (parsedA.session !== parsedB.session) {
+        if (!parsedA.session) return 1;
+        if (!parsedB.session) return -1;
+        return parsedA.session.localeCompare(parsedB.session, undefined, { numeric: true });
+      }
+      return parsedA.seatName.localeCompare(parsedB.seatName, undefined, { numeric: true, sensitivity: "base" });
+    });
+  }, [selectedEventData, eventDetail, selectedCategory, seatMap, categoryGroups, transactions]);
 
   // Filtered list of seats based on SEARCH and CATEGORY
   const filteredSeats = useMemo(() => {
@@ -461,7 +615,16 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     return processedTransactions.slice(start, start + itemsPerPage);
   }, [processedTransactions, seatPage]);
 
-  const selectedSeatInfo = selectedSeat ? seatMap[selectedSeat] : null;
+  const selectedSeatInfo = useMemo(() => {
+    if (!selectedSeat) return null;
+    if (seatMap[selectedSeat]) {
+      return seatMap[selectedSeat];
+    }
+    if (reservedSeatsSet.has(selectedSeat)) {
+      return { isReservedOnly: true };
+    }
+    return null;
+  }, [selectedSeat, seatMap, reservedSeatsSet]);
 
 
 
@@ -569,7 +732,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                 </Text>
 
                 {/* Legend */}
-                <Flex gap="md" mt="md" align="center">
+                <Flex gap="md" mt="md" align="center" wrap="wrap">
                   <Flex align="center" gap={6}>
                     <div className="w-6 h-6 rounded border border-light-grey bg-white"></div>
                     <Text size="xs" c="dimmed">Tersedia</Text>
@@ -577,6 +740,10 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                   <Flex align="center" gap={6}>
                     <div className="w-6 h-6 rounded border border-light-grey bg-grey"></div>
                     <Text size="xs" c="dimmed">Terisi</Text>
+                  </Flex>
+                  <Flex align="center" gap={6}>
+                    <div className="w-6 h-6 rounded border border-orange-500 bg-orange-500"></div>
+                    <Text size="xs" c="dimmed">Reserved</Text>
                   </Flex>
                 </Flex>
               </div>
@@ -586,8 +753,10 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                 {filteredSeats.length > 0 ? (
                   <div className="grid grid-cols-5 gap-2">
                     {filteredSeats.map((seat) => {
-                      const isBought = !!seatMap[seat];
+                      const isReserved = reservedSeatsSet.has(seat);
+                      const isBought = !!seatMap[seat] || isReserved;
                       const isSelected = selectedSeat === seat;
+                      const parsed = parseSeatSession(seat);
                       return (
                         <button
                           key={seat}
@@ -599,13 +768,20 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                             transition-all duration-150 border p-2.5 rounded-md text-xs font-bold
                             ${isSelected
                               ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300"
-                              : isBought
-                                ? "bg-grey text-white border-light-grey"
-                                : "bg-white text-blue-600 border-light-grey hover:border-blue-400 hover:bg-blue-50"
+                              : isReserved
+                                ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                : isBought
+                                  ? "bg-grey text-white border-light-grey"
+                                  : "bg-white text-blue-600 border-light-grey hover:border-blue-400 hover:bg-blue-50"
                             }
                           `}
                         >
-                          {seat}
+                          {parsed.seatName}
+                          {parsed.session && (
+                            <span className="block text-[9px] font-normal opacity-75 mt-0.5">
+                              Sesi {parsed.session}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -705,7 +881,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                   </Title>
                   <Text size="xs" c="dimmed" mt={4}>
                     {selectedSeat
-                      ? `Detail transaksi untuk kursi ${selectedSeat}`
+                      ? `Detail transaksi untuk kursi ${parseSeatSession(selectedSeat).seatName}${parseSeatSession(selectedSeat).session ? ` (Sesi ${parseSeatSession(selectedSeat).session})` : ""}`
                       : "Pilih kursi untuk melihat detail transaksi"}
                   </Text>
                 </div>
@@ -884,126 +1060,183 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
                   )}
                 </div>
               ) : selectedSeatInfo ? (
-                <div className="space-y-6">
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Informasi Pemesan Card */}
-                    <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
-                      <Stack gap="md">
-                        <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                          Informasi Pemesan
-                        </Text>
-                        <Divider color="light-grey" />
-                        <Stack gap="sm">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                              <FontAwesomeIcon icon={faUser} className="text-blue-600" size="sm" />
-                            </div>
-                            <div className="flex-1">
-                              <Text size="xs" c="dimmed">Nama Pemesan</Text>
-                              <Text size="sm" fw={600} c="dark">{selectedSeatInfo.transaction.has_user?.name || "-"}</Text>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                              <FontAwesomeIcon icon={faEnvelope} className="text-blue-600" size="sm" />
-                            </div>
-                            <div className="flex-1">
-                              <Text size="xs" c="dimmed">Email Pemesan</Text>
-                              <Text size="sm" fw={600} c="dark">{selectedSeatInfo.transaction.has_user?.email || "-"}</Text>
-                            </div>
-                          </div>
-                        </Stack>
-                      </Stack>
-                    </Card>
-
-                    {/* Detail Transaksi Card */}
-                    <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
-                      <Stack gap="md">
-                        <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                          Detail Transaksi
-                        </Text>
-                        <Divider color="light-grey" />
-                        <Stack gap="sm">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                              <FontAwesomeIcon icon={faFileInvoice} className="text-blue-600" size="sm" />
-                            </div>
-                            <div className="flex-1">
-                              <Text size="xs" c="dimmed">Invoice No</Text>
-                              <Link href={`/success/${selectedSeatInfo.transaction.invoice_no}`} className="text-blue-600 hover:underline font-semibold font-mono text-sm">
-                                {selectedSeatInfo.transaction.invoice_no}
-                              </Link>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                              <FontAwesomeIcon icon={faTicket} className="text-blue-600" size="sm" />
-                            </div>
-                            <div className="flex-1">
-                              <Text size="xs" c="dimmed">Status Pembayaran</Text>
-                              <Badge
-                                size="sm"
-                                variant="filled"
-                                color={
-                                  selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'verified' ||
-                                    selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'success' ? 'green' :
-                                    selectedSeatInfo.transaction.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
-                                }
-                                mt={4}
-                              >
-                                {selectedSeatInfo.transaction.payment_status}
-                              </Badge>
-                            </div>
-                          </div>
-                        </Stack>
-                      </Stack>
-                    </Card>
-                  </div>
-
-                  {/* Identities Table */}
-                  <Card withBorder radius="md" p={0} shadow="sm" className="border-light-grey">
-                    <div className="p-4 border-b border-light-grey bg-blue-50/50">
-                      <Text size="sm" fw={700} c="blue.7">
-                        Data Pemilik Tiket
-                      </Text>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-light-grey bg-gray-50">
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Nama Lengkap</th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Email</th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">No. Telp</th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Tipe</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-light-grey">
-                          {selectedSeatInfo.transaction.identities
-                            .filter((id) => id.is_pemesan === 1)
-                            .map((id, idx) => (
-                              <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                                <td className="py-3 px-4 font-medium text-gray-900">{id.full_name}</td>
-                                <td className="py-3 px-4 text-gray-700">{id.email}</td>
-                                <td className="py-3 px-4 text-gray-700">{id.no_telp || "-"}</td>
-                                <td className="py-3 px-4">
-                                  {id.is_pemesan ? (
-                                    <Badge variant="light" color="blue" size="sm">
-                                      Pemesan
+                (() => {
+                  const info = selectedSeatInfo as any;
+                  return (
+                    <div className="space-y-6">
+                      {info.isReservedOnly ? (
+                        <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey bg-yellow-50/10">
+                          <Stack gap="md">
+                            <Text size="sm" fw={700} c="yellow.9" tt="uppercase">
+                              Informasi Kursi Reservasi (Reserved)
+                            </Text>
+                            <Divider color="light-grey" />
+                            <Stack gap="sm">
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                                  <FontAwesomeIcon icon={faChair} className="text-yellow-600" size="sm" />
+                                </div>
+                                <div className="flex-1">
+                                  <Text size="xs" c="dimmed">Nomor Kursi</Text>
+                                  <Text size="sm" fw={600} c="dark">
+                                    {parseSeatSession(selectedSeat || "").seatName}
+                                  </Text>
+                                </div>
+                              </div>
+                              {parseSeatSession(selectedSeat || "").session && (
+                                <div className="flex items-start gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                                    <FontAwesomeIcon icon={faCalendarDays} className="text-yellow-600" size="sm" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <Text size="xs" c="dimmed">Sesi</Text>
+                                    <Badge color="yellow" variant="light" size="sm">
+                                      Sesi {parseSeatSession(selectedSeat || "").session}
                                     </Badge>
-                                  ) : (
-                                    <Badge variant="light" color="gray" size="sm">
-                                      Peserta
-                                    </Badge>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
+                                  </div>
+                                </div>
+                              )}
+                              <Text size="xs" c="dimmed" mt="xs">
+                                Kursi ini ditandai sebagai Reservasi (Reserved) dan tidak tersedia untuk dibeli oleh publik.
+                              </Text>
+                            </Stack>
+                          </Stack>
+                        </Card>
+                      ) : (
+                        <>
+                          {/* Summary Cards */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Informasi Pemesan Card */}
+                            <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
+                              <Stack gap="md">
+                                <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                                  Informasi Pemesan
+                                </Text>
+                                <Divider color="light-grey" />
+                                <Stack gap="sm">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                      <FontAwesomeIcon icon={faUser} className="text-blue-600" size="sm" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <Text size="xs" c="dimmed">Nama Pemesan</Text>
+                                      <Text size="sm" fw={600} c="dark">{info.transaction?.has_user?.name || "-"}</Text>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                      <FontAwesomeIcon icon={faEnvelope} className="text-blue-600" size="sm" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <Text size="xs" c="dimmed">Email Pemesan</Text>
+                                      <Text size="sm" fw={600} c="dark">{info.transaction?.has_user?.email || "-"}</Text>
+                                    </div>
+                                  </div>
+                                </Stack>
+                              </Stack>
+                            </Card>
+
+                            {/* Detail Transaksi Card */}
+                            <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
+                              <Stack gap="md">
+                                <Text size="sm" fw={700} c="dimmed" tt="uppercase">
+                                  Detail Transaksi
+                                </Text>
+                                <Divider color="light-grey" />
+                                <Stack gap="sm">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                      <FontAwesomeIcon icon={faFileInvoice} className="text-blue-600" size="sm" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <Text size="xs" c="dimmed">Invoice No</Text>
+                                      {info.transaction?.invoice_no ? (
+                                        <Link href={`/success/${info.transaction.invoice_no}`} className="text-blue-600 hover:underline font-semibold font-mono text-sm">
+                                          {info.transaction.invoice_no}
+                                        </Link>
+                                      ) : (
+                                        <Text size="sm" fw={600} c="dark">-</Text>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                      <FontAwesomeIcon icon={faTicket} className="text-blue-600" size="sm" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <Text size="xs" c="dimmed">Status Pembayaran</Text>
+                                      {info.transaction?.payment_status ? (
+                                        <Badge
+                                          size="sm"
+                                          variant="filled"
+                                          color={
+                                            info.transaction.payment_status?.toLowerCase() === 'verified' ||
+                                            info.transaction.payment_status?.toLowerCase() === 'success' ? 'green' :
+                                            info.transaction.payment_status?.toLowerCase() === 'expired' ? 'red' : 'yellow'
+                                          }
+                                          mt={4}
+                                        >
+                                          {info.transaction.payment_status}
+                                        </Badge>
+                                      ) : (
+                                        <Text size="sm" fw={600} c="dark">-</Text>
+                                      )}
+                                    </div>
+                                  </div>
+                                </Stack>
+                              </Stack>
+                            </Card>
+                          </div>
+
+                          {/* Identities Table */}
+                          {info.transaction?.identities && (
+                            <Card withBorder radius="md" p={0} shadow="sm" className="border-light-grey">
+                              <div className="p-4 border-b border-light-grey bg-blue-50/50">
+                                <Text size="sm" fw={700} c="blue.7">
+                                  Data Pemilik Tiket
+                                </Text>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                  <thead>
+                                    <tr className="border-b border-light-grey bg-gray-50">
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Nama Lengkap</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Email</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">No. Telp</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Tipe</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-light-grey">
+                                    {info.transaction.identities
+                                      .filter((id: any) => id.is_pemesan === 1)
+                                      .map((id: any, idx: number) => (
+                                        <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                                          <td className="py-3 px-4 font-medium text-gray-900">{id.full_name}</td>
+                                          <td className="py-3 px-4 text-gray-700">{id.email}</td>
+                                          <td className="py-3 px-4 text-gray-700">{id.no_telp || "-"}</td>
+                                          <td className="py-3 px-4">
+                                            {id.is_pemesan ? (
+                                              <Badge variant="light" color="blue" size="sm">
+                                                Pemesan
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="light" color="gray" size="sm">
+                                                Peserta
+                                              </Badge>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </Card>
+                          )}
+                        </>
+                      )}
                     </div>
-                  </Card>
-                </div>
+                  );
+                })()
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4 text-center py-16">
                   <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">

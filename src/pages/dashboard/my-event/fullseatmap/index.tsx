@@ -50,10 +50,14 @@ interface Ticket {
   id: number;
   ticket_category: string;
   seatnumber_ticket: string | string[];
+  event_session?: {
+    session_name?: string;
+  } | null;
   has_event_ticket: {
     ticket_category: string;
     available_seat_number: string;
     taken_seat_number: string;
+    reserved_seat_number?: string | null;
     name: string;
     sold_qty?: number;
     ticket_sold?: number;
@@ -77,12 +81,15 @@ interface Transaction {
 interface EventData {
   id: number;
   name: string;
+  slug?: string;
+  is_session?: number;
   seatmap?: string | null;
   has_event_ticket?: {
     id: number;
     ticket_category: string;
     available_seat_number: string | null;
     taken_seat_number: string | null;
+    reserved_seat_number?: string | null;
     name: string;
     sold_qty?: number;
     ticket_sold?: number;
@@ -99,6 +106,7 @@ interface SeatBoxProps {
   seatNumber: string;
   displaySeatNumber: string;
   isBought: boolean;
+  isReserved?: boolean;
   areaColor?: string;
   isDimmed: boolean;
   isHighlighted: boolean;
@@ -109,20 +117,29 @@ const SeatBox = memo(function SeatBox({
   seatNumber,
   displaySeatNumber,
   isBought,
+  isReserved,
   areaColor,
   isDimmed,
   isHighlighted,
   onSeatClick,
 }: SeatBoxProps) {
-  const bgColor = isBought ? (areaColor || "#adb5bd") : "#e9ecef";
-  const borderColor = isBought ? "rgba(250,250,250,0.18)" : "#d0d0d0";
+  const bgColor = isReserved
+    ? "#f59e0b" // Orange/amber for reserved
+    : isBought
+      ? (areaColor || "#adb5bd")
+      : "#e9ecef";
+  const borderColor = isReserved
+    ? "#d97706"
+    : isBought
+      ? "rgba(250,250,250,0.18)"
+      : "#d0d0d0";
 
   return (
     <Box
       component="button"
       type="button"
       onClick={() => isBought && onSeatClick(seatNumber)}
-      title={`Seat: ${displaySeatNumber}${isBought ? " (Terjual - Klik untuk detail)" : " (Tersedia)"}`}
+      title={`Seat: ${displaySeatNumber}${isReserved ? " (Reserved)" : isBought ? " (Terjual - Klik untuk detail)" : " (Tersedia)"}`}
       w={20}
       h={25}
       className={`rounded-sm relative overflow-hidden transition-all duration-200 ${isBought ? "cursor-pointer" : "cursor-default"}`}
@@ -154,7 +171,7 @@ const SeatBox = memo(function SeatBox({
         }}
       >
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '6px', fontWeight: 700, color: isBought ? 'white' : '#868e96', textTransform: 'uppercase', lineHeight: 1 }}>
+          <span style={{ fontSize: '6px', fontWeight: 700, color: (isBought || isReserved) ? 'white' : '#868e96', textTransform: 'uppercase', lineHeight: 1 }}>
             {displaySeatNumber}
           </span>
         </div>
@@ -167,7 +184,7 @@ const SeatBox = memo(function SeatBox({
           width: '70%',
           height: '7px',
           backgroundColor: bgColor,
-          border: isBought ? 'none' : `1px solid ${borderColor}`,
+          border: (isBought || isReserved) ? 'none' : `1px solid ${borderColor}`,
           contain: 'strict',
         }}
       />
@@ -183,6 +200,8 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingTrx, setLoadingTrx] = useState(false);
+  const [eventDetail, setEventDetail] = useState<EventData | null>(null);
+  const [loadingEventDetail, setLoadingEventDetail] = useState(false);
 
   const [selectedSeatTrx, setSelectedSeatTrx] = useState<Transaction | null>(null);
   const [selectedSeatTicket, setSelectedSeatTicket] = useState<Ticket | null>(null);
@@ -262,6 +281,26 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   }, [selectedEventId, users]);
 
+  useEffect(() => {
+    if (selectedEventData?.slug) {
+      setLoadingEventDetail(true);
+      Get(`event/${selectedEventData.slug}`, {})
+        .then((res: any) => {
+          if (res?.data) {
+            setEventDetail(res.data);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching event detail:", err);
+        })
+        .finally(() => {
+          setLoadingEventDetail(false);
+        });
+    } else {
+      setEventDetail(null);
+    }
+  }, [selectedEventData]);
+
   const ticketNameToSessionName = useMemo(() => {
     const map = new Map<string, string>();
     transactions.forEach(trx => {
@@ -323,16 +362,74 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     return map;
   }, [transactions, selectedSession]);
 
+  const reservedSeatsSet = useMemo(() => {
+    const rSet = new Set<string>();
+    const isSessionEvent = eventDetail?.is_session === 1 || selectedEventData?.is_session === 1;
+    const isSessionFiltered = selectedSession !== "all";
+
+    // 1. From eventDetail/selectedEventData
+    const ticketsSource = eventDetail?.has_event_ticket || selectedEventData?.has_event_ticket;
+    ticketsSource?.forEach((t: any) => {
+      // If we are filtering by session, check if this ticket's session matches
+      if (isSessionEvent && isSessionFiltered) {
+        const tSessionName = t.event_session?.session_name || t.session_name;
+        if (tSessionName && tSessionName !== selectedSession) return;
+      }
+
+      const reserved = t.reserved_seat_number?.split(",") || [];
+      reserved.forEach((s: any) => {
+        const cleaned = s.trim();
+        if (cleaned) rSet.add(cleaned);
+      });
+    });
+
+    // 2. From transactions
+    transactions.forEach((trx) => {
+      trx.tickets.forEach((t) => {
+        // If we are filtering by session, check if this ticket's session matches
+        if (isSessionFiltered && t.event_session?.session_name !== selectedSession) {
+          return;
+        }
+
+        const ticketCategory = t.has_event_ticket;
+        if (ticketCategory) {
+          const reserved = ticketCategory.reserved_seat_number?.split(",") || [];
+          reserved.forEach((s: any) => {
+            const cleaned = s.trim();
+            if (cleaned) rSet.add(cleaned);
+          });
+        }
+      });
+    });
+
+    return rSet;
+  }, [eventDetail, selectedEventData, transactions, selectedSession]);
+
   const fetchSeatTransactionDetail = useCallback((seatNumber: string) => {
     const info = seatToBuyerMap[seatNumber];
     if (info) {
       setSelectedSeatTrx(info.transaction);
       setSelectedSeatTicket(info.ticket);
       setIsModalOpen(true);
+    } else if (reservedSeatsSet.has(seatNumber)) {
+      setSelectedSeatTrx(null);
+      setSelectedSeatTicket({
+        id: 0,
+        ticket_category: "Reserved",
+        seatnumber_ticket: seatNumber,
+        has_event_ticket: {
+          ticket_category: "Reserved",
+          available_seat_number: "",
+          taken_seat_number: "",
+          reserved_seat_number: seatNumber,
+          name: "Reserved oleh Penyelenggara"
+        }
+      });
+      setIsModalOpen(true);
     } else {
       console.warn("Transaction detail for seat not found locally");
     }
-  }, [seatToBuyerMap]);
+  }, [seatToBuyerMap, reservedSeatsSet]);
 
   const takenSeatsFromAPI = useMemo(() => {
     const seats = new Set<string>();
@@ -380,6 +477,37 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
     return seats;
   }, [transactions, selectedSession]);
+
+  const seatCounts = useMemo(() => {
+    let total = 0;
+    let sold = 0;
+    let reserved = 0;
+
+    const hasCategoryFilter = selectedCategory !== "all";
+
+    seatmapData.forEach((area) => {
+      if (hasCategoryFilter && area.text !== selectedCategory) {
+        return;
+      }
+      if (area.type !== "seat") return;
+
+      area.seat?.forEach((row) => {
+        row.forEach((seatCode) => {
+          if (!seatCode || !seatCode.trim()) return;
+          total++;
+          if (reservedSeatsSet.has(seatCode)) {
+            reserved++;
+          } else if (takenSeatsFromAPI.has(seatCode)) {
+            sold++;
+          }
+        });
+      });
+    });
+
+    const available = total - sold - reserved;
+
+    return { total, sold, reserved, available };
+  }, [seatmapData, takenSeatsFromAPI, reservedSeatsSet, selectedCategory]);
 
   // Handle Zoom and Pan
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -547,11 +675,15 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           <Text size="xs" fw={700} mb={4}>Legenda:</Text>
           <Flex align="center" gap={8}>
             <Box w={12} h={12} bg="gray.2" className="rounded-sm border border-gray-400" />
-            <Text size="xs">Tersedia</Text>
+            <Text size="xs">Tersedia ({seatCounts.available})</Text>
           </Flex>
           <Flex align="center" gap={8}>
             <Box w={12} h={12} bg="gray.5" className="rounded-sm" />
-            <Text size="xs">Terjual</Text>
+            <Text size="xs">Terjual ({seatCounts.sold})</Text>
+          </Flex>
+          <Flex align="center" gap={8}>
+            <Box w={12} h={12} bg="#f59e0b" className="rounded-sm" />
+            <Text size="xs">Reserved ({seatCounts.reserved})</Text>
           </Flex>
         </div>
 
@@ -690,7 +822,8 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                                 <>
                                   <Flex gap={3} justify="flex-end">
                                     {row.slice(0, colsLeft).map((seatCode) => {
-                                      const isBought = takenSeatsFromAPI.has(seatCode);
+                                      const isReserved = reservedSeatsSet.has(seatCode);
+                                      const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                       const displaySeatNumber = seatCode.replace(/-/g, "");
                                       const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
                                       const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
@@ -702,6 +835,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                                           seatNumber={seatCode}
                                           displaySeatNumber={displaySeatNumber}
                                           isBought={isBought}
+                                          isReserved={isReserved}
                                           areaColor={area.seatcolor}
                                           isDimmed={isDimmed}
                                           isHighlighted={isHighlighted}
@@ -713,7 +847,8 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                                   <Box style={{ minWidth: gapSize, flexShrink: 0 }} />
                                   <Flex gap={3} justify="flex-start">
                                     {row.slice(colsLeft).map((seatCode) => {
-                                      const isBought = takenSeatsFromAPI.has(seatCode);
+                                      const isReserved = reservedSeatsSet.has(seatCode);
+                                      const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                       const displaySeatNumber = seatCode.replace(/-/g, "");
                                       const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
                                       const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
@@ -725,6 +860,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                                           seatNumber={seatCode}
                                           displaySeatNumber={displaySeatNumber}
                                           isBought={isBought}
+                                          isReserved={isReserved}
                                           areaColor={area.seatcolor}
                                           isDimmed={isDimmed}
                                           isHighlighted={isHighlighted}
@@ -737,7 +873,8 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                               ) : (
                                 <Flex gap={3} justify="center">
                                   {row.map((seatCode) => {
-                                    const isBought = takenSeatsFromAPI.has(seatCode);
+                                    const isReserved = reservedSeatsSet.has(seatCode);
+                                    const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                     const displaySeatNumber = seatCode.replace(/-/g, "");
                                     const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
                                     const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
@@ -749,6 +886,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
                                         seatNumber={seatCode}
                                         displaySeatNumber={displaySeatNumber}
                                         isBought={isBought}
+                                        isReserved={isReserved}
                                         areaColor={area.seatcolor}
                                         isDimmed={isDimmed}
                                         isHighlighted={isHighlighted}
