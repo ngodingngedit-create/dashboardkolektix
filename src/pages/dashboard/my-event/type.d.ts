@@ -62,6 +62,7 @@ export type TransactionListResponse = {
     no_telp: string;
     size?: string;
     address?: string;
+    seat_number?: string;
     created_at: string;
     updated_at: string;
     deleted_at: null | string;

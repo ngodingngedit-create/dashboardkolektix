@@ -24,6 +24,7 @@ interface EventInvitationDetail {
     fullname: string;
     email: string;
     phone: string;
+    seat_number?: string;
     recived_status: number;
     attendance_status: number;
     is_checkin: number;

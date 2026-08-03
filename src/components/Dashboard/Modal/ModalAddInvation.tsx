@@ -196,11 +196,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
     validationErrors.push("Maksimal 50 invitation per kali input");
   }
 
-  const emails = form.values.details.map(d => d.email.toLowerCase());
-  const duplicateEmails = emails.filter((email, index) => emails.indexOf(email) !== index);
-  if (duplicateEmails.length > 0) {
-    validationErrors.push("Terdapat email yang duplikat");
-  }
+
 
   if (validationErrors.length > 0) {
     notifications.show({

@@ -430,7 +430,7 @@ const Merch = () => {
                 data.forEach((invGroup: any) => {
                     invGroup.event_invitation_detail?.forEach((detail: any) => {
                         total++;
-                        if (detail.checkin_status === 1) checkin++;
+                        if (detail.is_checkin === 1) checkin++;
                     });
                 });
 

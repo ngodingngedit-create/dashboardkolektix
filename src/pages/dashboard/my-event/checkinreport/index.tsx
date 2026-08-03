@@ -267,6 +267,7 @@ const CheckinReport = () => {
               nama: identity?.full_name || (trans.has_user as any)?.name || "-",
               telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
               email: identity?.email || (trans.has_user as any)?.email || "-",
+              seat_number: identity?.seat_number || "-",
               status_checkin: eticket.is_checkin === 1,
               invoice: trans.invoice_no,
               qr_code: eticket.eticket_number, // Used for manual check-in
@@ -284,6 +285,7 @@ const CheckinReport = () => {
                 nama: identity?.full_name || (trans.has_user as any)?.name || "-",
                 telepon: identity?.no_telp || (trans.has_user as any)?.phone || "-",
                 email: identity?.email || (trans.has_user as any)?.email || "-",
+                seat_number: identity?.seat_number || "-",
                 status_checkin: ticket.ticket_checkin_status === 1,
                 invoice: trans.invoice_no,
                 qr_code: ticket.etiket_number, // Used for manual check-in
@@ -301,6 +303,7 @@ const CheckinReport = () => {
             nama: detail.fullname || "-",
             telepon: detail.phone || "-",
             email: detail.email || "-",
+            seat_number: detail.seat_number || "-",
             status_checkin: detail.is_checkin === 1,
             invoice: detail.invitation_number, // In invitation mode, we show invitation number
             ticket_name: "-"
@@ -494,6 +497,9 @@ const CheckinReport = () => {
                   <th onClick={() => handleSort('email')} style={headerStyle(false, sortBy === 'email', sortDir)}>
                     EMAIL <SortIcon active={sortBy === 'email'} dir={sortDir} />
                   </th>
+                  <th onClick={() => handleSort('seat_number')} style={headerStyle(false, sortBy === 'seat_number', sortDir)}>
+                    NOMOR KURSI <SortIcon active={sortBy === 'seat_number'} dir={sortDir} />
+                  </th>
                   <th onClick={() => handleSort('status_checkin')} style={headerStyle(false, sortBy === 'status_checkin', sortDir)}>
                     STATUS CHECK-IN <SortIcon active={sortBy === 'status_checkin'} dir={sortDir} />
                   </th>
@@ -503,7 +509,7 @@ const CheckinReport = () => {
               <tbody>
                 {loading.includes("getdata") ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
                       <Text fw={500} c="dimmed">Memuat data...</Text>
                     </td>
                   </tr>
@@ -531,6 +537,9 @@ const CheckinReport = () => {
                           </td>
                           <td style={cellStyle()}>
                             <Text size="sm" c="dimmed">{item.email}</Text>
+                          </td>
+                          <td style={cellStyle()}>
+                            <Text size="sm" fw={500}>{item.seat_number}</Text>
                           </td>
                           <td style={cellStyle()}>
                             <Badge
@@ -581,14 +590,14 @@ const CheckinReport = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
+                        <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
                           <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
                         </td>
                       </tr>
                     )}
                     {/* Loading overlay row for remaining data */}
                     <tr>
-                      <td colSpan={7} style={{ textAlign: "center", padding: "12px", backgroundColor: "#f8f9ff" }}>
+                      <td colSpan={8} style={{ textAlign: "center", padding: "12px", backgroundColor: "#f8f9ff" }}>
                         <Text size="sm" c="blue" fw={500}>
                           <FontAwesomeIcon icon={faDownload} spin style={{ marginRight: 8 }} />
                           Memuat sisa data...
@@ -618,6 +627,9 @@ const CheckinReport = () => {
                       </td>
                       <td style={cellStyle()}>
                         <Text size="sm" c="dimmed">{item.email}</Text>
+                      </td>
+                      <td style={cellStyle()}>
+                        <Text size="sm" fw={500}>{item.seat_number}</Text>
                       </td>
                       <td style={cellStyle()}>
                         <Badge
@@ -668,7 +680,7 @@ const CheckinReport = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "80px" }}>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
                       <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
                     </td>
                   </tr>
