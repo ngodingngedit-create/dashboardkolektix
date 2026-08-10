@@ -63,6 +63,13 @@ export type TransactionListResponse = {
     size?: string;
     address?: string;
     seat_number?: string;
+    domisili?: string | null;
+    age?: string | number | null;
+    church?: string | null;
+    ministry?: string | null;
+    usia?: string | number | null;
+    gereja?: string | null;
+    pelayanan?: string | null;
     created_at: string;
     updated_at: string;
     deleted_at: null | string;

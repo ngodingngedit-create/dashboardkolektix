@@ -1318,6 +1318,10 @@ const Merch = () => {
     per_page: 20,
   });
 
+  // State untuk pagination tabel pemesan (20 data per halaman)
+  const [pemesanPage, setPemesanPage] = useState(1);
+  const pemesanItemsPerPage = 20;
+
   // State untuk info dari API
   const [apiPaginationInfo, setApiPaginationInfo] = useState({
     totalRecords: 0,
@@ -1348,6 +1352,7 @@ const Merch = () => {
   useDidUpdate(() => {
     if (selectedEvent) {
       setCurrentPage(1);
+      setPemesanPage(1);
       loadEventData();
     }
   }, [selectedEvent]);
@@ -1727,6 +1732,7 @@ const Merch = () => {
 
   useDidUpdate(() => {
     setCurrentPage(1);
+    setPemesanPage(1);
   }, [selectedTicket, selectedSession, selectedStatus, transactionSegment, searchValue]);
 
   const [sortBy, setSortBy] = useState<string>("");
@@ -1909,6 +1915,23 @@ const Merch = () => {
     return result;
   }, [filteredDataList, transactionStatus, sortBy, sortDir, currentPage]);
 
+  // Flags event untuk menentukan kolom dinamis pada tabel pemesan
+  const selectedEventFlags = useMemo(() => {
+    const evt: any = eventList.find((e) => e.id === selectedEvent) || null;
+    const fallback: any = allDataList[0]?.has_event || null;
+    const get = (key: string) => {
+      const val = evt?.[key] !== undefined ? evt?.[key] : fallback?.[key];
+      return val === 1 || val === true;
+    };
+    return {
+      is_session: get("is_session"),
+      is_domisili: get("is_domisili"),
+      is_age: get("is_age"),
+      is_church: get("is_church"),
+      is_ministryrole: get("is_ministryrole"),
+    };
+  }, [eventList, selectedEvent, allDataList]);
+
   // Proses data untuk tabel pemesan
   const processedPemesanData = useMemo(() => {
     if (!Array.isArray(allDataList)) return [];
@@ -1935,12 +1958,19 @@ const Merch = () => {
           .filter(Boolean)
           .join(", ");
 
+        // Collect all session names from tickets in this transaction
+        const sessions = (e.tickets || [])
+          .map((t: any) => t.event_session?.session_name || null)
+          .filter((v: any, i: number, a: any[]) => v && a.indexOf(v) === i)
+          .join(", ") || "-";
+
         // Get all identities
         const identities = e.identities || [];
 
         return identities.map(identity => ({
           ...identity,
           seat_number: seats || "-",
+          sesi: sessions,
           transaction: e // Keep reference to transaction for editing if needed
         }));
       })
@@ -1952,8 +1982,13 @@ const Merch = () => {
         email: e.email || "-",
         telepon: e.no_telp || "-",
         seat_number: e.seat_number,
+        sesi: e.sesi,
         ukuran: e.size || "-",
         alamat: e.address || "-",
+        domisili: e.domisili || "-",
+        usia: e.age ?? e.usia ?? "-",
+        gereja: e.church ?? e.gereja ?? "-",
+        pelayanan: e.ministry ?? e.pelayanan ?? "-",
         tanggal: moment(e.created_at).format("HH:mm:ss DD MMM YYYY"),
         identity: e, // Full identity object
       }));
@@ -1973,6 +2008,19 @@ const Merch = () => {
 
     return result;
   }, [filteredDataList, sortBy, sortDir]);
+
+  // Data pemesan untuk halaman aktif (20 per halaman)
+  const paginatedPemesanData = useMemo(() => {
+    const totalPemesan = processedPemesanData.length;
+    const lastPemesanPage = Math.ceil(totalPemesan / pemesanItemsPerPage) || 1;
+    const safePage = Math.min(pemesanPage, lastPemesanPage);
+
+    const startIndex = (safePage - 1) * pemesanItemsPerPage;
+    return processedPemesanData.slice(startIndex, startIndex + pemesanItemsPerPage);
+  }, [processedPemesanData, pemesanPage, pemesanItemsPerPage]);
+
+  const pemesanTotalItems = processedPemesanData.length;
+  const pemesanTotalPages = Math.ceil(pemesanTotalItems / pemesanItemsPerPage) || 1;
 
   // Proses data untuk tabel checkin - Sekarang mendetail per e-ticket/peserta
   const processedCheckinData = useMemo(() => {
@@ -2100,7 +2148,7 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", "Sesi", "Nomor Kursi", "Harga Tiket", "Domisili", "Metode Pembayaran", "Status"];
+        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", ...(selectedEventFlags.is_session ? ["Sesi"] : []), "Nomor Kursi", "Harga Tiket", ...(selectedEventFlags.is_domisili ? ["Domisili"] : []), "Metode Pembayaran", "Status"];
         csvRows = [
           headers.join(","),
           ...exportData.map((item, index) => {
@@ -2144,7 +2192,7 @@ const Merch = () => {
             const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
             const paymentMethodInfo = getPaymentMethod(item.payment_method);
             const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, `"${ticketSesi}"`, `"${ticketSeats}"`, ticketPrice, `"${ticketDomisili}"`, `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ...(selectedEventFlags.is_session ? [`"${ticketSesi}"`] : []), `"${ticketSeats}"`, ticketPrice, ...(selectedEventFlags.is_domisili ? [`"${ticketDomisili}"`] : []), `"${paymentMethodText}"`, `"${statusText}"`].join(",");
           }),
         ];
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;
@@ -2153,11 +2201,41 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "No. Identitas (NIK)", "Nama Pemesan", "Email", "No. Telepon", "Nomor Kursi", "Ukuran", "Alamat", "Tanggal Dibuat"];
+        const headers = [
+          "No",
+          "No. Identitas (NIK)",
+          "Nama Pemesan",
+          "Email",
+          "No. Telepon",
+          "Nomor Kursi",
+          "Ukuran",
+          "Alamat",
+          ...(selectedEventFlags.is_session ? ["Sesi"] : []),
+          ...(selectedEventFlags.is_domisili ? ["Domisili"] : []),
+          ...(selectedEventFlags.is_age ? ["Usia"] : []),
+          ...(selectedEventFlags.is_church ? ["Gereja"] : []),
+          ...(selectedEventFlags.is_ministryrole ? ["Pelayanan"] : []),
+          "Tanggal Dibuat",
+        ];
         const csvRows = [
           headers.join(","),
           ...processedPemesanData.map((item, index) => {
-            return [index + 1, `"${item.nik}"`, `"${item.nama}"`, `"${item.email}"`, `"${item.telepon}"`, `"${item.seat_number}"`, `"${item.ukuran}"`, `"${item.alamat}"`, `"${item.tanggal}"`].join(",");
+            return [
+              index + 1,
+              `"${item.nik}"`,
+              `"${item.nama}"`,
+              `"${item.email}"`,
+              `"${item.telepon}"`,
+              `"${item.seat_number}"`,
+              `"${item.ukuran}"`,
+              `"${item.alamat}"`,
+              ...(selectedEventFlags.is_session ? [`"${item.sesi}"`] : []),
+              ...(selectedEventFlags.is_domisili ? [`"${item.domisili}"`] : []),
+              ...(selectedEventFlags.is_age ? [`"${item.usia}"`] : []),
+              ...(selectedEventFlags.is_church ? [`"${item.gereja}"`] : []),
+              ...(selectedEventFlags.is_ministryrole ? [`"${item.pelayanan}"`] : []),
+              `"${item.tanggal}"`,
+            ].join(",");
           }),
         ];
         downloadFileName = `report-pemesan-${eventName}-${timestamp}.csv`;
@@ -2416,9 +2494,13 @@ const Merch = () => {
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    {selectedEventFlags.is_session && (
+                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
                     <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    {selectedEventFlags.is_domisili && (
+                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS</th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>ACTION</th>
@@ -2427,7 +2509,7 @@ const Merch = () => {
                 <tbody>
                   {loading.includes("loadData") ? (
                     <tr>
-                      <td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={9 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Loading...</Text>
                       </td>
                     </tr>
@@ -2439,9 +2521,13 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm">{item.tiket}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.sesi}</Text></td>
+                        {selectedEventFlags.is_session && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.sesi}</Text></td>
+                        )}
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.harga}</Text></td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.domisili}</Text></td>
+                        {selectedEventFlags.is_domisili && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.domisili}</Text></td>
+                        )}
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.payment}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.status}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)' }}>{item.action}</td>
@@ -2449,7 +2535,7 @@ const Merch = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={9 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Tidak ada data</Text>
                       </td>
                     </tr>
@@ -2504,13 +2590,28 @@ const Merch = () => {
                     <th onClick={() => handleSort('ukuran')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>UKURAN <span style={{ opacity: sortBy === 'ukuran' ? 1 : 0.3 }}>{sortBy === 'ukuran' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('alamat')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ALAMAT <span style={{ opacity: sortBy === 'alamat' ? 1 : 0.3 }}>{sortBy === 'alamat' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    {selectedEventFlags.is_session && (
+                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
+                    {selectedEventFlags.is_domisili && (
+                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
+                    {selectedEventFlags.is_age && (
+                      <th onClick={() => handleSort('usia')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>USIA <span style={{ opacity: sortBy === 'usia' ? 1 : 0.3 }}>{sortBy === 'usia' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
+                    {selectedEventFlags.is_church && (
+                      <th onClick={() => handleSort('gereja')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>GEREJA <span style={{ opacity: sortBy === 'gereja' ? 1 : 0.3 }}>{sortBy === 'gereja' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
+                    {selectedEventFlags.is_ministryrole && (
+                      <th onClick={() => handleSort('pelayanan')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>PELAYANAN <span style={{ opacity: sortBy === 'pelayanan' ? 1 : 0.3 }}>{sortBy === 'pelayanan' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    )}
                     <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {processedPemesanData.length > 0 ? (
-                    processedPemesanData.map((item: any, idx) => (
+                  {paginatedPemesanData.length > 0 ? (
+                    paginatedPemesanData.map((item: any, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}><Text size="sm" c="dimmed" fw={500}>{item.no}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.nik}</Text></td>
@@ -2520,6 +2621,21 @@ const Merch = () => {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.ukuran}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.alamat}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.telepon}</Text></td>
+                        {selectedEventFlags.is_session && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.sesi}</Text></td>
+                        )}
+                        {selectedEventFlags.is_domisili && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.domisili}</Text></td>
+                        )}
+                        {selectedEventFlags.is_age && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.usia}</Text></td>
+                        )}
+                        {selectedEventFlags.is_church && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.gereja}</Text></td>
+                        )}
+                        {selectedEventFlags.is_ministryrole && (
+                          <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.pelayanan}</Text></td>
+                        )}
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" c="dimmed">{item.tanggal}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center' }}>
                           <Tooltip label="Edit Pemesan" withArrow position="top">
@@ -2532,7 +2648,7 @@ const Merch = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={13 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0) + (selectedEventFlags.is_age ? 1 : 0) + (selectedEventFlags.is_church ? 1 : 0) + (selectedEventFlags.is_ministryrole ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>Tidak ada data pemesan</Text>
                       </td>
                     </tr>
@@ -2540,6 +2656,27 @@ const Merch = () => {
                 </tbody>
               </table>
             </Box>
+
+            {pemesanTotalItems > 0 && (
+              <Flex justify="space-between" align="center" mt="md" wrap="wrap" gap="sm">
+                <Text size="sm" c="dimmed">
+                  Menampilkan {((pemesanPage - 1) * pemesanItemsPerPage) + 1} sampai {Math.min(pemesanPage * pemesanItemsPerPage, pemesanTotalItems)} dari <strong>{pemesanTotalItems}</strong> pemesan
+                  <br />
+                  <small>
+                    Halaman {Math.min(pemesanPage, pemesanTotalPages)} dari {pemesanTotalPages}
+                  </small>
+                </Text>
+
+                <Pagination
+                  value={Math.min(pemesanPage, pemesanTotalPages)}
+                  onChange={(page) => setPemesanPage(page)}
+                  total={pemesanTotalPages}
+                  radius="md"
+                  size="sm"
+                  withEdges
+                />
+              </Flex>
+            )}
           </div>
         )}
 

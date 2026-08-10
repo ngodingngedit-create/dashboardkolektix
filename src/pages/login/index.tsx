@@ -18,6 +18,10 @@ import { UserProps } from "@/utils/globalInterface";
 
 interface RegisterForm {
   name: string;
+  name_event_organizer: string;
+  location: string;
+  phone_number: string;
+  image: string;
   email: string;
   password: string;
   password_confirm: string;
@@ -43,8 +47,13 @@ const Auth = () => {
   const router = useRouter();
   const [step, setStep] = useState<number>(0);
   const [otp, setOtp] = useState<string>("");
+  const [image, setImage] = useState<string | null>(null);
   const [data, setData] = useSetState<RegisterForm>({
     name: "",
+    name_event_organizer: "",
+    location: "",
+    phone_number: "",
+    image: "",
     email: "",
     password: "",
     password_confirm: "",
@@ -94,7 +103,19 @@ const Auth = () => {
   const handleResendOtp = () => {
     setCountdownEndTime(new Date(Date.now() + 120000));
     setCountdownActive(true);
-    login();
+    // If step is 4, it's creator registration OTP, otherwise it's login OTP
+    if (step === 4) {
+      // Resend OTP for creator registration
+      Post("register", { email: data.email, name: data.name_event_organizer })
+        .then((res: any) => {
+          console.log(res);
+        })
+        .catch((err: any) => {
+          console.log(err);
+        });
+    } else {
+      login();
+    }
   };
 
   useEffect(() => {
@@ -112,20 +133,16 @@ const Auth = () => {
   const submitRegister = (event?: React.FormEvent) => {
     event?.preventDefault();
 
-    if (data.name == "") setErrors({ name: "Wajib Diisi" });
     if (data.email == "") setErrors({ email: "Wajib Diisi" });
-    if (data.password == "") setErrors({ password: "Wajib Diisi" });
-    if (data.password.length < 8) setErrors({ password: "Minimal 8 Karakter" });
-    if (data.password != data.password_confirm) setErrors({ password_confirm: "Password Tidak Sama" });
     if (Object.values(errors).filter((e) => !!e).length > 0) return;
 
     setLoading(true);
-    Post("register-auth", data)
+    Post("register", { email: data.email, name: data.name_event_organizer })
       .then((res: any) => {
         setLoading(false);
         setCountdownEndTime(new Date(Date.now() + 120000));
         setCountdownActive(true);
-        setStep(3);
+        setStep(4); // Move to OTP step
         console.log(res);
       })
       .catch((err: any) => {
@@ -195,13 +212,12 @@ const Auth = () => {
 
   const verifyRegister = () => {
     setLoading(true);
-    Post("verify-register", data)
+    Post("verify-register", { email: data.email, name: data.name_event_organizer, otp_code: data.otp_code })
       .then((res: any) => {
         console.log(res);
         Cookies.set("token", res.access_token);
-        Cookies.set("user_data", JSON.stringify({ ...res.data, force_creator: true, role: "Staff" }));
         setLoading(false);
-        router.push("/dashboard");
+        setStep(5); // Move to password setup step
       })
       .catch((err: any) => {
         setOtp("");
@@ -229,6 +245,64 @@ const Auth = () => {
         setLoading(false);
       });
   };
+
+  const handleFile = (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+      if (file.size > MAX_SIZE) {
+        toast.error("Maksimal ukuran gambar adalah 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+        setData({ image: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const submitCreator = () => {
+    if (data.password == "") setErrors({ password: "Wajib Diisi" });
+    if (data.password.length < 8) setErrors({ password: "Minimal 8 Karakter" });
+    if (data.password != data.password_confirm) setErrors({ password_confirm: "Password Tidak Sama" });
+    if (Object.values(errors).filter((e) => !!e).length > 0) return;
+
+    setLoading(true);
+    const creatorData = {
+      image: data.image,
+      name_event_organizer: data.name_event_organizer,
+      name: data.name,
+      location: data.location,
+      phone_number: data.phone_number,
+      email: data.email,
+      password: data.password,
+      password_confirmation: data.password_confirm,
+      user_id: null,
+      status: "active",
+      category_id: 1,
+      latitude: "1",
+      longitude: "2",
+      website: "www.example.net",
+    };
+
+    Post("creator", creatorData)
+      .then((res: any) => {
+        console.log(res);
+        Cookies.set("user_data", JSON.stringify({ ...res.data, force_creator: true, role: "Creator", has_creator: res.data }));
+        setLoading(false);
+        toast.success("Akun creator berhasil dibuat");
+        router.push("/dashboard");
+      })
+      .catch((err: any) => {
+        console.log(err);
+        setErrors(err.response.data);
+        toast.error(err.response.data.message || "Terjadi kesalahan");
+        setLoading(false);
+      });
+  };
+
 
   useEffect(() => {
     setImageOpacity(1);
@@ -313,7 +387,8 @@ const Auth = () => {
             <div className={`transition-opacity duration-300 opacity-0 ${step === 1 && "opacity-100"}`}>
               <div className="flex justify-center flex-col items-center">
                 <Image src={Logo} alt="Logo" className="w-1/3 mb-[20px]" />
-                <h2 className="text-dark font-semibold text-xl mt-2">Daftar Akun Staff</h2>
+                <h2 className="text-dark font-semibold text-xl mt-2">Daftar Akun Creator</h2>
+                <p className="text-grey text-sm text-center mb-3">Step 1 dari 3: Detail Penyelenggara</p>
                 <div className="flex">
                   <p className="text-grey text-sm text-center mb-3">
                     Sudah punya akun?
@@ -329,62 +404,152 @@ const Auth = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col w-full px-5">
+              <div className="flex flex-col w-full px-5 gap-3">
                 <div>
-                  <TextInput labelProps={{ size: "xs" }} label="Nama Lengkap" placeholder="Masukan Nama Lengkap" mb={10} value={data.name} onChange={(e) => setData({ name: e.target.value })} error={errors.name} />
-                </div>
-                <div>
-                  <TextInput labelProps={{ size: "xs" }} label="Email" placeholder="Masukan Email" mb={10} value={data.email} onChange={(e) => setData({ email: e.target.value })} error={errors.email} />
-                  <PasswordInput labelProps={{ size: "xs" }} label="Password" placeholder="Masukan Password" value={data.password} onChange={(e) => setData({ password: e.target.value })} error={errors.password} />
-                  <PasswordInput
-                    mt={10}
-                    labelProps={{ size: "xs" }}
-                    label="Konfirmasi Password"
-                    placeholder="Masukan Konfirmasi Password"
-                    value={data.password_confirm}
-                    onChange={(e) => setData({ password_confirm: e.target.value })}
-                    error={errors.password_confirm}
+                  <TextInput 
+                    labelProps={{ size: "xs" }} 
+                    label="Nama Penyelenggara Event" 
+                    placeholder="Misal: javamusikindo" 
+                    mb={10} 
+                    value={data.name_event_organizer} 
+                    onChange={(e) => setData({ name_event_organizer: e.target.value })} 
+                    error={errors.name_event_organizer} 
                   />
                 </div>
-                {/* <div>
-                  <Form
-                    placeholder='Password'
-                    label='Password'
-                    type='password'
-                    onChange={(e: any) => setData({ ...data, password: e.target.value })}
-                  />
-                  {errors.password &&
-                    errors.password.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px] '>
-                        {error}
-                      </p>
-                    ))}
-                </div>
                 <div>
-                  <Form
-                    placeholder='Konfirmasi Password'
-                    label='Konfirmasi Password'
-                    type='password'
-                    onChange={(e: any) =>
-                      setData({ ...data, password_confirmation: e.target.value })
-                    }
+                  <TextInput 
+                    labelProps={{ size: "xs" }} 
+                    label="Nama Pemilik" 
+                    placeholder="Masukan Nama Pemilik" 
+                    mb={10} 
+                    value={data.name} 
+                    onChange={(e) => setData({ name: e.target.value })} 
+                    error={errors.name} 
                   />
-                  {errors.password_confirmation &&
-                    errors.password_confirmation.map((error: string, index: number) => (
-                      <p key={index} className='text-red-500 text-[10px]'>
-                        {error}
-                      </p>
-                    ))}
-                </div> */}
+                </div>
 
-                <button className="bg-primary-base mt-[20px] mb-[20px] text-white w-full rounded-full p-2 text-xs" onClick={submitRegister}>
-                  {loading ? <Spinner color="default" size="sm" /> : "Selanjutnya"}
+                <button 
+                  className="bg-primary-base mt-[20px] mb-[20px] text-white w-full rounded-full p-2 text-xs disabled:bg-primary-disabled disabled:opacity-50" 
+                  onClick={() => setStep(2)}
+                  disabled={!data.name_event_organizer || !data.name}
+                >
+                  Selanjutnya
                 </button>
               </div>
             </div>
           )}
           {step === 2 && (
-            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-4 ${step === 2 ? "opacity-100" : "opacity-0"}`}>
+            <div className={`transition-opacity duration-300 opacity-0 ${step === 2 && "opacity-100"}`}>
+              <div className="flex justify-center flex-col items-center">
+                <Image src={Logo} alt="Logo" className="w-1/3 mb-[20px]" />
+                <h2 className="text-dark font-semibold text-xl mt-2">Daftar Akun Creator</h2>
+                <p className="text-grey text-sm text-center mb-3">Step 2 dari 3: Alamat & Kontak</p>
+              </div>
+              <div className="flex flex-col w-full px-5 gap-3">
+                <div>
+                  <TextInput 
+                    labelProps={{ size: "xs" }} 
+                    label="Lokasi / Kota Asal" 
+                    placeholder="Misalnya Jakarta" 
+                    mb={10} 
+                    value={data.location} 
+                    onChange={(e) => setData({ location: e.target.value })} 
+                    error={errors.location} 
+                  />
+                </div>
+                <div>
+                  <TextInput 
+                    labelProps={{ size: "xs" }} 
+                    label="No. Telepon / Handphone" 
+                    placeholder="Contoh: 08123456789" 
+                    mb={10} 
+                    value={data.phone_number} 
+                    onChange={(e) => setData({ phone_number: e.target.value.replaceAll(/\D/g, '').replace(/^(?!0|6)(\d+)/, '628$1').replace(/^(0)/, '62') })} 
+                    error={errors.phone_number} 
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    className="bg-gray-300 text-dark w-1/3 rounded-full p-2 text-xs" 
+                    onClick={() => setStep(1)}
+                  >
+                    Kembali
+                  </button>
+                  <button 
+                    className="bg-primary-base text-white w-2/3 rounded-full p-2 text-xs disabled:bg-primary-disabled disabled:opacity-50" 
+                    onClick={() => setStep(3)}
+                    disabled={!data.location || !data.phone_number}
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {step === 3 && (
+            <div className={`transition-opacity duration-300 opacity-0 ${step === 3 && "opacity-100"}`}>
+              <div className="flex justify-center flex-col items-center">
+                <Image src={Logo} alt="Logo" className="w-1/3 mb-[20px]" />
+                <h2 className="text-dark font-semibold text-xl mt-2">Daftar Akun Creator</h2>
+                <p className="text-grey text-sm text-center mb-3">Step 3 dari 3: Image & Email</p>
+              </div>
+              <div className="flex flex-col w-full px-5 gap-3">
+                <div>
+                  <label className="block mb-2 text-xs font-medium text-dark">Image / Logo Creator</label>
+                  <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-primary-light flex flex-col items-center justify-center h-32 gap-2 cursor-pointer">
+                    <input type="file" className="hidden" onChange={handleFile} accept=".jpg,.jpeg,.png" />
+                    {image ? (
+                      <Image
+                        src={image}
+                        alt="image"
+                        className="object-contain"
+                        width={120}
+                        height={120}
+                      />
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-base" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <h3 className="font-semibold text-xs text-center">Unggah logo creator (Max 2MB)</h3>
+                      </>
+                    )}
+                  </label>
+                </div>
+                <div>
+                  <TextInput 
+                    labelProps={{ size: "xs" }} 
+                    label="Email" 
+                    placeholder="Contoh: johndoe@xxxx.com" 
+                    mb={10} 
+                    value={data.email} 
+                    onChange={(e) => setData({ email: e.target.value })} 
+                    error={errors.email} 
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    className="bg-gray-300 text-dark w-1/3 rounded-full p-2 text-xs" 
+                    onClick={() => setStep(2)}
+                  >
+                    Kembali
+                  </button>
+                  <button 
+                    className="bg-primary-base text-white w-2/3 rounded-full p-2 text-xs disabled:bg-primary-disabled disabled:opacity-50" 
+                    onClick={submitRegister}
+                    disabled={!data.image || !data.email || loading}
+                  >
+                    {loading ? <Spinner color="default" size="sm" /> : "Selanjutnya"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {step === 4 && (
+            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-4 ${step === 4 ? "opacity-100" : "opacity-0"}`}>
+              <Image src={Logo} alt="Logo" className="w-1/3 mb-2" />
               <p className="text-primary-base font-semibold text-center">Verifikasi melalui email</p>
               <p className="text-dark text-xs font-semibold text-center px-5">
                 Mohon periksa Email kamu. Kami telah mengirimkan kode ke <span className="text-primary-base">{data.email}</span>
@@ -411,7 +576,7 @@ const Auth = () => {
               <div className="flex flex-col items-center w-full">
                 {countdownEndTime && countdownActive && <Countdown date={countdownEndTime} renderer={renderer} />}
                 {countdownActive ? (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={verifyLogin} disabled={loading || otp.length < 6}>
+                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={verifyRegister} disabled={loading || otp.length < 6}>
                     {loading ? <Spinner color="default" size="sm" /> : "Verifikasi"}
                   </button>
                 ) : (
@@ -422,41 +587,42 @@ const Auth = () => {
               </div>
             </div>
           )}
-          {step === 3 && (
-            <div className={`flex flex-col justify-center items-center transition-opacity duration-100 gap-5 ${step === 3 ? "opacity-100" : "opacity-0"}`}>
-              <p className="text-primary-base font-semibold text-center">Verifikasi melalui email</p>
-              <p className="text-dark text-xs font-semibold text-center">Mohon periksa Email kamu. Kami telah mengirimkan kode ke {data.email}</p>
-              <OTPInput
-                value={otp}
-                onChange={setOtp}
-                numInputs={6}
-                inputType="tel"
-                renderSeparator={<span>-</span>}
-                renderInput={(props) => <input {...props} />}
-                containerStyle={{ width: "80%" }}
-                inputStyle={{
-                  border: "1px solid grey ",
-                  borderRadius: "8px",
-                  width: "100%",
-                  height: "40px",
-                  fontSize: "20px",
-                  color: "#000",
-                  fontWeight: "400",
-                }}
-              />
-              {errors && <p className="text-danger text-[10px] mt-1">{errors.error}</p>}
+          {step === 5 && (
+            <div className={`transition-opacity duration-300 opacity-0 ${step === 5 && "opacity-100"}`}>
+              <div className="flex justify-center flex-col items-center">
+                <Image src={Logo} alt="Logo" className="w-1/3 mb-[20px]" />
+                <h2 className="text-dark font-semibold text-xl mt-2">Set Password</h2>
+                <p className="text-grey text-sm text-center mb-3">Buat password untuk akun creator Anda</p>
+              </div>
+              <div className="flex flex-col w-full px-5 gap-3">
+                <div>
+                  <PasswordInput 
+                    labelProps={{ size: "xs" }} 
+                    label="Password" 
+                    placeholder="Masukan Password" 
+                    value={data.password} 
+                    onChange={(e) => setData({ password: e.target.value })} 
+                    error={errors.password} 
+                  />
+                </div>
+                <div>
+                  <PasswordInput
+                    labelProps={{ size: "xs" }}
+                    label="Konfirmasi Password"
+                    placeholder="Masukan Konfirmasi Password"
+                    value={data.password_confirm}
+                    onChange={(e) => setData({ password_confirm: e.target.value })}
+                    error={errors.password_confirm}
+                  />
+                </div>
 
-              <div className="flex flex-col items-center w-full">
-                {countdownEndTime && countdownActive && <Countdown date={countdownEndTime} renderer={renderer} />}
-                {countdownActive ? (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={verifyRegister} disabled={loading || otp.length < 6}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Verifikasi"}
-                  </button>
-                ) : (
-                  <button className="bg-primary-base text-white w-1/2 rounded-full p-2 text-xs mt-3 hover:bg-primary-dark disabled:bg-primary-disabled" onClick={handleResendOtp} disabled={loading}>
-                    {loading ? <Spinner color="default" size="sm" /> : "Kirim Ulang"}
-                  </button>
-                )}
+                <button 
+                  className="bg-primary-base mt-[20px] mb-[20px] text-white w-full rounded-full p-2 text-xs disabled:bg-primary-disabled disabled:opacity-50" 
+                  onClick={submitCreator}
+                  disabled={!data.password || !data.password_confirm || loading}
+                >
+                  {loading ? <Spinner color="default" size="sm" /> : "Buat Akun Creator"}
+                </button>
               </div>
             </div>
           )}
