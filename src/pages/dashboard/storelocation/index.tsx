@@ -292,7 +292,7 @@ const StoreLocationPage = () => {
         const payload = { ...form.values };
         setLoading.append("submit");
         const req = isEditMode && selectedItem
-            ? Put(`store-locations/${selectedItem.id}`, payload)
+            ? Put(`store-locations/${selectedItem.slug_url}`, payload)
             : Post("store-locations", payload);
 
         req

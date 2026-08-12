@@ -1751,6 +1751,13 @@ const sidebarData: SidebarData = [
         link: "/dashboard/admin/role",
         role: "Admin",
       },
+      {
+        id: 1,
+        name: "Module",
+        icon: faUser,
+        link: "/dashboard/admin/module",
+        role: "Admin",
+      },
     ],
   },
 
@@ -1877,6 +1884,7 @@ const sidebarData: SidebarData = [
       },
       {
         id: 103,
+        moduleId: 13,
         name: "Down Payment Report",
         iconify: "carbon:wallet",
         role: "Creator",
@@ -2424,7 +2432,13 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                       {el.submenu && (
                         <ul className={`${openMenu[el.id] && visible ? "max-h-[1000px] mb-3" : "max-h-0"} ml-[10px] transition-all duration-300 ease-in-out overflow-hidden`}>
                           {el.submenu
-                            .filter((subEl) => subEl.role === role)
+                            .filter((subEl) => {
+                              if (subEl.role !== role) return false;
+                              if (role === "Creator" && subEl.moduleId) {
+                                return users?.permissions?.some((p) => p.module_id === subEl.moduleId);
+                              }
+                              return true;
+                            })
                             .map((subEl, i) => (
                               <li
                                 key={i}

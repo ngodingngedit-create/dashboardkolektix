@@ -428,6 +428,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         low_quantity_warning: 4,
         discount: 0,
         add_to_flash_sale: 0,
+        is_kolektix: 1,
         is_product_varian: is_variant ? 1 : 0,
         store_location_id: store_location_id !== null ? Number(store_location_id) : null,
         is_delivery: is_delivery ? 1 : 0,
