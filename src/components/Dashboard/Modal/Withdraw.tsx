@@ -242,6 +242,7 @@ interface EventData {
   total_views: number;
   total_withdraw: number;
   total_pendapatan: number;
+  total_voucher: number;
 }
 
 interface TarikDanaModalProps {
@@ -374,7 +375,7 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug,
   const calculateAvailableBalance = () => {
     // Jika ada eventData (dari konteks event), hitung dari pendapatan event
     if (eventData && eventData.event_name) {
-      const totalEarned = Number(eventData.total_pendapatan) || 0;
+      const totalEarned = (Number(eventData.total_pendapatan) || 0) - (Number(eventData.total_voucher) || 0);
       const totalWithdrawn = Number(eventData.total_withdraw) || 0;
       const availableBalance = totalEarned;
 

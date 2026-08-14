@@ -53,6 +53,7 @@ interface EventData {
   total_ticket_pending: number;
   total_ticket_sold: number;
   total_pendapatan: number;
+  total_voucher: number;
 }
 
 interface WithdrawHistory {
@@ -773,10 +774,10 @@ const MyEventDetail = () => {
     }
 
     const dataExcel: any[] = [];
-    
+
     invitation.forEach((item, index) => {
       const categoryName = invitationCategory?.find((e) => e.id == item?.invitation_cat_id)?.name ?? "-";
-      
+
       if (item.event_invitation_detail && item.event_invitation_detail.length > 0) {
         item.event_invitation_detail.forEach((detail: any) => {
           dataExcel.push({
@@ -807,7 +808,7 @@ const MyEventDetail = () => {
     const worksheet = XLSX.utils.json_to_sheet(dataExcel);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Invitation");
-    
+
     worksheet["!cols"] = [
       { wch: 5 },  // No
       { wch: 25 }, // Judul Undangan
@@ -893,7 +894,7 @@ const MyEventDetail = () => {
                       <p className="text-grey">Total Pendapatan Event</p>
                       <h6>
                         Rp.
-                        {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
+                        {((eventData?.total_pendapatan || 0) - Number(eventData?.total_voucher || 0)).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
                     </div>
                     <Button color="primary" label="Tarik Dana" startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />

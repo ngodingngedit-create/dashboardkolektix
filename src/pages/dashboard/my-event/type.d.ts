@@ -329,6 +329,7 @@ export type EventData = {
   total_ticket_pending: number;
   total_ticket_sold: number;
   total_pendapatan: number;
+  total_voucher: number;
 };
 
 export type DownpaymentData = {
