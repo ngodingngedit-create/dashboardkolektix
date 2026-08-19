@@ -431,7 +431,7 @@ const Chat = () => {
                     }`}
                     disabled={!messages.message.trim()}
                   >
-                    <Icon icon="solar:paper-plane-bold" width={22} />
+                    <FontAwesomeIcon icon={faPaperPlane} />
                   </button>
                 </form>
               </div>

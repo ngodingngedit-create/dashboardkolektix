@@ -1,6 +1,6 @@
 import { Delete, Get, Post, Put } from "@/utils/REST";
 import {
-  Card, Flex, ActionIcon, Group, Modal,
+  Flex, ActionIcon, Group, Modal,
   Tooltip, Text, Badge, Pagination as PaginationM,
   Button as ButtonM, Stack, TextInput, Textarea, Box, Switch as SwitchM, NumberInput
 } from "@mantine/core";
@@ -19,6 +19,7 @@ import Image from "next/image";
 import imagePlus from "../../../../assets/icon/image-plus.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faSave } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/router";
 import InputField from "@/components/Input";
 import InputEditor from "@/components/Input/InputEditor";
 import Button from "@/components/Button";
@@ -140,6 +141,7 @@ const emptyForm = {
 };
 
 export default function AdminCreateShuttle() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ShuttleItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -1021,14 +1023,23 @@ export default function AdminCreateShuttle() {
   // --- TABLE VIEW ---
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
-      <Flex justify="space-between" align="center" mb={10}>
-        <Stack gap={4}>
-          <Text size="1.7rem" fw={700} style={{ color: "#0B387C" }}>
-            <Icon icon="ph:bus-bold" style={{ marginRight: 8, verticalAlign: "middle" }} />
-            Event Shuttle
-          </Text>
-          <Text size="sm" c="gray">Kelola daftar event shuttle yang tersedia</Text>
-        </Stack>
+      <Flex justify="space-between" align="center" mb={8}>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push("/dashboard/admin")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <Stack gap={4}>
+            <Text size="1.7rem" fw={700} style={{ color: "#0B387C", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Icon icon="ph:bus-bold" />
+              Event Shuttle
+            </Text>
+            <Text size="sm" c="gray">Kelola daftar event shuttle yang tersedia</Text>
+          </Stack>
+        </Flex>
         <ButtonM
           color="blue"
           leftSection={<Icon icon="ph:plus-bold" />}
@@ -1040,7 +1051,7 @@ export default function AdminCreateShuttle() {
         </ButtonM>
       </Flex>
 
-      <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden">
+      <div className="mt-4">
         <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <Text size="sm" fw={600} c="gray.7">Total: <b>{total}</b> shuttle</Text>
           <div style={{ width: 280 }}>
@@ -1057,113 +1068,71 @@ export default function AdminCreateShuttle() {
           </div>
         </Flex>
 
-        <div className="w-full bg-white overflow-x-auto">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "2px solid #e8e8e8" }}>
-                <th style={{ ...tableHeadStyle, width: 50, textAlign: "center" }}>No</th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("name")}>
-                  Nama <SortIcon col="name" />
-                </th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("slug")}>
-                  Slug <SortIcon col="slug" />
-                </th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("start_date")}>
-                  Tanggal <SortIcon col="start_date" />
-                </th>
-                <th style={{ ...tableHeadStyle }}>Metode Bayar</th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Status</th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: 48, textAlign: "center" }}>
-                    <Text c="dimmed">Memuat data...</Text>
-                  </td>
-                </tr>
-              ) : sortedData.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: 48, textAlign: "center" }}>
-                    <Stack align="center" gap={8}>
-                      <Icon icon="ph:bus-duotone" style={{ fontSize: 40, color: "#ccc" }} />
-                      <Text c="dimmed">Tidak ada data shuttle</Text>
-                    </Stack>
-                  </td>
-                </tr>
-              ) : (
-                sortedData.map((item, i) => (
-                  <tr
-                    key={item.id}
-                    style={{ borderBottom: "1px solid #f0f0f0", transition: "background 0.15s" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#f8fafd")}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "")}
-                  >
-                    <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Text size="sm" c="dimmed">{(page - 1) * PER_PAGE + i + 1}</Text>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <Group gap="sm" wrap="nowrap">
-                        <div style={{ width: 48, height: 48, borderRadius: 8, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
-                          {item.image_url ? (
-                            <img src={item.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                              <Icon icon="ph:bus" style={{ fontSize: 20, color: "#ccc" }} />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <Text size="sm" fw={700} lineClamp={1}>{item.name}</Text>
-                          <Text size="xs" c="dimmed" lineClamp={1}>{item.description}</Text>
-                        </div>
-                      </Group>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <Text size="xs" c="dimmed" ff="monospace">{item.slug}</Text>
-                      <Text size="xs" c="blue" ff="monospace">{item.slug_url}</Text>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <Text size="xs" fw={500}>{moment(item.start_date).format("DD MMM YYYY")}</Text>
-                      <Text size="xs" c="dimmed">{item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}</Text>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <Group gap={4} wrap="wrap">
-                        {item.payment_method_custom?.split(",").map(m => (
-                          <Badge key={m} size="xs" variant="light" color="blue">{m.trim()}</Badge>
-                        ))}
-                      </Group>
-                    </td>
-                    <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Badge variant="filled" size="sm" color={item.is_active ? "green" : "gray"} radius="sm">
-                        {item.is_active ? "Aktif" : "Nonaktif"}
-                      </Badge>
-                    </td>
-                    <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Group gap={6} justify="center">
-                        <Tooltip label="Lihat Detail">
-                          <ActionIcon variant="filled" color="cyan" size="md" radius="sm" onClick={() => handleOpenView(item.slug)}>
-                            <Icon icon="ph:eye" style={{ fontSize: 16 }} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Edit Shuttle">
-                          <ActionIcon variant="filled" color="indigo" size="md" radius="sm" onClick={() => handleOpenEdit(item.slug)}>
-                            <Icon icon="ph:pencil-simple" style={{ fontSize: 16 }} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Hapus Shuttle">
-                          <ActionIcon variant="filled" color="red" size="md" radius="sm" onClick={() => handleDelete(item.id, item.name)}>
-                            <Icon icon="ph:trash" style={{ fontSize: 16 }} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10 p-4 md:p-5">
+          {loading ? (
+            <>
+              <div className="w-full bg-gray-100 rounded-xl animate-pulse h-64" />
+              <div className="w-full bg-gray-100 rounded-xl animate-pulse h-64" />
+              <div className="w-full bg-gray-100 rounded-xl animate-pulse h-64" />
+              <div className="w-full bg-gray-100 rounded-xl animate-pulse h-64" />
+            </>
+          ) : sortedData.length === 0 ? (
+            <div className="col-span-full border border-primary-light-200 flex flex-col items-center justify-center min-h-[40vh] rounded-md gap-3 text-center text-dark px-5">
+              <Icon icon="ph:bus-duotone" style={{ fontSize: 40, color: "#ccc" }} />
+              <h3 className="text-xl font-semibold">Tidak ada data shuttle</h3>
+            </div>
+          ) : (
+            sortedData.map((item) => (
+              <div key={item.id} className="w-full bg-white rounded-xl shadow-md border border-primary-light-200 overflow-hidden">
+                <div className="relative w-full h-44 bg-gray-100">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt="" className="w-full h-44 object-cover" />
+                  ) : (
+                    <div className="w-full h-44 flex items-center justify-center">
+                      <Icon icon="ph:bus" style={{ fontSize: 40, color: "#ccc" }} />
+                    </div>
+                  )}
+                  <div className="absolute right-2 top-2">
+                    <Badge variant="filled" size="sm" color={item.is_active ? "green" : "gray"} radius="sm">
+                      {item.is_active ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h5 className="text-lg font-semibold text-dark truncate">{item.name}</h5>
+                  <p className="text-grey text-sm mt-1 line-clamp-2">{item.description}</p>
+                  <p className="text-dark text-sm mt-3">
+                    <Icon icon="ph:calendar-blank" className="inline text-gray-400 mr-1.5" />
+                    {moment(item.start_date).format("DD MMM YYYY")} • {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                  </p>
+                  <Group gap={4} wrap="wrap" mt={8}>
+                    {item.payment_method_custom?.split(",").map(m => (
+                      <Badge key={m} size="xs" variant="light" color="blue">{m.trim()}</Badge>
+                    ))}
+                  </Group>
+                  <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-end">
+                    <Group gap={4}>
+                      <Tooltip label="Lihat Detail">
+                        <ActionIcon variant="transparent" color="cyan" onClick={() => handleOpenView(item.slug)}>
+                          <Icon icon="ph:eye" style={{ fontSize: 18 }} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Edit Shuttle">
+                        <ActionIcon variant="transparent" color="gray" onClick={() => handleOpenEdit(item.slug)}>
+                          <Icon icon="ph:pencil-simple" style={{ fontSize: 18 }} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Hapus Shuttle">
+                        <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, item.name)}>
+                          <Icon icon="ph:trash" style={{ fontSize: 18 }} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {total > PER_PAGE && (
@@ -1178,7 +1147,7 @@ export default function AdminCreateShuttle() {
             />
           </div>
         )}
-      </Card>
+      </div>
 
       {/* View Detail Modal */}
       <Modal

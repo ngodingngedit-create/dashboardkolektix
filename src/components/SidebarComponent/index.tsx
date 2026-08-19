@@ -2086,7 +2086,7 @@ const sidebarData: SidebarData = [
   { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator", moduleId: 6 },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
-  { id: 11, name: "Project Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement" },
+  { id: 11, name: "Project Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement", moduleId: 14 },
   { id: 12, moduleId: 12, name: "Microsite Settings", icon: faCogs, role: "Creator", link: "/dashboard/microsite" },
   // { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard" },
 ];
@@ -2198,13 +2198,6 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
         );
         return !!hasPermission;
       }
-
-      // Feature flag for Issue Management
-      if (el.id === 11) {
-        const isProduction = hostname === "kolektix.com" || hostname === "dashboard.kolektix.com";
-        return !isProduction;
-      }
-
       return true;
     });
   }, [role, users, hostname]);

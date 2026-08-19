@@ -23,6 +23,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { Tab, Tabs } from '@nextui-org/react';
+import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -108,6 +109,7 @@ type FormType = 'ktp' | 'npwp' | null;
 const ProfileCreator = () => {
   const [loading, setLoading] = useListState<string>();
   const userData = useLoggedUser();
+  const router = useRouter();
 
   // ── Tab 1: Profil Creator ──────────────────────────────────────────────────
   const [profileList, setProfileList] = useState<CreatorProfileRecord[]>([]);
@@ -291,7 +293,7 @@ const ProfileCreator = () => {
   const ktpForm = useForm<FormKTPProps>({
     initialValues: { no_identity: '', name_identity: '', address_identity: '', file_identity: '' },
     validate: {
-      no_identity: (v) => (!v ? 'Nomor KTP harus diisi' : null),
+      no_identity: (v) => (!v ? 'Nomor KTP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor KTP harus 16 digit angka' : null),
       name_identity: (v) => (!v ? 'Nama harus diisi' : null),
       address_identity: (v) => (!v ? 'Alamat harus diisi' : null),
     },
@@ -300,7 +302,7 @@ const ProfileCreator = () => {
   const npwpForm = useForm<FormNPWPProps>({
     initialValues: { no_npwp: '', name_npwp: '', address_npwp: '', file_npwp: '' },
     validate: {
-      no_npwp: (v) => (!v ? 'Nomor NPWP harus diisi' : null),
+      no_npwp: (v) => (!v ? 'Nomor NPWP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor NPWP harus 16 digit angka' : null),
       name_npwp: (v) => (!v ? 'Nama harus diisi' : null),
       address_npwp: (v) => (!v ? 'Alamat harus diisi' : null),
     },
@@ -916,7 +918,8 @@ const ProfileCreator = () => {
               </label>
             </Box>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput label="Nomor KTP" placeholder="Ketik 16 digit nomor KTP" required {...ktpForm.getInputProps('no_identity')} />
+              <TextInput label="Nomor KTP" placeholder="Ketik 16 digit nomor KTP" required maxLength={16} {...ktpForm.getInputProps('no_identity')}
+                onChange={(e) => ktpForm.setFieldValue('no_identity', e.target.value.replace(/\D/g, ''))} />
               <TextInput label="Nama (Sesuai KTP)" placeholder="Ketik nama sesuai KTP" required {...ktpForm.getInputProps('name_identity')} />
               <TextInput label="Alamat (Sesuai KTP)" placeholder="Ketik alamat sesuai KTP" required className="md:col-span-2" {...ktpForm.getInputProps('address_identity')} />
             </div>
@@ -980,7 +983,8 @@ const ProfileCreator = () => {
               </label>
             </Box>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput label="Nomor NPWP" placeholder="Ketik 16 digit nomor NPWP" required {...npwpForm.getInputProps('no_npwp')} />
+              <TextInput label="Nomor NPWP" placeholder="Ketik 16 digit nomor NPWP" required maxLength={16} {...npwpForm.getInputProps('no_npwp')}
+                onChange={(e) => npwpForm.setFieldValue('no_npwp', e.target.value.replace(/\D/g, ''))} />
               <TextInput label="Nama (Sesuai NPWP)" placeholder="Ketik nama sesuai NPWP" required {...npwpForm.getInputProps('name_npwp')} />
               <TextInput label="Alamat (Sesuai NPWP)" placeholder="Ketik alamat sesuai NPWP" required className="md:col-span-2" {...npwpForm.getInputProps('address_npwp')} />
             </div>
@@ -1027,7 +1031,7 @@ const ProfileCreator = () => {
   );
 
   const renderResetPasswordForm = () => (
-    <Stack gap={25} maw={600} mx="auto">
+    <Stack gap={25} maw={600}>
       <Stack gap={0}>
         <Title order={2} size="h3">Reset Password</Title>
         <Text size="sm" c="gray">Ubah password akun Anda di sini</Text>
@@ -1079,8 +1083,22 @@ const ProfileCreator = () => {
   // ══════════════════════════════════════════════════════════════════════════
 
   return (
-    <Card>
-      <Tabs
+    <div className="p-5">
+      <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <h1 className="text-dark m-0">Akun Creator</h1>
+        </div>
+      </div>
+
+      <Card>
+        <Tabs
         variant="solid"
         aria-label="Profil Creator Tabs"
         className="border border-b-2 border-primary-light-200 border-x-0 border-t-0"
@@ -1114,7 +1132,8 @@ const ProfileCreator = () => {
           </div>
         </Tab>
       </Tabs>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

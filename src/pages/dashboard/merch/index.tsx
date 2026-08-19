@@ -898,19 +898,21 @@
 // export default Merch;
 import CreateMerchandise from "@/components/CreateMerchandise";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Switch, TextInput, Select, Pagination as MantinePagination, Stack, Divider, Text } from "@mantine/core";
-import { Input, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs } from "@nextui-org/react";
+import { NumberFormatter, Button as ButtonM, Flex, ActionIcon, Switch, Pagination as MantinePagination, Stack, Divider, Text } from "@mantine/core";
+import { Tab, Tabs } from "@nextui-org/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { MerchListResponse } from "./type";
 import { modals } from "@mantine/modals";
-import { faCirclePlus } from "@fortawesome/free-solid-svg-icons";
-import merchIcon from "../../../assets/svg/merch.svg";
+import { faArrowLeft, faSearch, faCirclePlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Button from "@/components/Button";
+import InputField from "@/components/Input";
 import useLoggedUser from "@/utils/useLoggedUser";
 import _ from "lodash";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import { Get } from "@/utils/REST";
+import { useRouter } from "next/router";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 
 const PER_PAGE = 10;
@@ -935,6 +937,7 @@ const Merch: React.FC = () => {
   const [totalWithdrawn, setTotalWithdrawn] = useState<number>(0);
 
   const user = useLoggedUser();
+  const router = useRouter();
   const tabStatus: [number, string][] = [
     [2, "Sedang Dijual"],
     [1, "Produk Draf"],
@@ -1174,22 +1177,6 @@ const Merch: React.FC = () => {
    * FILTER & SEARCH STATE
    */
   const [search, setSearch] = useState<string>("");
-  const [filterProduct, setFilterProduct] = useState<string | null>(null);
-  const [mtSortBy, setMtSortBy] = useState<string>("");
-  const [mtSortDir, setMtSortDir] = useState<"asc" | "desc">("asc");
-  const handleMTSort = (col: string) => {
-    if (mtSortBy === col) setMtSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setMtSortBy(col); setMtSortDir("asc"); }
-  };
-
-  // Daftar nama produk unik untuk dropdown filter
-  const productNames = useMemo(() => {
-    const names = new Set<string>();
-    merchList.forEach((item) => {
-      if (item.product_name) names.add(item.product_name);
-    });
-    return Array.from(names).map((n) => ({ value: n, label: n }));
-  }, [merchList]);
 
   // Fungsi untuk mendapatkan SKU produk
   const getProductSku = (item: MerchListResponse): string => {
@@ -1245,55 +1232,16 @@ const Merch: React.FC = () => {
           if (!itemSearchText(item).includes(needle)) return false;
         }
 
-        if (filterProduct && filterProduct !== "all") {
-          if (!item.product_name?.toLowerCase().includes(filterProduct.toLowerCase())) return false;
-        }
-
         return true;
       });
 
       map.set(status, filtered);
     }
     return map;
-  }, [splittedByStatus, search, filterProduct, tabStatus]);
-
-  const sortedFilteredMap = useMemo(() => {
-    const map = new Map<number, MerchListResponse[]>();
-    for (const [status] of tabStatus) {
-      let filtered = [...(filteredMap.get(status) || [])];
-      if (mtSortBy) {
-        filtered.sort((a: any, b: any) => {
-          let valA: any = "";
-          let valB: any = "";
-          if (mtSortBy === "product_name") {
-            valA = a.product_name ?? "";
-            valB = b.product_name ?? "";
-          } else if (mtSortBy === "sku") {
-            valA = getProductSku(a);
-            valB = getProductSku(b);
-          } else if (mtSortBy === "price") {
-            valA = parseInt(a.product_varian?.[0]?.price ?? a.price ?? "0", 10) || 0;
-            valB = parseInt(b.product_varian?.[0]?.price ?? b.price ?? "0", 10) || 0;
-          } else if (mtSortBy === "stock") {
-            valA = a.product_varian?.length ? _.sumBy(a.product_varian, "stock_qty") : a.qty;
-            valB = b.product_varian?.length ? _.sumBy(b.product_varian, "stock_qty") : b.qty;
-          }
-
-          if (typeof valA === "string") valA = valA.toLowerCase();
-          if (typeof valB === "string") valB = valB.toLowerCase();
-
-          if (valA < valB) return mtSortDir === "asc" ? -1 : 1;
-          if (valA > valB) return mtSortDir === "asc" ? 1 : -1;
-          return 0;
-        });
-      }
-      map.set(status, filtered);
-    }
-    return map;
-  }, [filteredMap, tabStatus, mtSortBy, mtSortDir]);
+  }, [splittedByStatus, search, tabStatus]);
 
   return (
-    <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
+    <div className="p-5">
       {/* Withdraw Modal */}
       <TarikDanaModal
         isOpen={isWithdrawOpen}
@@ -1315,12 +1263,35 @@ const Merch: React.FC = () => {
         />
       ) : (
         <>
-          {/* Header dengan stats */}
-          <Flex justify="space-between" align="center" wrap="wrap" gap="md">
-            <Title order={1} size="h2">
-              Produk Saya
-            </Title>
-            <Flex gap="xl" align="center">
+          {/* Header: judul di kiri, search di kanan (sejajar judul) */}
+          <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                aria-label="Kembali ke Dashboard"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} />
+              </button>
+              <h1 className="text-dark m-0">Produk Saya</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <InputField
+                type="text"
+                size="sm"
+                placeholder="Cari Produk"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title="Cari">
+                <FontAwesomeIcon icon={faSearch} />
+              </button>
+            </div>
+          </div>
+
+          {/* Statistik pendapatan & aksi buat produk */}
+          <div className="bg-white border border-primary-light-200 rounded-xl p-4 mb-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <Flex gap="xl" align="center" wrap="wrap">
               <Stack gap={4}>
                 <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Pendapatan</Text>
                 <Flex align="center" gap="xs">
@@ -1353,17 +1324,16 @@ const Merch: React.FC = () => {
                   </Stack>
                 </Flex>
               </Stack>
-              <Divider orientation="vertical" />
-              <ButtonM
-                onClick={() => openCreateModal("")}
-                leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />}
-                radius="xl"
-                color="#0B387C"
-              >
-                Buat Produk
-              </ButtonM>
             </Flex>
-          </Flex>
+            <ButtonM
+              onClick={() => openCreateModal("")}
+              leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />}
+              radius="xl"
+              color="#0B387C"
+            >
+              Buat Produk
+            </ButtonM>
+          </div>
 
           <Tabs
             variant="solid"
@@ -1376,167 +1346,99 @@ const Merch: React.FC = () => {
             }}
           >
             {tabStatus.map(([status, label]) => {
-              const filtered = sortedFilteredMap.get(status) ?? [];
+              const filtered = filteredMap.get(status) ?? [];
 
               return (
                 <Tab key={status} title={label}>
-                  <Card className="!overflow-auto" p={0} withBorder>
-                    {/* filter bar */}
-                    <Flex align="center" gap="sm" wrap="wrap" px={16} py={12} justify="flex-end" style={{ borderBottom: '1px solid #eee' }}>
-                      <Select
-                        placeholder="Filter Produk"
-                        data={[
-                          { value: 'all', label: 'Semua Produk' },
-                          ...productNames,
-                        ]}
-                        value={filterProduct || 'all'}
-                        onChange={(val) => setFilterProduct(val)}
-                        style={{ minWidth: 200 }}
-                        size="sm"
-                        searchable
-                        clearable
-                      />
-                      <TextInput
-                        placeholder="Cari Produk..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        leftSection={<Icon icon="akar-icons:search" width={16} />}
-                        style={{ width: 280 }}
-                        size="sm"
-                      />
-                      {(search || (filterProduct && filterProduct !== 'all')) && (
-                        <ButtonM
-                          size="sm"
-                          variant="light"
-                          color="gray"
-                          onClick={() => { setSearch(""); setFilterProduct(null); }}
-                          leftSection={<Icon icon="solar:refresh-bold" width={14} />}
-                          radius="xl"
-                        >
-                          Reset
-                        </ButtonM>
-                      )}
-                    </Flex>
+                  {!loading2 ? (
+                    filtered.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10 my-5 px-5">
+                          {filtered.map((item: MerchListResponse) => {
+                            const image = item.product_image?.[0]?.image_url;
+                            const price = Number(item.product_varian?.[0]?.price ?? item.price ?? 0) || 0;
+                            const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
+                            const location = item.has_store_location?.store_name || "-";
 
-
-                    <div className="bg-white rounded-[8px] overflow-hidden">
-                      <Table
-                        removeWrapper
-                        className="rounded-[8px] [&_td]:py-[15px] min-w-[800px]"
-                      >
-                        <TableHeader>
-                          <TableColumn>#</TableColumn>
-                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('product_name')}>Info Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
-                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
-                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('price')}>Harga {mtSortBy === 'price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
-                          <TableColumn className="cursor-pointer" onClick={() => handleMTSort('stock')}>Stock {mtSortBy === 'stock' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}</TableColumn>
-                          <TableColumn>Lokasi</TableColumn>
-                          <TableColumn>Aktif</TableColumn>
-                        </TableHeader>
-
-                        <TableBody>
-                          {filtered.length === 0 ? (
-                            <TableRow key="empty">
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                              <TableCell>{null}</TableCell>
-                            </TableRow>
-                          ) : (
-                            filtered.map((item, i) => {
-                              const safeId = String(item.id ?? i);
-                              const safeSlug = String(item.slug || "");
-                              const safeSlugUrl = String((item as any).slug_url || item.slug || "");
-
-                              // Gunakan fungsi getProductSku untuk mendapatkan SKU
-                              const safeSku = getProductSku(item);
-
-                              const safePriceRaw = String(item.product_varian?.[0]?.price ?? item.price ?? "0");
-                              const safePrice = parseInt(safePriceRaw === "" ? "0" : safePriceRaw, 10) || 0;
-                              const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
-                              const location = item.has_store_location?.store_name || "-";
-
-                              return (
-                                <TableRow key={safeId}>
-                                  <TableCell className="whitespace-nowrap">{i + 1}</TableCell>
-
-                                  <TableCell>
-                                    <div className="flex items-center gap-[10px]">
-                                      <p>{String(item.product_name ?? "")}</p>
+                            return (
+                              <div key={String(item.id)} className="w-full bg-white rounded-xl shadow-md border border-primary-light-200 overflow-hidden">
+                                <div className="relative w-full h-44 bg-primary-light">
+                                  {image ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={image} alt={item.product_name} className="w-full h-44 object-cover" />
+                                  ) : (
+                                    <div className="w-full h-44 flex items-center justify-center bg-gray-200">
+                                      <Icon icon="solar:box-bold" className="text-4xl text-gray-400" />
                                     </div>
-                                  </TableCell>
-
-                                  <TableCell className="whitespace-nowrap">
-                                    {safeSku !== "-" ? safeSku : "-"}
-                                  </TableCell>
-
-                                  <TableCell className="whitespace-nowrap">
-                                    <NumberFormatter value={safePrice} prefix="Rp " />
-                                  </TableCell>
-
-                                  <TableCell>
-                                    <Link href={`/dashboard/stockmanagement?action=create&productName=${encodeURIComponent(String(item.product_name || ''))}`} className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
-                                      {stock ?? 0}
-                                    </Link>
-                                  </TableCell>
-
-                                  <TableCell className="whitespace-nowrap">{String(location)}</TableCell>
-
-                                  <TableCell>
-                                    <div className="flex items-center gap-[10px]">
-                                      <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
-                                      <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${safeSlug}`}>
-                                        <Icon icon="akar-icons:eye" className="text-[24px]" />
+                                  )}
+                                  <div className="absolute right-2 top-2">
+                                    <span className="bg-light-grey text-dark py-1 px-3 rounded-full shadow-sm text-xs">{label}</span>
+                                  </div>
+                                </div>
+                                <div className="p-4">
+                                  <h5 className="text-lg font-semibold text-dark truncate">{item.product_name}</h5>
+                                  <p className="text-primary-base font-bold mt-1">
+                                    <NumberFormatter prefix="Rp " value={price} thousandSeparator="." decimalSeparator="," />
+                                  </p>
+                                  <div className="flex items-center gap-4 mt-3 text-sm text-grey">
+                                    <span>
+                                      Stock:{" "}
+                                      <Link
+                                        href={`/dashboard/stockmanagement?action=create&productName=${encodeURIComponent(String(item.product_name || ""))}`}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                      >
+                                        {stock ?? 0}
+                                      </Link>
+                                    </span>
+                                    <span>{String(location)}</span>
+                                  </div>
+                                  <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-between">
+                                    <Switch checked={item.product_status_id === 2} disabled={loading.includes("toggle-status")} onChange={(z: any) => handleToggleStatus(item.id, z.target.checked)} />
+                                    <div className="flex items-center gap-1">
+                                      <ActionIcon variant="transparent" component={Link as any} href={`/dashboard/merch/${String(item.slug || "")}`}>
+                                        <Icon icon="akar-icons:eye" className="text-[22px]" />
                                       </ActionIcon>
-                                      <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(safeSlug)}>
-                                        <Icon icon="akar-icons:edit" className="text-[24px]" />
+                                      <ActionIcon variant="transparent" color="gray" onClick={() => openCreateModal(String(item.slug || ""))}>
+                                        <Icon icon="akar-icons:edit" className="text-[22px]" />
                                       </ActionIcon>
-                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, safeSlugUrl)}>
+                                      <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, String((item as any).slug_url || item.slug || ""))}>
                                         <Icon icon="uiw:delete" className="text-[18px]" />
                                       </ActionIcon>
                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {filtered.length === 0 && (
-                      <Center mih={200} w="100%">
-                        <div className="py-[30px] px-[20px] flex flex-col items-center justify-center text-dark gap-2 w-full">
-                          <div className="border-2 border-primary-light-200 bg-primary-light rounded-md h-10 flex items-center justify-center mb-2">
-                            {/* <NextImage src={merchIcon} alt="merch" className="w-7" /> */}
-                            <div className="w-7 h-7 bg-gray-300 rounded"></div>
-                          </div>
-                          <div className="text-center">
-                            <p className="font-semibold text-lg">Belum ada Produk yang dibuat</p>
-                            <p className="text-grey max-w-72 mt-[10px]">
-                              Mulai buat merchandise dengan klik button &quot;Buat Produk&quot; di bawah.
-                            </p>
-                          </div>
-                          <Button label="Buat Produk" color="primary" className="mt-4" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </Center>
-                    )}
-
-                    <Flex justify="center" align="center" gap="md" py={16} style={{ borderTop: '1px solid #f0f0f0' }}>
-                      <MantinePagination
-                        total={lastPage}
-                        value={page}
-                        onChange={setPage}
-                        size="sm"
-                        radius="md"
-                        withEdges
-                        color="#0B387C"
-                      />
-                    </Flex>
-                  </Card>
+                        <div className="flex justify-center py-6" style={{ borderTop: "1px solid #f0f0f0" }}>
+                          <MantinePagination
+                            total={lastPage}
+                            value={page}
+                            onChange={setPage}
+                            size="sm"
+                            radius="md"
+                            withEdges
+                            color="#0B387C"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark px-5 my-5">
+                        <div className="w-7 h-7 bg-gray-300 rounded"></div>
+                        <h3 className="text-xl font-semibold">Belum ada Produk yang dibuat</h3>
+                        <p className="px-10">Mulai buat merchandise dengan klik button &quot;Buat Produk&quot; di atas.</p>
+                        <Button label="Buat Produk" color="primary" className="mt-3" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
+                      </div>
+                    )
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 content-center justify-items-center gap-y-10 my-5 px-5">
+                      <div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse" />
+                      <div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse" />
+                      <div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse" />
+                      <div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse" />
+                    </div>
+                  )}
                 </Tab>
               );
             })}

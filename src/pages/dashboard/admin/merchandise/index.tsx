@@ -1,6 +1,6 @@
 import CreateMerchandiseAdmin from "@/components/CreateMerchandiseAdmin";
 import { Delete, Post } from "@/utils/REST";
-import { Card, Center, NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Group, Select, Modal, Tooltip, Text, Badge, Avatar, Paper, Stack } from "@mantine/core";
+import { NumberFormatter, Button as ButtonM, Title, Flex, ActionIcon, Group, Select, Modal, Tooltip, Text, Badge, Avatar, Paper, Stack } from "@mantine/core";
 import { Input } from "@nextui-org/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { modals } from "@mantine/modals";
@@ -9,6 +9,9 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import { Get } from "@/utils/REST";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useRouter } from "next/router";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -74,6 +77,7 @@ interface CreatorAPIResponse {
 }
 
 const Merch: React.FC = () => {
+  const router = useRouter();
   const [isRender, setIsRender] = useState(false);
   const [modalCreate, setModalCreate] = useState<string | undefined>(undefined);
   const [merchList, setMerchList] = useState<MerchListResponse[]>([]);
@@ -264,16 +268,25 @@ const Merch: React.FC = () => {
       </Modal>
 
       <Flex justify="space-between" align="center">
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Merchandise Management</Text>
-          <Text size="sm" c="gray">Kelola semua merchandise dari berbagai creator dalam satu tempat</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push("/dashboard/admin")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <Stack gap={5}>
+            <Text size="1.8rem" fw={600}>Merchandise Management</Text>
+            <Text size="sm" c="gray">Kelola semua merchandise dari berbagai creator dalam satu tempat</Text>
+          </Stack>
+        </Flex>
         <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="ph:plus-bold" />} radius="md" color="blue">
           Tambah Produk
         </ButtonM>
       </Flex>
 
-      <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden mt-4">
+      <div className="mt-4">
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }} wrap="wrap">
           <div style={{ width: 220 }}>
             <Select
@@ -377,7 +390,7 @@ const Merch: React.FC = () => {
             </Group>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 };

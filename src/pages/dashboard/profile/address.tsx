@@ -4,11 +4,9 @@ import {
   Box,
   Button,
   Card,
-  Divider,
   Flex,
   LoadingOverlay,
   Select,
-  SimpleGrid,
   Stack,
   Switch,
   Text,
@@ -20,11 +18,11 @@ import {
 } from '@mantine/core';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useListState } from '@mantine/hooks';
-import _ from 'lodash';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import { modals } from '@mantine/modals';
+import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -32,11 +30,7 @@ import {
   faArrowLeft,
   faSave,
   faXmark,
-  faSort,
-  faSortUp,
-  faSortDown,
   faSearch,
-  faArrowsRotate,
   faPlus,
   faPen,
   faTrash,
@@ -105,8 +99,9 @@ const Address = () => {
   const [isr, setIsr] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const user = useLoggedUser();
+const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+const user = useLoggedUser();
+const router = useRouter();
 
   const [searchValue, setSearchValue] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({
@@ -329,51 +324,17 @@ const Address = () => {
     return result;
   }, [addressList, searchValue, sortConfig, provinceName, cityName]);
 
-  const requestSort = (key: string) => {
-    let direction: "asc" | "desc" | null = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
-    else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
-    setSortConfig({ key, direction });
-  };
-
-  const getSortIcon = (key: string) => {
-    if (sortConfig.key !== key || !sortConfig.direction) return faSort;
-    return sortConfig.direction === "asc" ? faSortUp : faSortDown;
-  };
-
   const renderList = () => (
     <div className="p-[30px_20px] md:p-[30px] md:max-w-[1440px] mx-auto pb-[100px]">
       <Stack gap={30}>
-        <Flex gap={20} justify="space-between" align="center">
-          <Stack gap={0}>
+        <Flex gap={20} justify="space-between" align="center" wrap="wrap">
+          <Flex align="center" gap={12}>
+            <ActionIcon variant="light" color="gray" onClick={() => router.push('/dashboard')} size="lg" radius="md">
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </ActionIcon>
             <Title order={1} size="h3" fw={600} c="gray.8">Alamat Saya</Title>
-            <Text c="gray" size="sm">Kelola Daftar Alamat Pengiriman Anda</Text>
-          </Stack>
-          <Button
-            onClick={handleAddClick}
-            leftSection={<FontAwesomeIcon icon={faPlus} />}
-            color="blue"
-            size="md"
-            radius="xl"
-          >
-            Tambah Alamat
-          </Button>
-        </Flex>
-
-        {/* Table Card */}
-        <Card withBorder p="md" radius="md" shadow="sm">
-          <Flex justify="space-between" align="center" mb="lg" wrap="wrap" gap="md">
-            <Flex gap={10}>
-              <Button
-                variant="filled"
-                color="blue"
-                size="sm"
-                onClick={getData}
-                loading={loading.includes("getdata")}
-              >
-                <FontAwesomeIcon icon={faArrowsRotate} />
-              </Button>
-            </Flex>
+          </Flex>
+          <Flex align="center" gap={12} wrap="wrap">
             <TextInput
               placeholder="Cari nama alamat, penerima, atau lokasi..."
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
@@ -381,118 +342,63 @@ const Address = () => {
               onChange={(e) => setSearchValue(e.target.value)}
               style={{ width: "100%", maxWidth: 320 }}
             />
+            <Button
+              onClick={handleAddClick}
+              leftSection={<FontAwesomeIcon icon={faPlus} />}
+              color="blue"
+              size="md"
+              radius="xl"
+            >
+              Tambah Alamat
+            </Button>
           </Flex>
+        </Flex>
 
-          <Box style={{ overflow: "auto", maxHeight: 600 }}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 800 }}>
-              <thead>
-                <tr>
-                  {[
-                    { label: "No", sortable: false },
-                    { label: "Nama Alamat", sortable: true, key: "name" },
-                    { label: "Penerima", sortable: true, key: "nama_penerima" },
-                    { label: "No. Telp", sortable: false },
-                    { label: "Lokasi", sortable: true, key: "location" },
-                    { label: "Detail", sortable: false },
-                    { label: "Aksi", sortable: false },
-                  ].map((col, idx) => (
-                    <th
-                      key={idx}
-                      onClick={() => col.sortable && col.key && requestSort(col.key)}
-                      style={{
-                        padding: "12px",
-                        textAlign: "left",
-                        borderBottom: "2px solid #dee2e6",
-                        cursor: col.sortable ? "pointer" : "default",
-                        color: "#495057",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        backgroundColor: "#f8f9fa",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      <Flex align="center" gap={8} display="inline-flex">
-                        <Text size="sm" fw={600} style={{ textTransform: "uppercase" }}>{col.label}</Text>
-                        {col.sortable && col.key && (
-                          <FontAwesomeIcon icon={getSortIcon(col.key)} style={{ opacity: 0.5 }} size="sm" />
-                        )}
-                      </Flex>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.length > 0 ? (
-                  filteredData.map((item, idx) => (
-                    <tr
-                      key={item.id}
-                      style={{ borderBottom: "1px solid #dee2e6", transition: "background-color 0.2s" }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Text size="sm">{idx + 1}</Text>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Flex direction="column" gap={4}>
-                          <Text size="sm" fw={600}>{item.name}</Text>
-                          {item.is_default && (
-                            <Badge color="blue" variant="light" size="sm">Alamat Utama</Badge>
-                          )}
-                        </Flex>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Text size="sm">{item.nama_penerima}</Text>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Text size="sm">{item.phone}</Text>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Text size="sm">
-                          {provinceName ? provinceName[item.province] ?? "-" : "-"},{" "}
-                          {cityName ? cityName[item.city] ?? "-" : "-"}
-                        </Text>
-                        <Text size="xs" c="dimmed">Pos: {item.postcode}</Text>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5", maxWidth: 200 }}>
-                        <Text size="sm" truncate>{item.detail}</Text>
-                      </td>
-                      <td style={{ padding: "12px", borderBottom: "1px solid #f1f3f5" }}>
-                        <Flex gap={8}>
-                          <Tooltip label="Edit">
-                            <ActionIcon variant="light" color="blue" onClick={() => handleEditClick(item)}>
-                              <FontAwesomeIcon icon={faPen} size="sm" />
-                            </ActionIcon>
-                          </Tooltip>
-                          <Tooltip label="Hapus">
-                            <ActionIcon variant="light" color="red" onClick={() => { 
-                              setSelectedAddressId(item.id); 
-                              setTimeout(() => handleDelete(), 100); 
-                            }}>
-                              <FontAwesomeIcon icon={faTrash} size="sm" />
-                            </ActionIcon>
-                          </Tooltip>
-                        </Flex>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "60px 20px" }}>
-                      <Stack align="center" gap={15}>
-                        <Box c="gray.4">
-                          <FontAwesomeIcon icon={faSearch} className="text-[2rem]" />
-                        </Box>
-                        <Text ta="center" c="dimmed">{searchValue ? 'Alamat tidak ditemukan' : 'Tidak ada alamat yang terdaftar'}</Text>
-                      </Stack>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </Box>
-        </Card>
+        {filteredData.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10">
+            {filteredData.map((item) => (
+              <div key={item.id} className="w-full bg-white rounded-xl shadow-md border border-primary-light-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <h5 className="text-lg font-semibold text-dark truncate">{item.name}</h5>
+                    {item.is_default && <Badge color="blue" variant="light" size="sm">Utama</Badge>}
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 text-sm">
+                    <p className="text-dark"><span className="text-grey">Penerima:</span> {item.nama_penerima}</p>
+                    <p className="text-dark"><span className="text-grey">No. Telp:</span> {item.phone}</p>
+                    <p className="text-dark">
+                      <span className="text-grey">Lokasi:</span>{" "}
+                      {provinceName ? provinceName[item.province] ?? "-" : "-"},{" "}
+                      {cityName ? cityName[item.city] ?? "-" : "-"}
+                    </p>
+                    <p className="text-grey">Pos: {item.postcode}</p>
+                    <p className="text-grey">{item.detail}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-end gap-2">
+                    <Tooltip label="Edit">
+                      <ActionIcon variant="light" color="blue" onClick={() => handleEditClick(item)}>
+                        <FontAwesomeIcon icon={faPen} size="sm" />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Hapus">
+                      <ActionIcon variant="light" color="red" onClick={() => { setSelectedAddressId(item.id); setTimeout(() => handleDelete(), 100); }}>
+                        <FontAwesomeIcon icon={faTrash} size="sm" />
+                      </ActionIcon>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[40vh] rounded-md gap-3 text-center text-dark px-5">
+            <Box c="gray.4">
+              <FontAwesomeIcon icon={faSearch} className="text-[2rem]" />
+            </Box>
+            <h3 className="text-xl font-semibold">{searchValue ? "Alamat tidak ditemukan" : "Tidak ada alamat yang terdaftar"}</h3>
+            <Text size="sm" c="gray">Klik tombol &quot;Tambah Alamat&quot; untuk menambahkan alamat pengiriman.</Text>
+          </div>
+        )}
       </Stack>
     </div>
   );

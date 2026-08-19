@@ -2273,6 +2273,20 @@ const Merch = () => {
 
   if (!isr) return <></>;
 
+  // Ringkasan pembayaran untuk modal detail transaksi
+  const modalTicketSubtotal =
+    selectedTransaction?.tickets?.reduce(
+      (sum, t) => sum + (Number(t.subtotal_price) || (t.price || 0) * (t.qty_ticket || 1)),
+      0
+    ) || 0;
+  const modalMerchSubtotal =
+    selectedTransaction?.transaction_merches?.reduce(
+      (sum, m) => sum + (parseFloat(m.subtotal) || parseFloat(m.price || "0") * (m.qty || 0)),
+      0
+    ) || 0;
+  const modalAdminFee = selectedTransaction?.admin_fee ? Number(selectedTransaction.admin_fee) || 0 : 0;
+  const modalPpn = selectedTransaction?.ppn ? Number(selectedTransaction.ppn) || 0 : 0;
+
   return (
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
       <Flex gap={20} justify="space-between" align="center">
@@ -2688,7 +2702,7 @@ const Merch = () => {
             <Text fw={600} size="md" c="white">Detail Transaksi</Text>
           </Flex>
         }
-        size="lg"
+        size={1000}
         radius="lg"
         styles={{
           header: { backgroundColor: "#0b387c", color: "white", padding: "15px 20px" },
@@ -2698,8 +2712,10 @@ const Merch = () => {
       >
         {selectedTransaction && (
           <Stack gap="xl">
-            {/* Informasi Transaksi Card */}
-            <Card withBorder radius="md" p={0} shadow="xs">
+            {/* Informasi Transaksi & Informasi Pembeli (sebaris, 2 kolom) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Informasi Transaksi Card */}
+              <Card withBorder radius="md" p={0} shadow="xs">
               <div className="bg-gray-50/50 p-4 border-b border-light-grey flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                   <FontAwesomeIcon icon={faInfoCircle} size="sm" />
@@ -2709,12 +2725,13 @@ const Merch = () => {
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
                 <Stack gap={2}>
                   <Text size="xs" c="dimmed" fw={500}>No. Invoice</Text>
-                  <Flex align="center" gap="xs">
-                    <Text fw={700} size="sm" className="font-mono">{selectedTransaction.invoice_no}</Text>
+                  <Flex align="center" gap="xs" style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={600} className="font-mono" style={{ wordBreak: "break-all", lineHeight: 1.4 }}>{selectedTransaction.invoice_no}</Text>
                     <ActionIcon
                       variant="subtle"
                       color="gray"
                       size="sm"
+                      flex="none"
                       onClick={() => {
                         navigator.clipboard.writeText(selectedTransaction.invoice_no || "");
                         notifications.show({
@@ -2739,13 +2756,12 @@ const Merch = () => {
                     radius="xl"
                     leftSection={<FontAwesomeIcon icon={faCheckCircle} size="xs" />}
                     px="sm"
-                    py="md"
                   >
                     {transactionStatus?.find((z) => z.id == selectedTransaction.transaction_status_id)?.name}
                   </Badge>
                 </Stack>
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed" fw={500}>Waktu Transaksi</Text>
+                  <Text size="xs" c="dimmed" fw={500}>Tanggal Transaksi</Text>
                   <Text size="sm" fw={600}>
                     {selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY, HH:mm") : "-"}
                   </Text>
@@ -2756,10 +2772,17 @@ const Merch = () => {
                     (() => {
                       const paymentMethodInfo = getPaymentMethod(selectedTransaction.payment_method);
                       return (
-                        <Text size="sm" fw={700}>{paymentMethodInfo?.label || selectedTransaction.payment_method.payment_name || "-"}</Text>
+                        <Flex align="center" gap="xs">
+                          {paymentMethodInfo?.icon && (
+                            <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" className="text-gray-500 shrink-0" />
+                          )}
+                          <Text size="sm" fw={600} className="capitalize">{paymentMethodInfo?.label || selectedTransaction.payment_method.payment_name || "-"}</Text>
+                        </Flex>
                       );
                     })()
-                  ) : <Text size="sm" fw={600}>-</Text>}
+                  ) : (
+                    <Text size="sm" fw={600}>-</Text>
+                  )}
                 </Stack>
               </div>
             </Card>
@@ -2773,38 +2796,77 @@ const Merch = () => {
                 <Text fw={700} size="sm" c="dark">Informasi Pembeli</Text>
               </div>
               <div className="divide-y divide-light-grey">
-                <Flex justify="space-between" align="center" p="md">
-                  <Flex align="center" gap="sm">
+                <Flex justify="space-between" align="center" gap="md" p="md">
+                  <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
-                    <Text size="sm" c="dimmed">Nama</Text>
+                    <Text size="xs" c="dimmed" fw={500}>Nama</Text>
                   </Flex>
-                  <Text size="sm" fw={700}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}</Text>
+                  <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                    {selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}
+                  </Text>
                 </Flex>
-                <Flex justify="space-between" align="center" p="md">
-                  <Flex align="center" gap="sm">
+                <Flex justify="space-between" align="center" gap="md" p="md">
+                  <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
-                    <Text size="sm" c="dimmed">Email</Text>
+                    <Text size="xs" c="dimmed" fw={500}>Email</Text>
                   </Flex>
-                  <Text size="sm" fw={700}>{selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}</Text>
+                  <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                    {selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}
+                  </Text>
                 </Flex>
-                <Flex justify="space-between" align="center" p="md">
-                  <Flex align="center" gap="sm">
+                <Flex justify="space-between" align="center" gap="md" p="md">
+                  <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faGlobe} size="xs" className="text-gray-400" />
-                    <Text size="sm" c="dimmed">Tipe Transaksi</Text>
+                    <Text size="xs" c="dimmed" fw={500}>Tipe Transaksi</Text>
                   </Flex>
-                  <Text size="sm" fw={700} className="capitalize">{selectedTransaction.type_transaction}</Text>
+                  <Text size="sm" fw={600} className="capitalize">{selectedTransaction.type_transaction || "-"}</Text>
                 </Flex>
               </div>
             </Card>
+            </div>
 
-            {/* Total Pembayaran Box */}
-            <Card radius="md" p="md" bg="gray.0" withBorder style={{ borderColor: '#e9ecef' }}>
-              <Flex justify="space-between" align="center">
-                <Text fw={700} size="sm" c="dimmed">Total Pembayaran</Text>
-                <Text fw={700} size="xl" c="dark">
-                  Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
-                </Text>
-              </Flex>
+            {/* Ringkasan Pembayaran */}
+            <Card radius="md" p="md" withBorder style={{ borderColor: "#e9ecef" }}>
+              <Stack gap="sm">
+                <Text fw={700} size="sm">Ringkasan Pembayaran</Text>
+
+                {modalTicketSubtotal > 0 && (
+                  <Flex justify="space-between" align="center" gap="md">
+                    <Text size="sm" c="dimmed">Subtotal Tiket ({selectedTransaction.tickets?.length ?? 0} item)</Text>
+                    <Text size="sm" fw={600}>Rp {modalTicketSubtotal.toLocaleString("id-ID")}</Text>
+                  </Flex>
+                )}
+
+                {modalMerchSubtotal > 0 && (
+                  <Flex justify="space-between" align="center" gap="md">
+                    <Text size="sm" c="dimmed">Subtotal Merchandise ({selectedTransaction.transaction_merches?.length ?? 0} item)</Text>
+                    <Text size="sm" fw={600}>Rp {modalMerchSubtotal.toLocaleString("id-ID")}</Text>
+                  </Flex>
+                )}
+
+                {modalAdminFee > 0 && (
+                  <Flex justify="space-between" align="center" gap="md">
+                    <Text size="sm" c="dimmed">Admin Fee</Text>
+                    <Text size="sm" fw={600}>Rp {modalAdminFee.toLocaleString("id-ID")}</Text>
+                  </Flex>
+                )}
+
+                {modalPpn > 0 && (
+                  <Flex justify="space-between" align="center" gap="md">
+                    <Text size="sm" c="dimmed">PPN</Text>
+                    <Text size="sm" fw={600}>Rp {modalPpn.toLocaleString("id-ID")}</Text>
+                  </Flex>
+                )}
+
+                <Divider />
+
+                <Flex justify="space-between" align="center" gap="md">
+                  <Text fw={700} size="sm" c="dimmed">Total Pembayaran</Text>
+                  <Text fw={700} size="xl" c="dark">
+                    Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
+                  </Text>
+                </Flex>
+              </Stack>
             </Card>
 
             {/* Detail Item (Accordion) */}
@@ -2820,14 +2882,22 @@ const Merch = () => {
                   <Accordion.Panel>
                     <Stack gap="xs">
                       {selectedTransaction.tickets.map((ticket, index) => (
-                        <div key={index} className="p-3 bg-white">
-                          <Flex justify="space-between" align="start" mb={4}>
-                            <Text fw={700} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
-                            <Text fw={700} size="sm">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
+                        <div key={index} className="p-3 bg-white border border-light-grey rounded-md">
+                          <Flex justify="space-between" align="start" gap="md" mb={4}>
+                            <div style={{ minWidth: 0 }}>
+                              <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
+                              {ticket.event_session?.session_name && (
+                                <Text size="xs" c="dimmed" fw={500}>Sesi: {ticket.event_session.session_name}</Text>
+                              )}
+                            </div>
+                            <Text fw={600} size="sm" flex="none">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
                           </Flex>
-                          <Flex justify="space-between" align="center">
+                          <Divider />
+                          <Flex justify="space-between" align="center" gap="md" mt={8}>
                             <Text size="xs" c="dimmed" fw={500}>Qty: {ticket.qty_ticket} tiket</Text>
-                            <Text size="xs" fw={700} c="blue.7">Subtotal: Rp {((ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" fw={700} ta="right">
+                              Subtotal: Rp {(Number(ticket.subtotal_price) || (ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}
+                            </Text>
                           </Flex>
                         </div>
                       ))}
@@ -2847,20 +2917,26 @@ const Merch = () => {
                   <Accordion.Panel>
                     <Stack gap="xs">
                       {selectedTransaction.transaction_merches.map((merch: any, index: number) => (
-                        <div key={index} className="p-3 bg-white">
-                          <Flex justify="space-between" align="start" mb={4}>
-                            <div>
-                              <Text fw={700} size="sm">Merch {index + 1}</Text>
+                        <div key={index} className="p-3 bg-white border border-light-grey rounded-md">
+                          <Flex justify="space-between" align="start" gap="md" mb={4}>
+                            <div style={{ minWidth: 0 }}>
+                              <Text fw={600} size="sm">Merchandise {index + 1}</Text>
                               {merch.product_variant?.varian_name && (
-                                <Text size="xs" c="blue" fw={600}>{merch.product_variant.varian_name}</Text>
+                                <Text size="xs" c="dimmed" fw={500}>{merch.product_variant.varian_name}</Text>
                               )}
                             </div>
-                            <Text fw={700} size="sm">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Text>
+                            <Text fw={600} size="sm" flex="none">Rp {parseFloat(merch.price || "0").toLocaleString("id-ID")}</Text>
                           </Flex>
-                          <Flex justify="space-between" align="center">
+                          <Divider />
+                          <Flex justify="space-between" align="center" gap="md" mt={8}>
                             <Text size="xs" c="dimmed" fw={500}>Qty: {merch.qty} pcs</Text>
-                            <Text size="xs" fw={700} c="green.7">Subtotal: Rp {(parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}</Text>
+                            <Text size="xs" fw={700} ta="right">
+                              Subtotal: Rp {(parseFloat(merch.subtotal) || parseFloat(merch.price || "0") * (merch.qty || 0)).toLocaleString("id-ID")}
+                            </Text>
                           </Flex>
+                          {merch.noted && (
+                            <Text size="xs" c="dimmed" mt={8}>Catatan: {merch.noted}</Text>
+                          )}
                         </div>
                       ))}
                     </Stack>

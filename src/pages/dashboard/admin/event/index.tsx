@@ -1,6 +1,6 @@
 import { Get, Put } from "@/utils/REST";
 import {
-  Card, Center, Title, Flex, ActionIcon, Group, Select, Modal,
+  Center, Title, Flex, ActionIcon, Group, Select, Modal,
   Tooltip, SimpleGrid, Text, Badge, Avatar, Pagination as PaginationM,
   Button as ButtonM, Stack, LoadingOverlay, Divider, Paper, ScrollArea
 } from "@mantine/core";
@@ -12,11 +12,15 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import moment from "moment";
 import _ from "lodash";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import type { EventListResponse } from "../../my-event/type.d.ts";
 
 const PER_PAGE = 10;
 
 export default function AdminEventManagement() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<EventListResponse[]>([]);
   const [creators, setCreators] = useState<any[]>([]);
@@ -194,11 +198,20 @@ export default function AdminEventManagement() {
 
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
-      <Flex justify="space-between" align="center" mb={20}>
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Kelola Event</Text>
-          <Text size="sm" c="gray">Monitor dan kelola persetujuan event platform</Text>
-        </Stack>
+      <Flex justify="space-between" align="center" mb={8}>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push("/dashboard/admin")}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <Stack gap={5}>
+            <Text size="1.8rem" fw={600}>Kelola Event</Text>
+            <Text size="sm" c="gray">Monitor dan kelola persetujuan event platform</Text>
+          </Stack>
+        </Flex>
         <ButtonM
           component={Link}
           href="/dashboard/admin/event/create"
@@ -228,7 +241,7 @@ export default function AdminEventManagement() {
       >
         {tabStatus.map(([status, label]) => (
           <Tab key={status} title={label}>
-            <Card withBorder radius="md" p={0} className="mt-4 shadow-sm overflow-hidden border-light-grey">
+            <div className="mt-0">
               <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
                 <div className="flex flex-col gap-1.5 w-60">
                   <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">Penyelenggara</Text>
@@ -437,7 +450,7 @@ export default function AdminEventManagement() {
                   />
                 </div>
               )}
-            </Card>
+            </div>
           </Tab>
         ))}
       </Tabs>
