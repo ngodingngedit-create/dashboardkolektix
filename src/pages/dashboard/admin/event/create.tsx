@@ -743,7 +743,20 @@ const CreateEventAdmin = () => {
                       <InputField label="URL Slug" type="text" fullWidth value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Status ID (3=Review, 1=Active)" type="num" fullWidth value={form.event_status_id} onChange={(e: any) => setForm({ ...form, event_status_id: Number(e.target.value) })} />
+                      <Select
+                        label="Status ID (1=Review, 3=Active)"
+                        placeholder="Pilih status"
+                        variant="bordered"
+                        radius="sm"
+                        classNames={{
+                          trigger: "!shadow-none"
+                        }}
+                        selectedKeys={form.event_status_id ? [form.event_status_id.toString()] : []}
+                        onChange={(e: any) => setForm({ ...form, event_status_id: Number(e.target.value) })}
+                      >
+                        <SelectItem key="1" value="1">1 - Review</SelectItem>
+                        <SelectItem key="3" value="3">3 - Active</SelectItem>
+                      </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
                       <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />

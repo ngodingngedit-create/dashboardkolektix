@@ -33,8 +33,8 @@ export default function AdminEventManagement() {
   // Status Tabs
   const tabStatus = [
     ["all", "Semua"],
-    ["1", "Disetujui"],
-    ["0", "Sedang Direview"],
+    ["3", "Disetujui"],
+    ["1", "Review"],
   ];
   const [activeTab, setActiveTab] = useState("all");
 
@@ -104,7 +104,7 @@ export default function AdminEventManagement() {
     };
 
     if (debouncedSearch) params.search = debouncedSearch;
-    if (activeTab !== "all") params.main_status = activeTab;
+    if (activeTab !== "all") params.event_status_id = activeTab;
     if (selectedCreator) params.creator_id = selectedCreator;
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
@@ -167,7 +167,7 @@ export default function AdminEventManagement() {
     setLoading(true);
     try {
       await Put(`admin-data/event/${id}`, {
-        main_status: status ? 1 : 0,
+        event_status_id: status ? 3 : 1,
       });
       notifications.show({
         title: "Berhasil",
@@ -307,8 +307,8 @@ export default function AdminEventManagement() {
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('start_date')}>
                         Waktu & Lokasi {sortBy === 'start_date' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
-                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('main_status')}>
-                        Status {sortBy === 'main_status' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('event_status_id')}>
+                        Status {sortBy === 'event_status_id' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('created_at')}>
                         Dibuat {sortBy === 'created_at' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
@@ -371,12 +371,12 @@ export default function AdminEventManagement() {
                               variant="filled"
                               radius="sm"
                               size="sm"
-                              leftSection={<Icon icon={item.main_status ? "ph:check-circle-fill" : "ph:clock-countdown-fill"} />}
+                              leftSection={<Icon icon={item.event_status_id === 3 ? "ph:check-circle-fill" : "ph:clock-countdown-fill"} />}
                               styles={{
                                 root: {
                                   textTransform: 'uppercase',
                                   fontWeight: 800,
-                                  backgroundColor: item.main_status ? '#40c057' : '#fab005',
+                                  backgroundColor: item.event_status_id === 3 ? '#40c057' : '#fab005',
                                   color: 'white',
                                   border: 'none',
                                   paddingLeft: '8px',
@@ -384,7 +384,7 @@ export default function AdminEventManagement() {
                                 }
                               }}
                             >
-                              {item.main_status ? "Disetujui" : "Review"}
+                              {item.event_status_id === 3 ? "Disetujui" : "Review"}
                             </Badge>
                           </td>
                           <td style={{ padding: '12px 14px' }}>
@@ -402,7 +402,7 @@ export default function AdminEventManagement() {
                                   <Icon icon="ph:pencil-simple" className="text-lg" />
                                 </ActionIcon>
                               </Tooltip>
-                              {item.main_status ? (
+                              {item.event_status_id === 3 ? (
                                 <Tooltip label="Batalkan Persetujuan">
                                   <ActionIcon variant="filled" color="red" onClick={() => handleToggleApproval(item.id, false)} size="md" radius="sm">
                                     <Icon icon="ph:x-circle" className="text-lg" />
@@ -462,8 +462,8 @@ export default function AdminEventManagement() {
                 <Center className="h-full"><Icon icon="ph:image-square" className="text-gray-200 text-6xl" /></Center>
               )}
               <div className="absolute top-4 right-4">
-                <Badge size="lg" color={selectedEvent.main_status ? "green" : "orange"} variant="filled">
-                  {selectedEvent.main_status ? "Disetujui" : "Menunggu Review"}
+                <Badge size="lg" color={selectedEvent.event_status_id === 3 ? "green" : "orange"} variant="filled">
+                  {selectedEvent.event_status_id === 3 ? "Disetujui" : "Menunggu Review"}
                 </Badge>
               </div>
             </div>
@@ -543,7 +543,7 @@ export default function AdminEventManagement() {
               >
                 Edit Event
               </ButtonM>
-              {selectedEvent.main_status ? (
+              {selectedEvent.event_status_id === 3 ? (
                 <ButtonM
                   variant="filled"
                   color="red"

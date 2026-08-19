@@ -217,7 +217,7 @@ const ProfileCreator = () => {
     const id = userData?.has_creator?.id ?? 0;
     if (isEditMode && selectedProfile) {
       setLoading.append('submitprofile');
-      Put(`creator/${selectedProfile.id}`, payload)
+      Put(`creator-data/profile-creator`, payload)
         .then(() => {
           notifications.show({ title: 'Berhasil', message: 'Berhasil mengupdate profil creator', color: 'green' });
           getProfileData();

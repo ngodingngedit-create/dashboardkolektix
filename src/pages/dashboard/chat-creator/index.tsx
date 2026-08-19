@@ -175,9 +175,11 @@ const Chat = () => {
   const getData = () => {
     Get('inbox', {})
       .then((res: any) => {
-        const chatlist = (res as InboxListProps[])
-          .filter(e => (Boolean(e.from) && (Boolean(e.to))))
-          .filter(e => e.to.id == users?.id)
+        const rawData = res?.data?.data || res?.data || res;
+        const list: InboxListProps[] = Array.isArray(rawData) ? rawData : [];
+        const chatlist = list
+          .filter(e => Boolean(e?.from) && Boolean(e?.to))
+          .filter(e => e.from.id === users?.id || e.to.id === users?.id)
 
         setChat(chatlist)
       })
@@ -266,23 +268,27 @@ const Chat = () => {
                 if (aUnread !== bUnread) return bUnread - aUnread;
                 return new Date(b.chats[0].created_at).getTime() - new Date(a.chats[0].created_at).getTime();
               })
-              .map((item: InboxListProps) => (
-                <ChatList
-                  name={item.from.name ?? ''}
-                  lastMsg={item.chats[0].message}
-                  time={formatDate(item.chats[0].created_at)}
-                  countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
-                  key={item.from.id}
-                  setSelected={setSelected}
-                  selected={selected}
-                  id={item.from.id ?? 0}
-                  setName={setName}
-                  setMessages={setMessages}
-                  messages={messages}
-                  inbox={item.id}
-                  image={item.from.has_creator?.image_url}
-                />
-              ))}
+              .map((item: InboxListProps) => {
+                const partner = item.from.id === users?.id ? item.to : item.from;
+                const lastChat = item.chats[item.chats.length - 1];
+                return (
+                  <ChatList
+                    name={partner.name ?? ''}
+                    lastMsg={lastChat?.message ?? ''}
+                    time={lastChat ? formatDate(lastChat.created_at) : ''}
+                    countMsg={item.chats.filter(e => e.status == "unread" && e.user_id != users?.id).length}
+                    key={item.id}
+                    setSelected={setSelected}
+                    selected={selected}
+                    id={partner.id ?? 0}
+                    setName={setName}
+                    setMessages={setMessages}
+                    messages={messages}
+                    inbox={item.id}
+                    image={partner.has_creator?.image_url}
+                  />
+                );
+              })}
           </div>
         </div>
 

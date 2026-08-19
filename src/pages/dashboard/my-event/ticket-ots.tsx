@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { BreadcrumbItem, Breadcrumbs, Select, SelectItem, Tabs, Tab } from "@nextui-org/react";
+import { Select, SelectItem, Tabs, Tab, Pagination, Input } from "@nextui-org/react";
 import Button from "@/components/Button";
-import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input } from "@nextui-org/react";
+import { Spinner } from "@nextui-org/react";
 import { Get } from "@/utils/REST";
 import { EventProps, TicketProps } from "@/utils/globalInterface";
 import { useRouter } from "next/router";
@@ -66,6 +66,29 @@ const parseNumber = (value: any): number => {
 
   return isNaN(parsed) ? 0 : parsed;
 };
+
+const ROWS_PER_PAGE = 20;
+
+type SortField = "invoice_no" | "created_at" | "name" | "grandtotal";
+
+const getCustomer = (transaction: any) => {
+  const identity = transaction?.identities?.find((i: any) => Number(i.is_pemesan) === 1);
+  return {
+    name: identity?.full_name || transaction?.has_user?.name || "Walk-in Customer",
+    email: identity?.email || transaction?.has_user?.email || "-",
+    phone: identity?.no_telp || transaction?.has_user?.phone || "-",
+  };
+};
+
+const thCls = (align: "left" | "center" = "left") =>
+  `px-4 py-3 ${align === "center" ? "text-center" : "text-left"} text-xs font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap`;
+
+const tdCls = (align: "left" | "center" = "left") =>
+  `px-4 py-3 ${align === "center" ? "text-center" : "text-left"} text-xs sm:text-sm whitespace-nowrap`;
+
+const SortIcon = ({ active, dir }: { active: boolean; dir: "asc" | "desc" }) => (
+  <span className="ml-1 text-[10px]">{active ? (dir === "asc" ? "▲" : "▼") : "⇅"}</span>
+);
 
 // Komponen Modal Detail Transaksi
 const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eventData }: TransactionDetailModalProps) => {
@@ -252,9 +275,10 @@ const TicketOTS = () => {
     avgTicketPrice: 0,
   });
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [filterValue, setFilterValue] = useState("");
   const [activeTab, setActiveTab] = useState<"offline" | "online">("offline");
+  const [sortBy, setSortBy] = useState<SortField>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const router = useRouter();
 
   const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
@@ -445,6 +469,8 @@ const TicketOTS = () => {
         params: {
           event_id: eventId,
           type_transaction: "offline",
+          page: 1,
+          per_page: 999999,
           include: "transaction_tickets,user",
         },
       });
@@ -472,6 +498,8 @@ const TicketOTS = () => {
         params: {
           event_id: eventId,
           type_transaction: "online",
+          page: 1,
+          per_page: 999999,
           include: "transaction_tickets,user",
         },
       });
@@ -618,29 +646,44 @@ const TicketOTS = () => {
   }, [activeTab, offlineTransactions, onlineTransactions]);
 
   const filteredTransactions = useMemo(() => {
-    return currentTransactions.filter((transaction) => {
-      const invoiceMatch = transaction.invoice_no?.toLowerCase().includes(filterValue.toLowerCase());
-      const customerMatch = transaction.has_user?.email?.toLowerCase().includes(filterValue.toLowerCase());
-      const nameMatch = transaction.has_user?.name?.toLowerCase().includes(filterValue.toLowerCase());
-      const phoneMatch = transaction.has_user?.phone?.toLowerCase().includes(filterValue.toLowerCase());
-      return invoiceMatch || customerMatch || nameMatch || phoneMatch;
+    const filtered = currentTransactions.filter((transaction) => {
+      const customer = getCustomer(transaction);
+      const q = filterValue.toLowerCase();
+      return (
+        transaction.invoice_no?.toLowerCase().includes(q) ||
+        customer.email.toLowerCase().includes(q) ||
+        customer.name.toLowerCase().includes(q) ||
+        customer.phone.toLowerCase().includes(q)
+      );
     });
-  }, [currentTransactions, filterValue]);
 
-  const pages = Math.ceil(filteredTransactions.length / rowsPerPage);
+    return [...filtered].sort((a, b) => {
+      const av = sortBy === "name" ? getCustomer(a).name.toLowerCase() : a[sortBy];
+      const bv = sortBy === "name" ? getCustomer(b).name.toLowerCase() : b[sortBy];
+      const cmp = typeof av === "number" ? av - parseNumber(bv) : String(av ?? "").localeCompare(String(bv ?? ""));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [currentTransactions, filterValue, sortBy, sortDir]);
+
+  const pages = Math.ceil(filteredTransactions.length / ROWS_PER_PAGE);
   const items = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
+    const start = (page - 1) * ROWS_PER_PAGE;
+    const end = start + ROWS_PER_PAGE;
     return filteredTransactions.slice(start, end);
-  }, [page, filteredTransactions, rowsPerPage]);
+  }, [page, filteredTransactions]);
 
   const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterValue(e.target.value);
     setPage(1);
   };
 
-  const onRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDir(field === "created_at" ? "desc" : "asc");
+    }
     setPage(1);
   };
 
@@ -670,10 +713,6 @@ const TicketOTS = () => {
   if (isLoading && events.length === 0) {
     return (
       <div className="py-5 px-4 sm:px-5">
-        <Breadcrumbs className="mb-5">
-          <BreadcrumbItem href="/dashboard/my-event">Event Saya</BreadcrumbItem>
-          <BreadcrumbItem>Tiket OTS</BreadcrumbItem>
-        </Breadcrumbs>
         <div className="flex flex-col justify-center items-center min-h-[60vh]">
           <Spinner color="primary" size="lg" />
           <p className="mt-4 text-gray-600">Memuat data event...</p>
@@ -685,10 +724,6 @@ const TicketOTS = () => {
   if (events.length === 0 && !isLoading) {
     return (
       <div className="py-5 px-4 sm:px-5">
-        <Breadcrumbs className="mb-5">
-          <BreadcrumbItem href="/dashboard/my-event">Event Saya</BreadcrumbItem>
-          <BreadcrumbItem>Tiket OTS</BreadcrumbItem>
-        </Breadcrumbs>
         <div className="flex flex-col justify-center items-center min-h-[60vh]">
           <h3 className="text-red-500 mb-4">Tidak ada event</h3>
           <p className="text-gray-600 mb-4">Anda belum memiliki event</p>
@@ -705,10 +740,6 @@ const TicketOTS = () => {
   return (
     <>
       <div className="py-5 px-4 sm:px-5 pb-24">
-        <Breadcrumbs className="mb-5">
-          <BreadcrumbItem href="/dashboard/my-event">Event Saya</BreadcrumbItem>
-          <BreadcrumbItem>Tiket OTS</BreadcrumbItem>
-        </Breadcrumbs>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -719,15 +750,6 @@ const TicketOTS = () => {
               <h3 className="text-xl sm:text-2xl font-bold">Penjualan Tiket OTS</h3>
             </div>
             <p className="text-sm text-gray-600">{eventData ? eventData.name : "Pilih event untuk penjualan OTS"}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {eventData && (
-              <>
-                <Button label="Riwayat Penjualan" color="secondary" onClick={() => router.push(`/dashboard/my-event/${eventData.slug}`)} className="text-sm" />
-                <Button label="Check-in" color="secondary" onClick={() => router.push(`/dashboard/my-event/checkin/${eventData.slug}`)} className="text-sm" />
-                <Button label="Tambah Tiket OTS" color="secondary" onClick={() => router.push(`/dashboard/my-event/${eventData.id}/ticket`)} className="text-sm" />
-              </>
-            )}
           </div>
         </div>
 
@@ -820,79 +842,51 @@ const TicketOTS = () => {
 
         {eventData && (
           <>
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div>
-                  <h4 className="font-semibold text-lg text-dark mb-2">
-                    {eventData.name}
-                    {data.length > 0 ? (
-                      <Badge color="green" className="ml-2">
-                        OTS Aktif
-                      </Badge>
-                    ) : (
-                      <Badge color="yellow" className="ml-2">
-                        Belum Ada Tiket OTS
-                      </Badge>
-                    )}
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-1">
-                    📅 {moment(eventData.start_date).format("DD MMMM YYYY")} - {moment(eventData.end_date).format("DD MMMM YYYY")}
-                  </p>
-                  <p className="text-sm text-gray-600">🏢 {eventData.location_name || "Lokasi tidak tersedia"}</p>
-                </div>
-                <div className="text-left md:text-right">
-                  <p className={`text-sm ${data.length > 0 ? "text-green-600" : "text-yellow-600"}`}>🎫 {data.length} tiket OTS tersedia</p>
-                  <p className="text-xs text-gray-500">Untuk penjualan di lokasi event</p>
-                  {data.length === 0 && <p className="text-xs text-red-500 mt-1">Tambahkan tiket OTS di halaman kelola tiket</p>}
-                </div>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* KOLOM KIRI - Tabel Transaksi */}
               <div className="flex flex-col h-full">
                 <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full flex flex-col">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <h5 className="font-semibold text-lg">Riwayat Penjualan</h5>
-                    <div className="flex items-center gap-2">
-                      <Badge color="blue" variant="light">
-                        {currentTransactions.length} transaksi
-                      </Badge>
+                    <Badge color="blue" variant="light">
+                      {currentTransactions.length} transaksi
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                    <div className="flex-grow">
+                      <Input placeholder="Cari invoice, email, nama, atau telepon..." value={filterValue} onChange={onSearchChange} className="w-full" />
                     </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <Tabs selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as "offline" | "online")} aria-label="Transaction types" className="w-full">
-                      <Tab
-                        key="offline"
-                        title={
-                          <div className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={faStore} className="text-sm" />
-                            <span>Offline ({offlineTransactions.length})</span>
-                          </div>
-                        }
-                      />
-                      <Tab
-                        key="online"
-                        title={
-                          <div className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={faDesktop} className="text-sm" />
-                            <span>Online ({onlineTransactions.length})</span>
-                          </div>
-                        }
-                      />
-                    </Tabs>
-                  </div>
-
-                  <div className="mb-4">
-                    <Input placeholder="Cari invoice, email, nama, atau telepon..." value={filterValue} onChange={onSearchChange} className="mb-2" />
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <select onChange={onRowsPerPageChange} value={rowsPerPage} className="border border-gray-300 rounded-md p-2 text-sm w-full sm:w-auto">
-                        <option value={5}>5 baris</option>
-                        <option value={10}>10 baris</option>
-                        <option value={20}>20 baris</option>
-                      </select>
-                      <button onClick={downloadReport} className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 text-sm border border-gray-300 rounded-md p-2 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Tabs
+                        selectedKey={activeTab}
+                        onSelectionChange={(key) => {
+                          setActiveTab(key as "offline" | "online");
+                          setPage(1);
+                        }}
+                        size="sm"
+                        aria-label="Transaction types"
+                      >
+                        <Tab
+                          key="offline"
+                          title={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faStore} className="text-sm" />
+                              <span>Offline ({offlineTransactions.length})</span>
+                            </div>
+                          }
+                        />
+                        <Tab
+                          key="online"
+                          title={
+                            <div className="flex items-center gap-2">
+                              <FontAwesomeIcon icon={faDesktop} className="text-sm" />
+                              <span>Online ({onlineTransactions.length})</span>
+                            </div>
+                          }
+                        />
+                      </Tabs>
+                      <button onClick={downloadReport} className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 text-sm border border-light-grey rounded-md px-3 py-2 hover:bg-gray-50 transition-colors">
                         <FontAwesomeIcon icon={faDownload} className="text-gray-600" />
                         <span>Download</span>
                       </button>
@@ -901,81 +895,90 @@ const TicketOTS = () => {
 
                   <div className="flex-grow overflow-auto mb-4">
                     <div className="overflow-x-auto">
-                      <Table aria-label="Transactions Table" className="min-w-full">
-                        <TableHeader>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">INVOICE</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">TANGGAL</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">CUSTOMER</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">JUMLAH</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">METODE</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">STATUS</TableColumn>
-                          <TableColumn className="text-xs sm:text-sm whitespace-nowrap">AKSI</TableColumn>
-                        </TableHeader>
-                        <TableBody
-                          emptyContent={
-                            <div className="text-center py-8">
-                              <p className="text-gray-500">{activeTab === "offline" ? "Belum ada transaksi offline" : "Belum ada transaksi online"}</p>
-                            </div>
-                          }
-                          items={items}
-                        >
-                          {(item: any) => (
-                            <TableRow key={item.id}>
-                              <TableCell className="whitespace-nowrap">
-                                <p className="font-medium text-xs sm:text-sm">{item.invoice_no}</p>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                <p className="text-xs sm:text-sm">{moment(item.created_at).format("DD/MM/YY")}</p>
-                                <p className="text-xs text-gray-500">{moment(item.created_at).format("HH:mm")}</p>
-                              </TableCell>
-                              <TableCell>
-                                <div className="min-w-[120px]">
-                                  <p className="font-medium text-xs sm:text-sm truncate">{item.has_user?.name || "Walk-in Customer"}</p>
-                                  <p className="text-xs text-gray-500 truncate">{item.has_user?.email || "-"}</p>
-                                  <p className="text-xs text-gray-500 truncate">{item.has_user?.phone || "-"}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                <p className="font-semibold text-xs sm:text-sm">Rp{parseNumber(item.grandtotal).toLocaleString("id-ID")}</p>
-                                <p className="text-xs text-gray-500">{item.total_qty || 0} tiket</p>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                <p className="text-xs sm:text-sm">{getPaymentMethodName(item.payment_method_id)}</p>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">{getStatusBadge(item.transaction_status_id)}</TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                <button onClick={() => handleViewTransaction(item)} className="flex items-center gap-1 text-primary hover:text-primary-dark text-sm p-1 rounded hover:bg-primary/10 transition-colors">
-                                  <FontAwesomeIcon icon={faEye} className="text-xs" />
-                                  <span className="hidden sm:inline">View</span>
-                                </button>
-                              </TableCell>
-                            </TableRow>
+                      <table className="w-full" style={{ borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr className="border-b border-light-grey" style={{ backgroundColor: "#f5f7fa" }}>
+                            <th className={`${thCls("center")} w-12`}>No</th>
+                            <th onClick={() => handleSort("invoice_no")} className={`${thCls()} cursor-pointer select-none`}>
+                              Invoice <SortIcon active={sortBy === "invoice_no"} dir={sortDir} />
+                            </th>
+                            <th onClick={() => handleSort("created_at")} className={`${thCls()} cursor-pointer select-none`}>
+                              Tanggal <SortIcon active={sortBy === "created_at"} dir={sortDir} />
+                            </th>
+                            <th onClick={() => handleSort("name")} className={`${thCls()} cursor-pointer select-none`}>
+                              Customer <SortIcon active={sortBy === "name"} dir={sortDir} />
+                            </th>
+                            <th onClick={() => handleSort("grandtotal")} className={`${thCls()} cursor-pointer select-none`}>
+                              Jumlah <SortIcon active={sortBy === "grandtotal"} dir={sortDir} />
+                            </th>
+                            <th className={thCls()}>Metode</th>
+                            <th className={thCls()}>Status</th>
+                            <th className={thCls("center")}>Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.length > 0 ? (
+                            items.map((item: any, idx: number) => (
+                              <tr key={item.id} className="border-b border-light-grey hover:bg-gray-50 transition-colors">
+                                <td className={`${tdCls("center")} w-12`}>{(page - 1) * ROWS_PER_PAGE + idx + 1}</td>
+                                <td className={tdCls()}>
+                                  <p className="font-medium">{item.invoice_no}</p>
+                                </td>
+                                <td className={tdCls()}>
+                                  <p>{moment(item.created_at).format("DD/MM/YY")}</p>
+                                  <p className="text-xs text-gray-500">{moment(item.created_at).format("HH:mm")}</p>
+                                </td>
+                                <td className={tdCls()}>
+                                  <div className="min-w-[120px]">
+                                    <p className="font-medium truncate">{getCustomer(item).name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{getCustomer(item).email}</p>
+                                    <p className="text-xs text-gray-500 truncate">{getCustomer(item).phone}</p>
+                                  </div>
+                                </td>
+                                <td className={tdCls()}>
+                                  <p className="font-semibold">Rp{parseNumber(item.grandtotal).toLocaleString("id-ID")}</p>
+                                  <p className="text-xs text-gray-500">{item.total_qty || 0} tiket</p>
+                                </td>
+                                <td className={tdCls()}>{getPaymentMethodName(item.payment_method_id)}</td>
+                                <td className={tdCls()}>{getStatusBadge(item.transaction_status_id)}</td>
+                                <td className={`${tdCls("center")}`}>
+                                  <button onClick={() => handleViewTransaction(item)} className="flex items-center gap-1 text-primary hover:text-primary-dark text-sm p-1 rounded hover:bg-primary/10 transition-colors">
+                                    <FontAwesomeIcon icon={faEye} className="text-xs" />
+                                    <span className="hidden sm:inline">View</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={8} className="text-center py-8 text-gray-500">
+                                {activeTab === "offline" ? "Belum ada transaksi offline" : "Belum ada transaksi online"}
+                              </td>
+                            </tr>
                           )}
-                        </TableBody>
-                      </Table>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
-                  {pages > 1 && (
-                    <div className="flex justify-center mb-4">
-                      <Pagination page={page} total={pages} onChange={setPage} showControls />
-                    </div>
-                  )}
-
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4 border-t border-light-grey">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                       <p className="text-xs text-gray-500 text-center sm:text-left">
-                        Menampilkan {items.length} dari {filteredTransactions.length} transaksi {activeTab === "offline" ? "offline" : "online"}
+                        Menampilkan {filteredTransactions.length === 0 ? 0 : (page - 1) * ROWS_PER_PAGE + 1} sampai{" "}
+                        {Math.min(page * ROWS_PER_PAGE, filteredTransactions.length)} dari {filteredTransactions.length} transaksi {activeTab === "offline" ? "offline" : "online"}
                       </p>
-                      <Button
-                        label="Refresh Data"
-                        color="secondary"
-                        onClick={() => {
-                          if (eventData) {
-                            loadEventData(eventData);
-                          }
-                        }}
-                      />
+                      <div className="flex flex-wrap items-center justify-center gap-3">
+                        {pages > 1 && <Pagination page={page} total={pages} onChange={setPage} showControls />}
+                        <Button
+                          label="Refresh Data"
+                          color="secondary"
+                          onClick={() => {
+                            if (eventData) {
+                              loadEventData(eventData);
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -1020,7 +1023,6 @@ const TicketOTS = () => {
                       <h5 className="font-semibold text-lg mb-1">Belum ada tiket OTS</h5>
                       <p className="text-sm text-gray-500 mb-4">Event ini belum memiliki tiket yang diaktifkan untuk penjualan OTS. Tambahkan tiket OTS terlebih dahulu untuk mulai penjualan.</p>
                       <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                        <Button label="Tambah Tiket OTS" color="secondary" onClick={() => router.push(`/dashboard/my-event/${eventData.id}/ticket`)} className="w-full sm:w-auto" />
                         <Button label="Refresh Data" color="primary" onClick={() => loadEventData(eventData)} className="w-full sm:w-auto" />
                       </div>
                     </div>

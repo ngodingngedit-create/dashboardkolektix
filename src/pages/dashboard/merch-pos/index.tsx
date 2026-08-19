@@ -12,10 +12,10 @@ import {
   Flex,
   Image,
   LoadingOverlay,
-  Menu,
   Modal,
   NumberFormatter,
   NumberInput,
+  Pagination,
   ScrollArea,
   Stack,
   Table,
@@ -25,7 +25,6 @@ import {
   TextInput,
   UnstyledButton,
   Popover,
-  Tooltip,
 } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
@@ -38,7 +37,7 @@ import { z } from "zod";
 import _ from "lodash";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
-import { DatePickerInput, DatesRangeValue, DatePicker } from "@mantine/dates";
+import { DatesRangeValue } from "@mantine/dates";
 
 type ComponentProps = {};
 
@@ -106,6 +105,8 @@ type ProductApiResponse = {
   total: number;
   per_page: number;
 };
+
+const TRANSACTION_PER_PAGE = 20;
 
 export default function Index({ }: Readonly<ComponentProps>) {
   const user = useLoggedUser();
@@ -386,7 +387,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
     const creatorId = user?.has_creator?.id;
     if (!creatorId) return;
 
-    let url = `order-bycreator?creator_id=${creatorId}&page=${page}&limit=10&order_by=created_at&order_direction=desc`;
+    let url = `order-bycreator?creator_id=${creatorId}&page=${page}&limit=${TRANSACTION_PER_PAGE}&order_by=created_at&order_direction=desc`;
 
     if (transactionSearch.trim()) {
       url += `&search=${encodeURIComponent(transactionSearch.trim())}`;
@@ -473,19 +474,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
     });
   };
 
-  const handleSearchTransactions = () => {
-    setTransactionPage(1);
-    getTransactions(1);
-  };
-
-  const handleResetFilters = () => {
-    setTransactionSearch("");
-    setDateRange([null, null]);
-    setTransactionStatus("all");
-    setTransactionPage(1);
-    getTransactions(1);
-  };
-
   const merchList = useMemo(() => {
     const normalize = (s: unknown) =>
       (s ?? "")
@@ -522,6 +510,11 @@ export default function Index({ }: Readonly<ComponentProps>) {
         })) ?? []
     );
   }, [merch, searchQuery]);
+
+  const visibleTransactions = useMemo(() => {
+    const start = (transactionPage - 1) * TRANSACTION_PER_PAGE;
+    return transactions.slice(start, start + TRANSACTION_PER_PAGE);
+  }, [transactions, transactionPage]);
 
   const selectedList = useMemo(() => {
     return selected.map((e) => {
@@ -1394,7 +1387,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
       </Modal>
 
       <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
-        <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-transform ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static overflow-hidden flex flex-col`}>
+        <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-all duration-300 ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static md:min-w-0 overflow-hidden flex flex-col ${activeTab === "transactions" ? "md:!w-[360px]" : "md:!w-[46%]"}`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
           <Stack gap={20} h="100%" className="flex flex-col">
             <div className="flex justify-between items-center border-b border-light-grey pb-4">
@@ -1579,7 +1572,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
           </Stack>
         </Card>
 
-        <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden">
+        <Card withBorder w="100%" p={0} radius={10} h="100%" className="flex flex-col overflow-hidden md:flex-1 md:min-w-0">
           <div className="flex-grow overflow-y-auto">
             <Tabs
               value={activeTab}
@@ -1900,64 +1893,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     </div>
                   </Flex>
 
-                  <Card withBorder p="md" radius="md" mb="md" className="bg-gray-50/50">
-                    <Stack gap="md">
-                      <Text fw={600} size="sm">
-                        Filter Transaksi
-                      </Text>
-
-                      <Flex gap="sm" align="center" justify="space-between" wrap="wrap">
-                        {/* Kiri: Status */}
-                        <Menu shadow="md" width={200}>
-                          <Menu.Target>
-                            <Button variant="outline" size="sm" rightSection={<Icon icon="uiw:down" />}>
-                              Status: {transactionStatus === "all" ? "Semua" :
-                                transactionStatus === "1" ? "Pending" :
-                                  transactionStatus === "2" ? "Success" :
-                                    transactionStatus === "3" ? "Expired" :
-                                      transactionStatus === "4" ? "Failed" :
-                                        transactionStatus === "5" ? "Cancelled" : transactionStatus}
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item onClick={() => setTransactionStatus("all")}>Semua Status</Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item onClick={() => setTransactionStatus("1")}>Pending</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("2")}>Success</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("3")}>Expired</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("4")}>Failed</Menu.Item>
-                            <Menu.Item onClick={() => setTransactionStatus("5")}>Cancelled</Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-
-                        {/* Kanan: Date picker + Search */}
-                        <Flex gap="sm" align="center">
-                          <Popover position="bottom-end" shadow="md">
-                            <Popover.Target>
-                              <Tooltip label="Pilih Rentang Tanggal">
-                                <ActionIcon size={36} variant={dateRange[0] ? "filled" : "light"} color="blue">
-                                  <Icon icon="solar:calendar-bold" className="text-xl" />
-                                </ActionIcon>
-                              </Tooltip>
-                            </Popover.Target>
-                            <Popover.Dropdown p={10}>
-                              <DatePicker type="range" value={dateRange} onChange={setDateRange} />
-                            </Popover.Dropdown>
-                          </Popover>
-
-                          <TextInput
-                            placeholder="Cari berdasarkan invoice atau nama..."
-                            value={transactionSearch}
-                            onChange={(e) => setTransactionSearch(e.target.value)}
-                            leftSection={<Icon icon="uiw:search" />}
-                            className="w-full sm:w-auto sm:min-w-[260px]"
-                            size="sm"
-                          />
-                        </Flex>
-                      </Flex>
-                    </Stack>
-                  </Card>
-
                   <LoadingOverlay visible={loading.includes("get-transactions")} />
 
                   {transactions.length === 0 ? (
@@ -1989,12 +1924,12 @@ export default function Index({ }: Readonly<ComponentProps>) {
                             </tr>
                           </thead>
                           <tbody>
-                            {transactions.map((transaction, index) => {
+                            {visibleTransactions.map((transaction, index) => {
                               const status = getStatusFromId(transaction.transaction_status_id || 1);
                               return (
                                 <tr key={transaction.id} style={{ borderBottom: '1px solid #f0f0f0' }} className="hover:bg-gray-50/50 transition-colors">
                                   <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                                    <Text size="sm" c="gray.6">{((transactionPage as number) - 1) * 10 + index + 1}</Text>
+                                    <Text size="sm" c="gray.6">{((transactionPage as number) - 1) * TRANSACTION_PER_PAGE + index + 1}</Text>
                                   </td>
                                   <td style={{ padding: '12px 14px' }}>
                                     <Text fw={600} size="sm" c="blue.8">{transaction.invoice_no || transaction.invoice_number}</Text>
@@ -2033,37 +1968,20 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
                       <Flex justify="space-between" align="center" mt="md">
                         <Text size="sm" c="gray.6">
-                          Halaman {transactionPage} - Menampilkan {transactions.length} dari {totalTransactions} transaksi
+                          Halaman {transactionPage} - Menampilkan {visibleTransactions.length} dari {totalTransactions} transaksi
                         </Text>
 
-                        <Flex gap={10}>
-                          <Button
-                            size="sm"
-                            variant="subtle"
-                            onClick={() => {
-                              if (transactionPage > 1) {
-                                const newPage = transactionPage - 1;
-                                setTransactionPage(newPage);
-                                getTransactions(newPage);
-                              }
-                            }}
-                            disabled={transactionPage <= 1}
-                          >
-                            Prev
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="subtle"
-                            onClick={() => {
-                              const newPage = transactionPage + 1;
-                              setTransactionPage(newPage);
-                              getTransactions(newPage);
-                            }}
-                            disabled={transactions.length < 10}
-                          >
-                            Next
-                          </Button>
-                        </Flex>
+                        <Pagination
+                          value={transactionPage}
+                          onChange={(newPage) => {
+                            setTransactionPage(newPage);
+                            getTransactions(newPage);
+                          }}
+                          total={Math.max(1, Math.ceil(totalTransactions / TRANSACTION_PER_PAGE))}
+                          color="#0B387C"
+                          size="sm"
+                          radius="md"
+                        />
                       </Flex>
                     </>
                   )}

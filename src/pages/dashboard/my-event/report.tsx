@@ -1376,7 +1376,7 @@ const Merch = () => {
   const getEventData = async () => {
     setLoadingEventData(true);
     try {
-      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`);
+      const response = await axios.get(`${config.wsUrl}event-view-list-by-slug/${slug}`, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
       if (response && response.data) {
         setEventData(response.data);
       }
@@ -1405,7 +1405,7 @@ const Merch = () => {
       console.log("Current user creator ID:", user?.has_creator?.id);
 
       // Fetch halaman pertama dengan axios
-      const response = await axios.get(`${config.wsUrl}event?page=${currentPage}`);
+      const response = await axios.get(`${config.wsUrl}event?page=${currentPage}`, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
       console.log("First page response status:", response.status);
       console.log("First page response data:", response.data);
@@ -1425,7 +1425,7 @@ const Merch = () => {
           if (lastPage > 1) {
             for (let page = 2; page <= lastPage; page++) {
               console.log(`Fetching page ${page}...`);
-              const nextResponse = await axios.get(`${config.wsUrl}event?page=${page}`);
+              const nextResponse = await axios.get(`${config.wsUrl}event?page=${page}`, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
               if (nextResponse.data?.data && Array.isArray(nextResponse.data.data)) {
                 allEvents = [...allEvents, ...nextResponse.data.data];
@@ -1496,7 +1496,7 @@ const Merch = () => {
     setLoading.append("fetchStatuses");
     try {
       console.log("Fetching transaction statuses...");
-      const statusResponse = await axios.get(`${config.wsUrl}transaction-statuses`);
+      const statusResponse = await axios.get(`${config.wsUrl}transaction-statuses`, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
       console.log("Status response:", statusResponse.data);
 
       if (statusResponse.data?.length) {
@@ -1589,7 +1589,7 @@ const Merch = () => {
     setLoading.append("savePemesan");
     try {
       // Assuming PUT endpoint for identity update
-      await axios.put(`${config.wsUrl}transaction-identity/${selectedIdentity.id}`, editIdentityForm);
+      await axios.put(`${config.wsUrl}transaction-identity/${selectedIdentity.id}`, editIdentityForm, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
       notifications.show({
         title: "Berhasil",
@@ -1663,7 +1663,7 @@ const Merch = () => {
       });
 
       const firstUrl = `${config.wsUrl}list-transaction-by-event?${firstParams.toString()}`;
-      const firstResponse = await axios.get(firstUrl);
+      const firstResponse = await axios.get(firstUrl, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
       let allTransactions: TransactionListResponse[] = [];
       let grandTotal = 0;
@@ -1705,7 +1705,7 @@ const Merch = () => {
       });
 
       const allUrl = `${config.wsUrl}list-transaction-by-event?${allParams.toString()}`;
-      const allResponse = await axios.get(allUrl);
+      const allResponse = await axios.get(allUrl, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
       if (allResponse.data?.data && Array.isArray(allResponse.data.data)) {
         allTransactions = [...allResponse.data.data];
@@ -1806,7 +1806,6 @@ const Merch = () => {
       }
 
       let ticketName = "-";
-      let ticketPrice = 0;
       let ticketDomisili = "-";
       let ticketSesi = "-";
 
@@ -1814,8 +1813,6 @@ const Merch = () => {
         ticketName = transaction.tickets
           .map((ticket) => ticket.has_event_ticket?.name || "-")
           .join(", ");
-        ticketPrice = transaction.tickets.reduce((sum, ticket) =>
-          sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
         ticketSesi = transaction.tickets
           .map((ticket) => ticket.event_session?.session_name || "-")
           .filter((v, i, a) => a.indexOf(v) === i && v !== "-")
@@ -1838,7 +1835,7 @@ const Merch = () => {
         invoice: transaction.invoice_no || "-",
         tiket: ticketName,
         sesi: ticketSesi,
-        harga: `Rp ${ticketPrice.toLocaleString("id-ID")}`,
+        harga: `Rp ${Math.max((Number(transaction.total_price) || 0) - (Number((transaction as any).total_voucher) || 0), 0).toLocaleString("id-ID")}`,
         domisili: ticketDomisili,
         payment: paymentMethodInfo ? (
           <Box style={{ display: 'flex', justifyContent: 'center' }}>
@@ -2159,12 +2156,10 @@ const Merch = () => {
             let ticketName = "-";
             let ticketSesi = "-";
             let ticketSeats = "-";
-            let ticketPrice = 0;
             let ticketDomisili = "-";
             if (item.tickets && item.tickets.length > 0) {
               ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
               ticketSesi = item.tickets.map((ticket) => ticket.event_session?.session_name || "-").filter((v, i, a) => a.indexOf(v) === i && v !== "-").join(", ") || "-";
-              ticketPrice = item.tickets.reduce((sum: number, ticket: any) => sum + (ticket.price || 0) * (ticket.qty_ticket || 1), 0);
               
               // Extract seat numbers
               ticketSeats = item.tickets
@@ -2192,7 +2187,7 @@ const Merch = () => {
             const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
             const paymentMethodInfo = getPaymentMethod(item.payment_method);
             const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ...(selectedEventFlags.is_session ? [`"${ticketSesi}"`] : []), `"${ticketSeats}"`, ticketPrice, ...(selectedEventFlags.is_domisili ? [`"${ticketDomisili}"`] : []), `"${paymentMethodText}"`, `"${statusText}"`].join(",");
+            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ...(selectedEventFlags.is_session ? [`"${ticketSesi}"`] : []), `"${ticketSeats}"`, Math.max((Number(item.total_price) || 0) - (Number((item as any).total_voucher) || 0), 0), ...(selectedEventFlags.is_domisili ? [`"${ticketDomisili}"`] : []), `"${paymentMethodText}"`, `"${statusText}"`].join(",");
           }),
         ];
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;

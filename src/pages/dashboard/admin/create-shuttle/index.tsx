@@ -282,16 +282,16 @@ export default function AdminCreateShuttle() {
               }
               sessions.push({
                 id: session.id,
-                session_name: session.session_name || "",
-                session_start_time: session.session_start_time || "08:00",
-                session_end_time: session.session_end_time || "12:00",
+                session_name: session.name || session.session_name || "",
+                session_start_time: session.departure_time || session.session_start_time || "08:00",
+                session_end_time: session.arrival_time || session.session_end_time || "12:00",
                 tickets: sessionTickets,
               });
             });
           }
           loadedDays.push({
             id: day.id,
-            day_name: day.day_name || "",
+            day_name: day.operation_date || day.day_name || "",
             sessions,
           });
         });
