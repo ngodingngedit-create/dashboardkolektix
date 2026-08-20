@@ -69,14 +69,14 @@ interface FormKTPProps {
   no_identity: string;
   name_identity: string;
   address_identity: string;
-  file_identity: string;
+  file: string;
 }
 
 interface FormNPWPProps {
   no_npwp: string;
   name_npwp: string;
   address_npwp: string;
-  file_npwp: string;
+  file: string;
 }
 
 interface LegalRecord {
@@ -291,7 +291,7 @@ const ProfileCreator = () => {
   const [hasLegalData, setHasLegalData] = useState(false);
 
   const ktpForm = useForm<FormKTPProps>({
-    initialValues: { no_identity: '', name_identity: '', address_identity: '', file_identity: '' },
+    initialValues: { no_identity: '', name_identity: '', address_identity: '', file: '' },
     validate: {
       no_identity: (v) => (!v ? 'Nomor KTP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor KTP harus 16 digit angka' : null),
       name_identity: (v) => (!v ? 'Nama harus diisi' : null),
@@ -300,7 +300,7 @@ const ProfileCreator = () => {
   });
 
   const npwpForm = useForm<FormNPWPProps>({
-    initialValues: { no_npwp: '', name_npwp: '', address_npwp: '', file_npwp: '' },
+    initialValues: { no_npwp: '', name_npwp: '', address_npwp: '', file: '' },
     validate: {
       no_npwp: (v) => (!v ? 'Nomor NPWP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor NPWP harus 16 digit angka' : null),
       name_npwp: (v) => (!v ? 'Nama harus diisi' : null),
@@ -340,7 +340,7 @@ const ProfileCreator = () => {
   const handleEditKTP = (record: LegalRecord) => {
     setSelectedRecord(record);
     setIsLegalEditMode(true);
-    ktpForm.setValues({ no_identity: record.no_identity, name_identity: record.name_identity, address_identity: record.address_identity, file_identity: '' });
+    ktpForm.setValues({ no_identity: record.no_identity, name_identity: record.name_identity, address_identity: record.address_identity, file: '' });
     setKtpImagePreview(record.file_identity_url || null);
     setKtpImageFile(null);
     setActiveForm('ktp');
@@ -349,7 +349,7 @@ const ProfileCreator = () => {
   const handleEditNPWP = (record: LegalRecord) => {
     setSelectedRecord(record);
     setIsLegalEditMode(true);
-    npwpForm.setValues({ no_npwp: record.no_npwp, name_npwp: record.name_npwp, address_npwp: record.address_npwp, file_npwp: '' });
+    npwpForm.setValues({ no_npwp: record.no_npwp, name_npwp: record.name_npwp, address_npwp: record.address_npwp, file: '' });
     setNpwpImagePreview(record.file_npwp_url || null);
     setNpwpImageFile(null);
     setActiveForm('npwp');
@@ -364,7 +364,7 @@ const ProfileCreator = () => {
     });
 
   const handleSubmitKTP = async (values: FormKTPProps) => {
-    let fileBase64 = values.file_identity;
+    let fileBase64 = values.file;
     if (ktpImageFile) {
       try { fileBase64 = await convertToBase64(ktpImageFile); } catch { return; }
     }
@@ -373,11 +373,10 @@ const ProfileCreator = () => {
       no_identity: values.no_identity,
       name_identity: values.name_identity,
       address_identity: values.address_identity,
-      file_identity: fileBase64,
       no_npwp: selectedRecord?.no_npwp || '',
       name_npwp: selectedRecord?.name_npwp || '',
       address_npwp: selectedRecord?.address_npwp || '',
-      file_npwp: selectedRecord?.file_npwp || '',
+      file: fileBase64,
       type: 'ktp',
       status: 'active',
       is_snk: true,
@@ -402,7 +401,7 @@ const ProfileCreator = () => {
   };
 
   const handleSubmitNPWP = async (values: FormNPWPProps) => {
-    let fileBase64 = values.file_npwp;
+    let fileBase64 = values.file;
     if (npwpImageFile) {
       try { fileBase64 = await convertToBase64(npwpImageFile); } catch { return; }
     }
@@ -411,11 +410,10 @@ const ProfileCreator = () => {
       no_identity: selectedRecord?.no_identity || '',
       name_identity: selectedRecord?.name_identity || '',
       address_identity: selectedRecord?.address_identity || '',
-      file_identity: selectedRecord?.file_identity || '',
       no_npwp: values.no_npwp,
       name_npwp: values.name_npwp,
       address_npwp: values.address_npwp,
-      file_npwp: fileBase64,
+      file: fileBase64,
       type: 'npwp',
       status: 'active',
       is_snk: true,

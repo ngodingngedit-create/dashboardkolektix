@@ -43,6 +43,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import axios from "axios";
 import config from "@/Config";
+import { useRouter } from "next/router";
 
 // Baseline Types
 interface InstallmentSchedule {
@@ -73,6 +74,7 @@ interface CreatorEvent {
 }
 
 const SetupDPReportPage = () => {
+  const router = useRouter();
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>([]);
   const [events, setEvents] = useState<CreatorEvent[]>([]);
@@ -480,11 +482,20 @@ const SetupDPReportPage = () => {
 
   const renderList = () => (
     <Stack gap={25}>
-      <Flex gap={20} justify="space-between" align="center" wrap="wrap">
-        <Stack gap={0}>
-          <Title order={1} size="h2">Setup Down Payment</Title>
-          <Text size="sm" c="gray">Kelola aturan pembayaran DP dan sistem cicilan tiket event Anda</Text>
-        </Stack>
+<Flex gap={20} justify="space-between" align="center" wrap="wrap">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={1} size="h2">Setup Down Payment</Title>
+<Text size="sm" c="gray">Kelola aturan pembayaran DP dan sistem cicilan tiket event Anda</Text>
+</Stack>
+</Flex>
         <Flex gap="md" align="center">
           <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL EVENT DP</Text>

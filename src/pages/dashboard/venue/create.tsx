@@ -212,14 +212,23 @@ export default function Create({ }: Readonly<ComponentProps>) {
         <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
             <LoadingOverlay visible={loading.includes('getdatavenue')} />
             <Flex gap={10} justify="space-between" align="center">
-                <Stack gap={5}>
-                    <Text size="1.8rem" fw={600}>
-                        {slug ? 'Edit Venue' : 'Buat Venue Baru'}
-                    </Text>
-                    <Text size="sm" c="gray">
-                        Lengkapi form untuk {slug ? 'memperbarui' : 'membuat'} venue baru
-                    </Text>
-                </Stack>
+                <Flex align="center" gap={15}>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/dashboard/venue')}
+                        className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                    >
+                        <Icon icon="ph:arrow-left-bold" />
+                    </button>
+                    <Stack gap={5}>
+                        <Text size="1.8rem" fw={600}>
+                            {slug ? 'Edit Venue' : 'Buat Venue Baru'}
+                        </Text>
+                        <Text size="sm" c="gray">
+                            Lengkapi form untuk {slug ? 'memperbarui' : 'membuat'} venue baru
+                        </Text>
+                    </Stack>
+                </Flex>
 
                 {/* <Flex align="center" gap={10}>
                     <TextInput radius="xl" leftSection={<Icon icon="uiw:search" />} placeholder="Cari Nama Venue" />

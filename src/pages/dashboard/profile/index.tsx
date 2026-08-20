@@ -21,6 +21,7 @@ import { useForm } from '@mantine/form';
 import { useListState } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import ChangePassword from '@/components/ProfileComponent/ChangePassword';
+import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -56,6 +57,7 @@ interface ProfileRecord {
 }
 
 const Profile = () => {
+  const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [profileList, setProfileList] = useState<ProfileRecord[]>([]);
   const [image, setImage] = useState<string | null>(null);
@@ -207,11 +209,20 @@ const Profile = () => {
   // ─── Table / List View ────────────────────────────────────────────────────
   const renderProfileList = () => (
     <Stack gap={20}>
-      <Flex justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={2} size="h3">Profile Saya</Title>
-          <Text size="sm" c="gray">Kelola informasi profil akun Anda</Text>
-        </Stack>
+<Flex justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={2} size="h3">Profile Saya</Title>
+<Text size="sm" c="gray">Kelola informasi profil akun Anda</Text>
+</Stack>
+</Flex>
         {!hasData && (
           <MantineButton
             onClick={handleAddClick}

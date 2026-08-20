@@ -19,6 +19,7 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import moment from "moment";
+import { useSidebar } from "@/components/SidebarComponent";
 
 type UserOption = { user_id: number; name: string };
 
@@ -901,6 +902,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
 
 const IssueManagement = () => {
     const router = useRouter();
+    const { collapse } = useSidebar();
     const loggedUser = useLoggedUser();
     const [projects, setProjects] = useState<Project[]>([]);
     const [users, setUsers] = useState<UserOption[]>([]);
@@ -1063,7 +1065,7 @@ const IssueManagement = () => {
     };
 
     return (
-        <div className="fixed inset-0 top-[65px] left-0 md:left-[65px] hvr:md:left-[280px] bg-white flex transition-all duration-300 overflow-hidden">
+        <div className={`fixed inset-0 top-[65px] left-0 ${collapse ? 'md:left-[280px]' : 'md:left-[65px]'} bg-white flex transition-all duration-300 overflow-hidden`}>
             <WorkspaceSidebar 
                 projects={projects} 
                 selectedProject={selectedProject} 

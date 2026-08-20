@@ -3,14 +3,27 @@ import Button from '@/components/Button';
 import InputEditor from '@/components/Input/InputEditor';
 import InputField from '@/components/Input';
 import { RadioGroup, Radio } from '@nextui-org/react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/router';
 
 const CreateVacancy = () => {
+  const router = useRouter();
   return (
     <>
       <div className='max-w-3xl mx-auto pt-5 text-dark min-h-screen pb-20'>
-        <div className='flex flex-col gap-4 px-4 sm:px-8 md:px-12 lg:px-0'>
-          <h2>Buat Lowongan</h2>
-          <p className='text-grey'>Lengkapi form dibawah ini untuk membuat Lowongan</p>
+<div className='flex flex-col gap-4 px-4 sm:px-8 md:px-12 lg:px-0'>
+<div className='flex items-center gap-3'>
+<button
+type="button"
+onClick={() => router.push('/dashboard/vacancy')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<h2>Buat Lowongan</h2>
+</div>
+<p className='text-grey'>Lengkapi form dibawah ini untuk membuat Lowongan</p>
           <div>
             <div className='max-w-3xl mx-auto pt-10 text-dark'>
               <div className='border-2 border-primary-light-200 rounded-xl flex flex-col gap-3'>

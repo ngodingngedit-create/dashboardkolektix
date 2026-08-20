@@ -749,7 +749,6 @@ const TicketOTS = () => {
               </button>
               <h3 className="text-xl sm:text-2xl font-bold">Penjualan Tiket OTS</h3>
             </div>
-            <p className="text-sm text-gray-600">{eventData ? eventData.name : "Pilih event untuk penjualan OTS"}</p>
           </div>
         </div>
 

@@ -53,12 +53,21 @@ export default function Create() {
 
     return (
         <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
-            <Flex gap={10} justify="space-between" align="center">
-                <Stack gap={5}>
-                    <Text size="1.8rem" fw={600}>Buat Blog Baru</Text>
-                    <Text size="sm" c="gray">Isi detail di bawah untuk membuat artikel blog baru</Text>
-                </Stack>
-            </Flex>
+<Flex gap={10} justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/blog')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<Stack gap={5}>
+<Text size="1.8rem" fw={600}>Buat Blog Baru</Text>
+<Text size="sm" c="gray">Isi detail di bawah untuk membuat artikel blog baru</Text>
+</Stack>
+</Flex>
+</Flex>
 
             <Divider />
 

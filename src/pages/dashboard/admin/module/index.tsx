@@ -51,7 +51,7 @@ export default function KelolaModule() {
   const [selectedModule, setSelectedModule] = useState<ModuleProps | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "created_at", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "id", direction: "asc" });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
 
@@ -228,6 +228,12 @@ export default function KelolaModule() {
         let valA = a[sortConfig.key as string];
         let valB = b[sortConfig.key as string];
 
+        if (sortConfig.key === "id") {
+          valA = Number(valA) || 0;
+          valB = Number(valB) || 0;
+          return sortConfig.direction === "asc" ? valA - valB : valB - valA;
+        }
+
         valA = (valA || "").toString().toLowerCase();
         valB = (valB || "").toString().toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
@@ -308,10 +314,19 @@ export default function KelolaModule() {
       <LoadingOverlay visible={loading.includes("getdata")} />
 
       <Flex justify="space-between" align="center">
-        <Stack gap={2}>
-          <Text size="1.8rem" fw={600} c="black">Kelola Module</Text>
-          <Text size="sm" c="black">Daftar semua module dalam sistem</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard/admin')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <Icon icon="ph:arrow-left-bold" className="text-lg" />
+          </button>
+          <Stack gap={2}>
+            <Text size="1.8rem" fw={600} c="black">Kelola Module</Text>
+            <Text size="sm" c="black">Daftar semua module dalam sistem</Text>
+          </Stack>
+        </Flex>
         <Button 
           onClick={handleAddClick} 
           leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}
@@ -393,7 +408,7 @@ export default function KelolaModule() {
                   >
                     <td style={tableCellStyle}>
                       <Text size="sm" fw={600} c="dimmed">
-                        {pagination?.current_page ? (Number(pagination.current_page) - 1) * (Number(pagination.per_page) || 10) + idx + 1 : idx + 1}
+                        {item.id}
                       </Text>
                     </td>
                     <td style={tableCellStyle}>

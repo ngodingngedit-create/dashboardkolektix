@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Get } from '@/utils/REST';
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/router';
 
 interface TransactionStatus {
   id: number;
@@ -68,7 +71,8 @@ interface MerchandiseTransaction {
 }
 
 export default function MerchandiseDashboard() {
-  const [data, setData] = useState<MerchandiseTransaction[]>([]);
+const router = useRouter();
+const [data, setData] = useState<MerchandiseTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [status, setStatus] = useState<string>('all');
   const [showFilter, setShowFilter] = useState<boolean>(false);
@@ -172,12 +176,21 @@ export default function MerchandiseDashboard() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-3">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Transaksi Merchandise</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Menampilkan {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredData.length)} dari {filteredData.length} transaksi
-              {status !== 'all' && ` (Filter: ${status.charAt(0).toUpperCase() + status.slice(1)})`}
-            </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/merch')}
+              className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Transaksi Merchandise</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Menampilkan {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredData.length)} dari {filteredData.length} transaksi
+                {status !== 'all' && ` (Filter: ${status.charAt(0).toUpperCase() + status.slice(1)})`}
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-2">

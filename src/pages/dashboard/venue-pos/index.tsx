@@ -9,6 +9,7 @@ import fetch from "@/utils/fetch";
 import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import { modals } from "@mantine/modals";
+import { useRouter } from "next/router";
 
 type DateList = {
     date?: string;
@@ -17,6 +18,7 @@ type DateList = {
 };
 
 export default function VenuePos() {
+    const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [venue, setVenue] = useListState<VenueListResponse>();
     const user = useLoggedUser();
@@ -53,10 +55,21 @@ export default function VenuePos() {
         <>
 
             <Stack className={`p-[20px] md:p-[24px]`} gap={20} w="100%" pb={100}>
-                <Stack gap={0}>
-                    <Title size="h2" mb={4}>Booking Venue</Title>
-                    <Text size="sm" c="gray">Buat Booking Venue secara offline</Text>
-                </Stack>
+<Stack gap={0}>
+<Flex align="center" gap={12}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/venue')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<Stack gap={0}>
+<Title size="h2" mb={4}>Booking Venue</Title>
+<Text size="sm" c="gray">Buat Booking Venue secara offline</Text>
+</Stack>
+</Flex>
+</Stack>
 
                 <Divider my="sm" />
 

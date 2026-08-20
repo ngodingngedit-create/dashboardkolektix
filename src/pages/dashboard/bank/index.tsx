@@ -208,10 +208,19 @@ const Bank = () => {
     <Stack gap={30}>
       {/* Header */}
       <Flex gap={20} justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={1} size="h2">Rekening Bank</Title>
-          <Text size="sm" c="gray">Daftar rekening bank yang terhubung ke akun Anda</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <Stack gap={0}>
+            <Title order={1} size="h2">Rekening Bank</Title>
+            <Text size="sm" c="gray">Daftar rekening bank yang terhubung ke akun Anda</Text>
+          </Stack>
+        </Flex>
         <Button
           onClick={handleAddClick}
           leftSection={<FontAwesomeIcon icon={faPlus} />}

@@ -170,16 +170,25 @@ export default function AdminCreateVenue() {
     return (
         <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
             <LoadingOverlay visible={loading.includes('getdatavenue') || loading.includes('submitdata')} />
-            <Flex gap={10} justify="space-between" align="center">
-                <Stack gap={5}>
-                    <Text size="1.8rem" fw={600}>
-                        {id ? 'Edit Venue (Admin)' : 'Buat Venue Baru (Admin)'}
-                    </Text>
-                    <Text size="sm" c="gray">
-                        Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administrator
-                    </Text>
-                </Stack>
-            </Flex>
+<Flex gap={10} justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/admin/venue')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<Stack gap={5}>
+<Text size="1.8rem" fw={600}>
+{id ? 'Edit Venue (Admin)' : 'Buat Venue Baru (Admin)'}
+</Text>
+<Text size="sm" c="gray">
+Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administrator
+</Text>
+</Stack>
+</Flex>
+</Flex>
 
             <Divider />
 

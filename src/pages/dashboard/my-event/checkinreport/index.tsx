@@ -8,11 +8,13 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faCheckCircle, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faCheckCircle, faDownload, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { notifications } from "@mantine/notifications";
+import { useRouter } from "next/router";
 
 const CheckinReport = () => {
   const { collapse } = useSidebar();
+  const router = useRouter();
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [eventList, setEventList] = useState<EventListResponse[]>([]);
@@ -376,15 +378,24 @@ const CheckinReport = () => {
     <div className="flex flex-col min-h-screen bg-white relative">
       {/* Main Content Area */}
       <div className="p-8 text-black flex flex-col gap-6 flex-grow">
-        <Flex justify="space-between" align="flex-end">
-          <Stack gap={2}>
-            <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-              Check-in Report {reportType === "eticket" ? "E-Ticket" : "Invitation"}
-            </Title>
-            <Text size="sm" c="dimmed">
-              Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket" : "undangan"} yang valid.
-            </Text>
-          </Stack>
+<Flex justify="space-between" align="flex-end">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={2}>
+<Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
+Check-in Report {reportType === "eticket" ? "E-Ticket" : "Invitation"}
+</Title>
+<Text size="sm" c="dimmed">
+Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket" : "undangan"} yang valid.
+</Text>
+</Stack>
+</Flex>
 
           <Select
             value={reportType}

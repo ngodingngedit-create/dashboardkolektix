@@ -94,6 +94,7 @@ type TrackingFormValues = {
 };
 
 export default function OrderTracking() {
+    const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [creators, setCreators] = useState<Creator[]>([]);
     const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
@@ -485,14 +486,23 @@ export default function OrderTracking() {
             <Box bg="white" style={{ borderBottom: '1px solid #dee2e6' }}>
                 <Box px="xl" py="lg">
                     <Group justify="space-between" align="center">
-                        <Box>
-                            <Title order={2} size="h2" fw={700}>
-                                Update Resi
-                            </Title>
-                            <Text size="sm" c="dimmed" mt={4}>
-                                Update resi untuk order yang sudah diterima
-                            </Text>
-                        </Box>
+                        <Group align="center" gap="md">
+                            <button
+                                onClick={() => router.push('/dashboard/admin')}
+                                className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                                aria-label="Kembali ke Dashboard Admin"
+                            >
+                                <Icon icon="ph:arrow-left-bold" width={20} />
+                            </button>
+                            <Box>
+                                <Title order={2} size="h2" fw={700}>
+                                    Update Resi
+                                </Title>
+                                <Text size="sm" c="dimmed" mt={4}>
+                                    Update resi untuk order yang sudah diterima
+                                </Text>
+                            </Box>
+                        </Group>
                         {step > 1 && (
                             <Tooltip label="Kembali ke Awal">
                                 <ActionIcon

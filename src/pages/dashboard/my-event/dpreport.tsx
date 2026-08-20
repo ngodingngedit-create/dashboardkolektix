@@ -9,9 +9,11 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faSearch, faFileExcel, faMoneyBillWave, faReceipt, faInfoCircle, faCalendarDays, faUser, faEnvelope, faGlobe, faWallet, faSort, faSortUp, faSortDown } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faSearch, faFileExcel, faMoneyBillWave, faReceipt, faInfoCircle, faCalendarDays, faUser, faEnvelope, faGlobe, faWallet, faSort, faSortUp, faSortDown, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/router";
 
 const DPReport = () => {
+  const router = useRouter();
   const getSuccessUrl = (invoice: string) => {
     const host = window.location.hostname;
     let baseUrl = "https://kolektix.com";
@@ -228,12 +230,21 @@ const DPReport = () => {
 
   return (
     <div className="p-[30px_20px] text-black flex flex-col gap-[25px]">
-      <Flex justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={1} size="h2">Down Payment Report</Title>
-          <Text size="sm" c="gray">Kelola dan pantau transaksi Down Payment event Anda</Text>
-        </Stack>
-      </Flex>
+<Flex justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={1} size="h2">Down Payment Report</Title>
+<Text size="sm" c="gray">Kelola dan pantau transaksi Down Payment event Anda</Text>
+</Stack>
+</Flex>
+</Flex>
 
       <Flex justify="flex-end" gap="sm" align="center" wrap="wrap">
         <Button 

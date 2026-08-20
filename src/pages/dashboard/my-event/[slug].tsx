@@ -7,7 +7,7 @@ import DetailModal from "@/components/Dashboard/Modal/ModalInvation";
 import EditEventModal from "@/components/Dashboard/Modal/ModalEditInvation";
 import AddEventModal, { CategoryResponse } from "@/components/Dashboard/Modal/ModalAddInvation";
 import InvitationDetailModal from "@/components/Dashboard/Modal/ModalDetailInvation";
-import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Accordion, AccordionItem, Selection } from "@nextui-org/react";
+import { Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Accordion, AccordionItem, Selection, Skeleton } from "@nextui-org/react";
 import { EventProps } from "@/utils/globalInterface";
 import { EventTicket, SeatmapData } from "@/utils/formInterface";
 import { Tabs, Tab } from "@nextui-org/react";
@@ -23,7 +23,7 @@ import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Divider, Flex, Stack, Text, Tooltip, Button as ButtonM, Box, Center } from "@mantine/core";
+import { Divider, Flex, Stack, Text, Tooltip, Button as ButtonM } from "@mantine/core";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import useLoggedUser from "@/utils/useLoggedUser";
 import fetch from "@/utils/fetch";
@@ -180,13 +180,14 @@ const MyEventDetail = () => {
   const [addTicket, showAddTicket] = useState<boolean>(false);
   const [idxTicket, setIdxTicket] = useState<number>();
   const [loading, setLoading] = useState(false);
+  const [invitationLoading, setInvitationLoading] = useState(false);
   const [grandTotal, setGrandTotal] = useState(0);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [filterValue, setFilterValue] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -670,7 +671,7 @@ const MyEventDetail = () => {
   };
 
   async function getInvitationEventData(id: string | number) {
-    setLoading(true);
+    setInvitationLoading(true);
     try {
       const response = await axios.get(`${config.wsUrl}invitations/event/${id}`, {
         params: {
@@ -685,7 +686,7 @@ const MyEventDetail = () => {
       console.error("Error fetching event invitation data:", err);
       setInvitation([]);
     } finally {
-      setLoading(false);
+      setInvitationLoading(false);
     }
   }
 
@@ -1080,8 +1081,16 @@ const MyEventDetail = () => {
                         </div>
 
                         {transactionLoading ? (
-                          <div className="flex justify-center py-10">
-                            <Spinner size="lg" />
+                          <div className="py-3 px-3">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                              <div key={i} className="grid grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
+                                {Array.from({ length: 7 }).map((_, j) => (
+                                  <Skeleton key={j} className="rounded-md">
+                                    <div className={`h-4 rounded-md bg-default-200 ${j === 6 ? "w-16 ml-auto" : "w-full"}`} />
+                                  </Skeleton>
+                                ))}
+                              </div>
+                            ))}
                           </div>
                         ) : filteredTransactionItems.length === 0 ? (
                           <div className="text-center py-10">
@@ -1212,8 +1221,18 @@ const MyEventDetail = () => {
                             </Tooltip>
                           </div>
                         </div>
-                        {loading ? (
-                          <p>Loading...</p>
+                        {invitationLoading ? (
+                          <div className="py-3 px-3">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                              <div key={i} className="grid grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
+                                {Array.from({ length: 7 }).map((_, j) => (
+                                  <Skeleton key={j} className="rounded-md">
+                                    <div className={`h-4 rounded-md bg-default-200 ${j === 6 ? "w-16 ml-auto" : "w-full"}`} />
+                                  </Skeleton>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
                         ) : (
                           <Table aria-label="Event Invitation Table" bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
                             <TableHeader>
@@ -1332,7 +1351,7 @@ const MyEventDetail = () => {
         </div>
       </div>
       <DetailModal item={selectedItem} isOpen={isDetailModalOpen} onClose={closeDetailModal} />
-      <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} eventId={data.id} ticket={ticket} seatmap={seatmap} setSeatmap={setSeatmap} />
+      <AddEventModal eventData={data} isOpen={isAddModalOpen} onClose={closeAddModal} onAdded={() => { getInvitationEventData(data.id); setPage(1); }} eventId={data.id} ticket={ticket} seatmap={seatmap} setSeatmap={setSeatmap} />
       <EditEventModal item={selectedEvent} isOpen={isEditModalOpen} onClose={closeEditModal} />
       <TarikDanaModal
         isOpen={isModalOpen}
@@ -1350,11 +1369,34 @@ const MyEventDetail = () => {
       </Context.Provider>
     </>
   ) : (
-    <Box w="100%" mih={300} h={300}>
-      <Center h="100%">
-        <Spinner />
-      </Center>
-    </Box>
+    <div className="p-5">
+      <div className="flex items-center gap-4 mb-4">
+        <Skeleton className="rounded-full">
+          <div className="w-10 h-10 rounded-full bg-default-200" />
+        </Skeleton>
+        <Skeleton className="rounded-lg">
+          <div className="h-8 w-52 rounded-lg bg-default-200" />
+        </Skeleton>
+      </div>
+      <div className="flex flex-col md:flex-row gap-2">
+        <div className="w-full md:max-w-[300px] flex flex-col gap-4">
+          <Skeleton className="rounded-xl">
+            <div className="h-64 w-full rounded-xl bg-default-200" />
+          </Skeleton>
+          <Skeleton className="rounded-xl">
+            <div className="h-40 w-full rounded-xl bg-default-200" />
+          </Skeleton>
+        </div>
+        <div className="flex-1">
+          <Skeleton className="rounded-xl mb-4">
+            <div className="h-12 w-full rounded-xl bg-default-200" />
+          </Skeleton>
+          <Skeleton className="rounded-xl">
+            <div className="h-96 w-full rounded-xl bg-default-200" />
+          </Skeleton>
+        </div>
+      </div>
+    </div>
   );
 };
 

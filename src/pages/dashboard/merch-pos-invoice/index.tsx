@@ -58,6 +58,15 @@ export default function MerchPosInvoice({  }: Readonly<ComponentProps>) {
 
     return (
         <Stack align="center" px={20} py={40} gap={20}>
+            <Flex w="100%" justify="flex-start">
+                <button
+                    type="button"
+                    onClick={() => router.push('/dashboard/merch-pos')}
+                    className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                >
+                    <Icon icon="ph:arrow-left-bold" />
+                </button>
+            </Flex>
             <Stack gap={3} align="center">
                 <Text size="1.5rem" fw={600}>Cetak Faktur</Text>
                 <Text size="sm" c="gray">Faktur Penjualan Merchandise</Text>

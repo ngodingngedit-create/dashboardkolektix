@@ -16,6 +16,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAdded?: () => void;
   eventId?: number;
   eventData?: EventProps;
   ticket?: EventTicket[];
@@ -75,7 +76,7 @@ export const invitationStoreSchema = z.object({
   image: z.instanceof(Blob).optional().nullable(),
 });
 
-const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket, seatmap: propSeatmap, setSeatmap: propSetSeatmap }: AddEventModalProps) => {
+const AddEventModal = ({ isOpen, onClose, onAdded, eventId, eventData, ticket: propTicket, seatmap: propSeatmap, setSeatmap: propSetSeatmap }: AddEventModalProps) => {
   const [loading, setLoading] = useListState<string>();
   const [category, setCategory] = useState<CategoryResponse[]>([]);
 
@@ -286,6 +287,7 @@ const AddEventModal = ({ isOpen, onClose, eventId, eventData, ticket: propTicket
         color: "green",
         message: "Invitation berhasil ditambahkan",
       });
+      onAdded?.();
       onClose();
       form.reset();
     },

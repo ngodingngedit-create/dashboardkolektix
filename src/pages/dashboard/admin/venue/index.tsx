@@ -182,12 +182,22 @@ export default function AdminVenueManagement() {
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
       <Flex justify="space-between" align="center" mb={10}>
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Venue Management</Text>
-          <Text size="sm" c="gray">
-            Kelola semua venue dari berbagai creator dalam satu tempat
-          </Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <Link href="/dashboard/admin">
+            <button
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+              aria-label="Kembali ke Dashboard Admin"
+            >
+              <Icon icon="ph:arrow-left-bold" className="text-lg" />
+            </button>
+          </Link>
+          <Stack gap={5}>
+            <Text size="1.8rem" fw={600}>Venue Management</Text>
+            <Text size="sm" c="gray">
+              Kelola semua venue dari berbagai creator dalam satu tempat
+            </Text>
+          </Stack>
+        </Flex>
         <ButtonM
           component={Link}
           href="/dashboard/admin/venue/create"

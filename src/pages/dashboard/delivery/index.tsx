@@ -1712,7 +1712,16 @@ const DeliveryPage: React.FC = () => {
 
   return (
     <>
-      <Text fw={800} style={{ fontSize: '26px' }} mx={15} mt={15} mb={0} c="dark.9">Data Pengiriman</Text>
+      <Flex align="center" gap={12} mx={15} mt={15} mb={0}>
+<button
+type="button"
+onClick={() => router.push('/dashboard')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<Text fw={800} style={{ fontSize: '26px' }} c="dark.9">Data Pengiriman</Text>
+</Flex>
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
           {/* ... existing content ... */}

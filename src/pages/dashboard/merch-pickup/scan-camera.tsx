@@ -1151,7 +1151,8 @@ import { faCheckCircle } from '@fortawesome/free-regular-svg-icons';
 import Button from '@/components/Button';
 import { Post, Get } from '@/utils/REST';
 import Cookies from 'js-cookie';
-import { faXmark, faBox, faClock, faHistory, faCalendarAlt, faCheck, faCheckDouble, faCamera, faKeyboard, faSpinner, faExclamationTriangle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faXmark, faBox, faClock, faHistory, faCalendarAlt, faCheck, faCheckDouble, faCamera, faKeyboard, faSpinner, faExclamationTriangle, faInfoCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/router';
 
 interface SuccessMerchData {
   invoice_no: string;
@@ -1189,6 +1190,7 @@ interface ScanItem {
 }
 
 export default function MerchScanPage() {
+  const router = useRouter();
   const [selected, setSelected] = useState<'qr' | 'manual'>('qr');
   const [step, setStep] = useState(0);
   const [data, setData] = useState<SuccessMerchData | null>(null);
@@ -1775,9 +1777,16 @@ export default function MerchScanPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white">
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Scan Merchandise</h1>
-        </div>
+<div className="px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-3">
+<button
+type="button"
+onClick={() => router.push('/dashboard/merch-pickup')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<h1 className="text-3xl font-bold text-gray-900">Scan Merchandise</h1>
+</div>
       </div>
 
       <div className="w-full relative">

@@ -11,6 +11,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { modals } from "@mantine/modals";
 import moment from "moment";
+import { useRouter } from "next/router";
 
 const PER_PAGE = 10;
 
@@ -53,6 +54,7 @@ const emptyForm = {
 };
 
 export default function AdminRouteManagement() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RouteItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -209,13 +211,22 @@ export default function AdminRouteManagement() {
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
       <Flex justify="space-between" align="center" mb={10}>
-        <Stack gap={4}>
-          <Text size="1.7rem" fw={700} style={{ color: "#0B387C" }}>
-            <Icon icon="ph:path-bold" style={{ marginRight: 8, verticalAlign: "middle" }} />
-            List Rute
-          </Text>
-          <Text size="sm" c="gray">Kelola rute perjalanan shuttle</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard/admin')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <Icon icon="ph:arrow-left-bold" />
+          </button>
+          <Stack gap={4}>
+            <Text size="1.7rem" fw={700} style={{ color: "#0B387C", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Icon icon="ph:path-bold" />
+              List Rute
+            </Text>
+            <Text size="sm" c="gray">Kelola rute perjalanan shuttle</Text>
+          </Stack>
+        </Flex>
         <ButtonM
           color="blue"
           leftSection={<Icon icon="ph:plus-bold" />}

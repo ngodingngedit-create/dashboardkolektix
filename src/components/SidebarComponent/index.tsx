@@ -2053,7 +2053,7 @@ const sidebarData: SidebarData = [
   // },
   {
     id: 11,
-    // moduleId: 7,
+    moduleId: 4,
     name: "Talenta",
     icon: faStar,
     role: "Creator",

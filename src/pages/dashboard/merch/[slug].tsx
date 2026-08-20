@@ -2602,6 +2602,13 @@ export default function MerchDetail() {
                                     Dibuat pada {data?.created_at ? moment(data.created_at).format('DD MMMM YYYY') : '-'}
                                 </Text>
                                 <Flex gap={10} align="center">
+                                    <button
+                                        type="button"
+                                        onClick={() => router.push('/dashboard/merch')}
+                                        className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                                    >
+                                        <Icon icon="ph:arrow-left-bold" />
+                                    </button>
                                     <Title size="h2" style={{ fontSize: '24px' }}>{data?.product_name || '-'}</Title>
                                     <Tooltip label="Tampilkan QR Code">
                                         <ActionIcon

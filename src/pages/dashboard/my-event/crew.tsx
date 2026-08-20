@@ -46,6 +46,7 @@ import {
   faChevronUp,
   faChevronDown
 } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/router";
 
 // Interface untuk data crew
 interface CrewProps {
@@ -92,6 +93,7 @@ interface TeritorialProps {
 }
 
 export default function KelolaCrew() {
+  const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CrewProps[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -644,15 +646,24 @@ export default function KelolaCrew() {
     return (
       <Stack gap={30}>
         {/* Header & Statistics */}
-        <Flex justify="space-between" align="flex-start">
-          <Stack gap={0}>
-            <Title order={1} size="h2">
-              Kelola Crew
-            </Title>
-            <Text size="sm" c="gray">
-              Daftar semua crew yang tersedia di sistem
-            </Text>
-          </Stack>
+<Flex justify="space-between" align="flex-start">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={1} size="h2">
+Kelola Crew
+</Title>
+<Text size="sm" c="gray">
+Daftar semua crew yang tersedia di sistem
+</Text>
+</Stack>
+</Flex>
           
           <Stack align="flex-end" gap="md">
             <Flex gap={8} wrap="wrap" justify="flex-end">

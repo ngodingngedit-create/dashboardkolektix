@@ -155,8 +155,11 @@ export default function AdminCreateShuttle() {
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editSlug, setEditSlug] = useState<string | null>(null);
-  const [viewOpened, setViewOpened] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ShuttleItem | null>(null);
+  const [detailTab, setDetailTab] = useState<string>("Detail");
+  const [detailDays, setDetailDays] = useState<OperationDay[]>([]);
+  const [detailTickets, setDetailTickets] = useState<ShuttleTicket[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -232,6 +235,68 @@ export default function AdminCreateShuttle() {
     setShowForm(true);
   };
 
+  const parseShuttleDetail = (item: any): { days: OperationDay[]; tickets: ShuttleTicket[] } => {
+    const days: OperationDay[] = [];
+    const tickets: ShuttleTicket[] = [];
+
+    if (item.operation_days && Array.isArray(item.operation_days)) {
+      item.operation_days.forEach((day: any) => {
+        const sessions: ShuttleSession[] = [];
+        if (day.sessions && Array.isArray(day.sessions)) {
+          day.sessions.forEach((session: any) => {
+            const sessionTickets: ShuttleTicket[] = [];
+            if (session.tickets && Array.isArray(session.tickets)) {
+              session.tickets.forEach((t: any) => {
+                const ticket: ShuttleTicket = {
+                  id: t.id,
+                  name: t.name || "",
+                  description: t.description || "",
+                  qty: t.qty || 0,
+                  price: String(t.price || 0),
+                  prices: t.prices && t.prices.length > 0
+                    ? t.prices.map((p: any) => ({
+                        ticket_type_id: p.ticket_type_id,
+                        price: p.price,
+                      }))
+                    : [],
+                  trip_status_id: String(t.trip_status_id || "1"),
+                  ticket_start_date: t.ticket_start_date ? t.ticket_start_date.substring(0, 10) : "",
+                  ticket_start_time: t.ticket_start_time || "08:00",
+                  ticket_end_date: t.ticket_end_date ? t.ticket_end_date.substring(0, 10) : "",
+                  ticket_end_time: t.ticket_end_time || "23:59",
+                  route_id: t.route_id || 1,
+                  ticket_category: t.ticket_category || (t.available_seat_number ? "Seated" : "Festival"),
+                  ticket_type: t.ticket_type || (t.price > 0 ? "Berbayar" : "Gratis"),
+                  available_seat_number: t.available_seat_number || "",
+                  available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
+                  seat_color: t.seat_color || "#194e9e",
+                  shuttle_id: t.shuttle_id || 1,
+                  shuttle_session_id: t.shuttle_session_id || 1,
+                };
+                sessionTickets.push(ticket);
+                tickets.push(ticket);
+              });
+            }
+            sessions.push({
+              id: session.id,
+              session_name: session.name || session.session_name || "",
+              session_start_time: session.departure_time || session.session_start_time || "08:00",
+              session_end_time: session.arrival_time || session.session_end_time || "12:00",
+              tickets: sessionTickets,
+            });
+          });
+        }
+        days.push({
+          id: day.id,
+          day_name: day.operation_date || day.day_name || "",
+          sessions,
+        });
+      });
+    }
+
+    return { days, tickets };
+  };
+
   const handleOpenEdit = async (slug: string) => {
     setIsEdit(true);
     setEditSlug(slug);
@@ -240,64 +305,7 @@ export default function AdminCreateShuttle() {
       const res: any = await Get(`shuttle/${slug}`, {});
       const item = res.data || res;
 
-      // Preserve operation_days from API response
-      const loadedDays: OperationDay[] = [];
-      const flatTickets: ShuttleTicket[] = [];
-
-      if (item.operation_days && Array.isArray(item.operation_days)) {
-        item.operation_days.forEach((day: any) => {
-          const sessions: ShuttleSession[] = [];
-          if (day.sessions && Array.isArray(day.sessions)) {
-            day.sessions.forEach((session: any) => {
-              const sessionTickets: ShuttleTicket[] = [];
-              if (session.tickets && Array.isArray(session.tickets)) {
-                session.tickets.forEach((t: any) => {
-                  const ticket: ShuttleTicket = {
-                    id: t.id,
-                    name: t.name || "",
-                    description: t.description || "",
-                    qty: t.qty || 0,
-                    price: String(t.price || 0),
-                    prices: t.prices && t.prices.length > 0
-                      ? t.prices.map((p: any) => ({
-                          ticket_type_id: p.ticket_type_id,
-                          price: p.price,
-                        }))
-                      : [],
-                    trip_status_id: String(t.trip_status_id || "1"),
-                    ticket_start_date: t.ticket_start_date ? t.ticket_start_date.substring(0, 10) : "",
-                    ticket_start_time: t.ticket_start_time || "08:00",
-                    ticket_end_date: t.ticket_end_date ? t.ticket_end_date.substring(0, 10) : "",
-                    ticket_end_time: t.ticket_end_time || "23:59",
-                    route_id: t.route_id || 1,
-                    ticket_category: t.ticket_category || (t.available_seat_number ? "Seated" : "Festival"),
-                    ticket_type: t.ticket_type || (t.price > 0 ? "Berbayar" : "Gratis"),
-                    available_seat_number: t.available_seat_number || "",
-                    available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
-                    seat_color: t.seat_color || "#194e9e",
-                    shuttle_id: t.shuttle_id || 1,
-                    shuttle_session_id: t.shuttle_session_id || 1,
-                  };
-                  sessionTickets.push(ticket);
-                  flatTickets.push(ticket);
-                });
-              }
-              sessions.push({
-                id: session.id,
-                session_name: session.name || session.session_name || "",
-                session_start_time: session.departure_time || session.session_start_time || "08:00",
-                session_end_time: session.arrival_time || session.session_end_time || "12:00",
-                tickets: sessionTickets,
-              });
-            });
-          }
-          loadedDays.push({
-            id: day.id,
-            day_name: day.operation_date || day.day_name || "",
-            sessions,
-          });
-        });
-      }
+      const { days: loadedDays, tickets: flatTickets } = parseShuttleDetail(item);
 
       setForm({
         id: item.id || 0,
@@ -344,11 +352,15 @@ export default function AdminCreateShuttle() {
   };
 
   const handleOpenView = async (slug: string) => {
+    setShowDetail(true);
     setLoading(true);
     try {
       const res: any = await Get(`shuttle/${slug}`, {});
-      setSelectedItem(res.data || res);
-      setViewOpened(true);
+      const item = res.data || res;
+      setSelectedItem(item);
+      const { days, tickets } = parseShuttleDetail(item);
+      setDetailDays(days);
+      setDetailTickets(tickets);
     } catch {
       notifications.show({ title: "Gagal", message: "Gagal mengambil detail shuttle.", color: "red" });
     } finally {
@@ -1020,6 +1032,192 @@ export default function AdminCreateShuttle() {
     );
   }
 
+  // --- DETAIL VIEW ---
+  if (showDetail) {
+    return (
+      <div className="p-5">
+        <div className="flex items-center mb-4 gap-4">
+          <button
+            onClick={() => setShowDetail(false)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Daftar Shuttle"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <h1 className="text-dark m-0">Detail Shuttle</h1>
+        </div>
+        <div className="flex flex-col md:flex-row gap-2">
+          <div className="w-full md:max-w-[300px] flex flex-col gap-4">
+            <div className="bg-white rounded-xl shadow-md border border-primary-light-200 overflow-hidden">
+              <div className="relative w-full h-44 bg-gray-100">
+                {selectedItem?.image_url ? (
+                  <img src={selectedItem.image_url} alt="" className="w-full h-44 object-cover" />
+                ) : (
+                  <div className="w-full h-44 flex items-center justify-center">
+                    <Icon icon="ph:bus" style={{ fontSize: 40, color: "#ccc" }} />
+                  </div>
+                )}
+                <div className="absolute right-2 top-2">
+                  <Badge variant="filled" size="sm" color={selectedItem?.is_active ? "green" : "gray"} radius="sm">
+                    {selectedItem?.is_active ? "Aktif" : "Nonaktif"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="p-4">
+                <h5 className="text-lg font-semibold text-dark truncate">{selectedItem?.name}</h5>
+                <p className="text-dark text-sm mt-2">
+                  <Icon icon="ph:calendar-blank" className="inline text-gray-400 mr-1.5" />
+                  {moment(selectedItem?.start_date).format("DD MMM YYYY")} {selectedItem?.start_time?.substring(0, 5)} - {moment(selectedItem?.end_date).format("DD MMM YYYY")} {selectedItem?.end_time?.substring(0, 5)}
+                </p>
+              </div>
+            </div>
+            <ButtonM variant="subtle" color="gray" onClick={() => setShowDetail(false)}>
+              Kembali
+            </ButtonM>
+          </div>
+
+          <div className="flex-1 border border-primary-light-200 rounded-lg shadow-sm">
+            {loading || !selectedItem ? (
+              <div className="p-5 flex flex-col gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="w-32 h-3 bg-gray-200 rounded animate-pulse" />
+                    <div className="w-full h-4 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Tabs className="flex flex-col" variant="underlined" selectedKey={detailTab} onSelectionChange={(k) => setDetailTab(k.toString())}>
+                <Tab key="Detail" title="Detail" className="px-2">
+                  <Tabs
+                    radius="full"
+                    color="secondary"
+                    classNames={{
+                      tabList: "bg-transparent",
+                      tab: "data-[selected=true]:text-primary",
+                      cursor: "border border-primary-base",
+                    }}
+                  >
+                    <Tab title="Deskripsi" className="px-2">
+                      <div dangerouslySetInnerHTML={{ __html: selectedItem.description }}></div>
+                    </Tab>
+                    <Tab title="Syarat & Ketentuan" className="px-2">
+                      <div
+                        className="ml-5"
+                        dangerouslySetInnerHTML={{ __html: selectedItem.terms }}
+                      ></div>
+                    </Tab>
+                  </Tabs>
+                  <div className="mt-4 pt-4 border-t border-primary-light-200">
+                    <div>
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Metode Pembayaran</Text>
+                      <Group gap={6}>
+                        {selectedItem.payment_method_custom?.split(",").map(m => (
+                          <Badge key={m} size="sm" variant="light" color="blue">{m.trim()}</Badge>
+                        ))}
+                      </Group>
+                    </div>
+                    {selectedItem.seatmap && (
+                      <div className="mt-4">
+                        <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Denah Kursi</Text>
+                        <Group gap={6} wrap="wrap">
+                          {(() => {
+                            try {
+                              const parsed = typeof selectedItem.seatmap === "string"
+                                ? JSON.parse(selectedItem.seatmap)
+                                : selectedItem.seatmap;
+                              return (Array.isArray(parsed) ? parsed : [])
+                                .filter((a: any) => a.type === "seat")
+                                .map((area: any, i: number) => (
+                                  <Badge key={i} size="sm" variant="light" color="blue">
+                                    {area.text || `Area ${i + 1}`}
+                                    {area.row && area.col ? ` (${area.row * area.col} kursi)` : ""}
+                                  </Badge>
+                                ));
+                            } catch {
+                              return <Text size="xs" c="dimmed">Tidak dapat membaca seatmap.</Text>;
+                            }
+                          })()}
+                        </Group>
+                      </div>
+                    )}
+                    <div className="mt-4">
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug</Text>
+                      <Text size="sm" ff="monospace">{selectedItem.slug}</Text>
+                    </div>
+                    <div className="mt-2">
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug URL</Text>
+                      <Text size="sm" ff="monospace">{selectedItem.slug_url}</Text>
+                    </div>
+                  </div>
+                </Tab>
+                <Tab key="Tiket" title="Tiket">
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <h6 className="text-lg font-semibold">Tiket</h6>
+                  </div>
+                  <div className="px-3">
+                    {detailTickets.length > 0 ? (
+                      detailTickets.map((t, index) => (
+                        <div key={index} className="mb-3">
+                          <TicketContainer
+                            type={t.ticket_type}
+                            category={t.ticket_category}
+                            price={Number(t.price)}
+                            name={t.name}
+                            description={t.description}
+                            ticketDate={null}
+                            ticketEnd={null}
+                            qty={t.qty}
+                            seatColor={t.seat_color}
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500">Belum ada tiket</p>
+                      </div>
+                    )}
+                  </div>
+                </Tab>
+                <Tab key="Jadwal" title="Jadwal">
+                  <div className="px-3 py-3">
+                    {detailDays.length > 0 ? (
+                      detailDays.map((day, i) => (
+                        <div key={i} className="mb-4">
+                          <h6 className="text-sm font-semibold text-dark mb-2">{day.day_name}</h6>
+                          <div className="flex flex-col gap-2">
+                            {day.sessions.map((s, j) => (
+                              <div key={j} className="border border-primary-light-200 rounded-lg p-3 flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold">{s.session_name}</p>
+                                  <p className="text-xs text-grey">
+                                    {s.session_start_time?.substring(0, 5)} - {s.session_end_time?.substring(0, 5)}
+                                  </p>
+                                </div>
+                                <Badge size="sm" variant="light" color="blue">{s.tickets.length} tiket</Badge>
+                              </div>
+                            ))}
+                            {day.sessions.length === 0 && (
+                              <p className="text-xs text-gray-400">Tidak ada sesi</p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500">Belum ada jadwal operasional</p>
+                      </div>
+                    )}
+                  </div>
+                </Tab>
+              </Tabs>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // --- TABLE VIEW ---
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
@@ -1148,105 +1346,6 @@ export default function AdminCreateShuttle() {
           </div>
         )}
       </div>
-
-      {/* View Detail Modal */}
-      <Modal
-        opened={viewOpened}
-        onClose={() => setViewOpened(false)}
-        title={<Text fw={700} size="lg" c="#0B387C">Detail Shuttle</Text>}
-        size="lg"
-        centered
-        padding="xl"
-        radius="md"
-      >
-        {selectedItem && (
-          <Stack gap="md">
-            {selectedItem.image_url && (
-              <div style={{ borderRadius: 12, overflow: "hidden", height: 180 }}>
-                <img src={selectedItem.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-            )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Nama</Text>
-                <Text size="sm" fw={600}>{selectedItem.name}</Text>
-              </div>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Status</Text>
-                <Badge color={selectedItem.is_active ? "green" : "gray"} variant="filled" size="sm">
-                  {selectedItem.is_active ? "Aktif" : "Nonaktif"}
-                </Badge>
-              </div>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug</Text>
-                <Text size="sm" ff="monospace">{selectedItem.slug}</Text>
-              </div>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug URL</Text>
-                <Text size="sm" ff="monospace">{selectedItem.slug_url}</Text>
-              </div>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Tanggal Mulai</Text>
-                <Text size="sm">{moment(selectedItem.start_date).format("DD MMM YYYY")} {selectedItem.start_time?.substring(0, 5)}</Text>
-              </div>
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Tanggal Selesai</Text>
-                <Text size="sm">{moment(selectedItem.end_date).format("DD MMM YYYY")} {selectedItem.end_time?.substring(0, 5)}</Text>
-              </div>
-            </div>
-            <div>
-              <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Deskripsi</Text>
-              <Text size="sm" dangerouslySetInnerHTML={{ __html: selectedItem.description }}></Text>
-            </div>
-            <div>
-              <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Syarat & Ketentuan</Text>
-              <Text size="sm" dangerouslySetInnerHTML={{ __html: selectedItem.terms }}></Text>
-            </div>
-            <div>
-              <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Metode Pembayaran</Text>
-              <Group gap={6}>
-                {selectedItem.payment_method_custom?.split(",").map(m => (
-                  <Badge key={m} size="sm" variant="light" color="blue">{m.trim()}</Badge>
-                ))}
-              </Group>
-            </div>
-            {selectedItem.seatmap && (
-              <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Denah Kursi</Text>
-                <Group gap={6} wrap="wrap">
-                  {(() => {
-                    try {
-                      const parsed = typeof selectedItem.seatmap === "string"
-                        ? JSON.parse(selectedItem.seatmap)
-                        : selectedItem.seatmap;
-                      return (Array.isArray(parsed) ? parsed : [])
-                        .filter((a: any) => a.type === "seat")
-                        .map((area: any, i: number) => (
-                          <Badge key={i} size="sm" variant="light" color="blue">
-                            {area.text || `Area ${i + 1}`}
-                            {area.row && area.col ? ` (${area.row * area.col} kursi)` : ""}
-                          </Badge>
-                        ));
-                    } catch {
-                      return <Text size="xs" c="dimmed">Tidak dapat membaca seatmap.</Text>;
-                    }
-                  })()}
-                </Group>
-              </div>
-            )}
-            <Group justify="flex-end" mt="xs">
-              <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>Tutup</ButtonM>
-              <ButtonM
-                color="indigo"
-                leftSection={<Icon icon="ph:pencil-simple" />}
-                onClick={() => { setViewOpened(false); handleOpenEdit(selectedItem.slug); }}
-              >
-                Edit
-              </ButtonM>
-            </Group>
-          </Stack>
-        )}
-      </Modal>
     </div>
   );
 }

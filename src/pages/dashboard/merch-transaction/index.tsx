@@ -71,9 +71,11 @@ import {
   faRulerCombined,
   faFilter,
   faTimes,
+  faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { useRouter } from "next/router";
 
 interface CreatorData {
   id: number;
@@ -374,6 +376,7 @@ interface FilterOption {
 }
 
 const MerchandiseTransaction: React.FC = () => {
+  const router = useRouter();
   const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [creators, setCreators] = useState<CreatorData[]>([]);
@@ -1658,8 +1661,17 @@ const MerchandiseTransaction: React.FC = () => {
 
   return (
     <>
-      <Flex mt={15} mx={15} justify="space-between" align="center" wrap="wrap">
-          <Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Transaksi Merchandise</Text>
+<Flex mt={15} mx={15} justify="space-between" align="center" wrap="wrap">
+<Flex align="center" gap={12}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/merch')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Transaksi Merchandise</Text>
+</Flex>
           <Group gap="xl">
               <Stack gap={2}>
                   <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>

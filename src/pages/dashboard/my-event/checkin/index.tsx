@@ -240,9 +240,11 @@ import {
     faEnvelope,
     faUser,
     faCircleExclamation,
-    faExclamation
+    faExclamation,
+    faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons';
+import { useRouter } from 'next/router';
 
 interface ScanItem {
     id: number;
@@ -258,6 +260,7 @@ interface ScanItem {
 }
 
 const Merch = () => {
+    const router = useRouter();
     const { collapse } = useSidebar();
     const videoRef = useRef<HTMLVideoElement>(null);
     let qrScanner = useRef<QrScanner | null>(null);
@@ -722,6 +725,19 @@ const Merch = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* Page Title */}
+            <div className="bg-white border-b border-gray-100">
+                <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => router.push('/dashboard/my-event')}
+                        className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} />
+                    </button>
+                    <h1 className="text-xl font-bold text-gray-900">Check In</h1>
+                </div>
+            </div>
             {/* Header and Tabs */}
             <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">

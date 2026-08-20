@@ -31,11 +31,13 @@ import {
   faInfoCircle,
   faUser,
   faTicket,
-  faDownload
+  faDownload,
+  faArrowLeft
 } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react";
 import chunk from "@/utils/chunk";
 import { SeatmapData } from "@/utils/formInterface";
+import { useRouter } from "next/router";
 
 // Interfaces copied from seatreport.tsx for consistency
 interface Identity {
@@ -195,6 +197,7 @@ const SeatBox = memo(function SeatBox({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
+  const router = useRouter();
   const users = useLoggedUser();
   const [events, setEvents] = useState<EventData[]>(initialEvents || []);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -573,14 +576,23 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      <Stack gap={2} mb="xl">
-        <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-          Seatmap Report
-        </Title>
-        <Text size="sm" c="dimmed">
-          Visualisasi denah kursi dan status pembelian secara real-time.
-        </Text>
-      </Stack>
+<Flex align="center" gap={12}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={2} mb="xl">
+<Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
+Seatmap Report
+</Title>
+<Text size="sm" c="dimmed">
+Visualisasi denah kursi dan status pembelian secara real-time.
+</Text>
+</Stack>
+</Flex>
 
       {/* Filter Bar */}
       <Card withBorder radius="md" p="md" shadow="sm">

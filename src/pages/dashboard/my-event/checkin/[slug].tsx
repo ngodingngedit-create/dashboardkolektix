@@ -19,7 +19,7 @@ import { formatDate, formatYear } from '@/utils/useFormattedDate';
 import { useRouter } from 'next/router';
 import { EventProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'; 
+import { faMagnifyingGlass, faArrowLeft } from '@fortawesome/free-solid-svg-icons'; 
 import { Flex } from '@mantine/core';
 
 const DetailEventTicket = () => {
@@ -137,9 +137,17 @@ const DetailEventTicket = () => {
           <BreadcrumbItem>{eventData.name}</BreadcrumbItem>
           <BreadcrumbItem>Check In</BreadcrumbItem>
         </Breadcrumbs>
-        <div className='flex justify-between'>
-          <div>
-            <h3 className='mb-3'>{eventData.name}</h3>
+<div className='flex justify-between'>
+<Flex align="center" gap={12}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<div>
+<h3 className='mb-3'>{eventData.name}</h3>
             <p className='text-sm text-grey mb-3'>
               {`${formatDate(eventData.start_date)} ${
                 eventData.start_date !== eventData.end_date
@@ -152,6 +160,7 @@ const DetailEventTicket = () => {
               <Button label="Check In Invitation" onClick={() => router.push(`/dashboard/my-event/checkin-invitation/${eventData.slug}`)} color="primary" />
             </Flex>
           </div>
+</Flex>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
       <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 text-center">
         <p className="text-grey">Total Jumlah Terjual</p>

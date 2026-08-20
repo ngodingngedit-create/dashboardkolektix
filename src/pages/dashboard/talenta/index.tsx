@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import imagePlus from '../../../assets/icon/camera-plus.png';
 // import InputField from '@/components/Input';
-import { faUpload, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faTrash, faPlus, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@/components/Button';
 import { toast, ToastContainer } from 'react-toastify';
+import { useRouter } from 'next/router';
 import 'react-toastify/dist/ReactToastify.css';
 import React from 'react';
 import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Checkbox, NumberInput, MultiSelect, Switch, ActionIcon, Divider, Group, FileInput, Tabs, Badge, Grid } from '@mantine/core';
@@ -124,6 +125,7 @@ export const formTalentaSchema = z.object({
 });
 
 const Talenta = () => {
+  const router = useRouter();
   const form = useForm<FormTalentaProps>({
     initialValues: {
       talenta_category_id: 1,
@@ -344,11 +346,20 @@ const Talenta = () => {
         <div className='w-full pt-8 px-4 sm:px-6 md:px-8 text-dark mb-10'>
 
           {/* Header Section */}
-          <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Profil Talenta Saya</h1>
-              <p className="text-sm text-gray-500 mt-1">Kelola data profil, keahlian, dan portofolio Anda sebagai talenta</p>
-            </div>
+<div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div className="flex items-start gap-3">
+<button
+type="button"
+onClick={() => router.push('/dashboard')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<div>
+<h1 className="text-2xl font-bold text-gray-800">Profil Talenta Saya</h1>
+<p className="text-sm text-gray-500 mt-1">Kelola data profil, keahlian, dan portofolio Anda sebagai talenta</p>
+</div>
+</div>
             {formState === 'update' && (
               <div>
                 {!isEditMode ? (

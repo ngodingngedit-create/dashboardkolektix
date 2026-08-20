@@ -31,6 +31,7 @@ import {
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useMediaQuery } from "@mantine/hooks";
 import fetch from "@/utils/fetch";
+import { useRouter } from "next/router";
 
 // Matches actual API: GET creator-data/venue-transaction
 type VenueDetail = {
@@ -71,6 +72,7 @@ type DataResponse = {
 };
 
 export default function VenueTransaction() {
+  const router = useRouter();
   const [data, setData] = useState<DataResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterValue, setFilterValue] = useState("");
@@ -247,15 +249,24 @@ export default function VenueTransaction() {
 
   return (
     <>
-      <Flex justify="space-between" align="center" mx={15} mt={15} mb={10}>
-        <Stack gap={0}>
-          <Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
-            Transaksi Venue
-          </Text>
-          <Text size="sm" c="gray">
-            Daftar semua transaksi venue
-          </Text>
-        </Stack>
+<Flex justify="space-between" align="center" mx={15} mt={15} mb={10}>
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/venue')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<Stack gap={0}>
+<Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
+Transaksi Venue
+</Text>
+<Text size="sm" c="gray">
+Daftar semua transaksi venue
+</Text>
+</Stack>
+</Flex>
         <Flex gap="md" align="center">
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Penjualan</Text>

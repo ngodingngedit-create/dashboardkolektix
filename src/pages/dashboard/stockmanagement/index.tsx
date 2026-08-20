@@ -1119,6 +1119,15 @@ const StockManagement = () => {
                   <Icon icon="akar-icons:arrow-left" width={24} />
                 </ActionIcon>
               )}
+              {!isFormVisible && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/dashboard')}
+                  className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                >
+                  <Icon icon="ph:arrow-left-bold" />
+                </button>
+              )}
               <div>
                 <Title order={2} className="text-gray-900 font-semibold mb-1">
                   {isFormVisible ? (editModeId ? "Edit Stock Movement" : "Buat Stock Movement") : "Stock Movement"}

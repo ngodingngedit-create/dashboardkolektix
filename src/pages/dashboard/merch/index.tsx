@@ -1263,7 +1263,7 @@ const Merch: React.FC = () => {
         />
       ) : (
         <>
-          {/* Header: judul di kiri, search di kanan (sejajar judul) */}
+          {/* Header: judul di kiri */}
           <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -1274,18 +1274,6 @@ const Merch: React.FC = () => {
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
               <h1 className="text-dark m-0">Produk Saya</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <InputField
-                type="text"
-                size="sm"
-                placeholder="Cari Produk"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title="Cari">
-                <FontAwesomeIcon icon={faSearch} />
-              </button>
             </div>
           </div>
 
@@ -1335,16 +1323,18 @@ const Merch: React.FC = () => {
             </ButtonM>
           </div>
 
-          <Tabs
-            variant="solid"
-            aria-label="Tabs variants"
-            className="border-b-2 border-primary-light-200"
-            classNames={{
-              tabList: "pb-0 self-center font-semibold bg-white",
-              tab: "p-5",
-              cursor: "!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base",
-            }}
-          >
+          <div className="grid grid-cols-1 gap-3 border-b-2 border-primary-light-200 md:grid-cols-[1fr_auto]">
+            <Tabs
+              variant="solid"
+              aria-label="Tabs variants"
+              className="md:col-start-1 md:row-start-1 md:self-start"
+              classNames={{
+                tabList: "pb-0 self-center font-semibold bg-white",
+                tab: "p-5",
+                cursor: "!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base",
+                panel: "md:col-start-1 md:col-span-2 md:row-start-2",
+              }}
+            >
             {tabStatus.map(([status, label]) => {
               const filtered = filteredMap.get(status) ?? [];
 
@@ -1443,6 +1433,20 @@ const Merch: React.FC = () => {
               );
             })}
           </Tabs>
+
+          <div className="flex items-center gap-3 pb-0 md:pt-3 md:pr-4 md:col-start-2 md:row-start-1 md:self-start">
+            <InputField
+              type="text"
+              size="sm"
+              placeholder="Cari Produk"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title="Cari">
+              <FontAwesomeIcon icon={faSearch} />
+            </button>
+          </div>
+          </div>
         </>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { Get, Post, Put, Delete } from "@/utils/REST";
 import { useEffect, useState, useCallback, useRef } from "react";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { useRouter } from "next/router";
 import {
     ActionIcon,
     Badge,
@@ -158,6 +159,7 @@ const MapPicker = ({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────
 const StoreLocationPage = () => {
+    const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [dataList, setDataList] = useState<StoreLocation[]>([]);
     const [isFormVisible, setIsFormVisible] = useState(false);
@@ -322,11 +324,20 @@ const StoreLocationPage = () => {
     // ─── Render List ───────────────────────────────────────────────────────────
     const renderList = () => (
         <Stack gap={20}>
-            <Flex justify="space-between" align="center">
-                <Stack gap={0}>
-                    <Title order={2} size="h3">Lokasi Toko</Title>
-                    <Text size="sm" c="gray">Kelola lokasi toko / gudang Anda</Text>
-                </Stack>
+<Flex justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={2} size="h3">Lokasi Toko</Title>
+<Text size="sm" c="gray">Kelola lokasi toko / gudang Anda</Text>
+</Stack>
+</Flex>
                 <Button onClick={handleAddClick} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" radius="xl">
                     Tambah Lokasi
                 </Button>

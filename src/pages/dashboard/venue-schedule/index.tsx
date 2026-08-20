@@ -202,11 +202,20 @@ const VenueSchedulePage = () => {
         <div className="min-h-screen bg-[#F8F9FA] pb-10">
             {/* Header Section */}
             <div className="max-w-[1600px] mx-auto px-6 pt-10 pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                <div className="flex flex-col gap-1">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Venue Schedule</h1>
-                        <p className="text-slate-500 mt-1">Monitor and manage your venue bookings in a calendar view</p>
-                    </div>
+<div className="flex flex-col gap-1">
+<div className="flex items-center gap-3">
+<button
+type="button"
+onClick={() => router.push('/dashboard/venue')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<Icon icon="ph:arrow-left-bold" />
+</button>
+<div>
+<h1 className="text-3xl font-bold text-slate-900 tracking-tight">Venue Schedule</h1>
+<p className="text-slate-500 mt-1">Monitor and manage your venue bookings in a calendar view</p>
+</div>
+</div>
 
                     {/* View Switcher Toggle */}
                     <div className="flex bg-white border border-light-grey rounded-full p-1.5 shadow-sm w-fit mt-4">

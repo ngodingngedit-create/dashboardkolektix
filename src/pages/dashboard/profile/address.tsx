@@ -327,21 +327,18 @@ const router = useRouter();
   const renderList = () => (
     <div className="p-[30px_20px] md:p-[30px] md:max-w-[1440px] mx-auto pb-[100px]">
       <Stack gap={30}>
-        <Flex gap={20} justify="space-between" align="center" wrap="wrap">
-          <Flex align="center" gap={12}>
-            <ActionIcon variant="light" color="gray" onClick={() => router.push('/dashboard')} size="lg" radius="md">
-              <FontAwesomeIcon icon={faArrowLeft} />
-            </ActionIcon>
-            <Title order={1} size="h3" fw={600} c="gray.8">Alamat Saya</Title>
-          </Flex>
-          <Flex align="center" gap={12} wrap="wrap">
-            <TextInput
-              placeholder="Cari nama alamat, penerima, atau lokasi..."
-              leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              style={{ width: "100%", maxWidth: 320 }}
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                aria-label="Kembali ke Dashboard"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} />
+              </button>
+              <h1 className="text-dark m-0">Alamat Saya</h1>
+            </div>
             <Button
               onClick={handleAddClick}
               leftSection={<FontAwesomeIcon icon={faPlus} />}
@@ -351,8 +348,17 @@ const router = useRouter();
             >
               Tambah Alamat
             </Button>
-          </Flex>
-        </Flex>
+          </div>
+          <div className="flex justify-end">
+            <TextInput
+              placeholder="Cari nama alamat, penerima, atau lokasi..."
+              leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              style={{ width: "100%", maxWidth: 320 }}
+            />
+          </div>
+        </div>
 
         {filteredData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10">

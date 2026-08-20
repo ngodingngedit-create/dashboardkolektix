@@ -440,10 +440,19 @@ export default function KelolaPermission() {
       <LoadingOverlay visible={loading.includes("getdata")} />
 
       <Flex justify="space-between" align="center">
-        <Stack gap={2}>
-          <Text size="1.8rem" fw={600} c="black">Kelola Permission</Text>
-          <Text size="sm" c="black">Daftar semua permission kustom per user</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard/admin')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <Icon icon="ph:arrow-left-bold" className="text-lg" />
+          </button>
+          <Stack gap={2}>
+            <Text size="1.8rem" fw={600} c="black">Kelola Permission</Text>
+            <Text size="sm" c="black">Daftar semua permission kustom per user</Text>
+          </Stack>
+        </Flex>
         <Button 
           onClick={handleAddClick} 
           leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}

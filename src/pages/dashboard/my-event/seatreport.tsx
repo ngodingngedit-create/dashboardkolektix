@@ -7,10 +7,11 @@ import { Get } from "@/utils/REST";
 import { Select, TextInput, Card, Flex, Stack, Text, Title, Loader, Tooltip, Pagination as MantinePagination, Badge, Box, Divider, Button, Group, ActionIcon } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair, faFileExcel, faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faChevronRight, faUser, faTicket, faEnvelope, faPhone, faFileInvoice, faIdBadge, faCalendarDays, faFilter, faInfoCircle, faEye, faChair, faFileExcel, faArrowsRotate, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import moment from "moment";
 import * as XLSX from "xlsx";
+import { useRouter } from "next/router";
 
 interface Identity {
   id: number;
@@ -73,6 +74,7 @@ interface Props {
 }
 
 const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
+  const router = useRouter();
   const users = useLoggedUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [events, setEvents] = useState<EventData[]>(initialEvents || []);
@@ -639,15 +641,24 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header Title */}
-      <Stack gap={2} mb="lg">
-        <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-          Full Report
-        </Title>
-        <Text size="sm" c="dimmed">
-          Laporan penjualan dan data pemesan per kursi secara real-time.
-        </Text>
-      </Stack>
+{/* Header Title */}
+<Flex align="center" gap={12}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={2} mb="lg">
+<Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
+Full Report
+</Title>
+<Text size="sm" c="dimmed">
+Laporan penjualan dan data pemesan per kursi secara real-time.
+</Text>
+</Stack>
+</Flex>
 
       {/* Filter Bar - New Design */}
       <Card withBorder radius="md" p="md" shadow="sm">

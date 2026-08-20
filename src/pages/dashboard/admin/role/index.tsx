@@ -6,6 +6,7 @@ import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import moment from "moment";
 import fetch from "@/utils/fetch";
+import { useRouter } from "next/router";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -38,6 +39,7 @@ interface RoleProps {
 }
 
 export default function KelolaRole() {
+  const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<RoleProps[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -241,10 +243,19 @@ export default function KelolaRole() {
       <LoadingOverlay visible={loading.includes("getdata")} />
 
       <Flex justify="space-between" align="center">
-        <Stack gap={2}>
-          <Text size="1.8rem" fw={600} c="black">Kelola Role</Text>
-          <Text size="sm" c="black">Daftar semua tingkatan akses sistem</Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard/admin')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <Icon icon="ph:arrow-left-bold" className="text-lg" />
+          </button>
+          <Stack gap={2}>
+            <Text size="1.8rem" fw={600} c="black">Kelola Role</Text>
+            <Text size="sm" c="black">Daftar semua tingkatan akses sistem</Text>
+          </Stack>
+        </Flex>
         <Button 
           onClick={handleAddClick} 
           leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}

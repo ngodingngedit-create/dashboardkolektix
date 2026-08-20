@@ -1259,8 +1259,9 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { useRouter } from "next/router";
 
 // Definisikan tipe untuk metode pembayaran
 type PaymentMethodInfo = {
@@ -1270,6 +1271,7 @@ type PaymentMethodInfo = {
 } | null;
 
 const Merch = () => {
+  const router = useRouter();
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [dataListEticket, setDataListEticket] = useState<EticketListResponse[]>();
@@ -2289,15 +2291,24 @@ const Merch = () => {
 
   return (
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
-      <Flex gap={20} justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={1} size="h2">
-            Report Event
-          </Title>
-          <Text size="sm" c="gray">
-            Halaman Report Event Anda
-          </Text>
-        </Stack>
+<Flex gap={20} justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={1} size="h2">
+Report Event
+</Title>
+<Text size="sm" c="gray">
+Halaman Report Event Anda
+</Text>
+</Stack>
+</Flex>
 
         <Flex gap="md" wrap="wrap">
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">

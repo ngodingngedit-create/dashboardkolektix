@@ -11,6 +11,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import _ from "lodash";
 import { modals } from "@mantine/modals";
+import { useRouter } from "next/router";
 
 const PER_PAGE = 10;
 
@@ -43,6 +44,7 @@ interface SliderItem {
 }
 
 export default function AdminSliderManagement() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SliderItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -284,12 +286,21 @@ export default function AdminSliderManagement() {
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-gray-50/50">
       <Flex justify="space-between" align="center" mb={10}>
-        <Stack gap={5}>
-          <Text size="1.8rem" fw={600}>Slider Management</Text>
-          <Text size="sm" c="gray">
-            Kelola banner slider yang ditampilkan di halaman utama
-          </Text>
-        </Stack>
+        <Flex align="center" gap={12}>
+          <button
+            onClick={() => router.push('/dashboard/admin')}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+            aria-label="Kembali ke Dashboard Admin"
+          >
+            <Icon icon="ph:arrow-left-bold" />
+          </button>
+          <Stack gap={5}>
+            <Text size="1.8rem" fw={600}>Slider Management</Text>
+            <Text size="sm" c="gray">
+              Kelola banner slider yang ditampilkan di halaman utama
+            </Text>
+          </Stack>
+        </Flex>
         <ButtonM
           onClick={handleOpenCreate}
           leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}

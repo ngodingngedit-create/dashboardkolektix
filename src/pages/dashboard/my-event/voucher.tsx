@@ -45,6 +45,7 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { notifications } from "@mantine/notifications";
+import { useRouter } from "next/router";
 
 // Types
 interface Voucher {
@@ -92,6 +93,7 @@ interface PaginationInfo {
 }
 
 const VoucherPage = () => {
+  const router = useRouter();
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -440,11 +442,20 @@ const VoucherPage = () => {
 
   const renderList = () => (
     <Stack gap={25}>
-      <Flex gap={20} justify="space-between" align="center">
-        <Stack gap={0}>
-          <Title order={1} size="h2">Manajemen Voucher</Title>
-          <Text size="sm" c="gray">Kelola voucher promo untuk event Anda</Text>
-        </Stack>
+<Flex gap={20} justify="space-between" align="center">
+<Flex align="center" gap={15}>
+<button
+type="button"
+onClick={() => router.push('/dashboard/my-event')}
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+>
+<FontAwesomeIcon icon={faArrowLeft} />
+</button>
+<Stack gap={0}>
+<Title order={1} size="h2">Manajemen Voucher</Title>
+<Text size="sm" c="gray">Kelola voucher promo untuk event Anda</Text>
+</Stack>
+</Flex>
         <Flex gap="md" align="center">
           <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL VOUCHER</Text>
