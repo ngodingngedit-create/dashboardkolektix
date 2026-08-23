@@ -46,6 +46,10 @@ const tableCellStyle: React.CSSProperties = {
 };
 
 interface ShuttleItem {
+  is_soldout?: number;
+  is_fullbook?: number;
+  is_finish?: number;
+  is_show?: number;
   id: number;
   slug: string;
   slug_url: string;
@@ -117,6 +121,10 @@ const emptyDay: OperationDay = {
 };
 
 const emptyForm = {
+  is_soldout: 0,
+  is_fullbook: 0,
+  is_finish: 0,
+  is_show: 1,
   id: 0,
   slug: "",
   slug_url: "",
@@ -307,29 +315,33 @@ export default function AdminCreateShuttle() {
 
       const { days: loadedDays, tickets: flatTickets } = parseShuttleDetail(item);
 
-      setForm({
-        id: item.id || 0,
-        slug: item.slug || "",
-        slug_url: item.slug_url || "",
-        event_id: item.event_id || 1,
-        name: item.name || "",
-        description: item.description || "",
-        terms: item.terms || "",
-        start_date: item.start_date ? item.start_date.substring(0, 10) : "",
-        start_time: item.start_time || "08:00:00",
-        end_date: item.end_date ? item.end_date.substring(0, 10) : "",
-        end_time: item.end_time || "12:00:00",
-        is_active: item.is_active ?? 1,
-        payment_method_custom: item.payment_method_custom || "",
-        seatmap: item.seatmap || "",
-        image_base64: "",
-        is_name: item.is_name ?? 1,
-        is_email: item.is_email ?? 1,
-        is_phone: item.is_phone ?? 1,
-        is_noidentity: item.is_noidentity ?? 0,
-        tickets: flatTickets,
-        operation_days: loadedDays,
-      });
+        setForm({
+          id: item.id || 0,
+          slug: item.slug || "",
+          slug_url: item.slug_url || "",
+          event_id: item.event_id || 1,
+          name: item.name || "",
+          description: item.description || "",
+          terms: item.terms || "",
+          start_date: item.start_date ? item.start_date.substring(0, 10) : "",
+          start_time: item.start_time || "08:00:00",
+          end_date: item.end_date ? item.end_date.substring(0, 10) : "",
+          end_time: item.end_time || "12:00:00",
+          is_active: item.is_active ?? 1,
+          payment_method_custom: item.payment_method_custom || "",
+          seatmap: item.seatmap || "",
+          image_base64: "",
+          is_name: item.is_name ?? 1,
+          is_email: item.is_email ?? 1,
+          is_phone: item.is_phone ?? 1,
+          is_noidentity: item.is_noidentity ?? 0,
+          is_soldout: item.is_soldout ?? 0,
+          is_fullbook: item.is_fullbook ?? 0,
+          is_finish: item.is_finish ?? 0,
+          is_show: item.is_show ?? 1,
+          tickets: flatTickets,
+          operation_days: loadedDays,
+        });
       setImagePreview(item.image_url || null);
 
       if (item.seatmap) {
@@ -498,22 +510,27 @@ export default function AdminCreateShuttle() {
       }));
 
       // Fallback: if no operation_days defined, use flat tickets
-      const payload: any = {
-        name: form.name,
-        description: form.description.replace(/<[^>]*>/g, ''),
-        terms: form.terms,
-        start_date: form.start_date,
-        start_time: form.start_time,
-        end_date: form.end_date,
-        end_time: form.end_time,
-        is_active: form.is_active,
-        payment_method_custom: form.payment_method_custom,
-        seatmap: seatmapJson,
-        is_name: form.is_name,
-        is_email: form.is_email,
-        is_phone: form.is_phone,
-        is_noidentity: form.is_noidentity,
-      };
+        const payload: any = {
+          name: form.name,
+          description: form.description.replace(/<[^>]*>/g, ''),
+          terms: form.terms,
+          start_date: form.start_date,
+          start_time: form.start_time,
+          end_date: form.end_date,
+          end_time: form.end_time,
+          is_active: form.is_active,
+          payment_method_custom: form.payment_method_custom,
+          seatmap: seatmapJson,
+          is_name: form.is_name,
+          is_email: form.is_email,
+          is_phone: form.is_phone,
+          is_noidentity: form.is_noidentity,
+          is_soldout: form.is_soldout,
+          is_fullbook: form.is_fullbook,
+          is_finish: form.is_finish,
+          is_show: form.is_show,
+        };
+
 
       if (operationDaysPayload.length > 0) {
         payload.operation_days = operationDaysPayload;
@@ -935,17 +952,50 @@ export default function AdminCreateShuttle() {
                       <h3 className="text-medium font-semibold">Status & Pembayaran</h3>
                     </div>
                     <div className="p-5 flex flex-col gap-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-sm">Status Aktif</p>
-                          <p className="text-grey text-xs">Tentukan apakah shuttle ini dapat dibeli</p>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-sm">Status Aktif</p>
+                            <p className="text-grey text-xs">Tentukan apakah shuttle ini dapat dibeli</p>
+                          </div>
+                          <Switch
+                            size="sm"
+                            isSelected={form.is_active === 1}
+                            onChange={(e: any) => setForm({ ...form, is_active: e.target.checked ? 1 : 0 })}
+                          />
                         </div>
-                        <Switch
-                          size="sm"
-                          isSelected={form.is_active === 1}
-                          onChange={(e: any) => setForm({ ...form, is_active: e.target.checked ? 1 : 0 })}
-                        />
-                      </div>
+                        {/* New flags */}
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">Soldout</p>
+                          <Switch
+                            size="sm"
+                            isSelected={form.is_soldout === 1}
+                            onChange={(e: any) => setForm({ ...form, is_soldout: e.target.checked ? 1 : 0 })}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">Fullbook</p>
+                          <Switch
+                            size="sm"
+                            isSelected={form.is_fullbook === 1}
+                            onChange={(e: any) => setForm({ ...form, is_fullbook: e.target.checked ? 1 : 0 })}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">Finish</p>
+                          <Switch
+                            size="sm"
+                            isSelected={form.is_finish === 1}
+                            onChange={(e: any) => setForm({ ...form, is_finish: e.target.checked ? 1 : 0 })}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">Show</p>
+                          <Switch
+                            size="sm"
+                            isSelected={form.is_show === 1}
+                            onChange={(e: any) => setForm({ ...form, is_show: e.target.checked ? 1 : 0 })}
+                          />
+                        </div>
                       <hr className="border-gray-200" />
                       <div>
                         <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Metode Pembayaran (pisahkan dengan koma)</label>

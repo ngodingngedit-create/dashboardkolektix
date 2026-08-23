@@ -568,7 +568,7 @@ const WithDraw = () => {
                         onClick={() => setAmount(item.value)}
                         className={`cursor-pointer flex rounded-2xl items-center justify-center py-2 px-4 border ${
                           amount !== item.value
-                            ? "text-gray-500 border-gray-300"
+                            ? "text-gray-500 border-light-grey"
                             : "text-primary-dark border-primary-dark"
                         }`}
                       >
@@ -582,7 +582,7 @@ const WithDraw = () => {
                       onClick={() => setAmount(String(availableBalance))}
                       className={`cursor-pointer flex rounded-2xl items-center justify-center py-2 px-4 border ${
                         amount !== String(availableBalance)
-                          ? "text-gray-500 border-gray-300"
+                          ? "text-gray-500 border-light-grey"
                           : "text-primary-dark border-primary-dark"
                       }`}
                     >

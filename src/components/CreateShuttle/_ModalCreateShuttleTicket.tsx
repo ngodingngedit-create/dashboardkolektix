@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useContext } from "react";
-import { Modal as ModalM, Stack, Flex, Card, TextInput, UnstyledButton, Box, Button, Text, Radio as RadioM, RadioGroup as RadioGroupM } from "@mantine/core";
+import { Modal as ModalM, Stack, Flex, Card, TextInput, UnstyledButton, Box, Button, Text, Radio as RadioM, RadioGroup as RadioGroupM, Switch } from "@mantine/core";
 import { RadioGroup, Radio } from "@nextui-org/react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -33,7 +33,12 @@ export interface ShuttleTicket {
   seat_color?: string;
   shuttle_id?: number;
   shuttle_session_id?: number;
+  is_soldout?: number;
+  is_fullbook?: number;
+  is_finish?: number;
+  is_show?: number;
 }
+
 
 const emptyTicket: ShuttleTicket = {
   name: "",
@@ -338,6 +343,36 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
             <div className="grid grid-cols-2 gap-2 my-2">
               <InputField className={`${form.ticket_type === "Gratis" ? "hidden" : ""}`} type="text" label="Harga Tiket" required disabled={form.ticket_type === "Gratis"} fullWidth value={formatPrice(form.price)} onChange={(e: any) => setForm({ ...form, price: String(parsePrice(e.target.value)) })} placeholder="Masukan Harga" />
               <InputField className={`${form.ticket_category === "Seated" ? "hidden" : ""}`} type="num" label="Jumlah Tiket" required fullWidth value={form.qty > 0 ? form.qty : ""} onChange={(e: any) => setForm({ ...form, qty: e.target.value })} placeholder="Masukan Jumlah" />
+            </div>
+
+            <div className="border border-light-grey rounded-lg p-3 my-2 flex flex-col gap-2">
+              <Text size="sm" fw={600}>Status Tiket</Text>
+              <div className="grid grid-cols-2 gap-3">
+                <Switch
+                  size="sm"
+                  label="Soldout"
+                  checked={form.is_soldout === 1}
+                  onChange={(e) => setForm({ ...form, is_soldout: e.target.checked ? 1 : 0 })}
+                />
+                <Switch
+                  size="sm"
+                  label="Fullbook"
+                  checked={form.is_fullbook === 1}
+                  onChange={(e) => setForm({ ...form, is_fullbook: e.target.checked ? 1 : 0 })}
+                />
+                <Switch
+                  size="sm"
+                  label="Finish"
+                  checked={form.is_finish === 1}
+                  onChange={(e) => setForm({ ...form, is_finish: e.target.checked ? 1 : 0 })}
+                />
+                <Switch
+                  size="sm"
+                  label="Show"
+                  checked={form.is_show === 1}
+                  onChange={(e) => setForm({ ...form, is_show: e.target.checked ? 1 : 0 })}
+                />
+              </div>
             </div>
 
             {form.ticket_type === "Berbayar" && (
