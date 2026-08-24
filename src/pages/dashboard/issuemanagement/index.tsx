@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { SegmentedControl } from "@mantine/core";
 import {
     Card, CardBody, Button, Input, Textarea,
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -29,16 +30,19 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
     return (
         <div className="w-[280px] bg-slate-50 text-slate-600 flex flex-col h-full border-r border-light-grey">
             <div className="p-4 border-b border-light-grey bg-white">
-                <div className="flex items-center gap-2 px-2 py-1">
-                    <Image src="/images/logo.png" alt="Kolektix Logo" width={32} height={32} className="object-contain" />
-                    <span className="font-bold text-slate-900 tracking-tight">Kolektix Work</span>
+                <div className="flex flex-col px-2">
+                    <div className="flex items-center gap-2">
+                        <Image src="/images/logo.png" alt="Kolektix Logo" width={32} height={32} className="object-contain" />
+                        <span className="font-bold text-slate-900 tracking-tight">Kolektix Work</span>
+                    </div>
+                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest ml-10 leading-none mt-0.5">Spaces</p>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4 space-y-6">
-                {/* Spaces Section */}
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                {/* Spaces List */}
+                {projects && projects.length > 0 && (
                 <div className="px-4 space-y-1">
-                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Spaces</p>
                     {projects.map((p: any) => (
                         <div 
                             key={p.id}
@@ -50,8 +54,9 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
                         </div>
                     ))}
                 </div>
+                )}
 
-                <div className="px-4 space-y-1 pt-4 border-t border-light-grey">
+                <div className="px-4 space-y-1 pt-2">
                     <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-200/50 rounded-lg cursor-pointer">
                         <Icon icon="mdi:account-group-outline" width={18} />
                         <span className="text-sm font-medium">Teams</span>
@@ -62,7 +67,7 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
     );
 };
 
-const WorkspaceHeader = ({ project, onAddIssue, viewMode, onCancel, onSave }: any) => {
+const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel, onSave }: any) => {
     return (
         <div className="px-6 py-4 space-y-4 bg-white border-b border-light-grey">
             <div className="flex items-center gap-6">
@@ -109,15 +114,32 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, onCancel, onSave }: an
                             Assignee
                         </Button>
                     </div>
-                    <Button
-                        color="primary"
-                        size="sm"
-                        onClick={onAddIssue}
-                        className="bg-blue-600 font-bold h-8 rounded-lg shadow-md shadow-blue-200"
-                        startContent={<Icon icon="mdi:plus" width={16} />}
-                    >
-                        Create Issue
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <SegmentedControl
+                            size="xs"
+                            radius="lg"
+                            value={viewMode}
+                            onChange={(value) => setViewMode(value as 'BOARD' | 'TABLE')}
+                            data={[
+                                { label: 'Board', value: 'BOARD' },
+                                { label: 'Table', value: 'TABLE' },
+                            ]}
+                            styles={{
+                                root: { backgroundColor: '#f1f5f9' },
+                                indicator: { backgroundColor: '#fff' },
+                                label: { fontSize: 12, fontWeight: 700 },
+                            }}
+                        />
+                        <Button
+                            color="primary"
+                            size="sm"
+                            onClick={onAddIssue}
+                            className="bg-blue-600 font-bold h-8 rounded-lg shadow-md shadow-blue-200"
+                            startContent={<Icon icon="mdi:plus" width={16} />}
+                        >
+                            Create Issue
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>
@@ -558,6 +580,159 @@ const EMPTY_CONTENT: Record<string, { title: string; desc: string; icon: string;
     },
 };
 
+const PRIORITY_COLOR: Record<string, string> = {
+    low: "text-slate-400",
+    medium: "text-amber-500",
+    high: "text-red-500",
+};
+
+const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[], loggedUserId?: number }) => {
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [selectedIssue, setSelectedIssue] = useState<{ listIdx: number, issueIdx: number } | null>(null);
+
+    // Flatten board lists → rows
+    const rows: { listIdx: number; issueIdx: number; title: string; status: string; priority: string; assignees: number[]; labels: string[]; comments: number }[] = [];
+    formData.board.lists.forEach((list, listIdx) => {
+        list.issues.forEach((issue, issueIdx) => {
+            rows.push({
+                listIdx,
+                issueIdx,
+                title: issue.title || "Untitled Issue",
+                status: list.name,
+                priority: issue.priority,
+                assignees: issue.assignees || [],
+                labels: issue.labels || [],
+                comments: issue.comments?.length || 0,
+            });
+        });
+    });
+
+    const handleEditIssue = (listIdx: number, issueIdx: number) => {
+        setSelectedIssue({ listIdx, issueIdx });
+        onOpen();
+    };
+
+    const getUserName = (userId: number) => {
+        const u = users.find((x) => x.user_id === userId);
+        return u ? u.name : `U${userId}`;
+    };
+
+    const getLabelInfo = (key: string) => {
+        const l = formData.labels.find((x) => x.key === key);
+        return l || { name: key, color: "#94a3b8" };
+    };
+
+    const removeIssue = (listIndex: number, issueIndex: number) => {
+        const updatedLists = [...formData.board.lists];
+        updatedLists[listIndex].issues.splice(issueIndex, 1);
+        setFormData({
+            ...formData,
+            board: { ...formData.board, lists: updatedLists }
+        });
+    };
+
+    return (
+        <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/50">
+            <div className="flex-1 overflow-auto p-6">
+                <Table
+                    isStriped
+                    aria-label="Issue table"
+                    selectionMode="single"
+                    onRowAction={(key) => {
+                        const row = rows[Number(key)];
+                        if (row) handleEditIssue(row.listIdx, row.issueIdx);
+                    }}
+                    classNames={{
+                        tr: "cursor-pointer",
+                    }}
+                >
+                    <TableHeader>
+                        <TableColumn key="title">Title</TableColumn>
+                        <TableColumn key="status">Status</TableColumn>
+                        <TableColumn key="priority">Priority</TableColumn>
+                        <TableColumn key="assignees">Assignees</TableColumn>
+                        <TableColumn key="labels">Labels</TableColumn>
+                        <TableColumn key="comments" align="end">Comments</TableColumn>
+                    </TableHeader>
+                    <TableBody items={rows.map((r, i) => ({ ...r, key: String(i) }))}>
+                        {(item: any) => (
+                            <TableRow key={item.key}>
+                                <TableCell>
+                                    <span className="font-bold text-sm text-slate-700">{item.title}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2.5 h-2.5 rounded-full ${COLUMN_DOT[item.status] || 'bg-slate-400'}`} />
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.status}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <span className={`text-xs font-bold uppercase ${PRIORITY_COLOR[item.priority] || 'text-slate-400'}`}>{item.priority}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex -space-x-1.5 items-center">
+                                        {item.assignees.length > 0 ? item.assignees.map((id: number, i: number) => (
+                                            <div key={i} className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white text-[8px] flex items-center justify-center font-bold text-slate-700">
+                                                {getUserName(id).slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )) : (
+                                            <span className="text-xs text-slate-300">—</span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                        {item.labels.length > 0 ? item.labels.map((lKey: string, i: number) => {
+                                            const lInfo = getLabelInfo(lKey);
+                                            return (
+                                                <span key={i} className="px-2 py-0.5 rounded-md text-[10px] font-bold border" style={{ color: lInfo.color, borderColor: lInfo.color + "40", backgroundColor: lInfo.color + "10" }}>
+                                                    {lInfo.name}
+                                                </span>
+                                            );
+                                        }) : (
+                                            <span className="text-xs text-slate-300">—</span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Icon icon="mdi:comment-outline" width={14} className="text-slate-400" />
+                                        <span className="text-xs font-bold text-slate-500">{item.comments}</span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {selectedIssue && (
+                <IssueDetailsModal
+                    isOpen={isOpen}
+                    onOpenChange={onOpenChange}
+                    issue={formData.board.lists[selectedIssue.listIdx].issues[selectedIssue.issueIdx]}
+                    projectLabels={formData.labels}
+                    projectMembers={formData.members}
+                    readOnly={readOnly}
+                    users={users}
+                    loggedUserId={loggedUserId}
+                    onUpdate={(updatedIssue: any) => {
+                        if (readOnly) return;
+                        const updatedLists = [...formData.board.lists];
+                        updatedLists[selectedIssue.listIdx].issues[selectedIssue.issueIdx] = updatedIssue;
+                        setFormData({ ...formData, board: { ...formData.board, lists: updatedLists } });
+                    }}
+                    onDelete={() => {
+                        if (readOnly) return;
+                        removeIssue(selectedIssue.listIdx, selectedIssue.issueIdx);
+                        onOpenChange();
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
 const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[], loggedUserId?: number }) => {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [selectedIssue, setSelectedIssue] = useState<{ listIdx: number, issueIdx: number } | null>(null);
@@ -909,7 +1084,7 @@ const IssueManagement = () => {
     const [loading, setLoading] = useState(true);
 
     // View State
-    const [viewMode, setViewMode] = useState<'BOARD' | 'FORM'>('BOARD');
+    const [viewMode, setViewMode] = useState<'BOARD' | 'TABLE' | 'FORM'>('BOARD');
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -1077,6 +1252,7 @@ const IssueManagement = () => {
                     project={selectedProject || formData} 
                     onAddIssue={handleCreateNewProject} 
                     viewMode={viewMode}
+                    setViewMode={setViewMode}
                     onCancel={() => setViewMode('BOARD')}
                     onSave={handleSubmit}
                 />
@@ -1096,6 +1272,14 @@ const IssueManagement = () => {
                                 setViewMode={setViewMode}
                                 handleSubmit={handleSubmit}
                                 users={users}
+                            />
+                        ) : viewMode === 'TABLE' ? (
+                            <TableSection 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                readOnly={isReadOnly} 
+                                users={users}
+                                loggedUserId={loggedUser?.id}
                             />
                         ) : (
                             <BoardSection 

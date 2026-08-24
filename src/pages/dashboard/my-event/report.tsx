@@ -1259,7 +1259,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle, faArrowLeft, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRouter } from "next/router";
 
@@ -2835,6 +2835,82 @@ Halaman Report Event Anda
               </div>
             </Card>
             </div>
+
+            {/* Pemilik Tiket */}
+            <Card withBorder radius="md" p={0} shadow="xs">
+              <div className="bg-gray-50/50 p-4 border-b border-light-grey flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                  <FontAwesomeIcon icon={faTicketAlt} size="sm" />
+                </div>
+                <Text fw={700} size="sm" c="dark">Pemilik Tiket</Text>
+              </div>
+              <div className="p-4">
+                {selectedTransaction.identities && selectedTransaction.identities.length > 0 ? (
+                  <Accordion variant="separated" radius="md" chevron={<FontAwesomeIcon icon={faChevronDown} />}>
+                    {selectedTransaction.identities.map((identity: any, idx: number) => {
+                      const matchedTicket = selectedTransaction.tickets?.find(
+                        (t: any) => String(t.event_ticket_id) === String(identity.event_ticket_id)
+                      );
+                      const ticketName = matchedTicket?.has_event_ticket?.name || "-";
+                      return (
+                        <Accordion.Item key={identity.id || idx} value={`pemilik-${idx}`} style={{ border: '1px solid #f0f0f0' }}>
+                          <Accordion.Control icon={<FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />}>
+                            <div className="flex items-center justify-between gap-2">
+                              <Text size="sm" fw={600}>{identity.full_name || "-"}</Text>
+                              <Text size="xs" c="dimmed">{ticketName}</Text>
+                            </div>
+                          </Accordion.Control>
+                          <Accordion.Panel>
+                            <Stack gap="xs">
+                              <Flex justify="space-between" align="center" gap="md">
+                                <Flex align="center" gap="sm" flex="none">
+                                  <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
+                                  <Text size="xs" c="dimmed" fw={500}>Nama Lengkap</Text>
+                                </Flex>
+                                <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                                  {identity.full_name || "-"}
+                                </Text>
+                              </Flex>
+                              <Flex justify="space-between" align="center" gap="md">
+                                <Flex align="center" gap="sm" flex="none">
+                                  <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
+                                  <Text size="xs" c="dimmed" fw={500}>Email</Text>
+                                </Flex>
+                                <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                                  {identity.email || "-"}
+                                </Text>
+                              </Flex>
+                              <Flex justify="space-between" align="center" gap="md">
+                                <Flex align="center" gap="sm" flex="none">
+                                  <FontAwesomeIcon icon={faPhone} size="xs" className="text-gray-400" />
+                                  <Text size="xs" c="dimmed" fw={500}>No. Telp</Text>
+                                </Flex>
+                                <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                                  {identity.no_telp || "-"}
+                                </Text>
+                              </Flex>
+                              <Flex justify="space-between" align="center" gap="md">
+                                <Flex align="center" gap="sm" flex="none">
+                                  <FontAwesomeIcon icon={faTicketAlt} size="xs" className="text-gray-400" />
+                                  <Text size="xs" c="dimmed" fw={500}>Nama Tiket</Text>
+                                </Flex>
+                                <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
+                                  {ticketName}
+                                </Text>
+                              </Flex>
+                            </Stack>
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                      );
+                    })}
+                  </Accordion>
+                ) : (
+                  <div className="p-4 text-center">
+                    <Text size="sm" c="dimmed">Tidak ada data pemilik tiket</Text>
+                  </div>
+                )}
+              </div>
+            </Card>
 
             {/* Ringkasan Pembayaran */}
             <Card radius="md" p="md" withBorder style={{ borderColor: "#e9ecef" }}>

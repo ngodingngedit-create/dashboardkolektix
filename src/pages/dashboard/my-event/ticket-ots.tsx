@@ -989,7 +989,7 @@ const TicketOTS = () => {
                       <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                         <thead>
                           <tr className="border-b border-light-grey" style={{ backgroundColor: "#f5f7fa" }}>
-                            <th className={`${thCls("center")} w-12`}>No</th>
+                            <th className={`${thCls("center")} w-12 sticky left-0 z-20 bg-[#f5f7fa]`}>No</th>
                             <th onClick={() => handleSort("invoice_no")} className={`${thCls()} cursor-pointer select-none`}>
                               Invoice <SortIcon active={sortBy === "invoice_no"} dir={sortDir} />
                             </th>
@@ -1004,17 +1004,17 @@ const TicketOTS = () => {
                             </th>
                             <th className={thCls()}>Metode</th>
                             <th className={`${thCls()} min-w-[110px]`}>Status</th>
-                            <th className={`${thCls("center")} w-20`}>E-Ticket</th>
-                            <th className={`${thCls("center")} min-w-[110px]`}>Check-In</th>
+                            <th className={`${thCls("center")} w-20 min-w-[80px] sticky right-[182px] z-20 bg-[#f5f7fa]`}>E-Ticket</th>
+                            <th className={`${thCls("center")} min-w-[110px] sticky right-[72px] z-20 bg-[#f5f7fa]`}>Check-In</th>
                             <th className={`${thCls("center")} min-w-[120px]`}>Status Check-In</th>
-                            <th className={thCls("center")}>Aksi</th>
+                            <th className={`${thCls("center")} min-w-[72px] sticky right-0 z-20 bg-[#f5f7fa]`}>Aksi</th>
                           </tr>
                         </thead>
                         <tbody>
                           {items.length > 0 ? (
                             items.map((item: any, idx: number) => (
                               <tr key={item.id} className="border-b border-light-grey hover:bg-gray-50 transition-colors">
-                                <td className={`${tdCls("center")} w-12`}>{(page - 1) * ROWS_PER_PAGE + idx + 1}</td>
+                                <td className={`${tdCls("center")} w-12 sticky left-0 z-20 bg-white`}>{(page - 1) * ROWS_PER_PAGE + idx + 1}</td>
                                 <td className={tdCls()}>
                                   <p className="font-medium">{item.invoice_no}</p>
                                 </td>
@@ -1035,7 +1035,7 @@ const TicketOTS = () => {
                                 </td>
                                 <td className={tdCls()}>{resolvePaymentMethodLabel(item)}</td>
                                 <td className={tdCls()}>{getStatusBadge(item.transaction_status_id)}</td>
-                                <td className={`${tdCls("center")}`}>
+                                <td className={`${tdCls("center")} sticky right-[182px] z-20 bg-white`}>
                                   {(() => {
                                     const isPaid = Number(item.transaction_status_id) === 2;
                                     const hasEtickets = item.etickets && item.etickets.length > 0;
@@ -1057,7 +1057,7 @@ const TicketOTS = () => {
                                     );
                                   })()}
                                 </td>
-                                <td className={`${tdCls("center")}`}>
+                                <td className={`${tdCls("center")} sticky right-[72px] z-20 bg-white`}>
                                   <div className="flex items-center justify-center gap-1">
                                     {(() => {
                                       const isPaid = Number(item.transaction_status_id) === 2;
@@ -1113,7 +1113,7 @@ const TicketOTS = () => {
                                     );
                                   })()}
                                 </td>
-                                <td className={`${tdCls("center")}`}>
+                                <td className={`${tdCls("center")} sticky right-0 z-20 bg-white`}>
                                   <button onClick={() => handleViewTransaction(item)} title="Lihat Detail Transaksi" className="flex items-center justify-center w-8 h-8 mx-auto text-primary hover:text-primary-dark rounded hover:bg-primary/10 transition-colors">
                                     <FontAwesomeIcon icon={faEye} />
                                   </button>
@@ -1357,7 +1357,7 @@ const TicketOTS = () => {
                   </div>
                   {!isChecked && (
                     <Button
-                      label={checkingInId === et.id ? "..." : "Check-In"}
+                      label={checkingInId === et.id ? "..." : "Checkin Manual"}
                       color="secondary"
                       onClick={() => handleManualCheckin(et)}
                       disabled={checkingInId === et.id}

@@ -256,7 +256,7 @@ export default function AdminRouteManagement() {
         </Flex>
 
         <div className="w-full bg-white overflow-x-auto">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "2px solid #e8e8e8" }}>
                 <th style={{ ...tableHeadStyle, width: 50, textAlign: "center" }}>No</th>
@@ -335,7 +335,7 @@ export default function AdminRouteManagement() {
                       </Badge>
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Group gap={6} justify="center">
+                      <Group gap={6} justify="center" wrap="nowrap">
                         <Tooltip label="Lihat Detail">
                           <ActionIcon variant="filled" color="cyan" size="md" radius="sm" onClick={() => handleOpenView(item)}>
                             <Icon icon="ph:eye" style={{ fontSize: 16 }} />

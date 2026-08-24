@@ -512,9 +512,23 @@ export default function Index({ }: Readonly<ComponentProps>) {
   }, [merch, searchQuery]);
 
   const visibleTransactions = useMemo(() => {
+    const search = transactionSearch.trim().toLowerCase();
+    const filtered = search
+      ? transactions.filter(t =>
+          (t.invoice_no || t.invoice_number || "").toLowerCase().includes(search)
+        )
+      : transactions;
     const start = (transactionPage - 1) * TRANSACTION_PER_PAGE;
-    return transactions.slice(start, start + TRANSACTION_PER_PAGE);
-  }, [transactions, transactionPage]);
+    return filtered.slice(start, start + TRANSACTION_PER_PAGE);
+  }, [transactions, transactionPage, transactionSearch]);
+
+  const filteredTransactionCount = useMemo(() => {
+    const search = transactionSearch.trim().toLowerCase();
+    if (!search) return totalTransactions;
+    return transactions.filter(t =>
+      (t.invoice_no || t.invoice_number || "").toLowerCase().includes(search)
+    ).length;
+  }, [transactions, transactionSearch, totalTransactions]);
 
   const selectedList = useMemo(() => {
     return selected.map((e) => {
@@ -1879,18 +1893,34 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
               <Tabs.Panel value="transactions" pt="md">
                 <Card p={20}>
-                  <Flex align="center" gap={10} mb={20}>
-                    <div className="bg-primary-base/10 p-2 rounded-lg">
-                      <Icon icon="uiw:file-text" className="text-primary-base text-lg" />
-                    </div>
-                    <div>
-                      <Text fw={700} size="lg" c="#0B387C">
-                        Riwayat Transaksi
-                      </Text>
-                      <Text size="xs" c="gray.6">
-                        {totalTransactions} transaksi ditemukan
-                      </Text>
-                    </div>
+                  <Flex align="center" justify="space-between" gap={10} mb={20}>
+                    <Flex align="center" gap={10}>
+                      <div className="bg-primary-base/10 p-2 rounded-lg">
+                        <Icon icon="uiw:file-text" className="text-primary-base text-lg" />
+                      </div>
+                      <div>
+                        <Text fw={700} size="lg" c="#0B387C">
+                          Riwayat Transaksi
+                        </Text>
+                        <Text size="xs" c="gray.6">
+                          {filteredTransactionCount} transaksi ditemukan
+                        </Text>
+                      </div>
+                    </Flex>
+                    <TextInput
+                      value={transactionSearch}
+                      onChange={(e) => setTransactionSearch(e.target.value)}
+                      leftSection={<Icon icon="uiw:search" />}
+                      placeholder="Cari invoice..."
+                      className="w-64"
+                      styles={{
+                        input: {
+                          backgroundColor: "#F0F4FA",
+                          border: "none",
+                          borderRadius: "10px",
+                        }
+                      }}
+                    />
                   </Flex>
 
                   <LoadingOverlay visible={loading.includes("get-transactions")} />
@@ -1910,7 +1940,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                       </div>
                     </Card>
                   ) : (
-                    <>
+                    <div className="max-h-[calc(100vh-380px)] overflow-y-auto flex flex-col">
                       <div className="overflow-x-auto rounded-xl border border-light-grey">
                         <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                           <thead>
@@ -1966,9 +1996,9 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         </table>
                       </div>
 
-                      <Flex justify="space-between" align="center" mt="md">
+                      <Flex justify="space-between" align="center" mt="md" className="sticky bottom-0 bg-white border-t border-light-grey pt-3 pb-2 z-10">
                         <Text size="sm" c="gray.6">
-                          Halaman {transactionPage} - Menampilkan {visibleTransactions.length} dari {totalTransactions} transaksi
+                          Halaman {transactionPage} - Menampilkan {visibleTransactions.length} dari {filteredTransactionCount} transaksi
                         </Text>
 
                         <Pagination
@@ -1977,13 +2007,13 @@ export default function Index({ }: Readonly<ComponentProps>) {
                             setTransactionPage(newPage);
                             getTransactions(newPage);
                           }}
-                          total={Math.max(1, Math.ceil(totalTransactions / TRANSACTION_PER_PAGE))}
+                          total={Math.max(1, Math.ceil(filteredTransactionCount / TRANSACTION_PER_PAGE))}
                           color="#0B387C"
                           size="sm"
                           radius="md"
                         />
                       </Flex>
-                    </>
+                    </div>
                   )}
                 </Card>
               </Tabs.Panel>

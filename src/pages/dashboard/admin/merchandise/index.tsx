@@ -360,7 +360,7 @@ const Merch: React.FC = () => {
                       <td style={tableCellStyle}>{item.has_store_location?.store_name || "-"}</td>
                       <td style={tableCellStyle}><Badge color={statusColor} variant="light" size="xs">{statusLabel}</Badge></td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                        <Group gap={5} justify="center">
+                        <Group gap={5} justify="center" wrap="nowrap">
                           <ActionIcon variant="filled" color={statusId === 2 ? "green" : "gray"} onClick={() => handleToggleStatus(item.id, statusId !== 2)} size="sm">
                             <Icon icon={statusId === 2 ? "ph:toggle-right-fill" : "ph:toggle-left-fill"} />
                           </ActionIcon>

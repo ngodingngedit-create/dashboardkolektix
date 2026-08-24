@@ -367,7 +367,7 @@ export default function AdminVenueManagement() {
                          <Text size="xs" fw={500}>{item.max_capacity || 0} Orang</Text>
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                        <Group gap={5} justify="center">
+                        <Group gap={5} justify="center" wrap="nowrap">
                           <Tooltip label="Lihat Venue">
                             <ActionIcon variant="filled" color="blue" component={Link} href={`/venue/${item.slug}`} target="_blank" size="sm">
                               <Icon icon="ph:eye" />
