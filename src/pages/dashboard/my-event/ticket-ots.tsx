@@ -8,10 +8,11 @@ import { useRouter } from "next/router";
 import TicketPicker from "@/components/TicketPicker";
 import ModalOfflineSales from "@/components/Modals/ModalOfflineSales";
 import { Text, Badge, Card, Modal as MantineModal } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import moment from "moment";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStore, faTicketAlt, faShoppingCart, faDownload, faArrowLeft, faDesktop, faReceipt, faEye, faQrcode } from "@fortawesome/free-solid-svg-icons";
+import { faStore, faTicketAlt, faDownload, faArrowLeft, faDesktop, faReceipt, faEye, faQrcode, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import config from "@/Config";
 import axios from "axios";
 import QrCode from "@/components/QrCode";
@@ -28,12 +29,11 @@ interface FormTicket {
   ticket_fee?: number;
 }
 
-interface SalesStats {
-  totalOnline: number;
-  totalOffline: number;
-  totalTransactions: number;
-  totalTicketsSold: number;
-  avgTicketPrice: number;
+interface OtsStats {
+  totalOts: number;
+  otsQty: number;
+  totalEtickets: number;
+  checkedInEtickets: number;
 }
 
 interface PaymentMethod {
@@ -326,13 +326,8 @@ const TicketOTS = () => {
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [offlineTransactions, setOfflineTransactions] = useState<any[]>([]);
   const [onlineTransactions, setOnlineTransactions] = useState<any[]>([]);
-  const [salesStats, setSalesStats] = useState<SalesStats>({
-    totalOnline: 0,
-    totalOffline: 0,
-    totalTransactions: 0,
-    totalTicketsSold: 0,
-    avgTicketPrice: 0,
-  });
+  const [checkinTransaction, setCheckinTransaction] = useState<any>(null);
+  const [checkingInId, setCheckingInId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [filterValue, setFilterValue] = useState("");
   const [activeTab, setActiveTab] = useState<"offline" | "online">("offline");
@@ -377,11 +372,10 @@ const TicketOTS = () => {
 
   const refreshTransactionData = async () => {
     if (!eventData) return;
-    
+
     try {
       await getOfflineTransactions(eventData.id);
       await getOnlineTransactions(eventData.id);
-      updateSalesStats();
     } catch (error) {
       console.error("Error refreshing data:", error);
     }
@@ -539,7 +533,6 @@ const TicketOTS = () => {
         });
 
         setOfflineTransactions(filteredTransactions);
-        updateSalesStats();
       }
     } catch (err: any) {
       console.error("❌ Error fetching offline transactions:", err);
@@ -568,7 +561,6 @@ const TicketOTS = () => {
         });
 
         setOnlineTransactions(filteredTransactions);
-        updateSalesStats();
       }
     } catch (err: any) {
       console.error("❌ Error fetching online transactions:", err);
@@ -663,20 +655,25 @@ const TicketOTS = () => {
     }
   };
 
-  const updateSalesStats = () => {
-    const totalOffline = offlineTransactions.reduce((sum, t) => sum + parseNumber(t.grandtotal), 0);
-    const totalOnline = onlineTransactions.reduce((sum, t) => sum + parseNumber(t.grandtotal), 0);
-    const totalTicketsSold = [...offlineTransactions, ...onlineTransactions].reduce((sum, t) => sum + (parseInt(t.total_qty) || 0), 0);
-    const avgTicketPrice = totalTicketsSold > 0 ? (totalOffline + totalOnline) / totalTicketsSold : 0;
-
-    setSalesStats({
-      totalOnline,
-      totalOffline,
-      totalTransactions: offlineTransactions.length + onlineTransactions.length,
-      totalTicketsSold,
-      avgTicketPrice,
+  const otsStats = useMemo<OtsStats>(() => {
+    const successOffline = offlineTransactions.filter((t) => Number(t.transaction_status_id) === 2);
+    const totalOts = successOffline.reduce((sum, t) => sum + parseNumber(t.total_price), 0);
+    
+    let totalEtickets = 0;
+    let checkedInEtickets = 0;
+    successOffline.forEach((t) => {
+      const ets = t.etickets || [];
+      totalEtickets += ets.length;
+      checkedInEtickets += ets.filter((e: any) => Number(e.is_checkin) === 1).length;
     });
-  };
+
+    return {
+      totalOts,
+      otsQty: successOffline.length,
+      totalEtickets,
+      checkedInEtickets,
+    };
+  }, [offlineTransactions]);
 
   useEffect(() => {
     if (data.length > 0) {
@@ -774,6 +771,49 @@ const TicketOTS = () => {
     setShowDetailModal(true);
   };
 
+  const handleManualCheckin = async (eticket: any) => {
+    if (!eticket?.eticket_number) return;
+    setCheckingInId(eticket.id);
+    try {
+      const response = await axios.post(
+        `${config.wsUrl}event/scan-eticket`,
+        { qr_code: eticket.eticket_number },
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("token")}`,
+          },
+        }
+      );
+
+      if (response.data?.success || response.data?.status === 200 || response.data?.status === true) {
+        notifications.show({
+          title: "Berhasil",
+          message: "Check-in manual berhasil dilakukan",
+          color: "green",
+        });
+        setCheckinTransaction((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                etickets: prev.etickets.map((e: any) => (e.id === eticket.id ? { ...e, is_checkin: 1 } : e)),
+              }
+            : prev
+        );
+        await refreshTransactionData();
+      } else {
+        throw new Error(response.data?.message || "Gagal melakukan check-in manual");
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: "Gagal",
+        message: error.response?.data?.message || error.message || "Terjadi kesalahan",
+        color: "red",
+      });
+    } finally {
+      setCheckingInId(null);
+    }
+  };
+
   const resetTicketForm = () => {
     const resetCounts: Record<number, number> = {};
     data.forEach((item) => {
@@ -859,15 +899,15 @@ const TicketOTS = () => {
 
             {eventData && (
               <div className="lg:col-span-8">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <Card shadow="sm" padding="sm" radius="md" withBorder className="h-full">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="p-1 sm:p-2 bg-green-100 rounded-lg shrink-0">
                         <FontAwesomeIcon icon={faStore} className="text-green-600 text-base sm:text-lg" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">Total Offline</p>
-                        <p className="font-bold text-lg sm:text-xl truncate">Rp{salesStats.totalOffline.toLocaleString("id-ID")}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">Total OTS</p>
+                        <p className="font-bold text-lg sm:text-xl truncate">Rp{otsStats.totalOts.toLocaleString("id-ID")}</p>
                       </div>
                     </div>
                   </Card>
@@ -875,35 +915,14 @@ const TicketOTS = () => {
                   <Card shadow="sm" padding="sm" radius="md" withBorder className="h-full">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="p-1 sm:p-2 bg-blue-100 rounded-lg shrink-0">
-                        <FontAwesomeIcon icon={faDesktop} className="text-blue-600 text-base sm:text-lg" />
+                        <FontAwesomeIcon icon={faTicketAlt} className="text-blue-600 text-base sm:text-lg" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">Total Online</p>
-                        <p className="font-bold text-lg sm:text-xl truncate">Rp{salesStats.totalOnline.toLocaleString("id-ID")}</p>
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card shadow="sm" padding="sm" radius="md" withBorder className="h-full">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-1 sm:p-2 bg-purple-100 rounded-lg shrink-0">
-                        <FontAwesomeIcon icon={faTicketAlt} className="text-purple-600 text-base sm:text-lg" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">Transaksi</p>
-                        <p className="font-bold text-lg sm:text-xl truncate">{salesStats.totalTransactions}</p>
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card shadow="sm" padding="sm" radius="md" withBorder className="h-full">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="p-1 sm:p-2 bg-orange-100 rounded-lg shrink-0">
-                        <FontAwesomeIcon icon={faShoppingCart} className="text-orange-600 text-base sm:text-lg" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">Tiket Terjual</p>
-                        <p className="font-bold text-lg sm:text-xl truncate">{salesStats.totalTicketsSold}</p>
+                      <div className="min-w-0 w-full">
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">Qty OTS</p>
+                        <p className="font-bold text-lg sm:text-xl truncate">{otsStats.otsQty} Transaksi</p>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          Check-In: {otsStats.checkedInEtickets} / {otsStats.totalEtickets} Tiket
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -986,6 +1005,8 @@ const TicketOTS = () => {
                             <th className={thCls()}>Metode</th>
                             <th className={`${thCls()} min-w-[110px]`}>Status</th>
                             <th className={`${thCls("center")} w-20`}>E-Ticket</th>
+                            <th className={`${thCls("center")} min-w-[110px]`}>Check-In</th>
+                            <th className={`${thCls("center")} min-w-[120px]`}>Status Check-In</th>
                             <th className={thCls("center")}>Aksi</th>
                           </tr>
                         </thead>
@@ -1037,6 +1058,62 @@ const TicketOTS = () => {
                                   })()}
                                 </td>
                                 <td className={`${tdCls("center")}`}>
+                                  <div className="flex items-center justify-center gap-1">
+                                    {(() => {
+                                      const isPaid = Number(item.transaction_status_id) === 2;
+                                      const etickets: any[] = item.etickets || [];
+                                      const hasEtickets = etickets.length > 0;
+                                      const hasUnchecked = etickets.some((e: any) => Number(e.is_checkin) !== 1);
+                                      const checkinTitle = !isPaid ? "Check-in tersedia setelah pembayaran berhasil" : !hasEtickets ? "Tidak ada e-ticket" : hasUnchecked ? "Check-in Manual" : "Semua e-ticket sudah check-in";
+                                      return (
+                                        <button
+                                          onClick={() => setCheckinTransaction(item)}
+                                          disabled={!isPaid || !hasEtickets || !hasUnchecked}
+                                          title={checkinTitle}
+                                          className="flex items-center justify-center w-8 h-8 text-green-600 hover:bg-green-50 rounded-md transition-colors disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                                        >
+                                          <FontAwesomeIcon icon={faCheckCircle} />
+                                        </button>
+                                      );
+                                    })()}
+                                    {(() => {
+                                      const isKnownStatus = [1, 2, 3, 4].includes(Number(item.transaction_status_id));
+                                      if (!isKnownStatus) {
+                                        return (
+                                          <span title="E-Ticket tidak tersedia untuk status ini" className="flex items-center justify-center w-8 h-8 text-gray-300 cursor-not-allowed rounded-md">
+                                            <FontAwesomeIcon icon={faDownload} />
+                                          </span>
+                                        );
+                                      }
+                                      return (
+                                        <a
+                                          href={`${config.wsUrl}transaction-document/${item.invoice_no}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title="Download E-Ticket"
+                                          className="flex items-center justify-center w-8 h-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                                        >
+                                          <FontAwesomeIcon icon={faDownload} />
+                                        </a>
+                                      );
+                                    })()}
+                                  </div>
+                                </td>
+                                <td className={`${tdCls("center")}`}>
+                                  {(() => {
+                                    const isPaid = Number(item.transaction_status_id) === 2;
+                                    const etickets: any[] = item.etickets || [];
+                                    if (!isPaid || etickets.length === 0) return <span className="text-gray-400">-</span>;
+                                    const checkedInCount = etickets.filter((e: any) => Number(e.is_checkin) === 1).length;
+                                    const allChecked = checkedInCount === etickets.length;
+                                    return (
+                                      <Badge color={allChecked ? "green" : "yellow"} variant={allChecked ? "filled" : "light"} size="sm" fw={600}>
+                                        {checkedInCount}/{etickets.length} Check-In
+                                      </Badge>
+                                    );
+                                  })()}
+                                </td>
+                                <td className={`${tdCls("center")}`}>
                                   <button onClick={() => handleViewTransaction(item)} title="Lihat Detail Transaksi" className="flex items-center justify-center w-8 h-8 mx-auto text-primary hover:text-primary-dark rounded hover:bg-primary/10 transition-colors">
                                     <FontAwesomeIcon icon={faEye} />
                                   </button>
@@ -1045,7 +1122,7 @@ const TicketOTS = () => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={9} className="text-center py-8 text-gray-500">
+                              <td colSpan={11} className="text-center py-8 text-gray-500">
                                 {activeTab === "offline" ? "Belum ada transaksi offline" : "Belum ada transaksi online"}
                               </td>
                             </tr>
@@ -1238,15 +1315,58 @@ const TicketOTS = () => {
         title={<Text fw={600}>QR Code E-Ticket{qrTransaction?.invoice_no ? ` — ${qrTransaction.invoice_no}` : ""}</Text>}
       >
         {qrTransaction?.etickets && qrTransaction.etickets.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
+          <div className={`grid gap-4 max-h-[60vh] overflow-y-auto p-1 ${qrTransaction.etickets.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 justify-items-center"}`}>
             {qrTransaction.etickets.map((et: any) => (
-              <div key={et.id} className="flex flex-col items-center border border-primary-light-200 rounded-lg p-3">
+              <div key={et.id} className="flex flex-col items-center border border-primary-light-200 rounded-lg p-3 w-full max-w-[320px]">
                 <QrCode slug={String(et.eticket_number ?? "")} />
                 <Text size="xs" c="dimmed" mt={6} className="text-center break-all">
                   {et.eticket_number}
                 </Text>
               </div>
             ))}
+          </div>
+        ) : (
+          <Text size="sm" c="dimmed" ta="center" py="lg">
+            Tidak ada e-ticket untuk transaksi ini
+          </Text>
+        )}
+      </MantineModal>
+
+      {/* Modal Check-in E-Ticket */}
+      <MantineModal
+        opened={Boolean(checkinTransaction)}
+        onClose={() => setCheckinTransaction(null)}
+        size="md"
+        centered
+        title={<Text fw={600}>Check-in E-Ticket{checkinTransaction?.invoice_no ? ` — ${checkinTransaction.invoice_no}` : ""}</Text>}
+      >
+        {checkinTransaction?.etickets && checkinTransaction.etickets.length > 0 ? (
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
+            {checkinTransaction.etickets.map((et: any) => {
+              const isChecked = Number(et.is_checkin) === 1;
+              return (
+                <div key={et.id} className="flex justify-between items-center border border-primary-light-200 rounded-lg p-3 bg-gray-50 gap-3">
+                  <div className="min-w-0">
+                    <Text size="xs" c="dimmed">Nomor E-Ticket</Text>
+                    <Text size="sm" fw={600} className="font-mono break-all">{et.eticket_number}</Text>
+                    <div className="mt-1">
+                      <Badge color={isChecked ? "green" : "gray"} variant="filled" size="xs" fw={600}>
+                        {isChecked ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
+                      </Badge>
+                    </div>
+                  </div>
+                  {!isChecked && (
+                    <Button
+                      label={checkingInId === et.id ? "..." : "Check-In"}
+                      color="secondary"
+                      onClick={() => handleManualCheckin(et)}
+                      disabled={checkingInId === et.id}
+                      className="shrink-0 h-9"
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <Text size="sm" c="dimmed" ta="center" py="lg">
