@@ -5,8 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Images from "../Images";
 import { Post } from "@/utils/REST";
 import { EventProps } from "@/utils/globalInterface";
-import { useRouter } from "next/router";
-import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box, Group } from "@mantine/core";
+import { ActionIcon, Button, Card, Fieldset, Flex, Stack, Text, TextInput, Accordion as AccordionM, Switch, NumberFormatter, Image, Table, Box, Group, Modal as MantineModal, Anchor } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
@@ -25,6 +24,21 @@ interface FormTicket {
   qty_ticket: number;
   ticket_fee?: number;
 }
+
+const parseNumber = (value: any): number => {
+  if (value === null || value === undefined || value === "") return 0;
+  if (typeof value === "number") return value;
+  const cleaned = String(value).replace(/[^0-9.,]/g, "");
+  const parsed = parseFloat(cleaned.replace(",", "."));
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+const getUnitPrice = (el: any): number => {
+  const qty = parseNumber(el?.qty_ticket) || 1;
+  const price = parseNumber(el?.price);
+  if (price > 0) return price;
+  return parseNumber(el?.subtotal_price) / qty;
+};
 
 export type IdentityProps = {
   data: {
@@ -57,7 +71,8 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
   const [transactionData, setTransactionData] = useState<any>();
   const [step, setStep] = useState(2);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [showQrisModal, setShowQrisModal] = useState(false);
+  const [qrisIframeUrl, setQrisIframeUrl] = useState<string | null>(null);
   const [openForm, setOpenForm] = useState<boolean>(true);
   const contentRef = useRef(null);
   const printContent = useReactToPrint({ contentRef });
@@ -240,14 +255,14 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
           console.log(res);
           setTransactionData(res);
 
-          if (onSuccess) {
-            onSuccess();
-          }
-
           if (res?.xendit_invoice?.invoice_url) {
-            console.log(res);
-            router.push(res.xendit_invoice.invoice_url);
+            setLoading(false);
+            setQrisIframeUrl(res.xendit_invoice.invoice_url);
+            setShowQrisModal(true);
           } else {
+            if (onSuccess) {
+              onSuccess();
+            }
             reload();
             setStep(2);
             setLoading(false);
@@ -257,6 +272,16 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
           console.log(err);
           setLoading(false);
         });
+  };
+
+  const handleCloseQrisModal = () => {
+    setShowQrisModal(false);
+    setQrisIframeUrl(null);
+    if (onSuccess) {
+      onSuccess();
+    }
+    reload();
+    setIsOpen(false);
   };
 
   const handleNext = () => {
@@ -320,7 +345,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                                 <div>
                                   <p className="font-semibold mb-0.5">{el.name}</p>
                                   <p className="text-grey text-xs">
-                                    {el.qty_ticket} Tiket x Rp{el.subtotal_price.toLocaleString("id-ID")}
+                                    {`${el.qty_ticket} Tiket x Rp${getUnitPrice(el).toLocaleString("id-ID")} = Rp${parseNumber(el.subtotal_price).toLocaleString("id-ID")}`}
                                   </p>
                                 </div>
                               </div>
@@ -360,7 +385,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                                         )}
                                       </Text>
                                       <Text size="xs" c="gray">
-                                        1x Tiket <NumberFormatter value={e.price} />
+                                        {`1x Tiket Rp${getUnitPrice(e).toLocaleString("id-ID")}`}
                                       </Text>
                                     </Stack>
                                     <Switch ml="auto" mr={10} mt={10} display={i == 0 ? "none" : undefined} label="Gunakan Data Pertama" onChange={(e) => handleCopyData(e.target.checked, i)} />
@@ -560,10 +585,6 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                       </div>
                       <div className="border-b border-b-primary-light-200 px-4 py-2">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-dark-grey">{`Pajak`}</p>
-                          <p className="text-dark-grey">{`Rp${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
-                        </div>
-                        <div className="flex justify-between items-center mb-2">
                           <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
                           <p className="text-dark-grey">{`Rp${ticketFee.toLocaleString("id-ID")}`}</p>
                         </div>
@@ -591,7 +612,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                           <div>
                             <p className="font-semibold mb-0.5">{el.name}</p>
                             <p className="text-grey text-xs">
-                              {el.qty_ticket} Tiket x Rp{el.subtotal_price.toLocaleString("id-ID")}
+                              {`${el.qty_ticket} Tiket x Rp${getUnitPrice(el).toLocaleString("id-ID")} = Rp${parseNumber(el.subtotal_price).toLocaleString("id-ID")}`}
                             </p>
                           </div>
                         </div>
@@ -614,7 +635,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                                         {i + 1}. Pemilik Tiket {e.name}
                                       </Text>
                                       <Text size="xs" c="gray">
-                                        1x Tiket <NumberFormatter value={e.price} />
+                                        {`1x Tiket Rp${getUnitPrice(e).toLocaleString("id-ID")}`}
                                       </Text>
                                     </Stack>
                                   </Flex>
@@ -729,10 +750,6 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                       </div>
                       <div className="border-b border-b-primary-light-200 px-4 py-2">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-dark-grey">{`Pajak`}</p>
-                          <p className="text-dark-grey">{`Rp${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
-                        </div>
-                        <div className="flex justify-between items-center mb-2">
                           <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
                           <p className="text-dark-grey">{`Rp${ticketFee.toLocaleString("id-ID")}`}</p>
                         </div>
@@ -816,18 +833,6 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                         `}
                         >
                           <Table.Tbody>
-                            <Table.Tr>
-                              <Table.Td>PPN</Table.Td>
-                              <Table.Td>
-                                <NumberFormatter value={eventData?.ppn ?? 0} />
-                              </Table.Td>
-                            </Table.Tr>
-                            <Table.Tr>
-                              <Table.Td>Admin (Tiket)</Table.Td>
-                              <Table.Td>
-                                <NumberFormatter value={ticketFee ?? 0} />
-                              </Table.Td>
-                            </Table.Tr>
                             <Table.Tr className={`[&_*]:font-[600] border-t [&_*]:pt-[7px] [&_*]:mt-[7px]`}>
                               <Table.Td>Jumlah Dibayar</Table.Td>
                               <Table.Td>
@@ -852,27 +857,13 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                     <h1 className="text-[20px] text-center">Pembayaran Berhasil</h1>
                     <p className="text-center px-20 text-grey mt-1 mb-3">Segera untuk menyerahkan tiket pada pembeli</p>
                     <div className="bg-white border border-primary-light-200 rounded-lg px-4">
-                      <div className="border-b border-b-primary-light-200 py-1">
+                      <div className="py-1">
                         {ticket.map((el: any) => (
                           <div className="flex justify-between items-center my-2" key={el.event_ticket_id}>
                             <p className="text-dark-grey">{`${el.name} (x${el.qty_ticket})`}</p>
                             <p className="text-dark-grey">{`Rp ${el.subtotal_price.toLocaleString("id-ID")}`}</p>
                           </div>
                         ))}
-                      </div>
-                      <div className="border-b border-b-primary-light-200 py-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="text-dark-grey">{`Pajak`}</p>
-                          <p className="text-dark-grey">{`Rp ${eventData && eventData?.ppn ? eventData?.ppn.toLocaleString("id-ID") : 0}`}</p>
-                        </div>
-                        <div className="flex justify-between items-center  mb-2">
-                          <p className="text-dark-grey ">{`Biaya Admin (Tiket)`}</p>
-                          <p className="text-dark-grey">{`Rp ${ticketFee.toLocaleString("id-ID")}`}</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-between py-2">
-                        <h6>Total Pembayaran</h6>
-                        <h6>Rp{grandTotal.toLocaleString("id-ID")}</h6>
                       </div>
                     </div>
                   </div>
@@ -919,7 +910,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
                         <Icon icon="uiw:left" />
                       </ActionIcon>
                       <button className="w-full text-white bg-primary-dark rounded-md py-2 cursor-pointer disabled:bg-primary-disabled disabled:text-white disabled:cursor-not-allowed" onClick={onSubmit} disabled={loading}>
-                        {payment === "3" ? "Bayar Sekarang" : "Konfirmasi Pembayaran"}
+                        {payment === "3" || payment === "4" ? "Bayar Sekarang" : "Konfirmasi Pembayaran"}
                       </button>
                     </Flex>
                   </div>
@@ -945,6 +936,28 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
           )}
         </ModalContent>
       </Modal>
+
+      <MantineModal
+        opened={showQrisModal}
+        onClose={handleCloseQrisModal}
+        size="xl"
+        centered
+        closeOnClickOutside={false}
+        title={<Text fw={600}>Selesaikan Pembayaran QRIS</Text>}
+        styles={{ body: { padding: 0, height: "80vh", minHeight: "500px", display: "flex", flexDirection: "column" } }}
+      >
+        <div className="flex items-center justify-between px-4 py-2 border-b border-b-primary-light-200 bg-primary-light">
+          <Text size="xs" c="dimmed">
+            Scan atau selesaikan pembayaran pada halaman berikut
+          </Text>
+          {qrisIframeUrl && (
+            <Anchor href={qrisIframeUrl} target="_blank" size="xs">
+              Buka di tab baru
+            </Anchor>
+          )}
+        </div>
+        {qrisIframeUrl && <iframe src={qrisIframeUrl} style={{ width: "100%", flex: 1, border: "none" }} title="Pembayaran QRIS" allow="payment" />}
+      </MantineModal>
     </div>
   );
 }

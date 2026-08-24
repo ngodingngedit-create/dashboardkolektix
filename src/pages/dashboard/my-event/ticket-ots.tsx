@@ -7,13 +7,14 @@ import { EventProps, TicketProps } from "@/utils/globalInterface";
 import { useRouter } from "next/router";
 import TicketPicker from "@/components/TicketPicker";
 import ModalOfflineSales from "@/components/Modals/ModalOfflineSales";
-import { Text, Badge, Card } from "@mantine/core";
+import { Text, Badge, Card, Modal as MantineModal } from "@mantine/core";
 import moment from "moment";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStore, faTicketAlt, faShoppingCart, faDownload, faArrowLeft, faDesktop, faReceipt, faEye } from "@fortawesome/free-solid-svg-icons";
+import { faStore, faTicketAlt, faShoppingCart, faDownload, faArrowLeft, faDesktop, faReceipt, faEye, faQrcode } from "@fortawesome/free-solid-svg-icons";
 import config from "@/Config";
 import axios from "axios";
+import QrCode from "@/components/QrCode";
 
 interface FormTicket {
   event_id: number;
@@ -44,6 +45,7 @@ interface PaymentMethod {
   description: string | null;
   status: string;
   logo: string | null;
+  icon?: string;
 }
 
 // Interface untuk modal detail transaksi
@@ -67,9 +69,52 @@ const parseNumber = (value: any): number => {
   return isNaN(parsed) ? 0 : parsed;
 };
 
+const formatRupiah = (value: any): string => `Rp${parseNumber(value).toLocaleString("id-ID")}`;
+
+// Mapping metode pembayaran: id 4 = QRIS, id 5 = Cash
+const PAYMENT_METHOD_LABELS: Record<number, string> = {
+  4: "QRIS",
+  5: "Cash",
+};
+
+const labelFromKeyword = (value: string): string | null => {
+  const v = value.toLowerCase();
+  if (v.includes("qris") || v.includes("xendit")) return "QRIS";
+  if (v.includes("cash") || v.includes("tunai")) return "Cash";
+  return null;
+};
+
+// Field payment_method dari API bersifat polimorfik:
+// utamakan payment_method -> id (object { id, payment_name }), fallback ke nama/angka
+const resolvePaymentMethodLabel = (transaction: any): string => {
+  const candidates: any[] = [transaction?.payment_method, transaction?.payment_method_id, transaction?.payment_method_name];
+
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === "") continue;
+
+    if (typeof candidate === "object") {
+      const byId = PAYMENT_METHOD_LABELS[Number(candidate.id)];
+      if (byId) return byId;
+      const byName = labelFromKeyword(String(candidate.payment_name ?? candidate.name ?? ""));
+      if (byName) return byName;
+      continue;
+    }
+
+    const asNumber = Number(candidate);
+    if (!isNaN(asNumber) && PAYMENT_METHOD_LABELS[asNumber]) {
+      return PAYMENT_METHOD_LABELS[asNumber];
+    }
+
+    const byKeyword = labelFromKeyword(String(candidate));
+    if (byKeyword) return byKeyword;
+  }
+
+  return "-";
+};
+
 const ROWS_PER_PAGE = 20;
 
-type SortField = "invoice_no" | "created_at" | "name" | "grandtotal";
+type SortField = "invoice_no" | "created_at" | "name" | "total_price";
 
 const getCustomer = (transaction: any) => {
   const identity = transaction?.identities?.find((i: any) => Number(i.is_pemesan) === 1);
@@ -81,7 +126,7 @@ const getCustomer = (transaction: any) => {
 };
 
 const thCls = (align: "left" | "center" = "left") =>
-  `px-4 py-3 ${align === "center" ? "text-center" : "text-left"} text-xs font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap`;
+  `px-4 py-3 ${align === "center" ? "text-center" : "text-left"} text-xs font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap sticky top-0 z-10 bg-[#f5f7fa]`;
 
 const tdCls = (align: "left" | "center" = "left") =>
   `px-4 py-3 ${align === "center" ? "text-center" : "text-left"} text-xs sm:text-sm whitespace-nowrap`;
@@ -95,15 +140,20 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
   if (!transaction) return null;
 
   const getPaymentMethodName = () => {
+    const resolved = resolvePaymentMethodLabel(transaction);
+    if (resolved !== "-") {
+      return resolved;
+    }
+
     if (transaction.payment_method?.payment_name) {
       return transaction.payment_method.payment_name;
     }
-    
+
     if (transaction.payment_method_id) {
       const method = paymentList.find((m) => m.id === transaction.payment_method_id);
       return method ? method.payment_name : "Unknown";
     }
-    
+
     return "Unknown";
   };
 
@@ -139,112 +189,120 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction, paymentList, eve
   const status = getStatusText();
   const totalPrice = parseNumber(transaction.total_price);
   const adminFee = parseNumber(transaction.admin_fee);
-  const ppn = parseNumber(transaction.ppn);
   const grandTotal = parseNumber(transaction.grandtotal);
-  
-  const totalTicketFee = transaction.tickets?.reduce((sum: number, ticket: any) => {
-    return sum + parseNumber(ticket.has_event_ticket?.ticket_fee || 0) * parseNumber(ticket.qty_ticket || 1);
-  }, 0) || 0;
+  const totalQty = transaction.total_qty || transaction.tickets?.reduce((sum: number, ticket: any) => sum + (parseInt(ticket.qty_ticket) || 0), 0) || 0;
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${isOpen ? 'block' : 'hidden'}`}>
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 z-10">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faReceipt} />
-              <h3 className="text-lg font-semibold">Detail Transaksi</h3>
+      <div className="relative bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="sticky top-0 bg-white border-b border-light-grey px-6 py-4 z-10">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <FontAwesomeIcon icon={faReceipt} className="text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold leading-tight">Detail Transaksi</h3>
+                <p className="text-sm text-gray-500 truncate">{transaction.invoice_no}</p>
+              </div>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 shrink-0 p-1 transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-1">{transaction.invoice_no}</p>
         </div>
         
-        <div className="overflow-y-auto p-6 max-h-[calc(90vh-80px)]">
-          <div className="space-y-4">
-            {/* Info Transaksi */}
-            <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">Informasi Transaksi</Text>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><Text size="sm" c="dimmed">Invoice</Text><Text fw={500}>{transaction.invoice_no}</Text></div>
-                <div><Text size="sm" c="dimmed">Tanggal</Text><Text fw={500}>{moment(transaction.created_at).format("DD MMMM YYYY HH:mm")}</Text></div>
-                <div><Text size="sm" c="dimmed">Status</Text><Badge color={status.color as any} variant="light">{status.text}</Badge></div>
-                <div><Text size="sm" c="dimmed">Metode Pembayaran</Text><Text fw={500}>{getPaymentMethodName()}</Text></div>
-                <div><Text size="sm" c="dimmed">Tipe Transaksi</Text><Badge color={transaction.type_transaction === "offline" ? "blue" : "green"} variant="light">{transaction.type_transaction === "offline" ? "Offline" : "Online"}</Badge></div>
-                <div><Text size="sm" c="dimmed">Event</Text><Text fw={500}>{transaction.has_event?.name || "Unknown Event"}</Text></div>
-              </div>
-            </Card>
+        <div className="overflow-y-auto px-6 py-5 max-h-[calc(90vh-140px)] space-y-4">
+          {/* Info Transaksi */}
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Text fw={600} size="md" mb="sm">Informasi Transaksi</Text>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              <div><Text size="xs" c="dimmed">Invoice</Text><Text fw={500} className="break-all">{transaction.invoice_no}</Text></div>
+              <div><Text size="xs" c="dimmed">Tanggal</Text><Text fw={500}>{moment(transaction.created_at).format("DD MMMM YYYY HH:mm")}</Text></div>
+              <div><Text size="xs" c="dimmed">Status</Text><Badge color={status.color as any} variant="filled" size="sm" fw={600}>{status.text}</Badge></div>
+              <div><Text size="xs" c="dimmed">Metode Pembayaran</Text><Text fw={500}>{getPaymentMethodName()}</Text></div>
+              <div><Text size="xs" c="dimmed">Tipe Transaksi</Text><Badge color={transaction.type_transaction === "offline" ? "blue" : "green"} variant="light" size="sm" fw={600}>{transaction.type_transaction === "offline" ? "Offline" : "Online"}</Badge></div>
+              <div><Text size="xs" c="dimmed">Event</Text><Text fw={500} className="break-words">{transaction.has_event?.name || "Unknown Event"}</Text></div>
+            </div>
+          </Card>
 
-            {/* Info Customer */}
-            <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">Informasi Customer</Text>
-              {transaction.identities && transaction.identities.length > 0 ? (
-                <div className="space-y-3">
-                  {transaction.identities.map((identity: any, index: number) => (
-                    <div key={index} className="p-3 border rounded-md bg-gray-50">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div><Text size="sm" c="dimmed">Nama Lengkap</Text><Text fw={500}>{identity.full_name || "-"}</Text></div>
-                        <div><Text size="sm" c="dimmed">Email</Text><Text fw={500}>{identity.email || "-"}</Text></div>
-                        <div><Text size="sm" c="dimmed">No. Telepon</Text><Text fw={500}>{identity.no_telp || "-"}</Text></div>
-                        <div><Text size="sm" c="dimmed">NIK</Text><Text fw={500}>{identity.nik || "-"}</Text></div>
-                        {identity.is_pemesan === 1 && <div className="col-span-2"><Badge color="blue" variant="light">Pemesan Utama</Badge></div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4"><Text c="dimmed">Tidak ada informasi customer</Text></div>
-              )}
-            </Card>
-
-            {/* Detail Tiket */}
-            <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">Detail Tiket</Text>
-              {transaction.tickets && transaction.tickets.length > 0 ? (
-                <div className="space-y-2">
-                  {transaction.tickets.map((ticket: any, index: number) => (
-                    <div key={index} className="flex justify-between items-center border-b pb-2 last:border-0">
-                      <div className="flex-1">
-                        <Text fw={500}>{ticket.has_event_ticket?.name || "Ticket OTS"}</Text>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          <Text size="sm" c="dimmed">Qty: {ticket.qty_ticket || 1}</Text>
-                          {ticket.code && <Text size="sm" c="dimmed">Kode: {ticket.code}</Text>}
+          {/* Info Customer */}
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Text fw={600} size="md" mb="sm">Informasi Customer</Text>
+            {transaction.identities && transaction.identities.length > 0 ? (
+              <div className="space-y-3">
+                {transaction.identities.map((identity: any, index: number) => (
+                  <div key={index} className="p-3 border border-light-grey rounded-md bg-gray-50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                      <div>
+                        <Text size="xs" c="dimmed">Nama Lengkap</Text>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Text fw={500}>{identity.full_name || "-"}</Text>
+                          {Number(identity.is_pemesan) === 1 && (
+                            <Badge color="blue" variant="light" size="sm" fw={600}>Pemesan Utama</Badge>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right min-w-[120px]">
-                        <Text fw={500}>Rp{parseNumber(ticket.price).toLocaleString("id-ID")}</Text>
-                        <Text size="sm" c="dimmed">Subtotal: Rp{parseNumber(ticket.subtotal_price).toLocaleString("id-ID")}</Text>
-                      </div>
+                      <div><Text size="xs" c="dimmed">Email</Text><Text fw={500} className="break-all">{identity.email || "-"}</Text></div>
+                      <div><Text size="xs" c="dimmed">No. Telepon</Text><Text fw={500}>{identity.no_telp || "-"}</Text></div>
+                      <div><Text size="xs" c="dimmed">NIK</Text><Text fw={500}>{identity.nik || "-"}</Text></div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4"><Text c="dimmed">Tidak ada data tiket</Text></div>
-              )}
-            </Card>
-
-            {/* Ringkasan Pembayaran */}
-            <Card shadow="sm" padding="md" radius="md" withBorder>
-              <Text fw={600} size="lg" className="mb-3">Ringkasan Pembayaran</Text>
-              <div className="space-y-3">
-                <div className="flex justify-between"><Text>Subtotal Tiket ({transaction.total_qty || 0} tiket)</Text><Text>Rp{totalPrice.toLocaleString("id-ID")}</Text></div>
-                {adminFee > 0 && <div className="flex justify-between"><Text>Biaya Admin</Text><Text>Rp{adminFee.toLocaleString("id-ID")}</Text></div>}
-                {ppn > 0 && <div className="flex justify-between"><Text>PPN</Text><Text>Rp{ppn.toLocaleString("id-ID")}</Text></div>}
-                <div className="flex justify-between border-t pt-3 mt-2">
-                  <Text fw={600}>Total Pembayaran</Text>
-                  <Text fw={600} size="lg">Rp{grandTotal.toLocaleString("id-ID")}</Text>
-                </div>
+                  </div>
+                ))}
               </div>
-            </Card>
-          </div>
+            ) : (
+              <div className="text-center py-4"><Text c="dimmed">Tidak ada informasi customer</Text></div>
+            )}
+          </Card>
+
+          {/* Detail Tiket */}
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Text fw={600} size="md" mb="sm">Detail Tiket</Text>
+            {transaction.tickets && transaction.tickets.length > 0 ? (
+              <div className="space-y-3">
+                {transaction.tickets.map((ticket: any, index: number) => (
+                  <div key={index} className="flex justify-between items-start gap-4 border-b border-light-grey pb-3 last:border-0 last:pb-0">
+                    <div className="min-w-0">
+                      <Text fw={500}>{ticket.has_event_ticket?.name || "Tiket OTS"}</Text>
+                      <Text size="sm" c="dimmed" className="mt-0.5">
+                        {`${formatRupiah(ticket.price)} x ${ticket.qty_ticket || 1}${ticket.code ? ` • Kode: ${ticket.code}` : ""}`}
+                      </Text>
+                    </div>
+                    <Text fw={500} className="shrink-0 text-right">{formatRupiah(ticket.subtotal_price)}</Text>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4"><Text c="dimmed">Tidak ada data tiket</Text></div>
+            )}
+          </Card>
+
+          {/* Ringkasan Pembayaran */}
+          <Card shadow="sm" padding="md" radius="md" withBorder className="bg-gray-50">
+            <Text fw={600} size="md" mb="sm">Ringkasan Pembayaran</Text>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center gap-4">
+                <Text size="sm" c="dimmed">Subtotal Tiket ({totalQty} tiket)</Text>
+                <Text size="sm">{formatRupiah(totalPrice)}</Text>
+              </div>
+              {adminFee > 0 && (
+                <div className="flex justify-between items-center gap-4">
+                  <Text size="sm" c="dimmed">Biaya Admin</Text>
+                  <Text size="sm">{formatRupiah(adminFee)}</Text>
+                </div>
+              )}
+              <div className="flex justify-between items-center gap-4 border-t border-light-grey pt-3 mt-2">
+                <Text fw={700}>Total Pembayaran</Text>
+                <Text fw={700} size="xl">{formatRupiah(grandTotal)}</Text>
+              </div>
+            </div>
+          </Card>
         </div>
-        
-        <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4">
+
+        <div className="sticky bottom-0 bg-gray-50 border-t border-light-grey px-6 py-4">
           <Button label="Tutup" color="secondary" onClick={onClose} className="w-full" />
         </div>
       </div>
@@ -257,6 +315,7 @@ const TicketOTS = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [qrTransaction, setQrTransaction] = useState<any>(null);
   const [selected, setSelected] = useState<number>(0);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [data, setData] = useState<TicketProps[]>([]);
@@ -292,10 +351,8 @@ const TicketOTS = () => {
   }, [ticket]);
 
   const grandTotal = useMemo(() => {
-    const baseAmount = subtotalPrice + totalTicketFee;
-    const ppnAmount = eventData?.ppn_type === "percentage" ? baseAmount * 0.11 : eventData?.ppn || 0;
-    return baseAmount + ppnAmount;
-  }, [subtotalPrice, totalTicketFee, eventData]);
+    return subtotalPrice + totalTicketFee;
+  }, [subtotalPrice, totalTicketFee]);
 
   const getUserData = () => {
     try {
@@ -573,11 +630,10 @@ const TicketOTS = () => {
         const activeMethods = res.filter((method: PaymentMethod) => method.status === "active");
 
         const cashMethod = activeMethods.find((m: PaymentMethod) => m.id === 5);
-        const otherMethods = activeMethods.filter((m: PaymentMethod) => m.id !== 5);
+        const qrisSource = activeMethods.find((m: PaymentMethod) => m.id === 4) || activeMethods.find((m: PaymentMethod) => m.id !== 5);
+        const qrisMethod = qrisSource ? { ...qrisSource, payment_name: "QRIS", icon: "ph:qr-code-bold" } : null;
 
-        const sortedMethods = cashMethod ? [cashMethod, ...otherMethods] : activeMethods;
-
-        setPaymentList(sortedMethods);
+        setPaymentList([cashMethod, qrisMethod].filter(Boolean) as PaymentMethod[]);
       }
     } catch (err: any) {
       console.error("Error fetching payment methods:", err);
@@ -589,6 +645,17 @@ const TicketOTS = () => {
           account_name: "Tunai",
           account_branch: "",
           description: "Pembayaran tunai di lokasi",
+          status: "active",
+          logo: null,
+        },
+        {
+          id: 4,
+          payment_name: "QRIS",
+          icon: "ph:qr-code-bold",
+          account_no: null,
+          account_name: "Xendit",
+          account_branch: "",
+          description: "Pembayaran QRIS",
           status: "active",
           logo: null,
         },
@@ -621,23 +688,25 @@ const TicketOTS = () => {
     getAllEvents();
   }, []);
 
-  const getPaymentMethodName = (paymentMethodId: number) => {
-    const method = paymentList.find((m) => m.id === paymentMethodId);
-    return method ? method.payment_name : "Unknown";
-  };
-
   const getStatusBadge = (statusId: number) => {
+    const badge = (color: string, text: string) => (
+      <span className="inline-flex items-center">
+        <Badge color={color} variant="filled" size="sm" fw={600}>
+          {text}
+        </Badge>
+      </span>
+    );
     switch (statusId) {
       case 1:
-        return <Badge color="yellow">Pending</Badge>;
+        return badge("yellow", "Pending");
       case 2:
-        return <Badge color="green">Success</Badge>;
+        return badge("green", "Success");
       case 3:
-        return <Badge color="red">Failed</Badge>;
+        return badge("red", "Failed");
       case 4:
-        return <Badge color="gray">Expired</Badge>;
+        return badge("gray", "Expired");
       default:
-        return <Badge color="gray">Unknown</Badge>;
+        return badge("gray", "Unknown");
     }
   };
 
@@ -660,7 +729,12 @@ const TicketOTS = () => {
     return [...filtered].sort((a, b) => {
       const av = sortBy === "name" ? getCustomer(a).name.toLowerCase() : a[sortBy];
       const bv = sortBy === "name" ? getCustomer(b).name.toLowerCase() : b[sortBy];
-      const cmp = typeof av === "number" ? av - parseNumber(bv) : String(av ?? "").localeCompare(String(bv ?? ""));
+      const cmp =
+        sortBy === "total_price"
+          ? parseNumber(av) - parseNumber(bv)
+          : typeof av === "number"
+            ? av - parseNumber(bv)
+            : String(av ?? "").localeCompare(String(bv ?? ""));
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [currentTransactions, filterValue, sortBy, sortDir]);
@@ -892,9 +966,8 @@ const TicketOTS = () => {
                     </div>
                   </div>
 
-                  <div className="flex-grow overflow-auto mb-4">
-                    <div className="overflow-x-auto">
-                      <table className="w-full" style={{ borderCollapse: "collapse" }}>
+                  <div className="flex-grow overflow-y-auto overflow-x-auto mb-4 max-h-[360px]">
+                      <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                         <thead>
                           <tr className="border-b border-light-grey" style={{ backgroundColor: "#f5f7fa" }}>
                             <th className={`${thCls("center")} w-12`}>No</th>
@@ -907,11 +980,12 @@ const TicketOTS = () => {
                             <th onClick={() => handleSort("name")} className={`${thCls()} cursor-pointer select-none`}>
                               Customer <SortIcon active={sortBy === "name"} dir={sortDir} />
                             </th>
-                            <th onClick={() => handleSort("grandtotal")} className={`${thCls()} cursor-pointer select-none`}>
-                              Jumlah <SortIcon active={sortBy === "grandtotal"} dir={sortDir} />
+                            <th onClick={() => handleSort("total_price")} className={`${thCls()} cursor-pointer select-none`}>
+                              Jumlah <SortIcon active={sortBy === "total_price"} dir={sortDir} />
                             </th>
                             <th className={thCls()}>Metode</th>
-                            <th className={thCls()}>Status</th>
+                            <th className={`${thCls()} min-w-[110px]`}>Status</th>
+                            <th className={`${thCls("center")} w-20`}>E-Ticket</th>
                             <th className={thCls("center")}>Aksi</th>
                           </tr>
                         </thead>
@@ -935,29 +1009,49 @@ const TicketOTS = () => {
                                   </div>
                                 </td>
                                 <td className={tdCls()}>
-                                  <p className="font-semibold">Rp{parseNumber(item.grandtotal).toLocaleString("id-ID")}</p>
+                                  <p className="font-semibold">{formatRupiah(item.total_price)}</p>
                                   <p className="text-xs text-gray-500">{item.total_qty || 0} tiket</p>
                                 </td>
-                                <td className={tdCls()}>{getPaymentMethodName(item.payment_method_id)}</td>
+                                <td className={tdCls()}>{resolvePaymentMethodLabel(item)}</td>
                                 <td className={tdCls()}>{getStatusBadge(item.transaction_status_id)}</td>
                                 <td className={`${tdCls("center")}`}>
-                                  <button onClick={() => handleViewTransaction(item)} className="flex items-center gap-1 text-primary hover:text-primary-dark text-sm p-1 rounded hover:bg-primary/10 transition-colors">
-                                    <FontAwesomeIcon icon={faEye} className="text-xs" />
-                                    <span className="hidden sm:inline">View</span>
+                                  {(() => {
+                                    const isPaid = Number(item.transaction_status_id) === 2;
+                                    const hasEtickets = item.etickets && item.etickets.length > 0;
+                                    const qrTitle = !isPaid ? "E-Ticket tersedia setelah pembayaran berhasil" : hasEtickets ? "Lihat QR Code E-Ticket" : "Tidak ada e-ticket";
+                                    return (
+                                      <button
+                                        onClick={() => setQrTransaction(item)}
+                                        disabled={!isPaid || !hasEtickets}
+                                        title={qrTitle}
+                                        className="relative flex items-center justify-center w-8 h-8 mx-auto text-primary hover:bg-primary/10 rounded-md transition-colors disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                                      >
+                                        <FontAwesomeIcon icon={faQrcode} />
+                                        {isPaid && item.etickets && item.etickets.length > 1 && (
+                                          <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                                            {item.etickets.length}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })()}
+                                </td>
+                                <td className={`${tdCls("center")}`}>
+                                  <button onClick={() => handleViewTransaction(item)} title="Lihat Detail Transaksi" className="flex items-center justify-center w-8 h-8 mx-auto text-primary hover:text-primary-dark rounded hover:bg-primary/10 transition-colors">
+                                    <FontAwesomeIcon icon={faEye} />
                                   </button>
                                 </td>
                               </tr>
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={8} className="text-center py-8 text-gray-500">
+                              <td colSpan={9} className="text-center py-8 text-gray-500">
                                 {activeTab === "offline" ? "Belum ada transaksi offline" : "Belum ada transaksi online"}
                               </td>
                             </tr>
                           )}
                         </tbody>
                       </table>
-                    </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-light-grey">
@@ -1080,15 +1174,6 @@ const TicketOTS = () => {
                         <span className="font-medium text-red-600">Rp{totalTicketFee.toLocaleString("id-ID")}</span>
                       </div>
                     )}
-                    
-                    {eventData?.ppn && (
-                      <div className="text-sm">
-                        <span className="text-gray-500">+ PPN: </span>
-                        <span className="font-medium text-red-600">
-                          Rp{(eventData?.ppn_type === "percentage" ? (subtotalPrice + totalTicketFee) * 0.11 : eventData?.ppn || 0).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -1143,6 +1228,32 @@ const TicketOTS = () => {
         paymentList={paymentList} 
         eventData={eventData} 
       />
+
+      {/* Modal QR Code E-Ticket */}
+      <MantineModal
+        opened={Boolean(qrTransaction)}
+        onClose={() => setQrTransaction(null)}
+        size="lg"
+        centered
+        title={<Text fw={600}>QR Code E-Ticket{qrTransaction?.invoice_no ? ` — ${qrTransaction.invoice_no}` : ""}</Text>}
+      >
+        {qrTransaction?.etickets && qrTransaction.etickets.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
+            {qrTransaction.etickets.map((et: any) => (
+              <div key={et.id} className="flex flex-col items-center border border-primary-light-200 rounded-lg p-3">
+                <QrCode slug={String(et.eticket_number ?? "")} />
+                <Text size="xs" c="dimmed" mt={6} className="text-center break-all">
+                  {et.eticket_number}
+                </Text>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Text size="sm" c="dimmed" ta="center" py="lg">
+            Tidak ada e-ticket untuk transaksi ini
+          </Text>
+        )}
+      </MantineModal>
     </>
   );
 };
