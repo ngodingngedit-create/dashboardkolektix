@@ -1207,7 +1207,7 @@ const Chat = ({ openTab, toggleOpenTab, creatorIdOpen }: { openTab?: boolean; to
                   </Badge>
                 )}
                 {users?.id && Boolean(users.has_creator) && (
-                  <ActionIcon component={Link} href="/dashboard/chat" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden !absolute right-0 !z-50`}>
+                  <ActionIcon component={Link} href="/dashboard/chat-creator" variant="transparent" className={`text-primary-base ml-[10px] redirectBtn !hidden !absolute right-0 !z-50`}>
                     <Icon icon="majesticons:open-line" className={`!text-[20px] !text-primary-base`} />
                   </ActionIcon>
                 )}

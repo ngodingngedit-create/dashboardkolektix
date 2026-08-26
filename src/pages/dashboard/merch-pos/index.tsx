@@ -1235,6 +1235,26 @@ export default function Index({ }: Readonly<ComponentProps>) {
             data-autofocus
           />
 
+          {/* Quick Nominal Buttons */}
+          <Stack gap={8}>
+            <Text size="xs" c="gray.5" fw={600}>Nominal Cepat</Text>
+            <Flex gap={8}>
+              {[10000, 20000, 50000, 100000].map((nominal) => (
+                <Button
+                  key={nominal}
+                  variant="light"
+                  color="gray"
+                  size="xs"
+                  radius="md"
+                  onClick={() => setCashReceived(nominal)}
+                  styles={{ root: { flex: 1 } }}
+                >
+                  <NumberFormatter value={nominal} thousandSeparator="." />
+                </Button>
+              ))}
+            </Flex>
+          </Stack>
+
           <Card withBorder p={14} radius="md" className="bg-gray-50">
             <Flex justify="space-between" align="center">
               <Text fw={600} c="gray.7">Kembalian</Text>

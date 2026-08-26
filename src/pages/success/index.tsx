@@ -28,7 +28,7 @@ const Success = () => {
         <br />
         <b className='text-primary-base'>Teman Kolektix</b>
       </p>
-      <Link href='/dashboard/my-ticket' className='text-primary-base text-medium mt-4'>
+      <Link href='/dashboard/user' className='text-primary-base text-medium mt-4'>
         Ke Dashboard
       </Link>
     </div>

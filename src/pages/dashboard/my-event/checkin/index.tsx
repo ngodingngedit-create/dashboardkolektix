@@ -726,7 +726,7 @@ const Merch = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Page Title */}
-            <div className="bg-white border-b border-gray-100">
+            <div className="bg-white border-b border-light-grey">
                 <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
                     <button
                         type="button"

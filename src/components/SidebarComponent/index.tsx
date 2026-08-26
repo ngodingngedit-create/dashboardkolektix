@@ -1600,7 +1600,6 @@ import {
   faTruck,
   faTableColumns,
   faRightFromBracket,
-  faSquareArrowUpRight,
   faBox,
   faDolly,
   faBlog,
@@ -1616,7 +1615,7 @@ import {
   faCogs,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
-import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faCalendarDays, faBookmark, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
+import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
 import { UserProps } from "@/utils/globalInterface";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
@@ -1661,25 +1660,11 @@ type SidebarData = {
 
 const profileData: SidebarData[number]["submenu"] = [
   {
-    id: 1,
-    name: "Profile Saya",
-    icon: faIdBadge,
-    link: "/dashboard/profile",
-    role: "Pembeli",
-  },
-  {
     id: 2,
     name: "Akun Creator",
     icon: faIdBadge,
     link: "/dashboard/profile-creator",
     role: "Creator",
-  },
-  {
-    id: 3,
-    name: "Alamat Saya",
-    icon: faMap,
-    link: "/dashboard/profile/address",
-    role: "Pembeli",
   },
   {
     id: 4,
@@ -1707,7 +1692,6 @@ const profileData: SidebarData[number]["submenu"] = [
 const sidebarData: SidebarData = [
   { id: 1, name: "Dashboard", icon: faHome, link: "/dashboard", role: "Creator", iconify: undefined },
   { id: 1, name: "Dashboard", icon: faHome, link: "/dashboard", role: "Staff", iconify: undefined },
-  { id: 1, name: "Dashboard", icon: faHome, link: "/dashboard/user", role: "Pembeli", iconify: undefined },
   { id: 1, name: "Dashboard", icon: faHome, link: "/dashboard/admin", role: "Admin", iconify: undefined },
   { id: 1, name: "Event", iconify: "mdi:event-star", link: "/dashboard/admin/event", role: "Admin" },
   { id: 6, name: "Merchandise", icon: faGift, role: "Admin", link: "/dashboard/admin/merchandise" },
@@ -1791,9 +1775,6 @@ const sidebarData: SidebarData = [
     ],
   },
 
-  { id: 1, name: "Bookmark", link: "/dashboard/bookmark", role: "Pembeli", iconify: "material-symbols:bookmark" },
-  { id: 2, name: "Tiket Saya", icon: faTicket, link: "/dashboard/my-ticket", role: "Pembeli" },
-  { id: 3, name: "Merchandise Saya", icon: faGift, link: "/dashboard/my-merchandise", role: "Pembeli" },
   {
     id: 3,
     name: "Event",
@@ -2082,10 +2063,8 @@ const sidebarData: SidebarData = [
     role: "Creator",
     link: "/dashboard/blog"
   },
-  { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat", role: "Pembeli" },
   { id: 8, name: "Pesan", icon: faMessage, link: "/dashboard/chat-creator", role: "Creator", moduleId: 6 },
   { id: 9, name: "Account Saya", icon: faIdBadge, role: "Creator", submenu: profileData },
-  { id: 9, name: "Account Saya", icon: faIdBadge, role: "Pembeli", submenu: profileData },
   { id: 11, name: "Project Management", icon: faListCheck, role: "Creator", link: "/dashboard/issuemanagement", moduleId: 14 },
   { id: 12, moduleId: 12, name: "Microsite Settings", icon: faCogs, role: "Creator", link: "/dashboard/microsite" },
   // { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard" },
@@ -2257,15 +2236,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     if (users) {
       console.log("DEBUG USER DATA:", users);
       setUserData(users);
-      if (route === "/dashboard/user") {
-        if (!!users.has_creator) setHasCreator(true);
-        setRole("Pembeli");
-      } else {
-        if (!!users.has_creator || users?.role == "Staff") {
-          setHasCreator(true);
-        }
-        setRole(users?.role ?? "Pembeli");
+      if (!!users.has_creator || users?.role == "Staff") {
+        setHasCreator(true);
       }
+      setRole(users?.role ?? "Pembeli");
     }
   }, [users]);
 
@@ -2616,20 +2590,6 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                             </Text>
                           </Stack>
 
-
-                          {!["Staff", "Admin"].includes(role ?? "") && (
-                            <>
-                              <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                                Transaksi
-                              </Link>
-
-                              <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                                <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                                Bookmark
-                              </Link>
-                            </>
-                          )}
 
                           <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                             <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />

@@ -5,8 +5,8 @@ import Image from "next/image";
 import FilterMenu from "../FilterMenu";
 import Footer from "../FooterComponent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faBookmark, faStar } from "@fortawesome/free-regular-svg-icons";
-import { faBell as Bell, faBars, faXmark, faSearch, faCalendarDays, faEnvelope, faCirclePlus, faTableColumns, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faStar } from "@fortawesome/free-regular-svg-icons";
+import { faBell as Bell, faBars, faXmark, faSearch, faEnvelope, faCirclePlus, faTableColumns, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { UserProps } from "@/utils/globalInterface";
 import top from "../../assets/images/Ellipse 40.png";
 import avatar from "../../assets/images/avatar.jpg";
@@ -307,14 +307,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                             </>
                           ) : (
                             <>
-                              <Menu.Item leftSection={<Icon icon="gg:list" />} component={Link} href="/dashboard/my-ticket">
-                                Transaksi
-                              </Menu.Item>
                               <Menu.Item leftSection={<Icon icon="gg:list" />} component={Link} href={users?.force_creator && !!users.has_creator ? "/dashboard/" : "/dashboard/user"}>
                                 Dashboard
-                              </Menu.Item>
-                              <Menu.Item leftSection={<Icon icon="lucide:bookmark" />} component={Link} href="/dashboard/bookmark">
-                                Bookmark
                               </Menu.Item>
                               <Menu.Item leftSection={<Icon icon="solar:logout-2-broken" />} color="red" onClick={handleLogout}>
                                 Logout
@@ -361,20 +355,10 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         aria-labelledby="user-menu-button"
                         tabIndex={-1}
                       >
-                        <Link href="/dashboard/my-ticket" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                          <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
-                          Transaksi
-                        </Link>
-                        <Link href="/dashboard/my-ticket" className="block px-4 py-2 text-xs text-dark hover:bg-primary-light" role="menuitem" tabIndex={-1} id="user-menu-item-1">
+                        <Link href="/dashboard/user" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
                           <FontAwesomeIcon icon={faTableColumns} className="mr-2" />
                           Dashboard
                         </Link>
-                        {users?.id && (
-                          <Link href="/dashboard/bookmark" className="block px-4 pb-2 pt-3 text-xs text-dark hover:bg-primary-light rounded-t-md" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                            <FontAwesomeIcon icon={faBookmark} className="mr-2" />
-                            Bookmark
-                          </Link>
-                        )}
                         <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                           <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
                           Keluar
