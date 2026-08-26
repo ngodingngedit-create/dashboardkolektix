@@ -1529,27 +1529,6 @@ const Auth = () => {
     setImageOpacity(1);
   }, []);
 
-  const [displayedText, setDisplayedText] = useState<string>("");
-
-  useEffect(() => {
-    setImageOpacity(1);
-  }, []);
-
-  useEffect(() => {
-    const text = "Masa Depan Tongkrongan";
-    let index = 0;
-
-    const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + text[index - 1]);
-      index += 1;
-      if (index === text.length) {
-        clearInterval(interval);
-      }
-    }, 150);
-
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     setData({ ...data, otp_code: otp });
     //eslint-disable-next-line
@@ -1576,19 +1555,12 @@ const Auth = () => {
           />
         </div>
 
-        {/* Bottom Text */}
-        <div className="relative z-10 text-white flex flex-col gap-2 text-left">
-          <span className="text-xs uppercase tracking-wider font-semibold opacity-75">Kolektix Creator Hub</span>
-          <h3 className="text-3xl font-bold leading-tight">
-            Masa Depan Tongkrongan
-          </h3>
-        </div>
       </div>
 
       {/* Right Side: Form Container */}
       <div className="w-full md:w-[40%] flex flex-col justify-between px-10 py-8 bg-white min-h-screen relative">
         {/* Header Bar */}
-        <div className="w-full flex justify-between md:justify-end items-center">
+        <div className="w-full flex justify-between md:justify-end items-center gap-3">
           {/* Logo (Mobile only) */}
           <div className="md:hidden flex items-center">
             <Image src={Logo} alt="Logo" className="h-9 w-auto object-contain" />
@@ -1957,6 +1929,9 @@ const Auth = () => {
             </div>
           )}
         </div>
+
+        {/* Brand label (Desktop, bottom right) */}
+        <span className="hidden md:block text-xs uppercase tracking-wider font-semibold text-dark text-right">Kolektix Creator Hub</span>
       </div>
     </div>
   );
