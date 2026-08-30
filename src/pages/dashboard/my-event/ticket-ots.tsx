@@ -112,6 +112,12 @@ const resolvePaymentMethodLabel = (transaction: any): string => {
   return "-";
 };
 
+const getPaymentMethodId = (t: any): number | null => {
+  if (t?.payment_method?.id) return Number(t.payment_method.id);
+  if (t?.payment_method_id) return Number(t.payment_method_id);
+  return null;
+};
+
 const ROWS_PER_PAGE = 20;
 
 type SortField = "invoice_no" | "created_at" | "name" | "total_price";
@@ -656,12 +662,17 @@ const TicketOTS = () => {
   };
 
   const otsStats = useMemo<OtsStats>(() => {
-    const successOffline = offlineTransactions.filter((t) => Number(t.transaction_status_id) === 2);
-    const totalOts = successOffline.reduce((sum, t) => sum + parseNumber(t.total_price), 0);
-    
+    const allSuccess = offlineTransactions.filter((t) => Number(t.transaction_status_id) === 2);
+    const qrisSuccess = allSuccess.filter((t) => getPaymentMethodId(t) === 4);
+
+    const totalOts = qrisSuccess.reduce((sum, t) => {
+      const tickets = t.tickets || [];
+      return sum + tickets.reduce((s: number, tk: any) => s + parseNumber(tk.subtotal_price), 0);
+    }, 0);
+
     let totalEtickets = 0;
     let checkedInEtickets = 0;
-    successOffline.forEach((t) => {
+    allSuccess.forEach((t) => {
       const ets = t.etickets || [];
       totalEtickets += ets.length;
       checkedInEtickets += ets.filter((e: any) => Number(e.is_checkin) === 1).length;
@@ -669,7 +680,7 @@ const TicketOTS = () => {
 
     return {
       totalOts,
-      otsQty: successOffline.length,
+      otsQty: allSuccess.length,
       totalEtickets,
       checkedInEtickets,
     };
