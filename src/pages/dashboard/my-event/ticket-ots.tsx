@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStore, faTicketAlt, faDownload, faArrowLeft, faDesktop, faReceipt, faEye, faQrcode, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import config from "@/Config";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import QrCode from "@/components/QrCode";
 
 interface FormTicket {
@@ -771,10 +772,27 @@ const TicketOTS = () => {
 
   const downloadReport = () => {
     if (!eventData) return;
-
-    const type = activeTab === "offline" ? "offline" : "online";
-    const url = `${config.wsUrl}list-transaction-by-event?event_id=${eventData.id}&type_transaction=${type}&download=true`;
-    window.open(url, "_blank");
+    const type = activeTab === "offline" ? "Offline" : "Online";
+    const statusLabel: Record<number, string> = { 1: "Pending", 2: "Success", 3: "Failed", 4: "Expired" };
+    const rows = currentTransactions.map((item: any, idx: number) => {
+      const customer = getCustomer(item);
+      return {
+        No: idx + 1,
+        Invoice: item.invoice_no,
+        Tanggal: moment(item.created_at).format("DD/MM/YYYY HH:mm"),
+        Customer: customer.name,
+        Email: customer.email,
+        Telepon: customer.phone,
+        "Jumlah Tiket": item.total_qty || 0,
+        "Total Harga": parseNumber(item.total_price),
+        "Metode Pembayaran": resolvePaymentMethodLabel(item),
+        Status: statusLabel[Number(item.transaction_status_id)] || "Unknown",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Riwayat Penjualan");
+    XLSX.writeFile(wb, `riwayat-penjualan-${type.toLowerCase()}-${eventData.id}.xlsx`);
   };
 
   const handleViewTransaction = (transaction: any) => {

@@ -2314,9 +2314,9 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   )}
                 </Link>
               </li>
-              <li className="border border-[#1b3a6a] border-x-0 border-t-0 p-2 mb-3 mt-2">
-                <div className="flex items-center gap-3 px-3 [&_*]:!text-white w-full">
-                  <Image src={Avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+              <li className={`border border-[#1b3a6a] border-x-0 border-t-0 mb-3 mt-2 transition-[padding] duration-300 ease-in-out ${collapse ? "p-2" : "px-0 py-2"}`}>
+                <div className={`flex items-center [&_*]:!text-white w-full transition-[padding,gap] duration-300 ease-in-out ${collapse ? "gap-3 px-3" : "gap-0 px-[14px]"}`}>
+                  <Image src={users?.has_creator?.image_url || Avatar} alt="Avatar" width={36} height={36} className="w-9 h-9 min-w-9 min-h-9 shrink-0 aspect-square rounded-full object-cover" />
                   {visible && (
                     <>
                       <div className={`w-full ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `}>
@@ -2569,7 +2569,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                           onClick={() => setShowUserMenu(!showUserMenu)}
                         >
                           <FontAwesomeIcon icon={faBars} className="text-primary-base" />
-                          <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={Avatar} alt="" />
+                          <Image className="h-6 w-6 rounded-full border border-primary-light-200" src={users?.has_creator?.image_url || Avatar} alt="" width={24} height={24} />
                         </button>
                       </div>
                       <Fade isShowing={showUserMenu}>

@@ -202,7 +202,7 @@ const AdminEventDetailView = () => {
         limit: transactionRowsPerPage.toString(),
       });
       if (searchValue) queryParams.append('search', searchValue);
-      if (transactionFilter !== 'all') queryParams.append('type', transactionFilter);
+      if (transactionFilter !== 'all') queryParams.append('type_transaction', transactionFilter);
       const response = await axios.get(`${config.wsUrl}list-transaction-by-event?${queryParams.toString()}`);
       const result = response.data as TransactionResponse;
       if (result?.data && Array.isArray(result.data)) {
@@ -229,9 +229,10 @@ const AdminEventDetailView = () => {
       const matchesInvoice = item.invoice_no?.toLowerCase().includes(lowerFilterValue) || false;
       const userEmail = item.has_user?.email?.toLowerCase() || "";
       const identityEmail = item.identities?.[0]?.email?.toLowerCase() || "";
-      return matchesInvoice || userEmail.includes(lowerFilterValue) || identityEmail.includes(lowerFilterValue);
+      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
+      return matchesType && (matchesInvoice || userEmail.includes(lowerFilterValue) || identityEmail.includes(lowerFilterValue));
     });
-  }, [transactionData, filterValue]);
+  }, [transactionData, filterValue, transactionFilter]);
 
   const onTransactionRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setTransactionRowsPerPage(Number(e.target.value));
@@ -249,8 +250,7 @@ const AdminEventDetailView = () => {
 
   const handleTransactionFilterChange = useCallback((filter: "all" | "online" | "offline") => {
     setTransactionFilter(filter);
-    fetchTransactions(1, filterValue);
-  }, [fetchTransactions, filterValue]);
+  }, []);
 
   const sendInvitationEmail = useCallback(async (invitationItem: any) => {
     const invitationIdStr = String(invitationItem?.id);

@@ -1262,6 +1262,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle, faArrowLeft, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRouter } from "next/router";
+import * as XLSX from "xlsx";
 
 // Definisikan tipe untuk metode pembayaran
 type PaymentMethodInfo = {
@@ -1834,8 +1835,10 @@ const Merch = () => {
         no: globalIndex,
         nama: pemesanIdentity?.full_name || "-",
         email: pemesanIdentity?.email || "-",
+        telepon: pemesanIdentity?.no_telp || "-",
         invoice: transaction.invoice_no || "-",
         tiket: ticketName,
+        qty: transaction.tickets?.map((ticket) => ticket.qty_ticket || 0).join(", ") || "-",
         sesi: ticketSesi,
         harga: `Rp ${Math.max((Number(transaction.total_price) || 0) - (Number((transaction as any).total_voucher) || 0), 0).toLocaleString("id-ID")}`,
         domisili: ticketDomisili,
@@ -2108,10 +2111,10 @@ const Merch = () => {
 
   const exportToExcel = (exportStatus?: string) => {
     try {
-      let csvRows: string[] = [];
       const timestamp = new Date().toISOString().split("T")[0];
       const eventName = eventList?.find((e) => e.id === selectedEvent)?.name || "event";
-      let downloadFileName = `report-${eventName}-${timestamp}.csv`;
+      let downloadFileName = `report-${eventName}-${timestamp}.xlsx`;
+      let data: Record<string, any>[] = [];
 
       if (selectedTab === "transaksi") {
         let exportData = filteredDataList;
@@ -2147,126 +2150,117 @@ const Merch = () => {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Email", "No. Invoice", "Nama Tiket", ...(selectedEventFlags.is_session ? ["Sesi"] : []), "Nomor Kursi", "Harga Tiket", ...(selectedEventFlags.is_domisili ? ["Domisili"] : []), "Metode Pembayaran", "Status"];
-        csvRows = [
-          headers.join(","),
-          ...exportData.map((item, index) => {
-            let pemesanIdentity = null;
-            if (item.identities && item.identities.length > 0) {
-              pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
-            }
-            let ticketName = "-";
-            let ticketSesi = "-";
-            let ticketSeats = "-";
-            let ticketDomisili = "-";
-            if (item.tickets && item.tickets.length > 0) {
-              ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
-              ticketSesi = item.tickets.map((ticket) => ticket.event_session?.session_name || "-").filter((v, i, a) => a.indexOf(v) === i && v !== "-").join(", ") || "-";
-              
-              // Extract seat numbers
-              ticketSeats = item.tickets
-                .map((ticket: any) => {
-                  if (ticket.seatnumber_ticket) {
-                    try {
-                      if (typeof ticket.seatnumber_ticket === 'string' && (ticket.seatnumber_ticket.startsWith('[') || ticket.seatnumber_ticket.startsWith('{'))) {
-                        const parsed = JSON.parse(ticket.seatnumber_ticket);
-                        return Array.isArray(parsed) ? parsed.join(", ") : parsed;
-                      }
-                      return ticket.seatnumber_ticket;
-                    } catch {
-                      return ticket.seatnumber_ticket;
+
+        data = exportData.map((item, index) => {
+          let pemesanIdentity = null;
+          if (item.identities && item.identities.length > 0) {
+            pemesanIdentity = item.identities.find((id) => id.is_pemesan == 1) || item.identities[0];
+          }
+          let ticketName = "-";
+          let ticketSesi = "-";
+          let ticketSeats = "-";
+          let ticketDomisili = "-";
+          let ticketQty = "-";
+          if (item.tickets && item.tickets.length > 0) {
+            ticketName = item.tickets.map((ticket) => ticket.has_event_ticket?.name || "-").join(", ");
+            ticketSesi = item.tickets.map((ticket) => ticket.event_session?.session_name || "-").filter((v, i, a) => a.indexOf(v) === i && v !== "-").join(", ") || "-";
+            ticketQty = item.tickets.map((ticket) => ticket.qty_ticket || 0).join(", ");
+            ticketSeats = item.tickets
+              .map((ticket: any) => {
+                if (ticket.seatnumber_ticket) {
+                  try {
+                    if (typeof ticket.seatnumber_ticket === 'string' && (ticket.seatnumber_ticket.startsWith('[') || ticket.seatnumber_ticket.startsWith('{'))) {
+                      const parsed = JSON.parse(ticket.seatnumber_ticket);
+                      return Array.isArray(parsed) ? parsed.join(", ") : parsed;
                     }
+                    return ticket.seatnumber_ticket;
+                  } catch {
+                    return ticket.seatnumber_ticket;
                   }
-                  return null;
-                })
-                .filter(Boolean)
-                .join(", ") || "-";
-            }
-            if (item.identities && item.identities.length > 0) {
-              const domisilis = item.identities.map((identity: any) => identity.domisili).filter(Boolean);
-              ticketDomisili = domisilis.length > 0 ? domisilis.filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(", ") : "-";
-            }
-            const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
-            const paymentMethodInfo = getPaymentMethod(item.payment_method);
-            const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
-            return [index + 1, `"${pemesanIdentity?.full_name || "-"}"`, `"${pemesanIdentity?.email || "-"}"`, `"${item.invoice_no}"`, `"${ticketName}"`, ...(selectedEventFlags.is_session ? [`"${ticketSesi}"`] : []), `"${ticketSeats}"`, Math.max((Number(item.total_price) || 0) - (Number((item as any).total_voucher) || 0), 0), ...(selectedEventFlags.is_domisili ? [`"${ticketDomisili}"`] : []), `"${paymentMethodText}"`, `"${statusText}"`].join(",");
-          }),
-        ];
-        downloadFileName = `report-penjualan-${eventName}-${timestamp}.csv`;
+                }
+                return null;
+              })
+              .filter(Boolean)
+              .join(", ") || "-";
+          }
+          if (item.identities && item.identities.length > 0) {
+            const domisilis = item.identities.map((identity: any) => identity.domisili).filter(Boolean);
+            ticketDomisili = domisilis.length > 0 ? domisilis.filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(", ") : "-";
+          }
+          const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
+          const paymentMethodInfo = getPaymentMethod(item.payment_method);
+          const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
+
+          const row: Record<string, any> = {
+            "No": index + 1,
+            "Nama": pemesanIdentity?.full_name || "-",
+            "Email": pemesanIdentity?.email || "-",
+            "No. Telepon": pemesanIdentity?.no_telp || "-",
+            "No. Invoice": item.invoice_no || "-",
+            "Nama Tiket": ticketName,
+            "Qty": ticketQty,
+          };
+          if (selectedEventFlags.is_session) row["Sesi"] = ticketSesi;
+          row["Nomor Kursi"] = ticketSeats;
+          row["Harga Tiket"] = Math.max((Number(item.total_price) || 0) - (Number((item as any).total_voucher) || 0), 0);
+          if (selectedEventFlags.is_domisili) row["Domisili"] = ticketDomisili;
+          row["Metode Pembayaran"] = paymentMethodText;
+          row["Status"] = statusText;
+          return row;
+        });
+        downloadFileName = `report-penjualan-${eventName}-${timestamp}.xlsx`;
       } else if (selectedTab === "pemesan") {
         if (!processedPemesanData || processedPemesanData.length === 0) {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = [
-          "No",
-          "No. Identitas (NIK)",
-          "Nama Pemesan",
-          "Email",
-          "No. Telepon",
-          "Nomor Kursi",
-          "Ukuran",
-          "Alamat",
-          ...(selectedEventFlags.is_session ? ["Sesi"] : []),
-          ...(selectedEventFlags.is_domisili ? ["Domisili"] : []),
-          ...(selectedEventFlags.is_age ? ["Usia"] : []),
-          ...(selectedEventFlags.is_church ? ["Gereja"] : []),
-          ...(selectedEventFlags.is_ministryrole ? ["Pelayanan"] : []),
-          "Tanggal Dibuat",
-        ];
-        const csvRows = [
-          headers.join(","),
-          ...processedPemesanData.map((item, index) => {
-            return [
-              index + 1,
-              `"${item.nik}"`,
-              `"${item.nama}"`,
-              `"${item.email}"`,
-              `"${item.telepon}"`,
-              `"${item.seat_number}"`,
-              `"${item.ukuran}"`,
-              `"${item.alamat}"`,
-              ...(selectedEventFlags.is_session ? [`"${item.sesi}"`] : []),
-              ...(selectedEventFlags.is_domisili ? [`"${item.domisili}"`] : []),
-              ...(selectedEventFlags.is_age ? [`"${item.usia}"`] : []),
-              ...(selectedEventFlags.is_church ? [`"${item.gereja}"`] : []),
-              ...(selectedEventFlags.is_ministryrole ? [`"${item.pelayanan}"`] : []),
-              `"${item.tanggal}"`,
-            ].join(",");
-          }),
-        ];
-        downloadFileName = `report-pemesan-${eventName}-${timestamp}.csv`;
+        data = processedPemesanData.map((item, index) => {
+          const row: Record<string, any> = {
+            "No": index + 1,
+            "No. Identitas (NIK)": item.nik,
+            "Nama Pemesan": item.nama,
+            "Email": item.email,
+            "No. Telepon": item.telepon,
+            "Nomor Kursi": item.seat_number,
+            "Ukuran": item.ukuran,
+            "Alamat": item.alamat,
+          };
+          if (selectedEventFlags.is_session) row["Sesi"] = item.sesi;
+          if (selectedEventFlags.is_domisili) row["Domisili"] = item.domisili;
+          if (selectedEventFlags.is_age) row["Usia"] = item.usia;
+          if (selectedEventFlags.is_church) row["Gereja"] = item.gereja;
+          if (selectedEventFlags.is_ministryrole) row["Pelayanan"] = item.pelayanan;
+          row["Tanggal Dibuat"] = item.tanggal;
+          return row;
+        });
+        downloadFileName = `report-pemesan-${eventName}-${timestamp}.xlsx`;
       } else if (selectedTab === "checkin") {
         if (!processedCheckinData || processedCheckinData.length === 0) {
           alert("Tidak ada data untuk diexport");
           return;
         }
-        const headers = ["No", "Nama", "Telepon", "Email", "Status Checkin", "No. Invoice", "QR Code/Eticket", "Waktu Checkin"];
-        csvRows = [
-          headers.join(","),
-          ...processedCheckinData.map((item, index) => {
-            const statusCheckinText = item.status_checkin ? "Sudah Checkin" : "Belum Checkin";
-            return [index + 1, `"${item.nama || "-"}"`, `"${item.telepon || "-"}"`, `"${item.email || "-"}"`, `"${statusCheckinText}"`, `"${item.invoice || "-"}"`, `"${item.qr_code || "-"}"`, `"${item.waktu || "-"}"`].join(",");
-          }),
-        ];
-        downloadFileName = `report-checkin-${eventName}-${timestamp}.csv`;
+        data = processedCheckinData.map((item, index) => {
+          return {
+            "No": index + 1,
+            "Nama": item.nama || "-",
+            "Telepon": item.telepon || "-",
+            "Email": item.email || "-",
+            "Status Checkin": item.status_checkin ? "Sudah Checkin" : "Belum Checkin",
+            "No. Invoice": item.invoice || "-",
+            "QR Code/Eticket": item.qr_code || "-",
+            "Waktu Checkin": item.waktu || "-",
+          };
+        });
+        downloadFileName = `report-checkin-${eventName}-${timestamp}.xlsx`;
       } else {
         alert("Tab tidak didukung untuk export");
         return;
       }
 
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = downloadFileName;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, selectedTab === "transaksi" ? "Penjualan" : selectedTab === "pemesan" ? "Pemesan" : "Checkin");
+      XLSX.writeFile(wb, downloadFileName);
     } catch (error) {
       console.error("Export error:", error);
       alert("Terjadi kesalahan saat mengeksport data");
@@ -2513,7 +2507,9 @@ Halaman Report Event Anda
                     <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. INVOICE <span style={{ opacity: sortBy === 'invoice' ? 1 : 0.3 }}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>NO. TELEPON</th>
                     <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>QTY</th>
                     {selectedEventFlags.is_session && (
                       <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
@@ -2540,7 +2536,9 @@ Halaman Report Event Anda
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.invoice}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.telepon}</Text></td>
                         <td style={{ padding: '12px 14px' }}><Text size="sm">{item.tiket}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center' }}><Text size="sm">{item.qty}</Text></td>
                         {selectedEventFlags.is_session && (
                           <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.sesi}</Text></td>
                         )}
@@ -2575,7 +2573,7 @@ Halaman Report Event Anda
                   )}
                   <br />
                   <small>
-                    Halaman {currentPage} dari {lastPageLocal} | Total Keseluruhan: Rp {apiPaginationInfo.grandTotal.toLocaleString("id-ID")}
+                    Halaman {currentPage} dari {lastPageLocal}
                   </small>
                 </Text>
 

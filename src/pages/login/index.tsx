@@ -1409,6 +1409,7 @@ const Auth = () => {
             name: res.data.has_creator.name,
             name_event_organizer: res.data.has_creator.name_event_organizer,
             slug: res.data.has_creator.slug,
+            image_url: res.data.has_creator.image_url,
             is_verified: res.data.has_creator.is_verified,
             verified_status_id: res.data.has_creator.verified_status_id,
           } : undefined,

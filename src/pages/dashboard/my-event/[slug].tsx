@@ -23,7 +23,7 @@ import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Divider, Flex, Stack, Text, Tooltip, Button as ButtonM } from "@mantine/core";
+import { Card, Divider, Flex, SimpleGrid, Stack, Text, Tooltip, Button as ButtonM } from "@mantine/core";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import useLoggedUser from "@/utils/useLoggedUser";
 import fetch from "@/utils/fetch";
@@ -124,6 +124,14 @@ interface TransactionItem {
     id: number;
     email: string;
     full_name: string;
+  }>;
+  tickets?: Array<{
+    id: number;
+    qty_ticket: number;
+    has_event_ticket?: {
+      id?: number;
+      name?: string;
+    };
   }>;
 }
 
@@ -249,7 +257,7 @@ const MyEventDetail = () => {
       }
 
       if (transactionFilter !== 'all') {
-        params.append('type', transactionFilter);
+        params.append('type_transaction', transactionFilter);
       }
 
       const url = `list-transaction-by-event?${params.toString()}`;
@@ -338,13 +346,14 @@ const MyEventDetail = () => {
       const userEmail = item.has_user?.email?.toLowerCase() || "";
       const identityEmail = item.identities?.[0]?.email?.toLowerCase() || "";
       const matchesEmail = userEmail.includes(lowerFilterValue) || identityEmail.includes(lowerFilterValue);
+      const matchesType = transactionFilter === "all" || item.type_transaction === transactionFilter;
 
-      return matchesInvoice || matchesEmail;
+      return matchesType && (matchesInvoice || matchesEmail);
     });
 
     console.log("Filtered items result:", filtered.length, "items");
     return filtered;
-  }, [transactionData, filterValue]);
+  }, [transactionData, filterValue, transactionFilter]);
 
   const onTransactionRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRowsPerPage = Number(e.target.value);
@@ -367,9 +376,7 @@ const MyEventDetail = () => {
 
   const handleTransactionFilterChange = useCallback((filter: "all" | "online" | "offline") => {
     setTransactionFilter(filter);
-    // Reset ke page 1 saat mengganti filter
-    fetchTransactions(1, filterValue);
-  }, [fetchTransactions, filterValue]);
+  }, []);
 
   const sendInvitationEmail = useCallback(
     async (invitationItem: any) => {
@@ -538,6 +545,50 @@ const MyEventDetail = () => {
     }
   };
 
+  const [ticketSoldMap, setTicketSoldMap] = useState<Record<number, number>>({});
+
+  const fetchTicketSoldCounts = useCallback(async (eventId: string | number) => {
+    try {
+      const buildUrl = (type: string) => {
+        const params = new URLSearchParams({
+          event_id: eventId.toString(),
+          page: "1",
+          per_page: "999999",
+          type_transaction: type,
+        });
+        return `list-transaction-by-event?${params.toString()}`;
+      };
+
+      const [onlineRes, offlineRes] = await Promise.all([
+        axios.get(`${config.wsUrl}${buildUrl("online")}`, {
+          headers: { "Content-Type": "application/json" },
+        }),
+        axios.get(`${config.wsUrl}${buildUrl("offline")}`, {
+          headers: { "Content-Type": "application/json" },
+        }),
+      ]);
+
+      const onlineTxns = (onlineRes.data as TransactionResponse)?.data ?? [];
+      const offlineTxns = (offlineRes.data as TransactionResponse)?.data ?? [];
+      const allTransactions = [...onlineTxns, ...offlineTxns];
+
+      const soldMap: Record<number, number> = {};
+      for (const txn of allTransactions) {
+        if (txn.transaction_status_id !== 2) continue;
+        if (!txn.tickets?.length) continue;
+        for (const t of txn.tickets) {
+          const ticketId = Number(t.has_event_ticket?.id ?? t.event_ticket_id);
+          if (ticketId) {
+            soldMap[ticketId] = (soldMap[ticketId] || 0) + (t.qty_ticket || 0);
+          }
+        }
+      }
+      setTicketSoldMap(soldMap);
+    } catch (err) {
+      console.error("Error fetching ticket sold counts:", err);
+    }
+  }, []);
+
   const sendETicket = useCallback(
     async (invoiceNo: string, email: string, itemId: string | number) => {
       const itemIdStr = String(itemId);
@@ -583,12 +634,62 @@ const MyEventDetail = () => {
   );
 
   const handleDownloadTransaction = async () => {
-    const params = new URLSearchParams({
-      event_id: data?.id?.toString() || '',
-      download: 'true'
-    });
+    try {
+      const params = new URLSearchParams({
+        event_id: data?.id?.toString() || '',
+        page: "1",
+        per_page: "999999",
+      });
 
-    window.open(`${config.wsUrl}list-transaction-by-event?${params.toString()}`);
+      if (transactionFilter !== 'all') {
+        params.append('type_transaction', transactionFilter);
+      }
+
+      const url = `list-transaction-by-event?${params.toString()}`;
+      const response = await axios.get(`${config.wsUrl}${url}`, {
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = response.data as TransactionResponse;
+      const allTxns = result?.data && Array.isArray(result.data) ? result.data : [];
+
+      const exportData = allTxns.map((item: any, index: number) => {
+        let pemesanIdentity = null;
+        if (item.identities?.length) {
+          pemesanIdentity = item.identities.find((id: any) => id.is_pemesan == 1) || item.identities[0];
+        }
+        let ticketName = "-";
+        let ticketQty = "-";
+        if (item.tickets?.length) {
+          ticketName = item.tickets.map((t: any) => t.has_event_ticket?.name || "-").join(", ");
+          ticketQty = item.tickets.map((t: any) => t.qty_ticket || 0).join(", ");
+        }
+        const statusName = getStatusText(item.transaction_status_id);
+        const paymentName = item.payment_method?.payment_name || "-";
+
+        return {
+          "No": index + 1,
+          "No. Invoice": item.invoice_no || "-",
+          "Nama": pemesanIdentity?.full_name || "-",
+          "Email": pemesanIdentity?.email || "-",
+          "No. Telepon": pemesanIdentity?.no_telp || "-",
+          "Nama Tiket": ticketName,
+          "Qty": ticketQty,
+          "Harga Tiket": Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
+          "Metode Pembayaran": paymentName,
+          "Status": statusName,
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
+      const timestamp = new Date().toISOString().split("T")[0];
+      const eventName = data?.name || 'event';
+      XLSX.writeFile(wb, `report-penjualan-${eventName}-${timestamp}.xlsx`);
+    } catch (err) {
+      console.error("Error downloading transaction:", err);
+      alert("Terjadi kesalahan saat mengeksport data");
+    }
   };
 
   const sendEventETicket = async (invoiceNo: any, email: any) => {
@@ -615,8 +716,9 @@ const MyEventDetail = () => {
   useEffect(() => {
     if (data?.id && user?.id) {
       getWithdrawHistory();
+      fetchTicketSoldCounts(data.id);
     }
-  }, [data?.id, user?.id, updateWithdrawHistory]);
+  }, [data?.id, user?.id, updateWithdrawHistory, fetchTicketSoldCounts]);
 
   const getStatusClass = (statusId: any) => {
     switch (statusId) {
@@ -892,7 +994,7 @@ const MyEventDetail = () => {
                 title={
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
-                      <p className="text-grey">Total Pendapatan Event</p>
+                      <p className="text-grey text-xs">Saldo Event</p>
                       <h6>
                         Rp.
                         {((eventData?.total_pendapatan || 0) - Number(eventData?.total_voucher || 0)).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
@@ -903,6 +1005,26 @@ const MyEventDetail = () => {
                 }
               >
                 <Stack p={20} pt={0} gap={10}>
+                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+                    <Card withBorder shadow="sm" radius="md" p="md">
+                      <p className="text-grey text-xs">Total Pendapatan</p>
+                      <h6 className="mt-1">
+                        Rp{(eventData?.total_pendapatan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </Card>
+                    <Card withBorder shadow="sm" radius="md" p="md">
+                      <p className="text-grey text-xs">Total Withdraw</p>
+                      <h6 className="mt-1">
+                        Rp{withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </Card>
+                    <Card withBorder shadow="sm" radius="md" p="md">
+                      <p className="text-grey text-xs">Total Voucher</p>
+                      <h6 className="mt-1">
+                        Rp{Number(eventData?.total_voucher || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </Card>
+                  </SimpleGrid>
                   <Divider />
                   <Text size="sm" fw={600} c="gray">
                     Riwayat Tarik Dana
@@ -914,10 +1036,10 @@ const MyEventDetail = () => {
 
             <Accordion selectedKeys={selectedKeys} onSelectionChange={setSelectedKeys} className="rounded-lg shadow-sm p-0" aria-label="Event Data Accordion">
               <AccordionItem key="1" title="Statistik Event" className="border border-primary-light-200 px-4 rounded-lg">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan Online</p>
+                      <p className="text-grey text-xs">Total Penjualan Online</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
@@ -928,7 +1050,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan Offline</p>
+                      <p className="text-grey text-xs">Total Penjualan Offline</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
@@ -939,7 +1061,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Transaksi</p>
+                      <p className="text-grey text-xs">Total Transaksi</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
@@ -947,7 +1069,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Transaksi Gagal</p>
+                      <p className="text-grey text-xs">Transaksi Gagal</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
@@ -955,7 +1077,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Transaksi Pending</p>
+                      <p className="text-grey text-xs">Transaksi Pending</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
@@ -963,7 +1085,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Ticket Terjual</p>
+                      <p className="text-grey text-xs">Ticket Terjual</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
@@ -971,15 +1093,17 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Withdraw</p>
+                      <p className="text-grey text-xs">Total Withdraw</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
-                    <p className="font-semibold">{eventData?.total_withdraw || 0}</p>
+                    <p className="font-semibold">
+                      Rp{(eventData?.total_withdraw || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                    </p>
                   </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total View</p>
+                      <p className="text-grey text-xs">Total View</p>
                       <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_views || 0}</p>
@@ -987,7 +1111,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Bookmarks</p>
+                      <p className="text-grey text-xs">Total Bookmarks</p>
                       <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">0</p>
@@ -995,7 +1119,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Jenis Tiket</p>
+                      <p className="text-grey text-xs">Jenis Tiket</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket || 0}</p>
@@ -1033,7 +1157,7 @@ const MyEventDetail = () => {
                   <div className="flex justify-between items-center px-3 py-2">
                     <h6 className="text-lg font-semibold">Tiket</h6>
                   </div>
-                  <div className="px-3">
+                  <div className="px-3 max-h-[400px] overflow-y-auto">
                     {ticket.length > 0 &&
                       ticket.map((el, index) => (
                         <div key={index} className={`mb-3`}>
@@ -1046,7 +1170,7 @@ const MyEventDetail = () => {
                             description={el.description}
                             name={el.name}
                             qty={el.qty}
-                            sold={el.ticket_sold ?? el.sold_qty ?? 0}
+                            sold={ticketSoldMap[Number(el.id)] ?? el.ticket_sold ?? el.sold_qty ?? 0}
                             isAdmin={false}
                             onEdit={() => onEditTicket(el, index)}
                           />
@@ -2321,7 +2445,7 @@ export default MyEventDetail;
 //                 title={
 //                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
 //                     <div className="mb-3 md:mb-0">
-//                       <p className="text-grey">Total Pendapatan Event</p>
+//                       <p className="text-grey text-xs">Total Pendapatan Event</p>
 //                       <h6>
 //                         Rp.
 //                         {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
@@ -2346,7 +2470,7 @@ export default MyEventDetail;
 //                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total Penjualan Online</p>
+//                       <p className="text-grey text-xs">Total Penjualan Online</p>
 //                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">
@@ -2357,7 +2481,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total Penjualan Offline</p>
+//                       <p className="text-grey text-xs">Total Penjualan Offline</p>
 //                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">
@@ -2368,7 +2492,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total Transaksi</p>
+//                       <p className="text-grey text-xs">Total Transaksi</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
@@ -2376,7 +2500,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Transaksi Gagal</p>
+//                       <p className="text-grey text-xs">Transaksi Gagal</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
@@ -2384,7 +2508,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Transaksi Pending</p>
+//                       <p className="text-grey text-xs">Transaksi Pending</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
@@ -2392,7 +2516,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Ticket Terjual</p>
+//                       <p className="text-grey text-xs">Ticket Terjual</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
@@ -2400,7 +2524,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total Withdraw</p>
+//                       <p className="text-grey text-xs">Total Withdraw</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_withdraw || 0}</p>
@@ -2408,7 +2532,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total View</p>
+//                       <p className="text-grey text-xs">Total View</p>
 //                       <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_views || 0}</p>
@@ -2416,7 +2540,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Total Bookmarks</p>
+//                       <p className="text-grey text-xs">Total Bookmarks</p>
 //                       <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">0</p>
@@ -2424,7 +2548,7 @@ export default MyEventDetail;
 
 //                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
 //                     <Flex align="center" gap={7}>
-//                       <p className="text-grey">Jenis Tiket</p>
+//                       <p className="text-grey text-xs">Jenis Tiket</p>
 //                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
 //                     </Flex>
 //                     <p className="font-semibold">{eventData?.total_ticket || 0}</p>

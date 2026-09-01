@@ -238,6 +238,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
     eventData &&
       Post("transaction-offline", {
         event_id: eventData?.id,
+        is_ots: 1,
         payment_method: payment,
         admin_fee: ticketFee,
         tickets: ticket,
