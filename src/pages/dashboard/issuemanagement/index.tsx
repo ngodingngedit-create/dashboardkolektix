@@ -21,21 +21,23 @@ import config from "@/Config";
 import Cookies from "js-cookie";
 import moment from "moment";
 import { useSidebar } from "@/components/SidebarComponent";
+import { useTranslation } from "react-i18next";
 
 type UserOption = { user_id: number; name: string };
 
 // --- Sub-components ---
 
 const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
+    const { t } = useTranslation();
     return (
         <div className="w-[280px] bg-slate-50 text-slate-600 flex flex-col h-full border-r border-light-grey">
             <div className="p-4 border-b border-light-grey bg-white">
                 <div className="flex flex-col px-2">
                     <div className="flex items-center gap-2">
                         <Image src="/images/logo.png" alt="Kolektix Logo" width={32} height={32} className="object-contain" />
-                        <span className="font-bold text-slate-900 tracking-tight">Kolektix Work</span>
+                        <span className="font-bold text-slate-900 tracking-tight">{t("issue.work")}</span>
                     </div>
-                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest ml-10 leading-none mt-0.5">Spaces</p>
+                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest ml-10 leading-none mt-0.5">{t("issue.spaces")}</p>
                 </div>
             </div>
 
@@ -59,7 +61,7 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
                 <div className="px-4 space-y-1 pt-2">
                     <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:bg-slate-200/50 rounded-lg cursor-pointer">
                         <Icon icon="mdi:account-group-outline" width={18} />
-                        <span className="text-sm font-medium">Teams</span>
+                        <span className="text-sm font-medium">{t("issue.teams")}</span>
                     </div>
                 </div>
             </div>
@@ -68,12 +70,13 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
 };
 
 const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel, onSave }: any) => {
+    const { t } = useTranslation();
     return (
         <div className="px-6 py-4 space-y-4 bg-white border-b border-light-grey">
             <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-full cursor-pointer select-none">
                     <Icon icon="mdi:cube-outline" className="text-blue-600" width={16} />
-                    <span className="text-sm font-bold text-slate-700">Product Space</span>
+                    <span className="text-sm font-bold text-slate-700">{t("issue.productSpace")}</span>
                     <Icon icon="mdi:chevron-down" className="text-slate-400" width={16} />
                 </div>
 
@@ -81,7 +84,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                     <Icon icon="mdi:magnify" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width={16} />
                     <input
                         type="text"
-                        placeholder="Search tasks..."
+                        placeholder={t("issue.searchTasks")}
                         className="w-full bg-slate-100 text-sm text-slate-600 rounded-full py-2 pr-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all"
                     />
                 </div>
@@ -89,8 +92,8 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                 <div className="flex items-center gap-4 ml-auto">
                     <div className="flex items-center gap-3">
                         <div className="flex flex-col items-end">
-                            <span className="text-sm font-black text-slate-800">{project?.name || "New Task"}</span>
-                            <span className="text-[11px] font-medium text-slate-400">{project?.members?.length || 0} Members Active</span>
+                            <span className="text-sm font-black text-slate-800">{project?.name || t("issue.newTask")}</span>
+                            <span className="text-[11px] font-medium text-slate-400">{t("issue.membersActive", { count: project?.members?.length || 0 })}</span>
                         </div>
                         <div className="flex items-center -space-x-1.5">
                             <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white text-[10px] font-bold text-slate-600 flex items-center justify-center">JD</div>
@@ -105,13 +108,13 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                 <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
                         <Button size="sm" variant="flat" className="bg-slate-100 text-slate-600 rounded-full h-8 px-3 font-bold border-none" startContent={<Icon icon="mdi:filter-variant" width={14} />}>
-                            Filter
+                            {t("issue.filter")}
                         </Button>
                         <Button size="sm" variant="flat" className="bg-slate-100 text-slate-600 rounded-full h-8 px-3 font-bold border-none" startContent={<Icon icon="mdi:sort" width={14} />}>
-                            Sort
+                            {t("issue.sort")}
                         </Button>
                         <Button size="sm" variant="flat" className="bg-slate-100 text-slate-600 rounded-full h-8 px-3 font-bold border-none" startContent={<Icon icon="mdi:account-multiple-outline" width={14} />}>
-                            Assignee
+                            {t("issue.assignee")}
                         </Button>
                     </div>
                     <div className="flex items-center gap-2">
@@ -121,8 +124,8 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                             value={viewMode}
                             onChange={(value) => setViewMode(value as 'BOARD' | 'TABLE')}
                             data={[
-                                { label: 'Board', value: 'BOARD' },
-                                { label: 'Table', value: 'TABLE' },
+                                { label: t("issue.board"), value: 'BOARD' },
+                                { label: t("issue.table"), value: 'TABLE' },
                             ]}
                             styles={{
                                 root: { backgroundColor: '#f1f5f9' },
@@ -137,7 +140,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                             className="bg-blue-600 font-bold h-8 rounded-lg shadow-md shadow-blue-200"
                             startContent={<Icon icon="mdi:plus" width={16} />}
                         >
-                            Create Issue
+                            {t("issue.createIssue")}
                         </Button>
                     </div>
                 </div>
@@ -147,6 +150,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
 };
 
 const MembersSection = ({ formData, setFormData, readOnly, users }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[] }) => {
+    const { t } = useTranslation();
     const [newMember, setNewMember] = useState({ user_id: "", role: "developer" });
 
     const addMember = () => {
@@ -170,18 +174,18 @@ const MembersSection = ({ formData, setFormData, readOnly, users }: { formData: 
         <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
                 <FontAwesomeIcon icon={faUsers} className="text-primary" />
-                <h3 className="text-sm font-bold text-slate-800">Team Members</h3>
+                <h3 className="text-sm font-bold text-slate-800">{t("issue.teamMembers")}</h3>
             </div>
             {!readOnly && (
                 <div className="flex flex-wrap items-end gap-4 bg-slate-50 p-4 rounded-xl border border-light-grey shadow-sm">
                     <Dropdown>
                         <DropdownTrigger>
                             <Button variant="bordered" size="sm" className="min-w-[220px] bg-white justify-start">
-                                {selectedUser ? `${selectedUser.name} (#${selectedUser.user_id})` : "Pilih user..."}
+                                {selectedUser ? `${selectedUser.name} (#${selectedUser.user_id})` : t("issue.selectUser")}
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="User selection"
+                            aria-label={t("issue.userSelection")}
                             className="max-h-72 overflow-y-auto"
                             onAction={(key) => setNewMember({ ...newMember, user_id: String(key) })}
                         >
@@ -195,16 +199,16 @@ const MembersSection = ({ formData, setFormData, readOnly, users }: { formData: 
                     <Dropdown>
                         <DropdownTrigger>
                             <Button variant="bordered" size="sm" className="capitalize min-w-[140px] bg-white">
-                                Role: {newMember.role}
+                                {t("issue.role")}: {newMember.role}
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Role selection"
+                            aria-label={t("issue.roleSelection")}
                             onAction={(key) => setNewMember({ ...newMember, role: key as string })}
                         >
-                            <DropdownItem key="owner">Owner</DropdownItem>
-                            <DropdownItem key="developer">Developer</DropdownItem>
-                            <DropdownItem key="tester">Tester</DropdownItem>
+                            <DropdownItem key="owner">{t("issue.owner")}</DropdownItem>
+                            <DropdownItem key="developer">{t("issue.developer")}</DropdownItem>
+                            <DropdownItem key="tester">{t("issue.tester")}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
                     <Button color="primary" size="sm" isIconOnly onClick={addMember} className="h-[32px] w-[32px]">
@@ -240,6 +244,7 @@ const MembersSection = ({ formData, setFormData, readOnly, users }: { formData: 
 };
 
 const LabelsSection = ({ formData, setFormData, readOnly }: { formData: Project, setFormData: any, readOnly?: boolean }) => {
+    const { t } = useTranslation();
     const [newLabel, setNewLabel] = useState({ name: "", color: "#3B82F6" });
 
     const addLabel = () => {
@@ -262,13 +267,13 @@ const LabelsSection = ({ formData, setFormData, readOnly }: { formData: Project,
         <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
                 <FontAwesomeIcon icon={faTag} className="text-primary" />
-                <h3 className="text-sm font-bold text-slate-800">Project Labels</h3>
+                <h3 className="text-sm font-bold text-slate-800">{t("issue.projectLabels")}</h3>
             </div>
             {!readOnly && (
                 <div className="flex flex-wrap items-end gap-4 bg-slate-50 p-4 rounded-xl border border-light-grey shadow-sm">
                     <Input
-                        label="Label Name"
-                        placeholder="e.g. Frontend"
+                        label={t("issue.labelName")}
+                        placeholder={t("issue.labelNamePlaceholder")}
                         size="sm"
                         value={newLabel.name}
                         onChange={(e) => setNewLabel({ ...newLabel, name: e.target.value })}
@@ -276,7 +281,7 @@ const LabelsSection = ({ formData, setFormData, readOnly }: { formData: Project,
                         variant="bordered"
                     />
                     <div className="flex flex-col gap-1">
-                        <label className="text-xs text-slate-500 ml-1">Color</label>
+                        <label className="text-xs text-slate-500 ml-1">{t("issue.color")}</label>
                         <input
                             type="color"
                             className="h-10 w-16 p-0 border-2 border-light-grey rounded cursor-pointer"
@@ -319,6 +324,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
     users: UserOption[],
     loggedUserId?: number
 }) => {
+    const { t } = useTranslation();
     const [data, setData] = useState<Issue>({ ...issue });
     const [newComment, setNewComment] = useState("");
 
@@ -342,13 +348,13 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            <h3 className="text-lg font-bold">Issue Details</h3>
+                            <h3 className="text-lg font-bold">{t("issue.details")}</h3>
                         </ModalHeader>
                         <ModalBody className="gap-6 py-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="md:col-span-2 space-y-4">
                                     <Input
-                                        label="Title"
+                                        label={t("issue.title")}
                                         value={data.title}
                                         onChange={(e) => setData({ ...data, title: e.target.value })}
                                         variant="bordered"
@@ -358,7 +364,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                         }}
                                     />
                                     <Textarea
-                                        label="Description"
+                                        label={t("issue.description")}
                                         value={data.description}
                                         onChange={(e) => setData({ ...data, description: e.target.value })}
                                         variant="bordered"
@@ -370,11 +376,11 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                     />
 
                                     <div className="space-y-2">
-                                        <h4 className="text-sm font-semibold text-slate-600">Comments</h4>
+                                        <h4 className="text-sm font-semibold text-slate-600">{t("issue.comments")}</h4>
                                         {!readOnly && (
                                             <div className="flex gap-2">
                                                 <Input
-                                                    placeholder="Add a comment..."
+                                                    placeholder={t("issue.addComment")}
                                                     value={newComment}
                                                     onChange={(e) => setNewComment(e.target.value)}
                                                     variant="flat"
@@ -405,7 +411,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
 
                                 <div className="space-y-6 bg-slate-50 p-4 rounded-xl border border-light-grey">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t("issue.priority")}</label>
                                         <div className="flex gap-1">
                                             {['low', 'medium', 'high'].map((p) => (
                                                 <Button
@@ -416,17 +422,17 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                                     onClick={readOnly ? undefined : () => setData({ ...data, priority: p as any })}
                                                     className="capitalize h-7 min-w-0 flex-1 px-0 text-[10px] font-bold"
                                                 >
-                                                    {p}
+                                                    {t(`issue.${p}`)}
                                                 </Button>
                                             ))}
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assignees</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t("issue.assignees")}</label>
                                         <div className="flex flex-wrap gap-2">
                                             {projectMembers.map((m) => (
-                                                <Tooltip key={m.user_id} content={`User ID: ${m.user_id}`}>
+                                                <Tooltip key={m.user_id} content={`${t("issue.userId")}: ${m.user_id}`}>
                                                     <Chip
                                                         size="sm"
                                                         variant={data.assignees.includes(m.user_id) ? "solid" : "flat"}
@@ -447,7 +453,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Labels</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t("issue.labels")}</label>
                                         <div className="flex flex-wrap gap-1">
                                             {projectLabels.map((l) => (
                                                 <Chip
@@ -499,7 +505,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                     startContent={<Icon icon="mdi:trash-can-outline" width={18} />}
                                     className="font-bold text-red-500"
                                 >
-                                    Hapus Task
+                                    {t("issue.deleteTask")}
                                 </Button>
                                 <div className="flex gap-4">
                                     <Button 
@@ -508,7 +514,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                         startContent={<Icon icon="mdi:close" width={18} />}
                                         className="font-bold text-slate-600 px-8 h-11"
                                     >
-                                        Batal
+                                        {t("issue.cancel")}
                                     </Button>
                                     <Button 
                                         color="primary" 
@@ -516,7 +522,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                         startContent={<Icon icon="mdi:check" width={18} />}
                                         className="bg-[#194e9e] font-bold text-white shadow-lg shadow-blue-100 px-10 h-11"
                                     >
-                                        Simpan Perubahan
+                                        {t("issue.saveChanges")}
                                     </Button>
                                 </div>
                             </>
@@ -528,7 +534,7 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                                     className="font-bold px-10 h-11"
                                     startContent={<Icon icon="mdi:close" width={18} />}
                                 >
-                                    Tutup
+                                    {t("issue.close")}
                                 </Button>
                             </div>
                         )}
@@ -547,34 +553,34 @@ const COLUMN_DOT: Record<string, string> = {
     "Done": "bg-blue-800",
 };
 
-const EMPTY_CONTENT: Record<string, { title: string; desc: string; icon: string; showAdd: boolean }> = {
+const EMPTY_CONTENT_KEYS: Record<string, { titleKey: string; descKey: string; icon: string; showAdd: boolean }> = {
     "To Do": {
-        title: "Plan Your Work",
-        desc: "Break down your project into manageable tasks and start tracking progress.",
+        titleKey: "issue.emptyPlanTitle",
+        descKey: "issue.emptyPlanDesc",
         icon: "mdi:clipboard-text-outline",
         showAdd: true,
     },
     "Todo": {
-        title: "Plan Your Work",
-        desc: "Break down your project into manageable tasks and start tracking progress.",
+        titleKey: "issue.emptyPlanTitle",
+        descKey: "issue.emptyPlanDesc",
         icon: "mdi:clipboard-text-outline",
         showAdd: true,
     },
     "In Progress": {
-        title: "Nothing Active",
-        desc: "Drag tasks here when you start working on them to keep the team updated.",
+        titleKey: "issue.emptyActiveTitle",
+        descKey: "issue.emptyActiveDesc",
         icon: "mdi:account-cog-outline",
         showAdd: false,
     },
     "Doing": {
-        title: "Nothing Active",
-        desc: "Drag tasks here when you start working on them to keep the team updated.",
+        titleKey: "issue.emptyActiveTitle",
+        descKey: "issue.emptyActiveDesc",
         icon: "mdi:account-cog-outline",
         showAdd: false,
     },
     "Done": {
-        title: "Clean Slate",
-        desc: "Completed tasks will land here. Keep pushing forward!",
+        titleKey: "issue.emptyDoneTitle",
+        descKey: "issue.emptyDoneDesc",
         icon: "mdi:check-decagram-outline",
         showAdd: false,
     },
@@ -587,6 +593,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[], loggedUserId?: number }) => {
+    const { t } = useTranslation();
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [selectedIssue, setSelectedIssue] = useState<{ listIdx: number, issueIdx: number } | null>(null);
 
@@ -597,7 +604,7 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
             rows.push({
                 listIdx,
                 issueIdx,
-                title: issue.title || "Untitled Issue",
+                title: issue.title || t("issue.untitledIssue"),
                 status: list.name,
                 priority: issue.priority,
                 assignees: issue.assignees || [],
@@ -636,7 +643,7 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
             <div className="flex-1 overflow-auto p-6">
                 <Table
                     isStriped
-                    aria-label="Issue table"
+                    aria-label={t("issue.tableAriaLabel")}
                     selectionMode="single"
                     onRowAction={(key) => {
                         const row = rows[Number(key)];
@@ -647,12 +654,12 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                     }}
                 >
                     <TableHeader>
-                        <TableColumn key="title">Title</TableColumn>
-                        <TableColumn key="status">Status</TableColumn>
-                        <TableColumn key="priority">Priority</TableColumn>
-                        <TableColumn key="assignees">Assignees</TableColumn>
-                        <TableColumn key="labels">Labels</TableColumn>
-                        <TableColumn key="comments" align="end">Comments</TableColumn>
+                        <TableColumn key="title">{t("issue.title")}</TableColumn>
+                        <TableColumn key="status">{t("issue.status")}</TableColumn>
+                        <TableColumn key="priority">{t("issue.priority")}</TableColumn>
+                        <TableColumn key="assignees">{t("issue.assignees")}</TableColumn>
+                        <TableColumn key="labels">{t("issue.labels")}</TableColumn>
+                        <TableColumn key="comments" align="end">{t("issue.comments")}</TableColumn>
                     </TableHeader>
                     <TableBody items={rows.map((r, i) => ({ ...r, key: String(i) }))}>
                         {(item: any) => (
@@ -667,7 +674,7 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <span className={`text-xs font-bold uppercase ${PRIORITY_COLOR[item.priority] || 'text-slate-400'}`}>{item.priority}</span>
+                                    <span className={`text-xs font-bold uppercase ${PRIORITY_COLOR[item.priority] || 'text-slate-400'}`}>{t(`issue.${item.priority}`, { defaultValue: item.priority })}</span>
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex -space-x-1.5 items-center">
@@ -734,6 +741,7 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
 };
 
 const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[], loggedUserId?: number }) => {
+    const { t } = useTranslation();
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [selectedIssue, setSelectedIssue] = useState<{ listIdx: number, issueIdx: number } | null>(null);
 
@@ -757,7 +765,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
 
     const addIssue = (listIndex: number) => {
         const newIssue: Issue = {
-            title: "New Issue",
+            title: t("issue.newIssue"),
             description: "",
             priority: "medium",
             assignees: [],
@@ -781,7 +789,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
         <div className="flex-1 overflow-hidden flex flex-col bg-slate-50/50">
             <div className="flex gap-4 overflow-x-auto p-6 items-start h-full no-scrollbar">
                 {formData.board.lists.map((list, listIdx) => {
-                    const content = EMPTY_CONTENT[list.name] || { title: "Nothing here yet", desc: "No tasks yet", icon: "mdi:clipboard-text-outline", showAdd: false };
+                    const content = EMPTY_CONTENT_KEYS[list.name] || { titleKey: "issue.emptyDefaultTitle", descKey: "issue.emptyDefaultDesc", icon: "mdi:clipboard-text-outline", showAdd: false };
                     return (
                     <div key={listIdx} className="min-w-[320px] max-w-[320px] flex flex-col max-h-full bg-slate-100/70 rounded-2xl p-3">
                         <div className="flex justify-between items-center mb-3 px-1">
@@ -798,7 +806,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                                         </Button>
                                     </DropdownTrigger>
                                     <DropdownMenu onAction={(key) => key === 'delete' && removeList(listIdx)}>
-                                        <DropdownItem key="delete" color="danger" className="text-danger">Delete Column</DropdownItem>
+                                        <DropdownItem key="delete" color="danger" className="text-danger">{t("issue.deleteColumn")}</DropdownItem>
                                     </DropdownMenu>
                                 </Dropdown>
                             )}
@@ -810,11 +818,11 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                                     <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                                         <Icon icon={content.icon} width={24} />
                                     </div>
-                                    <span className="text-sm font-bold text-slate-600">{content.title}</span>
-                                    <span className="text-xs text-slate-400 leading-relaxed">{content.desc}</span>
+                                    <span className="text-sm font-bold text-slate-600">{t(content.titleKey)}</span>
+                                    <span className="text-xs text-slate-400 leading-relaxed">{t(content.descKey)}</span>
                                     {content.showAdd && !readOnly && (
                                         <Button size="sm" variant="flat" className="mt-1 bg-blue-50 text-blue-600 font-bold rounded-full h-8 px-3 border-none" startContent={<Icon icon="mdi:plus" width={14} />}>
-                                            Add First Task
+                                            {t("issue.addFirstTask")}
                                         </Button>
                                     )}
                                 </div>
@@ -829,7 +837,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                                 >
                                     <CardBody className="p-4 space-y-3">
                                         <div className="flex justify-between items-start gap-2">
-                                            <span className="font-bold text-sm text-slate-700 text-left line-clamp-2 leading-snug group-hover/card:text-blue-600 transition-colors">{issue.title || "Untitled Issue"}</span>
+                                            <span className="font-bold text-sm text-slate-700 text-left line-clamp-2 leading-snug group-hover/card:text-blue-600 transition-colors">{issue.title || t("issue.untitledIssue")}</span>
                                         </div>
 
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
@@ -883,7 +891,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                                     onClick={() => addIssue(listIdx)}
                                     className="text-slate-400 hover:text-slate-600 font-bold justify-start px-2 h-10 hover:bg-slate-50 transition-colors"
                                 >
-                                    Create
+                                    {t("issue.create")}
                                 </Button>
                             )}
                         </div>
@@ -922,6 +930,7 @@ const BoardSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
 // --- Main Page Component ---
 
 const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, handleSubmit, users }: any) => {
+    const { t } = useTranslation();
     return (
         <div className="h-full flex flex-col bg-slate-50/50">
             <div className="flex-1 overflow-y-auto p-6 md:p-10 pb-32">
@@ -935,15 +944,15 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                    <span>Workspace</span>
+                                    <span>{t("issue.workspace")}</span>
                                     <Icon icon="mdi:chevron-right" width={12} />
-                                    <span className="text-blue-600">New Task</span>
+                                    <span className="text-blue-600">{t("issue.newTask")}</span>
                                 </div>
-                                <h1 className="text-xl md:text-2xl font-black text-slate-800">Buat Task / Issue Baru</h1>
-                                <p className="text-sm text-slate-500 mt-0.5">Lengkapi rincian di bawah, lalu simpan untuk membuat project workspace baru.</p>
+                                <h1 className="text-xl md:text-2xl font-black text-slate-800">{t("issue.newTaskIssue")}</h1>
+                                <p className="text-sm text-slate-500 mt-0.5">{t("issue.newTaskDescription")}</p>
                             </div>
                             <Chip variant="flat" className="bg-blue-50 text-blue-600 border border-blue-100 font-bold self-start md:self-auto">
-                                Draft
+                                {t("issue.draft")}
                             </Chip>
                         </div>
                     </div>
@@ -953,16 +962,16 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">01</div>
                             <div>
-                                <h2 className="text-sm font-black text-slate-800">Informasi Dasar</h2>
-                                <p className="text-xs text-slate-400">Nama dan deskripsi task baru Anda</p>
+                                <h2 className="text-sm font-black text-slate-800">{t("issue.basicInformation")}</h2>
+                                <p className="text-xs text-slate-400">{t("issue.basicInformationDescription")}</p>
                             </div>
                         </div>
                         <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
                             <CardBody className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
                                 <div>
                                     <Input
-                                        label="Task Name *"
-                                        placeholder="e.g. Mobile Ticketing Platform"
+                                        label={t("issue.taskName")}
+                                        placeholder={t("issue.taskNamePlaceholder")}
                                         labelPlacement="outside"
                                         size="sm"
                                         value={formData.name || ""}
@@ -975,12 +984,12 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                                             inputWrapper: "border-light-grey hover:border-slate-300 focus-within:!border-primary transition-colors rounded-xl bg-white"
                                         }}
                                     />
-                                    <p className="text-[11px] text-slate-400 mt-1.5">Nama unik untuk task/project Anda.</p>
+                                    <p className="text-[11px] text-slate-400 mt-1.5">{t("issue.taskNameHint")}</p>
                                 </div>
                                 <div>
                                     <Textarea
-                                        label="Description"
-                                        placeholder="Describe the purpose of this task..."
+                                        label={t("issue.description")}
+                                        placeholder={t("issue.taskDescriptionPlaceholder")}
                                         labelPlacement="outside"
                                         size="sm"
                                         minRows={1}
@@ -1003,8 +1012,8 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">02</div>
                             <div>
-                                <h2 className="text-sm font-black text-slate-800">Tim & Label</h2>
-                                <p className="text-xs text-slate-400">Atur anggota dan label untuk kolaborasi</p>
+                                <h2 className="text-sm font-black text-slate-800">{t("issue.teamAndLabels")}</h2>
+                                <p className="text-xs text-slate-400">{t("issue.teamAndLabelsDescription")}</p>
                             </div>
                         </div>
                         <Card className="border border-light-grey shadow-none rounded-2xl overflow-visible" shadow="none">
@@ -1022,8 +1031,8 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">03</div>
                             <div>
-                                <h2 className="text-sm font-black text-slate-800">Struktur Board Awal</h2>
-                                <p className="text-xs text-slate-400">{formData.board.name} — dibuat otomatis saat project tersimpan</p>
+                                <h2 className="text-sm font-black text-slate-800">{t("issue.boardStructure")}</h2>
+                                <p className="text-xs text-slate-400">{t("issue.boardStructureDescription", { name: formData.board.name })}</p>
                             </div>
                         </div>
                         <Card className="border-2 border-dashed border-primary-light-200 shadow-none rounded-2xl overflow-visible" shadow="none">
@@ -1035,7 +1044,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-bold text-slate-700 truncate">{l.name}</p>
-                                            <p className="text-[11px] text-slate-400">{l.issues.length} issue</p>
+                                            <p className="text-[11px] text-slate-400">{t("issue.issueCount", { count: l.issues.length })}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -1057,7 +1066,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                             onClick={() => setViewMode('BOARD')}
                             className="px-8 font-bold text-slate-600 h-11"
                         >
-                            Batal
+                            {t("issue.cancel")}
                         </Button>
                         <Button
                             color="primary"
@@ -1066,7 +1075,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                             onClick={handleSubmit}
                             className="bg-blue-600 px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
                         >
-                            Simpan Task
+                            {t("issue.saveTask")}
                         </Button>
                     </div>
                 </div>
@@ -1076,6 +1085,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
 };
 
 const IssueManagement = () => {
+    const { t } = useTranslation();
     const router = useRouter();
     const { collapse } = useSidebar();
     const loggedUser = useLoggedUser();
@@ -1228,14 +1238,14 @@ const IssueManagement = () => {
         try {
             if (selectedProject?.id) {
                 await Put(`projects/${selectedProject.id}`, formData);
-                toast.success("Project updated successfully");
+                toast.success(t("issue.projectUpdatedSuccess"));
             } else {
                 await Post("projects", formData);
-                toast.success("Project created successfully");
+                toast.success(t("issue.projectCreatedSuccess"));
             }
             fetchProjects();
         } catch (error) {
-            toast.error("Failed to save project");
+            toast.error(t("issue.failedSaveProject"));
         }
     };
 
@@ -1261,7 +1271,7 @@ const IssueManagement = () => {
                     {loading ? (
                          <div className="flex items-center justify-center h-full gap-3 text-slate-400">
                              <Icon icon="mdi:loading" className="animate-spin" width={24} />
-                             <span className="font-bold">Syncing Workspace...</span>
+                             <span className="font-bold">{t("issue.syncing")}</span>
                          </div>
                     ) : (
                         viewMode === 'FORM' ? (

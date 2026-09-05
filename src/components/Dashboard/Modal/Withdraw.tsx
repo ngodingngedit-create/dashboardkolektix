@@ -641,7 +641,21 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug,
                     className="mt-2"
                   />
                   <ScrollShadow orientation="horizontal" className="max-w-full flex gap-2 px-4 pb-3 mt-3">
+                    {/* Tombol tarik semua saldo — paling depan, highlight biru */}
+                    {availableBalance >= 10000 && (
+                      <div
+                        onClick={() => setAmount(availableBalance.toString())}
+                        className={`cursor-pointer flex rounded-2xl items-center justify-center py-2 px-4 border transition-colors ${
+                          amount !== availableBalance.toString()
+                            ? "bg-primary text-white border-primary hover:bg-primary-dark"
+                            : "bg-primary-dark text-white border-primary-dark font-semibold"
+                        }`}
+                      >
+                        <p className="whitespace-nowrap">Tarik Semua</p>
+                      </div>
+                    )}
                     {[
+                      { label: "Rp10.000", value: "10000" },
                       { label: "Rp100.000", value: "100000" },
                       { label: "Rp500.000", value: "500000" },
                       { label: "Rp1.000.000", value: "1000000" },
@@ -662,17 +676,6 @@ export default function TarikDanaModal({ isOpen, setIsOpen, onSubmit, eventSlug,
                           <p className="whitespace-nowrap">{item.label}</p>
                         </div>
                       ))}
-                    {/* Tombol tarik semua saldo */}
-                    {availableBalance >= 10000 && (
-                      <div
-                        onClick={() => setAmount(availableBalance.toString())}
-                        className={`cursor-pointer flex rounded-2xl items-center justify-center py-2 px-4 border ${
-                          amount !== availableBalance.toString() ? "text-dark-grey border-primary-light-200" : "text-primary-dark border-primary-dark"
-                        }`}
-                      >
-                        <p className="whitespace-nowrap">Tarik Semua</p>
-                      </div>
-                    )}
                   </ScrollShadow>
                 </div>
 

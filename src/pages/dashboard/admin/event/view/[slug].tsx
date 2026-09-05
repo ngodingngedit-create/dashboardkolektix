@@ -29,6 +29,7 @@ import _ from "lodash";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import QrCode from "@/components/QrCode";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 
 interface EventData {
   creator_id: string;
@@ -127,6 +128,7 @@ export const Context = createContext<{
 });
 
 const AdminEventDetailView = () => {
+  const { t } = useTranslation();
   const defaultForm: EventTicket = {
     ticket_type: "",
     ticket_category_id: 1,
@@ -486,18 +488,18 @@ const AdminEventDetailView = () => {
     <>
       <div className="p-5">
         <Breadcrumbs className="mb-5">
-          <BreadcrumbItem onPress={() => router.push("/dashboard/admin/event")}>Manajemen Event</BreadcrumbItem>
-          <BreadcrumbItem>Detail Event (Admin)</BreadcrumbItem>
+          <BreadcrumbItem onPress={() => router.push("/dashboard/admin/event")}>{t("admin.event.view.slug.manajemen.event")}</BreadcrumbItem>
+          <BreadcrumbItem>{t("admin.event.view.slug.detail.event.admin")}</BreadcrumbItem>
         </Breadcrumbs>
         <div className="flex items-center mb-4 gap-4">
           <button
             onClick={() => router.push("/dashboard/admin/event")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali"
+            aria-label={t("admin.event.view.slug.kembali")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
-          <h1 className="text-dark m-0">Detail Event (Admin View)</h1>
+          <h1 className="text-dark m-0">{t("admin.event.view.slug.detail.event.admin.view")}</h1>
         </div>
         <div className="flex flex-col md:flex-row lg:flex gap-2">
           <div className="max-w-[300px]">
@@ -519,11 +521,11 @@ const AdminEventDetailView = () => {
             />
 
             <div className="flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4">
-              <h5 className="text-lg font-semibold mb-2">Share your event link</h5>
+              <h5 className="text-lg font-semibold mb-2">{t("admin.event.view.slug.share.your.event.link")}</h5>
               <QrCode slug={window.location.hostname === "dashboard.kolektix.com" ? `https://kolektix.com/event/${data.slug}` : `${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
               {
                 <Button
-                  label="Download QR Code"
+                  label={t("admin.event.view.slug.download.qr.code")}
                   color="primary"
                   className="mt-4"
                   onClick={() => {
@@ -540,10 +542,10 @@ const AdminEventDetailView = () => {
             </div>
 
             <div className="text-center w-full my-4">
-              <Button label="Check-in" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
+              <Button label={t("admin.event.view.slug.check.in")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
             </div>
             <div className="text-center w-full my-4">
-              <Button label="Penjualan" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
+              <Button label={t("admin.event.view.slug.penjualan")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
             </div>
           </div>
 
@@ -553,54 +555,54 @@ const AdminEventDetailView = () => {
                 title={
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
-                      <p className="text-grey">Total Pendapatan Event</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.pendapatan.event")}</p>
                       <h6>
-                        Rp.
+                        {t("admin.event.view.slug.rp")}
                         {(eventData?.total_pendapatan || 0).toLocaleString("id-ID")}
                       </h6>
                     </div>
-                    <Button color="primary" label="Tarik Dana" startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    <Button color="primary" label={t("admin.event.view.slug.tarik.dana")} startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
                   </div>
                 }
               >
                 <Stack p={20} pt={0} gap={10}>
                   <Divider />
                   <Text size="sm" fw={600} c="gray">
-                    Riwayat Tarik Dana
+                    {t("admin.event.view.slug.riwayat.tarik.dana")}
                   </Text>
                   <WithdrawHistoryList user_id={user?.id ?? 0} setUpdate={updateWithdrawHistory} />
                 </Stack>
               </AccordionItem>
             </Accordion>
 
-            <Accordion selectedKeys={selectedKeys} onSelectionChange={setSelectedKeys} className="rounded-lg shadow-sm p-0" aria-label="Event Data Accordion">
-              <AccordionItem key="1" title="Statistik Event" className="border border-primary-light-200 px-4 rounded-lg">
+            <Accordion selectedKeys={selectedKeys} onSelectionChange={setSelectedKeys} className="rounded-lg shadow-sm p-0" aria-label={t("admin.event.view.slug.event.data.accordion")}>
+              <AccordionItem key="1" title={t("admin.event.view.slug.statistik.event")} className="border border-primary-light-200 px-4 rounded-lg">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan Online</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.penjualan.online")}</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
-                      Rp
+                      {t("admin.event.view.slug.rp.2")}
                       {(eventData?.total_price_sell_online || 0).toLocaleString("id-ID")}
                     </p>
                   </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Penjualan Offline</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.penjualan.offline")}</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
-                      Rp
+                      {t("admin.event.view.slug.rp.2")}
                       {(eventData?.total_price_sell_offline || 0).toLocaleString("id-ID")}
                     </p>
                   </div>
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Transaksi</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.transaksi")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
@@ -608,7 +610,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Transaksi Gagal</p>
+                      <p className="text-grey">{t("admin.event.view.slug.transaksi.gagal")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
@@ -616,7 +618,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Transaksi Pending</p>
+                      <p className="text-grey">{t("admin.event.view.slug.transaksi.pending")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
@@ -624,7 +626,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Ticket Terjual</p>
+                      <p className="text-grey">{t("admin.event.view.slug.ticket.terjual")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
@@ -632,7 +634,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Withdraw</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.withdraw")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_withdraw || 0}</p>
@@ -640,7 +642,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total View</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.view")}</p>
                       <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_views || 0}</p>
@@ -648,7 +650,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Total Bookmarks</p>
+                      <p className="text-grey">{t("admin.event.view.slug.total.bookmarks")}</p>
                       <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">0</p>
@@ -656,7 +658,7 @@ const AdminEventDetailView = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey">Jenis Tiket</p>
+                      <p className="text-grey">{t("admin.event.view.slug.jenis.tiket")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket || 0}</p>
@@ -667,7 +669,7 @@ const AdminEventDetailView = () => {
 
             <div className="border border-primary-light-200 rounded-lg shadow-sm">
               <Tabs className="flex flex-col" variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key.toString())}>
-                <Tab key="Detail" title="Detail" className="px-2">
+                <Tab key="Detail" title={t("admin.event.view.slug.detail")} className="px-2">
                   <Tabs
                     radius="full"
                     color="secondary"
@@ -677,10 +679,10 @@ const AdminEventDetailView = () => {
                       cursor: "border border-primary-base",
                     }}
                   >
-                    <Tab title="Deskripsi" className="px-2">
+                    <Tab title={t("admin.event.view.slug.deskripsi")} className="px-2">
                       <div dangerouslySetInnerHTML={{ __html: data.description }}></div>
                     </Tab>
-                    <Tab title="Syarat & Ketentuan" className="px-2">
+                    <Tab title={t("admin.event.view.slug.syarat.ketentuan")} className="px-2">
                       <div
                         className="ml-5"
                         dangerouslySetInnerHTML={{
@@ -690,10 +692,10 @@ const AdminEventDetailView = () => {
                     </Tab>
                   </Tabs>
                 </Tab>
-                <Tab key="Tiket" title="Tiket">
+                <Tab key="Tiket" title={t("admin.event.view.slug.tiket")}>
                   <div className="flex justify-between items-center px-3 py-2">
-                    <h6 className="text-lg font-semibold">Tiket</h6>
-                    <ButtonM variant="light" leftSection={<Icon icon="uiw:plus" />} size="xs" onClick={() => { setEditTicketData(defaultForm); showAddTicket(true); }}>Tambah Tiket</ButtonM>
+                    <h6 className="text-lg font-semibold">{t("admin.event.view.slug.tiket")}</h6>
+                    <ButtonM variant="light" leftSection={<Icon icon="uiw:plus" />} size="xs" onClick={() => { setEditTicketData(defaultForm); showAddTicket(true); }}>{t("admin.event.view.slug.tambah.tiket")}</ButtonM>
                   </div>
                   <div className="px-3">
                     {ticket.length > 0 &&
@@ -716,12 +718,12 @@ const AdminEventDetailView = () => {
                       ))}
                   </div>
                 </Tab>
-                <Tab key="Transaksi" title="Transaksi" className="px-2">
+                <Tab key="Transaksi" title={t("admin.event.view.slug.transaksi")} className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invoice or Email" value={filterValue} onChange={onSearchChange} />
+                          <Input type="text" placeholder={t("admin.event.view.slug.search.by.invoice.or.email")} value={filterValue} onChange={onSearchChange} />
                           <select 
                             onChange={onTransactionRowsPerPageChange} 
                             value={transactionRowsPerPage} 
@@ -734,11 +736,11 @@ const AdminEventDetailView = () => {
                         </div>
 
                         <div className="flex gap-4 mb-4 items-center">
-                          <Button label="All" onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
-                          <Button label="Online" onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
-                          <Button label="Offline" onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />
+                          <Button label={t("admin.event.view.slug.all")} onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
+                          <Button label={t("admin.event.view.slug.online")} onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
+                          <Button label={t("admin.event.view.slug.offline")} onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />
                           <ButtonM className={`shrink-0`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
-                            Download
+                            {t("admin.event.view.slug.download")}
                           </ButtonM>
                         </div>
 
@@ -748,11 +750,11 @@ const AdminEventDetailView = () => {
                           </div>
                         ) : filteredTransactionItems.length === 0 ? (
                           <div className="text-center py-10">
-                            <p className="text-gray-500">No transactions found</p>
+                            <p className="text-gray-500">{t("admin.event.view.slug.no.transactions.found")}</p>
                           </div>
                         ) : (
                           <Table
-                            aria-label="Transaction Table"
+                            aria-label={t("admin.event.view.slug.transaction.table")}
                             isHeaderSticky
                             bottomContentPlacement="outside"
                             classNames={{
@@ -773,13 +775,13 @@ const AdminEventDetailView = () => {
                             }
                           >
                             <TableHeader>
-                              <TableColumn className="font-bold text-sm">No</TableColumn>
-                              <TableColumn className="font-bold text-sm">Email</TableColumn>
-                              <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-                              <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-                              <TableColumn className="font-bold text-sm">Status</TableColumn>
-                              <TableColumn className="font-bold text-sm">Type</TableColumn>
-                              <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.no")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.email")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.no.invoice")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.waktu.dikirim")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.status")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.type")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("admin.event.view.slug.aksi")}</TableColumn>
                             </TableHeader>
                             <TableBody 
                               items={filteredTransactionItems}
@@ -850,12 +852,12 @@ const AdminEventDetailView = () => {
                   </div>
                 </Tab>
 
-                <Tab key="Invitation" title="Invitation" className="px-2">
+                <Tab key="Invitation" title={t("admin.event.view.slug.invitation")} className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="px-5 py-3">
                         <div className="flex flex-col md:flex-row items-center justify-between mb-4 space-y-2 md:space-y-0 md:space-x-4">
-                          <Input type="text" placeholder="Search by Invitation Title" value={invitationFilter} onChange={onEventSearchChange} />
+                          <Input type="text" placeholder={t("admin.event.view.slug.search.by.invitation.title")} value={invitationFilter} onChange={onEventSearchChange} />
                           <select onChange={onEventRowsPerPageChange} value={rowsPerPage} className="border border-light-grey p-2 rounded-md w-full md:w-auto">
                             <option value={5}>5</option>
                             <option value={10}>10</option>
@@ -879,16 +881,16 @@ const AdminEventDetailView = () => {
                           </div>
                         </div>
                         {loading ? (
-                          <p>Loading...</p>
+                          <p>{t("admin.event.view.slug.loading")}</p>
                         ) : (
-                          <Table aria-label="Event Invitation Table" bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
+                          <Table aria-label={t("admin.event.view.slug.event.invitation.table")} bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
                             <TableHeader>
-                              <TableColumn className="font-bold text-md">No</TableColumn>
-                              <TableColumn className="font-bold text-md">Judul Undangan</TableColumn>
-                              <TableColumn className="font-bold text-md">Type</TableColumn>
-                              <TableColumn className="font-bold text-md">Qty</TableColumn>
-                              <TableColumn className="font-bold text-md">Status</TableColumn>
-                              <TableColumn className="font-bold text-md">Aksi</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.no")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.judul.undangan")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.type")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.qty")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.status")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("admin.event.view.slug.aksi")}</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
                               {(item) => {
@@ -933,44 +935,44 @@ const AdminEventDetailView = () => {
                   </div>
                 </Tab>
 
-                <Tab key="Penjualan" title="Penjualan" className="px-2">
+                <Tab key="Penjualan" title={t("admin.event.view.slug.penjualan")} className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 pb-3 border-b border-b-primary-light-200">
-                        <h6>Ringkasan</h6>
+                        <h6>{t("admin.event.view.slug.ringkasan")}</h6>
                         <p onClick={downloadLaporan} className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer">
                           <span>
                             <Tooltip content="download">
                               <FontAwesomeIcon icon={faDownload} className="mr-2" />
                             </Tooltip>
                           </span>
-                          Download Laporan
+                          {t("admin.event.view.slug.download.laporan")}
                         </p>
                       </div>
                       <div className="flex flex-col mx-3 gap-3 border-b py-3 border-b-primary-light-200">
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Total Penjualan Tiket Online</p>
+                          <p className="text-dark-grey">{t("admin.event.view.slug.total.penjualan.tiket.online")}</p>
                           <p className="font-semibold">
-                            Rp
+                            {t("admin.event.view.slug.rp.2")}
                             {(eventData?.total_price_sell || 0).toLocaleString("id-ID")}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Total Promo</p>
+                          <p className="text-dark-grey">{t("admin.event.view.slug.total.promo")}</p>
                           <p className="font-semibold">{`(-) Rp0`}</p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Biaya Layanan Penjualan Tiket Online</p>
+                          <p className="text-dark-grey">{t("admin.event.view.slug.biaya.layanan.penjualan.tiket.online")}</p>
                           <p className="font-semibold">
-                            Rp
+                            {t("admin.event.view.slug.rp.2")}
                             {(eventData?.total_admin_fee || 0).toLocaleString("id-ID")}
                           </p>
                         </div>
                       </div>
                       <div className="flex justify-between px-3 py-4">
-                        <p className="text-primary">Total</p>
+                        <p className="text-primary">{t("admin.event.view.slug.total")}</p>
                         <p className="font-semibold">
-                          Rp
+                          {t("admin.event.view.slug.rp.2")}
                           {((eventData?.total_price_sell || 0) - (eventData?.total_admin_fee || 0)).toLocaleString("id-ID")}
                         </p>
                       </div>

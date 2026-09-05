@@ -13,6 +13,7 @@ import _ from "lodash";
 import Link from "next/link";
 import { modals } from "@mantine/modals";
 import type { VenueListResponse } from "../../venue/type.d.ts";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
@@ -34,6 +35,7 @@ const tableCellStyle: React.CSSProperties = {
 };
 
 export default function AdminVenueManagement() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<VenueListResponse[]>([]);
   const [creators, setCreators] = useState<any[]>([]);
@@ -186,15 +188,15 @@ export default function AdminVenueManagement() {
           <Link href="/dashboard/admin">
             <button
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-              aria-label="Kembali ke Dashboard Admin"
+              aria-label={t("admin.venue.index.kembali.ke.dashboard.admin")}
             >
               <Icon icon="ph:arrow-left-bold" className="text-lg" />
             </button>
           </Link>
           <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>Venue Management</Text>
+            <Text size="1.8rem" fw={600}>{t("admin.venue.index.venue.management")}</Text>
             <Text size="sm" c="gray">
-              Kelola semua venue dari berbagai creator dalam satu tempat
+              {t("admin.venue.index.kelola.semua.venue.dari.berbagai.creator.dalam.satu.tempat")}
             </Text>
           </Stack>
         </Flex>
@@ -206,16 +208,16 @@ export default function AdminVenueManagement() {
           color="blue"
           className="shadow-sm"
         >
-          Tambah Venue
+          {t("admin.venue.index.tambah.venue")}
         </ButtonM>
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden border-light-grey">
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 220 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Penyelenggara</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.penyelenggara")}</Text>
             <Select
-              placeholder="Semua Creator"
+              placeholder={t("admin.venue.index.semua.creator")}
               data={creators.map(c => ({
                 value: String(c.id),
                 label: c.name || c.has_user?.name || "Unknown"
@@ -232,7 +234,7 @@ export default function AdminVenueManagement() {
             />
           </div>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Rentang Tanggal</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.rentang.tanggal")}</Text>
             <Flex gap={5}>
               <input
                 type="date"
@@ -255,11 +257,11 @@ export default function AdminVenueManagement() {
             </Flex>
           </div>
           <div style={{ width: 220 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.pencarian")}</Text>
             <Input
               isClearable
               value={search}
-              placeholder="Cari venue..."
+              placeholder={t("admin.venue.index.cari.venue")}
               onChange={(e: any) => setSearch(e.target.value)}
               onClear={() => {
                 setSearch("");
@@ -278,35 +280,35 @@ export default function AdminVenueManagement() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #eee" }}>
-                <th style={tableHeadStyle}>No</th>
+                <th style={tableHeadStyle}>{t("admin.venue.index.no")}</th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("creator.name")}>
-                  Creator {sortBy === "creator.name" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.venue.index.creator")} {sortBy === "creator.name" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("name")}>
-                  Info Venue {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.venue.index.info.venue")} {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th style={tableHeadStyle}>Kategori</th>
+                <th style={tableHeadStyle}>{t("admin.venue.index.kategori")}</th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("location_name")}>
-                  Lokasi {sortBy === "location_name" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.venue.index.lokasi")} {sortBy === "location_name" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("starting_price")}>
-                  Harga Mulai {sortBy === "starting_price" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.venue.index.harga.mulai")} {sortBy === "starting_price" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th style={tableHeadStyle}>Kapasitas</th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
+                <th style={tableHeadStyle}>{t("admin.venue.index.kapasitas")}</th>
+                <th style={{ ...tableHeadStyle, textAlign: "center" }}>{t("admin.venue.index.aksi")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={8} style={{ padding: "40px", textAlign: "center" }}>
-                    <Text c="dimmed">Sedang memuat data...</Text>
+                    <Text c="dimmed">{t("admin.venue.index.sedang.memuat.data")}</Text>
                   </td>
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ padding: "40px", textAlign: "center" }}>
-                    <Text c="dimmed">Data tidak ditemukan</Text>
+                    <Text c="dimmed">{t("admin.venue.index.data.tidak.ditemukan")}</Text>
                   </td>
                 </tr>
               ) : (
@@ -364,21 +366,21 @@ export default function AdminVenueManagement() {
                         </Text>
                       </td>
                       <td style={tableCellStyle}>
-                         <Text size="xs" fw={500}>{item.max_capacity || 0} Orang</Text>
+                         <Text size="xs" fw={500}>{item.max_capacity || 0} {t("admin.venue.index.orang")}</Text>
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
                         <Group gap={5} justify="center" wrap="nowrap">
-                          <Tooltip label="Lihat Venue">
+                          <Tooltip label={t("admin.venue.index.lihat.venue")}>
                             <ActionIcon variant="filled" color="blue" component={Link} href={`/venue/${item.slug}`} target="_blank" size="sm">
                               <Icon icon="ph:eye" />
                             </ActionIcon>
                           </Tooltip>
-                          <Tooltip label="Edit Venue">
+                          <Tooltip label={t("admin.venue.index.edit.venue")}>
                             <ActionIcon variant="filled" color="indigo" component={Link} href={`/dashboard/admin/venue/edit/${item.id}`} size="sm">
                               <Icon icon="ph:pencil-simple" />
                             </ActionIcon>
                           </Tooltip>
-                          <Tooltip label="Hapus Venue">
+                          <Tooltip label={t("admin.venue.index.hapus.venue")}>
                             <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item.id!)} size="sm">
                               <Icon icon="ph:trash" />
                             </ActionIcon>

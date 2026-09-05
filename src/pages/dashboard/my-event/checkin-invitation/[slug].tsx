@@ -12,9 +12,11 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import config from '@/Config';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 
 const Merch = () => {
     const router = useRouter();
+    const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement>(null);
     const highlightCodeOutlineRef = useRef<HTMLDivElement>(null);
     let qrScanner = useRef<QrScanner | null>(null);
@@ -70,7 +72,7 @@ const Merch = () => {
                     children: (
                         <Stack p="10" gap={20} align="center" w="100%">
                             <Text ta="center" size="1.3rem" fw={600}>
-                                Validasi Berhasil
+                                {t('event.validationSuccess')}
                             </Text>
                             <Icon icon="ix:success" className={`text-[128px] text-green-500`} />
                             <Card bg="gray.1" radius={10} px={25} w="100%">
@@ -81,7 +83,7 @@ const Merch = () => {
                                 </Flex>
                             </Card>
                             <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                Ulangi Scan
+                                {t('event.scanAgain')}
                             </Button>
                         </Stack>
                     )
@@ -95,18 +97,18 @@ const Merch = () => {
                     children: (
                         <Stack p="10" gap={20} align="center" w="100%">
                             <Text ta="center" size="1.3rem" fw={600}>
-                                Validasi Gagal
+                                {t('event.validationFailed')}
                             </Text>
                             <Icon icon="ix:error" className={`text-[128px] text-red-500`} />
                             <Card bg="gray.1" radius={10} px={25} w="100%">
                                 <Flex gap={5} align="center" justify="center" wrap="wrap" w="100%">
                                     <Text ta="center" c="red">
-                                        {data?.message || 'Terjadi kesalahan'}
+                                        {data?.message || t('common.error')}
                                     </Text>
                                 </Flex>
                             </Card>
                             <Button mt={-5} fullWidth onClick={() => modals.closeAll()} c="gray.8" bg="gray.1">
-                                Ulangi Scan
+                                {t('event.scanAgain')}
                             </Button>
                         </Stack>
                     )
@@ -166,10 +168,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Stack align="center" gap={20}>
                 <Stack gap={5} align="center" ta="center">
                     <Text size="1.7rem" fw={600}>
-                        Scan QR Code Invitations
+                        {t('event.scanQrInvitation')}
                     </Text>
                     <Text size="sm" c="gray">
-                        Silahkan arahkan QR code tiket ke kamera/webcam{' '}
+                        {t('event.scanQrDesc')}{' '}
                     </Text>
                 </Stack>
 

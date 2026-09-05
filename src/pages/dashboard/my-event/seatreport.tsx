@@ -12,6 +12,7 @@ import Link from "next/link";
 import moment from "moment";
 import * as XLSX from "xlsx";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 interface Identity {
   id: number;
@@ -74,6 +75,7 @@ interface Props {
 }
 
 const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const users = useLoggedUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -109,8 +111,8 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
   const handleExportExcel = () => {
     if (processedTransactions.length === 0) {
       notifications.show({
-        title: "Gagal Export",
-        message: "Tidak ada data untuk di-export",
+        title: t("event.exportFailed"),
+        message: t("event.noDataToExport"),
         color: "red",
       });
       return;
@@ -634,7 +636,7 @@ const SeatReport = ({ initialEvents, initialCreatorId }: Props) => {
     return (
       <div className="flex justify-center items-center h-[80vh]">
         <Loader size="lg" />
-        <Text ml="md">Memuat Data Event...</Text>
+        <Text ml="md">{t("seatreport.loadingEvent")}</Text>
       </div>
     );
   }
@@ -654,9 +656,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
 Full Report
 </Title>
-<Text size="sm" c="dimmed">
-Laporan penjualan dan data pemesan per kursi secara real-time.
-</Text>
+        <Text size="sm" c="dimmed">
+          {t("event.realtimeSalesReport")}
+        </Text>
 </Stack>
 </Flex>
 
@@ -665,7 +667,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
         <Flex justify="space-between" align="center" wrap="wrap" gap="md">
           {/* Left: Search Bar */}
           <TextInput
-            placeholder="Cari Nama, Invoice, atau Nomor Kursi..."
+            placeholder={t("seatreport.searchNameInvoiceSeat")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
@@ -675,7 +677,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
 
           {/* Right: Controls */}
           <Flex align="center" gap="sm">
-            <Text size="sm" fw={600} c="dimmed">Pilih Event untuk Melihat Data Seatmap:</Text>
+            <Text size="sm" fw={600} c="dimmed">{t("seatreport.selectEventData")}</Text>
             <Select
               value={selectedEventId}
               data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
@@ -688,14 +690,14 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                   setSearchQuery("");
                 }
               }}
-              placeholder="Pilih Event"
+              placeholder={t("event.selectEvent")}
               style={{ width: 200 }}
               searchable
               size="sm"
             />
 
             <Select
-              placeholder="Kategori Tiket"
+              placeholder={t("seatreport.ticketCategory")}
               value={selectedCategory}
               onChange={(val) => {
                 setSelectedCategory(val || categories[0]);
@@ -710,10 +712,10 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
             />
 
             <Select
-              placeholder="Semua Status"
+              placeholder={t("seatreport.allStatus")}
               value={selectedStatus}
               onChange={(val) => setSelectedStatus(val || "all")}
-              data={[{ value: "all", label: "Semua Status" }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
+              data={[{ value: "all", label: t("seatreport.allStatus") }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
               style={{ width: 160 }}
               size="sm"
             />
@@ -736,25 +738,25 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
               {/* Header */}
               <div className="p-4 border-b border-light-grey">
                 <Title order={3} size="h4" className="font-bold text-[#1a1c1e]">
-                  Pilih Kursi
+                  {t("event.selectSeat")}
                 </Title>
                 <Text size="xs" c="dimmed" mt={4}>
-                  Pilih kursi untuk melihat detail transaksi
+                  {t("event.selectSeatDesc")}
                 </Text>
 
                 {/* Legend */}
                 <Flex gap="md" mt="md" align="center" wrap="wrap">
                   <Flex align="center" gap={6}>
                     <div className="w-6 h-6 rounded border border-light-grey bg-white"></div>
-                    <Text size="xs" c="dimmed">Tersedia</Text>
+                    <Text size="xs" c="dimmed">{t("event.available")}</Text>
                   </Flex>
                   <Flex align="center" gap={6}>
                     <div className="w-6 h-6 rounded border border-light-grey bg-grey"></div>
-                    <Text size="xs" c="dimmed">Terisi</Text>
+                    <Text size="xs" c="dimmed">{t("event.occupied")}</Text>
                   </Flex>
                   <Flex align="center" gap={6}>
                     <div className="w-6 h-6 rounded border border-orange-500 bg-orange-500"></div>
-                    <Text size="xs" c="dimmed">Reserved</Text>
+                    <Text size="xs" c="dimmed">{t("event.reserved")}</Text>
                   </Flex>
                 </Flex>
               </div>
@@ -790,7 +792,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                           {parsed.seatName}
                           {parsed.session && (
                             <span className="block text-[9px] font-normal opacity-75 mt-0.5">
-                              Sesi {parsed.session}
+                              {t("event.session")} {parsed.session}
                             </span>
                           )}
                         </button>
@@ -800,7 +802,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 text-center">
                     <FontAwesomeIcon icon={faChair} size="3x" className="opacity-30" />
-                    <Text size="sm" fw={500} c="dimmed">Tidak ada kursi ditemukan</Text>
+                    <Text size="sm" fw={500} c="dimmed">{t("event.noSeatsFound")}</Text>
                   </div>
                 )}
               </div>
@@ -816,7 +818,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon icon={faTicket} className="text-primary-base text-sm" />
-                    <span>Tiket Festival</span>
+                    <span>{t("event.festivalTickets")}</span>
                   </div>
                 </div>
               </div>
@@ -847,7 +849,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                         >
                           <span className="truncate">{tName}</span>
                           <span className={`text-[10px] px-2 py-1 rounded font-bold ${isSelected ? "bg-white/20 text-white" : "bg-light-grey text-dark-grey"}`}>
-                            {countBought} TERJUAL
+                            {countBought} {t("event.soldLabel")}
                           </span>
                         </button>
                       );
@@ -855,13 +857,13 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-grey gap-2 text-center p-4">
                       <FontAwesomeIcon icon={faTicket} size="2x" className="opacity-20" />
-                      <p className="text-sm font-medium">Tidak ada jenis tiket tersedia</p>
+                      <p className="text-sm font-medium">{t("event.noTicketTypes")}</p>
                     </div>
                   )}
                 </div>
               </div>
               <div className="p-3 border-t border-light-grey bg-white text-center">
-                <Text size="xs" c="dimmed">Menampilkan jenis tiket tersedia</Text>
+                <Text size="xs" c="dimmed">{t("event.showingTicketTypes")}</Text>
               </div>
             </div>
           </div>
@@ -881,26 +883,26 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                     color="blue"
                     size="lg"
                     onClick={() => setSelectedSeat(null)}
-                    title="Kembali ke tabel"
+                    title={t("event.backToTable")}
                   >
                     <FontAwesomeIcon icon={faChevronRight} className="rotate-180" />
                   </ActionIcon>
                 )}
                 <div>
                   <Title order={3} size="h4" className="font-bold text-[#1a1c1e]">
-                    Rincian Laporan
+                    {t("event.reportDetails")}
                   </Title>
                   <Text size="xs" c="dimmed" mt={4}>
                     {selectedSeat
-                      ? `Detail transaksi untuk kursi ${parseSeatSession(selectedSeat).seatName}${parseSeatSession(selectedSeat).session ? ` (Sesi ${parseSeatSession(selectedSeat).session})` : ""}`
-                      : "Pilih kursi untuk melihat detail transaksi"}
+                      ? `${t("event.transactionDetailForSeat", { seat: parseSeatSession(selectedSeat).seatName })}${parseSeatSession(selectedSeat).session ? ` (${t("event.session")} ${parseSeatSession(selectedSeat).session})` : ""}`
+                      : t("event.selectSeatDesc")}
                   </Text>
                 </div>
               </div>
               <Flex align="center" gap="sm">
                 {!isFestival && (
                   <>
-                    <Text size="sm" fw={600} c="dimmed">Tampilan</Text>
+                    <Text size="sm" fw={600} c="dimmed">{t("event.view")}</Text>
                     <Select
                       size="sm"
                       value={seatViewMode}
@@ -910,7 +912,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                       }}
                       data={[
                         { value: "grid", label: "Seat" },
-                        { value: "table", label: "Tabel" }
+                        { value: "table", label: t("event.table") }
                       ]}
                       style={{ width: 130 }}
                     />
@@ -924,7 +926,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                     leftSection={<FontAwesomeIcon icon={faFileExcel} />}
                     onClick={handleExportExcel}
                   >
-                    Export
+                    {t("common.export")}
                   </Button>
                 )}
               </Flex>
@@ -940,34 +942,34 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                       <table className="min-w-full w-max text-left text-sm">
                         <thead>
                           <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">NO</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">{t("seatreport.colNo")}</th>
                             <th
                               onClick={() => handleSort('invoice')}
                               className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
                             >
-                              INVOICE {sortBy === 'invoice' && (sortDir === 'asc' ? '↑' : '↓')}
+                              {t("seatreport.colInvoice")} {sortBy === 'invoice' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
                             <th
                               onClick={() => handleSort('nama')}
                               className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
                             >
-                              NAMA PEMESAN {sortBy === 'nama' && (sortDir === 'asc' ? '↑' : '↓')}
+                              {t("seatreport.colBuyerName")} {sortBy === 'nama' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">JENIS TIKET</th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">NO. SEAT</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">{t("seatreport.colTicketType")}</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide">{t("seatreport.colSeatNo")}</th>
                             <th
                               onClick={() => handleSort('email')}
                               className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
                             >
-                              EMAIL {sortBy === 'email' && (sortDir === 'asc' ? '↑' : '↓')}
+                              {t("seatreport.colEmail")} {sortBy === 'email' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
                             <th
                               onClick={() => handleSort('status')}
                               className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600"
                             >
-                              STATUS {sortBy === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
+                              {t("seatreport.colStatus")} {sortBy === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
                             </th>
-                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide text-center">AKSI</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wide text-center">{t("seatreport.colActions")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-light-grey">
@@ -1022,7 +1024,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                   </Badge>
                                 </td>
                                 <td className="py-3 px-4 text-center">
-                                  <Tooltip label="Lihat Detail" withArrow position="top">
+                                  <Tooltip label={t("event.viewDetails")} withArrow position="top">
                                     <ActionIcon
                                       variant="light"
                                       color="blue"
@@ -1046,8 +1048,8 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                   <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
                                     <FontAwesomeIcon icon={faTicket} size="2x" className="text-gray-300" />
                                   </div>
-                                  <Text fw={600} c="gray.6" size="sm">Belum ada kursi terpilih</Text>
-                                  <Text c="gray.5" size="xs">Silakan pilih nomor kursi pada panel kiri untuk memuat rincian data pemesan.</Text>
+                                  <Text fw={600} c="gray.6" size="sm">{t("event.noSeatSelected")}</Text>
+                                  <Text c="gray.5" size="xs">{t("event.selectSeatPrompt")}</Text>
                                 </Flex>
                               </td>
                             </tr>
@@ -1079,7 +1081,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                         <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey bg-yellow-50/10">
                           <Stack gap="md">
                             <Text size="sm" fw={700} c="yellow.9" tt="uppercase">
-                              Informasi Kursi Reservasi (Reserved)
+                              {t("event.reservedSeatInfo")}
                             </Text>
                             <Divider color="light-grey" />
                             <Stack gap="sm">
@@ -1088,7 +1090,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                   <FontAwesomeIcon icon={faChair} className="text-yellow-600" size="sm" />
                                 </div>
                                 <div className="flex-1">
-                                  <Text size="xs" c="dimmed">Nomor Kursi</Text>
+                                  <Text size="xs" c="dimmed">{t("event.seatNumber")}</Text>
                                   <Text size="sm" fw={600} c="dark">
                                     {parseSeatSession(selectedSeat || "").seatName}
                                   </Text>
@@ -1100,15 +1102,15 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                     <FontAwesomeIcon icon={faCalendarDays} className="text-yellow-600" size="sm" />
                                   </div>
                                   <div className="flex-1">
-                                    <Text size="xs" c="dimmed">Sesi</Text>
+                                    <Text size="xs" c="dimmed">{t("event.session")}</Text>
                                     <Badge color="yellow" variant="light" size="sm">
-                                      Sesi {parseSeatSession(selectedSeat || "").session}
+                                      {t("event.session")} {parseSeatSession(selectedSeat || "").session}
                                     </Badge>
                                   </div>
                                 </div>
                               )}
                               <Text size="xs" c="dimmed" mt="xs">
-                                Kursi ini ditandai sebagai Reservasi (Reserved) dan tidak tersedia untuk dibeli oleh publik.
+                                {t("event.reservedSeatDesc")}
                               </Text>
                             </Stack>
                           </Stack>
@@ -1121,7 +1123,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                             <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
                               <Stack gap="md">
                                 <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                                  Informasi Pemesan
+                                  {t("event.ordererInfo")}
                                 </Text>
                                 <Divider color="light-grey" />
                                 <Stack gap="sm">
@@ -1130,7 +1132,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                       <FontAwesomeIcon icon={faUser} className="text-blue-600" size="sm" />
                                     </div>
                                     <div className="flex-1">
-                                      <Text size="xs" c="dimmed">Nama Pemesan</Text>
+                                      <Text size="xs" c="dimmed">{t("event.ordererName")}</Text>
                                       <Text size="sm" fw={600} c="dark">{info.transaction?.has_user?.name || "-"}</Text>
                                     </div>
                                   </div>
@@ -1139,7 +1141,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                       <FontAwesomeIcon icon={faEnvelope} className="text-blue-600" size="sm" />
                                     </div>
                                     <div className="flex-1">
-                                      <Text size="xs" c="dimmed">Email Pemesan</Text>
+                                      <Text size="xs" c="dimmed">{t("event.ordererEmail")}</Text>
                                       <Text size="sm" fw={600} c="dark">{info.transaction?.has_user?.email || "-"}</Text>
                                     </div>
                                   </div>
@@ -1151,7 +1153,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                             <Card withBorder radius="md" p="lg" shadow="sm" className="border-light-grey">
                               <Stack gap="md">
                                 <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                                  Detail Transaksi
+                                  {t("event.transactionDetails")}
                                 </Text>
                                 <Divider color="light-grey" />
                                 <Stack gap="sm">
@@ -1160,7 +1162,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                       <FontAwesomeIcon icon={faFileInvoice} className="text-blue-600" size="sm" />
                                     </div>
                                     <div className="flex-1">
-                                      <Text size="xs" c="dimmed">Invoice No</Text>
+                                      <Text size="xs" c="dimmed">{t("dp.invoiceNo")}</Text>
                                       {info.transaction?.invoice_no ? (
                                         <Link href={`/success/${info.transaction.invoice_no}`} className="text-blue-600 hover:underline font-semibold font-mono text-sm">
                                           {info.transaction.invoice_no}
@@ -1175,7 +1177,7 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                       <FontAwesomeIcon icon={faTicket} className="text-blue-600" size="sm" />
                                     </div>
                                     <div className="flex-1">
-                                      <Text size="xs" c="dimmed">Status Pembayaran</Text>
+                                      <Text size="xs" c="dimmed">{t("event.paymentStatus")}</Text>
                                       {info.transaction?.payment_status ? (
                                         <Badge
                                           size="sm"
@@ -1204,17 +1206,17 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                             <Card withBorder radius="md" p={0} shadow="sm" className="border-light-grey">
                               <div className="p-4 border-b border-light-grey bg-blue-50/50">
                                 <Text size="sm" fw={700} c="blue.7">
-                                  Data Pemilik Tiket
+                                  {t("event.ticketHolderData")}
                                 </Text>
                               </div>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                   <thead>
                                     <tr className="border-b border-light-grey bg-gray-50">
-                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Nama Lengkap</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">{t("seatreport.colFullName")}</th>
                                       <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Email</th>
-                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">No. Telp</th>
-                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">Tipe</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">{t("event.phoneNo")}</th>
+                                      <th className="py-3 px-4 text-xs font-bold text-gray-600 uppercase">{t("seatreport.colTipe")}</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-light-grey">
@@ -1228,11 +1230,11 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                                           <td className="py-3 px-4">
                                             {id.is_pemesan ? (
                                               <Badge variant="light" color="blue" size="sm">
-                                                Pemesan
+                                                {t("event.orderer")}
                                               </Badge>
                                             ) : (
                                               <Badge variant="light" color="gray" size="sm">
-                                                Peserta
+                                                {t("event.participant")}
                                               </Badge>
                                             )}
                                           </td>
@@ -1254,9 +1256,9 @@ Laporan penjualan dan data pemesan per kursi secara real-time.
                     <FontAwesomeIcon icon={faChair} size="3x" className="text-blue-200" />
                   </div>
                   <div>
-                    <Text size="lg" fw={700} c="gray.7">Pilih Kursi</Text>
+                    <Text size="lg" fw={700} c="gray.7">{t("event.selectSeat")}</Text>
                     <Text size="sm" c="dimmed" mt="xs" className="max-w-xs mx-auto">
-                      Klik salah satu nomor kursi di sebelah kiri untuk melihat laporan data pembeli yang lengkap.
+                      {t("seatreport.clickSeatHint")}
                     </Text>
                   </div>
                 </div>

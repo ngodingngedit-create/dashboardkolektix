@@ -35,6 +35,7 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { currencyFormat } from '@/utils/currencyFormat';
 import _ from 'lodash';
 import moment from 'moment';
+import { useTranslation } from 'react-i18next';
 
 
 
@@ -66,6 +67,7 @@ interface Transaction {
 }
 
 const DetailEventTicket = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<number>(0);
@@ -335,7 +337,7 @@ const filteredOnlineTransactions = onlineList.filter((transaction: any) =>
 
 const handleOpenDetailOffline = (data: ResponseData['data'][number]) => {
   modals.open({
-    title: 'Detail Transaksi',
+    title: t("event.transactionDetails"),
     children: <ModalOfflineDetail data={data} />,
     centered: true,
     size: '80vw',
@@ -346,30 +348,30 @@ return (
   <>
   <div className="py-5 text-dark px-5">
     <Breadcrumbs className="mb-5">
-      <BreadcrumbItem href="/dashboard/my-event">Event Saya</BreadcrumbItem>
+      <BreadcrumbItem href="/dashboard/my-event">{t("event.myEvents")}</BreadcrumbItem>
       <BreadcrumbItem>{eventData?.name}</BreadcrumbItem>
-      <BreadcrumbItem onClick={() => setStep(0)}>Penjualan</BreadcrumbItem>
-      {step === 1 && <BreadcrumbItem>Tiket</BreadcrumbItem>}
+      <BreadcrumbItem onClick={() => setStep(0)}>{t("event.sales")}</BreadcrumbItem>
+      {step === 1 && <BreadcrumbItem>{t("event.tickets")}</BreadcrumbItem>}
     </Breadcrumbs>
     <Flex align="center" justify="space-between" gap={20} wrap="wrap">
       <div className='flex gap-2 mb-4 items-center'>
         <Button
-          label="Online"
+          label={t("event.online")}
           color={activeTab === 'Offline' ? 'primary' : 'secondary'}
           onClick={() => setActiveTab('Offline')}
         />
         <Button
-          label="Offline"
+          label={t("event.offline")}
           color={activeTab === 'Online' ? 'primary' : 'secondary'}
           onClick={() => setActiveTab('Online')}
         />
         {(activeTab === 'Online' && step == 1) && (
-          <Text fw={600} ml={10}>Tiket - OTS</Text>
+          <Text fw={600} ml={10}>{t("event.otsTickets")}</Text>
         )}
       </div>
       <Button
           className={`${step == 1 ? undefined : 'hidden'}`}
-          label="List Transaksi"
+          label={t("event.transactionList")}
           color={'secondary'}
           onClick={() => setStep(0)}
         />
@@ -383,17 +385,17 @@ return (
           </div>
           <div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
             <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-              <p className="text-grey">Total Pembelian Online</p>
+              <p className="text-grey">{t("event.totalOnlinePurchases")}</p>
               <p className="font-semibold">{onlineList.length}</p>
             </div>
             <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-              <p className="text-grey">Total Jumlah Tiket Online</p>
+              <p className="text-grey">{t("event.totalOnlineTicketQty")}</p>
               <p className="font-semibold">
                 {onlineList.reduce((acc: number, item: any) => acc + parseFloat(item.total_qty || 0), 0)}
               </p>
             </div>
             <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-              <p className="text-grey">Total Transaksi Online</p>
+              <p className="text-grey">{t("event.totalOnlineTransactions")}</p>
               <p className="font-semibold">
                 Rp{onlineList.reduce((acc: number, item: any) => acc + parseFloat(item.total_price || 0), 0).toLocaleString('id-ID')}
               </p>
@@ -403,7 +405,7 @@ return (
         <div className="mb-4 mt-4 flex justify-between">
           <div>
           <Button
-                label="Download Laporan"
+                       label={t("event.downloadReport")}
                 color="secondary"
                 onClick={() => exportToExcel(onlineTransactions, 'online_transactions')}
               />
@@ -423,35 +425,35 @@ return (
         >
           <TableHeader>
             <TableColumn key="no" allowsSorting>
-              No
+              {t("event.noLabel")}
             </TableColumn>
             <TableColumn key="name" allowsSorting>
-              Nama
+              {t("common.name")}
             </TableColumn>
             <TableColumn key="invoice_no" allowsSorting>
-              Nomor Invoice
+              {t("event.invoiceNumber")}
             </TableColumn>
             <TableColumn key="created_at" allowsSorting>
-              Tanggal & Waktu Pembelian
+              {t("event.purchaseDate")}
             </TableColumn>
             <TableColumn key="total_qty" allowsSorting>
-              Jumlah Tiket
+              {t("event.ticketQty")}
             </TableColumn>
             <TableColumn key="transaction_status_id" allowsSorting>
-              Status
+              {t("common.status")}
             </TableColumn>
             <TableColumn key="total_price" allowsSorting>
-              Jumlah Pembayaran
+              {t("event.paymentAmount")}
             </TableColumn>
             <TableColumn key="actions">
-              Aksi
+              {t("common.actions")}
             </TableColumn>
           </TableHeader>
           <TableBody
             items={currentItemsOnline}
             isLoading={isLoadingOnline}
             loadingContent={<Spinner label="Loading..." />}
-            emptyContent="Tidak ada transaksi"
+                  emptyContent={t("event.noTransactionData")}
           >
             {(item: any) => (
               <TableRow key={item.id}>
@@ -462,7 +464,7 @@ return (
                   if (columnKey === "name") {
                     return (
                       <TableCell>
-                        {item.has_user ? item.has_user.name : "Tidak Ada"}
+                        {item.has_user ? item.has_user.name : t("event.notAvailable")}
                       </TableCell>
                     );
                   }
@@ -561,22 +563,22 @@ return (
                     <ButtonM
                       onClick={() => setStep(1)}
                       rightSection={<Icon icon="hugeicons:cashier" />}
-                    >Penjualan Tiket OTS</ButtonM>
+                    >{t("event.otsTicketSales")}</ButtonM>
                   </Flex>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-                  <p className="text-grey">Total Pembelian Offline</p>
+                  <p className="text-grey">{t("event.totalOfflinePurchases")}</p>
                   <p className="font-semibold">{list.items.length}</p>
                 </div>
                 <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-                  <p className="text-grey">Total Jumlah Tiket</p>
+                  <p className="text-grey">{t("event.totalTicketQty")}</p>
                   <p className="font-semibold">
                   {list.items.reduce((acc: number, item: any) => acc + parseFloat(item.total_qty || 0), 0)}
                   </p>
                 </div>
                 <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 mt-4 text-center">
-                  <p className="text-grey">Total Transaksi Offline</p>
+                  <p className="text-grey">{t("event.totalOfflineTransactions")}</p>
                   <p className="font-semibold">
                     Rp
                     {list.items.reduce((acc: number, item: any) => acc + parseFloat(item.total_price || 0), 0).toLocaleString('id-ID')}
@@ -587,7 +589,7 @@ return (
               <div className="mb-4 mt-4 flex justify-between">
                 <div>
                 <Button
-                      label="Download Laporan"
+                label={t("event.downloadReport")}
                       color="secondary"
                       onClick={() => exportToExcel(list.items, 'offline_transactions')}
                     />
@@ -606,35 +608,35 @@ return (
               >
                 <TableHeader>
                   <TableColumn key="no" allowsSorting={false}>
-                    No
+                    {t("event.noLabel")}
                   </TableColumn>
                   {/* <TableColumn key="name" allowsSorting>
                     Nama
                   </TableColumn> */}
                   <TableColumn key="invoice_no" allowsSorting={false}>
-                    Nomor Invoice
+                    {t("event.invoiceNumber")}
                   </TableColumn>
                   <TableColumn key="created_at" allowsSorting={false}>
-                    Tanggal & Waktu Pembelian
+                    {t("event.purchaseDate")}
                   </TableColumn>
                   <TableColumn key="total_qty" allowsSorting={false}>
-                    Jumlah Tiket
+                    {t("event.ticketQty")}
                   </TableColumn>
                   <TableColumn key="transaction_status_id" allowsSorting={false}>
-                    Status
+                    {t("common.status")}
                   </TableColumn>
                   <TableColumn key="total_price" allowsSorting={false}>
-                    Jumlah Pembayaran
+                    {t("event.paymentAmount")}
                   </TableColumn>
                   <TableColumn key="actions">
-                    Aksi
+                    {t("common.actions")}
                   </TableColumn>
                 </TableHeader>
                 <TableBody
                   items={currentItems}
                   isLoading={isLoading}
                   loadingContent={<Spinner label="Loading..." />}
-                  emptyContent="Tidak ada transaksi"
+            emptyContent={t("event.noTransactionData")}
                 >
                   {(item) => (
                     <TableRow key={item.id}>
@@ -750,15 +752,15 @@ return (
                 <div className="flex max-w-2xl mx-auto justify-between items-center">
                   <div>
                     <p className="font-semibold mb-0.5">
-                      Total
-                      <span className="text-grey">{` (${totalCount} Tiket)`}</span>
+                      {t("event.total")}
+                      <span className="text-grey">{` (${totalCount} ${t("event.tickets")})`}</span>
                     </p>
                     <p className="font-semibold">
                       Rp{totalSubtotalPrice.toLocaleString('id-ID')}
                     </p>
                   </div>
                   <Button
-                    label="Pembayaran"
+                    label={t("event.processPayment")}
                     color="primary"
                     onClick={() => setShowModal(true)}
                     disabled={totalCount < 1}
@@ -797,33 +799,34 @@ return (
 export default DetailEventTicket;
 
 const ModalOfflineDetail = ({ data }: { data: ResponseData['data'][number] }) => {
+  const { t } = useTranslation();
   return (
     <Flex gap={30} wrap="wrap" className={`[&>*]:flex-grow`}>
       <Card withBorder radius={10} maw={400}>
         <Stack>
-          <Text fw={600}>No Invoice: {data.invoice_no}</Text>
+          <Text fw={600}>{t("event.invoiceNo")}: {data.invoice_no}</Text>
           <Divider />
           <Flex gap={10} wrap="wrap" className={`[&>*]:flex-grow`}>
             <TextInput
-              label="Waktu Transaksi"
+              label={t("event.transactionTime")}
               variant="filled"
               value={moment(data.created_at).format('DD MMMM YYYY - HH:mm')}
               readOnly
             />
             <TextInput
-              label="Total Tiket"
+              label={t("event.totalTicketsLabel")}
               variant="filled"
               value={data.total_qty}
               readOnly
             />
             <TextInput
-              label="Jumlah Pembayaran"
+              label={t("event.paymentAmount")}
               variant="filled"
               value={currencyFormat(parseInt(data.grandtotal))}
               readOnly
             />
             <TextInput
-              label="Metode Pembayaran"
+              label={t("event.paymentMethod")}
               variant="filled"
               value={_.capitalize(data?.payment_method?.account_name ?? '-')}
               readOnly
@@ -836,18 +839,18 @@ const ModalOfflineDetail = ({ data }: { data: ResponseData['data'][number] }) =>
             href={`${config['wsUrl']}transaction-document/${data.invoice_no}`}
             target="_blank"
             rightSection={<Icon icon="uiw:download" />}>
-            Unduh Etiket
+            {t("event.downloadEticket")}
           </ButtonM>
         </Stack>
       </Card>
       <Stack gap={8}>
-        <Text c="gray">Pemilik Tiket</Text>
+        <Text c="gray">{t("event.ticketHolder")}</Text>
         <Card className={``} p={0} radius={10} withBorder>
           <ScrollArea>
             <TableM
               w="100%"
               data={{
-                head: ['Nama', 'Email', 'No. Telp'],
+                head: [t("common.name"), 'Email', t("event.phoneNo")],
                 body: (data?.identities ?? []).map((e, i) => [
                   e.full_name,
                   e.email,

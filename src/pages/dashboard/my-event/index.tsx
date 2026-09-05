@@ -306,8 +306,10 @@ import EventCardCreator from "@/components/Card/EventCard/creator";
 import Button from "@/components/Button";
 import { useRouter } from "next/router";
 import { Modal } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 
 const MyEvent = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState<EventProps[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [status, setStatus] = useState<string>(""); // '' => Semua
@@ -396,21 +398,21 @@ const MyEvent = () => {
             <button
               onClick={() => router.push("/dashboard")}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-              aria-label="Kembali ke Dashboard"
+              aria-label={t("event.backToDashboard")}
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </button>
-            <h1 className="text-dark m-0">Event Saya</h1>
+            <h1 className="text-dark m-0">{t("event.myEvents")}</h1>
           </div>
           <div className="flex items-center gap-3">
             <InputField
               type="text"
               size="sm"
-              placeholder="Cari Event"
+              placeholder={t("event.searchEvent")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title="Cari">
+            <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title={t("event.search")}>
               <FontAwesomeIcon icon={faSearch} />
             </button>
           </div>
@@ -430,7 +432,7 @@ const MyEvent = () => {
         }}
       >
         {/* IMPORTANT: give each Tab a key so selection works reliably */}
-        <Tab key="" title="Semua Event">
+        <Tab key="" title={t("event.allEvents")}>
           {!loading ? (
             filteredData && filteredData.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10 my-5 px-5">
@@ -456,21 +458,21 @@ const MyEvent = () => {
               <div className="px-5 my-5">
                 {searchQuery && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Tidak ditemukan event untuk {searchQuery}</h3>
-                    <p className="text-sm text-muted-foreground">Coba rekomendasi di bawah atau ubah kata kunci pencarian.</p>
+                    <h3 className="text-lg font-semibold mb-2">{t("event.notFound", { query: searchQuery })}</h3>
+                    <p className="text-sm text-muted-foreground">{t("event.notFoundDesc")}</p>
                   </div>
                 )}
 
                 {!searchQuery || recommendations.length === 0 ? (
                   <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark">
                     <Image src={addevent} alt="draft" />
-                    <h3 className="text-xl font-semibold">Belum ada event</h3>
-                    <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                    <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
+                    <h3 className="text-xl font-semibold">{t("event.noEvents")}</h3>
+                    <p className="px-10">{t("event.emptyStateDesc")}</p>
+                    <Button color="primary" startIcon={faPlusCircle} label={t("dashboard.createEvent")} onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
                   </div>
                 ) : (
                   <div>
-                    <h4 className="mb-4 font-semibold">Rekomendasi Untukmu</h4>
+                    <h4 className="mb-4 font-semibold">{t("event.recommendations")}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {recommendations.map((event) => (
                         <EventCardCreator
@@ -503,7 +505,7 @@ const MyEvent = () => {
           )}
         </Tab>
 
-        <Tab key="3" title="Event Aktif">
+        <Tab key="3" title={t("event.activeEvents")}>
           {!loading ? (
             // When user clicks the tab, status will become '3' and getEventsByActiveTab will apply that filter,
             // then filteredData will further apply the searchQuery.
@@ -529,9 +531,9 @@ const MyEvent = () => {
             ) : (
               <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark px-5">
                 <Image src={addevent} alt="draft" />
-                <h3 className="text-xl font-semibold">Belum ada event yang dibuat</h3>
-                <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
+                <h3 className="text-xl font-semibold">{t("event.noEventsActive")}</h3>
+                <p className="px-10">{t("event.emptyStateDesc")}</p>
+                <Button color="primary" startIcon={faPlusCircle} label={t("dashboard.createEvent")} onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (
@@ -544,7 +546,7 @@ const MyEvent = () => {
           )}
         </Tab>
 
-        <Tab key="2" title="Event Draf">
+        <Tab key="2" title={t("event.draftEvents")}>
           {!loading ? (
             filteredData && filteredData.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10 my-5 px-5">
@@ -568,9 +570,9 @@ const MyEvent = () => {
             ) : (
               <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark px-5">
                 <Image src={addevent} alt="draft" />
-                <h3 className="text-xl font-semibold">Belum ada event draf</h3>
-                <p className="px-10">Mulai buat eventmu dengan klik button “Buat Event” di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
+                <h3 className="text-xl font-semibold">{t("event.noEventsDraft")}</h3>
+                <p className="px-10">{t("event.emptyStateDesc")}</p>
+                <Button color="primary" startIcon={faPlusCircle} label={t("dashboard.createEvent")} onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (
@@ -583,7 +585,7 @@ const MyEvent = () => {
           )}
         </Tab>
 
-        <Tab key="4" title="Event Lalu">
+        <Tab key="4" title={t("event.pastEvents")}>
           {!loading ? (
             filteredData && filteredData.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10 my-5 px-5">
@@ -607,9 +609,9 @@ const MyEvent = () => {
             ) : (
               <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark px-5">
                 <Image src={addevent} alt="draft" />
-                <h3 className="text-xl font-semibold">Belum ada event lalu</h3>
-                <p className="px-10">Mulai buat eventmu dengan klik button Buat Event di bawah.</p>
-                <Button color="primary" startIcon={faPlusCircle} label="Buat Event" onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
+                <h3 className="text-xl font-semibold">{t("event.noEventsPast")}</h3>
+                <p className="px-10">{t("event.emptyStateDesc")}</p>
+                <Button color="primary" startIcon={faPlusCircle} label={t("dashboard.createEvent")} onClick={() => router.push("/dashboard/create-event")} className="mt-3" />
               </div>
             )
           ) : (

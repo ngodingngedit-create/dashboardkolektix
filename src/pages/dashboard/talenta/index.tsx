@@ -14,6 +14,7 @@ import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Chec
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import useLoggedUser from '@/utils/useLoggedUser';
+import { useTranslation } from 'react-i18next';
 
 const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -100,13 +101,13 @@ type TalentSkillList = {
 
 const isBrowser = typeof window !== 'undefined';
 
-export const formTalentaSchema = z.object({
-  name: z.string().nonempty("Nama tidak boleh kosong."),
-  email: z.string().email("Format email tidak valid."),
-  phone: z.string().min(10, { message: "Format tidak sesuai" }).nonempty("Nomor telepon tidak boleh kosong."),
-  bio: z.string().nonempty("Bio tidak boleh kosong."),
-  description: z.string().nonempty("Deskripsi tidak boleh kosong."),
-  location: z.string().nonempty("Lokasi tidak boleh kosong."),
+const createFormTalentaSchema = (t: (key: string) => string) => z.object({
+  name: z.string().nonempty(t('talenta.validation.nameRequired')),
+  email: z.string().email(t('talenta.validation.emailInvalid')),
+  phone: z.string().min(10, { message: t('talenta.validation.phoneInvalid') }).nonempty(t('talenta.validation.phoneRequired')),
+  bio: z.string().nonempty(t('talenta.validation.bioRequired')),
+  description: z.string().nonempty(t('talenta.validation.descriptionRequired')),
+  location: z.string().nonempty(t('talenta.validation.locationRequired')),
   expected_salary: z.number().or(z.literal('')).optional(),
   expected_salary_min: z.number().or(z.literal('')).optional(),
   expected_salary_max: z.number().or(z.literal('')).optional(),
@@ -126,6 +127,9 @@ export const formTalentaSchema = z.object({
 
 const Talenta = () => {
   const router = useRouter();
+  const { t } = useTranslation();
+  const formTalentaSchema = createFormTalentaSchema(t);
+  const salaryStatusLabel = (status: string) => t(`talenta.salary.${status}`);
   const form = useForm<FormTalentaProps>({
     initialValues: {
       talenta_category_id: 1,
@@ -319,17 +323,17 @@ const Talenta = () => {
         .then((res: any) => {
           console.log('Response from API:', res);
           setLoading(false);
-          toast.success('Data berhasil disimpan');
+          toast.success(t('talenta.toast.saveSuccess'));
         })
         .catch((err: any) => {
           console.log(err);
           setLoading(false);
-          toast.error('Gagal menyimpan data');
+          toast.error(t('talenta.toast.saveFailed'));
         });
     } catch (e) {
       console.log("Error constructing payload:", e);
       setLoading(false);
-      toast.error('Gagal memproses data file');
+      toast.error(t('talenta.toast.fileProcessFailed'));
     }
   };
 
@@ -356,16 +360,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <div>
-<h1 className="text-2xl font-bold text-gray-800">Profil Talenta Saya</h1>
-<p className="text-sm text-gray-500 mt-1">Kelola data profil, keahlian, dan portofolio Anda sebagai talenta</p>
+<h1 className="text-2xl font-bold text-gray-800">{t('talenta.title')}</h1>
+              <p className="text-sm text-gray-500 mt-1">{t('talenta.subtitle')}</p>
 </div>
 </div>
             {formState === 'update' && (
               <div>
                 {!isEditMode ? (
-                  <Button label="Edit Profil Talenta" color="secondary" className="px-6 h-10" onClick={() => setIsEditMode(true)} />
+                  <Button label={t('talenta.editProfile')} color="secondary" className="px-6 h-10" onClick={() => setIsEditMode(true)} />
                 ) : (
-                  <Button label="Batal Edit" color="secondary" className="px-6 h-10 bg-red-500 text-white hover:bg-red-600 border-none" onClick={() => setIsEditMode(false)} />
+                  <Button label={t('talenta.cancelEdit')} color="secondary" className="px-6 h-10 bg-red-500 text-white hover:bg-red-600 border-none" onClick={() => setIsEditMode(false)} />
                 )}
               </div>
             )}
@@ -386,7 +390,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       <p className="text-gray-500 font-medium mb-1">{form.values.email}</p>
                       <p className="text-gray-500 text-sm mb-2">{form.values.phone}</p>
                       <Badge color="blue" variant="light" size="lg" className="mt-1 mb-4" tt="uppercase">
-                        {category?.find(c => c.id === form.values.talenta_category_id)?.name || 'Talenta'}
+                        {category?.find(c => c.id === form.values.talenta_category_id)?.name || t('talentaTrx.table.talent')}
                       </Badge>
                       
                       <div className="flex gap-2 mt-2 flex-wrap justify-center">
@@ -398,34 +402,34 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </div>
                     <div className="w-full md:w-2/3 flex flex-col gap-6">
                       <div>
-                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">Bio Singkat</Text>
+                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">{t('talenta.shortBio')}</Text>
                         <Text size="md" fw={500} c="dark.8">{form.values.bio || '-'}</Text>
                       </div>
                       <div>
-                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">Deskripsi Lengkap</Text>
+                        <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="mb-1">{t('talenta.fullDescription')}</Text>
                         <Text size="md" className="whitespace-pre-wrap">{form.values.description || '-'}</Text>
                       </div>
                       <Divider />
                       <Grid>
                         <Grid.Col span={6}>
-                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Lokasi Domisili</Text>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.location')}</Text>
                           <Text size="md" fw={500}>{form.values.location || '-'}</Text>
                         </Grid.Col>
                         <Grid.Col span={6}>
-                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Tahun Pengalaman</Text>
-                          <Text size="md" fw={500}>{form.values.experience_year ? `${form.values.experience_year} Tahun` : '-'}</Text>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.experienceYears')}</Text>
+                          <Text size="md" fw={500}>{form.values.experience_year ? t('talenta.yearsCount', { count: form.values.experience_year }) : '-'}</Text>
                         </Grid.Col>
                         <Grid.Col span={12}>
-                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Ekspektasi Gaji</Text>
-                          <Text size="md" fw={500} c="green.7">Rp {Number(form.values.expected_salary || 0).toLocaleString('id-ID')} / {form.values.salary_status}</Text>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.salaryExpectation')}</Text>
+                          <Text size="md" fw={500} c="green.7">Rp {Number(form.values.expected_salary || 0).toLocaleString('id-ID')} / {salaryStatusLabel(form.values.salary_status)}</Text>
                         </Grid.Col>
                         <Grid.Col span={6}>
-                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Ketersediaan</Text>
-                          <Text size="md" fw={500}>{form.values.is_available ? 'Tersedia' : 'Tidak Tersedia'}</Text>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.availability')}</Text>
+                          <Text size="md" fw={500}>{form.values.is_available ? t('talenta.available') : t('talenta.notAvailable')}</Text>
                         </Grid.Col>
                         <Grid.Col span={6}>
-                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">Status Verifikasi</Text>
-                          <Text size="md" fw={500}>{form.values.is_verified ? 'Terverifikasi' : 'Belum Diverifikasi'}</Text>
+                          <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.verificationStatus')}</Text>
+                          <Text size="md" fw={500}>{form.values.is_verified ? t('talenta.verified') : t('talenta.notVerified')}</Text>
                         </Grid.Col>
                       </Grid>
                     </div>
@@ -434,18 +438,18 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               ) : (
               <Tabs defaultValue="informasi-dasar" variant="outline" classNames={{ root: 'w-full', panel: 'pt-6' }}>
                 <Tabs.List>
-                  <Tabs.Tab value="informasi-dasar">Informasi Dasar</Tabs.Tab>
-                  <Tabs.Tab value="profil-profesional">Profil Profesional</Tabs.Tab>
-                  <Tabs.Tab value="portofolio">Portofolio</Tabs.Tab>
-                  <Tabs.Tab value="pengalaman">Pengalaman</Tabs.Tab>
-                  <Tabs.Tab value="banner">Banner / Promosi</Tabs.Tab>
-                  <Tabs.Tab value="sosial-media">Sosial Media</Tabs.Tab>
+                  <Tabs.Tab value="informasi-dasar">{t('talenta.tabs.basicInfo')}</Tabs.Tab>
+                  <Tabs.Tab value="profil-profesional">{t('talenta.tabs.professionalProfile')}</Tabs.Tab>
+                  <Tabs.Tab value="portofolio">{t('talenta.tabs.portfolio')}</Tabs.Tab>
+                  <Tabs.Tab value="pengalaman">{t('talenta.tabs.experience')}</Tabs.Tab>
+                  <Tabs.Tab value="banner">{t('talenta.tabs.banner')}</Tabs.Tab>
+                  <Tabs.Tab value="sosial-media">{t('talenta.tabs.socialMedia')}</Tabs.Tab>
                 </Tabs.List>
 
                 <Tabs.Panel value="informasi-dasar">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-700 mb-1 block">Foto Utama (Profil / Cover)</label>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">{t('talenta.mainPhoto')}</label>
                       <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors relative">
                         <input
                           type="file"
@@ -455,7 +459,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             if (e.target.files && e.target.files.length > 0) {
                               const file = e.target.files[0];
                               if (file.size > 2 * 1024 * 1024) {
-                                toast.error('Ukuran file maksimal 2MB');
+                                toast.error(t('talenta.toast.fileTooLarge'));
                                 e.target.value = '';
                                 return;
                               }
@@ -468,23 +472,23 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <img src={form.values.image instanceof File ? URL.createObjectURL(form.values.image) : form.values.image} alt="Preview" className="w-full h-full object-contain p-2" />
                             <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                               <FontAwesomeIcon icon={faUpload} className="text-white text-3xl mb-2" />
-                              <p className="text-white text-sm font-medium">Ganti Gambar</p>
+                              <p className="text-white text-sm font-medium">{t('talenta.changeImage')}</p>
                             </div>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                             <FontAwesomeIcon icon={faUpload} className="text-primary-base text-3xl mb-3" />
-                            <p className="mb-2 text-sm font-semibold text-gray-900">Unggah foto utama / avatar</p>
-                            <p className="text-xs text-gray-500">Direkomendasikan ukuran 1:1 dan tidak lebih dari 2mb</p>
+                            <p className="mb-2 text-sm font-semibold text-gray-900">{t('talenta.uploadMainPhoto')}</p>
+                            <p className="text-xs text-gray-500">{t('talenta.uploadMainPhotoHint')}</p>
                           </div>
                         )}
                       </label>
                     </div>
 
                     <TextInput
-                      label='Nama Lengkap'
+                      label={t('talenta.fullName')}
                       value={form.values.name}
-                      placeholder='Yogi Saputra'
+                      placeholder={t('talenta.fullNamePlaceholder')}
                       onChange={(e) => form.setValues({ name: e.target.value })}
                       error={form.errors.name}
                     />
@@ -493,33 +497,33 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       type='text'
                       label='Email'
                       value={form.values.email}
-                      placeholder='yogisaputra@gmail.com'
+                      placeholder={t('common.email')}
                       onChange={(e) => form.setValues({ email: e.target.value })}
                       error={form.errors.email}
                     />
 
                     <TextInput
                       type='text'
-                      label='No. Telepon / WhatsApp'
+                      label={t('talenta.phone')}
                       value={form.values.phone}
-                      placeholder='081234567890'
+                      placeholder={t('talenta.phonePlaceholder')}
                       onChange={(e) => form.setValues({ phone: e.target.value })}
                       error={form.errors.phone}
                     />
 
                     <TextInput
-                      label='Lokasi'
+                      label={t('talenta.location')}
                       value={form.values.location}
-                      placeholder='Jakarta, Indonesia'
+                      placeholder={t('talenta.locationPlaceholder')}
                       onChange={(e) => form.setValues({ location: e.target.value })}
                       error={form.errors.location}
                     />
 
                     <div className="md:col-span-2">
                       <TextInput
-                        label='Bio'
+                        label={t('talenta.bio')}
                         value={form.values.bio}
-                        placeholder='Professional drummer...'
+                        placeholder={t('talenta.bioPlaceholder')}
                         onChange={(e) => form.setValues({ bio: e.target.value })}
                         error={form.errors.bio}
                       />
@@ -529,9 +533,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       <Textarea
                         autosize
                         minRows={3}
-                        label='Deskripsi Lengkap'
+                        label={t('talenta.fullDescription')}
                         value={form.values.description}
-                        placeholder='Experienced session drummer...'
+                        placeholder={t('talenta.descriptionPlaceholder')}
                         onChange={(e) => form.setValues({ description: e.target.value })}
                         error={form.errors.description}
                       />
@@ -542,16 +546,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 <Tabs.Panel value="profil-profesional">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <Select
-                      label='Kategori Utama'
-                      placeholder="Pilih Kategori"
+                      label={t('talenta.mainCategory')}
+                      placeholder={t('talenta.selectCategory')}
                       data={category ? category.map(e => ({ label: e.name, value: String(e.id) })) : []}
                       value={String(form.values.talenta_category_id)}
                       onChange={e => form.setValues({ talenta_category_id: parseInt(e as string) })}
                     />
 
                     <MultiSelect
-                      label='Keahlian / Skill'
-                      placeholder="Pilih skill"
+                      label={t('talenta.skills')}
+                      placeholder={t('talenta.selectSkill')}
                       data={skillsList ? skillsList.map(e => ({ label: e.name, value: String(e.id) })) : []}
                       value={form.values.skills}
                       onChange={e => form.setValues({ skills: e })}
@@ -559,39 +563,39 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     />
 
                     <NumberInput
-                      label='Ekspektasi Gaji'
+                      label={t('talenta.salaryExpectation')}
                       value={form.values.expected_salary}
                       placeholder='15000000'
                       onChange={(v) => form.setValues({ expected_salary: v as number | '' })}
                     />
 
                     <NumberInput
-                      label='Ekspektasi Gaji Minimum'
+                      label={t('talenta.salaryMin')}
                       value={form.values.expected_salary_min}
                       placeholder='100000'
                       onChange={(v) => form.setValues({ expected_salary_min: v as number | '' })}
                     />
                     
                     <NumberInput
-                      label='Ekspektasi Gaji Maksimum'
+                      label={t('talenta.salaryMax')}
                       value={form.values.expected_salary_max}
                       placeholder='150000'
                       onChange={(v) => form.setValues({ expected_salary_max: v as number | '' })}
                     />
 
                     <Select
-                      label='Status Gaji (Periode)'
+                      label={t('talenta.salaryPeriod')}
                       data={[
-                        { label: 'Per Bulan', value: 'month' },
-                        { label: 'Per Event', value: 'event' },
-                        { label: 'Per Jam', value: 'hour' }
+                        { label: t('talenta.salary.month'), value: 'month' },
+                        { label: t('talenta.salary.event'), value: 'event' },
+                        { label: t('talenta.salary.hour'), value: 'hour' }
                       ]}
                       value={form.values.salary_status}
                       onChange={(v) => form.setValues({ salary_status: v || 'month' })}
                     />
 
                     <NumberInput
-                      label='Tahun Pengalaman'
+                      label={t('talenta.experienceYears')}
                       value={form.values.experience_year}
                       placeholder='10'
                       onChange={(v) => form.setValues({ experience_year: v as number | '' })}
@@ -599,7 +603,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                     <div className="md:col-span-2 flex flex-wrap gap-6 mt-2">
                       <Switch
-                        label="Tersedia (Available)"
+                        label={t('talenta.available')}
                         checked={form.values.is_available}
                         onChange={(e) => form.setValues({ is_available: e.currentTarget.checked })}
                       />
@@ -609,15 +613,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                 <Tabs.Panel value="portofolio">
                   <Group justify="space-between" mb="md">
-                    <h4 className="text-md font-semibold text-gray-700">Manajemen Portofolio</h4>
+                    <h4 className="text-md font-semibold text-gray-700">{t('talenta.portfolioManagement')}</h4>
                     <Button
                       onClick={() => form.insertListItem('portfolios', { title: '', description: '', type: 'image', file: null, url: '', event_name: '', event_date: '', is_featured: false, sort_order: 1 })}
                       className="px-4 py-2 text-white"
-                      label="Tambah Portofolio"
+                      label={t('talenta.addPortfolio')}
                     />
                   </Group>
 
-                  {form.values.portfolios.length === 0 && <Text size="sm" color="dimmed">Belum ada portofolio.</Text>}
+                  {form.values.portfolios.length === 0 && <Text size="sm" color="dimmed">{t('talenta.emptyPortfolio')}</Text>}
 
                   <Stack gap="md">
                     {form.values.portfolios.map((portfolio, index) => (
@@ -627,19 +631,19 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <FontAwesomeIcon icon={faTrash} />
                           </ActionIcon>
                         </div>
-                        <h5 className="font-semibold text-sm mb-4">Portofolio #{index + 1}</h5>
+                        <h5 className="font-semibold text-sm mb-4">{t('talenta.portfolioItem', { number: index + 1 })}</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <TextInput
-                            label="Judul"
+                            label={t('talenta.field.title')}
                             {...form.getInputProps(`portfolios.${index}.title`)}
                           />
                           <Select
-                            label="Tipe"
-                            data={[{ label: 'Image', value: 'image' }, { label: 'Video', value: 'video' }]}
+label={t('talenta.field.type')}
+                             data={[{ label: t('talenta.type.image'), value: 'image' }, { label: t('talenta.type.video'), value: 'video' }]}
                             {...form.getInputProps(`portfolios.${index}.type`)}
                           />
                           <div className="md:col-span-2 mt-2">
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">File Portofolio (Gambar / Video)</label>
+                            <label className="text-sm font-medium text-gray-700 mb-1 block">{t('talenta.portfolioFile')}</label>
                             <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors relative">
                               <input
                                 type="file"
@@ -649,7 +653,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                   if (e.target.files && e.target.files.length > 0) {
                                     const file = e.target.files[0];
                                     if (file.size > 2 * 1024 * 1024) {
-                                      toast.error('Ukuran file maksimal 2MB');
+                                      toast.error(t('talenta.toast.fileTooLarge'));
                                       e.target.value = '';
                                       return;
                                     }
@@ -662,52 +666,52 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                   <img src={form.values.portfolios[index].file instanceof File ? URL.createObjectURL(form.values.portfolios[index].file) : form.values.portfolios[index].file as string} alt="Preview" className="w-full h-full object-contain p-2" />
                                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                     <FontAwesomeIcon icon={faUpload} className="text-white text-3xl mb-2" />
-                                    <p className="text-white text-sm font-medium">Ganti Gambar</p>
+                                    <p className="text-white text-sm font-medium">{t('talenta.changeImage')}</p>
                                   </div>
                                 </div>
                               ) : form.values.portfolios[index].file ? (
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                   <FontAwesomeIcon icon={faUpload} className="text-primary-base text-3xl mb-3" />
-                                  <p className="text-sm text-green-600 font-medium mt-3 bg-green-50 px-3 py-1 rounded-full border border-green-200 line-clamp-1 max-w-[90%]">
-                                    File Video Terpilih: {form.values.portfolios[index].file instanceof File ? form.values.portfolios[index].file.name : 'Video sudah tersimpan'}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-2">Klik untuk mengganti file video</p>
+<p className="text-sm text-green-600 font-medium mt-3 bg-green-50 px-3 py-1 rounded-full border border-green-200 line-clamp-1 max-w-[90%]">
+                                     {t('talenta.videoSelected', { name: form.values.portfolios[index].file instanceof File ? form.values.portfolios[index].file.name : t('talenta.videoSaved') })}
+                                   </p>
+                                   <p className="text-xs text-gray-500 mt-2">{t('talenta.clickToChangeVideo')}</p>
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                   <FontAwesomeIcon icon={faUpload} className="text-primary-base text-3xl mb-3" />
-                                  <p className="mb-2 text-sm font-semibold text-gray-900">Unggah file portofolio</p>
-                                  <p className="text-xs text-gray-500">Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 5mb</p>
+<p className="mb-2 text-sm font-semibold text-gray-900">{t('talenta.uploadPortfolioFile')}</p>
+                                   <p className="text-xs text-gray-500">{t('talenta.uploadPortfolioHint')}</p>
                                 </div>
                               )}
                             </label>
                           </div>
                           <TextInput
-                            label="URL / Link"
+                            label={t('talenta.field.url')}
                             {...form.getInputProps(`portfolios.${index}.url`)}
                           />
                           <TextInput
-                            label="Nama Event"
+                            label={t('talenta.field.eventName')}
                             {...form.getInputProps(`portfolios.${index}.event_name`)}
                           />
                           <TextInput
-                            label="Tanggal Event"
+                            label={t('talenta.field.eventDate')}
                             type="date"
                             {...form.getInputProps(`portfolios.${index}.event_date`)}
                           />
                           <NumberInput
-                            label="Urutan Tampil"
+                            label={t('talenta.field.displayOrder')}
                             {...form.getInputProps(`portfolios.${index}.sort_order`)}
                           />
                           <Switch
-                            label="Featured Portofolio"
+                            label={t('talenta.field.featuredPortfolio')}
                             className="mt-8"
                             checked={form.values.portfolios[index].is_featured}
                             onChange={(e) => form.setFieldValue(`portfolios.${index}.is_featured`, e.currentTarget.checked)}
                           />
                           <div className="md:col-span-2">
                             <Textarea
-                              label="Deskripsi Portofolio"
+                              label={t('talenta.field.portfolioDescription')}
                               {...form.getInputProps(`portfolios.${index}.description`)}
                             />
                           </div>
@@ -719,15 +723,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                 <Tabs.Panel value="pengalaman">
                   <Group justify="space-between" mb="md">
-                    <h4 className="text-md font-semibold text-gray-700">Daftar Pengalaman</h4>
+                    <h4 className="text-md font-semibold text-gray-700">{t('talenta.experienceList')}</h4>
                     <Button
                       onClick={() => form.insertListItem('experiences', { company_name: '', event_name: '', role_name: '', description: '', start_date: '', end_date: '', is_present: false })}
                       className="px-4 py-2 text-white"
-                      label="Tambah Pengalaman"
+                      label={t('talenta.addExperience')}
                     />
                   </Group>
 
-                  {form.values.experiences.length === 0 && <Text size="sm" color="dimmed">Belum ada pengalaman.</Text>}
+                  {form.values.experiences.length === 0 && <Text size="sm" color="dimmed">{t('talenta.emptyExperience')}</Text>}
 
                   <Stack gap="md">
                     {form.values.experiences.map((exp, index) => (
@@ -737,37 +741,37 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <FontAwesomeIcon icon={faTrash} />
                           </ActionIcon>
                         </div>
-                        <h5 className="font-semibold text-sm mb-4">Pengalaman #{index + 1}</h5>
+                        <h5 className="font-semibold text-sm mb-4">{t('talenta.experienceItem', { number: index + 1 })}</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <TextInput
-                            label="Nama Perusahaan / Organisasi"
+                            label={t('talenta.field.companyName')}
                             {...form.getInputProps(`experiences.${index}.company_name`)}
                           />
                           <TextInput
-                            label="Nama Event / Project"
+                            label={t('talenta.field.eventProject')}
                             {...form.getInputProps(`experiences.${index}.event_name`)}
                           />
                           <TextInput
-                            label="Peran / Role"
+                            label={t('talenta.field.role')}
                             {...form.getInputProps(`experiences.${index}.role_name`)}
                           />
                           <div className="flex gap-4">
                             <TextInput
                               className="flex-1"
-                              label="Tanggal Mulai"
+                              label={t('talenta.field.startDate')}
                               type="date"
                               {...form.getInputProps(`experiences.${index}.start_date`)}
                             />
                             <TextInput
                               className="flex-1"
-                              label="Tanggal Selesai"
+                              label={t('talenta.field.endDate')}
                               type="date"
                               disabled={form.values.experiences[index].is_present}
                               {...form.getInputProps(`experiences.${index}.end_date`)}
                             />
                           </div>
                           <Switch
-                            label="Sampai Sekarang"
+                            label={t('talenta.field.present')}
                             className="mt-8"
                             checked={form.values.experiences[index].is_present}
                             onChange={(e) => {
@@ -779,7 +783,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                           />
                           <div className="md:col-span-2">
                             <Textarea
-                              label="Deskripsi Peran"
+                              label={t('talenta.field.roleDescription')}
                               {...form.getInputProps(`experiences.${index}.description`)}
                             />
                           </div>
@@ -791,15 +795,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                 <Tabs.Panel value="banner">
                   <Group justify="space-between" mb="md">
-                    <h4 className="text-md font-semibold text-gray-700">Banner / Promosi</h4>
+                    <h4 className="text-md font-semibold text-gray-700">{t('talenta.tabs.banner')}</h4>
                     <Button
                       onClick={() => form.insertListItem('banners', { title: '', description: '', image: null, mobile_image: null, link_url: '', button_label: '', sort_order: 1, is_primary: false, is_active: true, start_date: '', end_date: '' })}
                       className="px-4 py-2 text-white"
-                      label="Tambah Banner"
+                      label={t('talenta.addBanner')}
                     />
                   </Group>
 
-                  {form.values.banners.length === 0 && <Text size="sm" color="dimmed">Belum ada banner promosi.</Text>}
+                  {form.values.banners.length === 0 && <Text size="sm" color="dimmed">{t('talenta.emptyBanner')}</Text>}
 
                   <Stack gap="md">
                     {form.values.banners.map((banner, index) => (
@@ -809,19 +813,19 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <FontAwesomeIcon icon={faTrash} />
                           </ActionIcon>
                         </div>
-                        <h5 className="font-semibold text-sm mb-4">Banner #{index + 1}</h5>
+                        <h5 className="font-semibold text-sm mb-4">{t('talenta.bannerItem', { number: index + 1 })}</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <TextInput
-                            label="Judul Banner"
+                            label={t('talenta.field.bannerTitle')}
                             {...form.getInputProps(`banners.${index}.title`)}
                           />
                           <TextInput
-                            label="Label Tombol"
+                            label={t('talenta.field.buttonLabel')}
                             {...form.getInputProps(`banners.${index}.button_label`)}
                           />
                           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                             <div>
-                              <label className="text-sm font-medium text-gray-700 mb-1 block">Image Desktop (Gambar/Poster)</label>
+                              <label className="text-sm font-medium text-gray-700 mb-1 block">{t('talenta.desktopImage')}</label>
                               <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors relative">
                                 <input
                                   type="file"
@@ -831,7 +835,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     if (e.target.files && e.target.files.length > 0) {
                                       const file = e.target.files[0];
                                       if (file.size > 2 * 1024 * 1024) {
-                                        toast.error('Ukuran file maksimal 2MB');
+                                        toast.error(t('talenta.toast.fileTooLarge'));
                                         e.target.value = '';
                                         return;
                                       }
@@ -844,21 +848,21 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <img src={form.values.banners[index].image instanceof File ? URL.createObjectURL(form.values.banners[index].image) : form.values.banners[index].image as string} alt="Preview" className="w-full h-full object-contain p-2" />
                                     <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                       <FontAwesomeIcon icon={faUpload} className="text-white text-3xl mb-2" />
-                                      <p className="text-white text-sm font-medium">Ganti Gambar</p>
+                                      <p className="text-white text-sm font-medium">{t('talenta.changeImage')}</p>
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                     <FontAwesomeIcon icon={faUpload} className="text-primary-base text-3xl mb-3" />
-                                    <p className="mb-2 text-sm font-semibold text-gray-900">Unggah gambar/poster/banner</p>
-                                    <p className="text-xs text-gray-500">Direkomendasikan ukuran 724 x 340px dan tidak lebih dari 2mb</p>
+                                    <p className="mb-2 text-sm font-semibold text-gray-900">{t('talenta.uploadBannerImage')}</p>
+                                    <p className="text-xs text-gray-500">{t('talenta.uploadBannerHint')}</p>
                                   </div>
                                 )}
                               </label>
                             </div>
 
                             <div>
-                              <label className="text-sm font-medium text-gray-700 mb-1 block">Image Mobile</label>
+                              <label className="text-sm font-medium text-gray-700 mb-1 block">{t('talenta.mobileImage')}</label>
                               <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors relative">
                                 <input
                                   type="file"
@@ -868,7 +872,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     if (e.target.files && e.target.files.length > 0) {
                                       const file = e.target.files[0];
                                       if (file.size > 2 * 1024 * 1024) {
-                                        toast.error('Ukuran file maksimal 2MB');
+                                        toast.error(t('talenta.toast.fileTooLarge'));
                                         e.target.value = '';
                                         return;
                                       }
@@ -881,52 +885,52 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <img src={form.values.banners[index].mobile_image instanceof File ? URL.createObjectURL(form.values.banners[index].mobile_image) : form.values.banners[index].mobile_image as string} alt="Preview" className="w-full h-full object-contain p-2" />
                                     <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                       <FontAwesomeIcon icon={faUpload} className="text-white text-3xl mb-2" />
-                                      <p className="text-white text-sm font-medium">Ganti Gambar</p>
+                                      <p className="text-white text-sm font-medium">{t('talenta.changeImage')}</p>
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
                                     <FontAwesomeIcon icon={faUpload} className="text-primary-base text-3xl mb-3" />
-                                    <p className="mb-2 text-sm font-semibold text-gray-900">Unggah gambar mobile</p>
-                                    <p className="text-xs text-gray-500">Ukuran vertikal direkomendasikan</p>
+                                    <p className="mb-2 text-sm font-semibold text-gray-900">{t('talenta.uploadMobileImage')}</p>
+                                    <p className="text-xs text-gray-500">{t('talenta.uploadMobileHint')}</p>
                                   </div>
                                 )}
                               </label>
                             </div>
                           </div>
                           <TextInput
-                            label="URL Tujuan"
+                            label={t('talenta.field.targetUrl')}
                             {...form.getInputProps(`banners.${index}.link_url`)}
                           />
                           <NumberInput
-                            label="Urutan"
+                            label={t('talenta.field.sortOrder')}
                             {...form.getInputProps(`banners.${index}.sort_order`)}
                           />
                           <TextInput
-                            label="Tanggal Tayang Mulai"
+                            label={t('talenta.field.airStartDate')}
                             type="datetime-local"
                             {...form.getInputProps(`banners.${index}.start_date`)}
                           />
                           <TextInput
-                            label="Tanggal Tayang Selesai"
+                            label={t('talenta.field.airEndDate')}
                             type="datetime-local"
                             {...form.getInputProps(`banners.${index}.end_date`)}
                           />
                           <div className="md:col-span-2 flex gap-6 mt-2">
                             <Switch
-                              label="Banner Utama (Primary)"
+                              label={t('talenta.primaryBanner')}
                               checked={form.values.banners[index].is_primary}
                               onChange={(e) => form.setFieldValue(`banners.${index}.is_primary`, e.currentTarget.checked)}
                             />
                             <Switch
-                              label="Banner Aktif"
+                              label={t('talenta.activeBanner')}
                               checked={form.values.banners[index].is_active}
                               onChange={(e) => form.setFieldValue(`banners.${index}.is_active`, e.currentTarget.checked)}
                             />
                           </div>
                           <div className="md:col-span-2">
                             <Textarea
-                              label="Deskripsi Banner"
+                              label={t('talenta.field.bannerDescription')}
                               {...form.getInputProps(`banners.${index}.description`)}
                             />
                           </div>
@@ -939,7 +943,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 <Tabs.Panel value="sosial-media">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="md:col-span-2">
-                      <p className="text-sm text-gray-500 mb-4">Isi link profil sosial media kamu agar lebih mudah ditemukan oleh penyelenggara event.</p>
+                      <p className="text-sm text-gray-500 mb-4">{t('talenta.socialMediaHint')}</p>
                     </div>
 
                     {/* Instagram */}
@@ -1018,7 +1022,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-6 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
             <div className="w-full flex justify-end">
               <Button
-                label={formState === 'update' ? 'Perbarui Profil' : 'Simpan Profil'}
+                label={formState === 'update' ? t('talenta.updateProfile') : t('talenta.saveProfile')}
                 color='primary'
                 className='w-full md:w-auto px-8 h-10 text-dark font-semibold disabled:bg-gray-400 disabled:text-gray-400 disabled:opacity-50'
                 onClick={postTalentData}

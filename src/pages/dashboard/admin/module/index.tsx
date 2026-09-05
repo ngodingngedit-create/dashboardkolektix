@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import moment from "moment";
 import fetch from "@/utils/fetch";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -41,6 +42,7 @@ interface ModuleProps {
 }
 
 export default function KelolaModule() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<ModuleProps[]>([]);
@@ -254,14 +256,14 @@ export default function KelolaModule() {
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
       <Flex align="center" gap={15}>
-        <Tooltip label="Kembali">
+        <Tooltip label={t("admin.module.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
             <Icon icon="ph:arrow-left-bold" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Module" : "Tambah Module Baru"}</Text>
-          <Text size="xs" c="dimmed">Kelola data module sistem</Text>
+          <Text size="xs" c="dimmed">{t("admin.module.index.kelola.data.module.sistem")}</Text>
         </Stack>
       </Flex>
 
@@ -271,8 +273,8 @@ export default function KelolaModule() {
           <Grid>
             <Grid.Col span={12}>
               <TextInput 
-                label="Nama Module" 
-                placeholder="Masukkan nama module" 
+                label={t("admin.module.index.nama.module")} 
+                placeholder={t("admin.module.index.masukkan.nama.module")} 
                 required 
                 {...form.getInputProps("module_name")} 
                 variant="filled" 
@@ -280,16 +282,16 @@ export default function KelolaModule() {
             </Grid.Col>
             <Grid.Col span={12}>
               <TextInput 
-                label="Deskripsi Module" 
-                placeholder="Masukkan deskripsi module (opsional)" 
+                label={t("admin.module.index.deskripsi.module")} 
+                placeholder={t("admin.module.index.masukkan.deskripsi.module.opsional")} 
                 {...form.getInputProps("module_description")} 
                 variant="filled" 
               />
             </Grid.Col>
             <Grid.Col span={12}>
               <TextInput 
-                label="Link Module" 
-                placeholder="Masukkan link module (opsional)" 
+                label={t("admin.module.index.link.module")} 
+                placeholder={t("admin.module.index.masukkan.link.module.opsional")} 
                 {...form.getInputProps("module_link")} 
                 variant="filled" 
               />
@@ -299,7 +301,7 @@ export default function KelolaModule() {
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>Batal</Button>
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.module.index.batal")}</Button>
             <Button type="submit" form="module-form" color="indigo" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan Module"}
             </Button>
@@ -318,13 +320,13 @@ export default function KelolaModule() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.module.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" className="text-lg" />
           </button>
           <Stack gap={2}>
-            <Text size="1.8rem" fw={600} c="black">Kelola Module</Text>
-            <Text size="sm" c="black">Daftar semua module dalam sistem</Text>
+            <Text size="1.8rem" fw={600} c="black">{t("admin.module.index.kelola.module")}</Text>
+            <Text size="sm" c="black">{t("admin.module.index.daftar.semua.module.dalam.sistem")}</Text>
           </Stack>
         </Flex>
         <Button 
@@ -333,16 +335,16 @@ export default function KelolaModule() {
           color="indigo"
           radius="md"
         >
-          Tambah Module
+          {t("admin.module.index.tambah.module")}
         </Button>
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.module.index.pencarian")}</Text>
             <TextInput 
-              placeholder="Cari nama module..." 
+              placeholder={t("admin.module.index.cari.nama.module")} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
@@ -394,7 +396,7 @@ export default function KelolaModule() {
                   <td colSpan={6} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:shield-slash" className="text-5xl text-gray-300" />
-                      <Text c="dimmed" fw={500}>Data module tidak ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("admin.module.index.data.module.tidak.ditemukan")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -427,12 +429,12 @@ export default function KelolaModule() {
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
-                        <Tooltip label="Edit Module" withArrow>
+                        <Tooltip label={t("admin.module.index.edit.module")} withArrow>
                           <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm">
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus" withArrow>
+                        <Tooltip label={t("admin.module.index.hapus")} withArrow>
                           <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm">
                             <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>

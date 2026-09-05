@@ -25,6 +25,7 @@ import InputEditor from "@/components/Input/InputEditor";
 import Button from "@/components/Button";
 import TicketContainer from "@/components/TicketContainer";
 import ModalCreateShuttleTicket, { ShuttleTicket } from "@/components/CreateShuttle/_ModalCreateShuttleTicket";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
@@ -149,6 +150,7 @@ const emptyForm = {
 };
 
 export default function AdminCreateShuttle() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ShuttleItem[]>([]);
@@ -280,6 +282,10 @@ export default function AdminCreateShuttle() {
                   seat_color: t.seat_color || "#194e9e",
                   shuttle_id: t.shuttle_id || 1,
                   shuttle_session_id: t.shuttle_session_id || 1,
+                  is_soldout: t.is_soldout ?? 0,
+                  is_fullbook: t.is_fullbook ?? 0,
+                  is_finish: t.is_finish ?? 0,
+                  is_show: t.is_show ?? 1,
                 };
                 sessionTickets.push(ticket);
                 tickets.push(ticket);
@@ -464,6 +470,12 @@ export default function AdminCreateShuttle() {
   }, [form.operation_days]);
 
   const handleSubmit = async () => {
+    console.log('[handleSubmit] form state at submit', {
+      is_soldout: form.is_soldout,
+      ticketsCount: form.tickets.length,
+      operationDaysCount: form.operation_days.length,
+      operationDaysStructure: form.operation_days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, ticketsCount: s.tickets.length })) }))
+    });
     if (!form.name) {
       notifications.show({ title: "Validasi", message: "Nama shuttle wajib diisi.", color: "orange" });
       return;
@@ -505,6 +517,10 @@ export default function AdminCreateShuttle() {
             ...(t.seat_color ? { seat_color: t.seat_color } : {}),
             shuttle_id: t.shuttle_id ?? form.id,
             shuttle_session_id: t.shuttle_session_id ?? 1,
+            is_soldout: t.is_soldout ?? 0,
+            is_fullbook: t.is_fullbook ?? 0,
+            is_finish: t.is_finish ?? 0,
+            is_show: t.is_show ?? 1,
           })),
         })),
       }));
@@ -559,10 +575,16 @@ export default function AdminCreateShuttle() {
           ...(t.seat_color ? { seat_color: t.seat_color } : {}),
           shuttle_id: t.shuttle_id ?? form.id,
           shuttle_session_id: t.shuttle_session_id ?? 1,
+          is_soldout: t.is_soldout ?? 0,
+          is_fullbook: t.is_fullbook ?? 0,
+          is_finish: t.is_finish ?? 0,
+          is_show: t.is_show ?? 1,
         }));
       }
 
       if (form.image_base64) payload.image = form.image_base64;
+
+      console.log('[handleSubmit] final payload', JSON.parse(JSON.stringify(payload)));
 
       if (isEdit && form.id) {
         await Put(`shuttle/${form.id}`, payload);
@@ -585,7 +607,7 @@ export default function AdminCreateShuttle() {
     modals.openConfirmModal({
       title: "Hapus Shuttle",
       centered: true,
-      children: <Text size="sm">Yakin ingin menghapus shuttle <b>{name}</b>? Tindakan ini tidak dapat dibatalkan.</Text>,
+      children: <Text size="sm">{t("admin.create-shuttle.index.yakin.ingin.menghapus.shuttle")} <b>{name}</b>{t("admin.create-shuttle.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
       labels: { confirm: "Hapus", cancel: "Batal" },
       confirmProps: { color: "red" },
       onConfirm: async () => {
@@ -606,18 +628,29 @@ export default function AdminCreateShuttle() {
   // Ticket modal state – proxies flat form.tickets
   const modalTickets = form.tickets;
   const handleSetTicket = (tickets: ShuttleTicket[]) => {
+    console.log('[handleSetTicket] called', {
+      incomingCount: tickets.length,
+      incomingSessionIds: tickets.map(t => t.shuttle_session_id),
+      prevOperationDays: form.operation_days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, count: s.tickets.length })) }))
+    });
     setForm(prev => {
-      // Also sync tickets into operation_days sessions by shuttle_session_id
-      const days = prev.operation_days.map((day, di) => ({
+      const days = prev.operation_days.map((day) => ({
         ...day,
         sessions: day.sessions.map((ses, si) => {
-          const sesIdx = si + 1; // shuttle_session_id is 1-based
+          const targetId = ses.id ?? (si + 1);
+          const matched = tickets.filter(t => t.shuttle_session_id === targetId);
+          console.log('[handleSetTicket] session filter', { sesIdx: si + 1, targetId, sessionName: ses.session_name, matchedCount: matched.length });
           return {
             ...ses,
-            tickets: tickets.filter(t => t.shuttle_session_id === sesIdx),
+            tickets: matched,
           };
         }),
       }));
+      console.log('[handleSetTicket] result', {
+        prevTicketsCount: prev.tickets.length,
+        newTicketsCount: tickets.length,
+        newOperationDays: days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, count: s.tickets.length })) }))
+      });
       return { ...prev, tickets, operation_days: days };
     });
   };
@@ -643,7 +676,7 @@ export default function AdminCreateShuttle() {
             </button>
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold">{isEdit ? "Edit Shuttle" : "Buat Shuttle"}</h1>
-              <p className="text-grey">Lengkapi form dibawah ini untuk {isEdit ? "merubah" : "membuat"} shuttle</p>
+              <p className="text-grey">{t("admin.create-shuttle.index.lengkapi.form.dibawah.ini.untuk")} {isEdit ? "merubah" : "membuat"} {t("admin.create-shuttle.index.shuttle")}</p>
             </div>
           </div>
 
@@ -653,12 +686,12 @@ export default function AdminCreateShuttle() {
               <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-[#f8f9fa] flex flex-col items-center justify-center h-72 gap-4 cursor-pointer overflow-hidden relative">
                 <input type="file" className="hidden" onChange={handleImageChange} accept="image/jpeg, image/png, image/gif" />
                 {imagePreview ? (
-                  <img src={imagePreview} alt="image" className="object-cover w-full h-full" />
+                  <img src={imagePreview} alt={t("admin.create-shuttle.index.image")} className="object-cover w-full h-full" />
                 ) : (
                   <>
-                    <Image src={imagePlus} alt="image-plus" />
-                    <h3 className="font-semibold text-medium text-center">Unggah gambar/poster shuttle</h3>
-                    <p className="text-grey text-center text-sm px-8">Direkomendasikan rasio 16:9 dan maksimal 3 mb</p>
+                    <Image src={imagePlus} alt={t("admin.create-shuttle.index.image.plus")} />
+                    <h3 className="font-semibold text-medium text-center">{t("admin.create-shuttle.index.unggah.gambar.poster.shuttle")}</h3>
+                    <p className="text-grey text-center text-sm px-8">{t("admin.create-shuttle.index.direkomendasikan.rasio.16.9.dan.maksimal.3.mb")}</p>
                   </>
                 )}
               </label>
@@ -666,7 +699,7 @@ export default function AdminCreateShuttle() {
               <div className="mt-8 text-sm flex flex-col gap-4">
                 <InputField
                   type="text"
-                  placeholder="Nama Shuttle"
+                  placeholder={t("admin.create-shuttle.index.nama.shuttle")}
                   fullWidth
                   value={form.name}
                   onChange={(e: any) => setForm({ ...form, name: e.target.value })}
@@ -674,7 +707,7 @@ export default function AdminCreateShuttle() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> Tanggal & Waktu Mulai</label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> {t("admin.create-shuttle.index.tanggal.waktu.mulai")}</label>
                     <input
                       type="datetime-local"
                       value={form.start_date && form.start_time ? `${form.start_date}T${form.start_time.substring(0, 5)}` : ""}
@@ -691,7 +724,7 @@ export default function AdminCreateShuttle() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> Tanggal & Waktu Selesai</label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> {t("admin.create-shuttle.index.tanggal.waktu.selesai")}</label>
                     <input
                       type="datetime-local"
                       value={form.end_date && form.end_time ? `${form.end_date}T${form.end_time.substring(0, 5)}` : ""}
@@ -717,7 +750,7 @@ export default function AdminCreateShuttle() {
                 selectedKey={tab}
                 onSelectionChange={(e) => setTab(e as string)}
                 variant="solid"
-                aria-label="Tabs variants"
+                aria-label={t("admin.create-shuttle.index.tabs.variants")}
                 className="border border-b-2 border-primary-light-200 border-x-0 border-t-0"
                 fullWidth
                 classNames={{
@@ -726,23 +759,23 @@ export default function AdminCreateShuttle() {
                   cursor: "rounded-b-none border-b-2 border-b-primary-base",
                 }}
               >
-                <Tab key="info-tiket" title="Info Tiket">
+                <Tab key="info-tiket" title={t("admin.create-shuttle.index.info.tiket")}>
                   {/* ── Operation Days & Sessions ── */}
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto overflow-hidden">
                     <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center bg-primary-light-200/30">
                       <h3 className="text-medium font-semibold flex items-center gap-2">
                         <Icon icon="ph:calendar-bold" className="text-primary-base" />
-                        Tanggal & Sesi Operasional
+                        {t("admin.create-shuttle.index.tanggal.sesi.operasional")}
                       </h3>
                       <button onClick={handleAddDay} className="text-sm font-semibold text-primary-base flex items-center gap-1.5 hover:text-primary-dark transition-colors">
-                        <Icon icon="ph:plus-bold" /> Tambah Tanggal
+                        <Icon icon="ph:plus-bold" /> {t("admin.create-shuttle.index.tambah.tanggal")}
                       </button>
                     </div>
                     <div className="p-5">
                       {form.operation_days.length === 0 ? (
                         <div className="text-center py-6">
                           <Icon icon="ph:calendar-blank" className="text-4xl text-gray-300 mx-auto mb-2" />
-                          <Text size="sm" c="dimmed">Belum ada tanggal operasional. Klik &ldquo;Tambah Tanggal&rdquo; untuk menambahkan.</Text>
+                          <Text size="sm" c="dimmed">{t("admin.create-shuttle.index.belum.ada.tanggal.operasional.klik.ldquo.tambah.tanggal.rdquo.untuk.me")}</Text>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-4">
@@ -763,12 +796,12 @@ export default function AdminCreateShuttle() {
                                   onClick={() => addSession(di)}
                                   className="text-xs font-semibold text-primary-base flex items-center gap-1 hover:text-primary-dark transition-colors shrink-0"
                                 >
-                                  <Icon icon="ph:clock-plus-bold" /> Tambah Sesi
+                                  <Icon icon="ph:clock-plus-bold" /> {t("admin.create-shuttle.index.tambah.sesi")}
                                 </button>
                                 <button
                                   onClick={() => removeDay(di)}
                                   className="text-red-400 hover:text-red-600 transition-colors shrink-0"
-                                  title="Hapus hari"
+                                  title={t("admin.create-shuttle.index.hapus.hari")}
                                 >
                                   <Icon icon="ph:trash-bold" className="text-lg" />
                                 </button>
@@ -777,7 +810,7 @@ export default function AdminCreateShuttle() {
                               {/* Sessions */}
                               {day.sessions.length === 0 ? (
                                 <div className="px-4 py-3 text-sm text-gray-400 italic">
-                                  Belum ada sesi. Klik &ldquo;Tambah Sesi&rdquo;.
+                                  {t("admin.create-shuttle.index.belum.ada.sesi.klik.ldquo.tambah.sesi.rdquo")}
                                 </div>
                               ) : (
                                 <div className="px-4 py-3 flex flex-col gap-3">
@@ -807,7 +840,7 @@ export default function AdminCreateShuttle() {
                                       <button
                                         onClick={() => removeSession(di, si)}
                                         className="text-red-400 hover:text-red-600 transition-colors shrink-0"
-                                        title="Hapus sesi"
+                                        title={t("admin.create-shuttle.index.hapus.sesi")}
                                       >
                                         <Icon icon="ph:x-bold" className="text-lg" />
                                       </button>
@@ -823,7 +856,7 @@ export default function AdminCreateShuttle() {
                                   <div key={`tickets-${si}`} className="border-t border-primary-light-200 px-4 py-3">
                                     <Text size="xs" fw={700} c="dimmed" className="uppercase mb-2 flex items-center gap-1">
                                       <Icon icon="ph:ticket-bold" />
-                                      Tiket — {ses.session_name || `Sesi ${si + 1}`}
+                                      {t("admin.create-shuttle.index.tiket")} {ses.session_name || `Sesi ${si + 1}`}
                                     </Text>
                                     <div className="grid grid-cols-1 gap-3">
                                       {ses.tickets.map((t, tIdx) => (
@@ -855,14 +888,14 @@ export default function AdminCreateShuttle() {
                   {/* ── Flat Ticket List (legacy / fallback) ── */}
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center">
-                      <h3 className="text-medium font-semibold">Daftar Tiket</h3>
+                      <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.daftar.tiket")}</h3>
                       <button onClick={handleOpenTicketModal} className="text-sm font-semibold text-primary-base flex items-center gap-2">
-                        <Icon icon="ph:plus-bold" /> Kelola Tiket
+                        <Icon icon="ph:plus-bold" /> {t("admin.create-shuttle.index.kelola.tiket")}
                       </button>
                     </div>
                     <div className="p-5">
                       {form.tickets.length === 0 ? (
-                        <Text size="sm" c="dimmed">Belum ada tiket. Klik &ldquo;Kelola Tiket&rdquo; untuk menambahkan.</Text>
+                        <Text size="sm" c="dimmed">{t("admin.create-shuttle.index.belum.ada.tiket.klik.ldquo.kelola.tiket.rdquo.untuk.menambahkan")}</Text>
                       ) : (
                         <div className="grid grid-cols-1 gap-4">
                           {form.tickets.map((t, tIdx) => {
@@ -889,28 +922,28 @@ export default function AdminCreateShuttle() {
 
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-light-grey px-4 py-3">
-                      <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
+                      <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.formulir.data.pemesan")}</h3>
                     </div>
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3">
-                      <Checkbox isSelected={form.is_name === 1} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked ? 1 : 0 })}>Nama Lengkap</Checkbox>
-                      <Checkbox isSelected={form.is_email === 1} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked ? 1 : 0 })}>Email</Checkbox>
-                      <Checkbox isSelected={form.is_phone === 1} onChange={(e: any) => setForm({ ...form, is_phone: e.target.checked ? 1 : 0 })}>No. Handphone</Checkbox>
-                      <Checkbox isSelected={form.is_noidentity === 1} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked ? 1 : 0 })}>No. KTP</Checkbox>
+                      <Checkbox isSelected={form.is_name === 1} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked ? 1 : 0 })}>{t("admin.create-shuttle.index.nama.lengkap")}</Checkbox>
+                      <Checkbox isSelected={form.is_email === 1} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked ? 1 : 0 })}>{t("admin.create-shuttle.index.email")}</Checkbox>
+                      <Checkbox isSelected={form.is_phone === 1} onChange={(e: any) => setForm({ ...form, is_phone: e.target.checked ? 1 : 0 })}>{t("admin.create-shuttle.index.no.handphone")}</Checkbox>
+                      <Checkbox isSelected={form.is_noidentity === 1} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked ? 1 : 0 })}>{t("admin.create-shuttle.index.no.ktp")}</Checkbox>
                     </div>
                   </div>
                 </Tab>
 
-                <Tab key="detail" title="Detail Shuttle">
+                <Tab key="detail" title={t("admin.create-shuttle.index.detail.shuttle")}>
                   <div className="border-2 border-light-grey rounded-2xl my-5">
                     <div className="border-b-2 border-light-grey px-4 py-3">
-                      <h3 className="text-medium font-semibold">Deskripsi</h3>
+                      <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.deskripsi")}</h3>
                     </div>
                     <div className="p-5">
                       <InputEditor
                         theme="snow"
                         onChange={(value: any) => setForm(prev => prev.description === value ? prev : { ...prev, description: value })}
                         value={form.description}
-                        placeholder="Ketik Deskripsi Shuttle"
+                        placeholder={t("admin.create-shuttle.index.ketik.deskripsi.shuttle")}
                         modules={{
                           toolbar: [
                             [{ header: "1" }],
@@ -925,14 +958,14 @@ export default function AdminCreateShuttle() {
 
                   <div className="border-2 border-light-grey rounded-2xl my-5">
                     <div className="border-b-2 border-light-grey px-4 py-3">
-                      <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
+                      <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.syarat.ketentuan")}</h3>
                     </div>
                     <div className="p-5">
                       <InputEditor
                         theme="snow"
                         onChange={(value: any) => setForm(prev => prev.terms === value ? prev : { ...prev, terms: value })}
                         value={form.terms}
-                        placeholder="Ketik Syarat & Ketentuan"
+                        placeholder={t("admin.create-shuttle.index.ketik.syarat.ketentuan")}
                         modules={{
                           toolbar: [
                             [{ header: "1" }],
@@ -946,16 +979,16 @@ export default function AdminCreateShuttle() {
                   </div>
                 </Tab>
 
-                <Tab key="pengaturan" title="Pengaturan">
+                <Tab key="pengaturan" title={t("admin.create-shuttle.index.pengaturan")}>
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-light-grey px-4 py-3">
-                      <h3 className="text-medium font-semibold">Status & Pembayaran</h3>
+                      <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.status.pembayaran")}</h3>
                     </div>
                     <div className="p-5 flex flex-col gap-4">
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="font-medium text-sm">Status Aktif</p>
-                            <p className="text-grey text-xs">Tentukan apakah shuttle ini dapat dibeli</p>
+                            <p className="font-medium text-sm">{t("admin.create-shuttle.index.status.aktif")}</p>
+                            <p className="text-grey text-xs">{t("admin.create-shuttle.index.tentukan.apakah.shuttle.ini.dapat.dibeli")}</p>
                           </div>
                           <Switch
                             size="sm"
@@ -965,15 +998,18 @@ export default function AdminCreateShuttle() {
                         </div>
                         {/* New flags */}
                         <div className="flex justify-between items-center">
-                          <p className="font-medium text-sm">Soldout</p>
+                          <p className="font-medium text-sm">{t("admin.create-shuttle.index.soldout")}</p>
                           <Switch
                             size="sm"
                             isSelected={form.is_soldout === 1}
-                            onChange={(e: any) => setForm({ ...form, is_soldout: e.target.checked ? 1 : 0 })}
+                            onChange={(e: any) => {
+                              console.log('[is_soldout] onChange fired', { e, isChecked: e?.target?.checked, type: typeof e, isCheckedAlt: e });
+                              setForm({ ...form, is_soldout: e.target.checked ? 1 : 0 });
+                            }}
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <p className="font-medium text-sm">Fullbook</p>
+                          <p className="font-medium text-sm">{t("admin.create-shuttle.index.fullbook")}</p>
                           <Switch
                             size="sm"
                             isSelected={form.is_fullbook === 1}
@@ -981,7 +1017,7 @@ export default function AdminCreateShuttle() {
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <p className="font-medium text-sm">Finish</p>
+                          <p className="font-medium text-sm">{t("admin.create-shuttle.index.finish")}</p>
                           <Switch
                             size="sm"
                             isSelected={form.is_finish === 1}
@@ -989,7 +1025,7 @@ export default function AdminCreateShuttle() {
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <p className="font-medium text-sm">Show</p>
+                          <p className="font-medium text-sm">{t("admin.create-shuttle.index.show")}</p>
                           <Switch
                             size="sm"
                             isSelected={form.is_show === 1}
@@ -998,10 +1034,10 @@ export default function AdminCreateShuttle() {
                         </div>
                       <hr className="border-gray-200" />
                       <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Metode Pembayaran (pisahkan dengan koma)</label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">{t("admin.create-shuttle.index.metode.pembayaran.pisahkan.dengan.koma")}</label>
                         <InputField
                           type="text"
-                          placeholder="QRIS,BCA,MANDIRI"
+                          placeholder={t("admin.create-shuttle.index.qris.bca.mandiri")}
                           fullWidth
                           value={form.payment_method_custom}
                           onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })}
@@ -1051,7 +1087,7 @@ export default function AdminCreateShuttle() {
         <Modal
           opened={seatmapModalOpen}
           onClose={() => setSeatmapModalOpen(false)}
-          title={<Text fw={700} size="lg" c="#0B387C">Editor Denah Kursi Shuttle</Text>}
+          title={<Text fw={700} size="lg" c="#0B387C">{t("admin.create-shuttle.index.editor.denah.kursi.shuttle")}</Text>}
           size="xl"
           fullScreen
           padding={0}
@@ -1064,7 +1100,7 @@ export default function AdminCreateShuttle() {
               </div>
             </CreateEventContext.Provider>
             <Flex justify="flex-end" align="center" gap={10} p="md" style={{ borderTop: "1px solid #dee2e6", background: "white", flexShrink: 0 }}>
-              <ButtonM variant="subtle" color="gray" onClick={() => setSeatmapModalOpen(false)}>Batal</ButtonM>
+              <ButtonM variant="subtle" color="gray" onClick={() => setSeatmapModalOpen(false)}>{t("admin.create-shuttle.index.batal")}</ButtonM>
               <ButtonM
                 color="blue"
                 leftSection={<Icon icon="ph:check-bold" />}
@@ -1073,7 +1109,7 @@ export default function AdminCreateShuttle() {
                   setSeatmapModalOpen(false);
                 }}
               >
-                Simpan Seatmap
+                {t("admin.create-shuttle.index.simpan.seatmap")}
               </ButtonM>
             </Flex>
           </div>
@@ -1090,11 +1126,11 @@ export default function AdminCreateShuttle() {
           <button
             onClick={() => setShowDetail(false)}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Daftar Shuttle"
+            aria-label={t("admin.create-shuttle.index.kembali.ke.daftar.shuttle")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
-          <h1 className="text-dark m-0">Detail Shuttle</h1>
+          <h1 className="text-dark m-0">{t("admin.create-shuttle.index.detail.shuttle")}</h1>
         </div>
         <div className="flex flex-col md:flex-row gap-2">
           <div className="w-full md:max-w-[300px] flex flex-col gap-4">
@@ -1122,7 +1158,7 @@ export default function AdminCreateShuttle() {
               </div>
             </div>
             <ButtonM variant="subtle" color="gray" onClick={() => setShowDetail(false)}>
-              Kembali
+              {t("admin.create-shuttle.index.kembali")}
             </ButtonM>
           </div>
 
@@ -1138,7 +1174,7 @@ export default function AdminCreateShuttle() {
               </div>
             ) : (
               <Tabs className="flex flex-col" variant="underlined" selectedKey={detailTab} onSelectionChange={(k) => setDetailTab(k.toString())}>
-                <Tab key="Detail" title="Detail" className="px-2">
+                <Tab key="Detail" title={t("admin.create-shuttle.index.detail")} className="px-2">
                   <Tabs
                     radius="full"
                     color="secondary"
@@ -1148,10 +1184,10 @@ export default function AdminCreateShuttle() {
                       cursor: "border border-primary-base",
                     }}
                   >
-                    <Tab title="Deskripsi" className="px-2">
+                    <Tab title={t("admin.create-shuttle.index.deskripsi")} className="px-2">
                       <div dangerouslySetInnerHTML={{ __html: selectedItem.description }}></div>
                     </Tab>
-                    <Tab title="Syarat & Ketentuan" className="px-2">
+                    <Tab title={t("admin.create-shuttle.index.syarat.ketentuan")} className="px-2">
                       <div
                         className="ml-5"
                         dangerouslySetInnerHTML={{ __html: selectedItem.terms }}
@@ -1160,7 +1196,7 @@ export default function AdminCreateShuttle() {
                   </Tabs>
                   <div className="mt-4 pt-4 border-t border-primary-light-200">
                     <div>
-                      <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Metode Pembayaran</Text>
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>{t("admin.create-shuttle.index.metode.pembayaran")}</Text>
                       <Group gap={6}>
                         {selectedItem.payment_method_custom?.split(",").map(m => (
                           <Badge key={m} size="sm" variant="light" color="blue">{m.trim()}</Badge>
@@ -1169,7 +1205,7 @@ export default function AdminCreateShuttle() {
                     </div>
                     {selectedItem.seatmap && (
                       <div className="mt-4">
-                        <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>Denah Kursi</Text>
+                        <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={4}>{t("admin.create-shuttle.index.denah.kursi")}</Text>
                         <Group gap={6} wrap="wrap">
                           {(() => {
                             try {
@@ -1185,25 +1221,25 @@ export default function AdminCreateShuttle() {
                                   </Badge>
                                 ));
                             } catch {
-                              return <Text size="xs" c="dimmed">Tidak dapat membaca seatmap.</Text>;
+                              return <Text size="xs" c="dimmed">{t("admin.create-shuttle.index.tidak.dapat.membaca.seatmap")}</Text>;
                             }
                           })()}
                         </Group>
                       </div>
                     )}
                     <div className="mt-4">
-                      <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug</Text>
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.create-shuttle.index.slug")}</Text>
                       <Text size="sm" ff="monospace">{selectedItem.slug}</Text>
                     </div>
                     <div className="mt-2">
-                      <Text size="xs" fw={700} c="dimmed" className="uppercase">Slug URL</Text>
+                      <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.create-shuttle.index.slug.url")}</Text>
                       <Text size="sm" ff="monospace">{selectedItem.slug_url}</Text>
                     </div>
                   </div>
                 </Tab>
-                <Tab key="Tiket" title="Tiket">
+                <Tab key="Tiket" title={t("admin.create-shuttle.index.tiket.2")}>
                   <div className="flex justify-between items-center px-3 py-2">
-                    <h6 className="text-lg font-semibold">Tiket</h6>
+                    <h6 className="text-lg font-semibold">{t("admin.create-shuttle.index.tiket.2")}</h6>
                   </div>
                   <div className="px-3">
                     {detailTickets.length > 0 ? (
@@ -1224,12 +1260,12 @@ export default function AdminCreateShuttle() {
                       ))
                     ) : (
                       <div className="text-center py-10">
-                        <p className="text-gray-500">Belum ada tiket</p>
+                        <p className="text-gray-500">{t("admin.create-shuttle.index.belum.ada.tiket")}</p>
                       </div>
                     )}
                   </div>
                 </Tab>
-                <Tab key="Jadwal" title="Jadwal">
+                <Tab key="Jadwal" title={t("admin.create-shuttle.index.jadwal")}>
                   <div className="px-3 py-3">
                     {detailDays.length > 0 ? (
                       detailDays.map((day, i) => (
@@ -1244,18 +1280,18 @@ export default function AdminCreateShuttle() {
                                     {s.session_start_time?.substring(0, 5)} - {s.session_end_time?.substring(0, 5)}
                                   </p>
                                 </div>
-                                <Badge size="sm" variant="light" color="blue">{s.tickets.length} tiket</Badge>
+                                <Badge size="sm" variant="light" color="blue">{s.tickets.length} {t("admin.create-shuttle.index.tiket.3")}</Badge>
                               </div>
                             ))}
                             {day.sessions.length === 0 && (
-                              <p className="text-xs text-gray-400">Tidak ada sesi</p>
+                              <p className="text-xs text-gray-400">{t("admin.create-shuttle.index.tidak.ada.sesi")}</p>
                             )}
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="text-center py-10">
-                        <p className="text-gray-500">Belum ada jadwal operasional</p>
+                        <p className="text-gray-500">{t("admin.create-shuttle.index.belum.ada.jadwal.operasional")}</p>
                       </div>
                     )}
                   </div>
@@ -1276,16 +1312,16 @@ export default function AdminCreateShuttle() {
           <button
             onClick={() => router.push("/dashboard/admin")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.create-shuttle.index.kembali.ke.dashboard.admin")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <Stack gap={4}>
             <Text size="1.7rem" fw={700} style={{ color: "#0B387C", display: "inline-flex", alignItems: "center", gap: 8 }}>
               <Icon icon="ph:bus-bold" />
-              Event Shuttle
+              {t("admin.create-shuttle.index.event.shuttle")}
             </Text>
-            <Text size="sm" c="gray">Kelola daftar event shuttle yang tersedia</Text>
+            <Text size="sm" c="gray">{t("admin.create-shuttle.index.kelola.daftar.event.shuttle.yang.tersedia")}</Text>
           </Stack>
         </Flex>
         <ButtonM
@@ -1295,20 +1331,20 @@ export default function AdminCreateShuttle() {
           size="md"
           onClick={handleOpenCreate}
         >
-          Tambah Shuttle
+          {t("admin.create-shuttle.index.tambah.shuttle")}
         </ButtonM>
       </Flex>
 
       <div className="mt-4">
         <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">Total: <b>{total}</b> shuttle</Text>
+          <Text size="sm" fw={600} c="gray.7">{t("admin.create-shuttle.index.total")} <b>{total}</b> {t("admin.create-shuttle.index.shuttle")}</Text>
           <div style={{ width: 280 }}>
             <Input
               isClearable
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               onClear={() => setSearch("")}
-              placeholder="Cari nama atau slug..."
+              placeholder={t("admin.create-shuttle.index.cari.nama.atau.slug")}
               size="sm"
               startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
               classNames={{ input: "bg-[#f1f3f5] border-none" }}
@@ -1327,7 +1363,7 @@ export default function AdminCreateShuttle() {
           ) : sortedData.length === 0 ? (
             <div className="col-span-full border border-primary-light-200 flex flex-col items-center justify-center min-h-[40vh] rounded-md gap-3 text-center text-dark px-5">
               <Icon icon="ph:bus-duotone" style={{ fontSize: 40, color: "#ccc" }} />
-              <h3 className="text-xl font-semibold">Tidak ada data shuttle</h3>
+              <h3 className="text-xl font-semibold">{t("admin.create-shuttle.index.tidak.ada.data.shuttle")}</h3>
             </div>
           ) : (
             sortedData.map((item) => (
@@ -1360,17 +1396,17 @@ export default function AdminCreateShuttle() {
                   </Group>
                   <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-end">
                     <Group gap={4}>
-                      <Tooltip label="Lihat Detail">
+                      <Tooltip label={t("admin.create-shuttle.index.lihat.detail")}>
                         <ActionIcon variant="transparent" color="cyan" onClick={() => handleOpenView(item.slug)}>
                           <Icon icon="ph:eye" style={{ fontSize: 18 }} />
                         </ActionIcon>
                       </Tooltip>
-                      <Tooltip label="Edit Shuttle">
+                      <Tooltip label={t("admin.create-shuttle.index.edit.shuttle")}>
                         <ActionIcon variant="transparent" color="gray" onClick={() => handleOpenEdit(item.slug)}>
                           <Icon icon="ph:pencil-simple" style={{ fontSize: 18 }} />
                         </ActionIcon>
                       </Tooltip>
-                      <Tooltip label="Hapus Shuttle">
+                      <Tooltip label={t("admin.create-shuttle.index.hapus.shuttle")}>
                         <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, item.name)}>
                           <Icon icon="ph:trash" style={{ fontSize: 18 }} />
                         </ActionIcon>

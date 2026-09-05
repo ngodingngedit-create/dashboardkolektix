@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import Cookies from "js-cookie";
 import moment from "moment";
 import fetch from "@/utils/fetch";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -82,6 +83,7 @@ interface PermissionProps {
 }
 
 export default function KelolaPermission() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<PermissionProps[]>([]);
@@ -374,14 +376,14 @@ export default function KelolaPermission() {
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
       <Flex align="center" gap={15}>
-        <Tooltip label="Kembali">
+        <Tooltip label={t("admin.permission.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
             <Icon icon="ph:arrow-left-bold" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Permission" : "Tambah Permission Baru"}</Text>
-          <Text size="xs" c="dimmed">Kelola hak akses user ke modul tertentu</Text>
+          <Text size="xs" c="dimmed">{t("admin.permission.index.kelola.hak.akses.user.ke.modul.tertentu")}</Text>
         </Stack>
       </Flex>
 
@@ -390,17 +392,17 @@ export default function KelolaPermission() {
           <LoadingOverlay visible={loading.includes("submit")} />
           <Grid>
             <Grid.Col span={6}>
-              <Select label="User" placeholder="Pilih user" data={users} searchable required {...form.getInputProps("user_id")} variant="filled" />
+              <Select label={t("admin.permission.index.user")} placeholder={t("admin.permission.index.pilih.user")} data={users} searchable required {...form.getInputProps("user_id")} variant="filled" />
             </Grid.Col>
             <Grid.Col span={6}>
-              <Select label="Role" placeholder="Pilih role" data={roles} searchable required {...form.getInputProps("role_id")} variant="filled" />
+              <Select label={t("admin.permission.index.role")} placeholder={t("admin.permission.index.pilih.role")} data={roles} searchable required {...form.getInputProps("role_id")} variant="filled" />
             </Grid.Col>
             <Grid.Col span={12}>
-              <Select label="Module" placeholder="Pilih module" data={modules} searchable required {...form.getInputProps("module_id")} variant="filled" />
+              <Select label={t("admin.permission.index.module")} placeholder={t("admin.permission.index.pilih.module")} data={modules} searchable required {...form.getInputProps("module_id")} variant="filled" />
             </Grid.Col>
           </Grid>
 
-          <Divider my="xl" label="Access Rights" labelPosition="center" />
+          <Divider my="xl" label={t("admin.permission.index.access.rights")} labelPosition="center" />
 
           <Grid>
             {[
@@ -425,7 +427,7 @@ export default function KelolaPermission() {
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>Batal</Button>
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.permission.index.batal")}</Button>
             <Button type="submit" form="permission-form" color="indigo" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan Permission"}
             </Button>
@@ -444,13 +446,13 @@ export default function KelolaPermission() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.permission.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" className="text-lg" />
           </button>
           <Stack gap={2}>
-            <Text size="1.8rem" fw={600} c="black">Kelola Permission</Text>
-            <Text size="sm" c="black">Daftar semua permission kustom per user</Text>
+            <Text size="1.8rem" fw={600} c="black">{t("admin.permission.index.kelola.permission")}</Text>
+            <Text size="sm" c="black">{t("admin.permission.index.daftar.semua.permission.kustom.per.user")}</Text>
           </Stack>
         </Flex>
         <Button 
@@ -459,16 +461,16 @@ export default function KelolaPermission() {
           color="indigo"
           radius="md"
         >
-          Tambah Permission
+          {t("admin.permission.index.tambah.permission")}
         </Button>
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.permission.index.pencarian")}</Text>
             <TextInput 
-              placeholder="Cari user, role, module..." 
+              placeholder={t("admin.permission.index.cari.user.role.module")} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
@@ -520,7 +522,7 @@ export default function KelolaPermission() {
                   <td colSpan={6} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:shield-slash" className="text-5xl text-gray-300" />
-                      <Text c="dimmed" fw={500}>Data permission tidak ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("admin.permission.index.data.permission.tidak.ditemukan")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -553,21 +555,21 @@ export default function KelolaPermission() {
                     </td>
                     <td style={tableCellStyle}>
                       <Group gap={4}>
-                        {item.is_index === 1 && <Badge size="xs" radius="xs" color="gray" variant="outline">IDX</Badge>}
-                        {item.is_view === 1 && <Badge size="xs" radius="xs" color="teal" variant="light">VIEW</Badge>}
-                        {item.is_update === 1 && <Badge size="xs" radius="xs" color="orange" variant="light">UPD</Badge>}
-                        {item.is_delete === 1 && <Badge size="xs" radius="xs" color="red" variant="light">DEL</Badge>}
-                        {item.is_download === 1 && <Badge size="xs" radius="xs" color="indigo" variant="light">DL</Badge>}
+                        {item.is_index === 1 && <Badge size="xs" radius="xs" color="gray" variant="outline">{t("admin.permission.index.idx")}</Badge>}
+                        {item.is_view === 1 && <Badge size="xs" radius="xs" color="teal" variant="light">{t("admin.permission.index.view")}</Badge>}
+                        {item.is_update === 1 && <Badge size="xs" radius="xs" color="orange" variant="light">{t("admin.permission.index.upd")}</Badge>}
+                        {item.is_delete === 1 && <Badge size="xs" radius="xs" color="red" variant="light">{t("admin.permission.index.del")}</Badge>}
+                        {item.is_download === 1 && <Badge size="xs" radius="xs" color="indigo" variant="light">{t("admin.permission.index.dl")}</Badge>}
                       </Group>
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
-                        <Tooltip label="Edit Permission" withArrow>
+                        <Tooltip label={t("admin.permission.index.edit.permission")} withArrow>
                           <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm">
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus" withArrow>
+                        <Tooltip label={t("admin.permission.index.hapus")} withArrow>
                           <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm">
                             <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>

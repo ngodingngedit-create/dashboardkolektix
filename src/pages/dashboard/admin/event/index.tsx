@@ -16,10 +16,12 @@ import { useRouter } from "next/router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import type { EventListResponse } from "../../my-event/type.d.ts";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
 export default function AdminEventManagement() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<EventListResponse[]>([]);
@@ -203,13 +205,13 @@ export default function AdminEventManagement() {
           <button
             onClick={() => router.push("/dashboard/admin")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.event.index.kembali.ke.dashboard.admin")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>Kelola Event</Text>
-            <Text size="sm" c="gray">Monitor dan kelola persetujuan event platform</Text>
+            <Text size="1.8rem" fw={600}>{t("admin.event.index.kelola.event")}</Text>
+            <Text size="sm" c="gray">{t("admin.event.index.monitor.dan.kelola.persetujuan.event.platform")}</Text>
           </Stack>
         </Flex>
         <ButtonM
@@ -220,13 +222,13 @@ export default function AdminEventManagement() {
           radius="md"
           size="md"
         >
-          Tambah Event
+          {t("admin.event.index.tambah.event")}
         </ButtonM>
       </Flex>
 
       <Tabs
         variant="underlined"
-        aria-label="Filter Status"
+        aria-label={t("admin.event.index.filter.status")}
         selectedKey={activeTab}
         onSelectionChange={(key) => {
           setActiveTab(key.toString());
@@ -244,9 +246,9 @@ export default function AdminEventManagement() {
             <div className="mt-0">
               <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
                 <div className="flex flex-col gap-1.5 w-60">
-                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">Penyelenggara</Text>
+                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.penyelenggara")}</Text>
                   <Select
-                    placeholder="Semua Creator"
+                    placeholder={t("admin.event.index.semua.creator")}
                     data={creators.map(c => ({
                       value: String(c.id),
                       label: c.name || c.name_event_organizer || "No Name"
@@ -268,7 +270,7 @@ export default function AdminEventManagement() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">Rentang Tanggal</Text>
+                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.rentang.tanggal")}</Text>
                   <Group gap={8} wrap="nowrap">
                     <input
                       type="date"
@@ -286,7 +288,7 @@ export default function AdminEventManagement() {
                 </div>
 
                 <div className="flex flex-col gap-1.5 w-72">
-                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">Pencarian</Text>
+                  <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.pencarian")}</Text>
                   <Input
                     isClearable
                     value={search}
@@ -295,7 +297,7 @@ export default function AdminEventManagement() {
                       setSearch("");
                       setPage(1);
                     }}
-                    placeholder="Nama Event atau Creator..."
+                    placeholder={t("admin.event.index.nama.event.atau.creator")}
                     size="sm"
                     startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
                     className="w-full h-[36px]"
@@ -310,24 +312,24 @@ export default function AdminEventManagement() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #e8e8e8' }}>
-                      <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', width: 60 }}>No</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', width: 60 }}>{t("admin.event.index.no")}</th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('name')}>
-                        Event {sortBy === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                        {t("admin.event.index.event")} {sortBy === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('has_creator.name')}>
-                        Penyelenggara {sortBy === 'has_creator.name' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                        {t("admin.event.index.penyelenggara")} {sortBy === 'has_creator.name' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('start_date')}>
-                        Waktu & Lokasi {sortBy === 'start_date' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                        {t("admin.event.index.waktu.lokasi")} {sortBy === 'start_date' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('event_status_id')}>
-                        Status {sortBy === 'event_status_id' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                        {t("admin.event.index.status")} {sortBy === 'event_status_id' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => handleSort('created_at')}>
-                        Dibuat {sortBy === 'created_at' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
+                        {t("admin.event.index.dibuat")} {sortBy === 'created_at' ? (sortDir === 'asc' ? '↑' : '↓') : <span style={{ opacity: 0.3 }}>↑</span>}
                       </th>
                       <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', position: 'sticky', right: 0, backgroundColor: '#f8f9fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
-                        Aksi
+                        {t("admin.event.index.aksi")}
                       </th>
                     </tr>
                   </thead>
@@ -405,24 +407,24 @@ export default function AdminEventManagement() {
                           </td>
                           <td style={{ padding: '12px 14px', textAlign: 'center', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
                             <Group gap={8} justify="center">
-                              <Tooltip label="View Detail Event">
+                              <Tooltip label={t("admin.event.index.view.detail.event")}>
                                 <ActionIcon variant="filled" color="cyan" component={Link} href={`/dashboard/admin/event/view/${item.slug_url}`} size="md" radius="sm">
                                   <Icon icon="ph:eye" className="text-lg" />
                                 </ActionIcon>
                               </Tooltip>
-                              <Tooltip label="Edit Event">
+                              <Tooltip label={t("admin.event.index.edit.event")}>
                                 <ActionIcon variant="filled" color="indigo" component={Link} href={`/dashboard/admin/event/edit/${item.slug_url}`} size="md" radius="sm">
                                   <Icon icon="ph:pencil-simple" className="text-lg" />
                                 </ActionIcon>
                               </Tooltip>
                               {item.event_status_id === 3 ? (
-                                <Tooltip label="Batalkan Persetujuan">
+                                <Tooltip label={t("admin.event.index.batalkan.persetujuan")}>
                                   <ActionIcon variant="filled" color="red" onClick={() => handleToggleApproval(item.id, false)} size="md" radius="sm">
                                     <Icon icon="ph:x-circle" className="text-lg" />
                                   </ActionIcon>
                                 </Tooltip>
                               ) : (
-                                <Tooltip label="Setujui Event">
+                                <Tooltip label={t("admin.event.index.setujui.event")}>
                                   <ActionIcon variant="filled" color="green" onClick={() => handleToggleApproval(item.id, true)} size="md" radius="sm">
                                     <Icon icon="ph:check-circle" className="text-lg" />
                                   </ActionIcon>
@@ -459,7 +461,7 @@ export default function AdminEventManagement() {
       <Modal
         opened={detailOpened}
         onClose={() => setDetailOpened(false)}
-        title={<Text fw={700} size="lg">Detail Persetujuan Event</Text>}
+        title={<Text fw={700} size="lg">{t("admin.event.index.detail.persetujuan.event")}</Text>}
         size="xl"
         centered
         padding="xl"
@@ -484,16 +486,16 @@ export default function AdminEventManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Stack gap="md">
                 <div>
-                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-1">Informasi Dasar</Text>
+                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-1">{t("admin.event.index.informasi.dasar")}</Text>
                   <Title order={3} className="text-gray-800 leading-tight mb-2">{selectedEvent.name}</Title>
-                  <Text size="sm" c="dimmed" fw={500}>URL Slug: kolektix.com/event/{selectedEvent.slug}</Text>
+                  <Text size="sm" c="dimmed" fw={500}>{t("admin.event.index.url.slug.kolektix.com.event")}{selectedEvent.slug}</Text>
                 </div>
 
                 <Divider />
 
                 <Group gap="lg">
                   <div className="flex flex-col gap-1">
-                    <Text size="xs" fw={700} c="dimmed" className="uppercase">Tanggal & Waktu</Text>
+                    <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.event.index.tanggal.waktu")}</Text>
                     <Group gap={6}>
                       <Icon icon="ph:calendar" className="text-[#0B387C]" />
                       <Text size="sm" fw={600}>{moment(selectedEvent.start_date).format("DD MMMM YYYY")}</Text>
@@ -505,7 +507,7 @@ export default function AdminEventManagement() {
                 </Group>
 
                 <div className="flex flex-col gap-1">
-                  <Text size="xs" fw={700} c="dimmed" className="uppercase">Lokasi</Text>
+                  <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.event.index.lokasi")}</Text>
                   <Group gap={6} align="flex-start">
                     <Icon icon="ph:map-pin" className="text-[#0B387C] mt-1" />
                     <div className="flex flex-col">
@@ -518,7 +520,7 @@ export default function AdminEventManagement() {
 
               <Stack gap="md">
                 <div>
-                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-3">Penyelenggara</Text>
+                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-3">{t("admin.event.index.penyelenggara")}</Text>
                   <Paper withBorder radius="md" p="md" bg="gray.50/50">
                     <Group>
                       <Avatar src={selectedEvent.has_creator?.image_url || undefined} size="lg" radius="md" />
@@ -531,7 +533,7 @@ export default function AdminEventManagement() {
                 </div>
 
                 <div>
-                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-2">Tentang Event</Text>
+                  <Text size="xs" fw={700} c="dimmed" className="uppercase mb-2">{t("admin.event.index.tentang.event")}</Text>
                   <ScrollArea.Autosize mah={150} type="scroll">
                     <Text size="sm" className="whitespace-pre-line text-gray-700 leading-relaxed">
                       {selectedEvent.description?.replace(/<[^>]*>/g, '') || "Tidak ada deskripsi."}
@@ -545,7 +547,7 @@ export default function AdminEventManagement() {
 
             <Group justify="flex-end" gap="md">
               <ButtonM variant="subtle" color="gray" onClick={() => setDetailOpened(false)}>
-                Tutup
+                {t("admin.event.index.tutup")}
               </ButtonM>
               <ButtonM
                 component={Link}
@@ -554,7 +556,7 @@ export default function AdminEventManagement() {
                 color="indigo"
                 leftSection={<Icon icon="ph:pencil-simple" />}
               >
-                Edit Event
+                {t("admin.event.index.edit.event")}
               </ButtonM>
               {selectedEvent.event_status_id === 3 ? (
                 <ButtonM
@@ -563,7 +565,7 @@ export default function AdminEventManagement() {
                   leftSection={<Icon icon="ph:x-circle" />}
                   onClick={() => handleToggleApproval(selectedEvent.id, false)}
                 >
-                  Batalkan Persetujuan
+                  {t("admin.event.index.batalkan.persetujuan")}
                 </ButtonM>
               ) : (
                 <ButtonM
@@ -572,7 +574,7 @@ export default function AdminEventManagement() {
                   leftSection={<Icon icon="ph:check-circle" />}
                   onClick={() => handleToggleApproval(selectedEvent.id, true)}
                 >
-                  Setujui Event Sekarang
+                  {t("admin.event.index.setujui.event.sekarang")}
                 </ButtonM>
               )}
             </Group>

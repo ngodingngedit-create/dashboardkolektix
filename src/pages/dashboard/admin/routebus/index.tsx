@@ -12,6 +12,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { modals } from "@mantine/modals";
 import moment from "moment";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
@@ -54,6 +55,7 @@ const emptyForm = {
 };
 
 export default function AdminRouteManagement() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RouteItem[]>([]);
@@ -179,7 +181,7 @@ export default function AdminRouteManagement() {
     modals.openConfirmModal({
       title: "Hapus Rute",
       centered: true,
-      children: <Text size="sm">Yakin ingin menghapus rute <b>{item.route_name}</b>? Tindakan ini tidak dapat dibatalkan.</Text>,
+      children: <Text size="sm">{t("admin.routebus.index.yakin.ingin.menghapus.rute")} <b>{item.route_name}</b>{t("admin.routebus.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
       labels: { confirm: "Hapus", cancel: "Batal" },
       confirmProps: { color: "red" },
       onConfirm: async () => {
@@ -215,16 +217,16 @@ export default function AdminRouteManagement() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.routebus.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" />
           </button>
           <Stack gap={4}>
             <Text size="1.7rem" fw={700} style={{ color: "#0B387C", display: "inline-flex", alignItems: "center", gap: 8 }}>
               <Icon icon="ph:path-bold" />
-              List Rute
+              {t("admin.routebus.index.list.rute")}
             </Text>
-            <Text size="sm" c="gray">Kelola rute perjalanan shuttle</Text>
+            <Text size="sm" c="gray">{t("admin.routebus.index.kelola.rute.perjalanan.shuttle")}</Text>
           </Stack>
         </Flex>
         <ButtonM
@@ -234,20 +236,20 @@ export default function AdminRouteManagement() {
           size="md"
           onClick={handleOpenCreate}
         >
-          Tambah Rute
+          {t("admin.routebus.index.tambah.rute")}
         </ButtonM>
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden">
         <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">Total: <b>{total}</b> rute</Text>
+          <Text size="sm" fw={600} c="gray.7">{t("admin.routebus.index.total")} <b>{total}</b> {t("admin.routebus.index.rute")}</Text>
           <div style={{ width: 280 }}>
             <Input
               isClearable
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               onClear={() => setSearch("")}
-              placeholder="Cari rute, asal, tujuan..."
+              placeholder={t("admin.routebus.index.cari.rute.asal.tujuan")}
               size="sm"
               startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
               classNames={{ input: "bg-[#f1f3f5] border-none" }}
@@ -259,28 +261,28 @@ export default function AdminRouteManagement() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "2px solid #e8e8e8" }}>
-                <th style={{ ...tableHeadStyle, width: 50, textAlign: "center" }}>No</th>
+                <th style={{ ...tableHeadStyle, width: 50, textAlign: "center" }}>{t("admin.routebus.index.no")}</th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("route_name")}>
-                  Nama Rute <SortIcon col="route_name" />
+                  {t("admin.routebus.index.nama.rute")} <SortIcon col="route_name" />
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("origin_name")}>
-                  Asal → Tujuan <SortIcon col="origin_name" />
+                  {t("admin.routebus.index.asal.tujuan")} <SortIcon col="origin_name" />
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer", textAlign: "center" }} onClick={() => handleSort("distance_km")}>
-                  Jarak <SortIcon col="distance_km" />
+                  {t("admin.routebus.index.jarak")} <SortIcon col="distance_km" />
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer", textAlign: "center" }} onClick={() => handleSort("duration_minutes")}>
-                  Durasi <SortIcon col="duration_minutes" />
+                  {t("admin.routebus.index.durasi")} <SortIcon col="duration_minutes" />
                 </th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Status</th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
+                <th style={{ ...tableHeadStyle, textAlign: "center" }}>{t("admin.routebus.index.status")}</th>
+                <th style={{ ...tableHeadStyle, textAlign: "center" }}>{t("admin.routebus.index.aksi")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} style={{ padding: 48, textAlign: "center" }}>
-                    <Text c="dimmed">Memuat data...</Text>
+                    <Text c="dimmed">{t("admin.routebus.index.memuat.data")}</Text>
                   </td>
                 </tr>
               ) : sortedData.length === 0 ? (
@@ -288,7 +290,7 @@ export default function AdminRouteManagement() {
                   <td colSpan={7} style={{ padding: 48, textAlign: "center" }}>
                     <Stack align="center" gap={8}>
                       <Icon icon="ph:path-duotone" style={{ fontSize: 40, color: "#ccc" }} />
-                      <Text c="dimmed">Tidak ada data rute</Text>
+                      <Text c="dimmed">{t("admin.routebus.index.tidak.ada.data.rute")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -324,7 +326,7 @@ export default function AdminRouteManagement() {
                       </Group>
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Text size="sm" fw={600}>{item.distance_km} km</Text>
+                      <Text size="sm" fw={600}>{item.distance_km} {t("admin.routebus.index.km")}</Text>
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
                       <Text size="sm" fw={600}>{formatDuration(item.duration_minutes)}</Text>
@@ -336,17 +338,17 @@ export default function AdminRouteManagement() {
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
                       <Group gap={6} justify="center" wrap="nowrap">
-                        <Tooltip label="Lihat Detail">
+                        <Tooltip label={t("admin.routebus.index.lihat.detail")}>
                           <ActionIcon variant="filled" color="cyan" size="md" radius="sm" onClick={() => handleOpenView(item)}>
                             <Icon icon="ph:eye" style={{ fontSize: 16 }} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Edit Rute">
+                        <Tooltip label={t("admin.routebus.index.edit.rute")}>
                           <ActionIcon variant="filled" color="indigo" size="md" radius="sm" onClick={() => handleOpenEdit(item)}>
                             <Icon icon="ph:pencil-simple" style={{ fontSize: 16 }} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus Rute">
+                        <Tooltip label={t("admin.routebus.index.hapus.rute")}>
                           <ActionIcon variant="filled" color="red" size="md" radius="sm" onClick={() => handleDelete(item)}>
                             <Icon icon="ph:trash" style={{ fontSize: 16 }} />
                           </ActionIcon>
@@ -386,8 +388,8 @@ export default function AdminRouteManagement() {
       >
         <Stack gap="md">
           <TextInput
-            label="Nama Rute"
-            placeholder="Jakarta - Bandung"
+            label={t("admin.routebus.index.nama.rute")}
+            placeholder={t("admin.routebus.index.jakarta.bandung")}
             value={form.route_name}
             onChange={e => setForm(f => ({ ...f, route_name: e.target.value }))}
             required
@@ -395,21 +397,21 @@ export default function AdminRouteManagement() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <TextInput
-              label="Kota Asal"
-              placeholder="Jakarta"
+              label={t("admin.routebus.index.kota.asal")}
+              placeholder={t("admin.routebus.index.jakarta")}
               value={form.origin_name}
               onChange={e => setForm(f => ({ ...f, origin_name: e.target.value }))}
               required
             />
             <TextInput
-              label="Kota Tujuan"
-              placeholder="Bandung"
+              label={t("admin.routebus.index.kota.tujuan")}
+              placeholder={t("admin.routebus.index.bandung")}
               value={form.destination_name}
               onChange={e => setForm(f => ({ ...f, destination_name: e.target.value }))}
               required
             />
             <NumberInput
-              label="Jarak (km)"
+              label={t("admin.routebus.index.jarak.km")}
               placeholder="150.5"
               value={form.distance_km}
               onChange={v => setForm(f => ({ ...f, distance_km: Number(v) }))}
@@ -417,7 +419,7 @@ export default function AdminRouteManagement() {
               decimalScale={2}
             />
             <NumberInput
-              label="Durasi (menit)"
+              label={t("admin.routebus.index.durasi.menit")}
               placeholder="180"
               value={form.duration_minutes}
               onChange={v => setForm(f => ({ ...f, duration_minutes: Number(v) }))}
@@ -427,7 +429,7 @@ export default function AdminRouteManagement() {
 
           <Group align="center">
             <Switch
-              label="Status Aktif"
+              label={t("admin.routebus.index.status.aktif")}
               checked={form.status === 1}
               onChange={e => setForm(f => ({ ...f, status: e.currentTarget.checked ? 1 : 0 }))}
               color="blue"
@@ -435,7 +437,7 @@ export default function AdminRouteManagement() {
           </Group>
 
           <Group justify="flex-end" mt="md" gap={10}>
-            <ButtonM variant="subtle" color="gray" onClick={() => setOpened(false)}>Batal</ButtonM>
+            <ButtonM variant="subtle" color="gray" onClick={() => setOpened(false)}>{t("admin.routebus.index.batal")}</ButtonM>
             <ButtonM
               color="blue"
               leftSection={<Icon icon={isEdit ? "ph:floppy-disk" : "ph:plus-bold"} />}
@@ -452,7 +454,7 @@ export default function AdminRouteManagement() {
       <Modal
         opened={viewOpened}
         onClose={() => setViewOpened(false)}
-        title={<Text fw={700} size="lg" c="#0B387C">Detail Rute</Text>}
+        title={<Text fw={700} size="lg" c="#0B387C">{t("admin.routebus.index.detail.rute")}</Text>}
         size="md"
         centered
         padding="xl"
@@ -477,34 +479,34 @@ export default function AdminRouteManagement() {
               <div style={{ textAlign: "center", background: "#f1f3f5", borderRadius: 10, padding: 14 }}>
                 <Icon icon="ph:road-horizon-bold" style={{ fontSize: 24, color: "#0B387C", marginBottom: 4 }} />
                 <Text size="lg" fw={800} c="#0B387C">{selectedItem.distance_km}</Text>
-                <Text size="xs" c="dimmed">km</Text>
+                <Text size="xs" c="dimmed">{t("admin.routebus.index.km")}</Text>
               </div>
               <div style={{ textAlign: "center", background: "#f1f3f5", borderRadius: 10, padding: 14 }}>
                 <Icon icon="ph:clock-countdown-bold" style={{ fontSize: 24, color: "#0B387C", marginBottom: 4 }} />
                 <Text size="lg" fw={800} c="#0B387C">{formatDuration(selectedItem.duration_minutes)}</Text>
-                <Text size="xs" c="dimmed">durasi</Text>
+                <Text size="xs" c="dimmed">{t("admin.routebus.index.durasi.2")}</Text>
               </div>
               <div style={{ textAlign: "center", background: "#f1f3f5", borderRadius: 10, padding: 14 }}>
                 <Icon icon="ph:check-circle-bold" style={{ fontSize: 24, color: selectedItem.status ? "#2f9e44" : "#aaa", marginBottom: 4 }} />
                 <Text size="sm" fw={700} c={selectedItem.status ? "green" : "gray"}>
                   {selectedItem.status ? "Aktif" : "Nonaktif"}
                 </Text>
-                <Text size="xs" c="dimmed">status</Text>
+                <Text size="xs" c="dimmed">{t("admin.routebus.index.status.2")}</Text>
               </div>
             </div>
 
             {selectedItem.created_at && (
-              <Text size="xs" c="dimmed">Dibuat: {moment(selectedItem.created_at).format("DD MMM YYYY HH:mm")}</Text>
+              <Text size="xs" c="dimmed">{t("admin.routebus.index.dibuat")} {moment(selectedItem.created_at).format("DD MMM YYYY HH:mm")}</Text>
             )}
 
             <Group justify="flex-end" mt="xs">
-              <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>Tutup</ButtonM>
+              <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>{t("admin.routebus.index.tutup")}</ButtonM>
               <ButtonM
                 color="indigo"
                 leftSection={<Icon icon="ph:pencil-simple" />}
                 onClick={() => { setViewOpened(false); handleOpenEdit(selectedItem); }}
               >
-                Edit
+                {t("admin.routebus.index.edit")}
               </ButtonM>
             </Group>
           </Stack>

@@ -46,6 +46,7 @@ import config from "@/Config";
 import Cookies from "js-cookie";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // Types
 interface Voucher {
@@ -94,6 +95,7 @@ interface PaginationInfo {
 
 const VoucherPage = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useLoggedUser();
   const [loading, setLoading] = useListState<string>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -298,7 +300,7 @@ const VoucherPage = () => {
 
   const handleSaveVoucher = async () => {
     if ((formData.module_id === 1 && !formData.event_id) || (formData.module_id === 2 && !formData.product_id) || !formData.code) {
-      notifications.show({ title: "Peringatan", message: "Lengkapi data yang diperlukan", color: "yellow" });
+      notifications.show({ title: t("common.warning"), message: t("voucher.warning"), color: "yellow" });
       return;
     }
     const payload = {
@@ -322,15 +324,15 @@ const VoucherPage = () => {
       
       if (formData.id) {
         await axios.put(`${config.wsUrl}vouchers/${formData.slug_url || formData.id}`, payload, { headers });
-        notifications.show({ title: "Sukses", message: "Voucher berhasil diperbarui", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("voucher.updateSuccess"), color: "green" });
       } else {
         await axios.post(`${config.wsUrl}vouchers`, payload, { headers });
-        notifications.show({ title: "Sukses", message: "Voucher berhasil dibuat", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("voucher.createSuccess"), color: "green" });
       }
       setIsFormVisible(false);
       fetchVouchers(formData.id ? pagination.current_page : 1);
     } catch (error: any) {
-      notifications.show({ title: "Error", message: `Error: ${error.response?.data?.message || error.message}`, color: "red" });
+      notifications.show({ title: t("common.error"), message: t("voucher.errorPrefix", { msg: error.response?.data?.message || error.message }), color: "red" });
     } finally {
       setLoading.filter((e) => e !== "save");
     }
@@ -343,11 +345,11 @@ const VoucherPage = () => {
       const token = Cookies.get("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.delete(`${config.wsUrl}vouchers/${voucherToDelete}`, { headers });
-      notifications.show({ title: "Sukses", message: "Voucher berhasil dihapus", color: "green" });
+      notifications.show({ title: t("common.success"), message: t("voucher.deleteSuccess"), color: "green" });
       setDeleteModalOpen(false);
       fetchVouchers(pagination.current_page);
     } catch (error: any) {
-      notifications.show({ title: "Error", message: error.response?.data?.message || "Gagal menghapus voucher", color: "red" });
+      notifications.show({ title: t("common.error"), message: error.response?.data?.message || t("voucher.deleteFailed"), color: "red" });
     } finally {
       setLoading.filter((e) => e !== "delete");
     }
@@ -452,17 +454,17 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
-<Title order={1} size="h2">Manajemen Voucher</Title>
-<Text size="sm" c="gray">Kelola voucher promo untuk event Anda</Text>
+<Title order={1} size="h2">{t("voucher.title")}</Title>
+<Text size="sm" c="gray">{t("voucher.subtitle")}</Text>
 </Stack>
 </Flex>
         <Flex gap="md" align="center">
           <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL VOUCHER</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalVoucher")}</Text>
             <Text size="lg" fw={700}>{stats.total}</Text>
           </Card>
           <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL TERPAKAI</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalUsed")}</Text>
             <Text size="lg" fw={700} c="blue">{stats.used}</Text>
           </Card>
           <Button 
@@ -471,7 +473,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             size="md" 
             radius="lg" 
             px={24}
-            title="Buat Voucher Baru"
+            title={t("voucher.createVoucher")}
           >
             <FontAwesomeIcon icon={faPlus} />
           </Button>
@@ -480,13 +482,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
       <Card withBorder p="md" radius="md" shadow="sm">
         <Flex gap="md" align="center" wrap="wrap">
-          <TextInput placeholder="Cari kode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
-          <Select placeholder="Semua Modul" value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: "Semua Modul" }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 140 }} />
-          <Select placeholder="Semua Event" value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: "Semua Event" }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
-          <Select placeholder="Semua Tipe" value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: "Semua Tipe" }, { value: "persentase", label: "Persentase" }, { value: "nominal", label: "Nominal" }]} style={{ width: 140 }} />
-          <Select placeholder="Semua Status" value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: "Semua Status" }, { value: "active", label: "Aktif" }, { value: "inactive", label: "Nonaktif" }, { value: "expired", label: "Kadaluarsa" }]} style={{ width: 140 }} />
+          <TextInput placeholder={t("voucher.searchCode")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
+          <Select placeholder={t("voucher.allModules")} value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: t("voucher.allModules") }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 140 }} />
+          <Select placeholder={t("voucher.allEvents")} value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: t("voucher.allEvents") }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
+          <Select placeholder={t("voucher.allTypes")} value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: t("voucher.allTypes") }, { value: "persentase", label: t("voucher.percentage") }, { value: "nominal", label: t("voucher.nominal") }]} style={{ width: 140 }} />
+          <Select placeholder={t("voucher.allStatus")} value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: t("voucher.allStatus") }, { value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }, { value: "expired", label: t("voucher.expired") }]} style={{ width: 140 }} />
           <Button variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
-          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>Reset</Button>
+          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>{t("voucher.reset")}</Button>
         </Flex>
       </Card>
 
@@ -495,32 +497,42 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
-                {["No", "Kode Voucher", "Tipe Voucher", "Diskon", "Periode", "Kuota", "Stok", "Status", "Aksi"].map((label, i) => (
-                  <th key={i} onClick={() => ["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) && requestSort(label === "Kode Voucher" ? 'code' : label === "Tipe Voucher" ? 'type' : 'stock')} style={{
-                    padding: '14px', textAlign: ["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: ["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) ? 'pointer' : 'default',
-                    position: label === "Aksi" ? 'sticky' : 'static', right: label === "Aksi" ? 0 : 'auto', backgroundColor: label === "Aksi" ? '#f8f9fa' : 'transparent', zIndex: label === "Aksi" ? 10 : 1, boxShadow: label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
+                {[
+                  { label: t("voucher.colNo"), center: true, sortKey: null, sticky: false },
+                  { label: t("voucher.colCode"), center: false, sortKey: 'code', sticky: false },
+                  { label: t("voucher.colType"), center: false, sortKey: 'type', sticky: false },
+                  { label: t("voucher.colDiscount"), center: true, sortKey: null, sticky: false },
+                  { label: t("voucher.colPeriod"), center: false, sortKey: null, sticky: false },
+                  { label: t("voucher.colQuota"), center: false, sortKey: null, sticky: false },
+                  { label: t("voucher.colStock"), center: true, sortKey: 'stock', sticky: false },
+                  { label: t("voucher.colStatus"), center: true, sortKey: null, sticky: false },
+                  { label: t("common.actions"), center: true, sortKey: null, sticky: true }
+                ].map((col, i) => (
+                  <th key={i} onClick={() => col.sortKey && requestSort(col.sortKey)} style={{
+                    padding: '14px', textAlign: col.center ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', cursor: col.sortKey ? 'pointer' : 'default',
+                    position: col.sticky ? 'sticky' : 'static', right: col.sticky ? 0 : 'auto', backgroundColor: col.sticky ? '#f8f9fa' : 'transparent', zIndex: col.sticky ? 10 : 1, boxShadow: col.sticky ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
                   }}>
-                    <Flex align="center" gap={6} justify={["No", "Diskon", "Stok", "Status", "Aksi"].includes(label) ? 'center' : 'flex-start'}>
-                      {label}
-                      {["Kode Voucher", "Tipe Voucher", "Stok"].includes(label) && <FontAwesomeIcon icon={getSortIcon(label === "Kode Voucher" ? 'code' : label === "Tipe Voucher" ? 'type' : 'stock')} size="xs" style={{ color: '#adb5bd' }} />}
+                    <Flex align="center" gap={6} justify={col.center ? 'center' : 'flex-start'}>
+                      {col.label}
+                      {col.sortKey && <FontAwesomeIcon icon={getSortIcon(col.sortKey)} size="xs" style={{ color: '#adb5bd' }} />}
                     </Flex>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {loading.includes("vouchers") ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr> :
-                sortedVouchers.length === 0 ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Tidak ada voucher ditemukan</Text></td></tr> :
+              {loading.includes("vouchers") ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">{t("common.loading")}</Text></td></tr> :
+                sortedVouchers.length === 0 ? <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">{t("voucher.noVouchers")}</Text></td></tr> :
                   sortedVouchers.map((v, idx) => {
                     const now = moment();
                     const startDate = moment(v.date_start);
                     const endDate = moment(v.date_end);
-                    let bStat = "Aktif"; let sCol = "green"; let sysStat = v.status === 1 ? "Aktif" : "Nonaktif";
-                    if (now.isBefore(startDate)) { bStat = "Belum Mulai"; sCol = "blue"; }
-                    else if (now.isAfter(endDate)) { bStat = "Kadaluarsa"; sCol = "red"; }
-                    else if (v.used_count >= v.max_use) { bStat = "Terpakai"; sCol = "orange"; }
-                    else if (v.stock <= 0) { bStat = "Habis"; sCol = "gray"; }
-                    else if (sysStat === "Nonaktif") { bStat = "Nonaktif"; sCol = "gray"; }
+                    let bStat = t("common.active"); let sCol = "green"; let sysStat = v.status === 1 ? "Aktif" : "Nonaktif";
+                    if (now.isBefore(startDate)) { bStat = t("voucher.notStarted"); sCol = "blue"; }
+                    else if (now.isAfter(endDate)) { bStat = t("voucher.expired"); sCol = "red"; }
+                    else if (v.used_count >= v.max_use) { bStat = t("voucher.used"); sCol = "orange"; }
+                    else if (v.stock <= 0) { bStat = t("voucher.outOfStock"); sCol = "gray"; }
+                    else if (sysStat === "Nonaktif") { bStat = t("common.inactive"); sCol = "gray"; }
 
                     return (
                       <tr key={v.id} style={{ borderBottom: '1px solid #f1f3f5' }}>
@@ -528,7 +540,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         <td style={{ padding: '12px 14px' }}><Text size="sm" fw={700} c="blue">{v.code}</Text></td>
                         <td style={{ padding: '12px 14px' }}>
                           <Badge variant="light" color={v.event_id && !v.product_id ? "blue" : "orange"} size="sm">
-                            {v.event_id && !v.product_id ? "Event" : "Produk"}
+                            {v.event_id && !v.product_id ? t("voucher.eventBadge") : t("voucher.productBadge")}
                           </Badge>
                         </td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Badge variant="light" color={v.type === "persentase" ? "blue" : "green"}>{v.type === "persentase" ? `${v.discount}%` : `Rp ${v.discount.toLocaleString()}`}</Badge></td>
@@ -552,7 +564,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       </Card>
       {vouchers.length > 0 && (
         <Flex justify="space-between" align="center">
-          <Text size="xs" c="dimmed">Total {pagination.total} voucher</Text>
+          <Text size="xs" c="dimmed">{t("voucher.totalCount", { count: pagination.total })}</Text>
           <Pagination value={pagination.current_page} onChange={handlePageChange} total={pagination.last_page} radius="md" size="sm" withEdges />
         </Flex>
       )}
@@ -567,8 +579,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <FontAwesomeIcon icon={faArrowLeft} />
         </ActionIcon>
         <Stack gap={0}>
-          <Title order={2} size="h3">{isEditMode ? "Edit Voucher" : "Buat Voucher Baru"}</Title>
-          <Text size="xs" c="dimmed">Lengkapi rincian di bawah ini</Text>
+          <Title order={2} size="h3">{isEditMode ? t("voucher.editVoucher") : t("voucher.createVoucher")}</Title>
+          <Text size="xs" c="dimmed">{t("voucher.formSubtitle")}</Text>
         </Stack>
       </Flex>
 
@@ -576,24 +588,24 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         <Card withBorder padding="xl" radius="md" shadow="sm">
           <Stack gap="xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select label="Modul Voucher" data={modules.filter(m => m.id === 1 || m.id === 2).map(m => ({ value: m.id.toString(), label: m.module_name }))} value={formData.module_id?.toString()} onChange={v => {
+              <Select label={t("voucher.moduleLabel")} data={modules.filter(m => m.id === 1 || m.id === 2).map(m => ({ value: m.id.toString(), label: m.module_name }))} value={formData.module_id?.toString()} onChange={v => {
                 const newModuleId = Number(v) || 1;
                 setFormData({ ...formData, module_id: newModuleId });
                 setVoucherTargetType(newModuleId === 2 ? "product" : "event");
               }} />
               {formData.module_id === 1 ? (
-                <Select label="Event" data={events.map(e => ({ value: e.id.toString(), label: e.name }))} value={formData.event_id} onChange={v => setFormData({ ...formData, event_id: v || "" })} required />
+                <Select label={t("voucher.eventLabel")} data={events.map(e => ({ value: e.id.toString(), label: e.name }))} value={formData.event_id} onChange={v => setFormData({ ...formData, event_id: v || "" })} required />
               ) : (
-                <Select label="Produk" data={products.map(p => ({ value: p.id.toString(), label: p.product_name || p.name }))} value={formData.product_id} onChange={v => setFormData({ ...formData, product_id: v || "" })} required />
+                <Select label={t("voucher.productLabel")} data={products.map(p => ({ value: p.id.toString(), label: p.product_name || p.name }))} value={formData.product_id} onChange={v => setFormData({ ...formData, product_id: v || "" })} required />
               )}
-              <TextInput label="Kode Voucher" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required />
-              <Select label="Tipe" data={[{ value: "persentase", label: "Persen (%)" }, { value: "nominal", label: "Nominal (Rp)" }]} value={formData.type} onChange={v => setFormData({ ...formData, type: v as any })} />
-              <NumberInput label="Diskon" value={formData.discount} onChange={v => setFormData({ ...formData, discount: Number(v) })} required />
-              <TextInput label="Mulai" type="date" value={formData.date_start} onChange={e => setFormData({ ...formData, date_start: e.target.value })} />
-              <TextInput label="Berakhir" type="date" value={formData.date_end} onChange={e => setFormData({ ...formData, date_end: e.target.value })} />
-              <NumberInput label="Kuota" value={formData.max_use} onChange={v => setFormData({ ...formData, max_use: Number(v) })} />
-              <NumberInput label="Stok" value={formData.stock} onChange={v => setFormData({ ...formData, stock: Number(v) })} />
-              <Select label="Status" data={[{ value: "1", label: "Aktif" }, { value: "0", label: "Nonaktif" }]} value={formData.status.toString()} onChange={v => setFormData({ ...formData, status: parseInt(v || "1") })} />
+              <TextInput label={t("voucher.codeLabel")} value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required />
+              <Select label={t("voucher.typeLabel")} data={[{ value: "persentase", label: t("voucher.percentLabel") }, { value: "nominal", label: t("voucher.nominalLabel") }]} value={formData.type} onChange={v => setFormData({ ...formData, type: v as any })} />
+              <NumberInput label={t("voucher.discountLabel")} value={formData.discount} onChange={v => setFormData({ ...formData, discount: Number(v) })} required />
+              <TextInput label={t("voucher.startLabel")} type="date" value={formData.date_start} onChange={e => setFormData({ ...formData, date_start: e.target.value })} />
+              <TextInput label={t("voucher.endLabel")} type="date" value={formData.date_end} onChange={e => setFormData({ ...formData, date_end: e.target.value })} />
+              <NumberInput label={t("voucher.quotaLabel")} value={formData.max_use} onChange={v => setFormData({ ...formData, max_use: Number(v) })} />
+              <NumberInput label={t("voucher.stockLabel")} value={formData.stock} onChange={v => setFormData({ ...formData, stock: Number(v) })} />
+              <Select label={t("common.status")} data={[{ value: "1", label: t("common.active") }, { value: "0", label: t("common.inactive") }]} value={formData.status.toString()} onChange={v => setFormData({ ...formData, status: parseInt(v || "1") })} />
             </div>
           </Stack>
         </Card>
@@ -604,7 +616,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         >
           <Flex justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} leftSection={<FontAwesomeIcon icon={faXmark} />}>
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -613,7 +625,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               loading={loading.includes("save")}
               leftSection={<FontAwesomeIcon icon={faSave} />}
             >
-              Simpan
+              {t("common.save")}
             </Button>
           </Flex>
         </Box>
@@ -624,21 +636,21 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
   return (
     <div className="p-5 md:p-8 pb-[100px] min-h-screen bg-[#fcfcfc]">
       {isFormVisible ? renderForm() : renderList()}
-      <Modal opened={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Hapus Voucher" centered size="sm">
+      <Modal opened={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title={t("voucher.deleteTitle")} centered size="sm">
         <Stack gap="md">
-          <Text size="sm">Yakin ingin menghapus voucher ini?</Text>
-          <Flex justify="flex-end" gap="sm"><Button variant="subtle" color="gray" onClick={() => setDeleteModalOpen(false)}>Batal</Button><Button color="red" onClick={handleDeleteVoucher} loading={loading.includes("delete")}>Hapus</Button></Flex>
+          <Text size="sm">{t("voucher.deleteConfirm")}</Text>
+          <Flex justify="flex-end" gap="sm"><Button variant="subtle" color="gray" onClick={() => setDeleteModalOpen(false)}>{t("common.cancel")}</Button><Button color="red" onClick={handleDeleteVoucher} loading={loading.includes("delete")}>{t("common.delete")}</Button></Flex>
         </Stack>
       </Modal>
-      <Modal opened={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Detail Voucher" size="md">
+      <Modal opened={viewModalOpen} onClose={() => setViewModalOpen(false)} title={t("voucher.detailTitle")} size="md">
         {selectedVoucher && (
           <Stack gap="md">
             <div className="grid grid-cols-2 gap-4">
-              <div><Text size="xs" c="dimmed">Kode</Text><Text fw={700}>{selectedVoucher.code}</Text></div>
-              <div><Text size="xs" c="dimmed">{selectedVoucher.product_id ? "Produk" : "Event"}</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id || selectedVoucher.product_id}</Text></div>
+              <div><Text size="xs" c="dimmed">{t("voucher.codeField")}</Text><Text fw={700}>{selectedVoucher.code}</Text></div>
+              <div><Text size="xs" c="dimmed">{selectedVoucher.product_id ? t("voucher.productBadge") : t("voucher.eventBadge")}</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id || selectedVoucher.product_id}</Text></div>
             </div>
-            <Alert color="blue" icon={<FontAwesomeIcon icon={faInfoCircle} />}>Berlaku: {moment(selectedVoucher.date_start).format("DD/MM/YY")} - {moment(selectedVoucher.date_end).format("DD/MM/YY")}</Alert>
-            <Button fullWidth variant="light" onClick={() => setViewModalOpen(false)}>Tutup</Button>
+            <Alert color="blue" icon={<FontAwesomeIcon icon={faInfoCircle} />}>{t("voucher.validLabel")} {moment(selectedVoucher.date_start).format("DD/MM/YY")} - {moment(selectedVoucher.date_end).format("DD/MM/YY")}</Alert>
+            <Button fullWidth variant="light" onClick={() => setViewModalOpen(false)}>{t("common.close")}</Button>
           </Stack>
         )}
       </Modal>

@@ -24,6 +24,7 @@ import {
 import { useForm } from '@mantine/form';
 import { Tab, Tabs } from '@nextui-org/react';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -110,6 +111,7 @@ const ProfileCreator = () => {
   const [loading, setLoading] = useListState<string>();
   const userData = useLoggedUser();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // ── Tab 1: Profil Creator ──────────────────────────────────────────────────
   const [profileList, setProfileList] = useState<CreatorProfileRecord[]>([]);
@@ -221,21 +223,21 @@ const ProfileCreator = () => {
       setLoading.append('submitprofile');
       Put(`creator-data/profile-creator`, payload)
         .then(() => {
-          notifications.show({ title: 'Berhasil', message: 'Berhasil mengupdate profil creator', color: 'green' });
+          notifications.show({ title: t('common.success'), message: t('profileCreator.updateSuccess'), color: 'green' });
           getProfileData();
           setIsFormVisible(false);
         })
-        .catch(() => notifications.show({ title: 'Gagal', message: 'Gagal mengupdate profil creator', color: 'red' }))
+        .catch(() => notifications.show({ title: t('common.failed'), message: t('profileCreator.updateFailed'), color: 'red' }))
         .finally(() => setLoading.filter((e) => e !== 'submitprofile'));
     } else {
       setLoading.append('submitprofile');
       Post('creator', payload)
         .then(() => {
-          notifications.show({ title: 'Berhasil', message: 'Berhasil menyimpan profil creator', color: 'green' });
+          notifications.show({ title: t('common.success'), message: t('profileCreator.saveSuccess'), color: 'green' });
           getProfileData();
           setIsFormVisible(false);
         })
-        .catch(() => notifications.show({ title: 'Gagal', message: 'Gagal menyimpan profil creator', color: 'red' }))
+        .catch(() => notifications.show({ title: t('common.failed'), message: t('profileCreator.saveFailed'), color: 'red' }))
         .finally(() => setLoading.filter((e) => e !== 'submitprofile'));
     }
   };
@@ -293,18 +295,18 @@ const ProfileCreator = () => {
   const ktpForm = useForm<FormKTPProps>({
     initialValues: { no_identity: '', name_identity: '', address_identity: '', file: '' },
     validate: {
-      no_identity: (v) => (!v ? 'Nomor KTP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor KTP harus 16 digit angka' : null),
-      name_identity: (v) => (!v ? 'Nama harus diisi' : null),
-      address_identity: (v) => (!v ? 'Alamat harus diisi' : null),
+      no_identity: (v) => (!v ? t('profileCreator.ktpRequired') : !/^\d{16}$/.test(v) ? t('profileCreator.ktp16Digits') : null),
+      name_identity: (v) => (!v ? t('profileCreator.nameRequired') : null),
+      address_identity: (v) => (!v ? t('profileCreator.addressRequired') : null),
     },
   });
 
   const npwpForm = useForm<FormNPWPProps>({
     initialValues: { no_npwp: '', name_npwp: '', address_npwp: '', file: '' },
     validate: {
-      no_npwp: (v) => (!v ? 'Nomor NPWP harus diisi' : !/^\d{16}$/.test(v) ? 'Nomor NPWP harus 16 digit angka' : null),
-      name_npwp: (v) => (!v ? 'Nama harus diisi' : null),
-      address_npwp: (v) => (!v ? 'Alamat harus diisi' : null),
+      no_npwp: (v) => (!v ? t('profileCreator.npwpRequired') : !/^\d{16}$/.test(v) ? t('profileCreator.npwp16Digits') : null),
+      name_npwp: (v) => (!v ? t('profileCreator.nameRequired') : null),
+      address_npwp: (v) => (!v ? t('profileCreator.addressRequired') : null),
     },
   });
 
@@ -386,15 +388,15 @@ const ProfileCreator = () => {
     try {
       if (hasLegalData && selectedRecord) {
         await Put(`creator-information-legal/${userData?.has_creator?.id ?? 0}`, payload);
-        notifications.show({ title: 'Berhasil', message: 'Data KTP berhasil diperbarui', color: 'green' });
+        notifications.show({ title: t('common.success'), message: t('profileCreator.ktpUpdated'), color: 'green' });
       } else {
         await Post('creator-information-legal', payload);
-        notifications.show({ title: 'Berhasil', message: 'Data KTP berhasil disimpan', color: 'green' });
+        notifications.show({ title: t('common.success'), message: t('profileCreator.ktpSaved'), color: 'green' });
       }
       getLegalData(userData?.has_creator?.id ?? 0);
       setActiveForm(null);
     } catch {
-      notifications.show({ title: 'Gagal', message: 'Gagal menyimpan data KTP', color: 'red' });
+      notifications.show({ title: t('common.failed'), message: t('profileCreator.ktpSaveFailed'), color: 'red' });
     } finally {
       setLoading.filter((e) => e !== 'submitlegal');
     }
@@ -423,15 +425,15 @@ const ProfileCreator = () => {
     try {
       if (hasLegalData && selectedRecord) {
         await Put(`creator-information-legal/${userData?.has_creator?.id ?? 0}`, payload);
-        notifications.show({ title: 'Berhasil', message: 'Data NPWP berhasil diperbarui', color: 'green' });
+        notifications.show({ title: t('common.success'), message: t('profileCreator.npwpUpdated'), color: 'green' });
       } else {
         await Post('creator-information-legal', payload);
-        notifications.show({ title: 'Berhasil', message: 'Data NPWP berhasil disimpan', color: 'green' });
+        notifications.show({ title: t('common.success'), message: t('profileCreator.npwpSaved'), color: 'green' });
       }
       getLegalData(userData?.has_creator?.id ?? 0);
       setActiveForm(null);
     } catch {
-      notifications.show({ title: 'Gagal', message: 'Gagal menyimpan data NPWP', color: 'red' });
+      notifications.show({ title: t('common.failed'), message: t('profileCreator.npwpSaveFailed'), color: 'red' });
     } finally {
       setLoading.filter((e) => e !== 'submitlegal');
     }
@@ -488,7 +490,7 @@ const ProfileCreator = () => {
   const resetPasswordForm = useForm<FormResetPasswordProps>({
     initialValues: { email: '', password: '' },
     validate: {
-      password: (v) => (v.length < 6 ? 'Password minimal 6 karakter' : null),
+      password: (v) => (v.length < 6 ? t('profileCreator.passwordMin6') : null),
     },
   });
 
@@ -496,11 +498,11 @@ const ProfileCreator = () => {
     setLoading.append('resetpassword');
     Post('setup-passoword', values)
       .then(() => {
-        notifications.show({ title: 'Berhasil', message: 'Password berhasil diperbarui', color: 'green' });
+        notifications.show({ title: t('common.success'), message: t('profileCreator.passwordUpdated'), color: 'green' });
         resetPasswordForm.setFieldValue('password', '');
       })
       .catch((err) => {
-        notifications.show({ title: 'Gagal', message: err?.response?.data?.message || 'Gagal memperbarui password', color: 'red' });
+        notifications.show({ title: t('common.failed'), message: err?.response?.data?.message || t('profileCreator.passwordUpdateFailed'), color: 'red' });
       })
       .finally(() => setLoading.filter((e) => e !== 'resetpassword'));
   };
@@ -523,17 +525,17 @@ const ProfileCreator = () => {
     <Stack gap={20}>
       <Flex justify="space-between" align="center">
         <Stack gap={0}>
-          <Title order={2} size="h3">Profil Creator</Title>
-          <Text size="sm" c="gray">Kelola informasi profil creator Anda</Text>
+          <Title order={2} size="h3">{t('profileCreator.title')}</Title>
+          <Text size="sm" c="gray">{t('profileCreator.subtitle')}</Text>
         </Stack>
         {!hasProfileData && (
           <Button onClick={handleAddProfile} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">
-            Tambah Profil
+            {t('profileCreator.addProfile')}
           </Button>
         )}
         {hasProfileData && (
           <Button onClick={() => profileList[0] && handleEditProfile(profileList[0])} leftSection={<FontAwesomeIcon icon={faPencil} />} color="blue" size="md" radius="xl">
-            Edit Profil
+            {t('profileCreator.editProfile')}
           </Button>
         )}
       </Flex>
@@ -546,7 +548,7 @@ const ProfileCreator = () => {
             </Button>
           </Flex>
           <TextInput
-            placeholder="Cari nama, email, atau telepon..."
+            placeholder={t('profileCreator.searchPlaceholder')}
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
             value={searchProfile}
             onChange={(e) => setSearchProfile(e.target.value)}
@@ -559,31 +561,31 @@ const ProfileCreator = () => {
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
                 {[
-                  { label: 'No', sortable: false },
-                  { label: 'Foto', sortable: false },
-                  { label: 'Nama', sortable: true, key: 'name' },
-                  { label: 'Nama Creator', sortable: true, key: 'name_event_organizer' },
-                  { label: 'Email', sortable: true, key: 'email' },
-                  { label: 'Telepon', sortable: false },
-                  { label: 'Aksi', sortable: false },
+                  { label: t('common.no'), sortable: false },
+                  { label: t('profileCreator.colPhoto'), sortable: false },
+                  { label: t('profileCreator.colName'), sortable: true, key: 'name' },
+                  { label: t('profileCreator.colCreatorName'), sortable: true, key: 'name_event_organizer' },
+                  { label: t('common.email'), sortable: true, key: 'email' },
+                  { label: t('profileCreator.colPhone'), sortable: false },
+                  { label: t('common.actions'), sortable: false },
                 ].map((col, i) => (
                   <th
                     key={i}
                     onClick={() => col.sortable && requestSortProfile(col.key!)}
                     style={{
                       padding: '12px 14px',
-                      textAlign: ['No', 'Foto', 'Aksi'].includes(col.label) ? 'center' : 'left',
+                      textAlign: [t('common.no'), t('profileCreator.colPhoto'), t('common.actions')].includes(col.label) ? 'center' : 'left',
                       fontSize: '11px', fontWeight: 700, color: '#495057',
                       textTransform: 'uppercase', borderBottom: '2px solid #e9ecef',
                       letterSpacing: '0.5px', cursor: col.sortable ? 'pointer' : 'default',
                       userSelect: 'none',
-                      position: col.label === 'Aksi' ? 'sticky' : 'static',
-                      right: col.label === 'Aksi' ? 0 : 'auto',
-                      backgroundColor: col.label === 'Aksi' ? '#f8f9fa' : 'transparent',
-                      zIndex: col.label === 'Aksi' ? 10 : 1,
+                      position: col.label === t('common.actions') ? 'sticky' : 'static',
+                      right: col.label === t('common.actions') ? 0 : 'auto',
+                      backgroundColor: col.label === t('common.actions') ? '#f8f9fa' : 'transparent',
+                      zIndex: col.label === t('common.actions') ? 10 : 1,
                     }}
                   >
-                    <Flex align="center" gap={6} justify={['No', 'Foto', 'Aksi'].includes(col.label) ? 'center' : 'flex-start'}>
+                    <Flex align="center" gap={6} justify={[t('common.no'), t('profileCreator.colPhoto'), t('common.actions')].includes(col.label) ? 'center' : 'flex-start'}>
                       {col.label}
                       {col.sortable && (
                         <FontAwesomeIcon
@@ -599,13 +601,13 @@ const ProfileCreator = () => {
             </thead>
             <tbody>
               {loading.includes('getprofile') ? (
-                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr>
+                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">{t('common.loading')}</Text></td></tr>
               ) : filteredProfile.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: '60px', textAlign: 'center' }}>
                     <Stack align="center" gap={10}>
-                      <Text c="dimmed" fw={500}>Belum ada data profil creator</Text>
-                      <Text size="xs" c="gray">Klik &quot;Tambah Profil&quot; untuk membuat profil baru</Text>
+                      <Text c="dimmed" fw={500}>{t('profileCreator.noData')}</Text>
+                      <Text size="xs" c="gray">{t('profileCreator.noDataDesc')}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -635,7 +637,7 @@ const ProfileCreator = () => {
                     <td style={{ padding: '12px 14px' }}><Text size="sm" c="gray.7">{item.phone_number || item.phone || '-'}</Text></td>
                     <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)', borderLeft: '1px solid #f1f3f5' }}>
                       <Flex gap={8} justify="center">
-                        <Tooltip label="Edit Profil Creator">
+                        <Tooltip label={t('profileCreator.editTooltip')}>
                           <ActionIcon variant="subtle" color="blue" onClick={() => handleEditProfile(item)}>
                             <FontAwesomeIcon icon={faPencil} size="sm" />
                           </ActionIcon>
@@ -659,8 +661,8 @@ const ProfileCreator = () => {
           <FontAwesomeIcon icon={faArrowLeft} />
         </ActionIcon>
         <Stack gap={0}>
-          <Title order={2} size="h3">{isEditMode ? 'Edit Profil Creator' : 'Tambah Profil Creator Baru'}</Title>
-          <Text size="xs" c="dimmed">Isi formulir di bawah untuk mengelola data profil creator Anda</Text>
+          <Title order={2} size="h3">{isEditMode ? t('profileCreator.editTitle') : t('profileCreator.addTitle')}</Title>
+          <Text size="xs" c="dimmed">{t('profileCreator.formDesc')}</Text>
         </Stack>
       </Flex>
 
@@ -676,17 +678,17 @@ const ProfileCreator = () => {
               )}
             </label>
             <Stack gap={3}>
-              <Text fw={600}>Foto Profil</Text>
-              <Text size="xs" c="gray">Direkomendasikan tidak lebih dari 2mb</Text>
+              <Text fw={600}>{t('profileCreator.photoLabel')}</Text>
+              <Text size="xs" c="gray">{t('profileCreator.photoHint')}</Text>
             </Stack>
           </Flex>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TextInput label="Nama Pribadi" placeholder="Masukkan Nama Pribadi" value={profileForm.values.name} onChange={(e) => profileForm.setFieldValue('name', e.target.value)} />
-            <TextInput label="Nama Event Organizer" placeholder="Masukkan Nama Event Organizer" value={profileForm.values.name_event_organizer} onChange={(e) => profileForm.setFieldValue('name_event_organizer', e.target.value)} />
-            <TextInput label="Email" placeholder="Masukkan Email" value={profileForm.values.email} onChange={(e) => profileForm.setFieldValue('email', e.target.value)} />
-            <TextInput label="Nomor Telepon" placeholder="Masukkan No Telepon" value={profileForm.values.phone} onChange={(e) => profileForm.setFieldValue('phone', e.target.value)} />
-            <TextInput label="Alamat" placeholder="Masukkan Alamat" value={profileForm.values.address} onChange={(e) => profileForm.setFieldValue('address', e.target.value)} className="md:col-span-2" />
+            <TextInput label={t('profileCreator.personalName')} placeholder={t('profileCreator.enterPersonalName')} value={profileForm.values.name} onChange={(e) => profileForm.setFieldValue('name', e.target.value)} />
+            <TextInput label={t('profileCreator.eoName')} placeholder={t('profileCreator.enterEoName')} value={profileForm.values.name_event_organizer} onChange={(e) => profileForm.setFieldValue('name_event_organizer', e.target.value)} />
+            <TextInput label={t('common.email')} placeholder={t('profileCreator.enterEmail')} value={profileForm.values.email} onChange={(e) => profileForm.setFieldValue('email', e.target.value)} />
+            <TextInput label={t('profileCreator.phoneNo')} placeholder={t('profileCreator.enterPhone')} value={profileForm.values.phone} onChange={(e) => profileForm.setFieldValue('phone', e.target.value)} />
+            <TextInput label={t('profileCreator.colAddress')} placeholder={t('profileCreator.enterAddress')} value={profileForm.values.address} onChange={(e) => profileForm.setFieldValue('address', e.target.value)} className="md:col-span-2" />
           </div>
         </Stack>
       </Card>
@@ -694,12 +696,12 @@ const ProfileCreator = () => {
       <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
         <Flex justify="flex-end" gap="md">
           <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>
-            Batalkan
+            {t('profileCreator.cancel')}
           </Button>
           <Button color="blue" size="md" loading={loading.includes('submitprofile') || loading.includes('loadimage')}
             leftSection={!loading.includes('submitprofile') && !loading.includes('loadimage') && <FontAwesomeIcon icon={faSave} />}
             onClick={handleSubmitProfile}>
-            {isEditMode ? 'Simpan Perubahan' : 'Konfirmasi & Simpan'}
+            {isEditMode ? t('profileCreator.saveChanges') : t('profileCreator.confirmSave')}
           </Button>
         </Flex>
       </Box>
@@ -723,22 +725,22 @@ const ProfileCreator = () => {
   ) => {
     const cols = type === 'ktp'
       ? [
-          { label: 'No', sortable: false },
-          { label: 'File', sortable: false },
-          { label: 'Nomor KTP', sortable: true, key: 'no_identity' },
-          { label: 'Nama', sortable: true, key: 'name_identity' },
-          { label: 'Alamat', sortable: false },
-          { label: 'Status', sortable: false },
-          { label: 'Aksi', sortable: false },
+          { label: t('common.no'), sortable: false },
+          { label: t('profileCreator.colFile'), sortable: false },
+          { label: t('profileCreator.colKtpNo'), sortable: true, key: 'no_identity' },
+          { label: t('profileCreator.colName'), sortable: true, key: 'name_identity' },
+          { label: t('profileCreator.colAddress'), sortable: false },
+          { label: t('common.status'), sortable: false },
+          { label: t('common.actions'), sortable: false },
         ]
       : [
-          { label: 'No', sortable: false },
-          { label: 'File', sortable: false },
-          { label: 'Nomor NPWP', sortable: true, key: 'no_npwp' },
-          { label: 'Nama', sortable: true, key: 'name_npwp' },
-          { label: 'Alamat', sortable: false },
-          { label: 'Status', sortable: false },
-          { label: 'Aksi', sortable: false },
+          { label: t('common.no'), sortable: false },
+          { label: t('profileCreator.colFile'), sortable: false },
+          { label: t('profileCreator.colNpwpNo'), sortable: true, key: 'no_npwp' },
+          { label: t('profileCreator.colName'), sortable: true, key: 'name_npwp' },
+          { label: t('profileCreator.colAddress'), sortable: false },
+          { label: t('common.status'), sortable: false },
+          { label: t('common.actions'), sortable: false },
         ];
 
     return (
@@ -759,7 +761,7 @@ const ProfileCreator = () => {
               <FontAwesomeIcon icon={faArrowsRotate} />
             </Button>
             <TextInput
-              placeholder={`Cari ${title}...`}
+              placeholder={t('profileCreator.searchType', { type: title })}
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -778,18 +780,18 @@ const ProfileCreator = () => {
                     onClick={() => col.sortable && requestSort(col.key!)}
                     style={{
                       padding: '12px 14px',
-                      textAlign: ['No', 'File', 'Status', 'Aksi'].includes(col.label) ? 'center' : 'left',
+                      textAlign: [t('common.no'), t('profileCreator.colFile'), t('common.status'), t('common.actions')].includes(col.label) ? 'center' : 'left',
                       fontSize: '11px', fontWeight: 700, color: '#495057',
                       textTransform: 'uppercase', borderBottom: '2px solid #e9ecef',
                       letterSpacing: '0.5px', cursor: col.sortable ? 'pointer' : 'default',
                       userSelect: 'none',
-                      position: col.label === 'Aksi' ? 'sticky' : 'static',
-                      right: col.label === 'Aksi' ? 0 : 'auto',
-                      backgroundColor: col.label === 'Aksi' ? '#f8f9fa' : 'transparent',
-                      zIndex: col.label === 'Aksi' ? 10 : 1,
+                      position: col.label === t('common.actions') ? 'sticky' : 'static',
+                      right: col.label === t('common.actions') ? 0 : 'auto',
+                      backgroundColor: col.label === t('common.actions') ? '#f8f9fa' : 'transparent',
+                      zIndex: col.label === t('common.actions') ? 10 : 1,
                     }}
                   >
-                    <Flex align="center" gap={6} justify={['No', 'File', 'Status', 'Aksi'].includes(col.label) ? 'center' : 'flex-start'}>
+                    <Flex align="center" gap={6} justify={[t('common.no'), t('profileCreator.colFile'), t('common.status'), t('common.actions')].includes(col.label) ? 'center' : 'flex-start'}>
                       {col.label}
                       {col.sortable && (
                         <FontAwesomeIcon
@@ -805,13 +807,13 @@ const ProfileCreator = () => {
             </thead>
             <tbody>
               {loading.includes('getlegal') ? (
-                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">Memuat data...</Text></td></tr>
+                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}><Text c="dimmed">{t('common.loading')}</Text></td></tr>
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: '60px', textAlign: 'center' }}>
                     <Stack align="center" gap={10}>
                       <Image src={filePlus} alt="empty" width={40} height={40} />
-                      <Text c="dimmed" fw={500}>Belum ada data {type === 'ktp' ? 'KTP' : 'NPWP'}</Text>
+                      <Text c="dimmed" fw={500}>{type === 'ktp' ? t('profileCreator.noKtpData') : t('profileCreator.noNpwpData')}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -850,12 +852,12 @@ const ProfileCreator = () => {
                     </td>
                     <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                       <Badge variant="filled" color={item.status === 'active' ? 'green' : 'red'} size="sm">
-                        {item.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                        {item.status === 'active' ? t('common.active') : t('common.inactive')}
                       </Badge>
                     </td>
                     <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', zIndex: 5, boxShadow: '-2px 0 5px rgba(0,0,0,0.02)', borderLeft: '1px solid #f1f3f5' }}>
                       <Flex gap={8} justify="center">
-                        <Tooltip label={`Edit ${type === 'ktp' ? 'KTP' : 'NPWP'}`}>
+                        <Tooltip label={t('profileCreator.editTypeTooltip', { type: type === 'ktp' ? 'KTP' : 'NPWP' })}>
                           <ActionIcon variant="subtle" color="blue" onClick={() => onEdit(item)}>
                             <FontAwesomeIcon icon={faPencil} size="sm" />
                           </ActionIcon>
@@ -879,8 +881,8 @@ const ProfileCreator = () => {
           <FontAwesomeIcon icon={faArrowLeft} />
         </ActionIcon>
         <Stack gap={0}>
-          <Title order={2} size="h3">{isLegalEditMode ? 'Edit Data KTP' : 'Tambah Data KTP'}</Title>
-          <Text size="xs" c="dimmed">Isi formulir di bawah untuk mengelola data KTP Anda</Text>
+          <Title order={2} size="h3">{isLegalEditMode ? t('profileCreator.editKtpTitle') : t('profileCreator.addKtpTitle')}</Title>
+          <Text size="xs" c="dimmed">{t('profileCreator.ktpFormDesc')}</Text>
         </Stack>
       </Flex>
 
@@ -888,7 +890,7 @@ const ProfileCreator = () => {
         <Card withBorder padding="xl" radius="md" shadow="sm">
           <Stack gap="lg">
             <Box>
-              <Text size="sm" fw={500} mb={8}>Foto / Scan KTP</Text>
+              <Text size="sm" fw={500} mb={8}>{t('profileCreator.ktpPhoto')}</Text>
               <label style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 border: '2px dashed #dee2e6', borderRadius: 12, height: 200, cursor: 'pointer',
@@ -910,26 +912,26 @@ const ProfileCreator = () => {
                 ) : (
                   <Stack align="center" gap={8}>
                     <Image src={filePlus} alt="upload" width={40} height={40} />
-                    <Text size="sm" c="gray" fw={500}>Unggah dokumen KTP disini</Text>
+                    <Text size="sm" c="gray" fw={500}>{t('profileCreator.uploadKtpHere')}</Text>
                   </Stack>
                 )}
               </label>
             </Box>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput label="Nomor KTP" placeholder="Ketik 16 digit nomor KTP" required maxLength={16} {...ktpForm.getInputProps('no_identity')}
+              <TextInput label={t('profileCreator.ktpNumber')} placeholder={t('profileCreator.ktpNumberPlaceholder')} required maxLength={16} {...ktpForm.getInputProps('no_identity')}
                 onChange={(e) => ktpForm.setFieldValue('no_identity', e.target.value.replace(/\D/g, ''))} />
-              <TextInput label="Nama (Sesuai KTP)" placeholder="Ketik nama sesuai KTP" required {...ktpForm.getInputProps('name_identity')} />
-              <TextInput label="Alamat (Sesuai KTP)" placeholder="Ketik alamat sesuai KTP" required className="md:col-span-2" {...ktpForm.getInputProps('address_identity')} />
+              <TextInput label={t('profileCreator.nameAsKtp')} placeholder={t('profileCreator.nameAsKtpPlaceholder')} required {...ktpForm.getInputProps('name_identity')} />
+              <TextInput label={t('profileCreator.addressAsKtp')} placeholder={t('profileCreator.addressAsKtpPlaceholder')} required className="md:col-span-2" {...ktpForm.getInputProps('address_identity')} />
             </div>
           </Stack>
         </Card>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>Batalkan</Button>
+            <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>{t('profileCreator.cancel')}</Button>
             <Button type="submit" form="ktp-form-creator" color="blue" size="md" loading={loading.includes('submitlegal')}
               leftSection={!loading.includes('submitlegal') && <FontAwesomeIcon icon={faSave} />}>
-              {isLegalEditMode ? 'Simpan Perubahan' : 'Konfirmasi & Simpan'}
+              {isLegalEditMode ? t('profileCreator.saveChanges') : t('profileCreator.confirmSave')}
             </Button>
           </Flex>
         </Box>
@@ -944,8 +946,8 @@ const ProfileCreator = () => {
           <FontAwesomeIcon icon={faArrowLeft} />
         </ActionIcon>
         <Stack gap={0}>
-          <Title order={2} size="h3">{isLegalEditMode ? 'Edit Data NPWP' : 'Tambah Data NPWP'}</Title>
-          <Text size="xs" c="dimmed">Isi formulir di bawah untuk mengelola data NPWP Anda</Text>
+          <Title order={2} size="h3">{isLegalEditMode ? t('profileCreator.editNpwpTitle') : t('profileCreator.addNpwpTitle')}</Title>
+          <Text size="xs" c="dimmed">{t('profileCreator.npwpFormDesc')}</Text>
         </Stack>
       </Flex>
 
@@ -953,7 +955,7 @@ const ProfileCreator = () => {
         <Card withBorder padding="xl" radius="md" shadow="sm">
           <Stack gap="lg">
             <Box>
-              <Text size="sm" fw={500} mb={8}>Foto / Scan NPWP</Text>
+              <Text size="sm" fw={500} mb={8}>{t('profileCreator.npwpPhoto')}</Text>
               <label style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 border: '2px dashed #dee2e6', borderRadius: 12, height: 200, cursor: 'pointer',
@@ -975,26 +977,26 @@ const ProfileCreator = () => {
                 ) : (
                   <Stack align="center" gap={8}>
                     <Image src={filePlus} alt="upload" width={40} height={40} />
-                    <Text size="sm" c="gray" fw={500}>Unggah dokumen NPWP disini</Text>
+                    <Text size="sm" c="gray" fw={500}>{t('profileCreator.uploadNpwpHere')}</Text>
                   </Stack>
                 )}
               </label>
             </Box>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput label="Nomor NPWP" placeholder="Ketik 16 digit nomor NPWP" required maxLength={16} {...npwpForm.getInputProps('no_npwp')}
+              <TextInput label={t('profileCreator.npwpNumber')} placeholder={t('profileCreator.npwpNumberPlaceholder')} required maxLength={16} {...npwpForm.getInputProps('no_npwp')}
                 onChange={(e) => npwpForm.setFieldValue('no_npwp', e.target.value.replace(/\D/g, ''))} />
-              <TextInput label="Nama (Sesuai NPWP)" placeholder="Ketik nama sesuai NPWP" required {...npwpForm.getInputProps('name_npwp')} />
-              <TextInput label="Alamat (Sesuai NPWP)" placeholder="Ketik alamat sesuai NPWP" required className="md:col-span-2" {...npwpForm.getInputProps('address_npwp')} />
+              <TextInput label={t('profileCreator.nameAsNpwp')} placeholder={t('profileCreator.nameAsNpwpPlaceholder')} required {...npwpForm.getInputProps('name_npwp')} />
+              <TextInput label={t('profileCreator.addressAsNpwp')} placeholder={t('profileCreator.addressAsNpwpPlaceholder')} required className="md:col-span-2" {...npwpForm.getInputProps('address_npwp')} />
             </div>
           </Stack>
         </Card>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>Batalkan</Button>
+            <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>{t('profileCreator.cancel')}</Button>
             <Button type="submit" form="npwp-form-creator" color="teal" size="md" loading={loading.includes('submitlegal')}
               leftSection={!loading.includes('submitlegal') && <FontAwesomeIcon icon={faSave} />}>
-              {isLegalEditMode ? 'Simpan Perubahan' : 'Konfirmasi & Simpan'}
+              {isLegalEditMode ? t('profileCreator.saveChanges') : t('profileCreator.confirmSave')}
             </Button>
           </Flex>
         </Box>
@@ -1006,49 +1008,49 @@ const ProfileCreator = () => {
     <Stack gap={30}>
       <Flex justify="space-between" align="center">
         <Stack gap={0}>
-          <Title order={1} size="h2">Informasi Legal</Title>
-          <Text size="sm" c="gray">Kelola data KTP dan NPWP untuk verifikasi akun Anda</Text>
+          <Title order={1} size="h2">{t('profileCreator.legalInfo')}</Title>
+          <Text size="sm" c="gray">{t('profileCreator.legalDesc')}</Text>
         </Stack>
         <Flex gap={10}>
           {ktpList.length === 0 && (
             <Button onClick={handleAddKTP} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">
-              Tambah KTP
+              {t('profileCreator.addKtp')}
             </Button>
           )}
           {npwpList.length === 0 && (
             <Button onClick={handleAddNPWP} leftSection={<FontAwesomeIcon icon={faPlus} />} color="teal" size="md" radius="xl">
-              Tambah NPWP
+              {t('profileCreator.addNpwp')}
             </Button>
           )}
         </Flex>
       </Flex>
 
-      {renderLegalTable('Data KTP', filteredKtp, 'ktp', handleAddKTP, handleEditKTP, searchKtp, setSearchKtp, sortKtp, requestSortKtp)}
-      {renderLegalTable('Data NPWP', filteredNpwp, 'npwp', handleAddNPWP, handleEditNPWP, searchNpwp, setSearchNpwp, sortNpwp, requestSortNpwp)}
+      {renderLegalTable(t('profileCreator.ktpData'), filteredKtp, 'ktp', handleAddKTP, handleEditKTP, searchKtp, setSearchKtp, sortKtp, requestSortKtp)}
+      {renderLegalTable(t('profileCreator.npwpData'), filteredNpwp, 'npwp', handleAddNPWP, handleEditNPWP, searchNpwp, setSearchNpwp, sortNpwp, requestSortNpwp)}
     </Stack>
   );
 
   const renderResetPasswordForm = () => (
     <Stack gap={25} maw={600}>
       <Stack gap={0}>
-        <Title order={2} size="h3">Reset Password</Title>
-        <Text size="sm" c="gray">Ubah password akun Anda di sini</Text>
+        <Title order={2} size="h3">{t('profileCreator.resetPassword')}</Title>
+        <Text size="sm" c="gray">{t('profileCreator.resetPasswordDesc')}</Text>
       </Stack>
 
       <Card withBorder padding="xl" radius="md" shadow="sm">
         <form id="reset-password-form" onSubmit={resetPasswordForm.onSubmit(handleSubmitResetPassword)}>
           <Stack gap="lg">
             <TextInput
-              label="Email"
-              placeholder="Email Anda"
+              label={t('common.email')}
+              placeholder={t('profileCreator.yourEmail')}
               readOnly
               disabled
               {...resetPasswordForm.getInputProps('email')}
               leftSection={<Text size="xs" c="dimmed">@</Text>}
             />
             <PasswordInput
-              label="Password Baru"
-              placeholder="Masukkan password baru"
+              label={t('profileCreator.newPassword')}
+              placeholder={t('profileCreator.enterNewPassword')}
               required
               {...resetPasswordForm.getInputProps('password')}
               leftSection={<FontAwesomeIcon icon={faKey} size="xs" />}
@@ -1069,7 +1071,7 @@ const ProfileCreator = () => {
             loading={loading.includes('resetpassword')}
             leftSection={!loading.includes('resetpassword') && <FontAwesomeIcon icon={faSave} />}
           >
-            Update Password
+            {t('profileCreator.updatePassword')}
           </Button>
         </Flex>
       </Box>
@@ -1087,11 +1089,11 @@ const ProfileCreator = () => {
           <button
             onClick={() => router.push('/dashboard')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard"
+            aria-label={t('event.backToDashboard')}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
-          <h1 className="text-dark m-0">Akun Creator</h1>
+          <h1 className="text-dark m-0">{t('profileCreator.pageTitle')}</h1>
         </div>
       </div>
 
@@ -1107,7 +1109,7 @@ const ProfileCreator = () => {
         }}
       >
         {/* ── Tab 1: Profil Creator ── */}
-        <Tab key="profil-creator" title="Profil Creator">
+        <Tab key="profil-creator" title={t('profileCreator.profileTab')}>
           <div className="p-5 pb-[100px]">
             <LoadingOverlay visible={loading.includes('submitprofile')} overlayProps={{ blur: 2 }} />
             {isFormVisible ? renderProfileForm() : renderProfileList()}
@@ -1115,7 +1117,7 @@ const ProfileCreator = () => {
         </Tab>
 
         {/* ── Tab 2: Informasi Legal ── */}
-        <Tab key="informasi-legal" title="Informasi Legal">
+        <Tab key="informasi-legal" title={t('profileCreator.legalTab')}>
           <div className="p-5 pb-[100px] min-h-screen bg-[#fcfcfc]">
             <LoadingOverlay visible={loading.includes('submitlegal')} overlayProps={{ blur: 2 }} />
             {activeForm === 'ktp' ? renderKTPForm() : activeForm === 'npwp' ? renderNPWPForm() : renderLegalList()}
@@ -1123,7 +1125,7 @@ const ProfileCreator = () => {
         </Tab>
 
         {/* ── Tab 3: Reset Password ── */}
-        <Tab key="reset-password" title="Reset Password">
+        <Tab key="reset-password" title={t('profileCreator.resetPassword')}>
           <div className="p-5 pb-[100px] min-h-[500px] bg-[#fcfcfc]">
             <LoadingOverlay visible={loading.includes('resetpassword')} overlayProps={{ blur: 2 }} />
             {renderResetPasswordForm()}

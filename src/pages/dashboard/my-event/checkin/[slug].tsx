@@ -21,8 +21,10 @@ import { EventProps } from '@/utils/globalInterface';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass, faArrowLeft } from '@fortawesome/free-solid-svg-icons'; 
 import { Flex } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
 
 const DetailEventTicket = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [eventData, setEventData] = useState<EventProps | null>(null);
@@ -132,10 +134,10 @@ const DetailEventTicket = () => {
       <div className='p-5 text-dark'>
         <Breadcrumbs className='mb-5'>
           <BreadcrumbItem onPress={() => router.push('/dashboard/my-event')}>
-            Event Saya
+            {t('event.myEvents')}
           </BreadcrumbItem>
           <BreadcrumbItem>{eventData.name}</BreadcrumbItem>
-          <BreadcrumbItem>Check In</BreadcrumbItem>
+          <BreadcrumbItem>{t('event.checkIn')}</BreadcrumbItem>
         </Breadcrumbs>
 <div className='flex justify-between'>
 <Flex align="center" gap={12}>
@@ -156,26 +158,26 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               } ${formatYear(eventData.end_date)}`}
             </p>
             <Flex align="center" gap={8}>
-              <Button label="Check In" onClick={() => router.push(`/dashboard/my-event/checkin-eticket/${eventData.slug}`)} color="primary" />
-              <Button label="Check In Invitation" onClick={() => router.push(`/dashboard/my-event/checkin-invitation/${eventData.slug}`)} color="primary" />
+              <Button label={t('event.checkIn')} onClick={() => router.push(`/dashboard/my-event/checkin-eticket/${eventData.slug}`)} color="primary" />
+              <Button label={t('event.checkInInvitation')} onClick={() => router.push(`/dashboard/my-event/checkin-invitation/${eventData.slug}`)} color="primary" />
             </Flex>
           </div>
 </Flex>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
       <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 text-center">
-        <p className="text-grey">Total Jumlah Terjual</p>
+        <p className="text-grey">{t('event.totalSold')}</p>
         <p className="font-semibold">
           {checkinData ? checkinData.total_tickets_sold : 0}
         </p>
       </div>
       <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 text-center">
-        <p className="text-grey">Total Tiket Check-in</p>
+        <p className="text-grey">{t('event.totalCheckedInTickets')}</p>
         <p className="font-semibold">
           {checkinData ? checkinData.total_checkins : 0}
         </p>
       </div>
       <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2 text-center">
-        <p className="text-grey">Presentase Penjualan</p>
+        <p className="text-grey">{t('event.salesPercentage')}</p>
         <p className="font-semibold">
           {checkinData ? checkinData.checkin_percentage : 0}%
         </p>
@@ -186,7 +188,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <FontAwesomeIcon icon={faMagnifyingGlass} className="text-grey ml-2" />
           <input
             type="text"
-            placeholder="Cari Nomor Invoice"
+            placeholder={t('event.searchInvoiceNumber')}
             className="border-none p-2 outline-none flex-1"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -196,12 +198,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         <table className="min-w-full border  divide-y divide-gray-200 mt-4shadow-md mt-4">
   <thead className="bg-primary">
     <tr>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Nomor Invoice</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Di-Scan Oleh</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Jumlah Tiket</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Tanggal & Waktu Pembelian</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Status</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">Jumlah Pembayaran</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('event.invoiceNumber')}</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('event.scannedBy')}</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('event.ticketQty')}</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('event.purchaseDate')}</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('common.status')}</th>
+      <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-300">{t('event.paymentAmount')}</th>
     </tr>
   </thead>
   <tbody className="bg-white">

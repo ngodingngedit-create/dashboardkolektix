@@ -47,6 +47,7 @@ import {
   faChevronDown
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // Interface untuk data crew
 interface CrewProps {
@@ -94,6 +95,7 @@ interface TeritorialProps {
 
 export default function KelolaCrew() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CrewProps[]>([]);
   const [pagination, setPagination] = useState<any>(null);
@@ -122,10 +124,10 @@ export default function KelolaCrew() {
     },
 
     validate: {
-      event_id: (value) => (!value ? "Event harus dipilih" : null),
-      teritorial_id: (value) => (!value ? "Teritorial harus dipilih" : null),
-      name: (value) => (!value ? "Nama crew harus diisi" : null),
-      division: (value) => (!value ? "Divisi harus diisi" : null),
+      event_id: (value) => (!value ? t("crew.eventRequired") : null),
+      teritorial_id: (value) => (!value ? t("crew.territoryRequired") : null),
+      name: (value) => (!value ? t("crew.nameRequired") : null),
+      division: (value) => (!value ? t("crew.divisionRequired") : null),
     },
   });
 
@@ -181,8 +183,8 @@ export default function KelolaCrew() {
           error: (error) => {
             console.error("Error fetching data:", error);
             notifications.show({
-              title: "Gagal",
-              message: "Gagal mengambil data crew",
+              title: t("common.failed"),
+              message: t("crew.fetchFailed"),
               color: "red",
             });
           },
@@ -267,11 +269,11 @@ export default function KelolaCrew() {
         complete: () => setLoading.filter((e) => e !== "getevents"),
         error: (error) => {
           console.error("Error fetching events:", error);
-          notifications.show({
-            title: "Gagal",
-            message: "Gagal mengambil data event",
-            color: "red",
-          });
+            notifications.show({
+              title: t("common.failed"),
+              message: t("crew.fetchEventFailed"),
+              color: "red",
+            });
         },
       });
     } catch (error) {
@@ -313,7 +315,7 @@ export default function KelolaCrew() {
   const handleDelete = async (rowData: any) => {
     const crew = rowData as CrewProps;
 
-    if (!confirm(`Apakah Anda yakin ingin menghapus crew "${crew.name}"?`)) {
+    if (!confirm(t("crew.deleteConfirm", { name: crew.name }))) {
       return;
     }
 
@@ -324,8 +326,8 @@ export default function KelolaCrew() {
       before: () => setLoading.append("delete"),
       success: () => {
         notifications.show({
-          title: "Berhasil",
-          message: "Crew berhasil dihapus",
+          title: t("common.success"),
+          message: t("crew.deleteSuccess"),
           color: "green",
         });
         getData();
@@ -333,8 +335,8 @@ export default function KelolaCrew() {
       error: (error) => {
         console.error("Delete error:", error);
         notifications.show({
-          title: "Gagal",
-          message: error.message || "Gagal menghapus crew",
+          title: t("common.failed"),
+          message: error.message || t("crew.deleteFailed"),
           color: "red",
         });
       },
@@ -374,8 +376,8 @@ export default function KelolaCrew() {
     // Validasi tambahan
     if (!values.event_id) {
       notifications.show({
-        title: "Error",
-        message: "Event harus dipilih",
+        title: t("common.error"),
+        message: t("crew.eventRequired"),
         color: "red",
       });
       return;
@@ -383,8 +385,8 @@ export default function KelolaCrew() {
 
     if (!values.teritorial_id) {
       notifications.show({
-        title: "Error",
-        message: "Teritorial harus dipilih",
+        title: t("common.error"),
+        message: t("crew.territoryRequired"),
         color: "red",
       });
       return;
@@ -401,8 +403,8 @@ export default function KelolaCrew() {
         } catch (error) {
           console.error("Error converting image to base64:", error);
           notifications.show({
-            title: "Gagal",
-            message: "Gagal mengkonversi gambar ke base64",
+            title: t("common.failed"),
+            message: t("crew.imageConvertFailed"),
             color: "red",
           });
           return;
@@ -443,8 +445,8 @@ export default function KelolaCrew() {
           before: () => setLoading.append("submit"),
           success: () => {
             notifications.show({
-              title: "Berhasil",
-              message: "Crew berhasil diperbarui",
+              title: t("common.success"),
+              message: t("crew.updateSuccess"),
               color: "green",
             });
             getData();
@@ -456,8 +458,8 @@ export default function KelolaCrew() {
           error: (error) => {
             console.error("Update error:", error);
             notifications.show({
-              title: "Gagal",
-              message: error.message || "Gagal memperbarui crew",
+              title: t("common.failed"),
+              message: error.message || t("crew.updateFailed"),
               color: "red",
             });
           },
@@ -472,8 +474,8 @@ export default function KelolaCrew() {
           before: () => setLoading.append("submit"),
           success: () => {
             notifications.show({
-              title: "Berhasil",
-              message: "Crew berhasil ditambahkan",
+              title: t("common.success"),
+              message: t("crew.addSuccess"),
               color: "green",
             });
             getData();
@@ -485,8 +487,8 @@ export default function KelolaCrew() {
           error: (error) => {
             console.error("Create error:", error);
             notifications.show({
-              title: "Gagal",
-              message: error.message || "Gagal menambahkan crew",
+              title: t("common.failed"),
+              message: error.message || t("crew.addFailed"),
               color: "red",
             });
           },
@@ -496,8 +498,8 @@ export default function KelolaCrew() {
     } catch (error) {
       console.error("Form submission error:", error);
       notifications.show({
-        title: "Gagal",
-        message: "Terjadi kesalahan saat memproses data",
+        title: t("common.failed"),
+        message: t("crew.processError"),
         color: "red",
       });
     }
@@ -561,7 +563,7 @@ export default function KelolaCrew() {
       event: crewData.has_event ? crewData.has_event.name : "-",
       action: (
         <Flex gap={8} justify="center">
-          <Tooltip label="Edit Crew">
+          <Tooltip label={t("crew.editTooltip")}>
             <ActionIcon
               variant="subtle"
               color="blue"
@@ -570,7 +572,7 @@ export default function KelolaCrew() {
               <FontAwesomeIcon icon={faPencil} size="sm" />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Hapus Crew">
+          <Tooltip label={t("crew.deleteTooltip")}>
             <ActionIcon
               variant="subtle"
               color="red"
@@ -657,10 +659,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </button>
 <Stack gap={0}>
 <Title order={1} size="h2">
-Kelola Crew
+{t("crew.title")}
 </Title>
 <Text size="sm" c="gray">
-Daftar semua crew yang tersedia di sistem
+{t("crew.subtitle")}
 </Text>
 </Stack>
 </Flex>
@@ -668,11 +670,11 @@ Daftar semua crew yang tersedia di sistem
           <Stack align="flex-end" gap="md">
             <Flex gap={8} wrap="wrap" justify="flex-end">
               {[
-                { label: "Total Crew", value: stats.total, unit: "crew" },
-                { label: "Active Status", value: stats.active, unit: "status" },
-                { label: "Inactive", value: stats.inactive, unit: "status" },
-                { label: "Host Division", value: stats.host, unit: "divisi" },
-                { label: "Teritorial", value: stats.teritorial, unit: "teritorial" },
+                { label: t("crew.totalCrew"), value: stats.total, unit: "crew" },
+                { label: t("crew.activeStatus"), value: stats.active, unit: t("crew.unitStatus") },
+                { label: t("crew.inactiveLabel"), value: stats.inactive, unit: t("crew.unitStatus") },
+                { label: t("crew.hostDivision"), value: stats.host, unit: t("crew.unit") },
+                { label: t("crew.teritorialLabel"), value: stats.teritorial, unit: t("crew.unitTeritorial") },
               ].map((item, i) => (
                 <Paper
                   key={i}
@@ -711,7 +713,7 @@ Daftar semua crew yang tersedia di sistem
               radius="xl"
               px="xl"
             >
-              Tambah Crew
+              {t("crew.addCrew")}
             </Button>
           </Stack>
         </Flex>
@@ -721,9 +723,9 @@ Daftar semua crew yang tersedia di sistem
             <Box /> {/* Empty left space */}
             <Flex gap="sm" align="center">
               <Select
-                placeholder="Filter Divisi"
+                placeholder={t("crew.filterDivision")}
                 data={[
-                  { value: "all", label: "Semua Divisi" },
+                  { value: "all", label: t("crew.allDivisions") },
                   ...Array.from(new Set(data.map(c => c.division))).filter(Boolean).map(d => ({ value: d, label: d }))
                 ]}
                 value={divisionFilter}
@@ -732,14 +734,14 @@ Daftar semua crew yang tersedia di sistem
                 radius="md"
               />
               <TextInput
-                placeholder="Cari nama, divisi, atau event..."
+                placeholder={t("crew.searchPlaceholder")}
                 leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 style={{ width: 300 }}
                 radius="md"
               />
-              <Tooltip label="Refresh Data">
+              <Tooltip label={t("common.refresh")}>
                 <ActionIcon
                   variant="filled"
                   color="blue.4"
@@ -759,21 +761,21 @@ Daftar semua crew yang tersedia di sistem
               <thead>
                 <tr style={{ backgroundColor: '#f8f9fa' }}>
                   {[
-                    { label: "No", sortable: false },
-                    { label: "Foto", sortable: false },
-                    { label: "Nama", sortable: true, key: "name" },
-                    { label: "Divisi", sortable: true, key: "division" },
-                    { label: "Event", sortable: true, key: "event" },
-                    { label: "Teritorial", sortable: false },
-                    { label: "Status", sortable: false },
-                    { label: "Aksi", sortable: false }
+                    { label: t("crew.colNo"), sortable: false, center: true },
+                    { label: t("crew.colPhoto"), sortable: false, center: true },
+                    { label: t("crew.colName"), sortable: true, key: "name" },
+                    { label: t("crew.colDivision"), sortable: true, key: "division" },
+                    { label: t("crew.colEvent"), sortable: true, key: "event" },
+                    { label: t("crew.colTerritory"), sortable: false, center: true },
+                    { label: t("crew.colStatus"), sortable: false, center: true },
+                    { label: "Aksi", sortable: false, center: true, sticky: true }
                   ].map((col, i) => (
                     <th
                       key={i}
                       onClick={() => col.sortable && requestSort(col.key!)}
                       style={{
                         padding: '12px 14px',
-                        textAlign: ["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'left',
+                        textAlign: col.center ? 'center' : 'left',
                         fontSize: '11px',
                         fontWeight: 700,
                         color: '#495057',
@@ -782,14 +784,14 @@ Daftar semua crew yang tersedia di sistem
                         letterSpacing: '0.5px',
                         cursor: col.sortable ? 'pointer' : 'default',
                         userSelect: 'none',
-                        position: col.label === "Aksi" ? 'sticky' : 'static',
-                        right: col.label === "Aksi" ? 0 : 'auto',
-                        backgroundColor: col.label === "Aksi" ? '#f8f9fa' : 'transparent',
-                        zIndex: col.label === "Aksi" ? 10 : 1,
-                        boxShadow: col.label === "Aksi" ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
+                        position: col.sticky ? 'sticky' : 'static',
+                        right: col.sticky ? 0 : 'auto',
+                        backgroundColor: col.sticky ? '#f8f9fa' : 'transparent',
+                        zIndex: col.sticky ? 10 : 1,
+                        boxShadow: col.sticky ? '-2px 0 5px rgba(0,0,0,0.02)' : 'none'
                       }}
                     >
-                      <Flex align="center" gap={6} justify={["No", "Foto", "Teritorial", "Status", "Aksi"].includes(col.label) ? 'center' : 'flex-start'}>
+                      <Flex align="center" gap={6} justify={col.center ? 'center' : 'flex-start'}>
                         {col.label}
                         {col.sortable && (
                           <FontAwesomeIcon
@@ -811,13 +813,13 @@ Daftar semua crew yang tersedia di sistem
                   <tr>
                     <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
                       <LoadingOverlay visible />
-                      <Text c="dimmed">Memuat data...</Text>
+                      <Text c="dimmed">{t("common.loading")}</Text>
                     </td>
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ padding: '40px', textAlign: 'center' }}>
-                      <Text c="dimmed">Tidak ada data ditemukan</Text>
+                      <Text c="dimmed">{t("common.noData")}</Text>
                     </td>
                   </tr>
                 ) : (
@@ -842,7 +844,7 @@ Daftar semua crew yang tersedia di sistem
                         <td style={{ padding: '12px 14px' }}>
                           <Flex justify="center">
                             <Badge variant="filled" color="blue" size="sm" style={{ width: 100 }}>
-                              {item.has_teritorial?.name || "Unknown"}
+                              {item.has_teritorial?.name || t("crew.unknownFallback")}
                             </Badge>
                           </Flex>
                         </td>
@@ -854,7 +856,7 @@ Daftar semua crew yang tersedia di sistem
                               size="sm"
                               style={{ width: 100 }}
                             >
-                              {item.status === "active" ? "Active" : "Inactive"}
+                              {item.status === "active" ? t("common.active") : t("common.inactive")}
                             </Badge>
                           </Flex>
                         </td>
@@ -897,9 +899,9 @@ Daftar semua crew yang tersedia di sistem
         </ActionIcon>
         <Stack gap={0}>
           <Title order={2} size="h3">
-            {isEditMode ? `Edit Crew: ${selectedCrew?.name}` : "Tambah Crew Baru"}
+            {isEditMode ? t("crew.editCrewTitle", { name: selectedCrew?.name || "" }) : t("crew.addNewCrew")}
           </Title>
-          <Text size="xs" c="dimmed">Isi formulir lengkap dibawah untuk mengelola data anggota crew</Text>
+          <Text size="xs" c="dimmed">{t("crew.formDesc")}</Text>
         </Stack>
       </Flex>
 
@@ -908,8 +910,8 @@ Daftar semua crew yang tersedia di sistem
           <Stack gap="xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Select
-                label="Pilih Event"
-                placeholder="Pilih event tempat crew bertugas"
+                label={t("crew.selectEventLabel")}
+                placeholder={t("crew.selectEventPlaceholder")}
                 data={events.map(event => ({
                   value: event.id.toString(),
                   label: event.name
@@ -920,8 +922,8 @@ Daftar semua crew yang tersedia di sistem
               />
 
               <Select
-                label="Pilih Teritorial"
-                placeholder="Wilayah tugas crew"
+                label={t("crew.selectTerritory")}
+                placeholder={t("crew.territoryPlaceholder")}
                 data={teritorials.map(ter => ({
                   value: ter.id.toString(),
                   label: ter.name
@@ -932,15 +934,15 @@ Daftar semua crew yang tersedia di sistem
               />
 
               <TextInput
-                label="Nama Lengkap Crew"
-                placeholder="Contoh: Andi Wijaya"
+                label={t("crew.fullName")}
+                placeholder={t("crew.namePlaceholder")}
                 required
                 {...form.getInputProps("name")}
               />
 
               <Select
-                label="Divisi / Role"
-                placeholder="Tanggung jawab crew"
+                label={t("crew.divisionRole")}
+                placeholder={t("crew.divisionPlaceholder")}
                 data={[
                   { value: "Host", label: "Host" },
                   { value: "Technical", label: "Technical" },
@@ -958,19 +960,19 @@ Daftar semua crew yang tersedia di sistem
               />
 
               <Select
-                label="Status Anggota"
-                placeholder="Status keaktifan"
+                label={t("crew.memberStatus")}
+                placeholder={t("crew.statusPlaceholder")}
                 data={[
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
+                  { value: "active", label: t("common.active") },
+                  { value: "inactive", label: t("common.inactive") },
                 ]}
                 required
                 {...form.getInputProps("status")}
               />
 
               <FileInput
-                label="Foto Crew"
-                placeholder="Unggah foto profil"
+                label={t("crew.crewPhoto")}
+                placeholder={t("crew.photoPlaceholder")}
                 accept="image/*"
                 value={imageFile}
                 onChange={handleImageChange}
@@ -981,7 +983,7 @@ Daftar semua crew yang tersedia di sistem
 
             {imagePreview && (
               <Paper withBorder p="sm" radius="md" style={{ maxWidth: 220 }}>
-                <Text size="xs" fw={700} mb={10} c="dimmed">PREVIEW FOTO</Text>
+                <Text size="xs" fw={700} mb={10} c="dimmed">{t("crew.photoPreview")}</Text>
                 <Image
                   src={imagePreview}
                   alt="Preview"
@@ -1006,7 +1008,7 @@ Daftar semua crew yang tersedia di sistem
               size="md"
               leftSection={<FontAwesomeIcon icon={faXmark} />}
             >
-              Batalkan
+              {t("crew.cancel")}
             </Button>
             <Button
               type="submit"
@@ -1016,7 +1018,7 @@ Daftar semua crew yang tersedia di sistem
               loading={loading.includes("submit")}
               leftSection={!loading.includes("submit") && <FontAwesomeIcon icon={faSave} />}
             >
-              {isEditMode ? "Simpan Perubahan" : "Konfirmasi & Simpan"}
+              {isEditMode ? t("crew.saveChanges") : t("crew.confirmSave")}
             </Button>
           </Flex>
         </Box>

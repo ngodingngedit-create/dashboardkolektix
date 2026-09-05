@@ -259,7 +259,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       <Menu offset={20} width="250px" radius={10}>
                         <Menu.Target>
                           <Card bg="gray.3" p={i18n.language.toLowerCase() == "id" ? 7 : "10px 7px"} radius={999} className={`!shadow-[3px_3px_10px_#00000065] !overflow-visible`}>
-                            <Icon icon={i18n.language.toLowerCase() == "id" ? "twemoji:flag-indonesia" : "flag:us-4x3"} className={`${i18n.language.toLowerCase() == "id" ? "text-[24px]" : "text-[18px]"}`} />
+                            <Icon icon={i18n.language.toLowerCase() == "id" ? "twemoji:flag-indonesia" : "flag:us-4x3"} className={`text-[24px] object-cover rounded-[2px]`} />
                           </Card>
                         </Menu.Target>
                         <Menu.Dropdown w={150}>
@@ -272,7 +272,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                           </Menu.Item>
                           <Menu.Item bg={i18n.language.toLowerCase() == "en" ? "gray.1" : undefined} onClick={() => i18n.changeLanguage("en")}>
                             <Flex align="center" gap={10}>
-                              <Icon icon="flag:us-4x3" className={`text-[16px]`} />
+                              <Icon icon="flag:us-4x3" className={`text-[24px] object-cover rounded-[2px]`} />
                               <Text>English</Text>
                             </Flex>
                           </Menu.Item>

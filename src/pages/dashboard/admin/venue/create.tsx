@@ -9,8 +9,10 @@ import { useForm } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { notifications } from '@mantine/notifications';
 import { VenueCategory, VenueFacility, VenueListResponse } from '../../venue/type';
+import { useTranslation } from "react-i18next";
 
 export default function AdminCreateVenue() {
+  const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
@@ -184,7 +186,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 {id ? 'Edit Venue (Admin)' : 'Buat Venue Baru (Admin)'}
 </Text>
 <Text size="sm" c="gray">
-Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administrator
+{t("admin.venue.create.lengkapi.form.untuk")} {id ? 'memperbarui' : 'membuat'} {t("admin.venue.create.venue.baru.sebagai.administrator")}
 </Text>
 </Stack>
 </Flex>
@@ -195,13 +197,13 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
             <Stack gap={20} w="100%">
                 <Flex gap={10} align="center">
                     <Icon icon="ph:user-circle-bold" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Penyelenggara (Creator)</Text>
+                    <Text size="lg" fw={600}>{t("admin.venue.create.penyelenggara.creator")}</Text>
                 </Flex>
 
                 <Select
                     withAsterisk
-                    label="Pilih Creator"
-                    placeholder="Cari & Pilih Creator"
+                    label={t("admin.venue.create.pilih.creator")}
+                    placeholder={t("admin.venue.create.cari.pilih.creator")}
                     data={creators.map(c => ({ value: String(c.id), label: c.name || c.has_user?.name || `ID: ${c.id}` }))}
                     searchable
                     {...inputProps('creator_id')}
@@ -212,10 +214,10 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Flex gap={10} align="center">
                     <Icon icon="ph:info-bold" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Informasi Venue</Text>
+                    <Text size="lg" fw={600}>{t("admin.venue.create.informasi.venue")}</Text>
                 </Flex>
 
-                <InputWrapper error={form.errors.image} label="Gambar Venue" description="Direkomendasikan 1280px X 400px" withAsterisk>
+                <InputWrapper error={form.errors.image} label={t("admin.venue.create.gambar.venue")} description="Direkomendasikan 1280px X 400px" withAsterisk>
                     <Flex wrap="wrap" gap={10} pt={5}>
                         {Array(5).fill(null).map((e, i) => (
                             <ImageInput
@@ -243,15 +245,15 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Nama Venue"
-                        placeholder="Isi Nama Venue"
+                        label={t("admin.venue.create.nama.venue")}
+                        placeholder={t("admin.venue.create.isi.nama.venue")}
                         w="100%"
                         {...inputProps('name')}
                     />
                     <Select
                         withAsterisk
-                        label="Kategori Venue"
-                        placeholder="Pilih Kategori Venue"
+                        label={t("admin.venue.create.kategori.venue")}
+                        placeholder={t("admin.venue.create.pilih.kategori.venue")}
                         disabled={loading.includes('getdatacat')}
                         data={category?.map(e => ({ value: String(e.id), label: e.name }))}
                         miw={250}
@@ -262,8 +264,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Textarea
                     withAsterisk
-                    label="Deskripsi Venue"
-                    placeholder="Isi Deskripsi Venue"
+                    label={t("admin.venue.create.deskripsi.venue")}
+                    placeholder={t("admin.venue.create.isi.deskripsi.venue")}
                     autosize
                     minRows={3}
                     {...inputProps('description')}
@@ -271,10 +273,10 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Tabs defaultValue="detail" mt={10}>
                     <Tabs.List>
-                        <Tabs.Tab value="detail" leftSection={<Icon icon="ph:gear" />}>Detail Venue</Tabs.Tab>
-                        <Tabs.Tab value="fasilitas" leftSection={<Icon icon="ph:app-store-logo" />}>Fasilitas Venue</Tabs.Tab>
-                        <Tabs.Tab value="jadwal" leftSection={<Icon icon="ph:calendar" />}>Jadwal & Waktu</Tabs.Tab>
-                        <Tabs.Tab value="area" leftSection={<Icon icon="ph:layout" />}>Area & Harga Tambahan</Tabs.Tab>
+                        <Tabs.Tab value="detail" leftSection={<Icon icon="ph:gear" />}>{t("admin.venue.create.detail.venue")}</Tabs.Tab>
+                        <Tabs.Tab value="fasilitas" leftSection={<Icon icon="ph:app-store-logo" />}>{t("admin.venue.create.fasilitas.venue")}</Tabs.Tab>
+                        <Tabs.Tab value="jadwal" leftSection={<Icon icon="ph:calendar" />}>{t("admin.venue.create.jadwal.waktu")}</Tabs.Tab>
+                        <Tabs.Tab value="area" leftSection={<Icon icon="ph:layout" />}>{t("admin.venue.create.area.harga.tambahan")}</Tabs.Tab>
                     </Tabs.List>
 
                     <Tabs.Panel value="detail" pt="xl">
@@ -282,16 +284,16 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                             <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                                 <NumberInput
                                     withAsterisk
-                                    label="Maksimal Kapasitas"
-                                    placeholder="Masukan Maksimal Kapasitas"
+                                    label={t("admin.venue.create.maksimal.kapasitas")}
+                                    placeholder={t("admin.venue.create.masukan.maksimal.kapasitas")}
                                     hideControls
                                     min={0}
                                     {...inputProps('max_capacity')}
                                 />
                                 <NumberInput
                                     withAsterisk
-                                    label="Jumlah Kursi"
-                                    placeholder="Masukan Jumlah Kursi"
+                                    label={t("admin.venue.create.jumlah.kursi")}
+                                    placeholder={t("admin.venue.create.masukan.jumlah.kursi")}
                                     hideControls
                                     min={0}
                                     {...inputProps('seat_capacity')}
@@ -302,8 +304,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                                 <Flex gap={10} align="center" className={`[&>*]:!flex-grow`}>
                                     <NumberInput
                                         withAsterisk
-                                        label="Harga Per Hari"
-                                        placeholder="Masukan Harga Per Hari"
+                                        label={t("admin.venue.create.harga.per.hari")}
+                                        placeholder={t("admin.venue.create.masukan.harga.per.hari")}
                                         hideControls
                                         prefix="Rp "
                                         min={0}
@@ -311,8 +313,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                                     />
                                     <NumberInput
                                         withAsterisk
-                                        label="Harga Per Jam"
-                                        placeholder="Masukan Harga Per Jam"
+                                        label={t("admin.venue.create.harga.per.jam")}
+                                        placeholder={t("admin.venue.create.masukan.harga.per.jam")}
                                         hideControls
                                         prefix="Rp "
                                         min={0}
@@ -320,8 +322,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                                     />
                                 </Flex>
                                 <NumberInput
-                                    label="Down Payment (DP)"
-                                    placeholder="Masukan Down Payment"
+                                    label={t("admin.venue.create.down.payment.dp")}
+                                    placeholder={t("admin.venue.create.masukan.down.payment")}
                                     hideControls
                                     prefix="Rp "
                                     min={0}
@@ -336,8 +338,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                         <Stack gap={15}>
                             <MultiSelect
                                 withAsterisk
-                                label="Pilih Fasilitas Venue"
-                                placeholder="Cari & Pilih Fasilitas"
+                                label={t("admin.venue.create.pilih.fasilitas.venue")}
+                                placeholder={t("admin.venue.create.cari.pilih.fasilitas")}
                                 data={facility?.map(e => ({ value: String(e.id), label: e.facility_name ?? '' })).filter(e => e.label) ?? []}
                                 value={(form.values.venue_facility_id ?? []).map(String)}
                                 onChange={vals => form.setValues({ venue_facility_id: vals.map(Number) })}
@@ -349,28 +351,28 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                     <Tabs.Panel value="jadwal" pt="xl">
                         <Stack gap={20}>
-                            <Text fw={600} size="lg">Pengaturan Jadwal (Schedule)</Text>
+                            <Text fw={600} size="lg">{t("admin.venue.create.pengaturan.jadwal.schedule")}</Text>
                             <Grid>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput label="Nama Jadwal" withAsterisk placeholder="Regular Schedule" {...inputProps('schedule.name')} />
+                                    <TextInput label={t("admin.venue.create.nama.jadwal")} withAsterisk placeholder={t("admin.venue.create.regular.schedule")} {...inputProps('schedule.name')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <Select label="Status Jadwal" data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
+                                    <Select label={t("admin.venue.create.status.jadwal")} data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput type="date" label="Tanggal Mulai" withAsterisk {...inputProps('schedule.start_date')} />
+                                    <TextInput type="date" label={t("admin.venue.create.tanggal.mulai")} withAsterisk {...inputProps('schedule.start_date')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput type="date" label="Tanggal Selesai" withAsterisk {...inputProps('schedule.end_date')} />
+                                    <TextInput type="date" label={t("admin.venue.create.tanggal.selesai")} withAsterisk {...inputProps('schedule.end_date')} />
                                 </Grid.Col>
                                 <Grid.Col span={12}>
-                                    <Textarea label="Deskripsi Jadwal" placeholder="Isi deskripsi jadwal" autosize minRows={2} {...inputProps('schedule.description')} />
+                                    <Textarea label={t("admin.venue.create.deskripsi.jadwal")} placeholder={t("admin.venue.create.isi.deskripsi.jadwal")} autosize minRows={2} {...inputProps('schedule.description')} />
                                 </Grid.Col>
                             </Grid>
 
                             <Divider my="sm" />
 
-                            <Text fw={600} size="lg">Jam Operasional</Text>
+                            <Text fw={600} size="lg">{t("admin.venue.create.jam.operasional")}</Text>
                             <Stack gap={10}>
                                 {form.values.operating_hours?.map((item: any, index: number) => {
                                     const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -384,8 +386,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                                                     onChange={(e) => form.setFieldValue(`operating_hours.${index}.is_closed`, !e.currentTarget.checked)}
                                                 />
                                                 <Flex gap={10} align="center" className={`[&>*]:!flex-grow`} flex={1} style={{ opacity: item.is_closed ? 0.5 : 1, pointerEvents: item.is_closed ? 'none' : 'auto' }}>
-                                                    <TextInput type="time" label="Jam Buka" {...inputProps(`operating_hours.${index}.open_time`)} w="100%" />
-                                                    <TextInput type="time" label="Jam Tutup" {...inputProps(`operating_hours.${index}.close_time`)} w="100%" />
+                                                    <TextInput type="time" label={t("admin.venue.create.jam.buka")} {...inputProps(`operating_hours.${index}.open_time`)} w="100%" />
+                                                    <TextInput type="time" label={t("admin.venue.create.jam.tutup")} {...inputProps(`operating_hours.${index}.close_time`)} w="100%" />
                                                 </Flex>
                                             </Flex>
                                         </Card>
@@ -396,18 +398,18 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                             <Divider my="sm" />
 
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Tanggal Diblokir (Blocked Dates)</Text>
+                                <Text fw={600} size="lg">{t("admin.venue.create.tanggal.diblokir.blocked.dates")}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="ph:plus" />} onClick={() => form.insertListItem('blocked_dates', { start_date: '', end_date: '', reason: '' })}>
-                                    Tambah Tanggal Blokir
+                                    {t("admin.venue.create.tambah.tanggal.blokir")}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
                                 {form.values.blocked_dates?.map((item: any, index: number) => (
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Flex gap={15} align="flex-end" wrap="wrap">
-                                            <TextInput type="date" label="Tanggal Mulai" required {...inputProps(`blocked_dates.${index}.start_date`)} w={{ base: '100%', md: '25%' }} />
-                                            <TextInput type="date" label="Tanggal Selesai" required {...inputProps(`blocked_dates.${index}.end_date`)} w={{ base: '100%', md: '25%' }} />
-                                            <TextInput label="Alasan" placeholder="Contoh: Maintenance" required {...inputProps(`blocked_dates.${index}.reason`)} flex={1} />
+                                            <TextInput type="date" label={t("admin.venue.create.tanggal.mulai")} required {...inputProps(`blocked_dates.${index}.start_date`)} w={{ base: '100%', md: '25%' }} />
+                                            <TextInput type="date" label={t("admin.venue.create.tanggal.selesai")} required {...inputProps(`blocked_dates.${index}.end_date`)} w={{ base: '100%', md: '25%' }} />
+                                            <TextInput label={t("admin.venue.create.alasan")} placeholder={t("admin.venue.create.contoh.maintenance")} required {...inputProps(`blocked_dates.${index}.reason`)} flex={1} />
                                             <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('blocked_dates', index)} size="lg" mb={5}>
                                                 <Icon icon="ph:trash" />
                                             </ActionIcon>
@@ -421,18 +423,18 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                     <Tabs.Panel value="area" pt="xl">
                         <Stack gap={20}>
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Area Venue</Text>
+                                <Text fw={600} size="lg">{t("admin.venue.create.area.venue")}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="ph:plus" />} onClick={() => form.insertListItem('areas', { name: '', capacity: 0, base_price: 0 })}>
-                                    Tambah Area
+                                    {t("admin.venue.create.tambah.area")}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
                                 {form.values.areas?.map((item: any, index: number) => (
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Flex gap={15} align="flex-end" wrap="wrap">
-                                            <TextInput label="Nama Area" placeholder="Contoh: Main Hall" required {...inputProps(`areas.${index}.name`)} flex={1} />
-                                            <NumberInput label="Kapasitas" required min={0} hideControls {...inputProps(`areas.${index}.capacity`)} w={{ base: '100%', md: '20%' }} />
-                                            <NumberInput label="Harga Dasar" prefix="Rp " required min={0} hideControls {...inputProps(`areas.${index}.base_price`)} w={{ base: '100%', md: '30%' }} />
+                                            <TextInput label={t("admin.venue.create.nama.area")} placeholder={t("admin.venue.create.contoh.main.hall")} required {...inputProps(`areas.${index}.name`)} flex={1} />
+                                            <NumberInput label={t("admin.venue.create.kapasitas")} required min={0} hideControls {...inputProps(`areas.${index}.capacity`)} w={{ base: '100%', md: '20%' }} />
+                                            <NumberInput label={t("admin.venue.create.harga.dasar")} prefix="Rp " required min={0} hideControls {...inputProps(`areas.${index}.base_price`)} w={{ base: '100%', md: '30%' }} />
                                             <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('areas', index)} size="lg" mb={5}>
                                                 <Icon icon="ph:trash" />
                                             </ActionIcon>
@@ -444,9 +446,9 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                             <Divider my="sm" />
 
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Harga Kustom (Prices)</Text>
+                                <Text fw={600} size="lg">{t("admin.venue.create.harga.kustom.prices")}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="ph:plus" />} onClick={() => form.insertListItem('prices', { pricing_type: 'hourly', day_type: 'weekday', start_time: '08:00', end_time: '17:00', price: 0 })}>
-                                    Tambah Harga Kustom
+                                    {t("admin.venue.create.tambah.harga.kustom")}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
@@ -454,19 +456,19 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Grid align="flex-end">
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Harga" data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                                <Select label={t("admin.venue.create.tipe.harga")} data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Hari" data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
+                                                <Select label={t("admin.venue.create.tipe.hari")} data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <TextInput type="time" label="Waktu Mulai" {...inputProps(`prices.${index}.start_time`)} />
+                                                <TextInput type="time" label={t("admin.venue.create.waktu.mulai")} {...inputProps(`prices.${index}.start_time`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <TextInput type="time" label="Waktu Selesai" {...inputProps(`prices.${index}.end_time`)} />
+                                                <TextInput type="time" label={t("admin.venue.create.waktu.selesai")} {...inputProps(`prices.${index}.end_time`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 3 }}>
-                                                <NumberInput label="Harga" prefix="Rp " required min={0} hideControls {...inputProps(`prices.${index}.price`)} />
+                                                <NumberInput label={t("admin.venue.create.harga")} prefix="Rp " required min={0} hideControls {...inputProps(`prices.${index}.price`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 1 }}>
                                                 <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('prices', index)} size="lg" mb={5}>
@@ -483,21 +485,21 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Flex gap={10} align="center" mt={10}>
                     <Icon icon="ph:map-pin-bold" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Alamat Venue</Text>
+                    <Text size="lg" fw={600}>{t("admin.venue.create.alamat.venue")}</Text>
                 </Flex>
 
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Daerah"
-                        placeholder="Bandung, Jawa Barat"
+                        label={t("admin.venue.create.daerah")}
+                        placeholder={t("admin.venue.create.bandung.jawa.barat")}
                         w="100%"
                         {...inputProps('location_name')}
                     />
                     <TextInput
                         withAsterisk
-                        label="Link Maps"
-                        placeholder="https://maps.google.com/..."
+                        label={t("admin.venue.create.link.maps")}
+                        placeholder={t("admin.venue.create.https.maps.google.com")}
                         w="100%"
                         {...inputProps('location')}
                     />
@@ -505,8 +507,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Textarea
                     withAsterisk
-                    label="Alamat Detail Venue"
-                    placeholder="Isi Detail Alamat Venue"
+                    label={t("admin.venue.create.alamat.detail.venue")}
+                    placeholder={t("admin.venue.create.isi.detail.alamat.venue")}
                     autosize
                     minRows={3}
                     {...inputProps('location_detail')}
@@ -514,21 +516,21 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <Flex gap={10} align="center" mt={10}>
                     <Icon icon="ph:phone-bold" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Contact Person</Text>
+                    <Text size="lg" fw={600}>{t("admin.venue.create.contact.person")}</Text>
                 </Flex>
 
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Nama Kontak"
-                        placeholder="Isi Nama Kontak"
+                        label={t("admin.venue.create.nama.kontak")}
+                        placeholder={t("admin.venue.create.isi.nama.kontak")}
                         w="100%"
                         {...inputProps('contact_person_name')}
                     />
                     <TextInput
                         withAsterisk
-                        label="Email Kontak"
-                        placeholder="Isi Email Kontak"
+                        label={t("admin.venue.create.email.kontak")}
+                        placeholder={t("admin.venue.create.isi.email.kontak")}
                         w="100%"
                         {...inputProps('contact_person_email')}
                     />
@@ -536,8 +538,8 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
 
                 <TextInput
                     withAsterisk
-                    label="No.Telp Kontak"
-                    placeholder="Isi No.Telp Kontak"
+                    label={t("admin.venue.create.no.telp.kontak")}
+                    placeholder={t("admin.venue.create.isi.no.telp.kontak")}
                     w="100%"
                     {...inputProps('contact_person_phone')}
                 />
@@ -553,7 +555,7 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                         radius="xl"
                         leftSection={<Icon icon="ph:x" />}
                     >
-                        Batal
+                        {t("admin.venue.create.batal")}
                     </Button>
                     <Button
                         loading={loading.includes('submitdata')}
@@ -562,7 +564,7 @@ Lengkapi form untuk {id ? 'memperbarui' : 'membuat'} venue baru sebagai administ
                         color="blue"
                         rightSection={<Icon icon="ph:check" />}
                         radius="xl">
-                        Simpan Venue
+                        {t("admin.venue.create.simpan.venue")}
                     </Button>
                 </Flex>
             </Card>

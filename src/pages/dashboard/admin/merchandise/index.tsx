@@ -12,6 +12,7 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { useRouter } from "next/router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -77,6 +78,7 @@ interface CreatorAPIResponse {
 }
 
 const Merch: React.FC = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isRender, setIsRender] = useState(false);
   const [modalCreate, setModalCreate] = useState<string | undefined>(undefined);
@@ -248,11 +250,11 @@ const Merch: React.FC = () => {
         />
       )}
 
-      <Modal opened={showCreatorModal} onClose={() => setShowCreatorModal(false)} title="Pilih Creator" centered>
+      <Modal opened={showCreatorModal} onClose={() => setShowCreatorModal(false)} title={t("admin.merchandise.index.pilih.creator")} centered>
         <div className="py-4">
           <Select
-            label="Pilih Creator"
-            placeholder="Pilih creator"
+            label={t("admin.merchandise.index.pilih.creator")}
+            placeholder={t("admin.merchandise.index.pilih.creator.2")}
             data={creators.map(c => ({
               value: String(c.id),
               label: `${c.name}${c.has_user?.email ? ` - ${c.has_user.email}` : ''}`
@@ -261,8 +263,8 @@ const Merch: React.FC = () => {
             onChange={(value) => setTempSelectedCreator(value || "")}
           />
           <div className="flex justify-end gap-2 mt-6">
-            <ButtonM variant="light" color="gray" onClick={() => setShowCreatorModal(false)}>Batal</ButtonM>
-            <ButtonM variant="filled" color="#0B387C" disabled={!tempSelectedCreator} onClick={handleConfirmCreatorSelection}>Lanjut</ButtonM>
+            <ButtonM variant="light" color="gray" onClick={() => setShowCreatorModal(false)}>{t("admin.merchandise.index.batal")}</ButtonM>
+            <ButtonM variant="filled" color="#0B387C" disabled={!tempSelectedCreator} onClick={handleConfirmCreatorSelection}>{t("admin.merchandise.index.lanjut")}</ButtonM>
           </div>
         </div>
       </Modal>
@@ -272,17 +274,17 @@ const Merch: React.FC = () => {
           <button
             onClick={() => router.push("/dashboard/admin")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.merchandise.index.kembali.ke.dashboard.admin")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>Merchandise Management</Text>
-            <Text size="sm" c="gray">Kelola semua merchandise dari berbagai creator dalam satu tempat</Text>
+            <Text size="1.8rem" fw={600}>{t("admin.merchandise.index.merchandise.management")}</Text>
+            <Text size="sm" c="gray">{t("admin.merchandise.index.kelola.semua.merchandise.dari.berbagai.creator.dalam.satu.tempat")}</Text>
           </Stack>
         </Flex>
         <ButtonM onClick={() => openCreateModal("")} leftSection={<Icon icon="ph:plus-bold" />} radius="md" color="blue">
-          Tambah Produk
+          {t("admin.merchandise.index.tambah.produk")}
         </ButtonM>
       </Flex>
 
@@ -290,8 +292,8 @@ const Merch: React.FC = () => {
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }} wrap="wrap">
           <div style={{ width: 220 }}>
             <Select
-              label="Penyelenggara"
-              placeholder="Semua Creator"
+              label={t("admin.merchandise.index.penyelenggara")}
+              placeholder={t("admin.merchandise.index.semua.creator")}
               data={creators.map(c => ({ value: String(c.id), label: c.name || "Unknown" }))}
               value={selectedCreator}
               onChange={(val) => { setSelectedCreator(val || ""); setPage(1); }}
@@ -299,7 +301,7 @@ const Merch: React.FC = () => {
             />
           </div>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4}>Rentang Tanggal</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4}>{t("admin.merchandise.index.rentang.tanggal")}</Text>
             <Flex gap={5}>
               <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #ced4da", fontSize: "13px", width: "50%" }} />
               <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #ced4da", fontSize: "13px", width: "50%" }} />
@@ -307,9 +309,9 @@ const Merch: React.FC = () => {
           </div>
           <div style={{ width: 220 }}>
             <Input
-              label="Pencarian"
+              label={t("admin.merchandise.index.pencarian")}
               value={search}
-              placeholder="Cari produk..."
+              placeholder={t("admin.merchandise.index.cari.produk")}
               onChange={(e: any) => setSearch(e.target.value)}
               size="sm"
               startContent={<Icon icon="ph:magnifying-glass" />}
@@ -321,22 +323,22 @@ const Merch: React.FC = () => {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #eee" }}>
-                <th style={tableHeadStyle}>No</th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("has_creator.name")}>Creator</th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("product_name")}>Info Produk</th>
-                <th style={tableHeadStyle}>SKU</th>
-                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("price")}>Harga</th>
-                <th style={tableHeadStyle}>Stok</th>
-                <th style={tableHeadStyle}>Lokasi</th>
-                <th style={tableHeadStyle}>Status</th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
+                <th style={tableHeadStyle}>{t("admin.merchandise.index.no")}</th>
+                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("has_creator.name")}>{t("admin.merchandise.index.creator")}</th>
+                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("product_name")}>{t("admin.merchandise.index.info.produk")}</th>
+                <th style={tableHeadStyle}>{t("admin.merchandise.index.sku")}</th>
+                <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleRequestSort("price")}>{t("admin.merchandise.index.harga")}</th>
+                <th style={tableHeadStyle}>{t("admin.merchandise.index.stok")}</th>
+                <th style={tableHeadStyle}>{t("admin.merchandise.index.lokasi")}</th>
+                <th style={tableHeadStyle}>{t("admin.merchandise.index.status")}</th>
+                <th style={{ ...tableHeadStyle, textAlign: "center" }}>{t("admin.merchandise.index.aksi")}</th>
               </tr>
             </thead>
             <tbody>
               {loading2 ? (
-                <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center" }}><Text>Loading...</Text></td></tr>
+                <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center" }}><Text>{t("admin.merchandise.index.loading")}</Text></td></tr>
               ) : sortedList.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">Data tidak ditemukan</Text></td></tr>
+                <tr><td colSpan={9} style={{ padding: "40px", textAlign: "center" }}><Text c="dimmed">{t("admin.merchandise.index.data.tidak.ditemukan")}</Text></td></tr>
               ) : (
                 sortedList.map((item, i) => {
                   const safeSlug = String(item.slug ?? "");
@@ -356,7 +358,7 @@ const Merch: React.FC = () => {
                       <td style={tableCellStyle}>{item.product_name}</td>
                       <td style={tableCellStyle}><Badge color="gray" variant="light" size="xs">{safeSku}</Badge></td>
                       <td style={tableCellStyle}><NumberFormatter value={safePrice} prefix="Rp " thousandSeparator="." /></td>
-                      <td style={tableCellStyle}><Badge color={(stock ?? 0) > 0 ? "green" : "red"} size="xs">{stock ?? 0} Unit</Badge></td>
+                      <td style={tableCellStyle}><Badge color={(stock ?? 0) > 0 ? "green" : "red"} size="xs">{stock ?? 0} {t("admin.merchandise.index.unit")}</Badge></td>
                       <td style={tableCellStyle}>{item.has_store_location?.store_name || "-"}</td>
                       <td style={tableCellStyle}><Badge color={statusColor} variant="light" size="xs">{statusLabel}</Badge></td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
@@ -382,11 +384,11 @@ const Merch: React.FC = () => {
 
         {sortedList.length > 0 && (
           <div className="flex justify-between items-center px-6 py-4 border-t border-light-grey bg-gray-50/30">
-            <Text size="sm" c="dimmed">Menampilkan {sortedList.length} produk</Text>
+            <Text size="sm" c="dimmed">{t("admin.merchandise.index.menampilkan")} {sortedList.length} {t("admin.merchandise.index.produk")}</Text>
             <Group gap={8}>
-              <ButtonM variant="white" color="gray" disabled={page <= 1} onClick={() => setPage(p => p - 1)} size="xs">Sebelumnya</ButtonM>
+              <ButtonM variant="white" color="gray" disabled={page <= 1} onClick={() => setPage(p => p - 1)} size="xs">{t("admin.merchandise.index.sebelumnya")}</ButtonM>
               <Text size="xs" fw={700}>{page} / {lastPage}</Text>
-              <ButtonM variant="white" color="gray" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)} size="xs">Berikutnya</ButtonM>
+              <ButtonM variant="white" color="gray" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)} size="xs">{t("admin.merchandise.index.berikutnya")}</ButtonM>
             </Group>
           </div>
         )}

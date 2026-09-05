@@ -29,6 +29,7 @@ import {
 import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 type DataResponse = {
   id?: number;
@@ -59,6 +60,7 @@ type DataResponse = {
 
 export default function TalentaTransaction() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<DataResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterValue, setFilterValue] = useState("");
@@ -130,7 +132,7 @@ export default function TalentaTransaction() {
     try {
       const date = parseDate(dateString);
       if (date.getTime() === 0) return dateString;
-      return date.toLocaleDateString("id-ID", {
+      return date.toLocaleDateString(i18n.language === 'id' ? 'id-ID' : 'en-US', {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -145,13 +147,13 @@ export default function TalentaTransaction() {
     const statusStr = (item.payment_status || "").toLowerCase();
 
     if (statusId === 2 || statusStr.includes("paid") || statusStr.includes("success") || statusStr.includes("berhasil")) {
-      return { text: "Success", color: "green" };
+      return { text: t('talentaTrx.status.success'), color: "green" };
     } else if (statusId === 1 || statusStr.includes("pending") || statusStr.includes("menunggu") || statusStr.includes("unpaid")) {
-      return { text: "Pending", color: "yellow" };
+      return { text: t('talentaTrx.status.pending'), color: "yellow" };
     } else if (statusId === 3 || statusStr.includes("gagal") || statusStr.includes("failed") || statusStr.includes("cancel")) {
-      return { text: "Gagal", color: "red" };
+      return { text: t('talentaTrx.status.failed'), color: "red" };
     } else if (statusId === 4 || statusStr.includes("expired")) {
-      return { text: "Expired", color: "gray" };
+      return { text: t('talentaTrx.status.expired'), color: "gray" };
     }
     return { text: item.payment_status || "-", color: "gray" };
   };
@@ -235,24 +237,24 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </button>
 <Stack gap={0}>
 <Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
-Transaksi Talenta
+{t('talentaTrx.title')}
 </Text>
 <Text size="sm" c="gray">
-Daftar semua transaksi talenta
+{t('talentaTrx.subtitle')}
 </Text>
 </Stack>
 </Flex>
         <Flex gap="md" align="center">
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Penjualan</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalSales')}</Text>
             <Text size="lg" fw={700}>Rp {stats.totalSales.toLocaleString('id-ID')}</Text>
           </MantineCard>
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Transaksi</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalTransactions')}</Text>
             <Text size="lg" fw={700}>{stats.totalTransactions}</Text>
           </MantineCard>
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Booking</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalBookings')}</Text>
             <Text size="lg" fw={700}>{stats.totalBooking}</Text>
           </MantineCard>
         </Flex>
@@ -276,7 +278,7 @@ Daftar semua transaksi talenta
                 <Box style={{ position: "relative" }}>
                   <MantineTextInput
                     type="date"
-                    placeholder="Filter tanggal"
+                    placeholder={t('talentaTrx.filterDate')}
                     value={dateFilter}
                     onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
                     size="sm"
@@ -285,14 +287,14 @@ Daftar semua transaksi talenta
                   />
                 </Box>
                 <MantineTextInput
-                  placeholder="Cari talenta atau client..."
+                  placeholder={t('talentaTrx.searchPlaceholder')}
                   leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                   value={filterValue}
                   onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
                   style={{ width: 280 }}
                   size="sm"
                 />
-                <Tooltip label="Reset filter">
+                <Tooltip label={t('talentaTrx.resetFilters')}>
                   <ActionIcon 
                     variant="filled" 
                     color="gray.1" 
@@ -311,11 +313,11 @@ Daftar semua transaksi talenta
 
             <Flex align="center" gap="sm" mb="md">
               <Text size="xs" c="gray">
-                Menampilkan{" "}
-                {filtered.length > 0
-                  ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, filtered.length)}`
-                  : "0"}{" "}
-                dari {filtered.length} transaksi
+                {t('talentaTrx.showing', {
+                  from: filtered.length > 0 ? (page - 1) * rowsPerPage + 1 : 0,
+                  to: filtered.length > 0 ? Math.min(page * rowsPerPage, filtered.length) : 0,
+                  total: filtered.length,
+                })}
               </Text>
             </Flex>
 
@@ -331,13 +333,13 @@ Daftar semua transaksi talenta
                 <thead>
                   <tr style={{ borderBottom: "2px solid #e8e8e8", backgroundColor: "#f5f7fa" }}>
                     <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700, color: "#777", width: 48 }}>#</th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("order_no")}>Invoice <SortIcon col="order_no" /></th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("created_at")}>Tanggal Order <SortIcon col="created_at" /></th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777" }}>Talenta</th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("user")}>Client <SortIcon col="user" /></th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("final_price")}>Total Pembayaran <SortIcon col="final_price" /></th>
-                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer", position: "sticky", right: 100, backgroundColor: "#f5f7fa", zIndex: 2, boxShadow: "-2px 0 5px rgba(0,0,0,0.06)" }} onClick={() => handleSort("payment_status")}>Status <SortIcon col="payment_status" /></th>
-                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700, color: "#777", position: "sticky", right: 0, backgroundColor: "#f5f7fa", zIndex: 2, boxShadow: "-2px 0 5px rgba(0,0,0,0.06)" }}>Action</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("order_no")}>{t('talentaTrx.table.invoice')} <SortIcon col="order_no" /></th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("created_at")}>{t('talentaTrx.table.orderDate')} <SortIcon col="created_at" /></th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777" }}>{t('talentaTrx.table.talent')}</th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("user")}>{t('talentaTrx.table.client')} <SortIcon col="user" /></th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer" }} onClick={() => handleSort("final_price")}>{t('talentaTrx.table.totalPayment')} <SortIcon col="final_price" /></th>
+                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700, color: "#777", cursor: "pointer", position: "sticky", right: 100, backgroundColor: "#f5f7fa", zIndex: 2, boxShadow: "-2px 0 5px rgba(0,0,0,0.06)" }} onClick={() => handleSort("payment_status")}>{t('common.status')} <SortIcon col="payment_status" /></th>
+                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700, color: "#777", position: "sticky", right: 0, backgroundColor: "#f5f7fa", zIndex: 2, boxShadow: "-2px 0 5px rgba(0,0,0,0.06)" }}>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,7 +351,7 @@ Daftar semua transaksi talenta
                             className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
                             style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #e9ecef", borderTopColor: "#228be6", animation: "spin 0.8s linear infinite" }}
                           />
-                          <Text size="sm" c="dimmed">Memuat data...</Text>
+                          <Text size="sm" c="dimmed">{t('common.loading')}</Text>
                         </Flex>
                       </td>
                     </tr>
@@ -358,9 +360,9 @@ Daftar semua transaksi talenta
                       <td colSpan={8} style={{ padding: "60px 14px", textAlign: "center" }}>
                         <Stack align="center" gap={8}>
                           <FontAwesomeIcon icon={faStar} style={{ width: 36, height: 36, color: "#adb5bd" }} />
-                          <Text size="sm" c="dimmed" fw={500}>Tidak ada transaksi talenta ditemukan</Text>
+                          <Text size="sm" c="dimmed" fw={500}>{t('talentaTrx.empty')}</Text>
                           {hasActiveFilters && (
-                            <Text size="xs" c="gray">Coba ubah filter atau <span style={{ color: "#228be6", cursor: "pointer" }} onClick={clearFilters}>hapus filter</span></Text>
+                            <Text size="xs" c="gray">{t('talentaTrx.emptyFilterPrefix')} <span style={{ color: "#228be6", cursor: "pointer" }} onClick={clearFilters}>{t('talentaTrx.clearFilters')}</span></Text>
                           )}
                         </Stack>
                       </td>
@@ -412,7 +414,7 @@ Daftar semua transaksi talenta
             </Box>
 
             <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: "1px solid #ebebeb", backgroundColor: "#fafafa", borderRadius: "0 0 8px 8px" }}>
-              <Text size="xs" c="dimmed">Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong></Text>
+              <Text size="xs" c="dimmed">{t('talentaTrx.pageOf', { page, total: totalPages })}</Text>
               <MantinePagination total={totalPages} value={page} onChange={setPage} size="sm" radius="xl" withEdges color="blue" styles={{ control: { border: "1px solid #e0e0e0", fontWeight: 600 } }} />
               <Text size="xs" c="dimmed">{filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}–${Math.min(page * rowsPerPage, filtered.length)}` : "0"} / {filtered.length}</Text>
             </Flex>
@@ -426,12 +428,12 @@ Daftar semua transaksi talenta
         }
       `}</style>
 
-      <Modal opened={detailModalOpened} onClose={() => setDetailModalOpened(false)} title={<Text fw={700}>Detail Transaksi Talenta</Text>} size="lg" radius="md">
+      <Modal opened={detailModalOpened} onClose={() => setDetailModalOpened(false)} title={<Text fw={700}>{t('talentaTrx.modal.title')}</Text>} size="lg" radius="md">
         {selectedTransaction && (
           <Stack gap="md">
             <Grid>
               <Grid.Col span={6}>
-                <Text size="sm" c="dimmed">Order No</Text>
+                <Text size="sm" c="dimmed">{t('talentaTrx.modal.orderNo')}</Text>
                 <Text fw={600}>{selectedTransaction.order_no || "-"}</Text>
               </Grid.Col>
               <Grid.Col span={6}>
@@ -439,21 +441,21 @@ Daftar semua transaksi talenta
                 <Badge color={getStatusInfo(selectedTransaction).color}>{getStatusInfo(selectedTransaction).text}</Badge>
               </Grid.Col>
               <Grid.Col span={6}>
-                <Text size="sm" c="dimmed">Tanggal Transaksi</Text>
+                <Text size="sm" c="dimmed">{t('talentaTrx.modal.transactionDate')}</Text>
                 <Text fw={600}>{formatDate(selectedTransaction.created_at)}</Text>
               </Grid.Col>
               <Grid.Col span={6}>
-                <Text size="sm" c="dimmed">Talenta</Text>
+                <Text size="sm" c="dimmed">{t('talentaTrx.table.talent')}</Text>
                 <Text fw={600}>{selectedTransaction.product_name || selectedTransaction.talenta?.name || "-"}</Text>
               </Grid.Col>
               <Grid.Col span={12}>
-                <Text size="sm" c="dimmed">Klien</Text>
+                <Text size="sm" c="dimmed">{t('talentaTrx.modal.client')}</Text>
                 <Text fw={600}>{selectedTransaction.user?.name || "-"}</Text>
                 <Text size="sm">{selectedTransaction.user?.email || "-"}</Text>
               </Grid.Col>
               <Grid.Col span={12}>
                 <Flex justify="space-between" mt="md" style={{ borderTop: "1px dashed #e0e0e0", paddingTop: 10 }}>
-                  <Text fw={600}>Total Pembayaran</Text>
+                  <Text fw={600}>{t('talentaTrx.table.totalPayment')}</Text>
                   <Text fw={700} c="blue">Rp {Number(selectedTransaction.final_price || selectedTransaction.grandtotal || selectedTransaction.total_price || 0).toLocaleString('id-ID')}</Text>
                 </Flex>
               </Grid.Col>

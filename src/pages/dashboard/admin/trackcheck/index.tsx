@@ -37,6 +37,7 @@ import { useForm } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
+import { useTranslation } from "react-i18next";
 
 // Types
 type Creator = {
@@ -94,6 +95,7 @@ type TrackingFormValues = {
 };
 
 export default function OrderTracking() {
+  const { t } = useTranslation();
     const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [creators, setCreators] = useState<Creator[]>([]);
@@ -433,21 +435,21 @@ export default function OrderTracking() {
                             <button
                                 onClick={() => router.push('/dashboard/admin')}
                                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-                                aria-label="Kembali ke Dashboard Admin"
+                                aria-label={t("admin.trackcheck.index.kembali.ke.dashboard.admin")}
                             >
                                 <Icon icon="ph:arrow-left-bold" width={20} />
                             </button>
                             <Box>
                                 <Title order={2} size="h2" fw={700}>
-                                    Tracking Order
+                                    {t("admin.trackcheck.index.tracking.order")}
                                 </Title>
                                 <Text size="sm" c="dimmed" mt={4}>
-                                    Buat tracking baru untuk order yang sudah diterima
+                                    {t("admin.trackcheck.index.buat.tracking.baru.untuk.order.yang.sudah.diterima")}
                                 </Text>
                             </Box>
                         </Group>
                         {step > 1 && (
-                            <Tooltip label="Kembali ke Awal">
+                            <Tooltip label={t("admin.trackcheck.index.kembali.ke.awal")}>
                                 <ActionIcon
                                     variant="subtle"
                                     color="gray"
@@ -478,15 +480,15 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:account-group" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Pilih Creator</Title>
-                                    <Text size="sm" c="dimmed">Pilih creator dari daftar untuk melihat transaksi</Text>
+                                    <Title order={4} fw={600}>{t("admin.trackcheck.index.pilih.creator")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.trackcheck.index.pilih.creator.dari.daftar.untuk.melihat.transaksi")}</Text>
                                 </Box>
                             </Group>
 
                             <Stack gap="md">
                                 <Select
-                                    label="Pilih Creator"
-                                    placeholder="Klik untuk memilih creator"
+                                    label={t("admin.trackcheck.index.pilih.creator")}
+                                    placeholder={t("admin.trackcheck.index.klik.untuk.memilih.creator")}
                                     data={creators.map((creator: Creator) => ({
                                         value: creator.slug_url,
                                         label: creator.name
@@ -528,7 +530,7 @@ export default function OrderTracking() {
                                             <Icon icon="mdi:file-document" />
                                         </ThemeIcon>
                                         <Box>
-                                            <Title order={4} fw={600}>Daftar Invoice</Title>
+                                            <Title order={4} fw={600}>{t("admin.trackcheck.index.daftar.invoice")}</Title>
                                             <Text size="sm" c="dimmed">
                                                 {selectedCreator && `Creator: ${selectedCreator.name}`}
                                             </Text>
@@ -538,7 +540,7 @@ export default function OrderTracking() {
                                     {/* Statistik Ringkas */}
                                     {pagination.total > 0 && (
                                         <Badge size="lg" variant="light" color="blue" radius="sm">
-                                            {pagination.total} Transaksi
+                                            {pagination.total} {t("admin.trackcheck.index.transaksi")}
                                         </Badge>
                                     )}
                                 </Group>
@@ -546,7 +548,7 @@ export default function OrderTracking() {
                                 {/* Search dan Filter */}
                                 <Group grow>
                                     <TextInput
-                                        placeholder="Cari invoice, customer, atau ID order..."
+                                        placeholder={t("admin.trackcheck.index.cari.invoice.customer.atau.id.order")}
                                         leftSection={<Icon icon="mdi:magnify" width={20} />}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.currentTarget.value)}
@@ -554,7 +556,7 @@ export default function OrderTracking() {
                                         radius="md"
                                     />
                                     <Select
-                                        placeholder="Filter status"
+                                        placeholder={t("admin.trackcheck.index.filter.status")}
                                         data={['Semua', 'Verified', 'Pending', 'Unpaid']}
                                         defaultValue="Semua"
                                         size="md"
@@ -621,7 +623,7 @@ export default function OrderTracking() {
                                                                     >
                                                                         {transaction.payment_status}
                                                                     </Badge>
-                                                                    <Tooltip label="Lihat detail">
+                                                                    <Tooltip label={t("admin.trackcheck.index.lihat.detail")}>
                                                                         <ActionIcon variant="subtle" color="blue">
                                                                             <Icon icon="mdi:arrow-right" width={18} />
                                                                         </ActionIcon>
@@ -654,17 +656,17 @@ export default function OrderTracking() {
                                                             {/* Baris 3: Grid Informasi Tambahan */}
                                                             <SimpleGrid cols={3} spacing="xs">
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Order ID</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.trackcheck.index.order.id")}</Text>
                                                                     <Text size="sm" fw={500}>#{transaction.id}</Text>
                                                                 </Box>
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Total Qty</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.trackcheck.index.total.qty")}</Text>
                                                                     <Text size="sm" fw={500}>
-                                                                        {transaction.total_qty || 0} item
+                                                                        {transaction.total_qty || 0} {t("admin.trackcheck.index.item")}
                                                                     </Text>
                                                                 </Box>
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Total</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.trackcheck.index.total")}</Text>
                                                                     <Text size="sm" fw={700} c="blue">
                                                                         {formatCurrency(transaction.grandtotal)}
                                                                     </Text>
@@ -696,7 +698,7 @@ export default function OrderTracking() {
                                                                             </Indicator>
                                                                             <Box>
                                                                                 <Text size="xs" c="dimmed">
-                                                                                    Tracking Terakhir
+                                                                                    {t("admin.trackcheck.index.tracking.terakhir")}
                                                                                 </Text>
                                                                                 <Group gap="xs">
                                                                                     <Badge size="sm" variant="dot" color="blue">
@@ -722,7 +724,7 @@ export default function OrderTracking() {
                                                                 <Group gap="xs">
                                                                     <Icon icon="mdi:package-variant" width={14} color="gray" />
                                                                     <Text size="xs" c="dimmed">
-                                                                        {transaction.items.length} item produk
+                                                                        {transaction.items.length} {t("admin.trackcheck.index.item.produk")}
                                                                     </Text>
                                                                 </Group>
                                                             )}
@@ -736,7 +738,7 @@ export default function OrderTracking() {
                                                 <Center py="xl">
                                                     <Loader size="sm" />
                                                     <Text ml="sm" size="sm" c="dimmed">
-                                                        Memuat lebih banyak transaksi...
+                                                        {t("admin.trackcheck.index.memuat.lebih.banyak.transaksi")}
                                                     </Text>
                                                 </Center>
                                             )}
@@ -749,7 +751,7 @@ export default function OrderTracking() {
                                                             <Icon icon="mdi:check-all" width={24} />
                                                         </ThemeIcon>
                                                         <Text size="sm" c="dimmed">
-                                                            Semua transaksi telah dimuat
+                                                            {t("admin.trackcheck.index.semua.transaksi.telah.dimuat")}
                                                         </Text>
                                                     </Stack>
                                                 </Center>
@@ -778,7 +780,7 @@ export default function OrderTracking() {
                                                         onClick={() => setSearchQuery('')}
                                                         leftSection={<Icon icon="mdi:close" />}
                                                     >
-                                                        Hapus Filter
+                                                        {t("admin.trackcheck.index.hapus.filter")}
                                                     </Button>
                                                 )}
                                             </Stack>
@@ -816,8 +818,8 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:package" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Detail Order</Title>
-                                    <Text size="sm" c="dimmed">Konfirmasi detail order sebelum membuat tracking</Text>
+                                    <Title order={4} fw={600}>{t("admin.trackcheck.index.detail.order")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.trackcheck.index.konfirmasi.detail.order.sebelum.membuat.tracking")}</Text>
                                 </Box>
                             </Group>
 
@@ -825,25 +827,25 @@ export default function OrderTracking() {
                                 <Card withBorder p="lg" radius="md" bg="blue.0">
                                     <Stack gap="md">
                                         <Group justify="space-between">
-                                            <Text fw={500} size="sm" c="dimmed">Invoice</Text>
+                                            <Text fw={500} size="sm" c="dimmed">{t("admin.trackcheck.index.invoice")}</Text>
                                             <Text fw={700} size="lg">{orderDetail.invoice_no}</Text>
                                         </Group>
                                         <Divider />
                                         <SimpleGrid cols={2} spacing="md">
                                             <Box>
-                                                <Text size="xs" c="dimmed">Order ID</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.trackcheck.index.order.id")}</Text>
                                                 <Text fw={500}>#{orderDetail.order_id}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Customer</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.trackcheck.index.customer")}</Text>
                                                 <Text fw={500}>{orderDetail.customer_name}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Tanggal Order</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.trackcheck.index.tanggal.order")}</Text>
                                                 <Text fw={500}>{formatDate(orderDetail.order_date)}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Total</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.trackcheck.index.total")}</Text>
                                                 <Text fw={700} c="blue" size="lg">
                                                     {formatCurrency(orderDetail.grandtotal || 0)}
                                                 </Text>
@@ -858,13 +860,13 @@ export default function OrderTracking() {
                                         onClick={() => setStep(2)}
                                         leftSection={<Icon icon="mdi:arrow-left" />}
                                     >
-                                        Kembali
+                                        {t("admin.trackcheck.index.kembali")}
                                     </Button>
                                     <Button
                                         onClick={() => setStep(4)}
                                         rightSection={<Icon icon="mdi:arrow-right" />}
                                     >
-                                        Lanjut ke Form Tracking
+                                        {t("admin.trackcheck.index.lanjut.ke.form.tracking")}
                                     </Button>
                                 </Group>
                             </Stack>
@@ -879,8 +881,8 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:truck-delivery" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Form Tracking</Title>
-                                    <Text size="sm" c="dimmed">Lengkapi data tracking untuk order ini</Text>
+                                    <Title order={4} fw={600}>{t("admin.trackcheck.index.form.tracking")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.trackcheck.index.lengkapi.data.tracking.untuk.order.ini")}</Text>
                                 </Box>
                             </Group>
 
@@ -889,15 +891,15 @@ export default function OrderTracking() {
                                 <Paper withBorder p="md" bg="gray.0" radius="md">
                                     <Group justify="space-between">
                                         <Box>
-                                            <Text size="xs" c="dimmed">Invoice</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.trackcheck.index.invoice")}</Text>
                                             <Text fw={600}>{orderDetail.invoice_no}</Text>
                                         </Box>
                                         <Box>
-                                            <Text size="xs" c="dimmed">Order ID</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.trackcheck.index.order.id")}</Text>
                                             <Text fw={600}>#{orderDetail.order_id}</Text>
                                         </Box>
                                         <Box>
-                                            <Text size="xs" c="dimmed">Customer</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.trackcheck.index.customer")}</Text>
                                             <Text fw={600}>{orderDetail.customer_name}</Text>
                                         </Box>
                                     </Group>
@@ -905,8 +907,8 @@ export default function OrderTracking() {
 
                                 <Select
                                     withAsterisk
-                                    label="Status Tracking"
-                                    placeholder="Pilih status tracking"
+                                    label={t("admin.trackcheck.index.status.tracking")}
+                                    placeholder={t("admin.trackcheck.index.pilih.status.tracking")}
                                     data={[
                                         { value: '1', label: '1 - Dalam Proses' },
                                         { value: '2', label: '2 - Dalam Perjalanan' },
@@ -921,16 +923,16 @@ export default function OrderTracking() {
 
                                 <TextInput
                                     withAsterisk
-                                    label="Nama Status"
-                                    placeholder="Contoh: Telah Diterima"
+                                    label={t("admin.trackcheck.index.nama.status")}
+                                    placeholder={t("admin.trackcheck.index.contoh.telah.diterima")}
                                     size="md"
                                     {...form.getInputProps('status_name')}
                                 />
 
                                 <Textarea
                                     withAsterisk
-                                    label="Deskripsi"
-                                    placeholder="Deskripsi detail status tracking"
+                                    label={t("admin.trackcheck.index.deskripsi")}
+                                    placeholder={t("admin.trackcheck.index.deskripsi.detail.status.tracking")}
                                     autosize
                                     minRows={3}
                                     size="md"
@@ -941,7 +943,7 @@ export default function OrderTracking() {
                                     <Group gap="xs">
                                         <Icon icon="mdi:information" />
                                         <Text size="sm">
-                                            Tracking akan dibuat dengan lokasi {form.values.location} dan PIC {form.values.pic_name}
+                                            {t("admin.trackcheck.index.tracking.akan.dibuat.dengan.lokasi")} {form.values.location} {t("admin.trackcheck.index.dan.pic")} {form.values.pic_name}
                                         </Text>
                                     </Group>
                                 </Alert>
@@ -952,7 +954,7 @@ export default function OrderTracking() {
                                         onClick={() => setStep(3)}
                                         leftSection={<Icon icon="mdi:arrow-left" />}
                                     >
-                                        Kembali
+                                        {t("admin.trackcheck.index.kembali")}
                                     </Button>
                                     <Button
                                         loading={loading.includes('submittracking')}
@@ -961,7 +963,7 @@ export default function OrderTracking() {
                                         size="md"
                                         leftSection={<Icon icon="mdi:check" />}
                                     >
-                                        Submit Tracking
+                                        {t("admin.trackcheck.index.submit.tracking")}
                                     </Button>
                                 </Group>
                             </Stack>

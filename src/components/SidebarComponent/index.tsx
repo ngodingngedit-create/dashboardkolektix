@@ -1630,8 +1630,9 @@ import { Get } from "@/utils/REST";
 import config from "@/Config";
 import axios from "axios";
 import { useClickOutside } from "@mantine/hooks";
-import { Flex, Stack, Text, Tooltip } from "@mantine/core";
+import { Flex, Menu, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { useTranslation } from "react-i18next";
 
 export const SidebarContext = createContext<{ collapse: boolean }>({ collapse: false });
 export const useSidebar = () => useContext(SidebarContext);
@@ -2070,11 +2071,76 @@ const sidebarData: SidebarData = [
   // { id: 12, name: "Website Management", icon: faGlobe, role: "Creator", link: "/dashboard" },
 ];
 
+// Map nama label menu sidebar (hardcoded di sidebarData) ke key i18n
+const menuLabelKeys: Record<string, string> = {
+  "Dashboard": "menu.dashboard",
+  "Event": "menu.event",
+  "Merchandise": "menu.merchandise",
+  "Tracking Update": "menu.trackingUpdate",
+  "Update Resi": "menu.updateResi",
+  "Venue": "menu.venue",
+  "Slider": "menu.slider",
+  "Kelola Role": "menu.manageRoles",
+  "User": "menu.user",
+  "Creator": "menu.creator",
+  "Permission": "menu.permission",
+  "Role": "menu.role",
+  "Module": "menu.module",
+  "Shuttle Ajaks": "menu.shuttleAjaks",
+  "Create Event Shuttle": "menu.createEventShuttle",
+  "List Bus": "menu.listBus",
+  "List Route": "menu.listRoute",
+  "Event Saya": "menu.myEvents",
+  "Check In Event": "menu.checkInEvent",
+  "Check In Report": "menu.checkInReport",
+  "Report Event": "menu.reportEvent",
+  "Sales Report": "menu.salesReport",
+  "Full Report": "menu.fullReport",
+  "Seatmap Report": "menu.seatmapReport",
+  "Down Payment Report": "menu.downPaymentReport",
+  "Report Downpayment": "menu.reportDownpayment",
+  "Setup Downpayment": "menu.setupDownpayment",
+  "Ticket OTS": "menu.ticketOTS",
+  "Crew Event": "menu.crewEvent",
+  "Voucher": "menu.voucher",
+  "Produk": "menu.product",
+  "Kelola Produk": "menu.manageProducts",
+  "Transaksi Produk": "menu.productTransactions",
+  "POS Produk": "menu.posProduct",
+  "Pengambilan Produk": "menu.productPickup",
+  "Delivery": "menu.delivery",
+  "Stock Management ": "menu.stockManagement",
+  "Stock Movement by List": "menu.stockMovementList",
+  "Update Stock By Scan": "menu.updateStockScan",
+  "Store Location": "menu.storeLocation",
+  "Kelola Venue": "menu.manageVenue",
+  "Transaksi Venue": "menu.venueTransaction",
+  "Buat Booking Venue": "menu.createVenueBooking",
+  "Venue Schedule": "menu.venueSchedule",
+  "Talenta": "menu.talenta",
+  "Daftar Talenta": "menu.talentaList",
+  "Transaksi Talenta": "menu.talentaTransaction",
+  "Blog": "menu.blog",
+  "Pesan": "menu.messages",
+  "Account Saya": "menu.myAccount",
+  "Akun Creator": "menu.creatorAccount",
+  "Alamat Saya": "menu.myAddress",
+  "Rekening Saya": "menu.myBankAccount",
+  "Project Management": "menu.projectManagement",
+  "Microsite Settings": "menu.micrositeSettings",
+};
+
+const translateMenuLabel = (name: string, t: (key: string) => string) => {
+  const key = menuLabelKeys[name];
+  return key ? t(key) : name;
+};
+
 const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const { slug } = router.query;
   const users = useLoggedUser();
   const { route } = router;
+  const { t, i18n } = useTranslation();
   const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
   const [openMenu, setOpenMenu] = useState<{ [key: number]: boolean }>({});
   const [userData, setUserData] = useState<UserProps>();
@@ -2337,7 +2403,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   <div className="flex justify-between mb-2">
                     <Flex align="center" gap={7}>
                       <Icon icon="hugeicons:money-03" />
-                      <p className="text-sm">Saldo</p>
+                      <p className="text-sm">{t("dashboard.balance")}</p>
                     </Flex>
                     {/* <p className="text-sm ">Rp.{(eventData?.total_price_sell || 0).toLocaleString("id-ID")}</p> */}
                     <p className="text-sm ">Rp.{(saldoData?.total_saldo || 0).toLocaleString("id-ID")}</p>
@@ -2355,7 +2421,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                         className="w-full bg-[#1b3a6a] text-white py-2 rounded-md mt-3 text-xs"
                         onClick={() => setIsPop(!pop)} // Menutup kolaps ketika tombol Detail diklik
                       >
-                        Detail
+                        {t("dashboard.detail")}
                       </button>
                     </Link>
                   </div>
@@ -2364,13 +2430,13 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
               <>
                 {filteredSidebarData.map((el) => (
-                  <Tooltip label={el.name} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? "!opacity-0" : ""}`} key={el.id}>
+                  <Tooltip label={translateMenuLabel(el.name, t)} position="right" bg="white" c="gray.8" className={`shadow-lg ${collapse ? "!opacity-0" : ""}`} key={el.id}>
                     <li key={el.id} className={`${router.pathname === el.link ? "bg-[#1b3a6a] border-l-3 border-white text-white" : "pl-[3px]  text-primary-light-200"} list-none transition-transform-colors`}>
                       {el.link ? (
                         <Link href={el.link} className="" onClick={handleItemClick}>
                           <div className="flex px-5 items-center hover:bg-[#1b3a6a] py-3">
                             <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
-                            {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{el.name}</p>}
+                            {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{translateMenuLabel(el.name, t)}</p>}
                           </div>
                         </Link>
                       ) : (
@@ -2386,7 +2452,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                               <div className="w-5 h-5 flex justify-center items-center">
                                 <div className="w-5 h-5 flex justify-center items-center">{el.iconify ? <Icon icon={el.iconify ?? ""} className={`h-5 w-5`} /> : el.icon && <FontAwesomeIcon icon={el.icon} className="w-5 h-5" />}</div>
                               </div>
-                              {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{el.name}</p>}
+                              {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 " : "opacity-0 "} transition-opacity delay-700`}>{translateMenuLabel(el.name, t)}</p>}
                             </div>
                             {el.submenu && visible && (
                               <button>
@@ -2426,7 +2492,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                         <div className="w-5 h-5 flex justify-center items-center">
                                           {subEl.iconify ? <Icon icon={subEl.iconify ?? ""} className={`h-5 w-5 text-white`} /> : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
                                         </div>
-                                        {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{subEl.name}</p>}
+                                        {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{translateMenuLabel(subEl.name, t)}</p>}
                                       </div>
                                       {visible && (
                                         <FontAwesomeIcon
@@ -2445,7 +2511,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                                 <div className="w-4 h-4 flex justify-center items-center opacity-80">
                                                   {ss.iconify ? <Icon icon={ss.iconify} className="h-4 w-4" /> : ss.icon && <FontAwesomeIcon icon={ss.icon} className="w-4 h-4" />}
                                                 </div>
-                                                {visible && <p className="text-[13px] font-medium">{ss.name}</p>}
+                                                {visible && <p className="text-[13px] font-medium">{translateMenuLabel(ss.name, t)}</p>}
                                               </div>
                                             </Link>
                                           </li>
@@ -2458,7 +2524,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                       <div className="w-5 h-5 flex justify-center items-center">
                                         {subEl.iconify ? <Icon icon={subEl.iconify ?? ""} className={`h-5 w-5 text-white`} /> : subEl.icon && <FontAwesomeIcon icon={subEl.icon} className="w-5 h-5" />}
                                       </div>
-                                      {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{subEl.name}</p>}
+                                      {visible && <p className={`text-sm ml-3 ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity`}>{translateMenuLabel(subEl.name, t)}</p>}
                                     </div>
                                   </Link>
                                 )}
@@ -2473,7 +2539,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
             </ul>
             <button onClick={() => setCollapse(!collapse)} className="sticky bottom-0 pl-[3px] bg-[#031f4d] hover:bg-[#1b3a6a] text-primary-light-200 py-4 text-sm transition-transform-colors w-full">
               <div className="flex items-center justify-center px-5">
-                {visible && <p className={`${collapse ? "w-full" : "w-0 hidden"} overflow-hidden transition-all delay-700`}>Persingkat Menu </p>}
+                {visible && <p className={`${collapse ? "w-full" : "w-0 hidden"} overflow-hidden transition-all delay-700`}>{t("dashboard.collapseMenu")} </p>}
                 <FontAwesomeIcon icon={faChevronLeft} className={`${collapse ? "rotate-0" : "rotate-180"} transition-all ease-in-out`} />
               </div>
             </button>
@@ -2511,44 +2577,78 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   <Flex gap={8} align="center" justify="end">
                     <Fade isShowing={showNotifications}>
                       <div
-                        className={`absolute right-10 top-10 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg  ${showNotifications ? "opacity-100" : "opacity-0"}`}
+                        className={`absolute right-10 top-10 z-10 mt-2 w-80 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 transition-opacity duration-200 ${showNotifications ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                         role="menu"
                         aria-orientation="vertical"
                         aria-labelledby="user-menu-button"
                         tabIndex={-1}
                       >
-                        {hasNotification ? (
-                          <>
-                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-0">
-                              Your Profile
-                            </Link>
-                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-1">
-                              Settings
-                            </Link>
-                            <Link href="#" className="block px-4 py-2 text-sm text-dark" role="menuitem" tabIndex={-1} id="user-menu-item-2">
-                              Sign out
-                            </Link>
-                          </>
-                        ) : (
-                          <div className="p-3">
-                            <p className="text-dark text-sm">Belum ada notifikasi</p>
-                          </div>
-                        )}
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-light-grey">
+                          <p className="text-sm font-semibold text-dark">{t("notification.title")}</p>
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-primary-base hover:text-primary-dark transition-colors"
+                            onClick={() => setHasNotification(false)}
+                          >
+                            {t("notification.markAllRead")}
+                          </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="max-h-64 overflow-y-auto">
+                          {hasNotification ? (
+                            <div className="px-4 py-3 hover:bg-primary-light transition-colors cursor-pointer">
+                              <p className="text-sm font-medium text-dark">Your Profile</p>
+                              <p className="text-xs text-grey mt-0.5">Settings</p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 px-4 py-8">
+                              <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center">
+                                <FontAwesomeIcon icon={faBell} className="text-primary-base text-base" />
+                              </div>
+                              <p className="text-xs text-grey text-center max-w-[200px]">{t("notification.emptyDesc")}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </Fade>
-                    <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard")}>
-                      <FontAwesomeIcon icon={faHome} />
-                    </button>
+                    <Menu offset={20} width="250px" radius={10} position="bottom-end">
+                      <Menu.Target>
+                        <button
+                          type="button"
+                          aria-label={t("language")}
+                          className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200 flex items-center justify-center"
+                        >
+                          <Icon icon={i18n.language?.toLowerCase() == "id" ? "twemoji:flag-indonesia" : "flag:us-4x3"} className="text-[22px] object-cover rounded-[2px]" />
+                        </button>
+                      </Menu.Target>
+                      <Menu.Dropdown w={150}>
+                        <Menu.Label>{t("language")}</Menu.Label>
+                        <Menu.Item bg={i18n.language?.toLowerCase() == "id" ? "gray.1" : undefined} onClick={() => i18n.changeLanguage("id")}>
+                          <Flex align="center" gap={10}>
+                            <Icon icon="twemoji:flag-indonesia" className="text-[24px]" />
+                            <Text size="sm">Indonesia</Text>
+                          </Flex>
+                        </Menu.Item>
+                        <Menu.Item bg={i18n.language?.toLowerCase() == "en" ? "gray.1" : undefined} onClick={() => i18n.changeLanguage("en")}>
+                          <Flex align="center" gap={10}>
+                            <Icon icon="flag:us-4x3" className="text-[24px] object-cover rounded-[2px]" />
+                            <Text size="sm">English</Text>
+                          </Flex>
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                     <button type="button" className="relative rounded-full bg-gray-800 w-9 h-9 text-primary-dark border border-primary-light-200 hover:bg-primary-light-200" onClick={() => setShowNotifications(!showNotifications)}>
                       <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
                     </button>
                     {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
-                      <Button label="Buat Event" startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
+                      <Button label={t("dashboard.createEvent")} startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
                     ) : (
                       role === "Creator" && (
                         <>
-                          <Button label="Edit" color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
-                          <Button label="Preview" color="primary" startIcon={faEye} className="mr-0" onClick={() => {
+                          <Button label={t("dashboard.edit")} color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
+                          <Button label={t("dashboard.preview")} color="primary" startIcon={faEye} className="mr-0" onClick={() => {
                             if (window.location.hostname === "dashboard.kolektix.com") {
                               window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
                             } else {
@@ -2593,7 +2693,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
 
                           <button className="block px-4 pt-2 pb-3 w-full text-start text-xs text-dark hover:bg-primary-light rounded-b-md" role="menuitem" tabIndex={-1} onClick={handleLogout} id="user-menu-item-2">
                             <FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
-                            Keluar
+                            {t("dashboard.logout")}
                           </button>
                         </div>
                       </Fade>

@@ -11,6 +11,7 @@ import { Get } from '@/utils/REST';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { VenueListResponse } from '../venue/type';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 const daysIdLong = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -18,6 +19,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i);
 const VenueSchedulePage = () => {
     const loggedUser = useLoggedUser();
     const router = useRouter();
+    const { t } = useTranslation();
     const [venues, setVenues] = useState<any[]>([]);
     const [selectedVenue, setSelectedVenue] = useState<any | null>(null);
     const [loadingVenues, setLoadingVenues] = useState(true);
@@ -38,11 +40,11 @@ const VenueSchedulePage = () => {
 
     const handleSaveBooking = () => {
         if (!bookingTitle) {
-            toast.error('Please enter a title');
+            toast.error(t('venue.schedule.titleRequired'));
             return;
         }
         // Logic to save can be added here
-        toast.success('Booking task saved locally');
+        toast.success(t('venue.schedule.bookingSavedLocal'));
         setIsCreatingBooking(false);
         setBookingTitle('');
         setBookingNotes('');
@@ -67,7 +69,7 @@ const VenueSchedulePage = () => {
             }
         } catch (error) {
             console.error('Failed to fetch venues:', error);
-            toast.error('Failed to load venues');
+            toast.error(t('venue.schedule.loadVenuesFailed'));
         } finally {
             setLoadingVenues(false);
         }
@@ -89,7 +91,7 @@ const VenueSchedulePage = () => {
             }
         } catch (error) {
             console.error('Failed to fetch venue detail:', error);
-            toast.error('Failed to load venue detail');
+            toast.error(t('venue.schedule.loadDetailFailed'));
         } finally {
             setLoadingDetail(false);
         }
@@ -134,7 +136,7 @@ const VenueSchedulePage = () => {
 
     const handleItemClick = (item: any) => {
         modals.open({
-            title: item.is_schedule ? 'Venue Schedule' : 'Booking Detail',
+            title: item.is_schedule ? t('venue.schedule.venueSchedule') : t('venue.schedule.bookingDetail'),
             centered: true,
             radius: 'xl',
             size: 'lg',
@@ -144,7 +146,7 @@ const VenueSchedulePage = () => {
                         <Stack gap={4}>
                             <Title order={3} className="text-slate-800">{item.event_name}</Title>
                             <Badge color={item.is_schedule ? 'blue' : 'green'} variant="light" radius="xl">
-                                {item.is_schedule ? 'Master Schedule' : 'Confirmed Booking'}
+                                {item.is_schedule ? t('venue.schedule.masterSchedule') : t('venue.schedule.confirmedBooking')}
                             </Badge>
                         </Stack>
                         {item.image && <Image src={item.image} w={80} h={80} radius="md" />}
@@ -158,7 +160,7 @@ const VenueSchedulePage = () => {
                                 <Icon icon="solar:calendar-bold-duotone" width={20} />
                             </Box>
                             <Stack gap={0}>
-                                <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">Date & Time</Text>
+                                <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">{t('venue.schedule.dateTime')}</Text>
                                 <Text fw={700}>{moment(item.start_date).format('DD MMMM YYYY')}</Text>
                                 <Text size="sm" c="dimmed">{moment(item.start_date).format('HH:mm')} - {moment(item.end_date).format('HH:mm')}</Text>
                             </Stack>
@@ -170,7 +172,7 @@ const VenueSchedulePage = () => {
                                     <Icon icon="solar:notes-bold-duotone" width={20} />
                                 </Box>
                                 <Stack gap={0}>
-                                    <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">Description</Text>
+                                    <Text size="xs" c="dimmed" fw={700} className="uppercase tracking-wider">{t('venue.description')}</Text>
                                     <Text size="sm">{item.description || item.reason}</Text>
                                 </Stack>
                             </Flex>
@@ -212,8 +214,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <div>
-<h1 className="text-3xl font-bold text-slate-900 tracking-tight">Venue Schedule</h1>
-<p className="text-slate-500 mt-1">Monitor and manage your venue bookings in a calendar view</p>
+<h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('venue.schedule.title')}</h1>
+<p className="text-slate-500 mt-1">{t('venue.schedule.subtitle')}</p>
 </div>
 </div>
 
@@ -254,7 +256,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 endContent={<Icon icon="mdi:chevron-down" />}
                                 isLoading={loadingVenues}
                             >
-                                {selectedVenue ? selectedVenue.name : 'Select Venue'}
+                                {selectedVenue ? selectedVenue.name : t('venue.schedule.selectVenue')}
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu 
@@ -272,7 +274,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <div className="flex flex-col">
                                         <span className="font-bold">{v.name}</span>
                                         <span className="text-xs text-slate-400">
-                                            {v.venue_schedule?.name || 'No Schedule'}
+                                            {v.venue_schedule?.name || t('venue.schedule.noSchedule')}
                                         </span>
                                     </div>
                                 </DropdownItem>
@@ -307,12 +309,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 <Card className="border border-light-grey shadow-sm rounded-2xl" shadow="none">
                                     <CardBody className="p-5 space-y-6">
                                         <div>
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">My Calendars</h3>
+                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t('venue.schedule.myCalendars')}</h3>
                                             <div className="space-y-3">
                                                 {[
-                                                    { label: 'Venue Bookings', color: '#194e9e' },
-                                                    { label: 'Maintenance', color: '#f59e0b' },
-                                                    { label: 'Internal Events', color: '#10b981' },
+                                                    { label: t('venue.schedule.venueBookings'), color: '#194e9e' },
+                                                    { label: t('venue.schedule.maintenance'), color: '#f59e0b' },
+                                                    { label: t('venue.schedule.internalEvents'), color: '#10b981' },
                                                 ].map((cal, i) => (
                                                     <div key={i} className="flex items-center gap-3">
                                                         <div className="w-4 h-4 rounded border-2" style={{ borderColor: cal.color, backgroundColor: `${cal.color}20` }} />
@@ -323,15 +325,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         </div>
                                         
                                         <div className="pt-4 border-t border-light-grey">
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Legend</h3>
+                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t('venue.schedule.legend')}</h3>
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Time</span>
+                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('venue.schedule.currentTime')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-3 h-3 rounded-sm bg-[#194e9e]/10 border-l-2 border-[#194e9e]" />
-                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Venue Booked</span>
+                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('venue.schedule.venueBooked')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -348,7 +350,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         className="justify-start font-bold h-11 bg-blue-50 text-[#194e9e]"
                                         startContent={<Icon icon="mdi:check-circle" width={18} />}
                                     >
-                                        All tasks
+                                        {t('venue.schedule.allTasks')}
                                     </Button>
                                     <Button 
                                         fullWidth 
@@ -356,12 +358,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         className="justify-start font-semibold h-11 text-slate-600"
                                         startContent={<Icon icon="mdi:star-outline" width={18} />}
                                     >
-                                        Starred
+                                        {t('venue.schedule.starred')}
                                     </Button>
                                     
                                     <div className="pt-4 mt-2 border-t border-light-grey">
                                         <div className="flex justify-between items-center px-2 mb-4">
-                                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Lists</span>
+                                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('venue.schedule.lists')}</span>
                                             <Icon icon="mdi:chevron-up" className="text-slate-400" />
                                         </div>
                                         <Button 
@@ -370,7 +372,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                             className="justify-start font-semibold h-11 text-slate-600"
                                             startContent={<Icon icon="mdi:format-list-bulleted" width={18} />}
                                         >
-                                            My Tasks
+                                            {t('venue.schedule.myTasks')}
                                         </Button>
                                         <Button 
                                             fullWidth 
@@ -378,7 +380,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                             className="justify-start font-bold h-11 text-slate-400 border-t border-light-grey mt-2"
                                             startContent={<Icon icon="mdi:plus" width={20} />}
                                         >
-                                            Create new list
+                                            {t('venue.schedule.createNewList')}
                                         </Button>
                                     </div>
                                 </CardBody>
@@ -396,14 +398,14 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <Box className="p-2 rounded-xl bg-blue-50 text-blue-600">
                                         <Icon icon="solar:calendar-add-bold-duotone" width={20} />
                                     </Box>
-                                    <Title order={4} className="text-slate-800">Add Booking Task</Title>
+                                    <Title order={4} className="text-slate-800">{t('venue.schedule.addBookingTask')}</Title>
                                 </Flex>
                                 <Divider />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="col-span-1 md:col-span-2">
-                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">What needs to be booked?</Text>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">{t('venue.schedule.whatNeedsBooked')}</Text>
                                         <MantineTextInput 
-                                            placeholder="e.g. Corporate Meeting, Wedding Rehearsal..." 
+                                            placeholder={t('venue.schedule.bookingTitlePlaceholder')} 
                                             value={bookingTitle} 
                                             onChange={(e) => setBookingTitle(e.target.value)}
                                             radius="md"
@@ -411,7 +413,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         />
                                     </div>
                                     <div>
-                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Selected Date</Text>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">{t('venue.schedule.selectedDate')}</Text>
                                         <Paper withBorder p="sm" radius="md" bg="gray.0">
                                             <Flex align="center" gap="sm">
                                                 <Icon icon="solar:calendar-minimalistic-linear" width={18} className="text-slate-400" />
@@ -420,7 +422,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         </Paper>
                                     </div>
                                     <div>
-                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Time Slot</Text>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">{t('venue.schedule.timeSlot')}</Text>
                                         <Paper withBorder p="sm" radius="md" bg="gray.0">
                                             <Flex align="center" gap="sm">
                                                 <Icon icon="solar:clock-circle-linear" width={18} className="text-slate-400" />
@@ -431,9 +433,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         </Paper>
                                     </div>
                                     <div className="col-span-1 md:col-span-2">
-                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">Additional Notes</Text>
+                                        <Text size="sm" fw={700} mb={5} className="text-slate-700">{t('venue.schedule.additionalNotes')}</Text>
                                         <MantineTextarea 
-                                            placeholder="Add specific requirements or notes here..." 
+                                            placeholder={t('venue.schedule.notesPlaceholder')} 
                                             value={bookingNotes} 
                                             onChange={(e) => setBookingNotes(e.target.value)}
                                             radius="md"
@@ -456,7 +458,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         onClick={handleToday}
                                         className="bg-slate-100 text-slate-700 font-bold px-5"
                                     >
-                                        Today
+                                        {t('venue.schedule.today')}
                                     </Button>
                                     <div className="flex items-center gap-1">
                                         <Button isIconOnly size="sm" variant="light" onClick={handlePrevWeek}>
@@ -472,7 +474,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="px-3 py-1.5 rounded-lg bg-blue-50 border border-light-grey text-[#194e9e] text-[10px] font-black uppercase tracking-widest">
-                                        {selectedVenue?.venue_schedule?.name || 'Weekly View'}
+                                        {selectedVenue?.venue_schedule?.name || t('venue.schedule.weeklyView')}
                                     </div>
                                     {loadingDetail && <Skeleton className="w-20 h-8 rounded-lg" />}
                                 </div>
@@ -564,7 +566,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         <Card className="border border-light-grey shadow-sm rounded-2xl h-[850px]" shadow="none">
                             <CardBody className="p-10 flex flex-col">
                                 <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-bold text-slate-800">My Tasks</h2>
+                                    <h2 className="text-2xl font-bold text-slate-800">{t('venue.schedule.myTasks')}</h2>
                                     <Button isIconOnly variant="light" size="sm">
                                         <Icon icon="mdi:dots-vertical" className="text-slate-400" width={24} />
                                     </Button>
@@ -580,7 +582,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                 <input 
                                                     autoFocus
                                                     type="text" 
-                                                    placeholder="Title" 
+                                                    placeholder={t('common.name')} 
                                                     className="w-full bg-transparent border-none outline-none text-lg font-semibold text-slate-700 placeholder:text-slate-400"
                                                     value={taskTitle}
                                                     onChange={(e) => setTaskTitle(e.target.value)}
@@ -588,7 +590,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                 <div className="flex items-start gap-2 text-slate-500">
                                                     <Icon icon="mdi:text-subject" width={20} className="mt-0.5 shrink-0" />
                                                     <textarea 
-                                                        placeholder="Details" 
+                                                        placeholder={t('venue.description')} 
                                                         rows={1}
                                                         className="w-full bg-transparent border-none outline-none text-sm py-0 placeholder:text-slate-400 resize-none"
                                                         value={taskDetails}
@@ -599,10 +601,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                 <div className="flex items-center justify-between pt-2">
                                                     <div className="flex items-center gap-2">
                                                         <Button size="sm" radius="full" variant="bordered" className="border-slate-200 text-slate-600 font-bold h-8 px-4 text-xs">
-                                                            Today
+                                                            {t('venue.schedule.today')}
                                                         </Button>
                                                         <Button size="sm" radius="full" variant="bordered" className="border-slate-200 text-slate-600 font-bold h-8 px-4 text-xs">
-                                                            Tomorrow
+                                                            {t('venue.schedule.tomorrow')}
                                                         </Button>
                                                         <Button isIconOnly size="sm" radius="full" variant="bordered" className="border-slate-200 text-slate-500 h-8 w-8 min-w-0">
                                                             <Icon icon="mdi:calendar-outline" width={18} />
@@ -618,7 +620,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                             className="font-bold px-6 h-8 rounded-lg"
                                                             onClick={() => setIsAddingTask(false)}
                                                         >
-                                                            Save
+                                                            {t('common.save')}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -636,7 +638,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         }
                                         onClick={() => setIsAddingTask(true)}
                                     >
-                                        Add a task
+                                        {t('venue.schedule.addTask')}
                                     </Button>
                                 )}
 
@@ -645,9 +647,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         <img src="/images/no_tasks_illustration.png" alt="No tasks" className="w-full h-full object-contain" />
                                     </div>
                                     <div className="space-y-2">
-                                        <h3 className="text-xl font-bold text-slate-700">No tasks yet</h3>
+                                        <h3 className="text-xl font-bold text-slate-700">{t('venue.schedule.noTasksYet')}</h3>
                                         <p className="text-slate-400 max-w-sm mx-auto font-medium">
-                                            Add your to-dos and keep track of them across Kolektix Workspace
+                                            {t('venue.schedule.noTasksDesc')}
                                         </p>
                                     </div>
                                 </div>
@@ -687,7 +689,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             }}
                             className="px-8 font-bold text-slate-600 h-11"
                         >
-                            Batal
+                            {t('common.cancel')}
                         </Button>
                         <Button 
                             color="primary" 
@@ -696,7 +698,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             onClick={handleSaveBooking}
                             className="bg-[#194e9e] px-10 font-bold text-white shadow-lg shadow-blue-100 h-11"
                         >
-                            Simpan Task
+                            {t('venue.schedule.saveTask')}
                         </Button>
                     </div>
                 </div>

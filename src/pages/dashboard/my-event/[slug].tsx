@@ -32,6 +32,7 @@ import _ from "lodash";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import QrCode from "@/components/QrCode";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 
 interface EventData {
   creator_id: string;
@@ -180,6 +181,7 @@ const MyEventDetail = () => {
   };
   const router = useRouter();
   const user = useLoggedUser();
+  const { t } = useTranslation();
   const { slug } = router.query;
   const [data, setData] = useState<EventProps>();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
@@ -385,8 +387,8 @@ const MyEventDetail = () => {
 
       if (!slug) {
         notifications.show({
-          title: "Gagal!",
-          message: "Slug invitation tidak ditemukan",
+          title: t("event.failed"),
+          message: t("event.slugInvitationNotFound"),
           color: "red",
           position: "top-right",
         });
@@ -409,8 +411,8 @@ const MyEventDetail = () => {
             console.log("✅ Resend invitation response:", res);
 
             notifications.show({
-              title: "Berhasil!",
-              message: res.message || "Invitation berhasil dikirim",
+              title: t("common.success"),
+              message: res.message || t("event.invitationSent"),
               color: "green",
               position: "top-right",
             });
@@ -422,8 +424,8 @@ const MyEventDetail = () => {
           error: (error: any) => {
             console.error("❌ Error in resend fetch:", error);
             notifications.show({
-              title: "Gagal!",
-              message: error?.message || "Gagal mengirim invitation",
+              title: t("event.failed"),
+              message: error?.message || t("event.invitationSendFailed"),
               color: "red",
               position: "top-right",
             });
@@ -608,15 +610,15 @@ const MyEventDetail = () => {
         });
 
         notifications.show({
-          title: "Berhasil!",
-          message: `E-ticket berhasil dikirim ke ${email}`,
+          title: t("common.success"),
+          message: t("event.eticketSentEmail", { email }),
           color: "green",
           position: "top-right",
         });
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || "Gagal mengirim e-ticket. Silakan coba lagi.";
+        const errorMessage = error.response?.data?.message || t("event.eticketSendFailedRetry");
         notifications.show({
-          title: "Gagal!",
+          title: t("event.failed"),
           message: errorMessage,
           color: "red",
           position: "top-right",
@@ -667,28 +669,28 @@ const MyEventDetail = () => {
         const paymentName = item.payment_method?.payment_name || "-";
 
         return {
-          "No": index + 1,
-          "No. Invoice": item.invoice_no || "-",
-          "Nama": pemesanIdentity?.full_name || "-",
-          "Email": pemesanIdentity?.email || "-",
-          "No. Telepon": pemesanIdentity?.no_telp || "-",
-          "Nama Tiket": ticketName,
-          "Qty": ticketQty,
-          "Harga Tiket": Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
-          "Metode Pembayaran": paymentName,
-          "Status": statusName,
+          [t("event.noLabel")]: index + 1,
+          [t("report.xlsxInvoiceNo")]: item.invoice_no || "-",
+          [t("report.xlsxName")]: pemesanIdentity?.full_name || "-",
+          [t("common.email")]: pemesanIdentity?.email || "-",
+          [t("report.xlsxPhone")]: pemesanIdentity?.no_telp || "-",
+          [t("report.xlsxTicketName")]: ticketName,
+          [t("event.colQty")]: ticketQty,
+          [t("report.xlsxTicketPrice")]: Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
+          [t("report.xlsxPayMethod")]: paymentName,
+          [t("common.status")]: statusName,
         };
       });
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
+      XLSX.utils.book_append_sheet(wb, ws, t("event.sales"));
       const timestamp = new Date().toISOString().split("T")[0];
       const eventName = data?.name || 'event';
       XLSX.writeFile(wb, `report-penjualan-${eventName}-${timestamp}.xlsx`);
     } catch (err) {
       console.error("Error downloading transaction:", err);
-      alert("Terjadi kesalahan saat mengeksport data");
+      alert(t("report.exportError"));
     }
   };
 
@@ -848,31 +850,31 @@ const MyEventDetail = () => {
     if (!eventData) return;
 
     const dataLaporan = [
-      ["Ringkasan Penjualan Tiket"],
-      ["Total View", eventData?.total_views || 0],
-      ["Total Bookmarks", 0],
-      ["Total Tiket Terjual", eventData?.total_paid || 0],
-      ["Total Penjualan", `Rp${eventData?.total_price_sell ? eventData.total_price_sell.toLocaleString("id-ID") : 0}`],
+      [t("event.ticketSalesSummary")],
+      [t("event.totalViews"), eventData?.total_views || 0],
+      [t("event.totalBookmarks"), 0],
+      [t("event.totalTicketsSold"), eventData?.total_paid || 0],
+      [t("event.totalSales"), `Rp${eventData?.total_price_sell ? eventData.total_price_sell.toLocaleString("id-ID") : 0}`],
       ["Total Admin Fee", `Rp${eventData?.total_admin_fee ? eventData.total_admin_fee.toLocaleString("id-ID") : 0}`],
-      ["Total Tiket", eventData?.total_ticket || 0],
-      ["Total Pembelian", eventData?.total_buy || 0],
+      [t("event.totalTickets"), eventData?.total_ticket || 0],
+      [t("event.totalPurchases"), eventData?.total_buy || 0],
       ["Total Online", eventData?.total_online || 0],
       ["Total Offline", eventData?.total_offline || 0],
-      ["Total Pembayaran Belum Lunas", eventData?.total_unpaid || 0],
-      ["Total Penjualan Online", `Rp${eventData?.total_price_sell_online ? eventData.total_price_sell_online.toLocaleString("id-ID") : 0}`],
-      ["Total Penjualan Offline", `Rp${eventData?.total_price_sell_offline ? eventData.total_price_sell_offline.toLocaleString("id-ID") : 0}`],
+      [t("event.totalUnpaid"), eventData?.total_unpaid || 0],
+      [t("event.totalOnlineSales"), `Rp${eventData?.total_price_sell_online ? eventData.total_price_sell_online.toLocaleString("id-ID") : 0}`],
+      [t("event.totalOfflineSales"), `Rp${eventData?.total_price_sell_offline ? eventData.total_price_sell_offline.toLocaleString("id-ID") : 0}`],
       ["Grand Total", `Rp${eventData?.total_price_sell && eventData?.total_admin_fee ? (eventData.total_price_sell - eventData.total_admin_fee).toLocaleString("id-ID") : 0}`],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(dataLaporan);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Penjualan");
+    XLSX.utils.book_append_sheet(workbook, worksheet, t("event.salesReport"));
     XLSX.writeFile(workbook, `Laporan_Penjualan_Event_${eventData.event_name}.xlsx`);
   };
 
   const downloadInvitationExcel = () => {
     if (!invitation || invitation.length === 0) {
-      toast.error("Tidak ada data invitation untuk diexport");
+      toast.error(t("event.noInvitationData"));
       return;
     }
 
@@ -884,33 +886,33 @@ const MyEventDetail = () => {
       if (item.event_invitation_detail && item.event_invitation_detail.length > 0) {
         item.event_invitation_detail.forEach((detail: any) => {
           dataExcel.push({
-            "No": index + 1,
-            "Judul Undangan": item?.invitation_title ?? "-",
+            [t("event.noLabel")]: index + 1,
+            [t("event.invitationTitle")]: item?.invitation_title ?? "-",
             "Kategori": categoryName,
-            "Nama Penerima": detail?.fullname ?? "-",
-            "Email": detail?.email ?? "-",
-            "No. Telp": detail?.phone ?? "-",
-            "Nomor Kursi": detail?.seat_number ?? "-",
-            "Sesi": detail?.session ?? "-",
+            [t("event.recipientName")]: detail?.fullname ?? "-",
+            [t("common.email")]: detail?.email ?? "-",
+            [t("event.phoneNo")]: detail?.phone ?? "-",
+            [t("event.seatNumber")]: detail?.seat_number ?? "-",
+            [t("event.session")]: detail?.session ?? "-",
           });
         });
       } else {
         dataExcel.push({
-          "No": index + 1,
-          "Judul Undangan": item?.invitation_title ?? "-",
+          [t("event.noLabel")]: index + 1,
+          [t("event.invitationTitle")]: item?.invitation_title ?? "-",
           "Kategori": categoryName,
-          "Nama Penerima": "-",
-          "Email": "-",
-          "No. Telp": "-",
-          "Nomor Kursi": "-",
-          "Sesi": "-",
+          [t("event.recipientName")]: "-",
+          [t("common.email")]: "-",
+          [t("event.phoneNo")]: "-",
+          [t("event.seatNumber")]: "-",
+          [t("event.session")]: "-",
         });
       }
     });
 
     const worksheet = XLSX.utils.json_to_sheet(dataExcel);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Invitation");
+    XLSX.utils.book_append_sheet(workbook, worksheet, t("event.invitationData"));
 
     worksheet["!cols"] = [
       { wch: 5 },  // No
@@ -934,11 +936,11 @@ const MyEventDetail = () => {
           <button
             onClick={() => router.push("/dashboard/my-event")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Event Saya"
+            aria-label={t("event.backToMyEvents")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
-          <h1 className="text-dark m-0">Detail Event</h1>
+          <h1 className="text-dark m-0">{t("event.detailTitle")}</h1>
         </div>
         <div className="flex flex-col md:flex-row lg:flex gap-2">
           <div className="w-full md:max-w-[300px]">
@@ -981,10 +983,10 @@ const MyEventDetail = () => {
             </div>
 
             <div className="text-center w-full my-4">
-              <Button label="Check-in" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
+              <Button label={t("event.checkIn")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
             </div>
             <div className="text-center w-full my-4">
-              <Button label="Penjualan" color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
+              <Button label={t("event.sales")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
             </div>
           </div>
 
@@ -994,32 +996,32 @@ const MyEventDetail = () => {
                 title={
                   <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="mb-3 md:mb-0">
-                      <p className="text-grey text-xs">Saldo Event</p>
+                      <p className="text-grey text-xs">{t("event.balance")}</p>
                       <h6>
                         Rp.
                         {((eventData?.total_pendapatan || 0) - Number(eventData?.total_voucher || 0)).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
                     </div>
-                    <Button color="primary" label="Tarik Dana" startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    <Button color="primary" label={t("event.withdrawFunds")} startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
                   </div>
                 }
               >
                 <Stack p={20} pt={0} gap={10}>
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
                     <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">Total Pendapatan</p>
+                      <p className="text-grey text-xs">{t("event.totalRevenue")}</p>
                       <h6 className="mt-1">
                         Rp{(eventData?.total_pendapatan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
                     </Card>
                     <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">Total Withdraw</p>
+                      <p className="text-grey text-xs">{t("event.totalWithdraw")}</p>
                       <h6 className="mt-1">
                         Rp{withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
                     </Card>
                     <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">Total Voucher</p>
+                      <p className="text-grey text-xs">{t("event.totalVoucher")}</p>
                       <h6 className="mt-1">
                         Rp{Number(eventData?.total_voucher || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
@@ -1027,7 +1029,7 @@ const MyEventDetail = () => {
                   </SimpleGrid>
                   <Divider />
                   <Text size="sm" fw={600} c="gray">
-                    Riwayat Tarik Dana
+                    {t("event.withdrawalHistory")}
                   </Text>
                   <WithdrawHistoryList user_id={user?.id ?? 0} setUpdate={updateWithdrawHistory} />
                 </Stack>
@@ -1035,11 +1037,11 @@ const MyEventDetail = () => {
             </Accordion>
 
             <Accordion selectedKeys={selectedKeys} onSelectionChange={setSelectedKeys} className="rounded-lg shadow-sm p-0" aria-label="Event Data Accordion">
-              <AccordionItem key="1" title="Statistik Event" className="border border-primary-light-200 px-4 rounded-lg">
+              <AccordionItem key="1" title={t("event.eventStatistics")} className="border border-primary-light-200 px-4 rounded-lg">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 [&>div]:!relative [&_p:first-child]:w-full [&>div]:!overflow-hidden">
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total Penjualan Online</p>
+                      <p className="text-grey text-xs">{t("event.totalOnlineSales")}</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
@@ -1050,7 +1052,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total Penjualan Offline</p>
+                      <p className="text-grey text-xs">{t("event.totalOfflineSales")}</p>
                       <Icon icon="hugeicons:money-04" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
@@ -1061,7 +1063,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total Transaksi</p>
+                      <p className="text-grey text-xs">{t("event.totalTransactions")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_paid || 0}</p>
@@ -1069,7 +1071,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Transaksi Gagal</p>
+                      <p className="text-grey text-xs">{t("event.failedTransactions")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_failed || 0}</p>
@@ -1077,7 +1079,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Transaksi Pending</p>
+                      <p className="text-grey text-xs">{t("event.pendingTransactions")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_pending || 0}</p>
@@ -1085,7 +1087,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Ticket Terjual</p>
+                      <p className="text-grey text-xs">{t("event.ticketsSold")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket_sold || 0}</p>
@@ -1093,7 +1095,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total Withdraw</p>
+                      <p className="text-grey text-xs">{t("event.totalWithdraw")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">
@@ -1103,7 +1105,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total View</p>
+                      <p className="text-grey text-xs">{t("event.totalViews")}</p>
                       <Icon icon="tabler:users" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_views || 0}</p>
@@ -1111,7 +1113,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Total Bookmarks</p>
+                      <p className="text-grey text-xs">{t("event.totalBookmarks")}</p>
                       <Icon icon="meteor-icons:bookmark" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">0</p>
@@ -1119,7 +1121,7 @@ const MyEventDetail = () => {
 
                   <div className="border border-primary-light-200 rounded-lg flex flex-col gap-1 md:gap-3 shadow-sm px-2 md:px-4 py-2">
                     <Flex align="center" gap={7}>
-                      <p className="text-grey text-xs">Jenis Tiket</p>
+                      <p className="text-grey text-xs">{t("event.ticketTypes")}</p>
                       <Icon icon="mingcute:ticket-line" className={`absolute text-[64px] opacity-15 bottom-[-15px] right-[5px] text-primary-disabled`} />
                     </Flex>
                     <p className="font-semibold">{eventData?.total_ticket || 0}</p>
@@ -1140,10 +1142,10 @@ const MyEventDetail = () => {
                       cursor: "border border-primary-base",
                     }}
                   >
-                    <Tab title="Deskripsi" className="px-2">
+                    <Tab title={t("event.description")} className="px-2">
                       <div dangerouslySetInnerHTML={{ __html: data.description }}></div>
                     </Tab>
-                    <Tab title="Syarat & Ketentuan" className="px-2">
+                    <Tab title={t("event.termsCondition")} className="px-2">
                       <div
                         className="ml-5"
                         dangerouslySetInnerHTML={{
@@ -1153,9 +1155,9 @@ const MyEventDetail = () => {
                     </Tab>
                   </Tabs>
                 </Tab>
-                <Tab key="Tiket" title="Tiket">
+                <Tab key="Tiket" title={t("event.tickets")}>
                   <div className="flex justify-between items-center px-3 py-2">
-                    <h6 className="text-lg font-semibold">Tiket</h6>
+                    <h6 className="text-lg font-semibold">{t("event.tickets")}</h6>
                   </div>
                   <div className="px-3 max-h-[400px] overflow-y-auto">
                     {ticket.length > 0 &&
@@ -1178,7 +1180,7 @@ const MyEventDetail = () => {
                       ))}
                   </div>
                 </Tab>
-                <Tab key="Transaksi" title="Transaksi" className="px-2">
+                <Tab key="Transaksi" title={t("event.transactionsLabel")} className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="px-5 py-3">
@@ -1243,13 +1245,13 @@ const MyEventDetail = () => {
                             }
                           >
                             <TableHeader>
-                              <TableColumn className="font-bold text-sm">No</TableColumn>
-                              <TableColumn className="font-bold text-sm">Email</TableColumn>
-                              <TableColumn className="font-bold text-sm">No.Invoice</TableColumn>
-                              <TableColumn className="font-bold text-sm">Waktu Dikirim</TableColumn>
-                              <TableColumn className="font-bold text-sm">Status</TableColumn>
-                              <TableColumn className="font-bold text-sm">Type</TableColumn>
-                              <TableColumn className="font-bold text-sm">Aksi</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("event.noLabel")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("common.email")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("event.invoiceNoLabel")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("event.sentTime")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("common.status")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("event.colType")}</TableColumn>
+                              <TableColumn className="font-bold text-sm">{t("common.actions")}</TableColumn>
                             </TableHeader>
                             <TableBody
                               items={filteredTransactionItems}
@@ -1284,7 +1286,7 @@ const MyEventDetail = () => {
                                     </TableCell>
                                     <TableCell className="border-b-1 border-light-grey text-sm">{item.type_transaction}</TableCell>
                                     <TableCell className="border-b-1 border-light-grey flex items-center">
-                                      <Tooltip label="Kirim Ulang">
+                                      <Tooltip label={t("event.resend")}>
                                         <button
                                           disabled={sendingEmails[String(item.id)]}
                                           className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -1294,7 +1296,7 @@ const MyEventDetail = () => {
                                             } else {
                                               notifications.show({
                                                 title: "Error",
-                                                message: "Email tidak tersedia untuk pengguna ini.",
+                                                message: t("event.emailUnavailable"),
                                                 color: "red",
                                                 position: "top-right",
                                               });
@@ -1304,7 +1306,7 @@ const MyEventDetail = () => {
                                           {sendingEmails[String(item.id)] ? <Spinner size="sm" color="default" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
                                         </button>
                                       </Tooltip>
-                                      <Tooltip label="Lihat Detail">
+                                      <Tooltip label={t("event.viewDetails")}>
                                         <button className="ml-2 w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={() => openDetailModal(item, ticket)}>
                                           <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
                                         </button>
@@ -1333,12 +1335,12 @@ const MyEventDetail = () => {
                             <option value={20}>20</option>
                           </select>
                           <div className="flex gap-2">
-                            <Tooltip label="Export Excel">
+                            <Tooltip label={t("event.exportExcel")}>
                               <button className="w-10 h-10 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md p-2" onClick={downloadInvitationExcel}>
                                 <FontAwesomeIcon icon={faDownload} className="text-white text-sm" />
                               </button>
                             </Tooltip>
-                            <Tooltip label="Tambah Invitation Baru">
+                            <Tooltip label={t("event.addInvitation")}>
                               <button className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2" onClick={openAddModal}>
                                 <FontAwesomeIcon icon={faPlus} className="text-white text-sm" />
                               </button>
@@ -1360,13 +1362,13 @@ const MyEventDetail = () => {
                         ) : (
                           <Table aria-label="Event Invitation Table" bottomContent={<Pagination className="items-center" page={page} total={eventPages} onChange={setPage} />}>
                             <TableHeader>
-                              <TableColumn className="font-bold text-md">No</TableColumn>
-                              <TableColumn className="font-bold text-md">Judul Undangan</TableColumn>
-                              <TableColumn className="font-bold text-md">Type</TableColumn>
-                              <TableColumn className="font-bold text-md">Qty</TableColumn>
-                              <TableColumn className="font-bold text-md">No. Kursi</TableColumn>
-                              <TableColumn className="font-bold text-md">Sesi</TableColumn>
-                              <TableColumn className="font-bold text-md">Aksi</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.noLabel")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.invitationTitle")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.colType")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.colQty")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.seatNumber")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("event.session")}</TableColumn>
+                              <TableColumn className="font-bold text-md">{t("common.actions")}</TableColumn>
                             </TableHeader>
                             <TableBody items={eventItems}>
                               {(item) => {
@@ -1395,12 +1397,12 @@ const MyEventDetail = () => {
                                       })()}
                                     </TableCell>
                                     <TableCell className="border-b-1 border-light-grey flex items-center gap-2">
-                                      <Tooltip label="Edit Invitation">
+                                      <Tooltip label={t("event.editInvitation")}>
                                         <button className="w-10 h-10 flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-md p-2" onClick={() => openEditModal(item)}>
                                           <FontAwesomeIcon icon={faPencil} className="text-white text-sm" />
                                         </button>
                                       </Tooltip>
-                                      <Tooltip label="Kirim Invitation">
+                                      <Tooltip label={t("event.sendInvitation")}>
                                         <button
                                           disabled={sendingInvitations[String(item?.id)] || emailCount === 0}
                                           className="w-10 h-10 flex items-center justify-center bg-primary-base hover:bg-primary-dark text-white rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1409,7 +1411,7 @@ const MyEventDetail = () => {
                                           {sendingInvitations[String(item?.id)] ? <Spinner size="sm" color="white" /> : <FontAwesomeIcon icon={faPaperPlane} className="text-white text-sm" />}
                                         </button>
                                       </Tooltip>
-                                      <Tooltip label="Lihat Detail">
+                                      <Tooltip label={t("event.viewDetails")}>
                                         <button className="w-10 h-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-md p-2" onClick={() => openInvitationModal(item)}>
                                           <FontAwesomeIcon icon={faEye} className="text-white text-sm" />
                                         </button>
@@ -1425,34 +1427,34 @@ const MyEventDetail = () => {
                     </div>
                   </div>
                 </Tab>
-                <Tab key="Penjualan" title="Penjualan" className="px-2">
+                <Tab key="Penjualan" title={t("event.sales")} className="px-2">
                   <div className="bg-primary-light flex flex-col gap-2">
                     <div className="bg-white">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 pb-3 border-b border-b-primary-light-200">
-                        <h6>Ringkasan</h6>
+                        <h6>{t("event.summary")}</h6>
                         <p onClick={downloadLaporan} className="text-primary-base font-semibold mt-2 md:mt-0 cursor-pointer">
                           <span>
                             <Tooltip label="download">
                               <FontAwesomeIcon icon={faDownload} className="mr-2" />
                             </Tooltip>
                           </span>
-                          Download Laporan
+                          {t("event.downloadReport")}
                         </p>
                       </div>
                       <div className="flex flex-col mx-3 gap-3 border-b py-3 border-b-primary-light-200">
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Total Penjualan Tiket Online</p>
+                          <p className="text-dark-grey">{t("event.totalOnlineTicketSales")}</p>
                           <p className="font-semibold">
                             Rp
                             {(eventData?.total_price_sell || 0).toLocaleString("id-ID")}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Total Promo</p>
+                          <p className="text-dark-grey">{t("event.totalPromo")}</p>
                           <p className="font-semibold">{`(-) Rp0`}</p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-dark-grey">Biaya Layanan Penjualan Tiket Online</p>
+                          <p className="text-dark-grey">{t("event.onlineTicketServiceFee")}</p>
                           <p className="font-semibold">
                             Rp
                             {(eventData?.total_admin_fee || 0).toLocaleString("id-ID")}
@@ -1460,7 +1462,7 @@ const MyEventDetail = () => {
                         </div>
                       </div>
                       <div className="flex justify-between px-3 py-4">
-                        <p className="text-primary">Total</p>
+                        <p className="text-primary">{t("event.total")}</p>
                         <p className="font-semibold">
                           Rp
                           {((eventData?.total_price_sell || 0) - (eventData?.total_admin_fee || 0)).toLocaleString("id-ID")}

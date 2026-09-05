@@ -1,4 +1,4 @@
-import { Icon } from '@iconify/react/dist/iconify.js';
+﻿import { Icon } from '@iconify/react/dist/iconify.js';
 import { ActionIcon, Button, Card, Checkbox, Divider, Flex, Grid, InputWrapper, LoadingOverlay, Modal, MultiSelect, NumberInput, Select, Space, Stack, Tabs, Text, Textarea, TextInput } from '@mantine/core';
 import { useEffect, useState, useMemo } from 'react';
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
@@ -9,11 +9,12 @@ import ImageInput from '@/components/ImageInput.tsx';
 import { useForm, zodResolver } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { z } from 'zod';
-
+import { useTranslation } from "react-i18next";
 
 type ComponentProps = {};
 
 export default function Create({ }: Readonly<ComponentProps>) {
+    const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const [category, setCategory] = useState<VenueCategory[]>();
     const [facility, setFacility] = useState<VenueFacility[]>();
@@ -222,10 +223,10 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     </button>
                     <Stack gap={5}>
                         <Text size="1.8rem" fw={600}>
-                            {slug ? 'Edit Venue' : 'Buat Venue Baru'}
+                            {slug ? t('venue.editTitle') : t('venue.createTitle')}
                         </Text>
                         <Text size="sm" c="gray">
-                            Lengkapi form untuk {slug ? 'memperbarui' : 'membuat'} venue baru
+                            {t('venue.formSubtitle', { action: slug ? t('venue.updating') : t('venue.creating') })}
                         </Text>
                     </Stack>
                 </Flex>
@@ -246,7 +247,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Text size="lg" fw={600}>Informasi Venue</Text>
                 </Flex>
 
-                <InputWrapper error={form.errors.image} label="Gambar Venue" description="Direkomendasikan 1280px X 400px" withAsterisk>
+                <InputWrapper error={form.errors.image} label={t('venue.image')} description={t('venue.imageRecommendation')} withAsterisk>
                     <Flex wrap="wrap" gap={10} pt={5}>
                         {Array(5).fill(null).map((e, i) => (
                             <ImageInput
@@ -263,15 +264,15 @@ export default function Create({ }: Readonly<ComponentProps>) {
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Nama Venue"
-                        placeholder="Isi Nama Venue"
+                        label={t('venue.name')}
+                        placeholder={t('venue.enterName')}
                         w="100%"
                         {...inputProps('name')}
                     />
                     <Select
                         withAsterisk
-                        label="Kategori Venue"
-                        placeholder="Pilih Kategori Venue"
+                        label={t('venue.category')}
+                        placeholder={t('venue.selectCategory')}
                         disabled={loading.includes('getdatacat')}
                         data={category?.map(e => ({ value: String(e.id), label: e.name }))}
                         miw={250}
@@ -282,8 +283,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <Textarea
                     withAsterisk
-                    label="Deskripsi Venue"
-                    placeholder="Isi Deskripsi Venue"
+                    label={t('venue.description')}
+                    placeholder={t('venue.enterDescription')}
                     autosize
                     minRows={3}
                     {...inputProps('description')}
@@ -291,13 +292,13 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <Tabs defaultValue="detail" mt={10}>
                     <Tabs.List>
-                        <Tabs.Tab value="detail" leftSection={<Icon icon="uiw:setting-o" />}>Detail Venue</Tabs.Tab>
-                        <Tabs.Tab value="fasilitas" leftSection={<Icon icon="uiw:appstore-o" />}>Fasilitas Venue</Tabs.Tab>
-                        <Tabs.Tab value="jadwal" leftSection={<Icon icon="uiw:time" />}>Jadwal & Waktu</Tabs.Tab>
-                        <Tabs.Tab value="area" leftSection={<Icon icon="uiw:appstore" />}>Area & Harga Tambahan</Tabs.Tab>
-                        <Tabs.Tab value="blocked-dates" leftSection={<Icon icon="uiw:date" />}>Blocked Dates</Tabs.Tab>
-                        <Tabs.Tab value="rules" leftSection={<Icon icon="uiw:file-text" />}>Aturan Venue</Tabs.Tab>
-                        <Tabs.Tab value="faqs" leftSection={<Icon icon="uiw:comment" />}>FAQ</Tabs.Tab>
+                        <Tabs.Tab value="detail" leftSection={<Icon icon="uiw:setting-o" />}>{t('venue.detailTab')}</Tabs.Tab>
+                        <Tabs.Tab value="fasilitas" leftSection={<Icon icon="uiw:appstore-o" />}>{t('venue.facilitiesTab')}</Tabs.Tab>
+                        <Tabs.Tab value="jadwal" leftSection={<Icon icon="uiw:time" />}>{t('venue.scheduleTab')}</Tabs.Tab>
+                        <Tabs.Tab value="area" leftSection={<Icon icon="uiw:appstore" />}>{t('venue.areaPricingTab')}</Tabs.Tab>
+                        <Tabs.Tab value="blocked-dates" leftSection={<Icon icon="uiw:date" />}>{t('venue.blockedDatesTab')}</Tabs.Tab>
+                        <Tabs.Tab value="rules" leftSection={<Icon icon="uiw:file-text" />}>{t('venue.rulesTab')}</Tabs.Tab>
+                        <Tabs.Tab value="faqs" leftSection={<Icon icon="uiw:comment" />}>{t('venue.faqTab')}</Tabs.Tab>
                     </Tabs.List>
 
 
@@ -306,16 +307,16 @@ export default function Create({ }: Readonly<ComponentProps>) {
                             <Flex gap={15} wrap="wrap" className={`[&>*]:!flex-grow`}>
                                 <NumberInput
                                     withAsterisk
-                                    label="Maksimal Kapasitas"
-                                    placeholder="Masukan Maksimal Kapasitas"
+                                    label={t('venue.maxCapacity')}
+                                    placeholder={t('venue.enterMaxCapacity')}
                                     hideControls
                                     min={0}
                                     {...inputProps('max_capacity')}
                                 />
                                 <NumberInput
                                     withAsterisk
-                                    label="Jumlah Kursi"
-                                    placeholder="Masukan Jumlah Kursi"
+                                    label={t('venue.seatCapacity')}
+                                    placeholder={t('venue.enterSeatCapacity')}
                                     hideControls
                                     min={0}
                                     {...inputProps('seat_capacity')}
@@ -326,8 +327,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                 <Flex gap={10} align="center" className={`[&>*]:!flex-grow`}>
                                     <NumberInput
                                         withAsterisk
-                                        label="Harga Per Hari"
-                                        placeholder="Masukan Harga Per Hari"
+                                        label={t('venue.pricePerDay')}
+                                        placeholder={t('venue.enterPricePerDay')}
                                         hideControls
                                         prefix="Rp "
                                         min={0}
@@ -335,8 +336,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     />
                                     <NumberInput
                                         withAsterisk
-                                        label="Harga Per Jam"
-                                        placeholder="Masukan Harga Per Jam"
+                                        label={t('venue.pricePerHour')}
+                                        placeholder={t('venue.enterPricePerHour')}
                                         hideControls
                                         prefix="Rp "
                                         min={0}
@@ -344,8 +345,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     />
                                 </Flex>
                                 <NumberInput
-                                    label="Down Payment (DP)"
-                                    placeholder="Masukan Down Payment"
+                                    label={t('venue.downPayment')}
+                                    placeholder={t('venue.enterDownPayment')}
                                     hideControls
                                     prefix="Rp "
                                     min={0}
@@ -360,8 +361,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         <Stack gap={15}>
                             <MultiSelect
                                 withAsterisk
-                                label="Pilih Fasilitas Venue"
-                                placeholder="Cari & Pilih Fasilitas"
+                                label={t('venue.selectFacilities')}
+                                placeholder={t('venue.searchSelectFacilities')}
                                 data={memoizedFacilityData}
                                 value={(form.values.venue_facility_id ?? []).map(String)}
                                 onChange={vals => form.setFieldValue('venue_facility_id', vals.map(Number))}
@@ -378,17 +379,17 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                 w="fit-content"
                                 onClick={openAddFacility}
                             >
-                                Tambah Fasilitas
+                                {t('venue.addFacility')}
                             </Button>
 
                             {form.values.venue_facility_id && form.values.venue_facility_id.length > 0 && (
                                 <Stack gap={10} mt={10}>
-                                    <Text fw={600} size="sm">Informasi Fasilitas Terpilih:</Text>
+                                    <Text fw={600} size="sm">{t('venue.selectedFacilitiesInfo')}</Text>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {facility?.filter(f => form.values.venue_facility_id?.includes(f.facility_id)).map(f => (
                                             <Card key={f.facility_id} withBorder p="sm" radius="md">
                                                 <Text fw={600} size="sm">{f.facility_name}</Text>
-                                                <Text size="xs" c="gray" mt={2}>{f.facility_description || 'Tidak ada deskripsi tersedia.'}</Text>
+                                                <Text size="xs" c="gray" mt={2}>{f.facility_description || t('venue.noFacilityDescription')}</Text>
                                             </Card>
                                         ))}
                                     </div>
@@ -398,32 +399,31 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     </Tabs.Panel>
                     <Tabs.Panel value="jadwal" pt="xl">
                         <Stack gap={20}>
-                            <Text fw={600} size="lg">Pengaturan Jadwal (Schedule)</Text>
+                            <Text fw={600} size="lg">{t('venue.scheduleSettings')}</Text>
                             <Grid>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput label="Nama Jadwal" withAsterisk placeholder="Regular Schedule" {...inputProps('schedule.name')} />
+                                    <TextInput label={t('venue.scheduleName')} withAsterisk placeholder={t('venue.scheduleNamePlaceholder')} {...inputProps('schedule.name')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <Select label="Status Jadwal" data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
+                                    <Select label={t('venue.scheduleStatus')} data={[{ value: 'active', label: t('common.active') }, { value: 'inactive', label: t('common.inactive') }]} {...inputProps('schedule.status')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput type="date" label="Tanggal Mulai" withAsterisk {...inputProps('schedule.start_date')} />
+                                    <TextInput type="date" label={t('venue.startDate')} withAsterisk {...inputProps('schedule.start_date')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <TextInput type="date" label="Tanggal Selesai" withAsterisk {...inputProps('schedule.end_date')} />
+                                    <TextInput type="date" label={t('venue.endDate')} withAsterisk {...inputProps('schedule.end_date')} />
                                 </Grid.Col>
                                 <Grid.Col span={12}>
-                                    <Textarea label="Deskripsi Jadwal" placeholder="Isi deskripsi jadwal" autosize minRows={2} {...inputProps('schedule.description')} />
+                                    <Textarea label={t('venue.scheduleDescription')} placeholder={t('venue.enterScheduleDescription')} autosize minRows={2} {...inputProps('schedule.description')} />
                                 </Grid.Col>
                             </Grid>
 
                             <Divider my="sm" />
 
-                            <Text fw={600} size="lg">Jam Operasional</Text>
+                            <Text fw={600} size="lg">{t('venue.operatingHours')}</Text>
                             <Stack gap={10}>
                                 {form.values.operating_hours?.map((item: any, index: number) => {
-                                    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-                                    const dayName = days[item.day_of_week];
+                                    const dayName = t(`venue.days.${item.day_of_week}`);
                                     return (
                                         <Card key={index} withBorder p="sm" radius="md">
                                             <Flex align="center" justify="space-between" wrap="wrap" gap={15}>
@@ -433,8 +433,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                                     onChange={(e) => form.setFieldValue(`operating_hours.${index}.is_closed`, !e.currentTarget.checked)}
                                                 />
                                                 <Flex gap={10} align="center" className={`[&>*]:!flex-grow`} flex={1} style={{ opacity: item.is_closed ? 0.5 : 1, pointerEvents: item.is_closed ? 'none' : 'auto' }}>
-                                                    <TextInput type="time" label="Jam Buka" {...inputProps(`operating_hours.${index}.open_time`)} w="100%" />
-                                                    <TextInput type="time" label="Jam Tutup" {...inputProps(`operating_hours.${index}.close_time`)} w="100%" />
+                                                    <TextInput type="time" label={t('venue.openTime')} {...inputProps(`operating_hours.${index}.open_time`)} w="100%" />
+                                                    <TextInput type="time" label={t('venue.closeTime')} {...inputProps(`operating_hours.${index}.close_time`)} w="100%" />
                                                 </Flex>
                                             </Flex>
                                         </Card>
@@ -450,18 +450,18 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Tabs.Panel value="blocked-dates" pt="xl">
                         <Stack gap={20}>
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Tanggal Diblokir (Blocked Dates)</Text>
+                                <Text fw={600} size="lg">{t('venue.blockedDates')}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('blocked_dates', { start_date: '', end_date: '', reason: '' })}>
-                                    Tambah Tanggal Blokir
+                                    {t('venue.addBlockedDate')}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
                                 {form.values.blocked_dates?.map((item: any, index: number) => (
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Flex gap={15} align="flex-end" wrap="wrap">
-                                            <TextInput type="date" label="Tanggal Mulai" required {...inputProps(`blocked_dates.${index}.start_date`)} w={{ base: '100%', md: '25%' }} />
-                                            <TextInput type="date" label="Tanggal Selesai" required {...inputProps(`blocked_dates.${index}.end_date`)} w={{ base: '100%', md: '25%' }} />
-                                            <TextInput label="Alasan" placeholder="Contoh: Maintenance" required {...inputProps(`blocked_dates.${index}.reason`)} flex={1} />
+                                            <TextInput type="date" label={t('venue.startDate')} required {...inputProps(`blocked_dates.${index}.start_date`)} w={{ base: '100%', md: '25%' }} />
+                                            <TextInput type="date" label={t('venue.endDate')} required {...inputProps(`blocked_dates.${index}.end_date`)} w={{ base: '100%', md: '25%' }} />
+                                            <TextInput label={t('venue.reason')} placeholder={t('venue.maintenanceExample')} required {...inputProps(`blocked_dates.${index}.reason`)} flex={1} />
                                             <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('blocked_dates', index)} size="lg" mb={5}>
                                                 <Icon icon="uiw:delete" />
                                             </ActionIcon>
@@ -469,7 +469,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     </Card>
                                 ))}
                                 {form.values.blocked_dates?.length === 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">Belum ada tanggal yang diblokir.</Text>
+                                    <Text size="sm" c="dimmed" ta="center">{t('venue.noBlockedDates')}</Text>
                                 )}
                             </Stack>
                         </Stack>
@@ -478,18 +478,18 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Tabs.Panel value="area" pt="xl">
                         <Stack gap={20}>
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Area Venue</Text>
+                                <Text fw={600} size="lg">{t('venue.areas')}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('areas', { name: '', capacity: 0, base_price: 0 })}>
-                                    Tambah Area
+                                    {t('venue.addArea')}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
                                 {form.values.areas?.map((item: any, index: number) => (
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Flex gap={15} align="flex-end" wrap="wrap">
-                                            <TextInput label="Nama Area" placeholder="Contoh: Main Hall" required {...inputProps(`areas.${index}.name`)} flex={1} />
-                                            <NumberInput label="Kapasitas" required min={0} hideControls {...inputProps(`areas.${index}.capacity`)} w={{ base: '100%', md: '20%' }} />
-                                            <NumberInput label="Harga Dasar" prefix="Rp " required min={0} hideControls {...inputProps(`areas.${index}.base_price`)} w={{ base: '100%', md: '30%' }} />
+                                            <TextInput label={t('venue.areaName')} placeholder={t('venue.mainHallExample')} required {...inputProps(`areas.${index}.name`)} flex={1} />
+                                            <NumberInput label={t('venue.capacity')} required min={0} hideControls {...inputProps(`areas.${index}.capacity`)} w={{ base: '100%', md: '20%' }} />
+                                            <NumberInput label={t('venue.basePrice')} prefix="Rp " required min={0} hideControls {...inputProps(`areas.${index}.base_price`)} w={{ base: '100%', md: '30%' }} />
                                             <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('areas', index)} size="lg" mb={5}>
                                                 <Icon icon="uiw:delete" />
                                             </ActionIcon>
@@ -497,16 +497,16 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     </Card>
                                 ))}
                                 {form.values.areas?.length === 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">Belum ada area yang ditambahkan.</Text>
+                                    <Text size="sm" c="dimmed" ta="center">{t('venue.noAreas')}</Text>
                                 )}
                             </Stack>
 
                             <Divider my="sm" />
 
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Harga Kustom (Prices)</Text>
+                                <Text fw={600} size="lg">{t('venue.customPrices')}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('prices', { venue_area_index: '0', pricing_type: 'hourly', day_type: 'weekday', start_time: '08:00', end_time: '17:00', price: 0 })}>
-                                    Tambah Harga Kustom
+                                    {t('venue.addCustomPrice')}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
@@ -514,22 +514,22 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Grid align="flex-end">
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Pilih Area" data={form.values.areas?.map((a: any, i: number) => ({ value: String(i), label: a.name || `Area ${i+1}` })) || []} {...inputProps(`prices.${index}.venue_area_index`)} />
+                                                <Select label={t('venue.selectArea')} data={form.values.areas?.map((a: any, i: number) => ({ value: String(i), label: a.name || `${t('venue.areas')} ${i+1}` })) || []} {...inputProps(`prices.${index}.venue_area_index`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Harga" data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                                <Select label={t('venue.priceType')} data={[{ value: 'hourly', label: t('venue.pricePerHour') }, { value: 'daily', label: t('venue.pricePerDay') }]} {...inputProps(`prices.${index}.pricing_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label="Tipe Hari" data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
+                                                <Select label={t('venue.dayType')} data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <TextInput type="time" label="Waktu Mulai" {...inputProps(`prices.${index}.start_time`)} />
+                                                <TextInput type="time" label={t('venue.startTime')} {...inputProps(`prices.${index}.start_time`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <TextInput type="time" label="Waktu Selesai" {...inputProps(`prices.${index}.end_time`)} />
+                                                <TextInput type="time" label={t('venue.endTime')} {...inputProps(`prices.${index}.end_time`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 3 }}>
-                                                <NumberInput label="Harga" prefix="Rp " required min={0} hideControls {...inputProps(`prices.${index}.price`)} />
+                                                <NumberInput label={t('venue.price')} prefix="Rp " required min={0} hideControls {...inputProps(`prices.${index}.price`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 1 }}>
                                                 <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('prices', index)} size="lg" mb={5}>
@@ -540,7 +540,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     </Card>
                                 ))}
                                 {form.values.prices?.length === 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">Belum ada harga kustom yang ditambahkan.</Text>
+                                    <Text size="sm" c="dimmed" ta="center">{t('venue.noCustomPrices')}</Text>
                                 )}
                             </Stack>
                         </Stack>
@@ -549,18 +549,18 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Tabs.Panel value="rules" pt="xl">
                         <Stack gap={20}>
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Aturan Venue (Rules)</Text>
+                                <Text fw={600} size="lg">{t('venue.rules')}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('rules', { title: '', description: '', sort_order: 0 })}>
-                                    Tambah Aturan
+                                    {t('venue.addRule')}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
                                 {form.values.rules?.map((item: any, index: number) => (
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Flex gap={15} align="flex-end" wrap="wrap">
-                                            <TextInput label="Judul Aturan" placeholder="Contoh: Dilarang Merokok" required {...inputProps(`rules.${index}.title`)} flex={1} />
-                                            <TextInput label="Keterangan" placeholder="Isi detail aturan (opsional)" {...inputProps(`rules.${index}.description`)} flex={2} />
-                                            <NumberInput label="Urutan" min={0} hideControls {...inputProps(`rules.${index}.sort_order`)} w={{ base: '100%', md: '10%' }} />
+                                            <TextInput label={t('venue.ruleTitle')} placeholder={t('venue.noSmokingExample')} required {...inputProps(`rules.${index}.title`)} flex={1} />
+                                            <TextInput label={t('venue.ruleDescription')} placeholder={t('venue.enterRuleDescription')} {...inputProps(`rules.${index}.description`)} flex={2} />
+                                            <NumberInput label={t('venue.order')} min={0} hideControls {...inputProps(`rules.${index}.sort_order`)} w={{ base: '100%', md: '10%' }} />
                                             <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('rules', index)} size="lg" mb={5}>
                                                 <Icon icon="uiw:delete" />
                                             </ActionIcon>
@@ -568,7 +568,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     </Card>
                                 ))}
                                 {form.values.rules?.length === 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">Belum ada aturan yang ditambahkan.</Text>
+                                    <Text size="sm" c="dimmed" ta="center">{t('venue.noRules')}</Text>
                                 )}
                             </Stack>
                         </Stack>
@@ -577,9 +577,9 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Tabs.Panel value="faqs" pt="xl">
                         <Stack gap={20}>
                             <Flex justify="space-between" align="center">
-                                <Text fw={600} size="lg">Pertanyaan Umum (FAQ)</Text>
+                                <Text fw={600} size="lg">{t('venue.faqs')}</Text>
                                 <Button size="xs" variant="light" leftSection={<Icon icon="uiw:plus" />} onClick={() => form.insertListItem('faqs', { question: '', answer: '' })}>
-                                    Tambah FAQ
+                                    {t('venue.addFaq')}
                                 </Button>
                             </Flex>
                             <Stack gap={10}>
@@ -587,17 +587,17 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Stack gap={10}>
                                             <Flex gap={15} align="flex-end">
-                                                <TextInput label="Pertanyaan" placeholder="Contoh: Apakah ada parkir?" required {...inputProps(`faqs.${index}.question`)} flex={1} />
+                                                <TextInput label={t('venue.question')} placeholder={t('venue.parkingExample')} required {...inputProps(`faqs.${index}.question`)} flex={1} />
                                                 <ActionIcon color="red" variant="light" onClick={() => form.removeListItem('faqs', index)} size="lg" mb={5}>
                                                     <Icon icon="uiw:delete" />
                                                 </ActionIcon>
                                             </Flex>
-                                            <Textarea label="Jawaban" placeholder="Isi jawaban dari pertanyaan" required autosize minRows={2} {...inputProps(`faqs.${index}.answer`)} />
+                                            <Textarea label={t('venue.answer')} placeholder={t('venue.enterAnswer')} required autosize minRows={2} {...inputProps(`faqs.${index}.answer`)} />
                                         </Stack>
                                     </Card>
                                 ))}
                                 {form.values.faqs?.length === 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">Belum ada FAQ yang ditambahkan.</Text>
+                                    <Text size="sm" c="dimmed" ta="center">{t('venue.noFaqs')}</Text>
                                 )}
                             </Stack>
                         </Stack>
@@ -607,20 +607,20 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <Flex gap={10} align="center" mt={10}>
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Alamat Venue</Text>
+                    <Text size="lg" fw={600}>{t('venue.address')}</Text>
                 </Flex>
 
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Daerah"
+                        label={t('venue.region')}
                         placeholder="Bandung, Jawa Barat"
                         w="100%"
                         {...inputProps('location_name')}
                     />
                     <TextInput
                         withAsterisk
-                        label="Link Maps"
+                        label={t('venue.mapsLink')}
                         placeholder="https://maps.google.com/..."
                         w="100%"
                         {...inputProps('location')}
@@ -629,8 +629,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <Textarea
                     withAsterisk
-                    label="Alamat Detail Venue"
-                    placeholder="Isi Detail Alamat Venue"
+                    label={t('venue.addressDetail')}
+                    placeholder={t('venue.enterAddressDetail')}
                     autosize
                     minRows={3}
                     {...inputProps('location_detail')}
@@ -638,21 +638,21 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <Flex gap={10} align="center" mt={10}>
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`} />
-                    <Text size="lg" fw={600}>Contact Person</Text>
+                    <Text size="lg" fw={600}>{t('venue.contactPerson')}</Text>
                 </Flex>
 
                 <Flex gap={15}>
                     <TextInput
                         withAsterisk
-                        label="Nama Kontak"
-                        placeholder="Isi Nama Kontak"
+                        label={t('venue.contactName')}
+                        placeholder={t('venue.enterContactName')}
                         w="100%"
                         {...inputProps('contact_person_name')}
                     />
                     <TextInput
                         withAsterisk
-                        label="Email Kontak"
-                        placeholder="Isi Email Kontak"
+                        label={t('venue.contactEmail')}
+                        placeholder={t('venue.enterContactEmail')}
                         w="100%"
                         {...inputProps('contact_person_email')}
                     />
@@ -660,8 +660,8 @@ export default function Create({ }: Readonly<ComponentProps>) {
 
                 <TextInput
                     withAsterisk
-                    label="No.Telp Kontak"
-                    placeholder="Isi No.Telp Kontak"
+                    label={t('venue.contactPhone')}
+                    placeholder={t('venue.enterContactPhone')}
                     w="100%"
                     {...inputProps('contact_person_phone')}
                 />
@@ -677,7 +677,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         radius="xl"
                         leftSection={<Icon icon="uiw:close" />}
                     >
-                        Batal
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         loading={loading.includes('submitdata')}
@@ -686,7 +686,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         color="#194e9e"
                         rightSection={<Icon icon="uiw:check" />}
                         radius="xl">
-                        Simpan Venue
+                        {t('venue.save')}
                     </Button>
                 </Flex>
             </Card>
@@ -695,21 +695,21 @@ export default function Create({ }: Readonly<ComponentProps>) {
             <Modal
                 opened={addFacilityOpened}
                 onClose={() => { closeAddFacility(); setNewFacilityName(''); setNewFacilityDesc(''); }}
-                title={<Text fw={700} size="lg">Tambah Fasilitas Baru</Text>}
+                title={<Text fw={700} size="lg">{t('venue.addFacilityTitle')}</Text>}
                 centered
                 radius="md"
             >
                 <Stack gap={15}>
                     <TextInput
-                        label="Nama Fasilitas"
-                        placeholder="Contoh: Parkir, WiFi, AC"
+                        label={t('venue.facilityName')}
+                        placeholder={t('venue.facilityExample')}
                         withAsterisk
                         value={newFacilityName}
                         onChange={e => setNewFacilityName(e.currentTarget.value)}
                     />
                     <Textarea
-                        label="Deskripsi Fasilitas"
-                        placeholder="Isi deskripsi fasilitas (opsional)"
+                        label={t('venue.facilityDescription')}
+                        placeholder={t('venue.enterFacilityDescription')}
                         autosize
                         minRows={2}
                         value={newFacilityDesc}
@@ -721,7 +721,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                             radius="xl"
                             onClick={() => { closeAddFacility(); setNewFacilityName(''); setNewFacilityDesc(''); }}
                         >
-                            Batal
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             color="#194e9e"
@@ -770,7 +770,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                                 });
                             }}
                         >
-                            Simpan Fasilitas
+                            {t('venue.saveFacility')}
                         </Button>
                     </Flex>
                 </Stack>

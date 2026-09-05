@@ -11,6 +11,7 @@ import { Accordion, AccordionItem } from "@nextui-org/react";
 import { Alert, Box, Card } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 
 interface EventData {
   creator_id: string;
@@ -32,6 +33,7 @@ interface EventData {
 export default function Dashboard() {
   const user = useLoggedUser();
   const router = useRouter();
+  const { t } = useTranslation();
   const [eventData, setEventData] = useState<EventData[] | null>(null);
 
   useEffect(() => {
@@ -84,42 +86,42 @@ export default function Dashboard() {
   return (
     <div className="w-full text-dark">
       <div className="flex flex-col gap-2 px-4 py-4 md:px-7 md:py-4 w-full bg-gradient-to-b from-white to-[#f5f5f5]">
-        <h1 className="mb-4 text-dark">Dashboard</h1>
+        <h1 className="mb-4 text-dark">{t("dash.title")}</h1>
         <Box px={0}>
           {user && !user?.has_creator?.is_verified && !user?.has_creator?.verified_status_id && (
             <Alert color="red" icon={<Icon icon="uiw:information-o" />} radius={8} className={`mt-[-10px] mb-[10px]`}>
-              Akun Anda belum terverifikasi.{" "}
+              {t("dash.unverifiedAccount")}{" "}
               <Link className={`text-primary-base hover:underline`} href="/dashboard/legal">
-                Verifikasi Sekarang
+                {t("dash.verifyNow")}
               </Link>
             </Alert>
           )}
           {user && (user?.has_creator?.is_verified || user?.has_creator?.verified_status_id) && (
             <Alert color="green" icon={<Icon icon="uiw:information-o" />} radius={8} className={`mt-[-10px] mb-[10px]`}>
-              Akun Anda Sudah terverifikasi.{" "}
+              {t("dash.verifiedAccount")}{" "}
             </Alert>
           )}
         </Box>
         <p className="text-dark-grey mb-1">
           {formatDay(now.toString())} &bull; {formatDateNoCheck(now.toString())}, {formatYear(now.toString())}
         </p>
-        <h3 className="font-semibold text-xl md:text-2xl capitalize">Halo, {user?.has_creator?.name_event_organizer || user?.has_creator?.name}</h3>
-        <p className="text-sm text-dark-grey">Pantau dan kelola event, lowongan, dan merchandise</p>
+        <h3 className="font-semibold text-xl md:text-2xl capitalize">{t("dash.greeting")}, {user?.has_creator?.name_event_organizer || user?.has_creator?.name}</h3>
+        <p className="text-sm text-dark-grey">{t("dash.subtitle")}</p>
       </div>
 
       <Card>
         <Accordion defaultExpandedKeys={["event"]}>
           {/* Event Section */}
-          <AccordionItem key="event" title="Rekap Semua Event">
+          <AccordionItem key="event" title={t("dash.eventRecap")}>
             <div className="">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable icon="mdi:event-star" title="Jumlah Event" value={calculateTotalEvents()} />
+                <CreatorTable icon="mdi:event-star" title={t("dash.eventCount")} value={calculateTotalEvents()} />
                 {/* <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal("total_unpaid")} yBorderNone /> */}
-                <CreatorTable icon="lucide:users-round" title="Total Pengunjung" value={calculateTotal("total_views")} yBorderNone />
-                <CreatorTable icon="hugeicons:invoice" title="Total Transaksi" value={calculateTotal("total_paid")} yBorderNone />
-                <CreatorTable icon="heroicons-outline:ticket" title="Jumlah Jenis Ticket" value={calculateTotal("total_ticket")} xBorderNone />
+                <CreatorTable icon="lucide:users-round" title={t("dash.totalVisitors")} value={calculateTotal("total_views")} yBorderNone />
+                <CreatorTable icon="hugeicons:invoice" title={t("dash.totalTransactions")} value={calculateTotal("total_paid")} yBorderNone />
+                <CreatorTable icon="heroicons-outline:ticket" title={t("dash.ticketTypeCount")} value={calculateTotal("total_ticket")} xBorderNone />
                 {/* <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} /> */}
-                <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan Seluruh Event" currency value={calculateTotal("total_price_sell")} />
+                <CreatorTable icon="mdi:event-multiple-check" title={t("dash.totalEventSales")} currency value={calculateTotal("total_price_sell")} />
               </div>
             </div>
           </AccordionItem>

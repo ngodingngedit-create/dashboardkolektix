@@ -23,6 +23,7 @@ import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import { modals } from '@mantine/modals';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -90,6 +91,7 @@ export type City = {
 type AddressListResponse = AddressUpdateRequest & { id: number };
 
 const Address = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>();
   const [addressList, setAddressList] = useListState<AddressData>([]);
   const [provinceList, setProvinceList] = useListState<Province>([]);
@@ -264,9 +266,9 @@ const router = useRouter();
   const handleDelete = () => {
     modals.openConfirmModal({
       centered: true,
-      title: 'Hapus Alamat',
-      children: 'Apakah anda yakin ingin menghapus alamat ini?',
-      labels: { confirm: 'Hapus', cancel: 'Batal' },
+      title: t('address.deleteTitle'),
+      children: t('address.deleteConfirm'),
+      labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
       onConfirm: async () => {
         await fetch<any, any>({
           url: `my-address/${selectedAddressId}`,
@@ -333,11 +335,11 @@ const router = useRouter();
               <button
                 onClick={() => router.push('/dashboard')}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-                aria-label="Kembali ke Dashboard"
+                aria-label={t('event.backToDashboard')}
               >
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
-              <h1 className="text-dark m-0">Alamat Saya</h1>
+              <h1 className="text-dark m-0">{t('address.title')}</h1>
             </div>
             <Button
               onClick={handleAddClick}
@@ -346,12 +348,12 @@ const router = useRouter();
               size="md"
               radius="xl"
             >
-              Tambah Alamat
+              {t('address.addAddress')}
             </Button>
           </div>
           <div className="flex justify-end">
             <TextInput
-              placeholder="Cari nama alamat, penerima, atau lokasi..."
+              placeholder={t('address.searchPlaceholder')}
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
@@ -367,26 +369,26 @@ const router = useRouter();
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <h5 className="text-lg font-semibold text-dark truncate">{item.name}</h5>
-                    {item.is_default && <Badge color="blue" variant="light" size="sm">Utama</Badge>}
+                    {item.is_default && <Badge color="blue" variant="light" size="sm">{t('address.default')}</Badge>}
                   </div>
                   <div className="mt-3 flex flex-col gap-2 text-sm">
-                    <p className="text-dark"><span className="text-grey">Penerima:</span> {item.nama_penerima}</p>
-                    <p className="text-dark"><span className="text-grey">No. Telp:</span> {item.phone}</p>
+                    <p className="text-dark"><span className="text-grey">{t('address.recipient')}</span> {item.nama_penerima}</p>
+                    <p className="text-dark"><span className="text-grey">{t('address.phone')}</span> {item.phone}</p>
                     <p className="text-dark">
-                      <span className="text-grey">Lokasi:</span>{" "}
+                      <span className="text-grey">{t('address.location')}</span>{" "}
                       {provinceName ? provinceName[item.province] ?? "-" : "-"},{" "}
                       {cityName ? cityName[item.city] ?? "-" : "-"}
                     </p>
-                    <p className="text-grey">Pos: {item.postcode}</p>
+                    <p className="text-grey">{t('address.zip')} {item.postcode}</p>
                     <p className="text-grey">{item.detail}</p>
                   </div>
                   <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-end gap-2">
-                    <Tooltip label="Edit">
+                    <Tooltip label={t('common.edit')}>
                       <ActionIcon variant="light" color="blue" onClick={() => handleEditClick(item)}>
                         <FontAwesomeIcon icon={faPen} size="sm" />
                       </ActionIcon>
                     </Tooltip>
-                    <Tooltip label="Hapus">
+                    <Tooltip label={t('common.delete')}>
                       <ActionIcon variant="light" color="red" onClick={() => { setSelectedAddressId(item.id); setTimeout(() => handleDelete(), 100); }}>
                         <FontAwesomeIcon icon={faTrash} size="sm" />
                       </ActionIcon>
@@ -401,8 +403,8 @@ const router = useRouter();
             <Box c="gray.4">
               <FontAwesomeIcon icon={faSearch} className="text-[2rem]" />
             </Box>
-            <h3 className="text-xl font-semibold">{searchValue ? "Alamat tidak ditemukan" : "Tidak ada alamat yang terdaftar"}</h3>
-            <Text size="sm" c="gray">Klik tombol &quot;Tambah Alamat&quot; untuk menambahkan alamat pengiriman.</Text>
+            <h3 className="text-xl font-semibold">{searchValue ? t('address.notFound') : t('address.noAddress')}</h3>
+            <Text size="sm" c="gray">{t('address.emptyStateDesc')}</Text>
           </div>
         )}
       </Stack>
@@ -420,9 +422,9 @@ const router = useRouter();
           </ActionIcon>
           <Stack gap={0}>
             <Title order={2} size="h3">
-              {isEditMode ? 'Edit Alamat' : 'Tambah Alamat Baru'}
+              {isEditMode ? t('address.editTitle') : t('address.addTitle')}
             </Title>
-            <Text size="xs" c="dimmed">Isi formulir di bawah untuk mengelola data alamat Anda</Text>
+            <Text size="xs" c="dimmed">{t('address.formDesc')}</Text>
           </Stack>
         </Flex>
 
@@ -430,23 +432,23 @@ const router = useRouter();
           <Stack gap="lg">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Nama Penerima"
-                placeholder="Masukan Nama Penerima"
+                label={t('address.recipientName')}
+                placeholder={t('address.enterRecipientName')}
                 {...form.getInputProps('nama_penerima')}
               />
               <TextInput
-                label="Nama Alamat"
-                placeholder="Rumah, Kantor, ..."
+                label={t('address.addressLabel')}
+                placeholder={t('address.labelPlaceholder')}
                 {...form.getInputProps('name')}
               />
               <TextInput
-                label="No. Telp"
+                label={t('address.phoneNo')}
                 placeholder="08XX XXXX XXXX"
                 {...form.getInputProps('phone')}
               />
               <Select
-                label="Provinsi"
-                placeholder="Pilih Provinsi"
+                label={t('address.province')}
+                placeholder={t('address.selectProvince')}
                 data={provinceList.map((e) => ({ value: String(e.id), label: e.name }))}
                 value={String(form.values.province)}
                 onChange={(e) => e && form.setValues({ province: parseInt(e) })}
@@ -455,8 +457,8 @@ const router = useRouter();
               />
               <Select
                 disabled={loading.includes('getcity')}
-                label="Kota"
-                placeholder="Pilih Kota"
+                label={t('address.city')}
+                placeholder={t('address.selectCity')}
                 data={cityList.map((e) => ({ value: String(e.id), label: e.name }))}
                 value={String(form.values.city)}
                 onChange={(e) => e && form.setValues({ city: parseInt(e) })}
@@ -464,8 +466,8 @@ const router = useRouter();
                 searchable
               />
               <TextInput
-                label="Kode Pos"
-                placeholder="Masukan Kode Pos"
+                label={t('address.postalCode')}
+                placeholder={t('address.enterPostalCode')}
                 {...form.getInputProps('postcode')}
               />
             </div>
@@ -473,20 +475,20 @@ const router = useRouter();
             <Textarea
               autosize
               minRows={3}
-              label="Detail Alamat"
-              placeholder="RT, RW, No. Rumah, dll"
+              label={t('address.detailLabel')}
+              placeholder={t('address.detailPlaceholder')}
               {...form.getInputProps('detail')}
             />
 
             <Switch
-              label="Alamat Utama"
+              label={t('address.defaultAddress')}
               checked={form.values.is_default}
               onChange={(e) => form.setFieldValue('is_default', e.target.checked)}
               error={form.errors.is_default}
             />
 
             <Text size="xs" c="gray">
-              Periksa kembali alamat yang Anda masukkan untuk memastikan tidak ada kesalahan.
+              {t('address.reviewHint')}
             </Text>
           </Stack>
         </Card>
@@ -503,7 +505,7 @@ const router = useRouter();
                   onClick={handleDelete}
                   loading={loading.includes('delete')}
                 >
-                  Hapus Alamat
+                  {t('address.deleteAddress')}
                 </Button>
               )}
             </div>
@@ -515,7 +517,7 @@ const router = useRouter();
                 size="md"
                 leftSection={<FontAwesomeIcon icon={faXmark} />}
               >
-                Batalkan
+                {t('address.cancel')}
               </Button>
               <Button
                 color="#0B387C"
@@ -524,7 +526,7 @@ const router = useRouter();
                 leftSection={!loading.includes('save') && <FontAwesomeIcon icon={faSave} />}
                 onClick={handleSave}
               >
-                {isEditMode ? 'Simpan Perubahan' : 'Konfirmasi & Simpan'}
+                {isEditMode ? t('address.saveChanges') : t('address.confirmSave')}
               </Button>
             </Flex>
           </Flex>

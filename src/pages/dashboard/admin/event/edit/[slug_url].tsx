@@ -26,6 +26,7 @@ import React from "react";
 import { useListState, UseListStateHandlers } from "@mantine/hooks";
 import { defaultSeatmapData } from "@/components/Seatmap";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { useTranslation } from "react-i18next";
 
 const option = [
   { key: 1, label: "1 Tiket" },
@@ -68,6 +69,7 @@ export const Context = createContext<{
 });
 
 const EditEventAdmin = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const { slug_url } = router.query;
   const [ticket, setTicket] = useState<EventTicket[]>([]);
@@ -324,8 +326,8 @@ const EditEventAdmin = () => {
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold">Edit Event (Admin)</h1>
-            <p className="text-grey">Lengkapi form dibawah ini untuk merubah event sebagai admin</p>
+            <h1 className="text-2xl font-bold">{t("admin.event.edit.slug_url.edit.event.admin")}</h1>
+            <p className="text-grey">{t("admin.event.edit.slug_url.lengkapi.form.dibawah.ini.untuk.merubah.event.sebagai.admin")}</p>
           </div>
         </div>
 
@@ -334,20 +336,20 @@ const EditEventAdmin = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
               {image ? (
-                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
+                <Image src={image} alt={t("admin.event.edit.slug_url.image")} className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} unoptimized />
               ) : (
                 <>
-                  <Image src={imagePlus} alt="image-plus" />
-                  <h3 className="font-semibold text-medium text-center">Unggah gambar/poster/banner</h3>
-                  <p className="text-grey text-center text-sm px-8">Direkomendasikan ukuran 724 x 340px</p>
+                  <Image src={imagePlus} alt={t("admin.event.edit.slug_url.image.plus")} />
+                  <h3 className="font-semibold text-medium text-center">{t("admin.event.edit.slug_url.unggah.gambar.poster.banner")}</h3>
+                  <p className="text-grey text-center text-sm px-8">{t("admin.event.edit.slug_url.direkomendasikan.ukuran.724.x.340px")}</p>
                 </>
               )}
             </label>
 
             <div className="mt-8">
               <Select
-                label="Pilih Penyelenggara (Creator)"
-                placeholder="Cari creator..."
+                label={t("admin.event.edit.slug_url.pilih.penyelenggara.creator")}
+                placeholder={t("admin.event.edit.slug_url.cari.creator")}
                 variant="bordered"
                 radius="sm"
                 className="mb-4"
@@ -361,7 +363,7 @@ const EditEventAdmin = () => {
                 ))}
               </Select>
 
-              <InputField type="text" placeholder="Nama Event" fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
+              <InputField type="text" placeholder={t("admin.event.edit.slug_url.nama.event")} fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
               {error?.name && <p className="text-danger text-xs mt-1">{error.name[0]}</p>}
             </div>
 
@@ -369,7 +371,7 @@ const EditEventAdmin = () => {
               <TagsInput
                 multiple
                 radius={8}
-                placeholder="Tag; Contoh: hiburan, musik, budaya"
+                placeholder={t("admin.event.edit.slug_url.tag.contoh.hiburan.musik.budaya")}
                 data={tagSuggestion}
                 value={!form.tag ? [] : form.tag.split(",")}
                 onChange={(e) => setForm({ ...form, tag: e.join(",") })}
@@ -383,7 +385,7 @@ const EditEventAdmin = () => {
                 {form.start_date && form.end_date ? (
                   <p className="text-dark">{formatDate(form.start_date)} - {formatDate(form.end_date)}</p>
                 ) : (
-                  <p>Atur Tanggal Event</p>
+                  <p>{t("admin.event.edit.slug_url.atur.tanggal.event")}</p>
                 )}
               </div>
               <div className="w-full border-y-2 border-primary-light-200 text-grey text-sm py-2 px-2 flex items-center cursor-pointer" onClick={() => setShowTime(!showTime)}>
@@ -391,7 +393,7 @@ const EditEventAdmin = () => {
                 {form.start_time && form.end_time ? (
                   <p className="text-dark">{form.start_time} - {form.end_time} {form.zone_time}</p>
                 ) : (
-                  <p>Atur Waktu Event</p>
+                  <p>{t("admin.event.edit.slug_url.atur.waktu.event")}</p>
                 )}
               </div>
               <div className="w-full border-primary-light-200 text-grey text-sm py-2 px-2 mb-3 flex items-center cursor-pointer" onClick={() => setShowLocation(!showLocation)}>
@@ -399,7 +401,7 @@ const EditEventAdmin = () => {
                 {form.organization_method !== "" ? (
                   <p className="text-dark">{form.location_name || form.location_map || "Lokasi Teratur"}</p>
                 ) : (
-                  <p>Atur Alamat Event</p>
+                  <p>{t("admin.event.edit.slug_url.atur.alamat.event")}</p>
                 )}
               </div>
             </div>
@@ -417,20 +419,20 @@ const EditEventAdmin = () => {
                 cursor: "rounded-b-none border-b-2 border-b-primary-base",
               }}
             >
-              <Tab key="info" title="Info Tiket">
+              <Tab key="info" title={t("admin.event.edit.slug_url.info.tiket")}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Tiket</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.edit.slug_url.tiket")}</h3>
                     <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={onAddTicket}>
                       <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
                         <FontAwesomeIcon icon={faPlus} size="sm" />
                       </button>
-                      <p>Tambah Tiket</p>
+                      <p>{t("admin.event.edit.slug_url.tambah.tiket")}</p>
                     </div>
                   </div>
                   <div className="p-5 flex flex-col gap-[10px] max-h-[450px] overflow-y-auto custom-scrollbar">
                     {ticket.length === 0 ? (
-                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">Belum ada tiket</Alert>
+                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">{t("admin.event.edit.slug_url.belum.ada.tiket")}</Alert>
                     ) : (
                       ticket.map((el, index) => (
                         <TicketContainer
@@ -459,36 +461,36 @@ const EditEventAdmin = () => {
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.edit.slug_url.formulir.data.pemesan")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       <Checkbox color="default" isSelected={true} isDisabled classNames={{ label: "text-sm" }}>
-                        Nama Lengkap
+                        {t("admin.event.edit.slug_url.nama.lengkap")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
-                        Email
+                        {t("admin.event.edit.slug_url.email")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={true} isDisabled>
-                        No. Handphone
+                        {t("admin.event.edit.slug_url.no.handphone")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_noidentity} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked })}>
-                        No. KTP
+                        {t("admin.event.edit.slug_url.no.ktp")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_birthdate} onChange={(e: any) => setForm({ ...form, is_birthdate: e.target.checked })}>
-                        Tanggal Lahir
+                        {t("admin.event.edit.slug_url.tanggal.lahir")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_gender} onChange={(e: any) => setForm({ ...form, is_gender: e.target.checked })}>
-                        Jenis Kelamin
+                        {t("admin.event.edit.slug_url.jenis.kelamin")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_assistant} onChange={(e: any) => setForm({ ...form, is_assistant: e.target.checked })}>
-                        Asisten
+                        {t("admin.event.edit.slug_url.asisten")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_profession} onChange={(e: any) => setForm({ ...form, is_profession: e.target.checked })}>
-                        Profesi
+                        {t("admin.event.edit.slug_url.profesi")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_company} onChange={(e: any) => setForm({ ...form, is_company: e.target.checked })}>
-                        Perusahaan
+                        {t("admin.event.edit.slug_url.perusahaan")}
                       </Checkbox>
                     </div>
                   </div>
@@ -496,19 +498,19 @@ const EditEventAdmin = () => {
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Pengaturan Tiket</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.edit.slug_url.pengaturan.tiket")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between">
                         <div>
-                          <p>Jumlah maks. tiket dalam 1 transaksi</p>
-                          <p className="text-grey text-xs">Jumlah maksimal tiket yang dapat dibeli dalam 1 transaksi</p>
+                          <p>{t("admin.event.edit.slug_url.jumlah.maks.tiket.dalam.1.transaksi")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.edit.slug_url.jumlah.maksimal.tiket.yang.dapat.dibeli.dalam.1.transaksi")}</p>
                         </div>
                         <Select
                           variant="underlined"
                           className="w-32 md:w-40 lg:w-24"
-                          aria-label="Options"
+                          aria-label={t("admin.event.edit.slug_url.options")}
                           size="sm"
                           defaultSelectedKeys={form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []}
                           onChange={(e: any) => setForm({ ...form, max_buy_ticket: Number(e.target.value) })}
@@ -525,8 +527,8 @@ const EditEventAdmin = () => {
                       </div>
                       <div className="flex justify-between">
                         <div>
-                          <p>1 akun email untuk 1 kali transaksi</p>
-                          <p className="text-grey text-xs">1 akun email hanya dapat melakukan 1 kali transaksi pembelian tiket</p>
+                          <p>{t("admin.event.edit.slug_url.1.akun.email.untuk.1.kali.transaksi")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.edit.slug_url.1.akun.email.hanya.dapat.melakukan.1.kali.transaksi.pembelian.tiket")}</p>
                         </div>
                         <div>
                           <Switch size="sm" isSelected={form.one_email_ticket} onChange={(e: any) => setForm({ ...form, one_email_ticket: e.target.checked })} />
@@ -534,8 +536,8 @@ const EditEventAdmin = () => {
                       </div>
                       <div className="flex justify-between">
                         <div>
-                          <p>1 tiket untuk 1 data pemesan</p>
-                          <p className="text-grey text-xs">Data setiap tiket tidak boleh sama</p>
+                          <p>{t("admin.event.edit.slug_url.1.tiket.untuk.1.data.pemesan")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.edit.slug_url.data.setiap.tiket.tidak.boleh.sama")}</p>
                         </div>
                         <div>
                           <Switch size="sm" isSelected={form.one_id_one_ticket} onChange={(e: any) => setForm({ ...form, one_id_one_ticket: e.target.checked })} />
@@ -546,35 +548,35 @@ const EditEventAdmin = () => {
                 </div>
               </Tab>
 
-              <Tab key="detail" title="Detail Event">
+              <Tab key="detail" title={t("admin.event.edit.slug_url.detail.event")}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
                   <div className="px-4 py-3">
-                    <h3 className="text-medium font-semibold">Deskripsi</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.edit.slug_url.deskripsi")}</h3>
                   </div>
                   <div className="p-5">
-                    <InputEditor theme="snow" value={form.description} onChange={(v: any) => setForm({ ...form, description: v })} placeholder="Ketik Deskripsi" />
+                    <InputEditor theme="snow" value={form.description} onChange={(v: any) => setForm({ ...form, description: v })} placeholder={t("admin.event.edit.slug_url.ketik.deskripsi")} />
                   </div>
                 </div>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
                   <div className="px-4 py-3">
-                    <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.edit.slug_url.syarat.ketentuan")}</h3>
                   </div>
                   <div className="p-5">
-                    <InputEditor theme="snow" value={form.term_condition} onChange={(v: any) => setForm({ ...form, term_condition: v })} placeholder="Ketik S&K" />
+                    <InputEditor theme="snow" value={form.term_condition} onChange={(v: any) => setForm({ ...form, term_condition: v })} placeholder={t("admin.event.edit.slug_url.ketik.s.k")} />
                   </div>
                 </div>
               </Tab>
 
-              <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> Admin</div>}>
+              <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> {t("admin.event.edit.slug_url.admin")}</div>}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 p-5">
                   <MantineGrid>
                     <MantineGrid.Col span={6}>
-                      <InputField label="URL Slug" type="text" fullWidth noShadow value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
+                      <InputField label={t("admin.event.edit.slug_url.url.slug")} type="text" fullWidth noShadow value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
                       <Select
-                        label="Status ID (1=Review, 3=Active)"
-                        placeholder="Pilih status"
+                        label={t("admin.event.edit.slug_url.status.id.1.review.3.active")}
+                        placeholder={t("admin.event.edit.slug_url.pilih.status")}
                         variant="bordered"
                         radius="sm"
                         classNames={{
@@ -583,17 +585,17 @@ const EditEventAdmin = () => {
                         selectedKeys={form.event_status_id ? [form.event_status_id.toString()] : []}
                         onChange={(e) => setForm({ ...form, event_status_id: Number(e.target.value) })}
                       >
-                        <SelectItem key="1" value="1">1 - Review</SelectItem>
-                        <SelectItem key="3" value="3">3 - Active</SelectItem>
+                        <SelectItem key="1" value="1">{t("admin.event.edit.slug_url.1.review")}</SelectItem>
+                        <SelectItem key="3" value="3">{t("admin.event.edit.slug_url.3.active")}</SelectItem>
                       </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
-                      <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth noShadow value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
+                      <InputField label={t("admin.event.edit.slug_url.metode.pembayaran.custom")} type="text" fullWidth noShadow value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
                       <Select
-                        label="Tipe PPN"
-                        placeholder="Pilih tipe PPN"
+                        label={t("admin.event.edit.slug_url.tipe.ppn")}
+                        placeholder={t("admin.event.edit.slug_url.pilih.tipe.ppn")}
                         variant="bordered"
                         radius="sm"
                         classNames={{
@@ -602,8 +604,8 @@ const EditEventAdmin = () => {
                         selectedKeys={form.ppn_type ? [form.ppn_type] : []}
                         onChange={(e) => setForm({ ...form, ppn_type: e.target.value })}
                       >
-                        <SelectItem key="percentage" value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem key="nominal" value="nominal">Nominal (Rp)</SelectItem>
+                        <SelectItem key="percentage" value="percentage">{t("admin.event.edit.slug_url.percentage")}</SelectItem>
+                        <SelectItem key="nominal" value="nominal">{t("admin.event.edit.slug_url.nominal.rp")}</SelectItem>
                       </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
@@ -617,10 +619,10 @@ const EditEventAdmin = () => {
                       />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Starting Price" type="text" fullWidth noShadow value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
+                      <InputField label={t("admin.event.edit.slug_url.starting.price")} type="text" fullWidth noShadow value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Maks Penggunaan Voucher" type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
+                      <InputField label={t("admin.event.edit.slug_url.maks.penggunaan.voucher")} type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
                       <div className="flex flex-col gap-4 p-4 border border-primary-light-200 rounded-lg bg-chat/50 mt-2">
@@ -629,25 +631,25 @@ const EditEventAdmin = () => {
                             isSelected={form.is_insurance === 1}
                             onChange={(e: any) => setForm({ ...form, is_insurance: e.target.checked ? 1 : 0, insurance_required: e.target.checked ? form.insurance_required : 0, insurance_amount: e.target.checked ? form.insurance_amount : null })}
                           >
-                            Aktifkan Asuransi
+                            {t("admin.event.edit.slug_url.aktifkan.asuransi")}
                           </Checkbox>
                           {form.is_insurance === 1 && (
                             <Checkbox
                               isSelected={form.insurance_required === 1}
                               onChange={(e: any) => setForm({ ...form, insurance_required: e.target.checked ? 1 : 0 })}
                             >
-                              Wajib Asuransi
+                              {t("admin.event.edit.slug_url.wajib.asuransi")}
                             </Checkbox>
                           )}
                         </div>
                         {form.is_insurance === 1 && (
                           <div className="max-w-xs">
                             <InputField
-                              label="Biaya Asuransi"
+                              label={t("admin.event.edit.slug_url.biaya.asuransi")}
                               type="num"
                               fullWidth
                               noShadow
-                              placeholder="Masukan biaya asuransi"
+                              placeholder={t("admin.event.edit.slug_url.masukan.biaya.asuransi")}
                               value={formatPrice(form.insurance_amount || 0)}
                               onChange={(e: any) => setForm({ ...form, insurance_amount: parsePrice(e.target.value) })}
                             />
@@ -665,9 +667,9 @@ const EditEventAdmin = () => {
 
       <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] right-0 bg-white shadow-lg z-40 p-4 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
-          <p className="text-sm font-bold hidden md:block">Mode Admin: Konfigurasi event secara penuh.</p>
+          <p className="text-sm font-bold hidden md:block">{t("admin.event.edit.slug_url.mode.admin.konfigurasi.event.secara.penuh")}</p>
           <div className="flex gap-4 w-full md:w-auto">
-            <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label="Batal" />
+            <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label={t("admin.event.edit.slug_url.batal")} />
             <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? "Loading..." : "Simpan Perubahan"} />
           </div>
         </div>

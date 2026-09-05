@@ -31,10 +31,12 @@
 import { formatDateNoCheck, formatDay, formatYear } from "@/utils/useFormattedDate";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 type ComponentProps = {};
 
 export default function DashboardUser({}: Readonly<ComponentProps>) {
+    const { t } = useTranslation();
     const user = useLoggedUser();
     const [currentDate, setCurrentDate] = useState<Date | null>(null);
     
@@ -46,11 +48,11 @@ export default function DashboardUser({}: Readonly<ComponentProps>) {
         return (
             <div className="w-full text-dark">
                 <div className="flex flex-col gap-2 px-4 py-4 md:px-7 md:py-4 w-full bg-gradient-to-b from-white to-[#f5f5f5]">
-                    <h1 className='mb-4 text-dark'>Dashboard</h1>
+                    <h1 className='mb-4 text-dark'>{t("admin.dashboard.dashboard")}</h1>
                     <p className="text-dark-grey mb-1">
-                        Loading...
+                        {t("admin.dashboard.loading")}
                     </p>
-                    <h3 className="font-semibold text-xl md:text-2xl">Halo, {user?.name || "Pengguna"}</h3>
+                    <h3 className="font-semibold text-xl md:text-2xl">{t("admin.dashboard.halo")} {user?.name || "Pengguna"}</h3>
                 </div>
             </div>
         );
@@ -59,12 +61,12 @@ export default function DashboardUser({}: Readonly<ComponentProps>) {
     return (
         <div className="w-full text-dark">
             <div className="flex flex-col gap-2 px-4 py-4 md:px-7 md:py-4 w-full bg-gradient-to-b from-white to-[#f5f5f5]">
-                <h1 className='mb-4 text-dark'>Dashboard</h1>
+                <h1 className='mb-4 text-dark'>{t("admin.dashboard.dashboard")}</h1>
                 <p className="text-dark-grey mb-1">
-                    {formatDay(currentDate.toString())} &bull; {formatDateNoCheck(currentDate.toString())},{' '}
+                    {formatDay(currentDate.toString())} {t("admin.dashboard.bull")} {formatDateNoCheck(currentDate.toString())},{' '}
                     {formatYear(currentDate.toString())}
                 </p>
-                <h3 className="font-semibold text-xl md:text-2xl">Halo, {user?.name}</h3>
+                <h3 className="font-semibold text-xl md:text-2xl">{t("admin.dashboard.halo")} {user?.name}</h3>
             </div>
         </div>
     );

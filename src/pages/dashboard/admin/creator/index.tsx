@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from "react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -79,6 +80,7 @@ const convertFileToBase64DataURL = (file: File): Promise<string> => {
 };
 
 export default function KelolaCreator() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CreatorProps[]>([]);
@@ -349,14 +351,14 @@ export default function KelolaCreator() {
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
       <Flex align="center" gap={15}>
-        <Tooltip label="Kembali">
+        <Tooltip label={t("admin.creator.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
             <Icon icon="ph:arrow-left-bold" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Creator" : "Tambah Creator Baru"}</Text>
-          <Text size="xs" c="dimmed">Isi form di bawah untuk mengelola data Creator</Text>
+          <Text size="xs" c="dimmed">{t("admin.creator.index.isi.form.di.bawah.untuk.mengelola.data.creator")}</Text>
         </Stack>
       </Flex>
 
@@ -366,34 +368,34 @@ export default function KelolaCreator() {
           <Stack gap="md">
             {imagePreview && (
               <Stack gap={5}>
-                <Text size="sm" fw={600}>Preview Gambar</Text>
-                <Image src={imagePreview} w={120} h={120} radius="sm" fit="cover" alt="Preview" />
+                <Text size="sm" fw={600}>{t("admin.creator.index.preview.gambar")}</Text>
+                <Image src={imagePreview} w={120} h={120} radius="sm" fit="cover" alt={t("admin.creator.index.preview")} />
               </Stack>
             )}
 
             {!imagePreview && isEditMode && selectedCreator?.image_url && (
               <Stack gap={5}>
-                <Text size="sm" fw={600}>Gambar Saat Ini</Text>
-                <Image src={selectedCreator.image_url} w={120} h={120} radius="sm" fit="cover" alt="Current" />
+                <Text size="sm" fw={600}>{t("admin.creator.index.gambar.saat.ini")}</Text>
+                <Image src={selectedCreator.image_url} w={120} h={120} radius="sm" fit="cover" alt={t("admin.creator.index.current")} />
               </Stack>
             )}
 
             <FileInput
-              label="Logo/Gambar (Opsional)"
-              placeholder="Pilih file gambar"
+              label={t("admin.creator.index.logo.gambar.opsional")}
+              placeholder={t("admin.creator.index.pilih.file.gambar")}
               accept="image/*"
               onChange={handleFileChange}
               clearable
               variant="filled"
             />
 
-            <TextInput label="Nama Creator" placeholder="Contoh: Gwenesbuk Records" required {...form.getInputProps("name")} />
-            <TextInput label="Nama Event Organizer" placeholder="Masukkan nama event organizer" {...form.getInputProps("name_event_organizer")} />
-            <TextInput label="Lokasi" placeholder="Contoh: Jakarta" {...form.getInputProps("location")} />
-            <TextInput label="Nomor Telepon" placeholder="Contoh: 081234567890" required {...form.getInputProps("phone_number")} />
-            <TextInput label="Email" placeholder="Contoh: creator@example.com" required type="email" {...form.getInputProps("email")} />
+            <TextInput label={t("admin.creator.index.nama.creator")} placeholder={t("admin.creator.index.contoh.gwenesbuk.records")} required {...form.getInputProps("name")} />
+            <TextInput label={t("admin.creator.index.nama.event.organizer")} placeholder={t("admin.creator.index.masukkan.nama.event.organizer")} {...form.getInputProps("name_event_organizer")} />
+            <TextInput label={t("admin.creator.index.lokasi")} placeholder={t("admin.creator.index.contoh.jakarta")} {...form.getInputProps("location")} />
+            <TextInput label={t("admin.creator.index.nomor.telepon")} placeholder={t("admin.creator.index.contoh.081234567890")} required {...form.getInputProps("phone_number")} />
+            <TextInput label={t("admin.creator.index.email")} placeholder={t("admin.creator.index.contoh.creator.example.com")} required type="email" {...form.getInputProps("email")} />
             <Select
-              label="Status"
+              label={t("admin.creator.index.status")}
               data={[
                 { value: "active", label: "Aktif" },
                 { value: "inactive", label: "Nonaktif" },
@@ -406,7 +408,7 @@ export default function KelolaCreator() {
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>Batal</Button>
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.creator.index.batal")}</Button>
             <Button type="submit" form="creator-form" color="indigo" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan Creator"}
             </Button>
@@ -425,13 +427,13 @@ export default function KelolaCreator() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.creator.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" className="text-lg" />
           </button>
           <Stack gap={2}>
-            <Text size="1.8rem" fw={600} c="black">Kelola Creator</Text>
-            <Text size="sm" c="black">Daftar semua creator/event organizer</Text>
+            <Text size="1.8rem" fw={600} c="black">{t("admin.creator.index.kelola.creator")}</Text>
+            <Text size="sm" c="black">{t("admin.creator.index.daftar.semua.creator.event.organizer")}</Text>
           </Stack>
         </Flex>
         <Button 
@@ -440,16 +442,16 @@ export default function KelolaCreator() {
           color="indigo"
           radius="md"
         >
-          Tambah Creator
+          {t("admin.creator.index.tambah.creator")}
         </Button>
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.creator.index.pencarian")}</Text>
             <TextInput 
-              placeholder="Cari creator..." 
+              placeholder={t("admin.creator.index.cari.creator")} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
@@ -503,7 +505,7 @@ export default function KelolaCreator() {
                   <td colSpan={8} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:users-three" className="text-5xl text-gray-300" />
-                      <Text c="dimmed" fw={500}>Data creator tidak ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("admin.creator.index.data.creator.tidak.ditemukan")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -533,7 +535,7 @@ export default function KelolaCreator() {
                     <td style={tableCellStyle}>
                       <Stack gap={0}>
                         <Text fw={600} size="sm" c="gray.8">{item.name || "-"}</Text>
-                        {item.name_event_organizer && <Text size="xs" c="dimmed">EO: {item.name_event_organizer}</Text>}
+                        {item.name_event_organizer && <Text size="xs" c="dimmed">{t("admin.creator.index.eo")} {item.name_event_organizer}</Text>}
                       </Stack>
                     </td>
                     <td style={tableCellStyle}>
@@ -561,12 +563,12 @@ export default function KelolaCreator() {
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
-                        <Tooltip label="Edit Data" withArrow>
+                        <Tooltip label={t("admin.creator.index.edit.data")} withArrow>
                           <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm">
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus" withArrow>
+                        <Tooltip label={t("admin.creator.index.hapus")} withArrow>
                           <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm">
                             <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>

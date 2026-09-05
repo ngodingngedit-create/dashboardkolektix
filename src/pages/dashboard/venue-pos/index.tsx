@@ -10,6 +10,7 @@ import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import { modals } from "@mantine/modals";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 type DateList = {
     date?: string;
@@ -19,6 +20,7 @@ type DateList = {
 
 export default function VenuePos() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const [venue, setVenue] = useListState<VenueListResponse>();
     const user = useLoggedUser();
@@ -65,8 +67,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={0}>
-<Title size="h2" mb={4}>Booking Venue</Title>
-<Text size="sm" c="gray">Buat Booking Venue secara offline</Text>
+<Title size="h2" mb={4}>{t('venue.pos.title')}</Title>
+<Text size="sm" c="gray">{t('venue.pos.subtitle')}</Text>
 </Stack>
 </Flex>
 </Stack>
@@ -79,11 +81,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="tabler:building" className="text-primary-base" />
-                                    <Text size="sm" className={`!text-primary-base`}>Informasi Venue</Text>
+                                    <Text size="sm" className={`!text-primary-base`}>{t('venue.info')}</Text>
                                 </Flex>
 
                                 <Select
-                                    placeholder="Pilih Venue"
+                                    placeholder={t('venue.pos.selectVenue')}
                                     data={venue.map(v => ({ value: String(v.id), label: v.name }))}
                                     value={selectedVenue ? String(selectedVenue.id) : null}
                                     onChange={(val) => setSelectedVenue(venue.find(v => String(v.id) === val))}
@@ -113,16 +115,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         <Icon icon="uil:calendar" width={24} />
                                     </Box>
                                     <Stack gap={0}>
-                                        <Text size="lg" fw={700} className="!text-gray-800">Tanggal Booking</Text>
-                                        <Text size="xs" c="dimmed">Pilih tanggal dan durasi penyewaan venue</Text>
+                                        <Text size="lg" fw={700} className="!text-gray-800">{t('venue.pos.bookingDate')}</Text>
+                                        <Text size="xs" c="dimmed">{t('venue.pos.bookingDateDesc')}</Text>
                                     </Stack>
                                 </Flex>
 
                                 <Stack gap="lg">
                                     <DatePickerInput
                                         minDate={new Date()}
-                                        label="Pilih Tanggal"
-                                        placeholder="Kapan venue akan digunakan?"
+                                        label={t('venue.pos.selectDate')}
+                                        placeholder={t('venue.pos.selectDatePlaceholder')}
                                         leftSection={<Icon icon="solar:calendar-date-bold-duotone" className="text-primary-base" width={18} />}
                                         value={dummyDate.date ? new Date(dummyDate.date) : undefined}
                                         onChange={e => setDummyDate({ ...dummyDate, date: e ? moment(e).format('YYYY-MM-DD') : undefined })}
@@ -131,12 +133,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     />
 
                                     <Box className="p-4 rounded-2xl bg-gray-50 border border-light-grey">
-                                        <Text size="xs" fw={700} mb={10} c="gray.6" className="uppercase tracking-wider">Durasi Booking</Text>
+                                        <Text size="xs" fw={700} mb={10} c="gray.6" className="uppercase tracking-wider">{t('venue.pos.bookingDuration')}</Text>
                                         <Grid align="center" gutter="sm">
                                             <Grid.Col span={5}>
                                                 <Select
-                                                    label="Jam Awal"
-                                                    placeholder="Pilih Jam"
+                                                    label={t('venue.pos.startTime')}
+                                                    placeholder={t('venue.pos.selectTime')}
                                                     leftSection={<Icon icon="solar:clock-circle-bold-duotone" className="text-green-500" width={18} />}
                                                     data={Array.from({ length: 48 }).map((_, i) => {
                                                         const hour = Math.floor(i / 2);
@@ -158,8 +160,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                             </Grid.Col>
                                             <Grid.Col span={5}>
                                                 <Select
-                                                    label="Jam Selesai"
-                                                    placeholder="Pilih Jam"
+                                                    label={t('venue.pos.endTime')}
+                                                    placeholder={t('venue.pos.selectTime')}
                                                     leftSection={<Icon icon="solar:clock-circle-bold-duotone" className="text-red-500" width={18} />}
                                                     data={Array.from({ length: 48 }).map((_, i) => {
                                                         const hour = Math.floor(i / 2);
@@ -191,14 +193,14 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                             leftSection={<Icon icon="solar:add-circle-bold-duotone" width={22} />}
                                             className="shadow-md hover:shadow-lg transition-all"
                                         >
-                                            Tambah ke Daftar Jadwal
+                                            {t('venue.pos.addToSchedule')}
                                         </Button>
                                     </Flex>
                                 </Stack>
 
                                 {date.length > 0 && (
                                     <Stack gap="md" mt="xs">
-                                        <Divider label={<Text size="xs" fw={700} c="dimmed">JADWAL TERPILIH</Text>} labelPosition="center" />
+                                        <Divider label={<Text size="xs" fw={700} c="dimmed">{t('venue.pos.selectedSchedule')}</Text>} labelPosition="center" />
                                         <Grid gutter="md">
                                             {date.map((e, i) => (
                                                 <Grid.Col span={{ base: 12, md: 12 }} key={i}>
@@ -238,24 +240,24 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         <Accordion variant="separated" radius="xl" defaultValue="data-pemesan">
                             <Accordion.Item value="data-pemesan" className="!border !border-[#dee2e6]">
                                 <Accordion.Control icon={<Icon icon="ep:user" className="text-primary-base text-lg" />}>
-                                    <Text size="sm" fw={600} className={`!text-primary-base`}>Data Pemesan</Text>
+                                    <Text size="sm" fw={600} className={`!text-primary-base`}>{t('venue.pos.bookerData')}</Text>
                                 </Accordion.Control>
                                 <Accordion.Panel>
                                     <Stack gap="md" pt="xs">
                                         <TextInput
                                             required
-                                            label="Nama Pemesan"
-                                            placeholder="Masukan Nama Pemesan"
+                                            label={t('venue.pos.bookerName')}
+                                            placeholder={t('venue.pos.enterBookerName')}
                                         />
                                         <TextInput
                                             required
-                                            label="Email Pemesan"
-                                            placeholder="Masukan Email Pemesan"
+                                            label={t('venue.pos.bookerEmail')}
+                                            placeholder={t('venue.pos.enterBookerEmail')}
                                         />
                                         <TextInput
                                             required
-                                            label="No. Telp Pemesan"
-                                            placeholder="Masukan No. Telp Pemesan"
+                                            label={t('venue.pos.bookerPhone')}
+                                            placeholder={t('venue.pos.enterBookerPhone')}
                                         />
                                     </Stack>
                                 </Accordion.Panel>
@@ -268,11 +270,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ep:money" className="text-primary-base text-[20px]" />
-                                    <Text size="sm" className={`!text-primary-base`}>Metode Pembayaran</Text>
+                                    <Text size="sm" className={`!text-primary-base`}>{t('venue.pos.paymentMethod')}</Text>
                                 </Flex>
 
                                 <Select
-                                    placeholder="Pilih Metode Pembayaran"
+                                    placeholder={t('venue.pos.selectPaymentMethod')}
                                     data={[{ value: 'Cash', label: 'Cash' }]}
                                     value={selectedPayment}
                                     onChange={(val) => setSelectedPayment(val || undefined)}
@@ -285,11 +287,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ic:baseline-percent" className="text-primary-base text-[20px]" />
-                                    <Text size="sm" className={`!text-primary-base`}>Diskon Tambahan</Text>
+                                    <Text size="sm" className={`!text-primary-base`}>{t('venue.pos.additionalDiscount')}</Text>
                                 </Flex>
 
                                 <NumberInput
-                                    placeholder="Masukan Diskon Tambahan"
+                                    placeholder={t('venue.pos.enterAdditionalDiscount')}
                                     prefix="Rp "
                                     thousandSeparator="."
                                     decimalSeparator=","
@@ -302,11 +304,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="material-symbols-light:order-approve-outline" className="text-primary-base text-[20px]" />
-                                    <Text size="sm" className={`!text-primary-base`}>Ringkasan Pesanan</Text>
+                                    <Text size="sm" className={`!text-primary-base`}>{t('venue.pos.orderSummary')}</Text>
                                 </Flex>
 
                                 <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
-                                    <Text>Total</Text>
+                                    <Text>{t('venue.pos.total')}</Text>
                                     <Text><NumberFormatter value={0} /></Text>
                                 </Flex>
                             </Stack>
@@ -319,7 +321,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             <Card pos="fixed" className={`!bottom-0 !left-0 !right-0 !z-10 !border-t !border-[#d0d0d0]`} radius={0} py={15} px={30} style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
                 <Flex justify="space-between" align="center" pl={{ base: 0, md: 90 }}>
                     <Stack gap={0}>
-                        <Text size="sm" c="gray" fw={600}>Total Pembayaran</Text>
+                        <Text size="sm" c="gray" fw={600}>{t('venue.pos.totalPayment')}</Text>
                         <Text size="xl" fw={800} c="blue"><NumberFormatter value={0} prefix="Rp " thousandSeparator="." decimalSeparator="," /></Text>
                     </Stack>
                     <Button
@@ -328,7 +330,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         radius="xl"
                         size="md"
                     >
-                        Pesan Sekarang
+                        {t('venue.pos.orderNow')}
                     </Button>
                 </Flex>
             </Card>

@@ -37,6 +37,7 @@ import { useForm } from '@mantine/form';
 import { useRouter } from 'next/router';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
+import { useTranslation } from "react-i18next";
 
 // Types
 type Creator = {
@@ -94,6 +95,7 @@ type TrackingFormValues = {
 };
 
 export default function OrderTracking() {
+  const { t } = useTranslation();
     const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [creators, setCreators] = useState<Creator[]>([]);
@@ -490,21 +492,21 @@ export default function OrderTracking() {
                             <button
                                 onClick={() => router.push('/dashboard/admin')}
                                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-                                aria-label="Kembali ke Dashboard Admin"
+                                aria-label={t("admin.resi.index.kembali.ke.dashboard.admin")}
                             >
                                 <Icon icon="ph:arrow-left-bold" width={20} />
                             </button>
                             <Box>
                                 <Title order={2} size="h2" fw={700}>
-                                    Update Resi
+                                    {t("admin.resi.index.update.resi")}
                                 </Title>
                                 <Text size="sm" c="dimmed" mt={4}>
-                                    Update resi untuk order yang sudah diterima
+                                    {t("admin.resi.index.update.resi.untuk.order.yang.sudah.diterima")}
                                 </Text>
                             </Box>
                         </Group>
                         {step > 1 && (
-                            <Tooltip label="Kembali ke Awal">
+                            <Tooltip label={t("admin.resi.index.kembali.ke.awal")}>
                                 <ActionIcon
                                     variant="subtle"
                                     color="gray"
@@ -535,15 +537,15 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:account-group" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Pilih Creator</Title>
-                                    <Text size="sm" c="dimmed">Pilih creator dari daftar untuk melihat transaksi</Text>
+                                    <Title order={4} fw={600}>{t("admin.resi.index.pilih.creator")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.resi.index.pilih.creator.dari.daftar.untuk.melihat.transaksi")}</Text>
                                 </Box>
                             </Group>
 
                             <Stack gap="md">
                                 <Select
-                                    label="Pilih Creator"
-                                    placeholder="Klik untuk memilih creator"
+                                    label={t("admin.resi.index.pilih.creator")}
+                                    placeholder={t("admin.resi.index.klik.untuk.memilih.creator")}
                                     data={creators.map((creator: Creator) => ({
                                         value: creator.slug_url,
                                         label: creator.name
@@ -585,7 +587,7 @@ export default function OrderTracking() {
                                             <Icon icon="mdi:file-document" />
                                         </ThemeIcon>
                                         <Box>
-                                            <Title order={4} fw={600}>Daftar Invoice</Title>
+                                            <Title order={4} fw={600}>{t("admin.resi.index.daftar.invoice")}</Title>
                                             <Text size="sm" c="dimmed">
                                                 {selectedCreator && `Creator: ${selectedCreator.name}`}
                                             </Text>
@@ -595,16 +597,16 @@ export default function OrderTracking() {
                                     {/* Statistik Ringkas */}
                                     {pagination.total > 0 && (
                                         <Badge size="lg" variant="light" color="blue" radius="sm">
-                                            {pagination.total} Transaksi
+                                            {pagination.total} {t("admin.resi.index.transaksi")}
                                         </Badge>
                                     )}
                                 </Group>
 
                                 {/* Search dan Filter */}
                                 <Stack gap="xs">
-                                    <Text size="sm" fw={500}>Select Recent Transaction</Text>
+                                    <Text size="sm" fw={500}>{t("admin.resi.index.select.recent.transaction")}</Text>
                                     <Select
-                                        placeholder="Select an invoice"
+                                        placeholder={t("admin.resi.index.select.an.invoice")}
                                         data={transactions.map(t => ({ value: t.invoice_no, label: t.invoice_no }))}
                                         size="md"
                                         radius="md"
@@ -618,13 +620,13 @@ export default function OrderTracking() {
                                     />
                                 </Stack>
 
-                                <Divider label="Or" labelPosition="center" />
+                                <Divider label={t("admin.resi.index.or")} labelPosition="center" />
 
                                 <Stack gap="xs">
-                                    <Text size="sm" fw={500}>Or Enter Merch Invoice ID Manually</Text>
+                                    <Text size="sm" fw={500}>{t("admin.resi.index.or.enter.merch.invoice.id.manually")}</Text>
                                     <Group grow align="flex-end">
                                         <TextInput
-                                            placeholder="e.g. MERCH-123456"
+                                            placeholder={t("admin.resi.index.e.g.merch.123456")}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.currentTarget.value)}
                                             size="md"
@@ -637,7 +639,7 @@ export default function OrderTracking() {
                                             loading={loading.includes('fetchinvoice')}
                                             style={{ flex: 'none', width: 120 }}
                                         >
-                                            Fetch
+                                            {t("admin.resi.index.fetch")}
                                         </Button>
                                     </Group>
                                 </Stack>
@@ -700,7 +702,7 @@ export default function OrderTracking() {
                                                                     >
                                                                         {transaction.payment_status}
                                                                     </Badge>
-                                                                    <Tooltip label="Lihat detail">
+                                                                    <Tooltip label={t("admin.resi.index.lihat.detail")}>
                                                                         <ActionIcon variant="subtle" color="blue">
                                                                             <Icon icon="mdi:arrow-right" width={18} />
                                                                         </ActionIcon>
@@ -733,17 +735,17 @@ export default function OrderTracking() {
                                                             {/* Baris 3: Grid Informasi Tambahan */}
                                                             <SimpleGrid cols={3} spacing="xs">
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Order ID</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.resi.index.order.id")}</Text>
                                                                     <Text size="sm" fw={500}>#{transaction.id}</Text>
                                                                 </Box>
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Total Qty</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.resi.index.total.qty")}</Text>
                                                                     <Text size="sm" fw={500}>
-                                                                        {transaction.total_qty || 0} item
+                                                                        {transaction.total_qty || 0} {t("admin.resi.index.item")}
                                                                     </Text>
                                                                 </Box>
                                                                 <Box>
-                                                                    <Text size="xs" c="dimmed">Total</Text>
+                                                                    <Text size="xs" c="dimmed">{t("admin.resi.index.total")}</Text>
                                                                     <Text size="sm" fw={700} c="blue">
                                                                         {formatCurrency(transaction.grandtotal)}
                                                                     </Text>
@@ -775,7 +777,7 @@ export default function OrderTracking() {
                                                                             </Indicator>
                                                                             <Box>
                                                                                 <Text size="xs" c="dimmed">
-                                                                                    Tracking Terakhir
+                                                                                    {t("admin.resi.index.tracking.terakhir")}
                                                                                 </Text>
                                                                                 <Group gap="xs">
                                                                                     <Badge size="sm" variant="dot" color="blue">
@@ -801,7 +803,7 @@ export default function OrderTracking() {
                                                                 <Group gap="xs">
                                                                     <Icon icon="mdi:package-variant" width={14} color="gray" />
                                                                     <Text size="xs" c="dimmed">
-                                                                        {transaction.items.length} item produk
+                                                                        {transaction.items.length} {t("admin.resi.index.item.produk")}
                                                                     </Text>
                                                                 </Group>
                                                             )}
@@ -815,7 +817,7 @@ export default function OrderTracking() {
                                                 <Center py="xl">
                                                     <Loader size="sm" />
                                                     <Text ml="sm" size="sm" c="dimmed">
-                                                        Memuat lebih banyak transaksi...
+                                                        {t("admin.resi.index.memuat.lebih.banyak.transaksi")}
                                                     </Text>
                                                 </Center>
                                             )}
@@ -828,7 +830,7 @@ export default function OrderTracking() {
                                                             <Icon icon="mdi:check-all" width={24} />
                                                         </ThemeIcon>
                                                         <Text size="sm" c="dimmed">
-                                                            Semua transaksi telah dimuat
+                                                            {t("admin.resi.index.semua.transaksi.telah.dimuat")}
                                                         </Text>
                                                     </Stack>
                                                 </Center>
@@ -857,7 +859,7 @@ export default function OrderTracking() {
                                                         onClick={() => setSearchQuery('')}
                                                         leftSection={<Icon icon="mdi:close" />}
                                                     >
-                                                        Hapus Filter
+                                                        {t("admin.resi.index.hapus.filter")}
                                                     </Button>
                                                 )}
                                             </Stack>
@@ -895,8 +897,8 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:package" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Detail Order</Title>
-                                    <Text size="sm" c="dimmed">Konfirmasi detail order sebelum membuat tracking</Text>
+                                    <Title order={4} fw={600}>{t("admin.resi.index.detail.order")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.resi.index.konfirmasi.detail.order.sebelum.membuat.tracking")}</Text>
                                 </Box>
                             </Group>
 
@@ -904,25 +906,25 @@ export default function OrderTracking() {
                                 <Card withBorder p="lg" radius="md" bg="blue.0">
                                     <Stack gap="md">
                                         <Group justify="space-between">
-                                            <Text fw={500} size="sm" c="dimmed">Invoice</Text>
+                                            <Text fw={500} size="sm" c="dimmed">{t("admin.resi.index.invoice")}</Text>
                                             <Text fw={700} size="lg">{orderDetail.invoice_no}</Text>
                                         </Group>
                                         <Divider />
                                         <SimpleGrid cols={2} spacing="md">
                                             <Box>
-                                                <Text size="xs" c="dimmed">Order ID</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.resi.index.order.id")}</Text>
                                                 <Text fw={500}>#{orderDetail.order_id}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Customer</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.resi.index.customer")}</Text>
                                                 <Text fw={500}>{orderDetail.customer_name}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Tanggal Order</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.resi.index.tanggal.order")}</Text>
                                                 <Text fw={500}>{formatDate(orderDetail.order_date)}</Text>
                                             </Box>
                                             <Box>
-                                                <Text size="xs" c="dimmed">Total</Text>
+                                                <Text size="xs" c="dimmed">{t("admin.resi.index.total")}</Text>
                                                 <Text fw={700} c="blue" size="lg">
                                                     {formatCurrency(orderDetail.grandtotal || 0)}
                                                 </Text>
@@ -937,13 +939,13 @@ export default function OrderTracking() {
                                         onClick={() => setStep(2)}
                                         leftSection={<Icon icon="mdi:arrow-left" />}
                                     >
-                                        Kembali
+                                        {t("admin.resi.index.kembali")}
                                     </Button>
                                     <Button
                                         onClick={() => setStep(4)}
                                         rightSection={<Icon icon="mdi:arrow-right" />}
                                     >
-                                        Lanjut ke Form Tracking
+                                        {t("admin.resi.index.lanjut.ke.form.tracking")}
                                     </Button>
                                 </Group>
                             </Stack>
@@ -958,8 +960,8 @@ export default function OrderTracking() {
                                     <Icon icon="mdi:truck-delivery" />
                                 </ThemeIcon>
                                 <Box>
-                                    <Title order={4} fw={600}>Form Tracking</Title>
-                                    <Text size="sm" c="dimmed">Lengkapi data tracking untuk order ini</Text>
+                                    <Title order={4} fw={600}>{t("admin.resi.index.form.tracking")}</Title>
+                                    <Text size="sm" c="dimmed">{t("admin.resi.index.lengkapi.data.tracking.untuk.order.ini")}</Text>
                                 </Box>
                             </Group>
 
@@ -968,15 +970,15 @@ export default function OrderTracking() {
                                 <Paper withBorder p="md" bg="gray.0" radius="md">
                                     <Group justify="space-between">
                                         <Box>
-                                            <Text size="xs" c="dimmed">Invoice</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.resi.index.invoice")}</Text>
                                             <Text fw={600}>{orderDetail.invoice_no}</Text>
                                         </Box>
                                         <Box>
-                                            <Text size="xs" c="dimmed">Order ID</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.resi.index.order.id")}</Text>
                                             <Text fw={600}>#{orderDetail.order_id}</Text>
                                         </Box>
                                         <Box>
-                                            <Text size="xs" c="dimmed">Customer</Text>
+                                            <Text size="xs" c="dimmed">{t("admin.resi.index.customer")}</Text>
                                             <Text fw={600}>{orderDetail.customer_name}</Text>
                                         </Box>
                                     </Group>
@@ -986,16 +988,16 @@ export default function OrderTracking() {
                                     <Grid.Col span={6}>
                                         <TextInput
                                             withAsterisk
-                                            label="Courier Company"
-                                            placeholder="Contoh: JNE, J&T"
+                                            label={t("admin.resi.index.courier.company")}
+                                            placeholder={t("admin.resi.index.contoh.jne.j.t")}
                                             size="md"
                                             {...form.getInputProps('courier_company')}
                                         />
                                     </Grid.Col>
                                     <Grid.Col span={6}>
                                         <TextInput
-                                            label="Courier Service"
-                                            placeholder="e.g. REG"
+                                            label={t("admin.resi.index.courier.service")}
+                                            placeholder={t("admin.resi.index.e.g.reg")}
                                             size="md"
                                             {...form.getInputProps('courier_service')}
                                         />
@@ -1004,8 +1006,8 @@ export default function OrderTracking() {
 
                                 <TextInput
                                     withAsterisk
-                                    label="Resi Number (Airway Bill)"
-                                    placeholder="Enter Tracking Number"
+                                    label={t("admin.resi.index.resi.number.airway.bill")}
+                                    placeholder={t("admin.resi.index.enter.tracking.number")}
                                     size="md"
                                     {...form.getInputProps('resi_no')}
                                 />
@@ -1013,15 +1015,15 @@ export default function OrderTracking() {
                                 <Grid gutter="md">
                                     <Grid.Col span={6}>
                                         <TextInput
-                                            label="ETD (Estimation)"
-                                            placeholder="e.g. 1-2 hari"
+                                            label={t("admin.resi.index.etd.estimation")}
+                                            placeholder={t("admin.resi.index.e.g.1.2.hari")}
                                             size="md"
                                             {...form.getInputProps('etd')}
                                         />
                                     </Grid.Col>
                                     <Grid.Col span={6}>
                                         <TextInput
-                                            label="ETD Time"
+                                            label={t("admin.resi.index.etd.time")}
                                             type="time"
                                             size="md"
                                             {...form.getInputProps('etd_time')}
@@ -1030,8 +1032,8 @@ export default function OrderTracking() {
                                 </Grid>
 
                                 <TextInput
-                                    label="Delivery ID"
-                                    placeholder="e.g. DEL-123456"
+                                    label={t("admin.resi.index.delivery.id")}
+                                    placeholder={t("admin.resi.index.e.g.del.123456")}
                                     size="md"
                                     {...form.getInputProps('delivery_id')}
                                 />
@@ -1042,7 +1044,7 @@ export default function OrderTracking() {
                                         onClick={() => setStep(3)}
                                         leftSection={<Icon icon="mdi:arrow-left" />}
                                     >
-                                        Kembali
+                                        {t("admin.resi.index.kembali")}
                                     </Button>
                                     <Button
                                         loading={loading.includes('submittracking')}
@@ -1058,7 +1060,7 @@ export default function OrderTracking() {
                                         }}
                                         leftSection={<Icon icon="mdi:check" />}
                                     >
-                                        Update Tracking Info
+                                        {t("admin.resi.index.update.tracking.info")}
                                     </Button>
                                 </Group>
                             </Stack>

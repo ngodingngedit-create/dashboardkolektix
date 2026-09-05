@@ -245,6 +245,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 
 interface ScanItem {
     id: number;
@@ -261,6 +262,7 @@ interface ScanItem {
 
 const Merch = () => {
     const router = useRouter();
+    const { t } = useTranslation();
     const { collapse } = useSidebar();
     const videoRef = useRef<HTMLVideoElement>(null);
     let qrScanner = useRef<QrScanner | null>(null);
@@ -567,15 +569,15 @@ const Merch = () => {
 
     const getStatusText = (status: string) => {
         if (status === 'success') {
-            return activeTab === 'ticket' ? 'Check-in Berhasil' : 'Validasi Berhasil';
+            return activeTab === 'ticket' ? t('event.checkedInBadge') : t('event.validationSuccessful');
         }
         if (status === 'warning') {
-            return 'Sudah Check In';
+            return t('event.alreadyCheckedIn');
         }
         if (status === 'failed') {
-            return 'Ticket Tidak Valid';
+            return t('event.invalidTicket');
         }
-        return 'Diproses';
+        return t('event.processing');
     };
 
     const handleFetchQRCode = async (code: string) => {
@@ -602,20 +604,20 @@ const Merch = () => {
                     headers: { lgntkn: 'true' },
                     success: (data: any) => {
                         // ... existing success logic
-                        const message = data?.message || 'Check-in berhasil';
+                        const message = data?.message || t('event.validationSuccessful');
                         const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
                         const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
                         const scanDateTime = new Date().toISOString();
                         const newScan: ScanItem = {
                             id: Date.now(),
                             invoice_no: data?.data?.eticket_number || data?.data?.invitation_code || code,
-                            buyer_name: data?.buyer_name || data?.data?.has_identity?.full_name || data?.data?.guest_name || 'Pengunjung',
+                            buyer_name: data?.buyer_name || data?.data?.has_identity?.full_name || data?.data?.guest_name || t('event.visitor'),
                             event_name: data?.data?.has_event?.name || data?.data?.event_name || 'Event',
                             category_ticket: data?.data?.has_event_ticket ? `${data.data.has_event_ticket.ticket_category} - ${data.data.has_event_ticket.name}` : (data?.data?.ticket_category || data?.data?.invitation_type || 'Regular'),
                             total_qty: data?.data?.has_transaction?.total_qty || data?.data?.quantity || '1',
                             scan_date: scanDateTime,
                             status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
-                            message: isAlreadyCheckedIn ? 'Sudah Checkin' : message,
+                            message: isAlreadyCheckedIn ? t('event.alreadyCheckedInShort') : message,
                             type: activeTab
                         };
                         setScanHistory(prev => [newScan, ...prev]);
@@ -623,7 +625,7 @@ const Merch = () => {
                         setShowSuccessModal(true);
                     },
                     error: (err) => {
-                        const errorMessage = err?.response?.data?.message || err?.message || 'Terjadi kesalahan';
+                        const errorMessage = err?.response?.data?.message || err?.message || t('common.error');
                         const isAlreadyCheckedIn = errorMessage.toLowerCase().includes('sudah') || errorMessage.toLowerCase().includes('already');
                         const isInvalidTicket = errorMessage.toLowerCase().includes('tidak terdaftar') || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('tidak valid') || errorMessage.toLowerCase().includes('invalid');
                         const scanDateTime = new Date().toISOString();
@@ -631,12 +633,12 @@ const Merch = () => {
                             id: Date.now(),
                             invoice_no: code,
                             buyer_name: isAlreadyCheckedIn ? (err?.response?.data?.data?.buyer_name || err?.response?.data?.data?.has_identity?.full_name || 'N/A') : 'N/A',
-                            event_name: isAlreadyCheckedIn ? 'Sudah Checkin' : (isInvalidTicket ? 'Ticket tidak terdaftar' : 'Validasi Gagal'),
+                            event_name: isAlreadyCheckedIn ? t('event.alreadyCheckedInShort') : (isInvalidTicket ? t('event.ticketNotRegistered') : t('event.validationFailed')),
                             category_ticket: isAlreadyCheckedIn ? 'Warning' : 'Error',
                             total_qty: '0',
                             scan_date: scanDateTime,
                             status: isAlreadyCheckedIn ? 'warning' : 'failed',
-                            message: isAlreadyCheckedIn ? 'Sudah Checkin' : (isInvalidTicket ? 'Ticket tidak terdaftar' : errorMessage),
+                            message: isAlreadyCheckedIn ? t('event.alreadyCheckedInShort') : (isInvalidTicket ? t('event.ticketNotRegistered') : errorMessage),
                             type: activeTab
                         };
                         setScanHistory(prev => [newScan, ...prev]);
@@ -654,20 +656,20 @@ const Merch = () => {
                 });
                 // Handle success/error similar to fetch success...
                 const data = response.data;
-                const message = data?.message || 'Validasi berhasil';
+                const message = data?.message || t('event.validationSuccessful');
                 const isAlreadyCheckedIn = message.toLowerCase().includes('sudah') || message.toLowerCase().includes('already');
                 const isInvalidTicket = message.toLowerCase().includes('tidak terdaftar') || message.toLowerCase().includes('not found') || message.toLowerCase().includes('tidak valid') || message.toLowerCase().includes('invalid');
                 const scanDateTime = new Date().toISOString();
                 const newScan: ScanItem = {
                     id: Date.now(),
                     invoice_no: data?.data?.invitation_number || code,
-                    buyer_name: data?.data?.fullname || 'Pengunjung',
+                    buyer_name: data?.data?.fullname || t('event.visitor'),
                     event_name: data?.data?.event_invitation?.event?.name || 'Event',
                     category_ticket: data?.data?.event_invitation?.invitation_title || 'Regular',
                     total_qty: '1',
                     scan_date: scanDateTime,
                     status: isInvalidTicket ? 'failed' : (isAlreadyCheckedIn ? 'warning' : 'success'),
-                    message: isAlreadyCheckedIn ? 'Sudah Validasi' : message,
+                    message: isAlreadyCheckedIn ? t('event.alreadyCheckedInShort') : message,
                     type: activeTab
                 };
                 setScanHistory(prev => [newScan, ...prev]);
@@ -684,12 +686,12 @@ const Merch = () => {
                     id: Date.now(),
                     invoice_no: code,
                     buyer_name: 'N/A',
-                    event_name: 'Sudah Checkin',
+                    event_name: t('event.alreadyCheckedInShort'),
                     category_ticket: activeTab === 'invitation' ? 'Invitation' : 'Warning',
                     total_qty: '0',
                     scan_date: scanDateTime,
                     status: 'warning',
-                    message: 'Sudah Checkin',
+                    message: t('event.alreadyCheckedInShort'),
                     type: activeTab
                 };
                 setScanHistory(prev => [newScan, ...prev]);
@@ -735,14 +737,14 @@ const Merch = () => {
                     >
                         <FontAwesomeIcon icon={faArrowLeft} />
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">Check In</h1>
+                    <h1 className="text-xl font-bold text-gray-900">{t("event.checkIn")}</h1>
                 </div>
             </div>
             {/* Header and Tabs */}
             <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                     <div className="flex flex-col w-full sm:w-auto">
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">Pilih Event</span>
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectEvent")}</span>
                         <Select
                             value={selectedEvent ? String(selectedEvent) : null}
                             onChange={(val) => {
@@ -751,7 +753,7 @@ const Merch = () => {
                                 }
                             }}
                             data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
-                            placeholder={eventList.length === 0 ? "Memuat event..." : "Pilih Event"}
+                            placeholder={eventList.length === 0 ? t("event.loadingEvents") : t("event.selectEvent")}
                             disabled={eventList.length === 0}
                             searchable
                             style={{ width: 220 }}
@@ -764,13 +766,13 @@ const Merch = () => {
 
                     {activeTab === 'ticket' && selectedEvent && (
                         <div className="flex flex-col w-full sm:w-auto">
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">Pilih Tiket</span>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectTicket")}</span>
                             <Select
                                 value={selectedTicket}
                                 onChange={(val) => {
                                     setSelectedTicket(val || 'all');
                                 }}
-                                data={[{ value: 'all', label: 'Semua Tiket' }, ...ticketList]}
+                                data={[{ value: 'all', label: t("event.allTicketsOption") }, ...ticketList]}
                                 disabled={ticketList.length === 0}
                                 searchable
                                 style={{ width: 180 }}
@@ -785,11 +787,11 @@ const Merch = () => {
                     {selectedEvent && (
                         <div className="flex gap-3">
                             <div className="flex flex-col items-center bg-gray-50 border border-light-grey rounded-md px-3 py-1">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total {activeTab === 'ticket' ? 'Tiket Paid' : 'Invitation'}</span>
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("event.total")} {activeTab === 'ticket' ? t("event.paidTickets") : t("event.invitation")}</span>
                                 <span className="text-sm font-bold text-gray-800">{isLoadingStats ? '...' : stats.total}</span>
                             </div>
                             <div className="flex flex-col items-center bg-green-50 border border-green-200 rounded-md px-3 py-1">
-                                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Total Checkin</span>
+                                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">{t("event.totalCheckin")}</span>
                                 <span className="text-sm font-bold text-green-700">{isLoadingStats ? '...' : stats.checkin}</span>
                             </div>
                         </div>
@@ -839,13 +841,14 @@ const Merch = () => {
                     {/* Bagian Scanner */}
                     <div className="lg:w-[60%]">
                         <div className="bg-white rounded-xl shadow-sm border border-primary-light-200 p-0 sm:p-6 m-0 sm:m-4 overflow-hidden relative min-h-[500px] lg:min-h-[calc(100vh-200px)] flex flex-col">
-                            <div className="flex items-center gap-2 mb-4 p-6 sm:p-0">
+                            {/* Judul Scan — disembunyikan sesuai permintaan, diganti label pada grup tombol di bawah */}
+                            <div className="hidden items-center gap-2 mb-4 p-6 sm:p-0">
                                 <FontAwesomeIcon
                                     icon={activeTab === 'ticket' ? faTicket : faEnvelope}
                                     className="text-primary text-base"
                                 />
                                 <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                    Scan {activeTab === 'ticket' ? 'Ticket' : 'Invitation'}
+                                    {t("event.scan", { type: activeTab === 'ticket' ? 'Ticket' : 'Invitation' })}
                                 </h2>
                             </div>
 
@@ -887,14 +890,14 @@ const Merch = () => {
                                                 <div className="absolute inset-0 bg-black bg-opacity-80 z-20 flex items-center justify-center p-4">
                                                     <div className="bg-white p-6 rounded-xl text-center max-w-md w-full">
                                                         <Icon icon="ph:camera-slash" className="text-4xl mb-3 text-red-500 mx-auto" />
-                                                        <p className="font-semibold mb-2">Kamera Tidak Tersedia</p>
-                                                        <p className="text-sm text-gray-600 mb-4">Aktifkan akses kamera untuk memindai QR code</p>
+                                                        <p className="font-semibold mb-2">{t("event.cameraNotAvailable")}</p>
+                                                        <p className="text-sm text-gray-600 mb-4">{t("event.enableCamera")}</p>
                                                         <Button
                                                             onClick={() => window.location.reload()}
                                                             fullWidth
                                                             className="!bg-primary !text-white"
                                                         >
-                                                            Coba Lagi
+                                                            {t("event.tryAgain")}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -939,20 +942,20 @@ const Merch = () => {
                                     <form onSubmit={handleManualSubmit} className="px-2 pb-4">
                                         <div className="mb-4">
                                             <label className="block text-gray-700 text-sm font-medium mb-1.5">
-                                                {activeTab === 'ticket' ? 'Kode Tiket / Invoice' : 'Kode Invitation'}
+                                                {activeTab === 'ticket' ? t('event.ticketCodeLabel') : t('event.invitationCodeLabel')}
                                             </label>
                                             <input
                                                 type="text"
                                                 className="border-2 border-primary-light-200 rounded-lg w-full py-2 px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                                                placeholder={activeTab === 'ticket' ? "Masukkan kode tiket" : "Masukkan kode undangan"}
+                                                placeholder={activeTab === 'ticket' ? t('event.enterTicketCode') : t('event.enterInvitationCode')}
                                                 value={isAutoInputActive ? '' : manualInput}
                                                 onChange={(e) => setManualInput(e.target.value)}
                                                 autoFocus
                                             />
                                             <p className="text-xs text-gray-500 mt-1.5">
                                                 {activeTab === 'ticket'
-                                                    ? 'Masukkan nomor invoice atau kode tiket untuk diproses scanner'
-                                                    : 'Masukkan kode undangan untuk divalidasi oleh scanner'}
+                                                    ? t('event.ticketCodeDesc')
+                                                    : t('event.invitationCodeDesc')}
                                             </p>
                                         </div>
                                         {!showSuccessModal && (
@@ -976,7 +979,7 @@ const Merch = () => {
                                                     disabled={!manualInput.trim() || loading === 'scan'}
                                                     className="!bg-primary !text-white !py-2 !rounded-lg !font-medium w-full md:w-auto md:min-w-[160px]"
                                                 >
-                                                    {loading === 'scan' ? 'Memproses...' : 'Scan / Validasi'}
+                                                    {loading === 'scan' ? 'Memproses...' : t('event.scanValidate')}
                                                 </Button>
                                             </div>
                                         )}
@@ -1002,8 +1005,8 @@ const Merch = () => {
                                                 (currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-red-700')
                                             }`}>
                                             {currentScanData.status === 'success'
-                                                ? 'Berhasil Checkin!'
-                                                : (currentScanData.status === 'warning' ? 'Sudah Checkin' : 'Gagal!')}
+                                                ? t('event.checkinSuccess')
+                                                : (currentScanData.status === 'warning' ? t('event.alreadyCheckedInShort') : t('event.failed'))}
                                         </p>
 
                                         <div className={`text-left mb-4 p-3 rounded-lg border ${currentScanData.status === 'success' ? 'bg-gray-50 border-light-grey' : (currentScanData.status === 'warning' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200')}`}>
@@ -1011,7 +1014,7 @@ const Merch = () => {
                                                 <div className="space-y-2">
                                                     <p className={`text-sm font-medium ${currentScanData.status === 'warning' ? 'text-yellow-800' : 'text-primary'}`}>{currentScanData.invoice_no}</p>
                                                     <div className="grid grid-cols-2 gap-1 text-sm">
-                                                        <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>{activeTab === 'ticket' ? 'Pengunjung:' : 'Nama:'}</span>
+                                                        <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>{activeTab === 'ticket' ? t('event.visitorLabel') : t('event.nameLabel')}</span>
                                                         <span className={`font-medium ${currentScanData.status === 'warning' ? 'text-yellow-900' : 'text-gray-900'}`}>{currentScanData.buyer_name}</span>
 
                                                         <span className={currentScanData.status === 'warning' ? 'text-yellow-700' : 'text-gray-600'}>Event:</span>
@@ -1031,8 +1034,8 @@ const Merch = () => {
                                         {currentScanData.status === 'success' && (
                                             <p className="text-sm text-gray-600 mb-4">
                                                 {activeTab === 'ticket'
-                                                    ? 'Tiket berhasil divalidasi. Pengunjung dapat memasuki venue.'
-                                                    : 'Undangan berhasil divalidasi.'}
+                                                    ? t('event.ticketValidatedDesc')
+                                                    : t('event.invitationValidatedDesc')}
                                             </p>
                                         )}
 
@@ -1041,13 +1044,13 @@ const Merch = () => {
                                                 onClick={() => setShowSuccessModal(false)}
                                                 className="!bg-gray-100 !text-gray-700 !py-2 !rounded-lg hover:!bg-gray-200 uppercase text-xs font-bold tracking-wider flex-1"
                                             >
-                                                Tutup
+                                                {t('common.close')}
                                             </Button>
                                             <Button
                                                 onClick={handleScanAgain}
                                                 className="!bg-primary !text-white !py-2 !rounded-lg shadow-md uppercase text-xs font-bold tracking-wider flex-1"
                                             >
-                                                Scan Ulang
+                                                {t('event.scanAgain')}
                                             </Button>
                                         </div>
                                     </div>
@@ -1090,7 +1093,7 @@ const Merch = () => {
                                 <div className="flex items-center gap-2">
                                     <FontAwesomeIcon icon={faHistory} className="text-primary text-base" />
                                     <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Riwayat {activeTab === 'ticket' ? 'Ticket' : 'Invitation'}
+                                        {t('event.ticketHistory', { type: activeTab === 'ticket' ? 'Ticket' : 'Invitation' })}
                                     </h2>
                                 </div>
                                 {filteredHistory.length > 0 && (
@@ -1108,12 +1111,12 @@ const Merch = () => {
                                             className="text-gray-300 text-5xl mb-4"
                                         />
                                         <h3 className="text-lg font-medium text-gray-700 mb-2">
-                                            Belum ada riwayat {activeTab === 'ticket' ? 'ticket' : 'invitation'}
+                                            {t('event.noHistory', { type: activeTab === 'ticket' ? 'ticket' : 'invitation' })}
                                         </h3>
                                         <p className="text-gray-500 text-sm max-w-md mx-auto">
                                             {activeTab === 'ticket'
-                                                ? 'Scan tiket menggunakan kamera atau masukkan kode tiket secara manual'
-                                                : 'Scan undangan menggunakan kamera atau masukkan kode undangan secara manual'}
+                                                ? t('event.scanTicketDesc')
+                                                : t('event.scanInvitationDesc')}
                                         </p>
                                     </div>
                                 ) : (
@@ -1156,7 +1159,7 @@ const Merch = () => {
                                                         </p>
                                                         <p className={`text-xs flex items-center gap-1 ${item.status === 'failed' ? 'text-red-600' : 'text-gray-600'}`}>
                                                             <Icon icon="ph:ticket" className="text-xs" />
-                                                            {item.total_qty} {item.type === 'ticket' ? 'tiket' : 'undangan'}
+                                                            {t('event.ticketCountUnit', { count: parseInt(item.total_qty, 10), type: item.type === 'ticket' ? 'tiket' : 'undangan' })}
                                                         </p>
                                                     </div>
 

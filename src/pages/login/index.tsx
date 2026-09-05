@@ -1575,7 +1575,7 @@ const Auth = () => {
                 radius={999}
                 className="border border-[#e4e4e7] hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center"
               >
-                <Icon icon={i18n.language?.toLowerCase() == "id" ? "twemoji:flag-indonesia" : "flag:us-4x3"} className={`${i18n.language?.toLowerCase() == "id" ? "text-[24px]" : "text-[18px]"}`} />
+                <Icon icon={i18n.language?.toLowerCase() == "id" ? "twemoji:flag-indonesia" : "flag:us-4x3"} className={`text-[24px] object-cover rounded-[2px]`} />
               </Card>
             </Menu.Target>
             <Menu.Dropdown w={150}>
@@ -1588,7 +1588,7 @@ const Auth = () => {
               </Menu.Item>
               <Menu.Item bg={i18n.language?.toLowerCase() == "en" ? "gray.1" : undefined} onClick={() => i18n.changeLanguage("en")}>
                 <Flex align="center" gap={10}>
-                  <Icon icon="flag:us-4x3" className={`text-[16px]`} />
+                  <Icon icon="flag:us-4x3" className={`text-[24px] object-cover rounded-[2px]`} />
                   <Text>English</Text>
                 </Flex>
               </Menu.Item>

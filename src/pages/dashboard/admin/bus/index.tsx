@@ -14,6 +14,7 @@ import moment from "moment";
 import { useRouter } from "next/router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
@@ -76,6 +77,7 @@ const emptyForm = {
 };
 
 export default function AdminBusManagement() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<BusItem[]>([]);
@@ -196,7 +198,7 @@ export default function AdminBusManagement() {
     modals.openConfirmModal({
       title: "Hapus Bus",
       centered: true,
-      children: <Text size="sm">Yakin ingin menghapus bus <b>{name}</b>? Tindakan ini tidak dapat dibatalkan.</Text>,
+      children: <Text size="sm">{t("admin.bus.index.yakin.ingin.menghapus.bus")} <b>{name}</b>{t("admin.bus.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
       labels: { confirm: "Hapus", cancel: "Batal" },
       confirmProps: { color: "red" },
       onConfirm: async () => {
@@ -232,16 +234,16 @@ export default function AdminBusManagement() {
           <button
             onClick={() => router.push("/dashboard/admin")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.bus.index.kembali.ke.dashboard.admin")}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <Stack gap={4}>
             <Text size="1.7rem" fw={700} style={{ color: "#0B387C", display: "inline-flex", alignItems: "center", gap: 8 }}>
               <Icon icon="ph:van-bold" />
-              List Bus
+              {t("admin.bus.index.list.bus")}
             </Text>
-            <Text size="sm" c="gray">Kelola armada bus untuk layanan shuttle</Text>
+            <Text size="sm" c="gray">{t("admin.bus.index.kelola.armada.bus.untuk.layanan.shuttle")}</Text>
           </Stack>
         </Flex>
         <ButtonM
@@ -251,20 +253,20 @@ export default function AdminBusManagement() {
           size="md"
           onClick={handleOpenCreate}
         >
-          Tambah Bus
+          {t("admin.bus.index.tambah.bus")}
         </ButtonM>
       </Flex>
 
       <div className="mt-4">
         <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">Total: <b>{total}</b> bus</Text>
+          <Text size="sm" fw={600} c="gray.7">{t("admin.bus.index.total")} <b>{total}</b> {t("admin.bus.index.bus")}</Text>
           <div style={{ width: 280 }}>
             <Input
               isClearable
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               onClear={() => setSearch("")}
-              placeholder="Cari nama, kode, atau plat..."
+              placeholder={t("admin.bus.index.cari.nama.kode.atau.plat")}
               size="sm"
               startContent={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
               classNames={{ input: "bg-[#f1f3f5] border-none" }}
@@ -283,7 +285,7 @@ export default function AdminBusManagement() {
           ) : sortedData.length === 0 ? (
             <div className="col-span-full border border-primary-light-200 flex flex-col items-center justify-center min-h-[40vh] rounded-md gap-3 text-center text-dark px-5">
               <Icon icon="ph:van-duotone" style={{ fontSize: 40, color: "#ccc" }} />
-              <h3 className="text-xl font-semibold">Tidak ada data bus</h3>
+              <h3 className="text-xl font-semibold">{t("admin.bus.index.tidak.ada.data.bus")}</h3>
             </div>
           ) : (
             sortedData.map((item) => (
@@ -305,7 +307,7 @@ export default function AdminBusManagement() {
                       {item.bus_type?.replace("_", " ")}
                     </Badge>
                   </div>
-                  <p className="text-grey text-sm mt-1">{item.seat_layout?.replace("_", "-")} layout • <b className="text-primary-base">{item.total_seat}</b> kursi</p>
+                  <p className="text-grey text-sm mt-1">{item.seat_layout?.replace("_", "-")} {t("admin.bus.index.layout")} <b className="text-primary-base">{item.total_seat}</b> {t("admin.bus.index.kursi")}</p>
                   <Group gap={4} wrap="wrap" mt={8}>
                     {(Array.isArray(item.facilities) ? item.facilities : []).slice(0, 3).map((f, idx) => (
                       <Badge key={idx} size="xs" variant="outline" color="gray">{f}</Badge>
@@ -316,17 +318,17 @@ export default function AdminBusManagement() {
                   </Group>
                   <div className="mt-4 pt-3 border-t-1.5 border-dashed border-primary-light-200 flex items-center justify-end">
                     <Group gap={4}>
-                      <Tooltip label="Lihat Detail">
+                      <Tooltip label={t("admin.bus.index.lihat.detail")}>
                         <ActionIcon variant="transparent" color="cyan" onClick={() => handleOpenView(item)}>
                           <Icon icon="ph:eye" style={{ fontSize: 18 }} />
                         </ActionIcon>
                       </Tooltip>
-                      <Tooltip label="Edit Bus">
+                      <Tooltip label={t("admin.bus.index.edit.bus")}>
                         <ActionIcon variant="transparent" color="gray" onClick={() => handleOpenEdit(item)}>
                           <Icon icon="ph:pencil-simple" style={{ fontSize: 18 }} />
                         </ActionIcon>
                       </Tooltip>
-                      <Tooltip label="Hapus Bus">
+                      <Tooltip label={t("admin.bus.index.hapus.bus")}>
                         <ActionIcon variant="transparent" color="red" onClick={() => handleDelete(item.id, item.bus_name)}>
                           <Icon icon="ph:trash" style={{ fontSize: 18 }} />
                         </ActionIcon>
@@ -366,27 +368,27 @@ export default function AdminBusManagement() {
         <Stack gap="md">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <TextInput
-              label="Nama Bus"
-              placeholder="Hiace Premium Jakarta"
+              label={t("admin.bus.index.nama.bus")}
+              placeholder={t("admin.bus.index.hiace.premium.jakarta")}
               value={form.bus_name}
               onChange={e => setForm(f => ({ ...f, bus_name: e.target.value }))}
               required
             />
             <TextInput
-              label="Kode Bus"
-              placeholder="HC001"
+              label={t("admin.bus.index.kode.bus")}
+              placeholder={t("admin.bus.index.hc001")}
               value={form.bus_code}
               onChange={e => setForm(f => ({ ...f, bus_code: e.target.value }))}
             />
             <TextInput
-              label="Nomor Plat"
-              placeholder="B 1234 XYZ"
+              label={t("admin.bus.index.nomor.plat")}
+              placeholder={t("admin.bus.index.b.1234.xyz")}
               value={form.plate_number}
               onChange={e => setForm(f => ({ ...f, plate_number: e.target.value }))}
               required
             />
             <NumberInput
-              label="Operator ID"
+              label={t("admin.bus.index.operator.id")}
               value={form.operator_id}
               onChange={v => setForm(f => ({ ...f, operator_id: Number(v) }))}
               min={1}
@@ -395,7 +397,7 @@ export default function AdminBusManagement() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
-              <Text size="xs" fw={700} c="gray.6" mb={4} className="uppercase">Tipe Bus</Text>
+              <Text size="xs" fw={700} c="gray.6" mb={4} className="uppercase">{t("admin.bus.index.tipe.bus")}</Text>
               <select
                 value={form.bus_type}
                 onChange={e => setForm(f => ({ ...f, bus_type: e.target.value }))}
@@ -405,7 +407,7 @@ export default function AdminBusManagement() {
               </select>
             </div>
             <div>
-              <Text size="xs" fw={700} c="gray.6" mb={4} className="uppercase">Layout Kursi</Text>
+              <Text size="xs" fw={700} c="gray.6" mb={4} className="uppercase">{t("admin.bus.index.layout.kursi")}</Text>
               <select
                 value={form.seat_layout}
                 onChange={e => setForm(f => ({ ...f, seat_layout: e.target.value }))}
@@ -415,7 +417,7 @@ export default function AdminBusManagement() {
               </select>
             </div>
             <NumberInput
-              label="Total Kursi"
+              label={t("admin.bus.index.total.kursi")}
               value={form.total_seat}
               onChange={v => setForm(f => ({ ...f, total_seat: Number(v) }))}
               min={1}
@@ -423,8 +425,8 @@ export default function AdminBusManagement() {
           </div>
 
           <MultiSelect
-            label="Fasilitas"
-            placeholder="Pilih fasilitas"
+            label={t("admin.bus.index.fasilitas")}
+            placeholder={t("admin.bus.index.pilih.fasilitas")}
             data={facilitiesOptions}
             value={form.facilities}
             onChange={v => setForm(f => ({ ...f, facilities: v }))}
@@ -434,7 +436,7 @@ export default function AdminBusManagement() {
 
           <Group align="center">
             <Switch
-              label="Status Aktif"
+              label={t("admin.bus.index.status.aktif")}
               checked={form.status === 1}
               onChange={e => setForm(f => ({ ...f, status: e.currentTarget.checked ? 1 : 0 }))}
               color="blue"
@@ -442,7 +444,7 @@ export default function AdminBusManagement() {
           </Group>
 
           <Group justify="flex-end" mt="md" gap={10}>
-            <ButtonM variant="subtle" color="gray" onClick={() => setOpened(false)}>Batal</ButtonM>
+            <ButtonM variant="subtle" color="gray" onClick={() => setOpened(false)}>{t("admin.bus.index.batal")}</ButtonM>
             <ButtonM
               color="blue"
               leftSection={<Icon icon={isEdit ? "ph:floppy-disk" : "ph:plus-bold"} />}
@@ -459,7 +461,7 @@ export default function AdminBusManagement() {
       <Modal
         opened={viewOpened}
         onClose={() => setViewOpened(false)}
-        title={<Text fw={700} size="lg" c="#0B387C">Detail Bus</Text>}
+        title={<Text fw={700} size="lg" c="#0B387C">{t("admin.bus.index.detail.bus")}</Text>}
         size="md"
         centered
         padding="xl"
@@ -487,23 +489,23 @@ export default function AdminBusManagement() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Tipe</Text>
+                <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.bus.index.tipe")}</Text>
                 <Badge variant="light" color={selectedItem.bus_type === "MINIBUS" ? "violet" : selectedItem.bus_type === "MEDIUM_BUS" ? "blue" : "teal"} size="sm">
                   {selectedItem.bus_type?.replace("_", " ")}
                 </Badge>
               </div>
               <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Layout</Text>
+                <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.bus.index.layout.2")}</Text>
                 <Text size="sm" fw={600}>{selectedItem.seat_layout?.replace("_", "-")}</Text>
               </div>
               <div>
-                <Text size="xs" fw={700} c="dimmed" className="uppercase">Total Kursi</Text>
-                <Text size="sm" fw={700} c="#0B387C">{selectedItem.total_seat} kursi</Text>
+                <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.bus.index.total.kursi")}</Text>
+                <Text size="sm" fw={700} c="#0B387C">{selectedItem.total_seat} {t("admin.bus.index.kursi")}</Text>
               </div>
             </div>
 
             <div>
-              <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={6}>Fasilitas</Text>
+              <Text size="xs" fw={700} c="dimmed" className="uppercase" mb={6}>{t("admin.bus.index.fasilitas")}</Text>
               <Group gap={6}>
                 {(Array.isArray(selectedItem.facilities) ? selectedItem.facilities : []).map((f, i) => (
                   <Badge key={i} size="sm" variant="outline" color="gray">{f}</Badge>
@@ -512,17 +514,17 @@ export default function AdminBusManagement() {
             </div>
 
             {selectedItem.created_at && (
-              <Text size="xs" c="dimmed">Dibuat: {moment(selectedItem.created_at).format("DD MMM YYYY HH:mm")}</Text>
+              <Text size="xs" c="dimmed">{t("admin.bus.index.dibuat")} {moment(selectedItem.created_at).format("DD MMM YYYY HH:mm")}</Text>
             )}
 
             <Group justify="flex-end" mt="xs">
-              <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>Tutup</ButtonM>
+              <ButtonM variant="subtle" color="gray" onClick={() => setViewOpened(false)}>{t("admin.bus.index.tutup")}</ButtonM>
               <ButtonM
                 color="indigo"
                 leftSection={<Icon icon="ph:pencil-simple" />}
                 onClick={() => { setViewOpened(false); handleOpenEdit(selectedItem); }}
               >
-                Edit
+                {t("admin.bus.index.edit")}
               </ButtonM>
             </Group>
           </Stack>

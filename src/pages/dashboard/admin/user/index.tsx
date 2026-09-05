@@ -9,6 +9,7 @@ import { Icon } from "@iconify/react";
 import { useDisclosure, useListState, useDebouncedValue } from "@mantine/hooks";
 import moment from "moment";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -71,6 +72,7 @@ interface CreatorProps {
 }
 
 export default function KelolaUser() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<CreatorProps[]>([]);
@@ -543,14 +545,14 @@ export default function KelolaUser() {
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
       <Flex align="center" gap={15}>
-        <Tooltip label="Kembali">
+        <Tooltip label={t("admin.user.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
             <Icon icon="mdi:arrow-left" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit User" : "Tambah User Baru"}</Text>
-          <Text size="xs" c="dimmed">Isi form di bawah untuk mengelola data user</Text>
+          <Text size="xs" c="dimmed">{t("admin.user.index.isi.form.di.bawah.untuk.mengelola.data.user")}</Text>
         </Stack>
       </Flex>
 
@@ -558,20 +560,20 @@ export default function KelolaUser() {
         <Card withBorder padding="xl" radius="md" shadow="sm">
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
-            <Text fw={600} size="lg">Data User</Text>
+            <Text fw={600} size="lg">{t("admin.user.index.data.user")}</Text>
             <Grid>
               <Grid.Col span={6}>
-                <TextInput label="Nama Lengkap" placeholder="Contoh: John Doe" required {...form.getInputProps("name")} />
+                <TextInput label={t("admin.user.index.nama.lengkap")} placeholder={t("admin.user.index.contoh.john.doe")} required {...form.getInputProps("name")} />
               </Grid.Col>
               <Grid.Col span={6}>
-                <TextInput label="Email" placeholder="Contoh: user@example.com" required type="email" {...form.getInputProps("email")} />
+                <TextInput label={t("admin.user.index.email")} placeholder={t("admin.user.index.contoh.user.example.com")} required type="email" {...form.getInputProps("email")} />
               </Grid.Col>
               <Grid.Col span={6}>
-                <TextInput label="Nomor Telepon" placeholder="Contoh: 081234567890" {...form.getInputProps("phone")} />
+                <TextInput label={t("admin.user.index.nomor.telepon")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone")} />
               </Grid.Col>
               <Grid.Col span={6}>
                 <Select
-                  label="Status Verifikasi User"
+                  label={t("admin.user.index.status.verifikasi.user")}
                   data={[
                     { value: "1", label: "Terverifikasi" },
                     { value: "0", label: "Belum Terverifikasi" },
@@ -583,7 +585,7 @@ export default function KelolaUser() {
             </Grid>
 
             <Switch
-              label="Jadikan sebagai Creator"
+              label={t("admin.user.index.jadikan.sebagai.creator")}
               description="Jika aktif, user ini akan memiliki akses sebagai creator/event organizer"
               checked={form.values.is_creator === 1}
               onChange={(event) => form.setFieldValue("is_creator", event.currentTarget.checked ? 1 : 0)}
@@ -593,26 +595,26 @@ export default function KelolaUser() {
             {form.values.is_creator === 1 && (
               <>
                 <Divider my="sm" />
-                <Text fw={600} size="lg">Data Creator</Text>
-                <Text size="sm" c="dimmed">Isi data berikut jika user ini juga berperan sebagai creator/event organizer</Text>
+                <Text fw={600} size="lg">{t("admin.user.index.data.creator")}</Text>
+                <Text size="sm" c="dimmed">{t("admin.user.index.isi.data.berikut.jika.user.ini.juga.berperan.sebagai.creator.event.org")}</Text>
 
                 <Grid>
                   <Grid.Col span={6}>
-                    <TextInput label="Nama Event Organizer" placeholder="Masukkan nama event organizer" {...form.getInputProps("name_event_organizer")} />
+                    <TextInput label={t("admin.user.index.nama.event.organizer")} placeholder={t("admin.user.index.masukkan.nama.event.organizer")} {...form.getInputProps("name_event_organizer")} />
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <TextInput label="Lokasi" placeholder="Contoh: Jakarta" {...form.getInputProps("location")} />
+                    <TextInput label={t("admin.user.index.lokasi")} placeholder={t("admin.user.index.contoh.jakarta")} {...form.getInputProps("location")} />
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <TextInput label="Nomor Telepon Creator" placeholder="Contoh: 081234567890" {...form.getInputProps("phone_number")} />
+                    <TextInput label={t("admin.user.index.nomor.telepon.creator")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone_number")} />
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <TextInput label="Website" placeholder="Contoh: https://example.com" {...form.getInputProps("website")} />
+                    <TextInput label={t("admin.user.index.website")} placeholder={t("admin.user.index.contoh.https.example.com")} {...form.getInputProps("website")} />
                   </Grid.Col>
                 </Grid>
 
                 <Select
-                  label="Status Creator"
+                  label={t("admin.user.index.status.creator")}
                   data={[
                     { value: "active", label: "Aktif" },
                     { value: "inactive", label: "Nonaktif" },
@@ -621,11 +623,11 @@ export default function KelolaUser() {
                   {...form.getInputProps("status")}
                 />
 
-                <Textarea label="Deskripsi Creator" placeholder="Masukkan deskripsi tentang creator" autosize minRows={2} {...form.getInputProps("description")} />
+                <Textarea label={t("admin.user.index.deskripsi.creator")} placeholder={t("admin.user.index.masukkan.deskripsi.tentang.creator")} autosize minRows={2} {...form.getInputProps("description")} />
 
                 <FileInput
-                  label="Logo/Gambar Creator"
-                  placeholder="Pilih file gambar"
+                  label={t("admin.user.index.logo.gambar.creator")}
+                  placeholder={t("admin.user.index.pilih.file.gambar")}
                   accept="image/*"
                   onChange={(file) => form.setFieldValue("image", file)}
                   clearable
@@ -639,7 +641,7 @@ export default function KelolaUser() {
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} disabled={loading.includes("submit")}>
-              Batal
+              {t("admin.user.index.batal")}
             </Button>
             <Button type="submit" form="user-form" color="blue" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan User"}
@@ -659,13 +661,13 @@ export default function KelolaUser() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.user.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" className="text-lg" />
           </button>
           <Stack gap={2}>
-            <Text size="1.8rem" fw={600} c="black">Kelola User</Text>
-            <Text size="sm" c="black">Daftar semua user kolektix</Text>
+            <Text size="1.8rem" fw={600} c="black">{t("admin.user.index.kelola.user")}</Text>
+            <Text size="sm" c="black">{t("admin.user.index.daftar.semua.user.kolektix")}</Text>
           </Stack>
         </Flex>
         <Button 
@@ -674,7 +676,7 @@ export default function KelolaUser() {
           color="indigo"
           radius="md"
         >
-          Tambah User
+          {t("admin.user.index.tambah.user")}
         </Button>
       </Flex>
 
@@ -689,9 +691,9 @@ export default function KelolaUser() {
       >
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.user.index.pencarian")}</Text>
             <TextInput 
-              placeholder="Cari user (nama, email)..." 
+              placeholder={t("admin.user.index.cari.user.nama.email")} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
@@ -744,7 +746,7 @@ export default function KelolaUser() {
                   <td colSpan={7} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:user-circle-minus" className="text-5xl text-gray-300" />
-                      <Text c="dimmed" fw={500}>Data user tidak ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("admin.user.index.data.user.tidak.ditemukan")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -772,7 +774,7 @@ export default function KelolaUser() {
                         <Stack gap={0}>
                           <Text size="sm" fw={600} c="gray.8">{item.has_user?.name || "-"}</Text>
                           <Text size="xs" c="dimmed">{item.has_user?.email || ""}</Text>
-                          <Text size="xs" c="indigo.4">ID: {item.user_id || "-"}</Text>
+                          <Text size="xs" c="indigo.4">{t("admin.user.index.id")} {item.user_id || "-"}</Text>
                         </Stack>
                       </Group>
                     </td>
@@ -801,7 +803,7 @@ export default function KelolaUser() {
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
-                        <Tooltip label="Edit Data" withArrow>
+                        <Tooltip label={t("admin.user.index.edit.data")} withArrow>
                           <ActionIcon 
                             variant="filled" 
                             color="indigo" 
@@ -811,7 +813,7 @@ export default function KelolaUser() {
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus User" withArrow>
+                        <Tooltip label={t("admin.user.index.hapus.user")} withArrow>
                           <ActionIcon 
                             variant="filled" 
                             color="red" 

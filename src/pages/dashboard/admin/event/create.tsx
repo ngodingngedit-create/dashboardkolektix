@@ -30,6 +30,7 @@ import Seatmap, { defaultSeatmapData } from "@/components/Seatmap";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Modal as ModalM } from "@mantine/core";
 import { Context } from "@/pages/dashboard/create-event";
+import { useTranslation } from "react-i18next";
 
 const option = Array.from({ length: 10 }, (_, i) => ({ key: i + 1, label: `${i + 1} Tiket` }));
 
@@ -53,6 +54,7 @@ interface ErrorResponse {
 
 
 const CreateEventAdmin = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [ticket, setTicket] = useState<EventTicket[]>([]);
   const [form, setForm] = useState<any>({
@@ -370,8 +372,8 @@ const CreateEventAdmin = () => {
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold">Tambah Event Baru (Admin)</h1>
-            <p className="text-grey">Lengkapi form dibawah ini untuk membuat event baru sebagai admin</p>
+            <h1 className="text-2xl font-bold">{t("admin.event.create.tambah.event.baru.admin")}</h1>
+            <p className="text-grey">{t("admin.event.create.lengkapi.form.dibawah.ini.untuk.membuat.event.baru.sebagai.admin")}</p>
           </div>
         </div>
 
@@ -380,20 +382,20 @@ const CreateEventAdmin = () => {
             <label className="w-full border-2 border-primary-light-200 rounded-lg border-dashed bg-chat flex flex-col items-center justify-center h-72 gap-4 cursor-pointer">
               <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
               {image ? (
-                <Image src={image} alt="image" className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} />
+                <Image src={image} alt={t("admin.event.create.image")} className="object-contain" width={0} height={0} style={{ width: "100%", height: "100%" }} />
               ) : (
                 <>
-                  <Image src={imagePlus} alt="image-plus" />
-                  <h3 className="font-semibold text-medium text-center">Unggah gambar/poster/banner</h3>
-                  <p className="text-grey text-center text-sm px-8">Direkomendasikan ukuran 724 x 340px</p>
+                  <Image src={imagePlus} alt={t("admin.event.create.image.plus")} />
+                  <h3 className="font-semibold text-medium text-center">{t("admin.event.create.unggah.gambar.poster.banner")}</h3>
+                  <p className="text-grey text-center text-sm px-8">{t("admin.event.create.direkomendasikan.ukuran.724.x.340px")}</p>
                 </>
               )}
             </label>
 
             <div className="mt-8">
               <Select
-                label="Pilih Penyelenggara (Creator)"
-                placeholder="Cari creator..."
+                label={t("admin.event.create.pilih.penyelenggara.creator")}
+                placeholder={t("admin.event.create.cari.creator")}
                 variant="bordered"
                 radius="sm"
                 className="mb-4"
@@ -408,7 +410,7 @@ const CreateEventAdmin = () => {
               </Select>
               {error?.creator_id && <p className="text-danger text-xs mt-1">{error.creator_id[0]}</p>}
 
-              <InputField type="text" placeholder="Nama Event" fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
+              <InputField type="text" placeholder={t("admin.event.create.nama.event")} fullWidth value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} />
               {error?.name && <p className="text-danger text-xs mt-1">{error.name[0]}</p>}
             </div>
 
@@ -416,7 +418,7 @@ const CreateEventAdmin = () => {
               <TagsInput
                 multiple
                 radius={8}
-                placeholder="Tag; Contoh: hiburan, musik, budaya"
+                placeholder={t("admin.event.create.tag.contoh.hiburan.musik.budaya")}
                 data={tagSuggestion}
                 value={!form.tag ? [] : form.tag.split(",")}
                 onChange={(e) => setForm({ ...form, tag: e.join(",") })}
@@ -430,7 +432,7 @@ const CreateEventAdmin = () => {
                 {form.start_date && form.end_date ? (
                   <p className="text-dark">{formatDate(form.start_date)} - {formatDate(form.end_date)}</p>
                 ) : (
-                  <p>Atur Tanggal Event</p>
+                  <p>{t("admin.event.create.atur.tanggal.event")}</p>
                 )}
               </div>
               <div className="w-full border-y-2 border-primary-light-200 text-grey text-sm py-2 px-2 flex items-center cursor-pointer" onClick={() => setShowTime(!showTime)}>
@@ -438,7 +440,7 @@ const CreateEventAdmin = () => {
                 {form.start_time && form.end_time ? (
                   <p className="text-dark">{form.start_time} - {form.end_time} {form.zone_time}</p>
                 ) : (
-                  <p>Atur Waktu Event</p>
+                  <p>{t("admin.event.create.atur.waktu.event")}</p>
                 )}
               </div>
               <div className="w-full border-primary-light-200 text-grey text-sm py-2 px-2 mb-3 flex items-center cursor-pointer" onClick={() => setShowLocation(!showLocation)}>
@@ -446,7 +448,7 @@ const CreateEventAdmin = () => {
                 {form.organization_method !== "" ? (
                   <p className="text-dark">{form.location_name || form.location_map || "Lokasi Teratur"}</p>
                 ) : (
-                  <p>Atur Alamat Event</p>
+                  <p>{t("admin.event.create.atur.alamat.event")}</p>
                 )}
               </div>
             </div>
@@ -464,20 +466,20 @@ const CreateEventAdmin = () => {
                 cursor: "rounded-b-none border-b-2 border-b-primary-base",
               }}
             >
-              <Tab key="info" title="Info Tiket">
+              <Tab key="info" title={t("admin.event.create.info.tiket")}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Tiket</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.tiket")}</h3>
                     <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={onAddTicket}>
                       <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
                         <FontAwesomeIcon icon={faPlus} size="sm" />
                       </button>
-                      <p>Tambah Tiket</p>
+                      <p>{t("admin.event.create.tambah.tiket")}</p>
                     </div>
                   </div>
                   <div className="p-5 flex flex-col gap-[10px] max-h-[450px] overflow-y-auto custom-scrollbar">
                     {ticket.length === 0 ? (
-                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">Belum ada tiket</Alert>
+                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">{t("admin.event.create.belum.ada.tiket")}</Alert>
                     ) : (
                       ticket.map((el, index) => (
                         <TicketContainer
@@ -506,36 +508,36 @@ const CreateEventAdmin = () => {
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Formulir Data Pemesan</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.formulir.data.pemesan")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       <Checkbox color="default" isSelected={form.is_name} classNames={{ label: "text-sm" }} onChange={(e: any) => setForm({ ...form, is_name: e.target.checked })}>
-                        Nama Lengkap
+                        {t("admin.event.create.nama.lengkap")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_email} onChange={(e: any) => setForm({ ...form, is_email: e.target.checked })}>
-                        Email
+                        {t("admin.event.create.email")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_phone_number} onChange={(e: any) => setForm({ ...form, is_phone_number: e.target.checked })}>
-                        No. Handphone
+                        {t("admin.event.create.no.handphone")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_noidentity} onChange={(e: any) => setForm({ ...form, is_noidentity: e.target.checked })}>
-                        No. KTP
+                        {t("admin.event.create.no.ktp")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_birthdate} onChange={(e: any) => setForm({ ...form, is_birthdate: e.target.checked })}>
-                        Tanggal Lahir
+                        {t("admin.event.create.tanggal.lahir")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_gender} onChange={(e: any) => setForm({ ...form, is_gender: e.target.checked })}>
-                        Jenis Kelamin
+                        {t("admin.event.create.jenis.kelamin")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_assistant} onChange={(e: any) => setForm({ ...form, is_assistant: e.target.checked })}>
-                        Asisten
+                        {t("admin.event.create.asisten")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_profession} onChange={(e: any) => setForm({ ...form, is_profession: e.target.checked })}>
-                        Profesi
+                        {t("admin.event.create.profesi")}
                       </Checkbox>
                       <Checkbox classNames={{ label: "text-sm" }} color="default" isSelected={form.is_company} onChange={(e: any) => setForm({ ...form, is_company: e.target.checked })}>
-                        Perusahaan
+                        {t("admin.event.create.perusahaan")}
                       </Checkbox>
                     </div>
                   </div>
@@ -543,19 +545,19 @@ const CreateEventAdmin = () => {
 
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Pengaturan Tiket</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.pengaturan.tiket")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between">
                         <div>
-                          <p>Jumlah maks. tiket dalam 1 transaksi</p>
-                          <p className="text-grey text-xs">Jumlah maksimal tiket yang dapat dibeli dalam 1 transaksi</p>
+                          <p>{t("admin.event.create.jumlah.maks.tiket.dalam.1.transaksi")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.create.jumlah.maksimal.tiket.yang.dapat.dibeli.dalam.1.transaksi")}</p>
                         </div>
                         <Select
                           variant="underlined"
                           className="w-32 md:w-40 lg:w-24"
-                          aria-label="Options"
+                          aria-label={t("admin.event.create.options")}
                           size="sm"
                           defaultSelectedKeys={form.max_buy_ticket ? [form.max_buy_ticket.toString()] : []}
                           onChange={(e: any) => setForm({ ...form, max_buy_ticket: Number(e.target.value) })}
@@ -572,8 +574,8 @@ const CreateEventAdmin = () => {
                       </div>
                       <div className="flex justify-between">
                         <div>
-                          <p>1 akun email untuk 1 kali transaksi</p>
-                          <p className="text-grey text-xs">1 akun email hanya dapat melakukan 1 kali transaksi pembelian tiket</p>
+                          <p>{t("admin.event.create.1.akun.email.untuk.1.kali.transaksi")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.create.1.akun.email.hanya.dapat.melakukan.1.kali.transaksi.pembelian.tiket")}</p>
                         </div>
                         <div>
                           <Switch size="sm" isSelected={form.one_email_ticket} onChange={(e: any) => setForm({ ...form, one_email_ticket: e.target.checked })} />
@@ -581,8 +583,8 @@ const CreateEventAdmin = () => {
                       </div>
                       <div className="flex justify-between">
                         <div>
-                          <p>1 tiket untuk 1 data pemesan</p>
-                          <p className="text-grey text-xs">Data setiap tiket tidak boleh sama</p>
+                          <p>{t("admin.event.create.1.tiket.untuk.1.data.pemesan")}</p>
+                          <p className="text-grey text-xs">{t("admin.event.create.data.setiap.tiket.tidak.boleh.sama")}</p>
                         </div>
                         <div>
                           <Switch size="sm" isSelected={form.one_id_one_ticket} onChange={(e: any) => setForm({ ...form, one_id_one_ticket: e.target.checked })} />
@@ -593,35 +595,35 @@ const CreateEventAdmin = () => {
                 </div>
               </Tab>
 
-              <Tab key="detail" title="Detail Event">
+              <Tab key="detail" title={t("admin.event.create.detail.event")}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
                   <div className="border-b-2 border-primary-light-200 px-4 py-3">
-                    <h3 className="text-medium font-semibold">Deskripsi</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.deskripsi")}</h3>
                   </div>
                   <div className="p-5">
-                    <InputEditor theme="snow" value={form.description} onChange={(v: any) => setForm({ ...form, description: v })} placeholder="Ketik Deskripsi" />
+                    <InputEditor theme="snow" value={form.description} onChange={(v: any) => setForm({ ...form, description: v })} placeholder={t("admin.event.create.ketik.deskripsi")} />
                   </div>
                 </div>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5">
                   <div className="border-b-2 border-primary-light-200 px-4 py-3">
-                    <h3 className="text-medium font-semibold">Syarat & Ketentuan</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.syarat.ketentuan")}</h3>
                   </div>
                   <div className="p-5">
-                    <InputEditor theme="snow" value={form.term_condition} onChange={(v: any) => setForm({ ...form, term_condition: v })} placeholder="Ketik S&K" />
+                    <InputEditor theme="snow" value={form.term_condition} onChange={(v: any) => setForm({ ...form, term_condition: v })} placeholder={t("admin.event.create.ketik.s.k")} />
                   </div>
                 </div>
               </Tab>
 
-              <Tab key="sesi" title={<div className="flex items-center gap-2"><Icon icon="mdi:calendar-clock" /> Sesi</div>}>
+              <Tab key="sesi" title={<div className="flex items-center gap-2"><Icon icon="mdi:calendar-clock" /> {t("admin.event.create.sesi")}</div>}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 mx-auto">
                   <div className="border-b-2 border-primary-light-200 px-4 py-3 flex justify-between items-center">
-                    <h3 className="text-medium font-semibold">Pengaturan Sesi</h3>
+                    <h3 className="text-medium font-semibold">{t("admin.event.create.pengaturan.sesi")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-4 pb-4 border-b border-primary-light-100">
                       <div>
-                        <p className="font-medium">Aktifkan Sesi</p>
-                        <p className="text-grey text-xs">Aktifkan pembagian sesi untuk event ini</p>
+                        <p className="font-medium">{t("admin.event.create.aktifkan.sesi")}</p>
+                        <p className="text-grey text-xs">{t("admin.event.create.aktifkan.pembagian.sesi.untuk.event.ini")}</p>
                       </div>
                       <Switch
                         size="lg"
@@ -633,17 +635,17 @@ const CreateEventAdmin = () => {
                     {form.is_session === 1 && (
                       <>
                         <div className="flex justify-between items-center mt-4 mb-3">
-                          <p className="font-semibold text-sm">Daftar Sesi</p>
+                          <p className="font-semibold text-sm">{t("admin.event.create.daftar.sesi")}</p>
                           <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={openAddSession}>
                             <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
                               <FontAwesomeIcon icon={faPlus} size="sm" />
                             </button>
-                            <p>Tambah Sesi</p>
+                            <p>{t("admin.event.create.tambah.sesi")}</p>
                           </div>
                         </div>
 
                         {sessions.length === 0 ? (
-                          <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">Belum ada sesi. Tambah sesi untuk event ini.</Alert>
+                          <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">{t("admin.event.create.belum.ada.sesi.tambah.sesi.untuk.event.ini")}</Alert>
                         ) : (
                           <div className="flex flex-col gap-3">
                             {sessions.map((ses, idx) => (
@@ -691,7 +693,7 @@ const CreateEventAdmin = () => {
                                 {/* Session Inventories (Tickets) */}
                                 <div className="border-t border-primary-light-100 mt-3 pt-3">
                                   <div className="flex justify-between items-center mb-2">
-                                    <p className="text-xs font-semibold text-grey uppercase tracking-wider">Inventory Tiket</p>
+                                    <p className="text-xs font-semibold text-grey uppercase tracking-wider">{t("admin.event.create.inventory.tiket")}</p>
                                     <div
                                       className="flex items-center gap-1.5 text-xs text-primary-dark cursor-pointer"
                                       onClick={() => openAddSessionTicket(idx)}
@@ -699,12 +701,12 @@ const CreateEventAdmin = () => {
                                       <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
                                         <FontAwesomeIcon icon={faPlus} size="xs" />
                                       </button>
-                                      <p>Tambah Tiket</p>
+                                      <p>{t("admin.event.create.tambah.tiket")}</p>
                                     </div>
                                   </div>
                                   <div className="flex flex-col gap-2">
                                     {(!ses.inventories || ses.inventories.length === 0) ? (
-                                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" classNames={{ root: "!p-3 !text-xs" }}>Belum ada tiket untuk sesi ini</Alert>
+                                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" classNames={{ root: "!p-3 !text-xs" }}>{t("admin.event.create.belum.ada.tiket.untuk.sesi.ini")}</Alert>
                                     ) : (
                                       ses.inventories.map((inv: EventTicket, invIdx: number) => (
                                         <TicketContainer
@@ -736,16 +738,16 @@ const CreateEventAdmin = () => {
                 </div>
               </Tab>
 
-              <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> Admin</div>}>
+              <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> {t("admin.event.create.admin")}</div>}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 p-5">
                   <MantineGrid>
                     <MantineGrid.Col span={6}>
-                      <InputField label="URL Slug" type="text" fullWidth value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
+                      <InputField label={t("admin.event.create.url.slug")} type="text" fullWidth value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
                       <Select
-                        label="Status ID (1=Review, 3=Active)"
-                        placeholder="Pilih status"
+                        label={t("admin.event.create.status.id.1.review.3.active")}
+                        placeholder={t("admin.event.create.pilih.status")}
                         variant="bordered"
                         radius="sm"
                         classNames={{
@@ -754,27 +756,27 @@ const CreateEventAdmin = () => {
                         selectedKeys={form.event_status_id ? [form.event_status_id.toString()] : []}
                         onChange={(e: any) => setForm({ ...form, event_status_id: Number(e.target.value) })}
                       >
-                        <SelectItem key="1" value="1">1 - Review</SelectItem>
-                        <SelectItem key="3" value="3">3 - Active</SelectItem>
+                        <SelectItem key="1" value="1">{t("admin.event.create.1.review")}</SelectItem>
+                        <SelectItem key="3" value="3">{t("admin.event.create.3.active")}</SelectItem>
                       </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
-                      <InputField label="Metode Pembayaran (Custom)" type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
+                      <InputField label={t("admin.event.create.metode.pembayaran.custom")} type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Admin Fee" type="text" fullWidth value={formatPrice(form.admin_fee)} onChange={(e: any) => setForm({ ...form, admin_fee: parsePrice(e.target.value) })} />
+                      <InputField label={t("admin.event.create.admin.fee")} type="text" fullWidth value={formatPrice(form.admin_fee)} onChange={(e: any) => setForm({ ...form, admin_fee: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={6}>
-                      <InputField label="Admin Fee Plus" type="text" fullWidth value={form.admin_fee_plus} onChange={(e: any) => setForm({ ...form, admin_fee_plus: e.target.value })} />
+                      <InputField label={t("admin.event.create.admin.fee.plus")} type="text" fullWidth value={form.admin_fee_plus} onChange={(e: any) => setForm({ ...form, admin_fee_plus: e.target.value })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="PPN (%)" type="num" fullWidth value={form.ppn} onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} />
+                      <InputField label={t("admin.event.create.ppn")} type="num" fullWidth value={form.ppn} onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Starting Price" type="text" fullWidth value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
+                      <InputField label={t("admin.event.create.starting.price")} type="text" fullWidth value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={4}>
-                      <InputField label="Maks Penggunaan Voucher" type="num" fullWidth value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
+                      <InputField label={t("admin.event.create.maks.penggunaan.voucher")} type="num" fullWidth value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>
                       <div className="flex flex-col gap-4 p-4 border border-primary-light-200 rounded-lg bg-chat/50 mt-2">
@@ -783,24 +785,24 @@ const CreateEventAdmin = () => {
                             isSelected={form.is_insurance === 1}
                             onChange={(e: any) => setForm({ ...form, is_insurance: e.target.checked ? 1 : 0, insurance_required: e.target.checked ? form.insurance_required : 0, insurance_amount: e.target.checked ? form.insurance_amount : null })}
                           >
-                            Aktifkan Asuransi
+                            {t("admin.event.create.aktifkan.asuransi")}
                           </Checkbox>
                           {form.is_insurance === 1 && (
                             <Checkbox
                               isSelected={form.insurance_required === 1}
                               onChange={(e: any) => setForm({ ...form, insurance_required: e.target.checked ? 1 : 0 })}
                             >
-                              Wajib Asuransi
+                              {t("admin.event.create.wajib.asuransi")}
                             </Checkbox>
                           )}
                         </div>
                         {form.is_insurance === 1 && (
                           <div className="max-w-xs">
                             <InputField
-                              label="Biaya Asuransi"
+                              label={t("admin.event.create.biaya.asuransi")}
                               type="num"
                               fullWidth
-                              placeholder="Masukan biaya asuransi"
+                              placeholder={t("admin.event.create.masukan.biaya.asuransi")}
                               value={formatPrice(form.insurance_amount || 0)}
                               onChange={(e: any) => setForm({ ...form, insurance_amount: parsePrice(e.target.value) })}
                             />
@@ -818,9 +820,9 @@ const CreateEventAdmin = () => {
 
       <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] right-0 bg-white shadow-lg z-40 p-4 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
-          <p className="text-sm font-bold hidden md:block">Mode Admin: Konfigurasi event secara penuh.</p>
+          <p className="text-sm font-bold hidden md:block">{t("admin.event.create.mode.admin.konfigurasi.event.secara.penuh")}</p>
           <div className="flex gap-4 w-full md:w-auto">
-            <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label="Batal" />
+            <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label={t("admin.event.create.batal")} />
             <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? "Loading..." : "Daftarkan Event"} />
           </div>
         </div>
@@ -871,17 +873,17 @@ const CreateEventAdmin = () => {
             <h3 className="text-lg font-semibold mb-4">{editSessionIdx !== undefined ? "Edit Sesi" : "Tambah Sesi"}</h3>
             <div className="flex flex-col gap-4">
               <div>
-                <label className="text-sm font-medium text-dark">Nama Sesi</label>
+                <label className="text-sm font-medium text-dark">{t("admin.event.create.nama.sesi")}</label>
                 <input
                   type="text"
                   className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
                   value={editSessionData.session_name}
                   onChange={(e) => setEditSessionData({ ...editSessionData, session_name: e.target.value })}
-                  placeholder="Contoh: Sesi 1, Sesi 2, dll"
+                  placeholder={t("admin.event.create.contoh.sesi.1.sesi.2.dll")}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-dark">Tanggal Sesi</label>
+                <label className="text-sm font-medium text-dark">{t("admin.event.create.tanggal.sesi")}</label>
                 <input
                   type="date"
                   className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
@@ -891,7 +893,7 @@ const CreateEventAdmin = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-dark">Waktu Mulai</label>
+                  <label className="text-sm font-medium text-dark">{t("admin.event.create.waktu.mulai")}</label>
                   <input
                     type="time"
                     className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
@@ -900,7 +902,7 @@ const CreateEventAdmin = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-dark">Waktu Selesai</label>
+                  <label className="text-sm font-medium text-dark">{t("admin.event.create.waktu.selesai")}</label>
                   <input
                     type="time"
                     className="w-full border-2 border-primary-light-200 rounded-lg p-2.5 mt-1 text-sm focus:border-primary-base focus:outline-none"
@@ -916,7 +918,7 @@ const CreateEventAdmin = () => {
             <div className="flex justify-end gap-3 mt-6">
               <Button
                 color="secondary"
-                label="Batal"
+                label={t("admin.event.create.batal")}
                 onClick={() => setShowSessionModal(false)}
               />
               <Button
@@ -933,7 +935,7 @@ const CreateEventAdmin = () => {
       <ModalM
         opened={showSessionSeatmap}
         onClose={() => setShowSessionSeatmap(false)}
-        title={<p className="font-bold text-lg text-primary-dark">Editor Denah Kursi (Sesi)</p>}
+        title={<p className="font-bold text-lg text-primary-dark">{t("admin.event.create.editor.denah.kursi.sesi")}</p>}
         size="xl"
         fullScreen
         padding={0}
@@ -948,12 +950,12 @@ const CreateEventAdmin = () => {
           <div className="flex justify-end items-center gap-3 p-4 border-t border-primary-light-200 bg-white flex-shrink-0">
             <Button
               color="secondary"
-              label="Batal"
+              label={t("admin.event.create.batal")}
               onClick={() => setShowSessionSeatmap(false)}
             />
             <Button
               color="primary"
-              label="Simpan Seatmap"
+              label={t("admin.event.create.simpan.seatmap")}
               onClick={() => {
                 setShowSessionSeatmap(false);
               }}

@@ -12,6 +12,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import _ from "lodash";
 import { modals } from "@mantine/modals";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
@@ -44,6 +45,7 @@ interface SliderItem {
 }
 
 export default function AdminSliderManagement() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<SliderItem[]>([]);
@@ -290,14 +292,14 @@ export default function AdminSliderManagement() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.slider.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" />
           </button>
           <Stack gap={5}>
-            <Text size="1.8rem" fw={600}>Slider Management</Text>
+            <Text size="1.8rem" fw={600}>{t("admin.slider.index.slider.management")}</Text>
             <Text size="sm" c="gray">
-              Kelola banner slider yang ditampilkan di halaman utama
+              {t("admin.slider.index.kelola.banner.slider.yang.ditampilkan.di.halaman.utama")}
             </Text>
           </Stack>
         </Flex>
@@ -308,18 +310,18 @@ export default function AdminSliderManagement() {
           color="blue"
           className="shadow-sm"
         >
-          Tambah Slider
+          {t("admin.slider.index.tambah.slider")}
         </ButtonM>
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden border-light-grey">
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 220 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.slider.index.pencarian")}</Text>
             <Input
               isClearable
               value={search}
-              placeholder="Cari slider..."
+              placeholder={t("admin.slider.index.cari.slider")}
               onChange={(e: any) => setSearch(e.target.value)}
               onClear={() => {
                 setSearch("");
@@ -338,34 +340,34 @@ export default function AdminSliderManagement() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #eee" }}>
-                <th style={tableHeadStyle}>No</th>
-                <th style={tableHeadStyle}>Banner</th>
+                <th style={tableHeadStyle}>{t("admin.slider.index.no")}</th>
+                <th style={tableHeadStyle}>{t("admin.slider.index.banner")}</th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("name")}>
-                  Nama Slider {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.slider.index.nama.slider")} {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("description")}>
-                  Deskripsi {sortBy === "description" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.slider.index.deskripsi")} {sortBy === "description" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("rank")}>
-                  Rank {sortBy === "rank" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.slider.index.rank")} {sortBy === "rank" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th style={{ ...tableHeadStyle, cursor: "pointer" }} onClick={() => handleSort("status")}>
-                  Status {sortBy === "status" && (sortDir === "asc" ? "↑" : "↓")}
+                  {t("admin.slider.index.status")} {sortBy === "status" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th style={{ ...tableHeadStyle, textAlign: "center" }}>Aksi</th>
+                <th style={{ ...tableHeadStyle, textAlign: "center" }}>{t("admin.slider.index.aksi")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "40px", textAlign: "center" }}>
-                    <Text c="dimmed">Sedang memuat data...</Text>
+                    <Text c="dimmed">{t("admin.slider.index.sedang.memuat.data")}</Text>
                   </td>
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "40px", textAlign: "center" }}>
-                    <Text c="dimmed">Data tidak ditemukan</Text>
+                    <Text c="dimmed">{t("admin.slider.index.data.tidak.ditemukan")}</Text>
                   </td>
                 </tr>
               ) : (
@@ -402,12 +404,12 @@ export default function AdminSliderManagement() {
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
                         <Group gap={5} justify="center">
-                          <Tooltip label="Edit Slider">
+                          <Tooltip label={t("admin.slider.index.edit.slider")}>
                             <ActionIcon variant="filled" color="indigo" onClick={() => handleOpenEdit(item)} size="sm">
                               <Icon icon="ph:pencil-simple" />
                             </ActionIcon>
                           </Tooltip>
-                          <Tooltip label="Hapus Slider">
+                          <Tooltip label={t("admin.slider.index.hapus.slider")}>
                             <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item.id!)} size="sm">
                               <Icon icon="ph:trash" />
                             </ActionIcon>
@@ -446,23 +448,23 @@ export default function AdminSliderManagement() {
         <form onSubmit={handleSubmit}>
             <Stack gap="md">
                 <TextInput
-                    label="Nama Slider"
-                    placeholder="Masukkan nama slider"
+                    label={t("admin.slider.index.nama.slider")}
+                    placeholder={t("admin.slider.index.masukkan.nama.slider")}
                     value={name}
                     onChange={(e) => setName(e.currentTarget.value)}
                     required
                 />
                 <Textarea
-                    label="Deskripsi"
-                    placeholder="Masukkan deskripsi slider"
+                    label={t("admin.slider.index.deskripsi")}
+                    placeholder={t("admin.slider.index.masukkan.deskripsi.slider")}
                     value={description}
                     onChange={(e) => setDescription(e.currentTarget.value)}
                     minRows={3}
                 />
                 <Flex gap="md">
                     <Select
-                        label="Status"
-                        placeholder="Pilih status"
+                        label={t("admin.slider.index.status")}
+                        placeholder={t("admin.slider.index.pilih.status")}
                         data={[
                             { value: 'active', label: 'Aktif' },
                             { value: 'inactive', label: 'Tidak Aktif' }
@@ -473,8 +475,8 @@ export default function AdminSliderManagement() {
                         style={{ flex: 1 }}
                     />
                     <NumberInput
-                        label="Rank"
-                        placeholder="Contoh: 1"
+                        label={t("admin.slider.index.rank")}
+                        placeholder={t("admin.slider.index.contoh.1")}
                         value={rank}
                         onChange={setRank}
                         style={{ flex: 1 }}
@@ -483,19 +485,19 @@ export default function AdminSliderManagement() {
                 
                 <Box>
                     <Text size="sm" fw={500} mb={5}>
-                        Gambar Slider {isEdit ? "" : <span className="text-red-500">*</span>}
+                        {t("admin.slider.index.gambar.slider")} {isEdit ? "" : <span className="text-red-500">*</span>}
                     </Text>
                     <div 
                         className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         {imagePreview ? (
-                            <img src={imagePreview} alt="Preview" className="max-w-full h-auto max-h-[200px] object-contain rounded-md" />
+                            <img src={imagePreview} alt={t("admin.slider.index.preview")} className="max-w-full h-auto max-h-[200px] object-contain rounded-md" />
                         ) : (
                             <>
                                 <Icon icon="ph:upload-simple" className="text-3xl text-gray-400 mb-2" />
-                                <Text size="sm" c="dimmed">Klik untuk mengunggah gambar</Text>
-                                <Text size="xs" c="dimmed">Disarankan rasio 16:9 atau sejenisnya</Text>
+                                <Text size="sm" c="dimmed">{t("admin.slider.index.klik.untuk.mengunggah.gambar")}</Text>
+                                <Text size="xs" c="dimmed">{t("admin.slider.index.disarankan.rasio.16.9.atau.sejenisnya")}</Text>
                             </>
                         )}
                     </div>
@@ -509,8 +511,8 @@ export default function AdminSliderManagement() {
                 </Box>
 
                 <Flex justify="flex-end" gap="sm" mt="md">
-                    <ButtonM variant="default" onClick={() => setOpened(false)}>Batal</ButtonM>
-                    <ButtonM type="submit" color="blue" loading={isSubmitting}>Simpan</ButtonM>
+                    <ButtonM variant="default" onClick={() => setOpened(false)}>{t("admin.slider.index.batal")}</ButtonM>
+                    <ButtonM type="submit" color="blue" loading={isSubmitting}>{t("admin.slider.index.simpan")}</ButtonM>
                 </Flex>
             </Stack>
         </form>

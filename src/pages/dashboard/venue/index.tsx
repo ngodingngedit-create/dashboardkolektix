@@ -1,4 +1,4 @@
-import { Icon } from '@iconify/react/dist/iconify.js';
+﻿import { Icon } from '@iconify/react/dist/iconify.js';
 import { ActionIcon, AspectRatio, Badge, Button, Card, Center, Divider, Flex, Image, NumberFormatter, Stack, Text, TextInput } from '@mantine/core';
 import { useListState } from '@mantine/hooks';
 import Link from 'next/link';
@@ -9,9 +9,11 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 
 const MyVenue = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>();
   const [search, setSearch] = useState<string>('');
   const [_venue, setVenue] = useListState<VenueListResponse>();
@@ -39,13 +41,11 @@ const MyVenue = () => {
 
   const handleDelete = (id: number) => {
     modals.openConfirmModal({
-        title: 'Hapus Venue',
+        title: t('venue.deleteTitle'),
         children: (
-            <Text size="sm">
-                Apakah Anda yakin ingin menghapus venue ini? Tindakan ini tidak dapat dibatalkan.
-            </Text>
+            <Text size="sm">{t('venue.deleteConfirm')}</Text>
         ),
-        labels: { confirm: 'Hapus', cancel: 'Batal' },
+        labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
         confirmProps: { color: 'red', radius: 'xl' },
         cancelProps: { radius: 'xl' },
         onConfirm: async () => {
@@ -54,16 +54,16 @@ const MyVenue = () => {
                 method: 'DELETE',
                 success: () => {
                     notifications.show({
-                        title: 'Berhasil',
-                        message: 'Venue berhasil dihapus',
+                        title: t('common.success'),
+                        message: t('venue.deleteSuccess'),
                         color: 'green',
                     });
                     getData();
                 },
                 error: () => {
                     notifications.show({
-                        title: 'Gagal',
-                        message: 'Gagal menghapus venue',
+                        title: t('common.failed'),
+                        message: t('venue.deleteFailed'),
                         color: 'red',
                     });
                 }
@@ -84,8 +84,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={5}>
-<Text size="1.8rem" fw={600}>Semua Venue</Text>
-<Text size="sm" c="gray">Kelola Semua Venue Anda</Text>
+<Text size="1.8rem" fw={600}>{t('venue.title')}</Text>
+<Text size="sm" c="gray">{t('venue.subtitle')}</Text>
 </Stack>
 </Flex>
 
@@ -95,7 +95,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             onChange={e => setSearch(e.currentTarget.value)}
             radius="xl"
             leftSection={<Icon icon="uiw:search" />}
-            placeholder='Cari Nama Venue'
+            placeholder={t('venue.searchPlaceholder')}
           />
           <Button
             radius="xl"
@@ -103,7 +103,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             leftSection={<Icon icon="uiw:plus" />}
             component={Link}
             href="/dashboard/venue/create">
-            Buat Venue
+            {t('venue.create')}
           </Button>
         </Flex>
       </Flex>
@@ -129,7 +129,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 {e.starting_price && (
                    <Text size="sm" c="blue" fw={700}>
                       <NumberFormatter prefix="Rp " value={Number(e.starting_price)} thousandSeparator="." decimalSeparator="," />
-                      <Text component="span" size="xs" c="dimmed" fw={400}> / hari</Text>
+                      <Text component="span" size="xs" c="dimmed" fw={400}> / {t('venue.perDayUnit')}</Text>
                    </Text>
                 )}
 
@@ -145,12 +145,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <Flex gap={15} align="center" wrap="wrap">
                         {e.venue_areas?.length > 0 && (
                             <Text size="xs" c="dimmed" className="flex items-center gap-1">
-                              <Icon icon="tabler:layout-dashboard" /> {e.venue_areas.length} Area
+                              <Icon icon="tabler:layout-dashboard" /> {e.venue_areas.length} {t('venue.areasCount')}
                             </Text>
                         )}
                         {e.venue_facilities?.length > 0 && (
                             <Text size="xs" c="dimmed" className="flex items-center gap-1">
-                              <Icon icon="tabler:building" /> {e.venue_facilities.length} Fasilitas
+                              <Icon icon="tabler:building" /> {e.venue_facilities.length} {t('venue.facilitiesCount')}
                             </Text>
                         )}
                     </Flex>
@@ -194,9 +194,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             <Icon icon="mage:building-b" className={`text-[36px] text-primary-base`} />
           </div>
           <div className='text-center'>
-            <p className='font-semibold text-lg'>Tidak ada venue yang tersedia</p>
+            <p className='font-semibold text-lg'>{t('venue.emptyTitle')}</p>
             <p className='text-grey max-w-72 mt-[10px]'>
-              Mulai buat venue dengan klik button “Buat Venue di bawah.{' '}
+              Mulai {t('venue.create')} dengan klik button “{t('venue.create')} di bawah.{' '}
             </p>
           </div>
 
@@ -207,7 +207,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             leftSection={<Icon icon="uiw:plus" />}
             component={Link}
             href="/dashboard/venue/create">
-            Tambah Venue
+            {t('venue.add')}
           </Button>
         </div>
       </Center>

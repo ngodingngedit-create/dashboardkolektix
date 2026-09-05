@@ -32,6 +32,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { useMediaQuery } from "@mantine/hooks";
 import fetch from "@/utils/fetch";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // Matches actual API: GET creator-data/venue-transaction
 type VenueDetail = {
@@ -73,6 +74,7 @@ type DataResponse = {
 
 export default function VenueTransaction() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [data, setData] = useState<DataResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterValue, setFilterValue] = useState("");
@@ -260,24 +262,24 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </button>
 <Stack gap={0}>
 <Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
-Transaksi Venue
+{t('venue.transaction.title')}
 </Text>
 <Text size="sm" c="gray">
-Daftar semua transaksi venue
+{t('venue.transaction.subtitle')}
 </Text>
 </Stack>
 </Flex>
         <Flex gap="md" align="center">
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Penjualan</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalSales')}</Text>
             <Text size="lg" fw={700}>Rp {stats.totalSales.toLocaleString('id-ID')}</Text>
           </MantineCard>
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Transaksi</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalTransactions')}</Text>
             <Text size="lg" fw={700}>{stats.totalTransactions}</Text>
           </MantineCard>
           <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Total Booking</Text>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalBookings')}</Text>
             <Text size="lg" fw={700}>{stats.totalBooking}</Text>
           </MantineCard>
         </Flex>
@@ -303,7 +305,7 @@ Daftar semua transaksi venue
                 <Box style={{ position: "relative" }}>
                   <MantineTextInput
                     type="date"
-                    placeholder="Filter tanggal"
+                    placeholder={t('venue.transaction.filterDate')}
                     value={dateFilter}
                     onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
                     size="sm"
@@ -314,10 +316,10 @@ Daftar semua transaksi venue
 
                 {/* Filter status */}
                 <MantineSelect
-                  placeholder="Filter status"
+                  placeholder={t('venue.transaction.filterStatus')}
                   value={statusFilter}
                   onChange={(val) => { setStatusFilter(val || ""); setPage(1); }}
-                  data={["Paid", "Pending", "Expired"]}
+                  data={[t('venue.transaction.paid'), t('venue.transaction.pending'), t('venue.transaction.expired')]}
                   style={{ width: 150 }}
                   size="sm"
                   clearable
@@ -325,7 +327,7 @@ Daftar semua transaksi venue
 
                 {/* Searchbar */}
                 <MantineTextInput
-                  placeholder="Cari event, venue, atau client..."
+                  placeholder={t('venue.transaction.searchPlaceholder')}
                   leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                   value={filterValue}
                   onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
@@ -337,11 +339,12 @@ Daftar semua transaksi venue
             {/* Info row */}
             <Flex align="center" gap="sm" mb="md">
               <Text size="xs" c="gray">
-                Menampilkan{" "}
-                {filtered.length > 0
-                  ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, filtered.length)}`
-                  : "0"}{" "}
-                dari {filtered.length} transaksi
+                {t('venue.transaction.showing', {
+                  range: filtered.length > 0
+                    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, filtered.length)}`
+                    : "0",
+                  count: filtered.length,
+                })}
               </Text>
             </Flex>
 
@@ -400,7 +403,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("created_at")}
                     >
-                      Tanggal Order <SortIcon col="created_at" />
+                      {t('venue.transaction.colOrderDate')} <SortIcon col="created_at" />
                     </th>
                     <th
                       style={{
@@ -416,7 +419,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("event_name")}
                     >
-                      Nama Event <SortIcon col="event_name" />
+                      {t('venue.transaction.colEvent')} <SortIcon col="event_name" />
                     </th>
                     <th
                       style={{
@@ -432,7 +435,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("venue")}
                     >
-                      Venue <SortIcon col="venue" />
+                      {t('venue.transaction.colVenue')} <SortIcon col="venue" />
                     </th>
                     <th
                       style={{
@@ -448,7 +451,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("start_date")}
                     >
-                      Tanggal Event <SortIcon col="start_date" />
+                      {t('venue.transaction.colEventDate')} <SortIcon col="start_date" />
                     </th>
                     <th
                       style={{
@@ -464,7 +467,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("user")}
                     >
-                      Client <SortIcon col="user" />
+                      {t('venue.transaction.colClient')} <SortIcon col="user" />
                     </th>
                     <th
                       style={{
@@ -485,7 +488,7 @@ Daftar semua transaksi venue
                       }}
                       onClick={() => handleSort("payment_status")}
                     >
-                      Status <SortIcon col="payment_status" />
+                      {t('common.status')} <SortIcon col="payment_status" />
                     </th>
                     <th
                       style={{
@@ -504,7 +507,7 @@ Daftar semua transaksi venue
                         boxShadow: "-2px 0 5px rgba(0,0,0,0.06)",
                       }}
                     >
-                      Action
+                      {t('common.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -524,7 +527,7 @@ Daftar semua transaksi venue
                               animation: "spin 0.8s linear infinite",
                             }}
                           />
-                          <Text size="sm" c="dimmed">Memuat data...</Text>
+                          <Text size="sm" c="dimmed">{t('common.loading')}</Text>
                         </Flex>
                       </td>
                     </tr>
@@ -533,15 +536,15 @@ Daftar semua transaksi venue
                       <td colSpan={8} style={{ padding: "60px 14px", textAlign: "center" }}>
                         <Stack align="center" gap={8}>
                           <FontAwesomeIcon icon={faStore} style={{ width: 36, height: 36, color: "#adb5bd" }} />
-                          <Text size="sm" c="dimmed" fw={500}>Tidak ada transaksi venue ditemukan</Text>
+                          <Text size="sm" c="dimmed" fw={500}>{t('venue.transaction.noTransactions')}</Text>
                           {hasActiveFilters && (
                             <Text size="xs" c="gray">
-                              Coba ubah filter atau{" "}
+                              {t('venue.transaction.tryChangingFilter')}{" "}
                               <span
                                 style={{ color: "#228be6", cursor: "pointer" }}
                                 onClick={clearFilters}
                               >
-                                hapus filter
+                                {t('venue.transaction.clearFilter')}
                               </span>
                             </Text>
                           )}
@@ -644,7 +647,7 @@ Daftar semua transaksi venue
                                 </Text>
                                 {item.end_date && item.end_date !== item.start_date && (
                                   <Text size="xs" c="dimmed">
-                                    s/d {formatDate(item.end_date)}
+                                    {t('venue.transaction.until')} {formatDate(item.end_date)}
                                   </Text>
                                 )}
                               </Box>
@@ -733,7 +736,7 @@ Daftar semua transaksi venue
               }}
             >
               <Text size="xs" c="dimmed">
-                Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+                {t('venue.transaction.pageOf', { page, total: totalPages })}
               </Text>
               <MantinePagination
                 total={totalPages}
@@ -768,7 +771,7 @@ Daftar semua transaksi venue
       <Modal
         opened={detailModalOpened}
         onClose={() => setDetailModalOpened(false)}
-        title={<Text fw={700}>Detail Transaksi Venue</Text>}
+        title={<Text fw={700}>{t('venue.transaction.detailTitle')}</Text>}
         size="lg"
         radius="md"
       >
@@ -776,11 +779,11 @@ Daftar semua transaksi venue
           <Stack gap="md">
             <Grid>
               <Grid.Col span={6}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Invoice No</Text>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.invoiceNo')}</Text>
                 <Text fw={700} c="blue" style={{ fontFamily: "monospace" }}>{selectedTransaction.invoice_no}</Text>
               </Grid.Col>
               <Grid.Col span={6}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Status</Text>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('common.status')}</Text>
                 <Badge color={getStatusInfo(selectedTransaction).color} variant="filled">
                   {getStatusInfo(selectedTransaction).text}
                 </Badge>
@@ -791,11 +794,11 @@ Daftar semua transaksi venue
 
             <Grid>
               <Grid.Col span={6}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Tanggal Order</Text>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.colOrderDate')}</Text>
                 <Text fw={600}>{formatDate(selectedTransaction.created_at)}</Text>
               </Grid.Col>
               <Grid.Col span={6}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Metode Pembayaran</Text>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.paymentMethod')}</Text>
                 <Text fw={600}>{selectedTransaction.payment_method?.toLowerCase() === 'xendit' ? 'QRIS' : selectedTransaction.payment_method || "-"}</Text>
               </Grid.Col>
             </Grid>
@@ -803,19 +806,19 @@ Daftar semua transaksi venue
             <Divider variant="dashed" />
 
             <Box>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>Informasi Event & Venue</Text>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>{t('venue.transaction.eventVenueInfo')}</Text>
               <Paper withBorder p="sm" radius="md" bg="gray.0">
                 <Grid>
                   <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">Nama Event</Text>
+                    <Text size="xs" c="dimmed">{t('venue.transaction.colEvent')}</Text>
                     <Text fw={600}>{selectedTransaction.event_name || "-"}</Text>
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">Venue</Text>
+                    <Text size="xs" c="dimmed">{t('venue.transaction.colVenue')}</Text>
                     <Text fw={600}>{selectedTransaction.venue?.name || "-"}</Text>
                   </Grid.Col>
                   <Grid.Col span={12}>
-                    <Text size="xs" c="dimmed">Tanggal Pelaksanaan</Text>
+                    <Text size="xs" c="dimmed">{t('venue.transaction.eventDate')}</Text>
                     <Text fw={600}>
                       {formatDate(selectedTransaction.start_date)} 
                       {selectedTransaction.end_date && selectedTransaction.end_date !== selectedTransaction.start_date && ` - ${formatDate(selectedTransaction.end_date)}`}
@@ -826,15 +829,15 @@ Daftar semua transaksi venue
             </Box>
 
             <Box>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>Informasi Client</Text>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>{t('venue.transaction.clientInfo')}</Text>
               <Paper withBorder p="sm" radius="md" bg="gray.0">
                 <Grid>
                   <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">Nama Client</Text>
+                    <Text size="xs" c="dimmed">{t('venue.transaction.colClient')}</Text>
                     <Text fw={600}>{selectedTransaction.user?.name || "-"}</Text>
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">Email</Text>
+                    <Text size="xs" c="dimmed">{t('common.email')}</Text>
                     <Text fw={600}>{selectedTransaction.user?.email || "-"}</Text>
                   </Grid.Col>
                 </Grid>
@@ -844,7 +847,7 @@ Daftar semua transaksi venue
             <Divider />
 
             <Flex justify="space-between" align="center">
-              <Text fw={700}>Total Pembayaran</Text>
+              <Text fw={700}>{t('venue.pos.totalPayment')}</Text>
               <Text fw={800} size="xl" c="blue">
                 Rp {(selectedTransaction.grandtotal || selectedTransaction.total_price || 0).toLocaleString('id-ID')}
               </Text>
@@ -879,7 +882,7 @@ Daftar semua transaksi venue
               leftSection={<FontAwesomeIcon icon={faTimes} />}
               style={{ minWidth: 120, border: '1px solid #d1d5db' }}
             >
-              Tutup
+              {t('common.close')}
             </Button>
             <Button 
               variant="filled" 
@@ -894,7 +897,7 @@ Daftar semua transaksi venue
               leftSection={<FontAwesomeIcon icon={faReceipt} />}
               style={{ minWidth: 200 }}
             >
-              Lihat Invoice Full
+              {t('venue.transaction.viewInvoiceFull')}
             </Button>
           </Flex>
         </Box>

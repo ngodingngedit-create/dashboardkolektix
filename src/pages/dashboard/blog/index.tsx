@@ -9,9 +9,11 @@ import useLoggedUser from '@/utils/useLoggedUser';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 
 const BlogDashboard = () => {
   const router = useRouter();
+  const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const [search, setSearch] = useState<string>('');
     const [_blogs, setBlogs] = useListState<Blog>();
@@ -45,13 +47,13 @@ const BlogDashboard = () => {
 
     const handleDelete = (id: number) => {
         modals.openConfirmModal({
-            title: 'Hapus Blog',
+            title: t('blog.deleteTitle'),
             children: (
                 <Text size="sm">
-                    Apakah Anda yakin ingin menghapus blog ini? Tindakan ini tidak dapat dibatalkan.
+                    {t('blog.deleteConfirm')}
                 </Text>
             ),
-            labels: { confirm: 'Hapus', cancel: 'Batal' },
+            labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
             confirmProps: { color: 'red', radius: 'xl' },
             cancelProps: { radius: 'xl' },
             onConfirm: async () => {
@@ -61,16 +63,16 @@ const BlogDashboard = () => {
                     data: { _method: 'DELETE' },
                     success: () => {
                         notifications.show({
-                            title: 'Berhasil',
-                            message: 'Blog berhasil dihapus',
+                            title: t('common.success'),
+                            message: t('blog.deleteSuccess'),
                             color: 'green',
                         });
                         getData();
                     },
                     error: () => {
                         notifications.show({
-                            title: 'Gagal',
-                            message: 'Gagal menghapus blog',
+                            title: t('common.failed'),
+                            message: t('blog.deleteFailed'),
                             color: 'red',
                         });
                     }
@@ -91,8 +93,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={5}>
-<Text size="1.8rem" fw={600}>Dashboard Blog</Text>
-<Text size="sm" c="gray">Kelola Semua Blog Anda</Text>
+<Text size="1.8rem" fw={600}>{t('blog.title')}</Text>
+<Text size="sm" c="gray">{t('blog.subtitle')}</Text>
 </Stack>
 </Flex>
 
@@ -102,7 +104,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         onChange={e => setSearch(e.currentTarget.value)}
                         radius="xl"
                         leftSection={<Icon icon="uiw:search" />}
-                        placeholder='Cari Judul Blog'
+                        placeholder={t('blog.searchPlaceholder')}
                     />
                     <Button
                         radius="xl"
@@ -110,7 +112,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         leftSection={<Icon icon="uiw:plus" />}
                         component={Link}
                         href="/dashboard/blog/create">
-                        Tambah Blog
+                        {t('blog.addBlog')}
                     </Button>
                 </Flex>
             </Flex>
@@ -173,9 +175,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Icon icon="mage:note-text-fill" className={`text-[36px] text-primary-base`} />
                         </div>
                         <div className='text-center'>
-                            <p className='font-semibold text-lg'>Tidak ada blog yang tersedia</p>
+                            <p className='font-semibold text-lg'>{t('blog.noBlogs')}</p>
                             <p className='text-grey max-w-72 mt-[10px]'>
-                                Mulai buat blog dengan klik button “Tambah Blog” di bawah.
+                                {t('blog.emptyStateDesc')}
                             </p>
                         </div>
 
@@ -186,7 +188,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             leftSection={<Icon icon="uiw:plus" />}
                             component={Link}
                             href="/dashboard/blog/create">
-                            Buat Blog Pertama
+                            {t('blog.createFirst')}
                         </Button>
                     </div>
                 </Center>

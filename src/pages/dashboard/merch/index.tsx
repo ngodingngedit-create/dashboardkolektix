@@ -914,10 +914,12 @@ import Link from "next/link";
 import { Get } from "@/utils/REST";
 import { useRouter } from "next/router";
 import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
+import { useTranslation } from "react-i18next";
 
 const PER_PAGE = 10;
 
 const Merch: React.FC = () => {
+  const { t } = useTranslation();
   const [isRender, setIsRender] = useState(false);
   const [modalCreate, setModalCreate] = useState<string | undefined>(undefined);
   const [merchList, setMerchList] = useState<MerchListResponse[]>([]);
@@ -939,9 +941,9 @@ const Merch: React.FC = () => {
   const user = useLoggedUser();
   const router = useRouter();
   const tabStatus: [number, string][] = [
-    [2, "Sedang Dijual"],
-    [1, "Produk Draf"],
-    [3, "Non Aktif"],
+    [2, t("merch.onSale")],
+    [1, t("merch.draftProducts")],
+    [3, t("merch.inactive")],
   ];
 
   useEffect(() => {
@@ -1148,9 +1150,9 @@ const Merch: React.FC = () => {
   const handleDelete = (id: number, slug: string) => {
     modals.openConfirmModal({
       centered: true,
-      title: "Hapus Produk?",
-      children: "Apakah anda yakin ingin menghapus produk ini?",
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      title: t("merch.deleteTitle"),
+      children: t("merch.deleteConfirm"),
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       onConfirm: () => {
         setLoading((prev) => [...prev, `delete${id}`]);
         Delete(`product/${id}`, {})
@@ -1269,11 +1271,11 @@ const Merch: React.FC = () => {
               <button
                 onClick={() => router.push("/dashboard")}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-                aria-label="Kembali ke Dashboard"
+                aria-label={t("merch.backToDashboard")}
               >
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
-              <h1 className="text-dark m-0">Produk Saya</h1>
+              <h1 className="text-dark m-0">{t("merch.myProducts")}</h1>
             </div>
           </div>
 
@@ -1281,7 +1283,7 @@ const Merch: React.FC = () => {
           <div className="bg-white border border-primary-light-200 rounded-xl p-4 mb-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
             <Flex gap="xl" align="center" wrap="wrap">
               <Stack gap={4}>
-                <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Pendapatan</Text>
+                <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t("merch.totalRevenue")}</Text>
                 <Flex align="center" gap="xs">
                   <Text size="xl" fw={700}>
                     <NumberFormatter prefix="Rp " value={totalPendapatan} thousandSeparator="." decimalSeparator="," />
@@ -1298,14 +1300,14 @@ const Merch: React.FC = () => {
                 </Flex>
                 <Flex gap="md" mt={4}>
                   <Stack gap={0}>
-                    <Text size="xs" c="dimmed">Sudah Ditarik</Text>
+                    <Text size="xs" c="dimmed">{t("merch.withdrawn")}</Text>
                     <Text size="xs" fw={600} c="red">
                       <NumberFormatter prefix="Rp " value={totalWithdrawn} thousandSeparator="." decimalSeparator="," />
                     </Text>
                   </Stack>
                   <Divider orientation="vertical" size="xs" />
                   <Stack gap={0}>
-                    <Text size="xs" c="dimmed">Tersedia</Text>
+                    <Text size="xs" c="dimmed">{t("merch.available")}</Text>
                     <Text size="xs" fw={600} c="green">
                       <NumberFormatter prefix="Rp " value={totalPendapatan - totalWithdrawn} thousandSeparator="." decimalSeparator="," />
                     </Text>
@@ -1319,7 +1321,7 @@ const Merch: React.FC = () => {
               radius="xl"
               color="#0B387C"
             >
-              Buat Produk
+              {t("merch.createProduct")}
             </ButtonM>
           </div>
 
@@ -1372,7 +1374,7 @@ const Merch: React.FC = () => {
                                   </p>
                                   <div className="flex items-center gap-4 mt-3 text-sm text-grey">
                                     <span>
-                                      Stock:{" "}
+                                      {t("merch.stock")}:{" "}
                                       <Link
                                         href={`/dashboard/stockmanagement?action=create&productName=${encodeURIComponent(String(item.product_name || ""))}`}
                                         className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
@@ -1416,9 +1418,9 @@ const Merch: React.FC = () => {
                     ) : (
                       <div className="border border-primary-light-200 flex flex-col items-center justify-center min-h-[50vh] rounded-md gap-3 text-center text-dark px-5 my-5">
                         <div className="w-7 h-7 bg-gray-300 rounded"></div>
-                        <h3 className="text-xl font-semibold">Belum ada Produk yang dibuat</h3>
-                        <p className="px-10">Mulai buat merchandise dengan klik button &quot;Buat Produk&quot; di atas.</p>
-                        <Button label="Buat Produk" color="primary" className="mt-3" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
+                        <h3 className="text-xl font-semibold">{t("merch.noProducts")}</h3>
+                        <p className="px-10">{t("merch.emptyStateDesc")}</p>
+                        <Button label={t("merch.createProduct")} color="primary" className="mt-3" onClick={() => openCreateModal("")} startIcon={faCirclePlus} />
                       </div>
                     )
                   ) : (
@@ -1438,11 +1440,11 @@ const Merch: React.FC = () => {
             <InputField
               type="text"
               size="sm"
-              placeholder="Cari Produk"
+              placeholder={t("merch.searchProduct")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title="Cari">
+            <button onClick={() => {}} className="p-2 rounded-md" aria-label="search" title={t("common.search")}>
               <FontAwesomeIcon icon={faSearch} />
             </button>
           </div>

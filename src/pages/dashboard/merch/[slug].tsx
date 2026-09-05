@@ -703,6 +703,7 @@ import {
     faEye,
     faPrint,
 } from "@fortawesome/free-solid-svg-icons";
+import { useTranslation } from "react-i18next";
 
 // Interface untuk data statistik
 interface StatisticsData {
@@ -1110,7 +1111,7 @@ const generateQRCodeHTML = (text: string): string => {
 };
 
 // Fungsi untuk generate HTML resi
-const generateResiHTML = (invoice: any, options: PrintOptions): string => {
+const generateResiHTML = (invoice: any, options: PrintOptions, t: (key: string, opts?: any) => string): string => {
     // Debug: lihat struktur data
     console.log('Invoice data:', invoice);
 
@@ -1135,8 +1136,8 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
 
     // Data penerima dari address object
     const receiverName = options.sensorNama
-        ? maskName(invoice?.address?.nama_penerima || 'Customer', true)
-        : (invoice?.address?.nama_penerima || 'Customer');
+        ? maskName(invoice?.address?.nama_penerima || t('merchResi.customerFallback'), true)
+        : (invoice?.address?.nama_penerima || t('merchResi.customerFallback'));
 
     const receiverPhone = options.sensorTelepon
         ? maskPhone(invoice?.address?.phone || '', true)
@@ -1156,7 +1157,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
 
     // Format produk dengan informasi variant
     const productItems = invoice?.detail?.map((d: any) => {
-        const productName = d?.product?.product_name || 'Produk';
+        const productName = d?.product?.product_name || t('merchResi.productFallback');
         let variantInfo = '';
 
         // Ambil informasi variant dari detail.variant
@@ -1170,7 +1171,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
         }
 
         return `${d?.qty || 1}x ${productName}${variantInfo}`;
-    }).join(', ') || '1x Produk';
+    }).join(', ') || `1x ${t('merchResi.productFallback')}`;
 
     const totalQty = invoice?.total_qty || 1;
     const referenceNumber = invoice?.invoice_no || '';
@@ -1193,7 +1194,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Resi Pengiriman - ${trackingNumber}</title>
+            <title>${t('merchResi.docTitle', { no: trackingNumber })}</title>
             <style>
                 * {
                     box-sizing: border-box;
@@ -1434,7 +1435,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                 <div class="powered-by">Powered by Kolektix.com</div>
                 
                 <div class="tracking-number">
-                    Nomor Resi - ${trackingNumber}
+                    ${t('merchResi.trackingNumber', { no: trackingNumber })}
                 </div>
                 
                 <div class="qr-container">
@@ -1444,19 +1445,19 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                 </div>
                 
                 <div class="info-row">
-                    <span><strong>Ongkos Kirim:</strong> ${options.tampilkanHarga ? `Rp ${deliveryPrice.toLocaleString('id-ID')}` : '***'}</span>
-                    <span><strong>Layanan:</strong> ${courierType}</span>
+                    <span><strong>${t('merchResi.shippingCost')}</strong> ${options.tampilkanHarga ? `Rp ${deliveryPrice.toLocaleString('id-ID')}` : '***'}</span>
+                    <span><strong>${t('merchResi.service')}</strong> ${courierType}</span>
                 </div>
                 
                 <div class="reference">
-                    <span class="reference-label">Reference Number</span>
+                    <span class="reference-label">${t('merchResi.referenceNumber')}</span>
                     <div class="reference-value">${referenceNumber}</div>
                 </div>
                 
                 <div class="address-section">
                     <!-- Alamat Penerima -->
                     <div class="address-box">
-                        <div class="address-label">ALAMAT PENERIMA:</div>
+                        <div class="address-label">${t('merchResi.recipientAddress')}</div>
                         <div class="address-name">${receiverName}</div>
                         <div class="address-phone">${receiverPhone}</div>
                         <div class="address-detail">${receiverFullAddress}</div>
@@ -1464,7 +1465,7 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                     
                     <!-- Alamat Pengirim -->
                     <div class="address-box">
-                        <div class="address-label">ALAMAT PENGIRIM:</div>
+                        <div class="address-label">${t('merchResi.senderAddress')}</div>
                         <div class="address-name">${senderName}</div>
                         <div class="address-phone">${senderPhone}</div>
                         <div class="address-detail">${senderAddress}</div>
@@ -1472,20 +1473,20 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
                 </div>
                 
                 <div class="product-info">
-                    <span class="product-label">Jenis Barang:</span>
+                    <span class="product-label">${t('merchResi.itemType')}</span>
                     <div class="product-detail">
                         ${productItems}<br>
-                        <strong>Total Item:</strong> ${totalQty} pcs
+                        <strong>${t('merchResi.totalItems')}</strong> ${totalQty} pcs
                     </div>
                 </div>
                 
                 <div class="notes">
-                    <em>Catatan: ${orderNotes}</em>
+                    <em>${t('merchResi.notes', { notes: orderNotes })}</em>
                 </div>
                 
                 <div class="footer">
-                    Pengiriman melalui ${courierName}<br>
-                    kolektix.com - Solusi Marketplace Terintegrasi
+                    ${t('merchResi.shippedVia', { courier: courierName })}<br>
+                    ${t('merchResi.footer')}
                 </div>
             </div>
             <script>
@@ -1501,17 +1502,18 @@ const generateResiHTML = (invoice: any, options: PrintOptions): string => {
 };
 
 export default function MerchDetail() {
+    const { t } = useTranslation();
     const [data, setData] = useState<any>();
     const [imageList, setImageList] = useState<any[]>([]);
     const [loading, setLoading] = useListState<string>();
     const [statistics, setStatistics] = useState<StatisticsData[]>([
         {
-            text: 'Total Terjual',
+            text: t('merchDetail.totalSold'),
             value: 0,
             icon: 'akar-icons:shopping-bag',
         },
         {
-            text: 'Total Pendapatan',
+            text: t('merch.totalRevenue'),
             value: 0,
             icon: 'akar-icons:money',
             isCurrency: true,
@@ -1627,7 +1629,7 @@ export default function MerchDetail() {
 
     const handleStockMovementSubmit = async () => {
         if (!stockQty || stockQty <= 0) {
-            notifications.show({ title: "Error", message: "Qty harus lebih dari 0", color: "red" });
+            notifications.show({ title: t("common.error"), message: t("merchDetail.qtyMustPositive"), color: "red" });
             return;
         }
 
@@ -1665,23 +1667,23 @@ export default function MerchDetail() {
                 before: () => { },
                 success: (response: any) => {
                     if (response.status) {
-                        notifications.show({ title: "Berhasil", message: "Stok varian berhasil diupdate", color: "green" });
+                        notifications.show({ title: t("common.success"), message: t("merchDetail.variantStockUpdated"), color: "green" });
                         setIsStockModalOpen(false);
                         setStockQty(0);
                         setStockNotes("");
                         getData(); // Refresh the main merch data
                     } else {
-                        notifications.show({ title: "Error", message: response.message || "Gagal mengupdate stok", color: "red" });
+                        notifications.show({ title: t("common.error"), message: response.message || t("merchDetail.updateStockFailed"), color: "red" });
                     }
                 },
                 error: (error: any) => {
                     console.error("Error submitting stock:", error);
-                    notifications.show({ title: "Error", message: "Gagal mengupdate stok varian", color: "red" });
+                    notifications.show({ title: t("common.error"), message: t("merchDetail.updateVariantStockFailed"), color: "red" });
                 }
             });
         } catch (error) {
             console.error("Stock submit exception:", error);
-            notifications.show({ title: "Error", message: "Terjadi kesalahan sistem", color: "red" });
+            notifications.show({ title: t("common.error"), message: t("merchDetail.systemError"), color: "red" });
         } finally {
             setIsSubmittingStock(false);
         }
@@ -1886,13 +1888,10 @@ export default function MerchDetail() {
             setVariantSoldCounts(variantCounts);
 
             setStatistics(prev => prev.map(stat => {
-                if (stat.text === 'Total Terjual') {
-                    return { ...stat, value: totalQty };
-                }
-                if (stat.text === 'Total Pendapatan') {
+                if (stat.isCurrency) {
                     return { ...stat, value: totalRevenue };
                 }
-                return stat;
+                return { ...stat, value: totalQty };
             }));
 
             setTransactions(transactionsData);
@@ -2035,11 +2034,11 @@ export default function MerchDetail() {
             if (res?.data) {
                 setInvoiceDetail(res.data);
             } else {
-                setDetailError("Gagal mengambil rincian invoice.");
+                setDetailError(t("merchDetail.invoiceDetailFailed"));
             }
         } catch (err) {
             console.error("Error fetching invoice detail:", err);
-            setDetailError("Terjadi kesalahan saat mengambil rincian invoice.");
+            setDetailError(t("merchDetail.invoiceDetailError"));
         } finally {
             setLoadingDetail(false);
         }
@@ -2120,7 +2119,7 @@ export default function MerchDetail() {
         loadingToast.style.padding = '10px 20px';
         loadingToast.style.borderRadius = '5px';
         loadingToast.style.zIndex = '9999';
-        loadingToast.innerText = 'Mengambil data invoice...';
+        loadingToast.innerText = t('merchDetail.retrievingInvoice');
         document.body.appendChild(loadingToast);
 
         try {
@@ -2164,14 +2163,14 @@ export default function MerchDetail() {
 
             // Cek status
             if (!result || result.status === false) {
-                throw new Error(result?.message || 'Gagal mengambil data invoice');
+                throw new Error(result?.message || t('merchDetail.invoiceDataFailed'));
             }
 
             // Ambil data invoice
             const invoiceData = result.data || result;
 
             if (!invoiceData) {
-                throw new Error('Data invoice kosong');
+                throw new Error(t('merchDetail.invoiceDataEmpty'));
             }
 
             console.log('Invoice data received:', invoiceData);
@@ -2188,11 +2187,11 @@ export default function MerchDetail() {
             if (document.body.contains(loadingToast)) {
                 document.body.removeChild(loadingToast);
             }
-            setPrintError(error.message || 'Gagal mengambil data invoice');
+            setPrintError(error.message || t('merchDetail.invoiceDataFailed'));
             setPrintLoading(false);
 
             // Tampilkan alert error dengan detail
-            alert(`Gagal mengambil data invoice: ${error.message || 'Unknown error'}\n\nCek console untuk detail lebih lanjut.`);
+            alert(t('merchDetail.invoiceDataFailedConsole', { error: error.message || 'Unknown error' }));
         }
     };
 
@@ -2214,13 +2213,13 @@ export default function MerchDetail() {
 
     const handleBulkPrint = () => {
         if (selectedInvoiceIds.length === 0) return;
-        alert(`Mencetak ${selectedInvoiceIds.length} resi...`);
+        alert(t('merchDetail.printingLabels', { count: selectedInvoiceIds.length }));
     };
 
     // Fungsi untuk mencetak resi dengan opsi yang dipilih
     const handlePrintWithOptions = () => {
         if (!invoiceData) {
-            alert('Data invoice tidak tersedia');
+            alert(t('merchDetail.invoiceUnavailable'));
             return;
         }
 
@@ -2240,7 +2239,7 @@ export default function MerchDetail() {
                 tampilkanHarga
             };
 
-            const resiHTML = generateResiHTML(invoiceData, options);
+            const resiHTML = generateResiHTML(invoiceData, options, t);
 
             // Buka window baru untuk print
             const printWindow = window.open('', '_blank');
@@ -2248,7 +2247,7 @@ export default function MerchDetail() {
                 printWindow.document.write(resiHTML);
                 printWindow.document.close();
             } else {
-                alert('Popup blocker mungkin menghalangi pembukaan jendela cetak. Silakan izinkan popup untuk situs ini.');
+                alert(t('merchDetail.popupBlocker'));
             }
 
             // Tutup modal
@@ -2257,7 +2256,7 @@ export default function MerchDetail() {
 
         } catch (error: any) {
             console.error('Error generating receipt:', error);
-            alert(`Gagal membuat resi: ${error.message || 'Unknown error'}`);
+            alert(t('merchDetail.labelFailed', { error: error.message || 'Unknown error' }));
         }
     };
 
@@ -2278,7 +2277,7 @@ export default function MerchDetail() {
     const transactionColumns: TableColumn[] = [
         {
             accessor: 'no',
-            title: 'No',
+            title: t('event.noLabel'),
             width: 50,
             render: (item: any, index?: number) => {
                 const rowIndex = index !== undefined
@@ -2291,7 +2290,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'invoice_no',
-            title: 'Invoice No',
+            title: t('merchDetail.colInvoiceNo'),
             width: 150,
             render: (item: any) => (
                 <Text ta="center" size="sm">{String(item.invoice_no || '-')}</Text>
@@ -2299,7 +2298,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'order_date',
-            title: 'Tanggal',
+            title: t('merchDetail.date'),
             width: 110,
             render: (item: any) => (
                 <Text ta="center" size="sm">{item.order_date ? moment(item.order_date).format('DD/MM/YY') : '-'}</Text>
@@ -2307,7 +2306,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'customer_name',
-            title: 'Customer',
+            title: t('merchDetail.customerName'),
             width: 140,
             render: (item: any) => (
                 <Text ta="center" size="sm" truncate>{String(item.customer_name || '-')}</Text>
@@ -2315,7 +2314,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'product_variant',
-            title: 'Varian',
+            title: t('merchDetail.variant'),
             width: 100,
             render: (item: any) => {
                 const variant = item.product_variant;
@@ -2325,7 +2324,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'total_qty',
-            title: 'Qty',
+            title: t('merchTrx.qty'),
             width: 60,
             render: (item: any) => (
                 <Text ta="center" size="sm">{Number(item.total_qty) || 0}</Text>
@@ -2333,7 +2332,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'total_price',
-            title: 'Total',
+            title: t('event.total'),
             width: 120,
             render: (item: any) => (
                 <Text ta="center" size="sm" fw={500}>{formatRupiah(item.total_price)}</Text>
@@ -2341,7 +2340,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'status_name',
-            title: 'Status Pembayaran',
+            title: t('merchDetail.paymentStatus'),
             width: 130,
             render: (item: any) => {
                 const statusInfo = getStatusInfo(item.transaction_status_id);
@@ -2356,11 +2355,11 @@ export default function MerchDetail() {
         },
         {
             accessor: 'shipping_status',
-            title: 'Status Pengiriman',
+            title: t('merchDetail.deliveryStatus'),
             width: 140,
             render: (item: any) => {
                 const latestManifest = item.latest_manifest;
-                let statusLabel = "Menunggu Penjual";
+                let statusLabel = t('merchDetail.waitingSeller');
                 let badgeColor = "yellow";
 
                 if (latestManifest && latestManifest.tracking_status_id) {
@@ -2375,7 +2374,7 @@ export default function MerchDetail() {
                             badgeColor = "gray";
                         }
                     } else {
-                        statusLabel = latestManifest.status || "Menunggu Penjual";
+                        statusLabel = latestManifest.status || t('merchDetail.waitingSeller');
                         badgeColor = "gray";
                     }
                 }
@@ -2391,7 +2390,7 @@ export default function MerchDetail() {
         },
         {
             accessor: 'payment_method',
-            title: 'Metode Pembayaran',
+            title: t('merchDetail.paymentMethod'),
             width: 140,
             render: (item: any) => {
                 const methodToDisplay = item.payment_method_custom || item.payment_method || '-';
@@ -2402,16 +2401,16 @@ export default function MerchDetail() {
         },
         {
             accessor: 'actions',
-            title: 'Aksi',
+            title: t('common.actions'),
             width: 140,
             render: (item: any) => (
                 <Flex justify="center" align="center" gap="xs">
-                    <Tooltip label="Detail Invoice">
+                    <Tooltip label={t('merchTrx.invoiceDetail')}>
                         <ActionIcon
                             variant="light"
                             color="blue"
                             onClick={() => handleViewInvoiceDetail(item)}
-                            title="Lihat Detail"
+                            title={t('merchDetail.viewDetails')}
                             size="md"
                             radius="md"
                         >
@@ -2423,12 +2422,12 @@ export default function MerchDetail() {
                         onChange={() => toggleSelectInvoice(item.invoice_no)}
                         size="xs"
                     />
-                    <Tooltip label="Cetak Resi">
+                    <Tooltip label={t('merchDetail.printLabel')}>
                         <ActionIcon
                             variant="filled"
                             color="blue"
                             onClick={() => handlePrintClick(item.invoice_no)}
-                            title="Cetak Resi"
+                            title={t('merchDetail.printLabel')}
                             size="md"
                             radius="md"
                             loading={printLoading && selectedInvoice === item.invoice_no}
@@ -2487,17 +2486,17 @@ export default function MerchDetail() {
     return (
         <>
             {/* Modal QR Code Produk */}
-            <Modal opened={qrOpened} onClose={closeQr} title="QR Code Produk" centered size="md">
+            <Modal opened={qrOpened} onClose={closeQr} title={t('merchDetail.qrTitle')} centered size="md">
                 <Stack align="center" gap="md">
                     <Image
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(productUrl)}`}
-                        alt={`QR Code untuk ${data?.product_name || 'produk'}`}
+                        alt={t('merchDetail.qrFor', { name: data?.product_name || 'produk' })}
                         width={250}
                         height={250}
                         style={{ objectFit: 'contain' }}
                     />
                     <Text size="sm" ta="center">
-                        Scan QR code untuk melihat halaman merchandise
+                        {t('merchDetail.qrDesc')}
                     </Text>
                     <Text size="xs" c="dimmed" ta="center">
                         Link: <Anchor href={productUrl} target="_blank" size="xs">{productUrl}</Anchor>
@@ -2507,14 +2506,14 @@ export default function MerchDetail() {
                             onClick={downloadQRCode}
                             leftSection={<Icon icon="solar:download-bold" width={18} />}
                         >
-                            Download QR Code
+                            {t('merchDetail.downloadQr')}
                         </Button>
                         <Button
                             variant="light"
                             onClick={() => window.open(productUrl, '_blank')}
                             leftSection={<Icon icon="proicons:open" width={18} />}
                         >
-                            Buka Halaman
+                            {t('merchDetail.openPage')}
                         </Button>
                     </Group>
                 </Stack>
@@ -2524,9 +2523,9 @@ export default function MerchDetail() {
             <Modal opened={showPrintOptions} onClose={() => {
                 setShowPrintOptions(false);
                 setInvoiceData(null);
-            }} title="Opsi Cetak Resi" centered size="sm">
+            }} title={t('merchDetail.printOptions')} centered size="sm">
                 <Stack>
-                    <Text size="sm">Pilih opsi untuk resi - {selectedInvoice}</Text>
+                    <Text size="sm">{t('merchDetail.printOptionsFor', { invoice: selectedInvoice })}</Text>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <input
@@ -2535,7 +2534,7 @@ export default function MerchDetail() {
                             checked={sensorNama}
                             onChange={(e) => setSensorNama(e.target.checked)}
                         />
-                        <label htmlFor="sensorNama">Sensor Nama Penerima</label>
+                        <label htmlFor="sensorNama">{t('merchDetail.maskRecipientName')}</label>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2545,7 +2544,7 @@ export default function MerchDetail() {
                             checked={sensorTelepon}
                             onChange={(e) => setSensorTelepon(e.target.checked)}
                         />
-                        <label htmlFor="sensorTelepon">Sensor Nomor Telepon</label>
+                        <label htmlFor="sensorTelepon">{t('merchDetail.maskPhone')}</label>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2555,7 +2554,7 @@ export default function MerchDetail() {
                             checked={sensorAlamat}
                             onChange={(e) => setSensorAlamat(e.target.checked)}
                         />
-                        <label htmlFor="sensorAlamat">Sensor Alamat (hanya kota)</label>
+                        <label htmlFor="sensorAlamat">{t('merchDetail.maskAddress')}</label>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2565,7 +2564,7 @@ export default function MerchDetail() {
                             checked={tampilkanHarga}
                             onChange={(e) => setTampilkanHarga(e.target.checked)}
                         />
-                        <label htmlFor="tampilkanHarga">Tampilkan Harga</label>
+                        <label htmlFor="tampilkanHarga">{t('merchDetail.showPrice')}</label>
                     </div>
 
                     {printError && (
@@ -2576,8 +2575,8 @@ export default function MerchDetail() {
                         <Button variant="light" onClick={() => {
                             setShowPrintOptions(false);
                             setInvoiceData(null);
-                        }}>Batal</Button>
-                        <Button onClick={handlePrintWithOptions}>Cetak Resi</Button>
+                        }}>{t('common.cancel')}</Button>
+                        <Button onClick={handlePrintWithOptions}>{t('merchDetail.printLabel')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -2599,7 +2598,7 @@ export default function MerchDetail() {
 
                             <Stack gap={0} flex={1}>
                                 <Text size="xs" c="gray" mb={2}>
-                                    Dibuat pada {data?.created_at ? moment(data.created_at).format('DD MMMM YYYY') : '-'}
+                                    {data?.created_at ? t('merchDetail.createdOn', { date: moment(data.created_at).format('DD MMMM YYYY') }) : '-'}
                                 </Text>
                                 <Flex gap={10} align="center">
                                     <button
@@ -2610,7 +2609,7 @@ export default function MerchDetail() {
                                         <Icon icon="ph:arrow-left-bold" />
                                     </button>
                                     <Title size="h2" style={{ fontSize: '24px' }}>{data?.product_name || '-'}</Title>
-                                    <Tooltip label="Tampilkan QR Code">
+                                    <Tooltip label={t('merchDetail.showQr')}>
                                         <ActionIcon
                                             variant="transparent"
                                             onClick={openQr}
@@ -2630,10 +2629,10 @@ export default function MerchDetail() {
                                 </Flex>
                                 <Stack gap={4} mt={10}>
                                     <Text size="sm" fw={600} c="gray.7">
-                                        Total Terjual: {data?.total_sold || 0} unit
+                                        {t('merchDetail.totalSoldLabel')} {data?.total_sold || 0} unit
                                     </Text>
                                     <Text size="xs" fw={500} c="dimmed">
-                                        Varian Terjual:
+                                        {t('merchDetail.variantsSoldLabel')}
                                     </Text>
                                     <Group gap={6}>
                                         {productVariants.length > 0 ? (
@@ -2649,22 +2648,22 @@ export default function MerchDetail() {
                                                 </Badge>
                                             ))
                                         ) : (
-                                            <Text size="xs" c="dimmed" fs="italic">Belum ada varian terjual</Text>
+                                            <Text size="xs" c="dimmed" fs="italic">{t('merchDetail.noVariantsSold')}</Text>
                                         )}
                                     </Group>
 
                                     <Stack gap={2} mt={8}>
-                                        <Text size="xs" fw={500} c="gray.7">Halaman Produk</Text>
+                                        <Text size="xs" fw={500} c="gray.7">{t('merchDetail.productPage')}</Text>
                                         <Flex align="center" gap={4}>
                                             <Box bg="gray.1" px={10} py={4} style={{ borderRadius: '6px', maxWidth: '200px', overflow: 'hidden' }}>
                                                 <Text size="xs" c="gray.8" truncate>{productUrl}</Text>
                                             </Box>
-                                            <Tooltip label="Salin Link">
+                                            <Tooltip label={t('merchDetail.copyLink')}>
                                                 <ActionIcon variant="transparent" c="blue" onClick={() => navigator.clipboard.writeText(productUrl)}>
                                                     <Icon icon="solar:copy-linear" width={18} />
                                                 </ActionIcon>
                                             </Tooltip>
-                                            <Tooltip label="Buka Halaman">
+                                            <Tooltip label={t('merchDetail.openPage')}>
                                                 <ActionIcon variant="transparent" c="blue" component="a" href={productUrl} target="_blank">
                                                     <Icon icon="iconamoon:send-light" width={18} />
                                                 </ActionIcon>
@@ -2681,7 +2680,7 @@ export default function MerchDetail() {
                                 <Accordion.Control>
                                     <Flex gap={10} align="center">
                                         <Icon icon="solar:chart-square-bold" className="text-primary-base" width={20} />
-                                        <Text fw={600}>Statistik Merchandise</Text>
+                                        <Text fw={600}>{t('merchDetail.merchStats')}</Text>
                                     </Flex>
                                 </Accordion.Control>
                                 <Accordion.Panel>
@@ -2715,10 +2714,10 @@ export default function MerchDetail() {
                     <Tabs defaultValue="transaction">
                         <Tabs.List>
                             <Tabs.Tab value="transaction" leftSection={<Icon icon="fluent:money-16-regular" />}>
-                                Transaksi ({filteredTransactions.length})
+                                {t('merchDetail.transactions', { count: filteredTransactions.length })}
                             </Tabs.Tab>
                             <Tabs.Tab value="stock" leftSection={<Icon icon="solar:box-bold" width={16} />}>
-                                Stock Report
+                                {t('merchDetail.stockReport')}
                             </Tabs.Tab>
                         </Tabs.List>
 
@@ -2729,7 +2728,7 @@ export default function MerchDetail() {
                                     if (variants.length === 0) {
                                         return (
                                             <Box py="xl" ta="center">
-                                                <Text c="dimmed">Belum ada data varian produk</Text>
+                                                <Text c="dimmed">{t('merchDetail.noVariantData')}</Text>
                                             </Box>
                                         );
                                     }
@@ -2738,7 +2737,7 @@ export default function MerchDetail() {
                                             <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
                                                 <thead>
                                                     <tr style={{ backgroundColor: '#f5f7fa', borderBottom: '2px solid #e8e8e8' }}>
-                                                        {['Varian', 'SKU', 'Harga', 'Stock Awal', 'Terjual', 'Paid', 'Pending', 'Expired', 'Sisa Stock', 'Aksi'].map(col => (
+                                                        {[t('merchDetail.variant'), t('createMerch.colSku'), t('createMerch.price'), t('merchDetail.initialStock'), t('merchDetail.sold'), 'Paid', 'Pending', 'Expired', t('merchDetail.remainingStock'), t('common.actions')].map(col => (
                                                             <th key={col} style={{ padding: '10px 16px', textAlign: col === 'Aksi' ? 'center' : 'left', fontSize: '11px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col}</th>
                                                         ))}
                                                     </tr>
@@ -2799,7 +2798,7 @@ export default function MerchDetail() {
                                                                     </Badge>
                                                                 </td>
                                                                 <td style={{ padding: '14px 16px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                                                                    <Tooltip label="Manajemen Stok">
+                                                                    <Tooltip label={t('merchDetail.stockManagement')}>
                                                                         <ActionIcon 
                                                                             variant="light" 
                                                                             color="blue" 
@@ -2846,9 +2845,9 @@ export default function MerchDetail() {
                                         />
                                         <Group gap="sm">
                                             <Select
-                                                placeholder="Filter Status"
+                                                placeholder={t('common.status')}
                                                 data={[
-                                                    { value: 'all', label: 'Semua Status' },
+                                                    { value: 'all', label: t('merchDetail.allStatus') },
                                                     { value: 'success', label: 'Success' },
                                                     { value: 'pending', label: 'Pending' },
                                                     { value: 'failed', label: 'Failed' },
@@ -2860,9 +2859,9 @@ export default function MerchDetail() {
                                                 size="sm"
                                             />
                                             <Select
-                                                placeholder="Filter Varian"
+                                                placeholder={t('merchDetail.filterVariant')}
                                                 data={[
-                                                    { value: 'all', label: 'Semua Varian' },
+                                                    { value: 'all', label: t('merchDetail.allVariants') },
                                                     ...(productVariants || []).map(v => ({
                                                         value: v.name,
                                                         label: v.name
@@ -2875,12 +2874,12 @@ export default function MerchDetail() {
                                                 size="sm"
                                             />
                                             <Select
-                                                placeholder="Urutkan"
+                                                placeholder={t('merchDetail.sort')}
                                                 data={[
-                                                    { value: 'newest', label: 'Terbaru' },
-                                                    { value: 'oldest', label: 'Terlama' },
-                                                    { value: 'highest', label: 'Total Tertinggi' },
-                                                    { value: 'lowest', label: 'Total Terendah' },
+                                                    { value: 'newest', label: t('merchDetail.newest') },
+                                                    { value: 'oldest', label: t('merchDetail.oldest') },
+                                                    { value: 'highest', label: t('merchDetail.highestTotal') },
+                                                    { value: 'lowest', label: t('merchDetail.lowestTotal') },
                                                 ]}
                                                 value={sortBy}
                                                 onChange={handleSortChange}
@@ -2889,7 +2888,7 @@ export default function MerchDetail() {
                                                 size="sm"
                                             />
                                             <TextInput
-                                                placeholder="Cari invoice, customer, produk..."
+                                                placeholder={t('merchDetail.searchTrx')}
                                                 leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                                                 value={searchValue}
                                                 onChange={(e) => handleSearch(e.target.value)}
@@ -2900,9 +2899,12 @@ export default function MerchDetail() {
                                     </Flex>
                                     <Flex align="center" gap="sm" mb="sm">
                                         <Text size="xs" c="gray">
-                                            Menampilkan {filteredTransactions.length > 0 ? `${startItem}-${endItem}` : '0'} dari {filteredTransactions.length} transaksi
-                                            {filterBy && filterBy !== 'all' && ` dengan status ${filterBy}`}
-                                            {selectedVariant && selectedVariant !== 'all' && `, varian ${selectedVariant}`}
+                                            {t('merchDetail.showingOf', {
+                                                from: filteredTransactions.length > 0 ? `${startItem}-${endItem}` : '0',
+                                                total: filteredTransactions.length
+                                            })}
+                                            {filterBy && filterBy !== 'all' && ` ${t('merchDetail.withStatus', { status: filterBy })}`}
+                                            {selectedVariant && selectedVariant !== 'all' && `, ${t('merchDetail.variantFilter', { variant: selectedVariant })}`}
                                         </Text>
                                     </Flex>
                                 </Box>
@@ -2959,14 +2961,14 @@ export default function MerchDetail() {
                                                         >
                                                             {col.accessor === 'actions' ? (
                                                                 <Flex align="center" justify="center" gap="xs">
-                                                                    <span style={{ fontSize: '14px', fontWeight: 600 }}>Aksi</span>
+                                                                    <span style={{ fontSize: '14px', fontWeight: 600 }}>{t('common.actions')}</span>
                                                                     <Checkbox
                                                                         checked={selectedInvoiceIds.length === paginatedTransactions.length && paginatedTransactions.length > 0}
                                                                         indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedTransactions.length}
                                                                         onChange={toggleSelectAll}
                                                                         size="xs"
                                                                     />
-                                                                    <Tooltip label={`Cetak Resi ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
+                                                                    <Tooltip label={`${t('merchDetail.printLabel')} ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
                                                                         <ActionIcon
                                                                             variant="transparent"
                                                                             color="blue"
@@ -3062,7 +3064,7 @@ export default function MerchDetail() {
                                 {filteredTransactions.length > 0 && (
                                     <Flex justify="space-between" align="center" mt="xl">
                                         <Text size="sm" c="gray">
-                                            Menampilkan halaman {currentPage} dari {totalPages}
+                                            {t('merchTrx.pageOf', { page: currentPage, totalPages: totalPages })}
                                         </Text>
                                         <Pagination
                                             total={totalPages}
@@ -3080,7 +3082,7 @@ export default function MerchDetail() {
                                     <Stack align="center" gap="md" mt="xl" py={50}>
                                         <Icon icon="solar:box-minimalistic-broken" width={64} className="text-gray-400" />
                                         <Text ta="center" c="gray" size="lg" fw={500}>
-                                            Tidak ada data transaksi
+                                            {t('merchDetail.noTrxData')}
                                         </Text>
                                         {(searchValue || filterBy !== 'all' || selectedVariant !== 'all') && (
                                             <Button
@@ -3097,7 +3099,7 @@ export default function MerchDetail() {
                                                     applyFilters('', 'all', 'newest', 'all', null, 'asc', transactions);
                                                 }}
                                             >
-                                                Reset Filter
+                                                {t('merchDetail.resetFilter')}
                                             </Button>
                                         )}
                                     </Stack>
@@ -3135,9 +3137,9 @@ export default function MerchDetail() {
                                                 <FontAwesomeIcon icon={faFileInvoice} className="h-5 w-5 text-white" />
                                             </div>
                                             <div>
-                                                <h2 className="text-lg font-bold text-white">Detail Pesanan</h2>
+                                                <h2 className="text-lg font-bold text-white">{t('merchDetail.orderDetails')}</h2>
                                                 <p className="text-xs text-white/90 flex items-center gap-2">
-                                                    <span>Order ID: {selectedInvoiceDetail?.invoice_no || '-'}</span>
+                                                    <span>{t('merchDetail.orderIdLabel')}: {selectedInvoiceDetail?.invoice_no || '-'}</span>
                                                     <button
                                                         onClick={() => copyToClipboard(selectedInvoiceDetail?.invoice_no || '')}
                                                         className="text-white/70 hover:text-white"
@@ -3184,7 +3186,7 @@ export default function MerchDetail() {
                                                                 <FontAwesomeIcon icon={invoiceDetail.transaction_status?.name.toLowerCase().includes('expired') ? faExclamationCircle : faCheckCircle} className="h-5 w-5" />
                                                             </div>
                                                             <div>
-                                                                <p className="text-[10px] items-center uppercase tracking-wider text-gray-500 font-bold">Status Pesanan</p>
+                                                                <p className="text-[10px] items-center uppercase tracking-wider text-gray-500 font-bold">{t('merchDetail.orderStatus')}</p>
                                                                 <p className="text-sm font-bold text-gray-800">{invoiceDetail.transaction_status?.name || '-'}</p>
                                                             </div>
                                                         </div>
@@ -3196,15 +3198,15 @@ export default function MerchDetail() {
                                                                 <FontAwesomeIcon icon={faTruck} className="h-5 w-5" />
                                                             </div>
                                                             <div>
-                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Status Pengiriman</p>
+                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('merchDetail.deliveryStatus')}</p>
                                                                 <p className="text-sm font-bold text-gray-800">
-                                                                    {invoiceDetail.manifest?.[0]?.status || 'Order berhasil dibuat'}
+                                                                    {invoiceDetail.manifest?.[0]?.status || t('merchDetail.orderCreated')}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">No. Resi</p>
+                                                        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{t('merchDetail.trackingNo')}</p>
                                                         <p className="text-sm font-bold text-blue-600 font-mono tracking-wider">{trackingNumber}</p>
                                                         <p className="text-[10px] text-gray-400 mt-0.5">{invoiceDetail.courier?.courier_type || 'jne reg'}</p>
                                                     </div>
@@ -3219,18 +3221,18 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faBox} className="text-blue-500 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-blue-900">Informasi Paket</span>
+                                                                    <span className="text-sm font-bold text-blue-900">{t('merchDetail.packageInfo')}</span>
                                                                 </div>
                                                                 <div className="p-0 overflow-hidden">
                                                                     <table className="w-100 min-w-full divide-y divide-gray-100">
                                                                         <thead className="bg-gray-50/50">
                                                                             <tr>
-                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Nama Barang</th>
-                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Varian</th>
-                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">Qty</th>
-                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Harga</th>
-                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">Subtotal</th>
-                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">Catatan</th>
+                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('merchDetail.itemName')}</th>
+                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('merchDetail.variant')}</th>
+                                                                                <th className="px-4 py-3 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('merchTrx.qty')}</th>
+                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('createMerch.price')}</th>
+                                                                                <th className="px-4 py-3 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('merchPickup.subtotal')}</th>
+                                                                                <th className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider">{t('merchDetail.notes')}</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="bg-white border-b border-light-grey">
@@ -3266,7 +3268,7 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faMapMarkerAlt} className="text-blue-500 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-blue-900">Alamat Pengiriman</span>
+                                                                    <span className="text-sm font-bold text-blue-900">{t('merchTrx.shippingAddress')}</span>
                                                                 </div>
                                                                 <div className="p-5">
                                                                     <div className="flex items-start gap-4">
@@ -3289,11 +3291,11 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faFileInvoice} className="text-blue-500 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-blue-900">Ringkasan Pesanan</span>
+                                                                    <span className="text-sm font-bold text-blue-900">{t('merchTrx.orderSummary')}</span>
                                                                 </div>
                                                                 <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-6">
                                                                     <div className="space-y-1">
-                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Order ID</p>
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchDetail.orderIdLabel')}</p>
                                                                         <div className="flex items-center gap-2">
                                                                             <p className="text-sm font-bold text-gray-800 font-mono tracking-tight">{invoiceDetail.invoice_no}</p>
                                                                             <button onClick={() => copyToClipboard(invoiceDetail.invoice_no)} className="text-gray-300 hover:text-blue-500 transition-colors">
@@ -3302,21 +3304,21 @@ export default function MerchDetail() {
                                                                         </div>
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Tanggal Order</p>
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchTrx.orderDate')}</p>
                                                                         <div className="flex items-center gap-1.5">
                                                                             <FontAwesomeIcon icon={faCalendar} className="h-3 w-3 text-gray-300" />
                                                                             <p className="text-sm font-bold text-gray-800">{formatDateDetail(invoiceDetail.created_at)}</p>
                                                                         </div>
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Kurir</p>
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchDetail.courier')}</p>
                                                                         <div className="flex items-center gap-1.5">
                                                                             <FontAwesomeIcon icon={faTruck} className="h-3 w-3 text-gray-300" />
                                                                             <p className="text-sm font-bold text-gray-800">{invoiceDetail.courier?.courier_company || 'jne reg'}</p>
                                                                         </div>
                                                                     </div>
                                                                     <div className="space-y-1">
-                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Berat</p>
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchTrx.weight')}</p>
                                                                         <div className="flex items-center gap-1.5">
                                                                             <FontAwesomeIcon icon={faWeightHanging} className="h-3 w-3 text-gray-300" />
                                                                             <p className="text-sm font-bold text-gray-800">1 gram</p>
@@ -3333,7 +3335,7 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faTimeline} className="text-blue-500 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-blue-900">Riwayat Pelacakan</span>
+                                                                    <span className="text-sm font-bold text-blue-900">{t('merchTrx.trackingHistory')}</span>
                                                                 </div>
                                                                 <div className="p-5 max-h-[400px] overflow-y-auto">
                                                                     {invoiceDetail.history && invoiceDetail.history.length > 0 ? (
@@ -3348,8 +3350,8 @@ export default function MerchDetail() {
                                                                                         <p className={`text-sm font-bold ${idx === 0 ? 'text-blue-600' : 'text-gray-700'}`}>{h.status}</p>
                                                                                         <p className="text-[11px] leading-relaxed text-gray-500 font-medium">{h.note}</p>
                                                                                         <div className="flex items-center gap-1.5 mt-1 text-[10px] text-gray-400">
-                                                                                            <FontAwesomeIcon icon={faMapMarkerAlt} className="h-2 w-2" />
-                                                                                            <span>Warehouse</span>
+                                                                                                <FontAwesomeIcon icon={faMapMarkerAlt} className="h-2 w-2" />
+                                                                                                <span>{t('merchDetail.warehouse')}</span>
                                                                                             <span className="mx-1">•</span>
                                                                                             <span>{formatDateDetail(h.created_at)}</span>
                                                                                         </div>
@@ -3362,8 +3364,8 @@ export default function MerchDetail() {
                                                                             <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
                                                                                 <FontAwesomeIcon icon={faHourglassHalf} className="text-gray-300 h-5 w-5" />
                                                                             </div>
-                                                                            <p className="text-sm font-bold text-gray-800">Menunggu data kurir</p>
-                                                                            <p className="text-[11px] text-gray-500 mt-1">Status pengiriman akan diperbarui secara otomatis</p>
+                                                                            <p className="text-sm font-bold text-gray-800">{t('merchDetail.waitingCourier')}</p>
+                                                                            <p className="text-[11px] text-gray-500 mt-1">{t('merchDetail.autoUpdateStatus')}</p>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -3374,23 +3376,23 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-green-50 px-4 py-3 border-b border-green-100 flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faTag} className="text-green-600 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-green-900">Ringkasan Pembayaran</span>
+                                                                    <span className="text-sm font-bold text-green-900">{t('merchDetail.paymentSummary')}</span>
                                                                 </div>
                                                                 <div className="p-5 space-y-3">
                                                                     <div className="flex justify-between items-center text-sm font-medium">
-                                                                        <span className="text-gray-600">Total Harga</span>
+                                                                        <span className="text-gray-600">{t('merchTrx.totalPrice')}</span>
                                                                         <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.total_price)}</span>
                                                                     </div>
                                                                     <div className="flex justify-between items-center text-sm font-medium">
-                                                                        <span className="text-gray-600">Ongkos Kirim</span>
+                                                                        <span className="text-gray-600">{t('merchTrx.shippingCost')}</span>
                                                                         <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.delivery_price)}</span>
                                                                     </div>
                                                                     <div className="flex justify-between items-center text-sm font-medium">
-                                                                        <span className="text-gray-600">Admin Fee</span>
+                                                                        <span className="text-gray-600">{t('merchDetail.adminFee')}</span>
                                                                         <span className="text-gray-900 font-bold">{formatRupiah(invoiceDetail.admin_fee || 2000)}</span>
                                                                     </div>
                                                                     <div className="pt-3 border-t border-green-100 flex justify-between items-center">
-                                                                        <span className="text-sm font-bold text-gray-800">Total Tagihan</span>
+                                                                        <span className="text-sm font-bold text-gray-800">{t('merchTrx.totalDue')}</span>
                                                                         <span className="text-lg font-bold text-green-600 tracking-tight">{formatRupiah(invoiceDetail.grandtotal || (Number(invoiceDetail.total_price) + Number(invoiceDetail.delivery_price) + (invoiceDetail.admin_fee || 2000)))}</span>
                                                                     </div>
                                                                 </div>
@@ -3401,7 +3403,7 @@ export default function MerchDetail() {
                                                             <CardBody className="p-0">
                                                                 <div className="bg-gray-50/50 px-4 py-3 border-b border-light-grey flex items-center gap-2">
                                                                     <FontAwesomeIcon icon={faCreditCard} className="text-gray-500 h-4 w-4" />
-                                                                    <span className="text-sm font-bold text-gray-700">Detail Transaksi</span>
+                                                                    <span className="text-sm font-bold text-gray-700">{t('merchTrx.trxDetails')}</span>
                                                                 </div>
                                                                 <div className="p-5 space-y-4">
                                                                     <div className="flex items-center gap-3">
@@ -3409,8 +3411,8 @@ export default function MerchDetail() {
                                                                             <FontAwesomeIcon icon={faCalendar} className="h-4 w-4" />
                                                                         </div>
                                                                         <div>
-                                                                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Tanggal</p>
-                                                                            <p className="text-xs font-bold text-gray-800">{formatDateDetail(invoiceDetail.created_at)}</p>
+                                                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchDetail.date')}</p>
+                                                                        <p className="text-xs font-bold text-gray-800">{formatDateDetail(invoiceDetail.created_at)}</p>
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex items-start gap-3">
@@ -3418,7 +3420,7 @@ export default function MerchDetail() {
                                                                             <FontAwesomeIcon icon={faFileInvoice} className="h-4 w-4" />
                                                                         </div>
                                                                         <div className="space-y-1">
-                                                                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Deskripsi</p>
+                                                                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{t('merchTrx.description')}</p>
                                                                             <p className="text-xs font-medium text-gray-600 leading-relaxed pr-2">
                                                                                 Payment with {formatPaymentMethodDetail(invoiceDetail.payment_method)} {invoiceDetail.invoice_no}
                                                                             </p>
@@ -3439,7 +3441,7 @@ export default function MerchDetail() {
                                         onPress={onClose}
                                         className="font-bold text-gray-600 h-10 px-6 rounded-xl border border-light-grey hover:bg-gray-100 transition-all"
                                     >
-                                        Tutup
+                                        {t('common.close')}
                                     </NextUIButton>
                                     <NextLink href={`/dashboard/merch-transaction`} passHref>
                                         <NextUIButton
@@ -3449,7 +3451,7 @@ export default function MerchDetail() {
                                             className="font-bold h-10 px-6 rounded-xl border border-blue-100 hover:bg-blue-50 transition-all flex items-center gap-2"
                                         >
                                             <FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />
-                                            Lihat Invoice Lengkap
+                                            {t('merchTrx.viewFullInvoice')}
                                         </NextUIButton>
                                     </NextLink>
                                     <NextUIButton
@@ -3459,7 +3461,7 @@ export default function MerchDetail() {
                                         isLoading={printLoading}
                                     >
                                         <FontAwesomeIcon icon={faPrint} className="h-3.5 w-3.5" />
-                                        Cetak Resi
+                                        {t('merchDetail.printLabel')}
                                     </NextUIButton>
                                 </ModalFooter>
                             </>
@@ -3471,74 +3473,74 @@ export default function MerchDetail() {
             <Modal
                 opened={isStockModalOpen}
                 onClose={() => setIsStockModalOpen(false)}
-                title="Buat Stock Movement Varian"
+                title={t('merchDetail.stockMovementTitle')}
                 size="xl"
             >
                 <Stack gap="md">
                     <Card p="md" withBorder>
                         <Stack gap="sm">
-                            <TextInput 
-                                label="Nama Varian" 
-                                value={selectedStockVariant?.varian_name || selectedStockVariant?.name || selectedStockVariant?.variant_name || '-'} 
-                                readOnly 
+                            <TextInput
+                                label={t('merchDetail.variantNameLabel')}
+                                value={selectedStockVariant?.varian_name || selectedStockVariant?.name || selectedStockVariant?.variant_name || '-'}
+                                readOnly
                                 variant="filled"
                             />
                             <SimpleGrid cols={2}>
-                                <NumberInput 
-                                    label="Qty" 
-                                    placeholder="Masukkan kuantitas"
-                                    value={stockQty} 
-                                    onChange={(val) => setStockQty(typeof val === 'number' ? val : 0)} 
+                                <NumberInput
+                                    label={t('merchDetail.qtyLabel')}
+                                    placeholder={t('merchDetail.enterQty')}
+                                    value={stockQty}
+                                    onChange={(val) => setStockQty(typeof val === 'number' ? val : 0)}
                                     required
                                     min={0}
                                 />
                                 <Select
-                                    label="Jenis Referensi"
-                                    placeholder="Pilih referensi"
+                                    label={t('stock.referenceType')}
+                                    placeholder={t('merchDetail.selectReference')}
                                     data={[
-                                        { value: 'restock_supplier', label: 'Restock Supplier' },
-                                        { value: 'produksi_internal', label: 'Produksi Internal' },
-                                        { value: 'return_customer', label: 'Return Customer' },
-                                        { value: 'order', label: 'Order' },
-                                        { value: 'return_supplier', label: 'Return Supplier' },
-                                        { value: 'damaged', label: 'Damaged' },
+                                        { value: 'restock_supplier', label: t('merchDetail.refRestockSupplier') },
+                                        { value: 'produksi_internal', label: t('merchDetail.refInternalProduction') },
+                                        { value: 'return_customer', label: t('merchDetail.refCustomerReturn') },
+                                        { value: 'order', label: t('merchDetail.refOrder') },
+                                        { value: 'return_supplier', label: t('merchDetail.refSupplierReturn') },
+                                        { value: 'damaged', label: t('merchDetail.refDamaged') },
                                     ]}
                                     value={stockReferenceType}
                                     onChange={(val) => setStockReferenceType(val || 'restock_supplier')}
                                 />
                             </SimpleGrid>
-                            <Textarea 
-                                label="Keterangan Tambahan" 
-                                placeholder="Masukkan keterangan (opsional)"
-                                value={stockNotes} 
-                                onChange={(e) => setStockNotes(e.currentTarget.value)} 
+                            <Textarea
+                                label={t('merchDetail.additionalNotes')}
+                                placeholder={t('stock.optionalNotes')}
+                                value={stockNotes}
+                                onChange={(e) => setStockNotes(e.currentTarget.value)}
                             />
                             <Group justify="flex-end" mt="md">
-                                <Button variant="light" onClick={() => setIsStockModalOpen(false)}>Batal</Button>
+                                <Button variant="light" onClick={() => setIsStockModalOpen(false)}>{t('common.cancel')}</Button>
                                 <Button 
                                     onClick={handleStockMovementSubmit} 
                                     loading={isSubmittingStock}
                                 >
-                                    Simpan Perubahan
+                                    {t('stock.saveChanges')}
                                 </Button>
                             </Group>
                         </Stack>
                     </Card>
 
-                    <Title order={5} mt="md">Riwayat Terakhir Varian Terpilih</Title>
+                    <Title order={5} mt="md">{t('stock.latestHistory')}</Title>
                     {isFetchingHistory ? (
-                        <Text ta="center" c="dimmed">Memuat riwayat...</Text>
+                        <Text ta="center" c="dimmed">{t('stock.loadingHistory')}</Text>
                     ) : variantHistory.length === 0 ? (
-                        <Text ta="center" c="dimmed">Belum ada riwayat stock untuk varian ini.</Text>
+                        <Text ta="center" c="dimmed">{t('stock.noVariantHistory')}</Text>
                     ) : (
                         <Box style={{ maxHeight: 300, overflowY: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                 <thead>
                                     <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                                        <th style={{ padding: '8px', textAlign: 'left' }}>Tanggal</th>
-                                        <th style={{ padding: '8px', textAlign: 'left' }}>Referensi</th>
-                                        <th style={{ padding: '8px', textAlign: 'center' }}>Perubahan</th>
-                                        <th style={{ padding: '8px', textAlign: 'left' }}>Catatan</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('stock.colDate')}</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('stock.colReference')}</th>
+                                        <th style={{ padding: '8px', textAlign: 'center' }}>{t('stock.colChange')}</th>
+                                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('stock.colNotes')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

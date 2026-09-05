@@ -7,6 +7,7 @@ import { useForm } from "@mantine/form";
 import moment from "moment";
 import fetch from "@/utils/fetch";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 const tableHeadStyle: React.CSSProperties = {
   padding: "12px 15px",
@@ -39,6 +40,7 @@ interface RoleProps {
 }
 
 export default function KelolaRole() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<RoleProps[]>([]);
@@ -195,14 +197,14 @@ export default function KelolaRole() {
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
       <Flex align="center" gap={15}>
-        <Tooltip label="Kembali">
+        <Tooltip label={t("admin.role.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
             <Icon icon="ph:arrow-left-bold" width={20} />
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
           <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Role" : "Tambah Role Baru"}</Text>
-          <Text size="xs" c="dimmed">Konfigurasi hak akses dan peran user</Text>
+          <Text size="xs" c="dimmed">{t("admin.role.index.konfigurasi.hak.akses.dan.peran.user")}</Text>
         </Stack>
       </Flex>
 
@@ -210,11 +212,11 @@ export default function KelolaRole() {
         <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", padding: "30px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
           <LoadingOverlay visible={loading.includes("submit")} />
           <Stack gap="md">
-            <TextInput label="Nama Role" placeholder="Contoh: Admin, Staff, User" required {...form.getInputProps("name")} variant="filled" />
-            <Textarea label="Deskripsi" placeholder="Masukkan deskripsi role" required autosize minRows={3} {...form.getInputProps("description")} variant="filled" />
+            <TextInput label={t("admin.role.index.nama.role")} placeholder={t("admin.role.index.contoh.admin.staff.user")} required {...form.getInputProps("name")} variant="filled" />
+            <Textarea label={t("admin.role.index.deskripsi")} placeholder={t("admin.role.index.masukkan.deskripsi.role")} required autosize minRows={3} {...form.getInputProps("description")} variant="filled" />
             <Select
-              label="Status"
-              placeholder="Pilih status"
+              label={t("admin.role.index.status")}
+              placeholder={t("admin.role.index.pilih.status")}
               data={[
                 { value: "active", label: "Active" },
                 { value: "inactive", label: "Inactive" },
@@ -228,7 +230,7 @@ export default function KelolaRole() {
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>Batal</Button>
+            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.role.index.batal")}</Button>
             <Button type="submit" form="role-form" color="indigo" loading={loading.includes("submit")}>
               {isEditMode ? "Simpan Perubahan" : "Simpan Role"}
             </Button>
@@ -247,13 +249,13 @@ export default function KelolaRole() {
           <button
             onClick={() => router.push('/dashboard/admin')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard Admin"
+            aria-label={t("admin.role.index.kembali.ke.dashboard.admin")}
           >
             <Icon icon="ph:arrow-left-bold" className="text-lg" />
           </button>
           <Stack gap={2}>
-            <Text size="1.8rem" fw={600} c="black">Kelola Role</Text>
-            <Text size="sm" c="black">Daftar semua tingkatan akses sistem</Text>
+            <Text size="1.8rem" fw={600} c="black">{t("admin.role.index.kelola.role")}</Text>
+            <Text size="sm" c="black">{t("admin.role.index.daftar.semua.tingkatan.akses.sistem")}</Text>
           </Stack>
         </Flex>
         <Button 
@@ -262,16 +264,16 @@ export default function KelolaRole() {
           color="indigo"
           radius="md"
         >
-          Tambah Role
+          {t("admin.role.index.tambah.role")}
         </Button>
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250 }}>
-            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>Pencarian</Text>
+            <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.role.index.pencarian")}</Text>
             <TextInput 
-              placeholder="Cari role..." 
+              placeholder={t("admin.role.index.cari.role")} 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
@@ -322,7 +324,7 @@ export default function KelolaRole() {
                   <td colSpan={5} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:identification-card-slash" className="text-5xl text-gray-300" />
-                      <Text c="dimmed" fw={500}>Data role tidak ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("admin.role.index.data.role.tidak.ditemukan")}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -344,12 +346,12 @@ export default function KelolaRole() {
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
-                        <Tooltip label="Edit Role" withArrow>
+                        <Tooltip label={t("admin.role.index.edit.role")} withArrow>
                           <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm">
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus" withArrow>
+                        <Tooltip label={t("admin.role.index.hapus")} withArrow>
                           <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm" disabled={item.id <= 4}>
                             <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>

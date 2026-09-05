@@ -38,6 +38,7 @@ import { Icon } from "@iconify/react";
 import chunk from "@/utils/chunk";
 import { SeatmapData } from "@/utils/formInterface";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // Interfaces copied from seatreport.tsx for consistency
 interface Identity {
@@ -125,6 +126,7 @@ const SeatBox = memo(function SeatBox({
   isHighlighted,
   onSeatClick,
 }: SeatBoxProps) {
+  const { t } = useTranslation();
   const bgColor = isReserved
     ? "#f59e0b" // Orange/amber for reserved
     : isBought
@@ -141,7 +143,7 @@ const SeatBox = memo(function SeatBox({
       component="button"
       type="button"
       onClick={() => isBought && onSeatClick(seatNumber)}
-      title={`Seat: ${displaySeatNumber}${isReserved ? " (Reserved)" : isBought ? " (Terjual - Klik untuk detail)" : " (Tersedia)"}`}
+      title={`Seat: ${displaySeatNumber}${isReserved ? ` (${t("fullseatmap.reservedLabel")})` : isBought ? " (Terjual - Klik untuk detail)" : " (Tersedia)"}`}
       w={20}
       h={25}
       className={`rounded-sm relative overflow-hidden transition-all duration-200 ${isBought ? "cursor-pointer" : "cursor-default"}`}
@@ -197,6 +199,7 @@ const SeatBox = memo(function SeatBox({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const users = useLoggedUser();
   const [events, setEvents] = useState<EventData[]>(initialEvents || []);
@@ -425,14 +428,14 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
           available_seat_number: "",
           taken_seat_number: "",
           reserved_seat_number: seatNumber,
-          name: "Reserved oleh Penyelenggara"
+          name: t("fullseatmap.reservedByOrganizer")
         }
       });
       setIsModalOpen(true);
     } else {
       console.warn("Transaction detail for seat not found locally");
     }
-  }, [seatToBuyerMap, reservedSeatsSet]);
+  }, [seatToBuyerMap, reservedSeatsSet, t]);
 
   const takenSeatsFromAPI = useMemo(() => {
     const seats = new Set<string>();
@@ -588,9 +591,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
 Seatmap Report
 </Title>
-<Text size="sm" c="dimmed">
-Visualisasi denah kursi dan status pembelian secara real-time.
-</Text>
+        <Text size="sm" c="dimmed">
+          {t("event.seatmapVisualization")}
+        </Text>
 </Stack>
 </Flex>
 
@@ -606,7 +609,7 @@ Visualisasi denah kursi dan status pembelian secara real-time.
                 setSelectedSession("all");
               }
             }}
-            placeholder="Pilih Event"
+            placeholder={t("fullseatmap.selectEvent")}
             style={{ width: 220 }}
             searchable
             clearable
@@ -615,12 +618,12 @@ Visualisasi denah kursi dan status pembelian secara real-time.
 
           {availableSessions.length > 1 && (
             <Select
-              placeholder="Sesi"
+              placeholder={t("fullseatmap.session")}
               value={selectedSession}
               onChange={(val) => setSelectedSession(val || "all")}
               data={availableSessions.map(sess => ({
                 value: sess,
-                label: sess === "all" ? "Semua Sesi" : sess
+                label: sess === "all" ? t("fullseatmap.allSessions") : sess
               }))}
               style={{ width: 180 }}
               size="sm"
@@ -628,12 +631,12 @@ Visualisasi denah kursi dan status pembelian secara real-time.
           )}
 
           <Select
-            placeholder="Kategori Tiket"
+            placeholder={t("fullseatmap.ticketCategory")}
             value={selectedCategory}
             onChange={(val) => setSelectedCategory(val || "all")}
             data={ticketCategories.map(cat => ({
               value: cat,
-              label: cat === "all" ? "Semua Tiket" : cat
+              label: cat === "all" ? t("fullseatmap.allTickets") : cat
             }))}
             style={{ width: 180 }}
             leftSection={<FontAwesomeIcon icon={faTicket} size="sm" />}
@@ -641,7 +644,7 @@ Visualisasi denah kursi dan status pembelian secara real-time.
           />
 
           <TextInput
-            placeholder="Cari Nama / Invoice / Seat..."
+            placeholder={t("fullseatmap.searchNameInvoiceSeat")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
@@ -649,7 +652,7 @@ Visualisasi denah kursi dan status pembelian secara real-time.
             size="sm"
           />
 
-          <Tooltip label="Refresh Data">
+          <Tooltip label={t("common.refresh")}>
             <ActionIcon
               variant="light"
               color="gray"
@@ -684,24 +687,24 @@ Visualisasi denah kursi dan status pembelian secara real-time.
 
         {/* Legend */}
         <div className="absolute top-4 left-4 z-40 bg-white/90 backdrop-blur p-3 rounded-lg border border-light-grey shadow-sm space-y-2">
-          <Text size="xs" fw={700} mb={4}>Legenda:</Text>
+          <Text size="xs" fw={700} mb={4}>{t("fullseatmap.legend")}</Text>
           <Flex align="center" gap={8}>
             <Box w={12} h={12} bg="gray.2" className="rounded-sm border border-gray-400" />
-            <Text size="xs">Tersedia ({seatCounts.available})</Text>
+            <Text size="xs">{t("fullseatmap.available")} ({seatCounts.available})</Text>
           </Flex>
           <Flex align="center" gap={8}>
             <Box w={12} h={12} bg="gray.5" className="rounded-sm" />
-            <Text size="xs">Terjual ({seatCounts.sold})</Text>
+            <Text size="xs">{t("fullseatmap.sold")} ({seatCounts.sold})</Text>
           </Flex>
           <Flex align="center" gap={8}>
             <Box w={12} h={12} bg="#f59e0b" className="rounded-sm" />
-            <Text size="xs">Reserved ({seatCounts.reserved})</Text>
+            <Text size="xs">{t("event.reserved")} ({seatCounts.reserved})</Text>
           </Flex>
         </div>
 
         {/* Controls */}
         <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
-          <Tooltip label="Download Seatmap" position="left">
+          <Tooltip label={t("fullseatmap.downloadSeatmap")} position="left">
             <ActionIcon color="white" bg="white" variant="default" onClick={() => {
               if (canvasWrapRef.current) {
                 import('html-to-image').then(({ toPng }) => {
@@ -927,40 +930,40 @@ Visualisasi denah kursi dan status pembelian secara real-time.
           <Center>
             <Stack align="center" gap="xs">
               <FontAwesomeIcon icon={faInfoCircle} size="2x" className="text-gray-400" />
-              <Text fw={700}>Tidak ada denah kursi untuk event ini</Text>
-              <Text size="sm" c="dimmed">Pastikan event memiliki pengaturan &quot;Seated&quot; dan denah kursi telah dibuat.</Text>
+              <Text fw={700}>{t("fullseatmap.noSeatmap")}</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.noSeatmapDesc")}</Text>
             </Stack>
           </Center>
         </Card>
       )}
 
       {/* Detail Modal */}
-      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detail Transaksi Kursi" centered>
+      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("fullseatmap.seatTransactionDetails")} centered>
         {selectedSeatTrx && selectedSeatTicket ? (
           <Stack gap="sm">
             <Box>
-              <Text size="sm" c="dimmed">Nomor Kursi</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.seatNumber")}</Text>
               <Text fw={700}>{selectedSeatTicket.seatnumber_ticket}</Text>
             </Box>
             <Box>
-              <Text size="sm" c="dimmed">Nama Pembeli</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.buyerName")}</Text>
               <Text fw={700}>{selectedSeatTrx.has_user?.name || '-'}</Text>
             </Box>
             <Box>
-              <Text size="sm" c="dimmed">Email Pembeli</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.buyerEmail")}</Text>
               <Text fw={700}>{selectedSeatTrx.has_user?.email || '-'}</Text>
             </Box>
             <Box>
-              <Text size="sm" c="dimmed">Nomor Invoice</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.invoiceNumber")}</Text>
               <Text fw={700}>{selectedSeatTrx.invoice_no}</Text>
             </Box>
             <Box>
-              <Text size="sm" c="dimmed">Kategori Tiket</Text>
+              <Text size="sm" c="dimmed">{t("fullseatmap.ticketCategory")}</Text>
               <Text fw={700}>{selectedSeatTicket.has_event_ticket?.name || selectedSeatTicket.ticket_category}</Text>
             </Box>
           </Stack>
         ) : (
-          <Text>Data tidak ditemukan.</Text>
+          <Text>{t("fullseatmap.dataNotFound")}</Text>
         )}
       </Modal>
     </div>

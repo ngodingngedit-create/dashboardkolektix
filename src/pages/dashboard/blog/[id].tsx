@@ -10,9 +10,11 @@ import ImageInput from '@/components/ImageInput.tsx/index';
 import InputEditor from '@/components/Input/InputEditor/index';
 import { useForm } from '@mantine/form';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 
 export default function Edit() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const user = useLoggedUser();
     const router = useRouter();
@@ -27,8 +29,8 @@ export default function Edit() {
             reading_time: 5,
         },
         validate: {
-            title: (value) => (!value ? 'Judul wajib diisi' : null),
-            content: (value) => (!value ? 'Konten wajib diisi' : null),
+            title: (value) => (!value ? t('blogForm.titleRequired') : null),
+            content: (value) => (!value ? t('blogForm.contentRequired') : null),
         }
     });
 
@@ -102,8 +104,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={5}>
-<Text size="1.8rem" fw={600}>Edit Blog</Text>
-<Text size="sm" c="gray">Perbarui detail artikel blog Anda</Text>
+<Text size="1.8rem" fw={600}>{t('blogForm.editTitle')}</Text>
+<Text size="sm" c="gray">{t('blogForm.editDesc')}</Text>
 </Stack>
 </Flex>
 </Flex>
@@ -113,10 +115,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             <Stack gap={20} w="100%" pb={100}>
                 <Flex gap={10} align="center">
                     <Icon icon="uiw:information" className={`text-[20px] text-primary-base`}/>
-                    <Text size="lg" fw={600}>Informasi Blog</Text>
+                    <Text size="lg" fw={600}>{t('blogForm.blogInfo')}</Text>
                 </Flex>
 
-                <InputWrapper label="Gambar Utama (Featured Image)" description="Direkomendasikan 1200px X 630px">
+                <InputWrapper label={t('blogForm.featuredImage')} description={t('blogForm.imageHint')}>
                     <Box pt={5}>
                         <ImageInput
                             dimension={[300, 150]}
@@ -130,19 +132,19 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 <Flex gap={15} wrap="wrap">
                     <TextInput
                         withAsterisk
-                        label="Judul Blog"
-                        placeholder="Masukkan Judul Artikel"
+                        label={t('blogForm.titleLabel')}
+                        placeholder={t('blogForm.titlePlaceholder')}
                         style={{ flex: 1 }}
                         {...form.getInputProps('title')}
                     />
                     <Select
-                        label="Kategori"
-                        placeholder="Pilih Kategori"
+                        label={t('blogForm.category')}
+                        placeholder={t('blogForm.selectCategory')}
                         data={[
-                            { value: '1', label: 'Teknologi' },
-                            { value: '2', label: 'Gaya Hidup' },
-                            { value: '3', label: 'Hiburan' },
-                            { value: '4', label: 'Edukasi' },
+                            { value: '1', label: t('blogForm.catTech') },
+                            { value: '2', label: t('blogForm.catLifestyle') },
+                            { value: '3', label: t('blogForm.catEntertainment') },
+                            { value: '4', label: t('blogForm.catEducation') },
                         ]}
                         w={200}
                         value={String(form.values.category_id)}
@@ -151,14 +153,14 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 </Flex>
 
                 <Textarea
-                    label="Ringkasan (Excerpt)"
-                    placeholder="Masukkan ringkasan singkat artikel"
+                    label={t('blogForm.excerpt')}
+                    placeholder={t('blogForm.excerptPlaceholder')}
                     autosize
                     minRows={2}
                     {...form.getInputProps('excerpt')}
                 />
 
-                <InputWrapper label="Konten Blog" withAsterisk>
+                <InputWrapper label={t('blogForm.content')} withAsterisk>
                     <Card withBorder p={0} mt={5}>
                         <InputEditor
                             value={form.values.content}
@@ -169,29 +171,29 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                 <Flex gap={15} wrap="wrap" align="flex-end">
                     <Select
-                        label="Status"
-                        placeholder="Pilih Status"
+                        label={t('blogForm.status')}
+                        placeholder={t('blogForm.selectStatus')}
                         data={[
-                            { value: 'published', label: 'Published' },
-                            { value: 'draft', label: 'Draft' },
+                            { value: 'published', label: t('blogForm.optPublished') },
+                            { value: 'draft', label: t('blogForm.optDraft') },
                         ]}
                         {...form.getInputProps('status')}
                     />
                     <DateInput
-                        label="Tanggal Publikasi"
-                        placeholder="Pilih Tanggal"
+                        label={t('blogForm.publishDate')}
+                        placeholder={t('blogForm.selectDate')}
                         value={form.values.published_at ? dayjs(form.values.published_at).toDate() : null}
                         onChange={(val) => form.setFieldValue('published_at', dayjs(val).format('YYYY-MM-DD HH:mm:ss'))}
                     />
                     <NumberInput
-                        label="Estimasi Waktu Baca (menit)"
+                        label={t('blogForm.readTime')}
                         placeholder="5"
                         {...form.getInputProps('reading_time')}
                     />
                 </Flex>
 
                 <Checkbox
-                    label="Izinkan Komentar"
+                    label={t('blogForm.allowComments')}
                     checked={form.values.allow_comments === 1}
                     onChange={(e) => form.setFieldValue('allow_comments', e.currentTarget.checked ? 1 : 0)}
                 />
@@ -205,7 +207,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         onClick={() => router.push('/dashboard/blog')}
                         leftSection={<Icon icon="uiw:close" />}
                         radius="xl">
-                        Batal
+                        {t('blogForm.cancel')}
                     </Button>
                     <Button
                         loading={loading.includes('submitdata')}
@@ -214,7 +216,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         color="#194e9e"
                         rightSection={<Icon icon="uiw:check" />}
                         radius="xl">
-                        Perbarui Blog
+                        {t('blogForm.updateBlog')}
                     </Button>
                 </Flex>
             </Card>

@@ -37,6 +37,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Delete, Get, Post, Put } from "@/utils/REST";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { useTranslation } from "react-i18next";
 
 interface BankProps {
   id: number;
@@ -59,6 +60,7 @@ const BANK_LIST = [
 ];
 
 const Bank = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>();
   const [data, setData] = useState<BankProps[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -80,9 +82,9 @@ const Bank = () => {
       status: "active",
     },
     validate: {
-      type_bank: (v) => (!v ? "Nama bank harus dipilih" : null),
-      account_number: (v) => (!v ? "Nomor rekening harus diisi" : null),
-      account_name: (v) => (!v ? "Atas nama harus diisi" : null),
+      type_bank: (v) => (!v ? t("bank.bankRequired") : null),
+      account_number: (v) => (!v ? t("bank.accountRequired") : null),
+      account_name: (v) => (!v ? t("bank.holderRequired") : null),
     },
   });
 
@@ -96,20 +98,20 @@ const Bank = () => {
       })
       .catch((err: any) => {
         console.log(err);
-        notifications.show({ title: "Gagal", message: "Gagal mengambil data rekening", color: "red" });
+        notifications.show({ title: t("common.failed"), message: t("bank.fetchFailed"), color: "red" });
       })
       .finally(() => setLoading.filter((e) => e !== "getdata"));
   };
 
   const deleteData = (id: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus rekening ini?")) return;
+    if (!confirm(t("bank.deleteConfirm"))) return;
     setLoading.append("delete");
     Delete(`user-bank/${id}`, {})
       .then(() => {
-        notifications.show({ title: "Berhasil", message: "Rekening berhasil dihapus", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("bank.deleteSuccess"), color: "green" });
         getData();
       })
-      .catch(() => notifications.show({ title: "Gagal", message: "Gagal menghapus rekening", color: "red" }))
+      .catch(() => notifications.show({ title: t("common.failed"), message: t("bank.deleteFailed"), color: "red" }))
       .finally(() => setLoading.filter((e) => e !== "delete"));
   };
 
@@ -144,16 +146,16 @@ const Bank = () => {
     try {
       if (isEditMode && selectedBank) {
         await Put(`user-bank/${selectedBank.id}`, payload);
-        notifications.show({ title: "Berhasil", message: "Rekening berhasil diperbarui", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("bank.updateSuccess"), color: "green" });
       } else {
         await Post("user-bank", payload);
-        notifications.show({ title: "Berhasil", message: "Rekening berhasil ditambahkan", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("bank.addSuccess"), color: "green" });
       }
       getData();
       setIsFormVisible(false);
       form.reset();
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal menyimpan data rekening", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("bank.saveFailed"), color: "red" });
     } finally {
       setLoading.filter((e) => e !== "submit");
     }
@@ -212,13 +214,13 @@ const Bank = () => {
           <button
             onClick={() => router.push('/dashboard')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
-            aria-label="Kembali ke Dashboard"
+            aria-label={t('event.backToDashboard')}
           >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
           <Stack gap={0}>
-            <Title order={1} size="h2">Rekening Bank</Title>
-            <Text size="sm" c="gray">Daftar rekening bank yang terhubung ke akun Anda</Text>
+            <Title order={1} size="h2">{t('bank.title')}</Title>
+            <Text size="sm" c="gray">{t('bank.subtitle')}</Text>
           </Stack>
         </Flex>
         <Button
@@ -228,7 +230,7 @@ const Bank = () => {
           size="md"
           radius="xl"
         >
-          Tambah Rekening
+          {t('bank.addAccount')}
         </Button>
       </Flex>
 
@@ -247,7 +249,7 @@ const Bank = () => {
             </Button>
           </Flex>
           <TextInput
-            placeholder="Cari nama bank, rekening, atau atas nama..."
+            placeholder={t('bank.searchPlaceholder')}
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -260,19 +262,19 @@ const Bank = () => {
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa" }}>
                 {[
-                  { label: "No", sortable: false },
-                  { label: "Bank", sortable: true, key: "type_bank" },
-                  { label: "Nomor Rekening", sortable: false },
-                  { label: "Atas Nama", sortable: true, key: "account_name" },
-                  { label: "Status", sortable: false },
-                  { label: "Aksi", sortable: false },
+                  { label: t('common.no'), sortable: false },
+                  { label: t('bank.colBank'), sortable: true, key: "type_bank" },
+                  { label: t('bank.colAccountNo'), sortable: false },
+                  { label: t('bank.colHolder'), sortable: true, key: "account_name" },
+                  { label: t('common.status'), sortable: false },
+                  { label: t('common.actions'), sortable: false },
                 ].map((col, i) => (
                   <th
                     key={i}
                     onClick={() => col.sortable && requestSort(col.key!)}
                     style={{
                       padding: "12px 14px",
-                      textAlign: ["No", "Status", "Aksi"].includes(col.label) ? "center" : "left",
+                      textAlign: [t('common.no'), t('common.status'), t('common.actions')].includes(col.label) ? "center" : "left",
                       fontSize: "11px",
                       fontWeight: 700,
                       color: "#495057",
@@ -281,13 +283,13 @@ const Bank = () => {
                       letterSpacing: "0.5px",
                       cursor: col.sortable ? "pointer" : "default",
                       userSelect: "none",
-                      position: col.label === "Aksi" ? "sticky" : "static",
-                      right: col.label === "Aksi" ? 0 : "auto",
-                      backgroundColor: col.label === "Aksi" ? "#f8f9fa" : "transparent",
-                      zIndex: col.label === "Aksi" ? 10 : 1,
+                      position: col.label === t('common.actions') ? "sticky" : "static",
+                      right: col.label === t('common.actions') ? 0 : "auto",
+                      backgroundColor: col.label === t('common.actions') ? "#f8f9fa" : "transparent",
+                      zIndex: col.label === t('common.actions') ? 10 : 1,
                     }}
                   >
-                    <Flex align="center" gap={6} justify={["No", "Status", "Aksi"].includes(col.label) ? "center" : "flex-start"}>
+                    <Flex align="center" gap={6} justify={[t('common.no'), t('common.status'), t('common.actions')].includes(col.label) ? "center" : "flex-start"}>
                       {col.label}
                       {col.sortable && (
                         <FontAwesomeIcon
@@ -305,7 +307,7 @@ const Bank = () => {
               {loading.includes("getdata") ? (
                 <tr>
                   <td colSpan={6} style={{ padding: "40px", textAlign: "center" }}>
-                    <Text c="dimmed">Memuat data...</Text>
+                    <Text c="dimmed">{t('common.loading')}</Text>
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
@@ -313,8 +315,8 @@ const Bank = () => {
                   <td colSpan={6} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap={10}>
                       <Image src={bankEmpty} alt="bank" width={40} height={40} />
-                      <Text c="dimmed" fw={500}>Belum ada rekening yang disimpan</Text>
-                      <Text size="xs" c="gray">Tambah rekening bank untuk memudahkan penarikan K-Wallet</Text>
+                      <Text c="dimmed" fw={500}>{t('bank.noAccounts')}</Text>
+                      <Text size="xs" c="gray">{t('bank.noAccountsDesc')}</Text>
                     </Stack>
                   </td>
                 </tr>
@@ -352,17 +354,17 @@ const Bank = () => {
                         color={item.status === "active" ? "green" : "red"}
                         size="sm"
                       >
-                        {item.status === "active" ? "Aktif" : "Nonaktif"}
+                        {item.status === "active" ? t('common.active') : t('common.inactive')}
                       </Badge>
                     </td>
                     <td style={{ padding: "12px 14px", position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)", borderLeft: "1px solid #f1f3f5" }}>
                       <Flex gap={8} justify="center">
-                        <Tooltip label="Edit Rekening">
+                        <Tooltip label={t('bank.editTooltip')}>
                           <ActionIcon variant="subtle" color="blue" onClick={() => handleEditClick(item)}>
                             <FontAwesomeIcon icon={faPencil} size="sm" />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Hapus Rekening">
+                        <Tooltip label={t('bank.deleteTooltip')}>
                           <ActionIcon variant="subtle" color="red" onClick={() => deleteData(item.id)} loading={loading.includes("delete")}>
                             <FontAwesomeIcon icon={faTrash} size="sm" />
                           </ActionIcon>
@@ -389,9 +391,9 @@ const Bank = () => {
         </ActionIcon>
         <Stack gap={0}>
           <Title order={2} size="h3">
-            {isEditMode ? `Edit Rekening: ${selectedBank?.type_bank}` : "Tambah Rekening Baru"}
+            {isEditMode ? t('bank.editTitle', { bank: selectedBank?.type_bank }) : t('bank.addTitle')}
           </Title>
-          <Text size="xs" c="dimmed">Isi formulir di bawah untuk mengelola data rekening bank Anda</Text>
+          <Text size="xs" c="dimmed">{t('bank.formDesc')}</Text>
         </Stack>
       </Flex>
 
@@ -400,31 +402,31 @@ const Bank = () => {
           <Stack gap="xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Select
-                label="Nama Bank"
-                placeholder="Pilih bank"
+                label={t('bank.bankName')}
+                placeholder={t('bank.selectBank')}
                 data={BANK_LIST.map((b) => ({ value: b, label: b }))}
                 searchable
                 required
                 {...form.getInputProps("type_bank")}
               />
               <TextInput
-                label="Nomor Rekening"
-                placeholder="Contoh: 1234567890"
+                label={t('bank.accountNumber')}
+                placeholder={t('bank.accountNumberExample')}
                 required
                 {...form.getInputProps("account_number")}
               />
               <TextInput
-                label="Atas Nama"
-                placeholder="Nama pemilik rekening"
+                label={t('bank.holderName')}
+                placeholder={t('bank.holderPlaceholder')}
                 required
                 {...form.getInputProps("account_name")}
               />
               <Select
-                label="Status"
-                placeholder="Status rekening"
+                label={t('common.status')}
+                placeholder={t('bank.accountStatus')}
                 data={[
-                  { value: "active", label: "Aktif" },
-                  { value: "inactive", label: "Nonaktif" },
+                  { value: "active", label: t('common.active') },
+                  { value: "inactive", label: t('common.inactive') },
                 ]}
                 required
                 {...form.getInputProps("status")}
@@ -443,7 +445,7 @@ const Bank = () => {
               size="md"
               leftSection={<FontAwesomeIcon icon={faXmark} />}
             >
-              Batalkan
+              {t('bank.cancel')}
             </Button>
             <Button
               type="submit"
@@ -453,7 +455,7 @@ const Bank = () => {
               loading={loading.includes("submit")}
               leftSection={!loading.includes("submit") && <FontAwesomeIcon icon={faSave} />}
             >
-              {isEditMode ? "Simpan Perubahan" : "Konfirmasi & Simpan"}
+              {isEditMode ? t('bank.saveChanges') : t('bank.confirmSave')}
             </Button>
           </Flex>
         </Box>
