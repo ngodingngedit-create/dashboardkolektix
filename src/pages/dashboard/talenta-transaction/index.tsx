@@ -8,7 +8,6 @@ import {
   Box,
   Badge,
   Tooltip,
-  Pagination as MantinePagination,
   Stack,
   Card as MantineCard,
   Button,
@@ -30,6 +29,8 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import fetch from "@/utils/fetch";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
+import TablePagination from "@/components/TablePagination";
+import * as XLSX from "xlsx";
 
 type DataResponse = {
   id?: number;
@@ -199,8 +200,6 @@ export default function TalentaTransaction() {
     return { totalSales, totalTransactions, totalBooking };
   }, [data]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-
   const sortedFiltered = useMemo(() => {
     if (!sortBy) return filtered;
     return [...filtered].sort((a: any, b: any) => {
@@ -223,6 +222,33 @@ export default function TalentaTransaction() {
   }, []);
 
   const hasActiveFilters = filterValue || dateFilter;
+
+  const handleExport = () => {
+    try {
+      if (!filtered || filtered.length === 0) {
+        alert(t('talentaTrx.exportEmpty'));
+        return;
+      }
+      const rows = filtered.map((item, index) => ({
+        No: index + 1,
+        "Order No": item.order_no || '-',
+        Tanggal: formatDate(item.created_at),
+        Talenta: item.product_name || item.talenta?.name || '-',
+        Client: item.user?.name || '-',
+        Email: item.user?.email || '-',
+        Total: item.final_price || item.grandtotal || item.total_price || 0,
+        Status: getStatusInfo(item).text,
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Talent Transactions");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `talent-transactions-${timestamp}.xlsx`);
+    } catch (err) {
+      console.error("Error exporting transactions:", err);
+      alert(t('talentaTrx.exportError'));
+    }
+  };
 
   return (
     <>
@@ -294,6 +320,17 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   style={{ width: 280 }}
                   size="sm"
                 />
+                <Button
+                  variant="filled"
+                  color="green"
+                  radius="md"
+                  size="sm"
+                  leftSection={<Icon icon="uiw:download" width={16} />}
+                  onClick={handleExport}
+                  disabled={filtered.length === 0}
+                >
+                  {t('talentaTrx.export')}
+                </Button>
                 <Tooltip label={t('talentaTrx.resetFilters')}>
                   <ActionIcon 
                     variant="filled" 
@@ -413,11 +450,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               </table>
             </Box>
 
-            <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: "1px solid #ebebeb", backgroundColor: "#fafafa", borderRadius: "0 0 8px 8px" }}>
-              <Text size="xs" c="dimmed">{t('talentaTrx.pageOf', { page, total: totalPages })}</Text>
-              <MantinePagination total={totalPages} value={page} onChange={setPage} size="sm" radius="xl" withEdges color="blue" styles={{ control: { border: "1px solid #e0e0e0", fontWeight: 600 } }} />
-              <Text size="xs" c="dimmed">{filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}–${Math.min(page * rowsPerPage, filtered.length)}` : "0"} / {filtered.length}</Text>
-            </Flex>
+            <TablePagination
+              page={page}
+              onPageChange={setPage}
+              total={filtered.length}
+              rowsPerPage={rowsPerPage}
+              unit="transaksi"
+            />
           </Box>
         </Stack>
       </MantineCard>

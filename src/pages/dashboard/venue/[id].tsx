@@ -1,6 +1,6 @@
 import TableData from "@/components/TableData";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, Card, SimpleGrid, Stack, Text, Title, Flex, Image, AspectRatio, PillGroup, Pill, Button, ActionIcon, Tabs, Badge, Divider, Alert, NumberFormatter } from "@mantine/core";
+import { Accordion, Card, SimpleGrid, Stack, Text, Title, Flex, Image, AspectRatio, PillGroup, Pill, Button, ActionIcon, Tabs, Badge, Divider, Alert, NumberFormatter, Skeleton } from "@mantine/core";
 import { VenueCapacity, VenueCategory, VenueFacility, VenueListResponse, VenueStoreRequest } from './type';
 import { useEffect, useState } from "react";
 
@@ -143,6 +143,21 @@ export default function VenuePage() {
     return (
         <Card p={30}>
             <Stack gap={30}>
+            {loading.includes('getdata') && !venue ? (
+                <>
+                    <Flex justify="space-between" gap={30}>
+                        <Stack gap={8}>
+                            <Skeleton height={28} width={280} radius="sm" />
+                            <Skeleton height={12} width={160} radius="sm" />
+                            <Skeleton height={30} width={200} radius="xl" />
+                        </Stack>
+                        <Skeleton height={140} width={500} radius={10} />
+                    </Flex>
+                    <Skeleton height={200} radius={10} />
+                    <Skeleton height={120} radius={10} />
+                </>
+            ) : (
+                <>
 <Flex justify="space-between" gap={30}>
 <Flex align="center" gap={15}>
 <button
@@ -248,8 +263,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 </Alert>
                             )}
                         </Stack>
-                    </Tabs.Panel>
-                </Tabs>
+                </Tabs.Panel>
+            </Tabs>
+                </>
+            )}
             </Stack>
         </Card>
     );

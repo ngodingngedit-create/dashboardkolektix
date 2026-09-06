@@ -40,7 +40,26 @@ import { useTranslation } from 'react-i18next';
 
 
 const exportToExcel = (transactions: any[], filename: string) => {
-  const worksheet = XLSX.utils.json_to_sheet(transactions);
+  if (!transactions || transactions.length === 0) return;
+
+  // Flatten kolom: objek nested (tickets, identities, dsb) diringkas jadi teks agar cell tidak rusak
+  const flattened = transactions.map(trx => {
+    const row: Record<string, any> = {};
+    for (const [key, value] of Object.entries(trx)) {
+      if (value === null || value === undefined) {
+        row[key] = '-';
+      } else if (Array.isArray(value)) {
+        row[key] = value.map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join('; ');
+      } else if (typeof value === 'object') {
+        row[key] = JSON.stringify(value);
+      } else {
+        row[key] = value;
+      }
+    }
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(flattened);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
   XLSX.writeFile(workbook, `${filename}.xlsx`);
@@ -407,6 +426,7 @@ return (
           <Button
                        label={t("event.downloadReport")}
                 color="secondary"
+                disabled={onlineTransactions.length === 0}
                 onClick={() => exportToExcel(onlineTransactions, 'online_transactions')}
               />
           </div>
@@ -591,6 +611,7 @@ return (
                 <Button
                 label={t("event.downloadReport")}
                       color="secondary"
+                      disabled={!list?.items || list.items.length === 0}
                       onClick={() => exportToExcel(list.items, 'offline_transactions')}
                     />
                 </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import TablePagination from '@/components/TablePagination';
 import Image from 'next/image';
 import filePlus from '../../../assets/icon/filePlus.png';
 import { Post, Get, Put } from '@/utils/REST';
@@ -85,6 +86,8 @@ const Legal = () => {
   const [sortKtp, setSortKtp] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'name_identity', direction: 'asc' });
   const [sortNpwp, setSortNpwp] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({ key: 'name_npwp', direction: 'asc' });
   const [hasData, setHasData] = useState(false);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const userData = useLoggedUser();
 
   const ktpForm = useForm<FormKTPProps>({
@@ -283,12 +286,14 @@ const Legal = () => {
     if (sortKtp.key === key && sortKtp.direction === 'asc') direction = 'desc';
     else if (sortKtp.key === key && sortKtp.direction === 'desc') direction = null;
     setSortKtp({ key, direction });
+    setPage(1);
   };
   const requestSortNpwp = (key: string) => {
     let direction: 'asc' | 'desc' | null = 'asc';
     if (sortNpwp.key === key && sortNpwp.direction === 'asc') direction = 'desc';
     else if (sortNpwp.key === key && sortNpwp.direction === 'desc') direction = null;
     setSortNpwp({ key, direction });
+    setPage(1);
   };
 
   const filteredKtp = useMemo(() => {
@@ -379,7 +384,7 @@ const Legal = () => {
               placeholder={`Cari ${title}...`}
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               style={{ width: 240 }}
             />
           </Flex>
@@ -439,9 +444,9 @@ const Legal = () => {
                       <Text c="dimmed" fw={500}>Belum ada data {type === 'ktp' ? 'KTP' : 'NPWP'}</Text>
                     </Stack>
                   </td>
-                </tr>
+                 </tr>
               ) : (
-                data.map((item, idx) => (
+                data.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((item, idx) => (
                   <tr
                     key={idx}
                     style={{ borderBottom: '1px solid #f1f3f5' }}
@@ -449,7 +454,7 @@ const Legal = () => {
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
                   >
                     <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                      <Text size="xs" fw={700}>{idx + 1}</Text>
+                      <Text size="xs" fw={700}>{(page - 1) * rowsPerPage + idx + 1}</Text>
                     </td>
                     <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                       {(type === 'ktp' ? item.file_identity_url : item.file_npwp_url) ? (
@@ -499,6 +504,15 @@ const Legal = () => {
             </tbody>
           </table>
         </Box>
+
+        <TablePagination
+          page={page}
+          onPageChange={setPage}
+          total={data.length}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(val) => { setRowsPerPage(val); setPage(1); }}
+          unit="data"
+        />
       </Card>
     );
   };

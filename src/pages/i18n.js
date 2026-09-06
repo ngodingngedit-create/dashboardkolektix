@@ -22,6 +22,11 @@ if (!i18n.isInitialized) {
       if (err) console.error('i18n error:', err);
       else console.log('i18n initialized with language:', i18n.language);
     });
+} else {
+  // HMR/dev: server singleton persists between module re-evaluations.
+  // Refresh bundles so edited translation.json files take effect without a server restart.
+  i18n.addResourceBundle('id', 'translation', idTranslations, true, true);
+  i18n.addResourceBundle('en', 'translation', enTranslations, true, true);
 }
 
 export default appWithTranslation;

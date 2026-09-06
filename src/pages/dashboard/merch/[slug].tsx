@@ -704,6 +704,7 @@ import {
     faPrint,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTranslation } from "react-i18next";
+import TableSkeleton from "@/components/TableSkeleton";
 
 // Interface untuk data statistik
 interface StatisticsData {
@@ -2211,9 +2212,67 @@ export default function MerchDetail() {
         );
     };
 
-    const handleBulkPrint = () => {
+    const handleBulkPrint = async () => {
         if (selectedInvoiceIds.length === 0) return;
-        alert(t('merchDetail.printingLabels', { count: selectedInvoiceIds.length }));
+
+        setPrintLoading(true);
+        const allResiHTML: string[] = [];
+
+        try {
+            for (const invoiceNo of selectedInvoiceIds) {
+                try {
+                    const res: any = await Get(`order-product-invoice/${invoiceNo}`, {});
+                    const invoice = res?.data ?? (res?.status !== undefined ? res : null);
+                    if (invoice) {
+                        allResiHTML.push(generateResiHTML(invoice, {
+                            sensorNama: false,
+                            sensorTelepon: false,
+                            sensorAlamat: false,
+                            tampilkanHarga: true,
+                        }, t));
+                    }
+                } catch (err) {
+                    console.error(`Failed to fetch invoice ${invoiceNo}:`, err);
+                }
+            }
+
+            if (allResiHTML.length === 0) {
+                alert(t('merchDetail.invoiceDataFailed'));
+                return;
+            }
+
+            const combinedHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${t('merchResi.docTitle', { no: selectedInvoiceIds.length })}</title>
+                </head>
+                <body style="margin: 0; padding: 0;">
+                    ${allResiHTML.join('')}
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                window.close();
+                            }, 500);
+                        };
+                    </script>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob([combinedHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const printWindow = window.open(url, '_blank');
+            if (!printWindow) {
+                alert(t('merchDetail.popupBlocker'));
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            console.error('Bulk print failed:', err);
+        } finally {
+            setPrintLoading(false);
+        }
     };
 
     // Fungsi untuk mencetak resi dengan opsi yang dipilih
@@ -2260,18 +2319,33 @@ export default function MerchDetail() {
         }
     };
 
-    const downloadQRCode = () => {
+    const downloadQRCode = async () => {
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
         const isProduction = host.includes('kolektix.com') && !host.includes('festaging');
         const domain = isProduction ? 'kolektix.com' : 'kolektix.my.id';
         const finalProductUrl = `https://${domain}/merchandise/${slug}`;
 
-        const link = document.createElement('a');
-        link.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(finalProductUrl)}`;
-        link.download = `qr-${data?.product_name || 'product'}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(finalProductUrl)}`;
+
+        try {
+            // Fetch via blob supaya atribut download bekerja (bypass cross-origin)
+            const res = await window.fetch(qrApiUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `qr-${data?.product_name || 'product'}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            console.error('QR download failed:', err);
+            // Fallback: buka di tab baru bila fetch diblokir (CORS)
+            window.open(qrApiUrl, '_blank');
+        }
     };
 
     const transactionColumns: TableColumn[] = [
@@ -2910,6 +2984,9 @@ export default function MerchDetail() {
                                 </Box>
 
                                 {/* Tabel Transaksi dengan Fixed Header */}
+                                {loading.includes('getdata') ? (
+                                    <TableSkeleton rows={8} cols={8} hasAction />
+                                ) : (
                                 <Box
                                     style={{
                                         border: '1px solid #dee2e6',
@@ -3059,9 +3136,10 @@ export default function MerchDetail() {
                                         </tbody>
                                     </table>
                                 </Box>
+                                )}
 
                                 {/* Pagination */}
-                                {filteredTransactions.length > 0 && (
+                                {filteredTransactions.length > 0 && !loading.includes('getdata') && (
                                     <Flex justify="space-between" align="center" mt="xl">
                                         <Text size="sm" c="gray">
                                             {t('merchTrx.pageOf', { page: currentPage, totalPages: totalPages })}
@@ -3078,7 +3156,7 @@ export default function MerchDetail() {
                                     </Flex>
                                 )}
 
-                                {filteredTransactions.length === 0 && (
+                                {filteredTransactions.length === 0 && !loading.includes('getdata') && (
                                     <Stack align="center" gap="md" mt="xl" py={50}>
                                         <Icon icon="solar:box-minimalistic-broken" width={64} className="text-gray-400" />
                                         <Text ta="center" c="gray" size="lg" fw={500}>

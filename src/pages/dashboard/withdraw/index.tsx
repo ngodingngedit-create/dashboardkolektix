@@ -1,7 +1,10 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowDown, faArrowLeft, faEye, faUniversity, faWallet } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faArrowLeft, faEye, faFileExcel, faUniversity, faWallet } from "@fortawesome/free-solid-svg-icons";
 import { Get } from "@/utils/REST";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
+import { useTranslation } from "react-i18next";
+import TablePagination from "@/components/TablePagination";
 import {
   Alert,
   Badge,
@@ -12,7 +15,6 @@ import {
   Grid,
   Loader,
   NumberFormatter,
-  Pagination,
   ScrollArea,
   Select,
   Stack,
@@ -25,6 +27,7 @@ import { DateInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import { useListState } from "@mantine/hooks";
 import useLoggedUser from "@/utils/useLoggedUser";
+import { formatDate } from "@/utils/useFormattedDate";
 import fetch from "@/utils/fetch";
 import Cookies from "js-cookie";
 import Link from "next/link";
@@ -122,6 +125,7 @@ const PER_PAGE = 10;
 
 const WithDraw = () => {
   const user = useLoggedUser();
+  const { t } = useTranslation();
   const [loading, setLoading] = useListState<string>([]);
 
   // ─── View ────────────────────────────────────────────────────────────────────
@@ -250,8 +254,6 @@ const WithDraw = () => {
     return filteredHistory.slice(start, start + PER_PAGE);
   }, [filteredHistory, page]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PER_PAGE));
-
   // ─── Withdraw submit ─────────────────────────────────────────────────────────
   const handleSubmitWithdraw = async () => {
     const parsedAmount = Number(String(amount).replace(/\D/g, ""));
@@ -309,6 +311,31 @@ const WithDraw = () => {
         });
       },
     });
+  };
+
+  const handleExport = () => {
+    if (history.length === 0) {
+      alert(t("withdraw.exportEmpty"));
+      return;
+    }
+    try {
+      const exportData = history.map((item, index) => ({
+        No: index + 1,
+        Tanggal: formatDate(item.created_at),
+        Nominal: `Rp ${Number(item.amount || 0).toLocaleString("id-ID")}`,
+        Bank: item.bank?.type_bank ?? "-",
+        "No. Rekening": item.bank?.account_number ?? (item.bank_account != null ? String(item.bank_account) : "-"),
+        Status: item.transaction_status_id != null ? getStatusText(item.transaction_status_id) : (item.status ?? "Pending"),
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Withdrawal History");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `withdrawal-history-${timestamp}.xlsx`);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert(t("withdraw.exportError"));
+    }
   };
 
   const quickAmounts = [
@@ -647,7 +674,20 @@ const WithDraw = () => {
     <Card radius="lg" withBorder p="xl">
       <Stack gap="lg">
         <Flex justify="space-between" align="center" wrap="wrap" gap="md">
-          <Title order={3}>History Withdraw</Title>
+          <Flex align="center" gap="md">
+            <Title order={3}>History Withdraw</Title>
+            <Button
+              variant="filled"
+              color="green"
+              radius="md"
+              size="sm"
+              leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+              onClick={handleExport}
+              disabled={history.length === 0}
+            >
+              {t("withdraw.export")}
+            </Button>
+          </Flex>
 
           {/* Filter bar */}
           <Flex align="center" gap="md" wrap="wrap">
@@ -786,12 +826,14 @@ const WithDraw = () => {
               </Table>
             </ScrollArea>
 
-            <Flex justify="flex-end" align="center" gap="md">
-              <Text size="xs" c="dimmed">
-                Menampilkan {filteredHistory.length} riwayat
-              </Text>
-              <Pagination total={totalPages} value={page} onChange={setPage} color="#0B387C" radius="xl" />
-            </Flex>
+            <TablePagination
+              page={page}
+              onPageChange={setPage}
+              total={filteredHistory.length}
+              rowsPerPage={PER_PAGE}
+              unit="riwayat"
+              color="#0B387C"
+            />
           </>
         )}
       </Stack>

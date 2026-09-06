@@ -1018,49 +1018,8 @@ const DeliveryPage: React.FC = () => {
   // Fungsi untuk generate QR code dengan pendekatan yang lebih kompatibel untuk PDF
   const generateQRCodeHTML = (text: string): string => {
     const qrData = text || 'KLTRX-JLBVTZRYH';
-    const size = 21;
-    const seed = qrData.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-    const generateQRPattern = (): boolean[][] => {
-      const grid: boolean[][] = [];
-      for (let i = 0; i < size; i++) {
-        const row: boolean[] = [];
-        for (let j = 0; j < size; j++) {
-          if ((i < 7 && j < 7) || (i < 7 && j > size - 8) || (i > size - 8 && j < 7)) {
-            if (i === 0 || i === 6 || j === 0 || j === 6) row.push(true);
-            else if (i === 1 || i === 5 || j === 1 || j === 5) row.push(false);
-            else if (i >= 2 && i <= 4 && j >= 2 && j <= 4) row.push(true);
-            else row.push(false);
-          } else if (i > size - 9 && j > size - 9 && i < size - 2 && j < size - 2) {
-            if (i === size - 8 || i === size - 4 || j === size - 8 || j === size - 4) row.push(true);
-            else if (i === size - 7 || i === size - 5 || j === size - 7 || j === size - 5) row.push(false);
-            else if (i === size - 6 && j === size - 6) row.push(true);
-            else row.push(false);
-          } else if (i === 6 && j > 7 && j < size - 8) row.push(j % 2 === 0);
-          else if (j === 6 && i > 7 && i < size - 8) row.push(i % 2 === 0);
-          else {
-            const charIndex = (i * j + seed) % qrData.length;
-            const charCode = qrData.charCodeAt(charIndex) || 0;
-            const val = (charCode + i + j + seed) % 3;
-            row.push(val === 0);
-          }
-        }
-        grid.push(row);
-      }
-      return grid;
-    };
-
-    const grid = generateQRPattern();
-    const cellSize = 10;
-    let svg = `<svg width="${size * cellSize}" height="${size * cellSize}" viewBox="0 0 ${size * cellSize} ${size * cellSize}" xmlns="http://www.w3.org/2000/svg">`;
-    svg += `<rect width="100%" height="100%" fill="white"/>`;
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (grid[i][j]) svg += `<rect x="${j * cellSize}" y="${i * cellSize}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
-      }
-    }
-    svg += `</svg>`;
-    return svg;
+    // QR asli via api.qrserver.com — QR fake grid sebelumnya tidak bisa di-scan
+    return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&margin=0&data=${encodeURIComponent(qrData)}" width="210" height="210" alt="QR ${qrData}" crossorigin="anonymous" />`;
   };
 
   const generateResiHTML = (invoice: any): string => {

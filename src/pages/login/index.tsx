@@ -1297,14 +1297,14 @@ const Auth = () => {
       } else {
         router.push("/dashboard");
       }
-      toast.warning("Anda Sudah Login");
+      toast.warning(t("login.alreadyLoggedIn"));
     }
     //eslint-disable-next-line
   }, [users]);
 
   const Completionist = () => (
-    <button className="text-dark w-full rounded-full p-2 text-xs font-semibold flex items-center gap-2 hover:text-primary-base" onClick={handleResendOtp}>
-      Kirim Ulang
+    <button className="text-dark w-full rounded-full p-2 text-xs font-semibold flex items-center gap-2 hover:text-primary-base"       onClick={handleResendOtp}>
+      {t("login.resend")}
     </button>
   );
 
@@ -1353,7 +1353,7 @@ const Auth = () => {
   const submitRegister = (event?: React.FormEvent) => {
     event?.preventDefault();
 
-    if (data.email == "") setErrors({ email: "Wajib Diisi" });
+    if (data.email == "") setErrors({ email: t("login.required") });
     if (Object.values(errors).filter((e) => !!e).length > 0) return;
 
     setLoading(true);
@@ -1381,8 +1381,8 @@ const Auth = () => {
     event?.preventDefault();
 
     const newErrors: Partial<Pick<RegisterForm, "email" | "password">> = {};
-    if (!data.email) newErrors.email = "Wajib Diisi";
-    if (!data.password) newErrors.password = "Wajib Diisi";
+    if (!data.email) newErrors.email = t("login.required");
+    if (!data.password) newErrors.password = t("login.required");
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -1424,7 +1424,7 @@ const Auth = () => {
       })
       .catch((err: any) => {
         if (err.response?.status === 401) {
-          toast.error("Email belum terdaftar. Silahkan registrasi terlebih dahulu");
+          toast.error(t("login.emailNotRegistered"));
           setStep(1);
         }
         setErrors(err.response?.data || {});
@@ -1473,7 +1473,7 @@ const Auth = () => {
     if (file) {
       const MAX_SIZE = 2 * 1024 * 1024; // 2MB
       if (file.size > MAX_SIZE) {
-        toast.error("Maksimal ukuran gambar adalah 2MB");
+        toast.error(t("login.imageTooLarge"));
         return;
       }
       const reader = new FileReader();
@@ -1486,9 +1486,9 @@ const Auth = () => {
   };
 
   const submitCreator = () => {
-    if (data.password == "") setErrors({ password: "Wajib Diisi" });
-    if (data.password.length < 8) setErrors({ password: "Minimal 8 Karakter" });
-    if (data.password != data.password_confirm) setErrors({ password_confirm: "Password Tidak Sama" });
+    if (data.password == "") setErrors({ password: t("login.required") });
+    if (data.password.length < 8) setErrors({ password: t("login.minPassword") });
+    if (data.password != data.password_confirm) setErrors({ password_confirm: t("login.passwordMismatch") });
     if (Object.values(errors).filter((e) => !!e).length > 0) return;
 
     setLoading(true);
@@ -1514,13 +1514,13 @@ const Auth = () => {
         console.log(res);
         Cookies.set("user_data", JSON.stringify({ ...res.data, force_creator: true, role: "Creator", has_creator: res.data }));
         setLoading(false);
-        toast.success("Akun creator berhasil dibuat");
+        toast.success(t("login.accountCreated"));
         router.push("/dashboard");
       })
       .catch((err: any) => {
         console.log(err);
         setErrors(err.response.data);
-        toast.error(err.response.data.message || "Terjadi kesalahan");
+        toast.error(err.response.data.message || t("common.error"));
         setLoading(false);
       });
   };
@@ -1602,14 +1602,14 @@ const Auth = () => {
             <div className={`flex flex-col transition-opacity duration-100 ${step === 0 ? "opacity-100" : "opacity-0"}`}>
               {/* Title */}
               <h2 className="text-dark font-semibold text-2xl mt-4 mb-6">
-                {i18n.language?.toLowerCase() === "en" ? "Login" : "Masuk"}
+                {t("login.title")}
               </h2>
 
               <div className="flex flex-col w-full mt-1">
                 <form onSubmit={login} className="flex flex-col gap-4">
                   {/* Email Input */}
                   <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                    <label className="text-[11px] text-[#000000] font-medium">Email</label>
+                    <label className="text-[11px] text-[#000000] font-medium">{t("login.email")}</label>
                     <div className="flex items-center justify-between mt-1">
                       <input
                         type="email"
@@ -1627,11 +1627,11 @@ const Auth = () => {
 
                   {/* Password Input */}
                   <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                    <label className="text-[11px] text-[#000000] font-medium">Password</label>
+                    <label className="text-[11px] text-[#000000] font-medium">{t("login.password")}</label>
                     <div className="flex items-center justify-between mt-1">
                       <input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Masukkan Password"
+                        placeholder={t("login.passwordPlaceholder")}
                         value={data.password}
                         onChange={(e) => setData({ password: e.target.value })}
                         className="bg-transparent text-sm w-full text-dark outline-none pr-8 py-0.5 placeholder:text-gray-300 font-medium"
@@ -1640,7 +1640,7 @@ const Auth = () => {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-primary-base absolute right-2 w-4 h-4 flex items-center justify-center"
-                        aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                        aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
                       >
                         <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="w-4 h-4" />
                       </button>
@@ -1657,19 +1657,19 @@ const Auth = () => {
                     {loading ? (
                       <Spinner color="default" size="sm" />
                     ) : (
-                      <span>Lanjutkan</span>
+                      <span>{t("login.continue")}</span>
                     )}
                   </button>
                 </form>
 
                 {/* Sign Up Link */}
                 <p className="text-grey text-xs mt-6 text-center">
-                  Belum punya akun?{" "}
+                  {t("login.noAccount")}{" "}
                   <span
                     className="cursor-pointer text-primary-base font-semibold hover:underline"
                     onClick={() => setStep(1)}
                   >
-                    Daftar Creator
+                    {t("login.registerCreator")}
                   </span>
                 </p>
               </div>
@@ -1677,15 +1677,15 @@ const Auth = () => {
           )}
           {step === 1 && (
             <div className={`flex flex-col transition-opacity duration-300 opacity-0 ${step === 1 && "opacity-100"}`}>
-              <h2 className="text-dark font-semibold text-2xl mt-4">Daftar Akun Creator</h2>
+              <h2 className="text-dark font-semibold text-2xl mt-4">{t("login.registerTitle")}</h2>
               <StepIndicator currentStep={1} />
 
               <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Nama Penyelenggara Event</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.eventOrganizerName")}</label>
                   <input
                     type="text"
-                    placeholder="Misal: javamusikindo"
+                    placeholder={t("login.eventOrganizerPlaceholder")}
                     value={data.name_event_organizer}
                     onChange={(e) => setData({ name_event_organizer: e.target.value })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1694,10 +1694,10 @@ const Auth = () => {
                 {errors.name_event_organizer && <p className="text-danger text-[10px]">{errors.name_event_organizer}</p>}
 
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Nama Pemilik</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.ownerName")}</label>
                   <input
                     type="text"
-                    placeholder="Masukan Nama Pemilik"
+                    placeholder={t("login.ownerNamePlaceholder")}
                     value={data.name}
                     onChange={(e) => setData({ name: e.target.value })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1710,16 +1710,16 @@ const Auth = () => {
                   onClick={() => setStep(2)}
                   disabled={!data.name_event_organizer || !data.name}
                 >
-                  Selanjutnya
+                  {t("next")}
                 </button>
 
                 <p className="text-grey text-xs mt-2 text-center">
-                  Sudah punya akun?{" "}
+                  {t("login.haveAccount")}{" "}
                   <span
                     className="cursor-pointer text-primary-base font-semibold hover:underline"
                     onClick={() => setStep(0)}
                   >
-                    Masuk
+                    {t("login.title")}
                   </span>
                 </p>
               </div>
@@ -1727,15 +1727,15 @@ const Auth = () => {
           )}
           {step === 2 && (
             <div className={`flex flex-col transition-opacity duration-300 opacity-0 ${step === 2 && "opacity-100"}`}>
-              <h2 className="text-dark font-semibold text-2xl mt-4">Daftar Akun Creator</h2>
+              <h2 className="text-dark font-semibold text-2xl mt-4">{t("login.registerTitle")}</h2>
               <StepIndicator currentStep={2} />
 
               <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Lokasi / Kota Asal</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.location")}</label>
                   <input
                     type="text"
-                    placeholder="Misalnya Jakarta"
+                    placeholder={t("login.locationPlaceholder")}
                     value={data.location}
                     onChange={(e) => setData({ location: e.target.value })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1744,10 +1744,10 @@ const Auth = () => {
                 {errors.location && <p className="text-danger text-[10px]">{errors.location}</p>}
 
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">No. Telepon / Handphone</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.phone")}</label>
                   <input
                     type="tel"
-                    placeholder="Contoh: 08123456789"
+                    placeholder={t("login.phonePlaceholder")}
                     value={data.phone_number}
                     onChange={(e) => setData({ phone_number: e.target.value.replaceAll(/\D/g, '').replace(/^(?!0|6)(\d+)/, '628$1').replace(/^(0)/, '62') })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1761,14 +1761,14 @@ const Auth = () => {
                     className="border border-[#D1D5DB] bg-white hover:bg-gray-50 text-[#374151] w-1/3 rounded-lg py-3 px-4 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center"
                     onClick={() => setStep(1)}
                   >
-                    Kembali
+                    {t("back")}
                   </button>
                   <button
                     className="bg-[#194E9E] hover:bg-[#0b387c] text-white w-2/3 rounded-lg py-3 px-4 text-sm font-semibold disabled:bg-[#194E9E] disabled:opacity-40 transition-all cursor-pointer disabled:cursor-not-allowed"
                     onClick={() => setStep(3)}
                     disabled={!data.location || !data.phone_number}
                   >
-                    Selanjutnya
+                    {t("next")}
                   </button>
                 </div>
               </div>
@@ -1776,12 +1776,12 @@ const Auth = () => {
           )}
           {step === 3 && (
             <div className={`flex flex-col transition-opacity duration-300 opacity-0 ${step === 3 && "opacity-100"}`}>
-              <h2 className="text-dark font-semibold text-2xl mt-4">Daftar Akun Creator</h2>
+              <h2 className="text-dark font-semibold text-2xl mt-4">{t("login.registerTitle")}</h2>
               <StepIndicator currentStep={3} />
 
               <div className="flex flex-col w-full gap-4">
                 <div>
-                  <label className="text-[11px] text-[#000000] font-medium block mb-2">Logo Creator</label>
+                  <label className="text-[11px] text-[#000000] font-medium block mb-2">{t("login.creatorLogo")}</label>
                   <label className="w-full border-2 border-dashed border-gray-300 hover:border-primary-base rounded-xl bg-gray-50 flex flex-col items-center justify-center h-32 gap-2 cursor-pointer transition-colors">
                     <input type="file" className="hidden" onChange={handleFile} accept=".jpg,.jpeg,.png" />
                     {image ? (
@@ -1797,18 +1797,18 @@ const Auth = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-base" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <h3 className="font-semibold text-xs text-grey text-center">Unggah logo creator (Max 2MB)</h3>
+                        <h3 className="font-semibold text-xs text-grey text-center">{t("login.uploadLogo")}</h3>
                       </>
                     )}
                   </label>
                 </div>
 
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Email</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.email")}</label>
                   <div className="flex items-center justify-between mt-1">
                     <input
                       type="email"
-                      placeholder="Contoh: johndoe@gmail.com"
+                      placeholder={t("login.emailPlaceholder")}
                       value={data.email}
                       onChange={(e) => setData({ email: e.target.value })}
                       className="bg-transparent text-sm w-full text-dark outline-none pr-8 py-0.5 placeholder:text-gray-300 font-medium"
@@ -1824,14 +1824,14 @@ const Auth = () => {
                     className="border border-[#D1D5DB] bg-white hover:bg-gray-50 text-[#374151] w-1/3 rounded-lg py-3 px-4 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center"
                     onClick={() => setStep(2)}
                   >
-                    Kembali
+                    {t("back")}
                   </button>
                   <button
                     className="bg-[#194E9E] hover:bg-[#0b387c] text-white w-2/3 rounded-lg py-3 px-4 text-sm font-semibold disabled:bg-[#194E9E] disabled:opacity-40 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                     onClick={submitRegister}
                     disabled={!data.image || !data.email || loading}
                   >
-                    {loading ? <Spinner color="default" size="sm" /> : "Selanjutnya"}
+                    {loading ? <Spinner color="default" size="sm" /> : t("next")}
                   </button>
                 </div>
               </div>
@@ -1839,9 +1839,9 @@ const Auth = () => {
           )}
           {step === 4 && (
             <div className={`flex flex-col transition-opacity duration-100 ${step === 4 ? "opacity-100" : "opacity-0"}`}>
-              <h2 className="text-dark font-semibold text-2xl mt-4">Verifikasi Email</h2>
+              <h2 className="text-dark font-semibold text-2xl mt-4">{t("login.verifyEmail")}</h2>
               <p className="text-grey text-sm mt-1.5 mb-6">
-                Kami telah mengirimkan kode verifikasi ke <span className="text-primary-base font-semibold">{data.email}</span>
+                {t("login.otpSent", { email: <span className="text-primary-base font-semibold">{data.email}</span> })}
               </p>
 
               <div className="flex flex-col items-center w-full gap-4">
@@ -1874,7 +1874,7 @@ const Auth = () => {
                       onClick={verifyRegister}
                       disabled={loading || otp.length < 6}
                     >
-                      {loading ? <Spinner color="default" size="sm" /> : "Verifikasi"}
+                      {loading ? <Spinner color="default" size="sm" /> : t("login.verify")}
                     </button>
                   ) : (
                     <button
@@ -1882,7 +1882,7 @@ const Auth = () => {
                       onClick={handleResendOtp}
                       disabled={loading}
                     >
-                      {loading ? <Spinner color="default" size="sm" /> : "Kirim Ulang Kode"}
+                      {loading ? <Spinner color="default" size="sm" /> : t("login.resendCode")}
                     </button>
                   )}
                 </div>
@@ -1891,15 +1891,15 @@ const Auth = () => {
           )}
           {step === 5 && (
             <div className={`flex flex-col transition-opacity duration-300 opacity-0 ${step === 5 && "opacity-100"}`}>
-              <h2 className="text-dark font-semibold text-2xl mt-4">Set Password</h2>
-              <p className="text-grey text-sm mt-1.5 mb-6">Buat password untuk akun creator Anda</p>
+              <h2 className="text-dark font-semibold text-2xl mt-4">{t("login.setPassword")}</h2>
+              <p className="text-grey text-sm mt-1.5 mb-6">{t("login.setPasswordDesc")}</p>
 
               <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Password</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.password")}</label>
                   <input
                     type="password"
-                    placeholder="Masukan Password"
+                    placeholder={t("login.passwordPlaceholder")}
                     value={data.password}
                     onChange={(e) => setData({ password: e.target.value })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1908,10 +1908,10 @@ const Auth = () => {
                 {errors.password && <p className="text-danger text-[10px]">{errors.password}</p>}
 
                 <div className="flex flex-col relative w-full border-b border-[#D1D5DB] focus-within:border-primary-base transition-colors py-1">
-                  <label className="text-[11px] text-[#000000] font-medium">Konfirmasi Password</label>
+                  <label className="text-[11px] text-[#000000] font-medium">{t("login.confirmPassword")}</label>
                   <input
                     type="password"
-                    placeholder="Masukan Konfirmasi Password"
+                    placeholder={t("login.confirmPasswordPlaceholder")}
                     value={data.password_confirm}
                     onChange={(e) => setData({ password_confirm: e.target.value })}
                     className="bg-transparent text-sm w-full text-dark outline-none py-1 placeholder:text-gray-300 font-medium"
@@ -1924,7 +1924,7 @@ const Auth = () => {
                   onClick={submitCreator}
                   disabled={!data.password || !data.password_confirm || loading}
                 >
-                  {loading ? <Spinner color="default" size="sm" /> : "Buat Akun Creator"}
+                  {loading ? <Spinner color="default" size="sm" /> : t("login.createAccount")}
                 </button>
               </div>
             </div>

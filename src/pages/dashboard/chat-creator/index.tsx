@@ -11,7 +11,7 @@ import paperplane from '../../../assets/icon/paperplane.png';
 import { InboxListProps } from '@/utils/globalInterface';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { toast } from 'react-toastify';
-import { Box, Card, Text, TextInput, Image as ImageM } from '@mantine/core';
+import { Box, Card, Skeleton, Text, TextInput, Image as ImageM } from '@mantine/core';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import echo from '@/utils/socket';
 
@@ -113,6 +113,7 @@ const ChatList = ({
 
 const Chat = () => {
   const [chat, setChat] = useState<InboxListProps[]>([]);
+  const [fetching, setFetching] = useState(true);
   const [selected, setSelected] = useState<number>(0);
   const [messagerName, setName] = useState<string>('');
   const [user, setUser] = useState<UserProps>();
@@ -182,9 +183,11 @@ const Chat = () => {
           .filter(e => e.from.id === users?.id || e.to.id === users?.id)
 
         setChat(chatlist)
+        setFetching(false)
       })
       .catch((err: any) => {
         console.error(err);
+        setFetching(false)
       });
   };
 
@@ -247,21 +250,35 @@ const Chat = () => {
           </div>
 
           <div className='flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200'>
-            {(searchQuery && searchedChats.length == 0) && (
+            {fetching && (
+              <div className="p-3 space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3">
+                    <Skeleton circle width={42} height={42} />
+                    <div style={{ flex: 1 }}>
+                      <Skeleton height={11} width="55%" radius="sm" mb={7} />
+                      <Skeleton height={8} width="80%" radius="sm" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!fetching && (searchQuery && searchedChats.length == 0) && (
               <div className="p-8 text-center">
                  <Icon icon="solar:chat-round-unread-linear" width={48} className="text-gray-200 mb-2 mx-auto" />
                  <Text size="sm" c="dimmed">Chat tidak ditemukan</Text>
               </div>
             )}
-            
-            {chat.length === 0 && (
+
+            {!fetching && chat.length === 0 && (
                <div className="p-8 text-center">
-                 <Icon icon="solar:ghost-linear" width={48} className="text-gray-200 mb-2 mx-auto" />
-                 <Text size="sm" c="dimmed">Belum ada percakapan</Text>
+                  <Icon icon="solar:ghost-linear" width={48} className="text-gray-200 mb-2 mx-auto" />
+                  <Text size="sm" c="dimmed">Belum ada percakapan</Text>
               </div>
             )}
 
-            {(searchQuery ? searchedChats : chat)
+            {!fetching && (searchQuery ? searchedChats : chat)
               .sort((a, b) => {
                 const aUnread = a.chats.filter(c => c.status === "unread" && c.user_id !== users?.id).length;
                 const bUnread = b.chats.filter(c => c.status === "unread" && c.user_id !== users?.id).length;

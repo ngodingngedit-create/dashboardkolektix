@@ -8,13 +8,16 @@ import axios from "axios";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faCheckCircle, faDownload, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faCheckCircle, faDownload, faArrowLeft, faFileExcel } from "@fortawesome/free-solid-svg-icons";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/router";
+import * as XLSX from "xlsx";
+import { useTranslation } from "react-i18next";
 
 const CheckinReport = () => {
   const { collapse } = useSidebar();
   const router = useRouter();
+  const { t } = useTranslation();
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [eventList, setEventList] = useState<EventListResponse[]>([]);
@@ -372,6 +375,45 @@ const CheckinReport = () => {
     setCurrentPage(1);
   };
 
+  const formatDate = (val: any) => {
+    if (!val) return "-";
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "-";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  };
+
+  const handleExport = () => {
+    try {
+      if (!processedData || processedData.length === 0) {
+        alert(t("checkinReport.exportEmpty"));
+        return;
+      }
+      const exportData = processedData.map((item: any, index: number) => ({
+        No: index + 1,
+        Invoice: item.invoice || "-",
+        Nama: item.nama || "-",
+        Email: item.email || "-",
+        Tiket: item.ticket_name || "-",
+        Sesi: item.session || item.sesi || "-",
+        Tanggal: formatDate(item.created_at),
+        "Status Checkin": item.status_checkin ? "Sudah" : "Belum",
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Checkin Report");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `checkin-report-${timestamp}.xlsx`);
+    } catch (err) {
+      console.error("Export checkin report error:", err);
+      alert(t("checkinReport.exportError"));
+    }
+  };
+
   if (!isr) return null;
 
   return (
@@ -487,6 +529,16 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                   label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 },
                 }}
               />
+              <Button
+                variant="filled"
+                color="green"
+                radius="md"
+                leftSection={<FontAwesomeIcon icon={faFileExcel} />}
+                onClick={handleExport}
+                disabled={processedData.length === 0}
+              >
+                {t("checkinReport.export")}
+              </Button>
             </Flex>
           </Flex>
 

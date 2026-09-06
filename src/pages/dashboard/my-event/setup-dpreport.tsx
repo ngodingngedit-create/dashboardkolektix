@@ -15,11 +15,11 @@ import {
   NumberInput,
   Group,
   ActionIcon,
-  Pagination,
   Alert,
   Progress,
   Textarea,
 } from "@mantine/core";
+import TablePagination from "@/components/TablePagination";
 import { useListState } from "@mantine/hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -455,8 +455,6 @@ const SetupDPReportPage = () => {
     return filteredConfigs.slice(start, start + itemsPerPage);
   }, [filteredConfigs, currentPage]);
 
-  const totalPages = Math.ceil(filteredConfigs.length / itemsPerPage) || 1;
-
   // Visual allocations builder for progress bar
   const progressAllocation = useMemo(() => {
     const allocations = [
@@ -648,24 +646,18 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   );
                 })
               )}
-            </tbody>
+             </tbody>
           </table>
         </Box>
       </Card>
-      
-      {totalPages > 1 && (
-        <Flex justify="space-between" align="center">
-          <Text size="xs" c="dimmed">Menampilkan {filteredConfigs.length} konfigurasi</Text>
-          <Pagination
-            value={currentPage}
-            onChange={setCurrentPage}
-            total={totalPages}
-            radius="md"
-            size="sm"
-            withEdges
-          />
-        </Flex>
-      )}
+
+      <TablePagination
+        page={currentPage}
+        onPageChange={setCurrentPage}
+        total={filteredConfigs.length}
+        rowsPerPage={itemsPerPage}
+        unit="konfigurasi"
+      />
     </Stack>
   );
 

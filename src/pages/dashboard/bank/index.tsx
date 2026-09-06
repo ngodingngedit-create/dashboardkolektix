@@ -38,6 +38,7 @@ import {
 import { Delete, Get, Post, Put } from "@/utils/REST";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useTranslation } from "react-i18next";
+import TablePagination from "@/components/TablePagination";
 
 interface BankProps {
   id: number;
@@ -67,6 +68,8 @@ const Bank = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedBank, setSelectedBank] = useState<BankProps | null>(null);
   const [searchValue, setSearchValue] = useState("");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" | null }>({
     key: "type_bank",
     direction: "asc",
@@ -193,7 +196,10 @@ const Bank = () => {
     return result;
   }, [data, searchValue, sortConfig]);
 
+  const paginatedData = filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
   const requestSort = (key: string) => {
+    setPage(1);
     let direction: "asc" | "desc" | null = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
@@ -252,7 +258,7 @@ const Bank = () => {
             placeholder={t('bank.searchPlaceholder')}
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={(e) => { setSearchValue(e.target.value); setPage(1); }}
             style={{ width: 320 }}
           />
         </Flex>
@@ -321,7 +327,7 @@ const Bank = () => {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item, idx) => (
+                paginatedData.map((item, idx) => (
                   <tr
                     key={item.id}
                     style={{ borderBottom: "1px solid #f1f3f5" }}
@@ -329,7 +335,7 @@ const Bank = () => {
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
                   >
                     <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                      <Text size="xs" fw={700}>{idx + 1}</Text>
+                      <Text size="xs" fw={700}>{(page - 1) * rowsPerPage + idx + 1}</Text>
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <Flex align="center" gap={10}>
@@ -377,6 +383,15 @@ const Bank = () => {
             </tbody>
           </table>
         </Box>
+
+        <TablePagination
+          page={page}
+          onPageChange={setPage}
+          total={filteredData.length}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(val) => { setRowsPerPage(val); setPage(1); }}
+          unit="rekening"
+        />
       </Card>
     </Stack>
   );

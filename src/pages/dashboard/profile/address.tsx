@@ -24,6 +24,7 @@ import { z } from 'zod';
 import { modals } from '@mantine/modals';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import CardSkeleton from '@/components/CardSkeleton';
 import fetch from '@/utils/fetch';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -362,7 +363,9 @@ const router = useRouter();
           </div>
         </div>
 
-        {filteredData.length > 0 ? (
+        {loading.includes('getdata') ? (
+          <CardSkeleton count={4} variant="image" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-start gap-x-6 gap-y-10" />
+        ) : filteredData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 content-center md:justify-items-start justify-items-center gap-x-6 gap-y-10">
             {filteredData.map((item) => (
               <div key={item.id} className="w-full bg-white rounded-xl shadow-md border border-primary-light-200 overflow-hidden">

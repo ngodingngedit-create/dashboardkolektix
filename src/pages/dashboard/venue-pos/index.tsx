@@ -1,6 +1,6 @@
 import { VenueProps } from "@/utils/globalInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Accordion, ActionIcon, Alert, Box, Button, Card, Center, Divider, Flex, Grid, Group, Image, Modal, NumberFormatter, NumberInput, Select, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
+import { Accordion, ActionIcon, Alert, Box, Button, Card, Center, Divider, Flex, Grid, Group, Image, Modal, NumberFormatter, NumberInput, Select, Skeleton, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
 import { VenueListResponse } from "../venue/type";
@@ -79,6 +79,14 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <Stack>
                         <Card withBorder radius="xl" p={25}>
                             <Stack>
+                                {loading.includes('getdata') ? (
+                                    <>
+                                        <Skeleton height={20} width="40%" radius="sm" />
+                                        <Skeleton height={42} radius="xl" />
+                                        <Skeleton height={80} radius="xl" />
+                                    </>
+                                ) : (
+                                <>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="tabler:building" className="text-primary-base" />
                                     <Text size="sm" className={`!text-primary-base`}>{t('venue.info')}</Text>
@@ -104,6 +112,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                             </Stack>
                                         </Flex>
                                     </Card>
+                                )}
+                                </>
                                 )}
                             </Stack>
                         </Card>

@@ -10,6 +10,7 @@ import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import CardSkeleton from '@/components/CardSkeleton';
 
 const MyVenue = () => {
   const router = useRouter();
@@ -110,6 +111,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
       <Divider />
 
+      {loading.includes('getdata') ? (
+        <CardSkeleton count={4} variant="image" />
+      ) : (
+        <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 w-full">
         {venue?.map((e: any, i) => (
           <Card key={i} withBorder radius={10} p={0} className={`relative group hover:shadow-md transition-shadow`}>
@@ -211,6 +216,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           </Button>
         </div>
       </Center>
+      )}
+        </>
       )}
     </Stack>
   );

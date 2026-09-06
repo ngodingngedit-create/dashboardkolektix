@@ -1943,13 +1943,13 @@ const sidebarData: SidebarData = [
         link: "/dashboard/merch-pos",
         role: "Creator",
       },
-      {
-        id: 4,
-        name: "Pengambilan Produk",
-        icon: faDolly,
-        link: "/dashboard/merch-pickup",
-        role: "Creator",
-      },
+      // {
+      //   id: 4,
+      //   name: "Pengambilan Produk",
+      //   icon: faDolly,
+      //   link: "/dashboard/merch-pickup",
+      //   role: "Creator",
+      // },
       {
         id: 5,
         name: "Delivery",

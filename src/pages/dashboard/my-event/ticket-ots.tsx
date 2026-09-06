@@ -774,7 +774,8 @@ const TicketOTS = () => {
     if (!eventData) return;
     const type = activeTab === "offline" ? "Offline" : "Online";
     const statusLabel: Record<number, string> = { 1: "Pending", 2: "Success", 3: "Failed", 4: "Expired" };
-    const rows = currentTransactions.map((item: any, idx: number) => {
+    // Gunakan hasil filter/sort aktif (filteredTransactions), bukan seluruh data mentah
+    const rows = filteredTransactions.map((item: any, idx: number) => {
       const customer = getCustomer(item);
       return {
         No: idx + 1,
@@ -793,6 +794,11 @@ const TicketOTS = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Riwayat Penjualan");
     XLSX.writeFile(wb, `riwayat-penjualan-${type.toLowerCase()}-${eventData.id}.xlsx`);
+  };
+
+  const downloadReportGuarded = () => {
+    if (filteredTransactions.length === 0) return;
+    downloadReport();
   };
 
   const handleViewTransaction = (transaction: any) => {
@@ -1007,7 +1013,7 @@ const TicketOTS = () => {
                           }
                         />
                       </Tabs>
-                      <button onClick={downloadReport} className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 text-sm border border-light-grey rounded-md px-3 py-2 hover:bg-gray-50 transition-colors">
+                      <button onClick={downloadReportGuarded} className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 text-sm border border-light-grey rounded-md px-3 py-2 hover:bg-gray-50 transition-colors">
                         <FontAwesomeIcon icon={faDownload} className="text-gray-600" />
                         <span>Download</span>
                       </button>

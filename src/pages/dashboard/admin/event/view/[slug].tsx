@@ -378,7 +378,60 @@ const AdminEventDetailView = () => {
   }, [data?.id]);
 
   const handleDownloadTransaction = async () => {
-    window.open(`${config.wsUrl}list-transaction-by-event?event_id=${data?.id}&download=true`);
+    if (!data?.id) {
+      notifications.show({ title: "Gagal!", message: "Data event belum dimuat", color: "red" });
+      return;
+    }
+    try {
+      // Client-side XLSX — menyamai mekanisme creator page, tanpa param API download=true
+      const params = new URLSearchParams({
+        event_id: data.id.toString(),
+        page: "1",
+        per_page: "999999",
+      });
+      const response = await axios.get(`${config.wsUrl}list-transaction-by-event?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = response.data as any;
+      const allTxns = result?.data && Array.isArray(result.data) ? result.data : [];
+      if (allTxns.length === 0) {
+        notifications.show({ title: "Gagal!", message: "Tidak ada data transaksi untuk diexport", color: "red" });
+        return;
+      }
+
+      const exportData = allTxns.map((item: any, index: number) => {
+        let pemesanIdentity = null;
+        if (item.identities?.length) {
+          pemesanIdentity = item.identities.find((id: any) => id.is_pemesan == 1) || item.identities[0];
+        }
+        let ticketName = "-";
+        let ticketQty = "-";
+        if (item.tickets?.length) {
+          ticketName = item.tickets.map((t: any) => t.has_event_ticket?.name || "-").join(", ");
+          ticketQty = item.tickets.map((t: any) => t.qty_ticket || 0).join(", ");
+        }
+        return {
+          "No": index + 1,
+          "No. Invoice": item.invoice_no || "-",
+          "Nama": pemesanIdentity?.full_name || "-",
+          "Email": pemesanIdentity?.email || "-",
+          "No. Telepon": pemesanIdentity?.no_telp || "-",
+          "Nama Tiket": ticketName,
+          "Qty": ticketQty,
+          "Harga Tiket": Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
+          "Metode Pembayaran": item.payment_method?.payment_name || "-",
+          "Status": getStatusText(item.transaction_status_id),
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
+      XLSX.writeFile(wb, `transaksi-event-${data.id}.xlsx`);
+    } catch (error: any) {
+      console.error("Error downloading transactions:", error);
+      notifications.show({ title: "Gagal!", message: error.response?.data?.message || "Gagal mengunduh data transaksi", color: "red" });
+    }
   };
 
   useEffect(() => {

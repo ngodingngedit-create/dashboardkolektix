@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import TableSkeleton from "@/components/TableSkeleton";
 import {
   Modal as NextUIModal,
   ModalContent,
@@ -376,6 +378,7 @@ interface FilterOption {
 }
 
 const MerchandiseTransaction: React.FC = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
@@ -563,7 +566,7 @@ const MerchandiseTransaction: React.FC = () => {
   const getShippingStatusInfo = (item: MerchandiseTransactionData) => {
     if (!item.latest_manifest) {
       return {
-        text: "Menunggu Penjual",
+        text: t('merchDetail.waitingSeller'),
         color: "yellow",
       };
     }
@@ -942,7 +945,7 @@ const MerchandiseTransaction: React.FC = () => {
     } catch (err: any) {
       console.error("Error fetching data:", err);
       setData([]);
-      setError("Gagal mengambil data dari server");
+      setError(t('merchTrx.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -1016,49 +1019,8 @@ const MerchandiseTransaction: React.FC = () => {
   // Fungsi untuk generate QR code dengan pendekatan yang lebih kompatibel untuk PDF
   const generateQRCodeHTML = (text: string): string => {
     const qrData = text || 'KLTRX-JLBVTZRYH';
-    const size = 21;
-    const seed = qrData.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-    const generateQRPattern = (): boolean[][] => {
-      const grid: boolean[][] = [];
-      for (let i = 0; i < size; i++) {
-        const row: boolean[] = [];
-        for (let j = 0; j < size; j++) {
-          if ((i < 7 && j < 7) || (i < 7 && j > size - 8) || (i > size - 8 && j < 7)) {
-            if (i === 0 || i === 6 || j === 0 || j === 6) row.push(true);
-            else if (i === 1 || i === 5 || j === 1 || j === 5) row.push(false);
-            else if (i >= 2 && i <= 4 && j >= 2 && j <= 4) row.push(true);
-            else row.push(false);
-          } else if (i > size - 9 && j > size - 9 && i < size - 2 && j < size - 2) {
-            if (i === size - 8 || i === size - 4 || j === size - 8 || j === size - 4) row.push(true);
-            else if (i === size - 7 || i === size - 5 || j === size - 7 || j === size - 5) row.push(false);
-            else if (i === size - 6 && j === size - 6) row.push(true);
-            else row.push(false);
-          } else if (i === 6 && j > 7 && j < size - 8) row.push(j % 2 === 0);
-          else if (j === 6 && i > 7 && i < size - 8) row.push(i % 2 === 0);
-          else {
-            const charIndex = (i * j + seed) % qrData.length;
-            const charCode = qrData.charCodeAt(charIndex) || 0;
-            const val = (charCode + i + j + seed) % 3;
-            row.push(val === 0);
-          }
-        }
-        grid.push(row);
-      }
-      return grid;
-    };
-
-    const grid = generateQRPattern();
-    const cellSize = 10;
-    let svg = `<svg width="${size * cellSize}" height="${size * cellSize}" viewBox="0 0 ${size * cellSize} ${size * cellSize}" xmlns="http://www.w3.org/2000/svg">`;
-    svg += `<rect width="100%" height="100%" fill="white"/>`;
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (grid[i][j]) svg += `<rect x="${j * cellSize}" y="${i * cellSize}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
-      }
-    }
-    svg += `</svg>`;
-    return svg;
+    // QR asli via api.qrserver.com — QR fake grid sebelumnya tidak bisa di-scan
+    return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&margin=0&data=${encodeURIComponent(qrData)}" width="210" height="210" alt="QR ${qrData}" crossorigin="anonymous" />`;
   };
 
   const generateResiHTML = (invoice: any): string => {
@@ -1224,7 +1186,7 @@ const MerchandiseTransaction: React.FC = () => {
       }
 
       if (allResiHTML.length === 0) {
-        alert("Gagal mengambil data invoice untuk dicetak.");
+        alert(t('merchTrx.invoiceDetailFailed'));
         return;
       }
 
@@ -1651,14 +1613,6 @@ const MerchandiseTransaction: React.FC = () => {
     );
   };
 
-  if (loading || loadingCreators) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
     <>
 <Flex mt={15} mx={15} justify="space-between" align="center" wrap="wrap">
@@ -1670,11 +1624,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 >
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
-<Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Transaksi Merchandise</Text>
+<Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">{t('merchTrx.title')}</Text>
 </Flex>
           <Group gap="xl">
               <Stack gap={2}>
-                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t('merchTrx.totalTransactions')}</Text>
                   <Text size="xl" fw={700}>{filtered.length}</Text>
               </Stack>
               <Divider orientation="vertical" />
@@ -1712,15 +1666,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             size="sm"
                             styles={{ root: { color: 'white' } }}
                         >
-                            Export CSV ({filtered.length})
+                            {t('merchTrx.exportCsv', { count: filtered.length })}
                         </MantineButton>
                     </Group>
                             <Group gap="sm" align="flex-end">
                                 <MantineSelect
-                                    label="Status Pembayaran"
-                                    placeholder="Status Bayar"
+                                    label={t('merchTrx.payStatus')}
+                                    placeholder={t('merchTrx.payStatus')}
                                     data={[
-                                        { value: 'all', label: 'Semua Status' },
+                                        { value: 'all', label: t('merchDetail.allStatus') },
                                         ...transactionStatuses.map(s => ({ value: String(s.id), label: s.name }))
                                     ]}
                                     value={paymentStatusFilter}
@@ -1732,10 +1686,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     }}
                                 />
                                 <MantineSelect
-                                    label="Filter Produk"
-                                    placeholder="Filter Produk"
+                                    label={t('merchTrx.filterProduct')}
+                                    placeholder={t('merchTrx.filterProduct')}
                                     data={[
-                                        { value: 'all', label: 'Semua Produk' },
+                                        { value: 'all', label: t('merchTrx.allProducts') },
                                         ...productOptions.map(p => ({ value: p.key, label: p.label }))
                                     ]}
                                     value={selectedProduct}
@@ -1749,8 +1703,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     }}
                                 />
                                 <MantineTextInput
-                                    label="Cari"
-                                    placeholder="Cari invoice..."
+                                    label={t('report.searchLabel')}
+                                    placeholder={t('merchTrx.searchInvoice')}
                                     leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                                     value={filterValue}
                                     onChange={(e) => {
@@ -1769,33 +1723,36 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         {/* Row 2: info transaksi kiri */}
                         <Flex align="center" gap="sm" mb="md">
                             <Text size="sm" c="gray">
-                                Menampilkan {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0'} dari {filtered.length} transaksi
+                                {t('merchTrx.showingOf', { from: filtered.length > 0 ? `${(page-1)*rowsPerPage+1}-${Math.min(page*rowsPerPage, filtered.length)}` : '0', total: filtered.length })}
                             </Text>
                         </Flex>
 
                         {/* Table */}
+                        {loading || loadingCreators ? (
+                            <TableSkeleton rows={8} cols={8} hasAction />
+                        ) : (
                         <Box style={{ overflowX: 'auto', position: 'relative' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
                                         <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('customer_name')}>Customer {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('product_name')}>Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>Total {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Metode Bayar</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', right: 270, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('transaction_status_id')}>Status Bayar {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', minWidth: 150, position: 'sticky', right: 120, backgroundColor: '#f5f7fa', zIndex: 2 }}>Status Kirim</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('invoice_no')}>{t('merchDetail.colInvoiceNo')} {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('customer_name')}>{t('merchDetail.customerName')} {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('product_name')}>{t('merchTrx.product')} {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>{t('event.total')} {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('merchTrx.paymentMethodShort')}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', right: 270, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('transaction_status_id')}>{t('merchTrx.payStatus')} {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', minWidth: 150, position: 'sticky', right: 120, backgroundColor: '#f5f7fa', zIndex: 2 }}>{t('merchTrx.shipStatus')}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 3, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)', minWidth: 120 }}>
                                             <Flex align="center" gap="xs">
-                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
+                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('common.actions')}</span>
                                                 <Checkbox
                                                     checked={selectedInvoiceIds.length === paginatedItems.length && paginatedItems.length > 0}
                                                     indeterminate={selectedInvoiceIds.length > 0 && selectedInvoiceIds.length < paginatedItems.length}
                                                     onChange={toggleSelectAll}
                                                     size="xs"
                                                 />
-                                                <Tooltip label={`Cetak Resi Semua ${selectedInvoiceIds.length > 0 ? `(${selectedInvoiceIds.length})` : ''}`}>
+                                                <Tooltip label={t('merchTrx.printAll', { count: selectedInvoiceIds.length })}>
                                                     <ActionIcon
                                                         variant="transparent"
                                                         color="blue"
@@ -1872,7 +1829,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                 </td>
                                                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: 'white', zIndex: 2, boxShadow: '-2px 0 4px rgba(0,0,0,0.06)', minWidth: 120 }}>
                                                     <Flex align="center" gap="xs">
-                                                        <Tooltip label="Detail Invoice">
+                                                        <Tooltip label={t('merchTrx.invoiceDetail')}>
                                                             <ActionIcon 
                                                                 variant="light" 
                                                                 color="blue" 
@@ -1908,16 +1865,18 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 </tbody>
                             </table>
                         </Box>
+                        )}
 
-                        {paginatedItems.length === 0 && (
+                        {paginatedItems.length === 0 && !loading && !loadingCreators && (
                             <Box py="xl" ta="center">
-                                <Text c="dimmed">Tidak ada data transaksi yang ditemukan</Text>
+                                <Text c="dimmed">{t('merchTrx.noTrxFound')}</Text>
                             </Box>
                         )}
 
+                        {!loading && !loadingCreators && (
                         <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
                             <Text size="xs" c="dimmed">
-                                Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+                                {t('report.pageOf', { page, total: totalPages })}
                             </Text>
                             <MantinePagination 
                                 total={totalPages} 
@@ -1935,6 +1894,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}–${Math.min(page*rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
                             </Text>
                         </Flex>
+                        )}
                     </Box>
         </Stack>
     </MantineCard>
@@ -2455,7 +2415,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       startContent={<FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />}
                       size="sm"
                     >
-                      Lihat Invoice Lengkap
+                      {t('merchTrx.viewFullInvoice')}
                     </NextUIButton>
                   </div>
                 </ModalFooter>
@@ -2469,16 +2429,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       <Modal opened={showPrintOptions} onClose={() => {
           setShowPrintOptions(false);
           setSelectedInvoiceForPrint(null);
-      }} title="Opsi Cetak Resi" centered size="sm">
+      }} title={t('merchDetail.printOptions')} centered size="sm">
           <Stack>
-              <Text size="sm">Pilih opsi untuk resi - {selectedInvoiceForPrint?.invoice_no}</Text>
+              <Text size="sm">{t('merchDetail.printOptionsFor', { invoice: selectedInvoiceForPrint?.invoice_no })}</Text>
 
               <Group gap="sm">
                   <Checkbox
                       id="sensorNama"
                       checked={sensorNama}
                       onChange={(e) => setSensorNama(e.currentTarget.checked)}
-                      label="Sensor Nama Penerima"
+                      label={t('merchDetail.maskRecipientName')}
                   />
               </Group>
 
@@ -2487,7 +2447,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       id="sensorTelepon"
                       checked={sensorTelepon}
                       onChange={(e) => setSensorTelepon(e.currentTarget.checked)}
-                      label="Sensor Nomor Telepon"
+                      label={t('merchDetail.maskPhone')}
                   />
               </Group>
 
@@ -2496,7 +2456,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       id="sensorAlamat"
                       checked={sensorAlamat}
                       onChange={(e) => setSensorAlamat(e.currentTarget.checked)}
-                      label="Sensor Alamat (hanya kota)"
+                      label={t('merchDetail.maskAddress')}
                   />
               </Group>
 
@@ -2505,13 +2465,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       id="tampilkanHarga"
                       checked={tampilkanHarga}
                       onChange={(e) => setTampilkanHarga(e.currentTarget.checked)}
-                      label="Tampilkan Harga"
+                      label={t('merchDetail.showPrice')}
                   />
               </Group>
 
               <Group justify="flex-end" mt="xl">
-                  <MantineButton variant="light" onClick={() => setShowPrintOptions(false)}>Batal</MantineButton>
-                  <MantineButton onClick={executePrintSingle} loading={printLoading}>Cetak Resi</MantineButton>
+                  <MantineButton variant="light" onClick={() => setShowPrintOptions(false)}>{t('common.cancel')}</MantineButton>
+                  <MantineButton onClick={executePrintSingle} loading={printLoading}>{t('merchDetail.printLabel')}</MantineButton>
               </Group>
           </Stack>
       </Modal>

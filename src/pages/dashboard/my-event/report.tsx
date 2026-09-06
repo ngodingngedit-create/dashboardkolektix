@@ -1258,6 +1258,8 @@ import { EticketListResponse, EventListResponse, TransactionListResponse, Transa
 import useLoggedUser from "@/utils/useLoggedUser";
 import axios from "axios";
 import config from "@/Config";
+import { useTranslation } from "react-i18next";
+import TableSkeleton from "@/components/TableSkeleton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faEye, faFilter, faTicketAlt, faTshirt, faChevronDown, faReceipt, faSearch, faMoneyBillWave, faQrcode, faArrowsRotate, faFileExcel, faChartPie, faPencil, faSave, faCopy, faCheckCircle, faUser, faEnvelope, faGlobe, faWallet, faPrint, faFileLines, faInfoCircle, faArrowLeft, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -1273,6 +1275,7 @@ type PaymentMethodInfo = {
 
 const Merch = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isr, setIsr] = useState(false);
   const [allDataList, setAllDataList] = useState<TransactionListResponse[]>([]);
   const [dataListEticket, setDataListEticket] = useState<EticketListResponse[]>();
@@ -1280,9 +1283,9 @@ const Merch = () => {
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number>();
   const [selectedTicket, setSelectedTicket] = useState<string>("all");
-  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
+  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: t('report.allTickets') }]);
   const [selectedSession, setSelectedSession] = useState<string>("all");
-  const [availableSessions, setAvailableSessions] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Sesi" }]);
+  const [availableSessions, setAvailableSessions] = useState<{ value: string; label: string }[]>([{ value: "all", label: t('report.allSessions') }]);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatusResponse[]>([]);
   const [loading, setLoading] = useListState<string>();
   const [loadingEventData, setLoadingEventData] = useState(false);
@@ -1341,7 +1344,7 @@ const Merch = () => {
       });
     });
     const sessionArray = Array.from(sessions).map((s) => ({ value: s, label: s }));
-    setAvailableSessions([{ value: "all", label: "Semua Sesi" }, ...sessionArray]);
+    setAvailableSessions([{ value: "all", label: t('report.allSessions') }, ...sessionArray]);
   }, [allDataList]);
 
   useEffect(() => {
@@ -1369,9 +1372,9 @@ const Merch = () => {
           value: name,
           label: name,
         }));
-        setAvailableTickets([{ value: "all", label: "Semua Tiket" }, ...ticketsArray]);
+        setAvailableTickets([{ value: "all", label: t('report.allTickets') }, ...ticketsArray]);
       } else {
-        setAvailableTickets([{ value: "all", label: "Semua Tiket" }]);
+        setAvailableTickets([{ value: "all", label: t('report.allTickets') }]);
       }
     }
   }, [selectedEvent, eventList]);
@@ -1595,8 +1598,8 @@ const Merch = () => {
       await axios.put(`${config.wsUrl}transaction-identity/${selectedIdentity.id}`, editIdentityForm, { headers: { Authorization: `Bearer ${Cookies.get('token')}` } });
 
       notifications.show({
-        title: "Berhasil",
-        message: "Data pemesan berhasil diperbarui",
+        title: t('common.success'),
+        message: t('report.editSuccess'),
         color: "green",
       });
 
@@ -1605,8 +1608,8 @@ const Merch = () => {
     } catch (error: any) {
       console.error("Error saving pemesan:", error);
       notifications.show({
-        title: "Gagal",
-        message: error.response?.data?.message || "Gagal memperbarui data pemesan",
+        title: t('common.failed'),
+        message: error.response?.data?.message || t('report.editFailed'),
         color: "red",
       });
     } finally {
@@ -1628,19 +1631,19 @@ const Merch = () => {
 
       if (response.data?.success || response.data?.status === 200 || response.data?.status === true) {
         notifications.show({
-          title: "Berhasil",
-          message: "Check-in manual berhasil dilakukan",
+          title: t('common.success'),
+          message: t('checkinReport.manualCheckinSuccess'),
           color: "green"
         });
         setIsCheckinModalOpen(false);
         loadEventData(); // Refresh data
       } else {
-        throw new Error(response.data?.message || "Gagal melakukan check-in manual");
+        throw new Error(response.data?.message || t('checkinReport.manualCheckinFailed'));
       }
     } catch (error: any) {
       notifications.show({
-        title: "Gagal",
-        message: error.response?.data?.message || error.message || "Terjadi kesalahan",
+        title: t('common.failed'),
+        message: error.response?.data?.message || error.message || t('common.error'),
         color: "red"
       });
     } finally {
@@ -2147,7 +2150,7 @@ const Merch = () => {
         }
 
         if (!exportData || exportData.length === 0) {
-          alert("Tidak ada data untuk diexport");
+          alert(t('report.noExportData'));
           return;
         }
 
@@ -2192,78 +2195,78 @@ const Merch = () => {
           const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
 
           const row: Record<string, any> = {
-            "No": index + 1,
-            "Nama": pemesanIdentity?.full_name || "-",
-            "Email": pemesanIdentity?.email || "-",
-            "No. Telepon": pemesanIdentity?.no_telp || "-",
-            "No. Invoice": item.invoice_no || "-",
-            "Nama Tiket": ticketName,
-            "Qty": ticketQty,
+            [t('report.colNo')]: index + 1,
+            [t('report.xlsxName')]: pemesanIdentity?.full_name || "-",
+            [t('common.email')]: pemesanIdentity?.email || "-",
+            [t('report.xlsxPhone')]: pemesanIdentity?.no_telp || "-",
+            [t('report.xlsxInvoiceNo')]: item.invoice_no || "-",
+            [t('report.xlsxTicketName')]: ticketName,
+            [t('report.colQty')]: ticketQty,
           };
-          if (selectedEventFlags.is_session) row["Sesi"] = ticketSesi;
-          row["Nomor Kursi"] = ticketSeats;
-          row["Harga Tiket"] = Math.max((Number(item.total_price) || 0) - (Number((item as any).total_voucher) || 0), 0);
-          if (selectedEventFlags.is_domisili) row["Domisili"] = ticketDomisili;
-          row["Metode Pembayaran"] = paymentMethodText;
-          row["Status"] = statusText;
+          if (selectedEventFlags.is_session) row[t('report.xlsxSession')] = ticketSesi;
+          row[t('report.xlsxSeatNumber')] = ticketSeats;
+          row[t('report.xlsxTicketPrice')] = Math.max((Number(item.total_price) || 0) - (Number((item as any).total_voucher) || 0), 0);
+          if (selectedEventFlags.is_domisili) row[t('report.xlsxDomicile')] = ticketDomisili;
+          row[t('report.xlsxPayMethod')] = paymentMethodText;
+          row[t('common.status')] = statusText;
           return row;
         });
         downloadFileName = `report-penjualan-${eventName}-${timestamp}.xlsx`;
       } else if (selectedTab === "pemesan") {
         if (!processedPemesanData || processedPemesanData.length === 0) {
-          alert("Tidak ada data untuk diexport");
+          alert(t('report.noExportData'));
           return;
         }
         data = processedPemesanData.map((item, index) => {
           const row: Record<string, any> = {
-            "No": index + 1,
-            "No. Identitas (NIK)": item.nik,
-            "Nama Pemesan": item.nama,
-            "Email": item.email,
-            "No. Telepon": item.telepon,
-            "Nomor Kursi": item.seat_number,
-            "Ukuran": item.ukuran,
-            "Alamat": item.alamat,
+            [t('report.colNo')]: index + 1,
+            [t('report.xlsxIdentityNik')]: item.nik,
+            [t('report.xlsxAttendeeName')]: item.nama,
+            [t('common.email')]: item.email,
+            [t('report.xlsxPhone')]: item.telepon,
+            [t('report.xlsxSeatNumber')]: item.seat_number,
+            [t('report.xlsxSize')]: item.ukuran,
+            [t('report.xlsxAddress')]: item.alamat,
           };
-          if (selectedEventFlags.is_session) row["Sesi"] = item.sesi;
-          if (selectedEventFlags.is_domisili) row["Domisili"] = item.domisili;
-          if (selectedEventFlags.is_age) row["Usia"] = item.usia;
-          if (selectedEventFlags.is_church) row["Gereja"] = item.gereja;
-          if (selectedEventFlags.is_ministryrole) row["Pelayanan"] = item.pelayanan;
-          row["Tanggal Dibuat"] = item.tanggal;
+          if (selectedEventFlags.is_session) row[t('report.xlsxSession')] = item.sesi;
+          if (selectedEventFlags.is_domisili) row[t('report.xlsxDomicile')] = item.domisili;
+          if (selectedEventFlags.is_age) row[t('report.xlsxAge')] = item.usia;
+          if (selectedEventFlags.is_church) row[t('report.xlsxChurch')] = item.gereja;
+          if (selectedEventFlags.is_ministryrole) row[t('report.xlsxMinistryRole')] = item.pelayanan;
+          row[t('report.xlsxDateCreated')] = item.tanggal;
           return row;
         });
         downloadFileName = `report-pemesan-${eventName}-${timestamp}.xlsx`;
       } else if (selectedTab === "checkin") {
         if (!processedCheckinData || processedCheckinData.length === 0) {
-          alert("Tidak ada data untuk diexport");
+          alert(t('report.noExportData'));
           return;
         }
         data = processedCheckinData.map((item, index) => {
           return {
-            "No": index + 1,
-            "Nama": item.nama || "-",
-            "Telepon": item.telepon || "-",
-            "Email": item.email || "-",
-            "Status Checkin": item.status_checkin ? "Sudah Checkin" : "Belum Checkin",
-            "No. Invoice": item.invoice || "-",
+            [t('report.colNo')]: index + 1,
+            [t('report.xlsxName')]: item.nama || "-",
+            [t('report.xlsxPhoneShort')]: item.telepon || "-",
+            [t('common.email')]: item.email || "-",
+            [t('report.xlsxCheckinStatus')]: item.status_checkin ? t('report.xlsxCheckedIn') : t('report.xlsxNotCheckedIn'),
+            [t('report.xlsxInvoiceNo')]: item.invoice || "-",
             "QR Code/Eticket": item.qr_code || "-",
-            "Waktu Checkin": item.waktu || "-",
+            [t('report.xlsxCheckinTime')]: item.waktu || "-",
           };
         });
         downloadFileName = `report-checkin-${eventName}-${timestamp}.xlsx`;
       } else {
-        alert("Tab tidak didukung untuk export");
+        alert(t('report.unsupportedTab'));
         return;
       }
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, selectedTab === "transaksi" ? "Penjualan" : selectedTab === "pemesan" ? "Pemesan" : "Checkin");
+      XLSX.utils.book_append_sheet(wb, ws, selectedTab === "transaksi" ? t('report.salesData') : selectedTab === "pemesan" ? t('report.attendeeData') : "Checkin");
       XLSX.writeFile(wb, downloadFileName);
     } catch (error) {
       console.error("Export error:", error);
-      alert("Terjadi kesalahan saat mengeksport data");
+      alert(t('report.exportError'));
     }
   };
 
@@ -2295,31 +2298,31 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
-<Title order={1} size="h2">
-Report Event
-</Title>
-<Text size="sm" c="gray">
-Halaman Report Event Anda
-</Text>
+            <Title order={1} size="h2">
+              {t('report.title')}
+            </Title>
+            <Text size="sm" c="gray">
+              {t('report.subtitle')}
+            </Text>
 </Stack>
 </Flex>
 
         <Flex gap="md" wrap="wrap">
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Transaksi Pending</h3>
-            <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} transaksi</p>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.pendingTrx')}</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} {t('report.trxUnit')}</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Tiket Paid</h3>
-            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTicketsPaid} tiket</p>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalPaidTickets')}</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTicketsPaid} {t('report.ticketUnit')}</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Checkin</h3>
-            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalCheckin} checkin</p>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalCheckin')}</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalCheckin} {t('report.checkinUnit')}</p>
           </div>
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
-            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Transaksi Paid</h3>
-            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTransactions} transaksi</p>
+            <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalPaidTrx')}</h3>
+            <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTransactions} {t('report.trxUnit')}</p>
           </div>
         </Flex>
       </Flex>
@@ -2337,14 +2340,14 @@ Halaman Report Event Anda
                 }`}
               onClick={() => setSelectedTab("transaksi")}
             >
-              Data Penjualan
+              {t('report.salesData')}
             </button>
             <button
               className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200 ${selectedTab === "pemesan" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"
                 }`}
               onClick={() => setSelectedTab("pemesan")}
             >
-              Data Pemesan
+              {t('report.attendeeData')}
             </button>
 
           </div>
@@ -2357,9 +2360,9 @@ Halaman Report Event Anda
             value={transactionSegment}
             onChange={(e) => setTransactionSegment(e)}
             data={[
-              { label: "All", value: "all" },
-              { label: "Online", value: "online" },
-              { label: "Offline", value: "offline" },
+              { label: t('common.all'), value: "all" },
+              { label: t('event.online'), value: "online" },
+              { label: t('event.offline'), value: "offline" },
             ]}
             radius="xl"
             color="#0b387c"
@@ -2378,14 +2381,14 @@ Halaman Report Event Anda
                     disabled={!allDataList || allDataList.length === 0}
                     size="sm"
                   >
-                    Export Excel
+                    {t('event.exportExcel')}
                   </Button>
                 </Menu.Target>
 
                 <Menu.Dropdown>
-                  <Menu.Label>Pilih Status Transaksi</Menu.Label>
+                  <Menu.Label>{t('report.selectTrxStatus')}</Menu.Label>
                   <Menu.Item onClick={() => exportToExcel("all")}>
-                    Semua Status
+                    {t('report.allStatus')}
                   </Menu.Item>
                   {transactionStatus?.map((status) => (
                     <Menu.Item key={status.id} onClick={() => exportToExcel(String(status.id))}>
@@ -2403,13 +2406,13 @@ Halaman Report Event Anda
                 disabled={!allDataList || allDataList.length === 0}
                 size="sm"
               >
-                Export Excel
+                {t('event.exportExcel')}
               </Button>
             )}
 
             {/* Pilih Event Filter */}
             <Select
-              label="Pilih Event"
+              label={t('event.selectEvent')}
               value={selectedEvent ? String(selectedEvent) : null}
               data={eventList.map((e) => ({ value: String(e.id), label: e.name }))}
               onChange={(e) => {
@@ -2426,11 +2429,11 @@ Halaman Report Event Anda
                   if (selectedEventData?.slug) setSlug(selectedEventData.slug);
                 }
               }}
-              placeholder={loading.includes("fetchEvents") ? "Loading..." : "Pilih Event"}
+              placeholder={loading.includes("fetchEvents") ? t('event.loadingEvents') : t('event.selectEvent')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={190}
               disabled={loading.includes("fetchEvents")}
-              nothingFoundMessage="Tidak ada event"
+              nothingFoundMessage={t('report.noEvents')}
               searchable
               clearable
               size="sm"
@@ -2438,11 +2441,11 @@ Halaman Report Event Anda
 
             {/* Filter Jenis Tiket */}
             <Select
-              label="Filter Jenis Tiket"
+              label={t('report.filterTicketType')}
               value={selectedTicket}
               data={availableTickets}
               onChange={(value) => { if (value) setSelectedTicket(value); }}
-              placeholder="Semua Tiket"
+              placeholder={t('report.allTickets')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={155}
               disabled={availableTickets.length <= 1}
@@ -2451,11 +2454,11 @@ Halaman Report Event Anda
 
             {/* Filter Sesi */}
             <Select
-              label="Filter Sesi"
+              label={t('report.filterSession')}
               value={selectedSession}
               data={availableSessions}
               onChange={(value) => { if (value) setSelectedSession(value); }}
-              placeholder="Semua Sesi"
+              placeholder={t('report.allSessions')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={155}
               disabled={availableSessions.length <= 1}
@@ -2464,12 +2467,12 @@ Halaman Report Event Anda
 
             {/* Filter Status Pembayaran */}
             <Select
-              label="Filter Status Pembayaran"
-              placeholder="Semua Status"
+              label={t('report.filterPayStatus')}
+              placeholder={t('report.allStatus')}
               value={selectedStatus}
               onChange={(value) => value && setSelectedStatus(value)}
               data={[
-                { value: "all", label: "Semua Status" },
+                { value: "all", label: t('report.allStatus') },
                 ...(transactionStatus?.map((status) => ({
                   value: String(status.id),
                   label: status.name,
@@ -2483,8 +2486,8 @@ Halaman Report Event Anda
 
             {/* Cari / Search */}
             <TextInput
-              label="Cari"
-              placeholder="Cari nama atau invoice..."
+              label={t('report.searchLabel')}
+              placeholder={t('report.searchPlaceholder')}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
@@ -2499,37 +2502,34 @@ Halaman Report Event Anda
         {selectedTab === "transaksi" && (
           <div className="pt-2">
             {/* TABLE TRANSAKSI DENGAN SCROLL */}
+            {loading.includes("loadData") ? (
+              <TableSkeleton rows={10} cols={9} hasAction />
+            ) : (
             <Box style={{ overflowX: 'auto', position: 'relative' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. INVOICE <span style={{ opacity: sortBy === 'invoice' ? 1 : 0.3 }}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>NO. TELEPON</th>
-                    <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA TIKET <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>QTY</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>{t('report.colNo')}</th>
+                    <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.invoiceNo')} <span style={{ opacity: sortBy === 'invoice' ? 1 : 0.3 }}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colName')} <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('common.email')} <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('report.colPhone')}</th>
+                    <th onClick={() => handleSort('tiket')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colTicketName')} <span style={{ opacity: sortBy === 'tiket' ? 1 : 0.3 }}>{sortBy === 'tiket' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('report.colQty')}</th>
                     {selectedEventFlags.is_session && (
-                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colSession')} <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
-                    <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>HARGA TIKET <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('harga')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colTicketPrice')} <span style={{ opacity: sortBy === 'harga' ? 1 : 0.3 }}>{sortBy === 'harga' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     {selectedEventFlags.is_domisili && (
-                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colDomicile')} <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>METODE PEMBAYARAN</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>STATUS</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>ACTION</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('report.colPayMethod')}</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('common.status')}</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>{t('report.colAction')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loading.includes("loadData") ? (
-                    <tr>
-                      <td colSpan={9 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text>Loading...</Text>
-                      </td>
-                    </tr>
-                  ) : processedTransactionData.length > 0 ? (
+                  {processedTransactionData.length > 0 ? (
                     processedTransactionData.map((item, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}><Text size="sm" c="dimmed" fw={500}>{item.no}</Text></td>
@@ -2554,26 +2554,27 @@ Halaman Report Event Anda
                   ) : (
                     <tr>
                       <td colSpan={9 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text>Tidak ada data</Text>
+                        <Text>{t('report.noData')}</Text>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </Box>
+            )}
 
             {filteredDataList.length > 0 && (
               <Flex justify="space-between" align="center" mt="md" wrap="wrap" gap="sm">
                 <Text size="sm" c="dimmed">
-                  Menampilkan {((currentPage - 1) * itemsPerPageLocal) + 1} sampai {Math.min(currentPage * itemsPerPageLocal, currentTotal)} dari <strong>{currentTotal}</strong> transaksi
+                  {t('report.showingTrx', { from: ((currentPage - 1) * itemsPerPageLocal) + 1, to: Math.min(currentPage * itemsPerPageLocal, currentTotal), total: currentTotal })}
                   {isLoadingRemaining && (
                     <span style={{ color: '#228be6', marginLeft: 8 }}>
-                      • Memuat data selanjutnya...
+                      • {t('report.loadingMore')}
                     </span>
                   )}
                   <br />
                   <small>
-                    Halaman {currentPage} dari {lastPageLocal}
+                    {t('report.pageOf', { page: currentPage, total: lastPageLocal })}
                   </small>
                 </Text>
 
@@ -2596,35 +2597,38 @@ Halaman Report Event Anda
         {selectedTab === "pemesan" && (
           <div className="pt-4">
             {/* TABLE PEMESAN DENGAN SCROLL */}
+            {loading.includes("loadData") ? (
+              <TableSkeleton rows={10} cols={11} hasAction />
+            ) : (
             <Box style={{ overflowX: 'auto', position: 'relative' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>NO</th>
-                    <th onClick={() => handleSort('nik')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. IDENTITAS <span style={{ opacity: sortBy === 'nik' ? 1 : 0.3 }}>{sortBy === 'nik' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NAMA PEMESAN <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>EMAIL <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('seat_number')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SEAT NUMBER <span style={{ opacity: sortBy === 'seat_number' ? 1 : 0.3 }}>{sortBy === 'seat_number' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('ukuran')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>UKURAN <span style={{ opacity: sortBy === 'ukuran' ? 1 : 0.3 }}>{sortBy === 'ukuran' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('alamat')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>ALAMAT <span style={{ opacity: sortBy === 'alamat' ? 1 : 0.3 }}>{sortBy === 'alamat' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>NO. TELEPON <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>{t('report.colNo')}</th>
+                    <th onClick={() => handleSort('nik')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colIdentityNo')} <span style={{ opacity: sortBy === 'nik' ? 1 : 0.3 }}>{sortBy === 'nik' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colAttendeeName')} <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('common.email')} <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('seat_number')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colSeatNumber')} <span style={{ opacity: sortBy === 'seat_number' ? 1 : 0.3 }}>{sortBy === 'seat_number' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('ukuran')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colSize')} <span style={{ opacity: sortBy === 'ukuran' ? 1 : 0.3 }}>{sortBy === 'ukuran' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('alamat')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colAddress')} <span style={{ opacity: sortBy === 'alamat' ? 1 : 0.3 }}>{sortBy === 'alamat' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th onClick={() => handleSort('telepon')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colPhone')} <span style={{ opacity: sortBy === 'telepon' ? 1 : 0.3 }}>{sortBy === 'telepon' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     {selectedEventFlags.is_session && (
-                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>SESI <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('sesi')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colSession')} <span style={{ opacity: sortBy === 'sesi' ? 1 : 0.3 }}>{sortBy === 'sesi' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
                     {selectedEventFlags.is_domisili && (
-                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>DOMISILI <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('domisili')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colDomicile')} <span style={{ opacity: sortBy === 'domisili' ? 1 : 0.3 }}>{sortBy === 'domisili' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
                     {selectedEventFlags.is_age && (
-                      <th onClick={() => handleSort('usia')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>USIA <span style={{ opacity: sortBy === 'usia' ? 1 : 0.3 }}>{sortBy === 'usia' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('usia')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colAge')} <span style={{ opacity: sortBy === 'usia' ? 1 : 0.3 }}>{sortBy === 'usia' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
                     {selectedEventFlags.is_church && (
-                      <th onClick={() => handleSort('gereja')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>GEREJA <span style={{ opacity: sortBy === 'gereja' ? 1 : 0.3 }}>{sortBy === 'gereja' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('gereja')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colChurch')} <span style={{ opacity: sortBy === 'gereja' ? 1 : 0.3 }}>{sortBy === 'gereja' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
                     {selectedEventFlags.is_ministryrole && (
-                      <th onClick={() => handleSort('pelayanan')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>PELAYANAN <span style={{ opacity: sortBy === 'pelayanan' ? 1 : 0.3 }}>{sortBy === 'pelayanan' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                      <th onClick={() => handleSort('pelayanan')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colMinistryRole')} <span style={{ opacity: sortBy === 'pelayanan' ? 1 : 0.3 }}>{sortBy === 'pelayanan' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     )}
-                    <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>TANGGAL DIBUAT <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTION</th>
+                    <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colDateCreated')} <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('report.colAction')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2656,7 +2660,7 @@ Halaman Report Event Anda
                         )}
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" c="dimmed">{item.tanggal}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                          <Tooltip label="Edit Pemesan" withArrow position="top">
+                          <Tooltip label={t('report.editAttendee')} withArrow position="top">
                             <ActionIcon color="blue" variant="light" onClick={() => handleEditPemesan(item)}>
                               <FontAwesomeIcon icon={faPencil} size="sm" />
                             </ActionIcon>
@@ -2667,21 +2671,22 @@ Halaman Report Event Anda
                   ) : (
                     <tr>
                       <td colSpan={13 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0) + (selectedEventFlags.is_age ? 1 : 0) + (selectedEventFlags.is_church ? 1 : 0) + (selectedEventFlags.is_ministryrole ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text>Tidak ada data pemesan</Text>
+                        <Text>{t('report.noAttendeeData')}</Text>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </Box>
+            )}
 
             {pemesanTotalItems > 0 && (
               <Flex justify="space-between" align="center" mt="md" wrap="wrap" gap="sm">
                 <Text size="sm" c="dimmed">
-                  Menampilkan {((pemesanPage - 1) * pemesanItemsPerPage) + 1} sampai {Math.min(pemesanPage * pemesanItemsPerPage, pemesanTotalItems)} dari <strong>{pemesanTotalItems}</strong> pemesan
+                  {t('report.showingAttendee', { from: ((pemesanPage - 1) * pemesanItemsPerPage) + 1, to: Math.min(pemesanPage * pemesanItemsPerPage, pemesanTotalItems), total: pemesanTotalItems })}
                   <br />
                   <small>
-                    Halaman {Math.min(pemesanPage, pemesanTotalPages)} dari {pemesanTotalPages}
+                    {t('report.pageOf', { page: Math.min(pemesanPage, pemesanTotalPages), total: pemesanTotalPages })}
                   </small>
                 </Text>
 
@@ -2708,7 +2713,7 @@ Halaman Report Event Anda
         title={
           <Flex align="center" gap="sm">
             <FontAwesomeIcon icon={faReceipt} color="white" />
-            <Text fw={600} size="md" c="white">Detail Transaksi</Text>
+            <Text fw={600} size="md" c="white">{t('event.transactionDetails')}</Text>
           </Flex>
         }
         size={1000}
@@ -2729,11 +2734,11 @@ Halaman Report Event Anda
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                   <FontAwesomeIcon icon={faInfoCircle} size="sm" />
                 </div>
-                <Text fw={700} size="sm" c="dark">Informasi Transaksi</Text>
+                <Text fw={700} size="sm" c="dark">{t('report.trxInfo')}</Text>
               </div>
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed" fw={500}>No. Invoice</Text>
+                  <Text size="xs" c="dimmed" fw={500}>{t('report.invoiceNo')}</Text>
                   <Flex align="center" gap="xs" style={{ minWidth: 0 }}>
                     <Text size="sm" fw={600} className="font-mono" style={{ wordBreak: "break-all", lineHeight: 1.4 }}>{selectedTransaction.invoice_no}</Text>
                     <ActionIcon
@@ -2744,8 +2749,8 @@ Halaman Report Event Anda
                       onClick={() => {
                         navigator.clipboard.writeText(selectedTransaction.invoice_no || "");
                         notifications.show({
-                          title: "Berhasil",
-                          message: "Nomor invoice berhasil disalin",
+                          title: t('common.success'),
+                          message: t('report.copied'),
                           color: "green",
                           icon: <FontAwesomeIcon icon={faCheckCircle} />,
                           autoClose: 2000,
@@ -2757,7 +2762,7 @@ Halaman Report Event Anda
                   </Flex>
                 </Stack>
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed" fw={500}>Status</Text>
+                  <Text size="xs" c="dimmed" fw={500}>{t('common.status')}</Text>
                   <Badge
                     size="sm"
                     variant="light"
@@ -2770,13 +2775,13 @@ Halaman Report Event Anda
                   </Badge>
                 </Stack>
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed" fw={500}>Tanggal Transaksi</Text>
+                  <Text size="xs" c="dimmed" fw={500}>{t('report.trxDate')}</Text>
                   <Text size="sm" fw={600}>
                     {selectedTransaction.payment_date ? moment(selectedTransaction.payment_date).format("DD MMM YYYY, HH:mm") : "-"}
                   </Text>
                 </Stack>
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed" fw={500}>Metode Pembayaran</Text>
+                  <Text size="xs" c="dimmed" fw={500}>{t('event.paymentMethod')}</Text>
                   {selectedTransaction.payment_method ? (
                     (() => {
                       const paymentMethodInfo = getPaymentMethod(selectedTransaction.payment_method);
@@ -2802,13 +2807,13 @@ Halaman Report Event Anda
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                   <FontAwesomeIcon icon={faUser} size="sm" />
                 </div>
-                <Text fw={700} size="sm" c="dark">Informasi Pembeli</Text>
+                <Text fw={700} size="sm" c="dark">{t('report.buyerInfo')}</Text>
               </div>
               <div className="divide-y divide-light-grey">
                 <Flex justify="space-between" align="center" gap="md" p="md">
                   <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
-                    <Text size="xs" c="dimmed" fw={500}>Nama</Text>
+                    <Text size="xs" c="dimmed" fw={500}>{t('common.name')}</Text>
                   </Flex>
                   <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
                     {selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.full_name || selectedTransaction.identities?.[0]?.full_name || "-"}
@@ -2817,7 +2822,7 @@ Halaman Report Event Anda
                 <Flex justify="space-between" align="center" gap="md" p="md">
                   <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
-                    <Text size="xs" c="dimmed" fw={500}>Email</Text>
+                    <Text size="xs" c="dimmed" fw={500}>{t('common.email')}</Text>
                   </Flex>
                   <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
                     {selectedTransaction.identities?.find((id) => id.is_pemesan == 1)?.email || selectedTransaction.identities?.[0]?.email || "-"}
@@ -2826,7 +2831,7 @@ Halaman Report Event Anda
                 <Flex justify="space-between" align="center" gap="md" p="md">
                   <Flex align="center" gap="sm" flex="none">
                     <FontAwesomeIcon icon={faGlobe} size="xs" className="text-gray-400" />
-                    <Text size="xs" c="dimmed" fw={500}>Tipe Transaksi</Text>
+                    <Text size="xs" c="dimmed" fw={500}>{t('report.trxType')}</Text>
                   </Flex>
                   <Text size="sm" fw={600} className="capitalize">{selectedTransaction.type_transaction || "-"}</Text>
                 </Flex>
@@ -2840,7 +2845,7 @@ Halaman Report Event Anda
                 <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
                   <FontAwesomeIcon icon={faTicketAlt} size="sm" />
                 </div>
-                <Text fw={700} size="sm" c="dark">Pemilik Tiket</Text>
+                <Text fw={700} size="sm" c="dark">{t('report.ticketHolders')}</Text>
               </div>
               <div className="p-4">
                 {selectedTransaction.identities && selectedTransaction.identities.length > 0 ? (
@@ -2863,7 +2868,7 @@ Halaman Report Event Anda
                               <Flex justify="space-between" align="center" gap="md">
                                 <Flex align="center" gap="sm" flex="none">
                                   <FontAwesomeIcon icon={faUser} size="xs" className="text-gray-400" />
-                                  <Text size="xs" c="dimmed" fw={500}>Nama Lengkap</Text>
+                                  <Text size="xs" c="dimmed" fw={500}>{t('fullName')}</Text>
                                 </Flex>
                                 <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
                                   {identity.full_name || "-"}
@@ -2872,7 +2877,7 @@ Halaman Report Event Anda
                               <Flex justify="space-between" align="center" gap="md">
                                 <Flex align="center" gap="sm" flex="none">
                                   <FontAwesomeIcon icon={faEnvelope} size="xs" className="text-gray-400" />
-                                  <Text size="xs" c="dimmed" fw={500}>Email</Text>
+                                  <Text size="xs" c="dimmed" fw={500}>{t('common.email')}</Text>
                                 </Flex>
                                 <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
                                   {identity.email || "-"}
@@ -2881,7 +2886,7 @@ Halaman Report Event Anda
                               <Flex justify="space-between" align="center" gap="md">
                                 <Flex align="center" gap="sm" flex="none">
                                   <FontAwesomeIcon icon={faPhone} size="xs" className="text-gray-400" />
-                                  <Text size="xs" c="dimmed" fw={500}>No. Telp</Text>
+                                  <Text size="xs" c="dimmed" fw={500}>{t('event.phoneNo')}</Text>
                                 </Flex>
                                 <Text size="sm" fw={600} ta="right" style={{ maxWidth: "60%", wordBreak: "break-word" }}>
                                   {identity.no_telp || "-"}
@@ -2904,7 +2909,7 @@ Halaman Report Event Anda
                   </Accordion>
                 ) : (
                   <div className="p-4 text-center">
-                    <Text size="sm" c="dimmed">Tidak ada data pemilik tiket</Text>
+                    <Text size="sm" c="dimmed">{t('report.noTicketHolderData')}</Text>
                   </div>
                 )}
               </div>
@@ -2913,32 +2918,32 @@ Halaman Report Event Anda
             {/* Ringkasan Pembayaran */}
             <Card radius="md" p="md" withBorder style={{ borderColor: "#e9ecef" }}>
               <Stack gap="sm">
-                <Text fw={700} size="sm">Ringkasan Pembayaran</Text>
+                <Text fw={700} size="sm">{t('merchDetail.paymentSummary')}</Text>
 
                 {modalTicketSubtotal > 0 && (
                   <Flex justify="space-between" align="center" gap="md">
-                    <Text size="sm" c="dimmed">Subtotal Tiket ({selectedTransaction.tickets?.length ?? 0} item)</Text>
+                    <Text size="sm" c="dimmed">{t('report.ticketSubtotal', { count: selectedTransaction.tickets?.length ?? 0 })}</Text>
                     <Text size="sm" fw={600}>Rp {modalTicketSubtotal.toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
 
                 {modalMerchSubtotal > 0 && (
                   <Flex justify="space-between" align="center" gap="md">
-                    <Text size="sm" c="dimmed">Subtotal Merchandise ({selectedTransaction.transaction_merches?.length ?? 0} item)</Text>
+                    <Text size="sm" c="dimmed">{t('report.merchSubtotal', { count: selectedTransaction.transaction_merches?.length ?? 0 })}</Text>
                     <Text size="sm" fw={600}>Rp {modalMerchSubtotal.toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
 
                 {modalAdminFee > 0 && (
                   <Flex justify="space-between" align="center" gap="md">
-                    <Text size="sm" c="dimmed">Admin Fee</Text>
+                    <Text size="sm" c="dimmed">{t('merchDetail.adminFee')}</Text>
                     <Text size="sm" fw={600}>Rp {modalAdminFee.toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
 
                 {modalPpn > 0 && (
                   <Flex justify="space-between" align="center" gap="md">
-                    <Text size="sm" c="dimmed">PPN</Text>
+                    <Text size="sm" c="dimmed">{t('report.ppn')}</Text>
                     <Text size="sm" fw={600}>Rp {modalPpn.toLocaleString("id-ID")}</Text>
                   </Flex>
                 )}
@@ -2946,7 +2951,7 @@ Halaman Report Event Anda
                 <Divider />
 
                 <Flex justify="space-between" align="center" gap="md">
-                  <Text fw={700} size="sm" c="dimmed">Total Pembayaran</Text>
+                  <Text fw={700} size="sm" c="dimmed">{t('totalPayment')}</Text>
                   <Text fw={700} size="xl" c="dark">
                     Rp {(selectedTransaction.total_price || 0).toLocaleString("id-ID")}
                   </Text>
@@ -2960,7 +2965,7 @@ Halaman Report Event Anda
                 <Accordion.Item value="tickets" style={{ border: '1px solid #f0f0f0' }}>
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTicketAlt} color="#3b82f6" />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={700} size="sm">Detail Tiket</Text>
+                      <Text fw={700} size="sm">{t('report.ticketDetails')}</Text>
                       <Badge size="xs" color="blue" variant="filled" radius="sm">{selectedTransaction.tickets.length} ITEM</Badge>
                     </Flex>
                   </Accordion.Control>
@@ -2972,14 +2977,14 @@ Halaman Report Event Anda
                             <div style={{ minWidth: 0 }}>
                               <Text fw={600} size="sm">{ticket.has_event_ticket?.name || "Tiket"}</Text>
                               {ticket.event_session?.session_name && (
-                                <Text size="xs" c="dimmed" fw={500}>Sesi: {ticket.event_session.session_name}</Text>
+                                <Text size="xs" c="dimmed" fw={500}>{t('report.sessionLabel', { session: ticket.event_session.session_name })}</Text>
                               )}
                             </div>
                             <Text fw={600} size="sm" flex="none">Rp {(ticket.price || 0).toLocaleString("id-ID")}</Text>
                           </Flex>
                           <Divider />
                           <Flex justify="space-between" align="center" gap="md" mt={8}>
-                            <Text size="xs" c="dimmed" fw={500}>Qty: {ticket.qty_ticket} tiket</Text>
+                            <Text size="xs" c="dimmed" fw={500}>{t('report.qtyTickets', { qty: ticket.qty_ticket })}</Text>
                             <Text size="xs" fw={700} ta="right">
                               Subtotal: Rp {(Number(ticket.subtotal_price) || (ticket.price || 0) * (ticket.qty_ticket || 1)).toLocaleString("id-ID")}
                             </Text>
@@ -2995,7 +3000,7 @@ Halaman Report Event Anda
                 <Accordion.Item value="merch" style={{ border: '1px solid #f0f0f0' }}>
                   <Accordion.Control icon={<FontAwesomeIcon icon={faTshirt} color="#10b981" />}>
                     <Flex align="center" gap="sm">
-                      <Text fw={700} size="sm">Detail Merchandise</Text>
+                      <Text fw={700} size="sm">{t('report.merchDetails')}</Text>
                       <Badge size="xs" color="green" variant="filled" radius="sm">{selectedTransaction.transaction_merches.length} ITEM</Badge>
                     </Flex>
                   </Accordion.Control>
@@ -3020,7 +3025,7 @@ Halaman Report Event Anda
                             </Text>
                           </Flex>
                           {merch.noted && (
-                            <Text size="xs" c="dimmed" mt={8}>Catatan: {merch.noted}</Text>
+                            <Text size="xs" c="dimmed" mt={8}>{t('report.note', { note: merch.noted })}</Text>
                           )}
                         </div>
                       ))}
@@ -3039,8 +3044,11 @@ Halaman Report Event Anda
                 radius="md"
                 h={44}
                 leftSection={<FontAwesomeIcon icon={faDownload} />}
+                component="a"
+                href={`${config['wsUrl']}transaction-document/${selectedTransaction?.invoice_no}`}
+                target="_blank"
               >
-                Unduh Invoice
+                {t('report.downloadInvoice')}
               </Button>
               <Button
                 variant="filled"
@@ -3049,8 +3057,9 @@ Halaman Report Event Anda
                 radius="md"
                 h={44}
                 leftSection={<FontAwesomeIcon icon={faPrint} />}
+                onClick={() => window.print()}
               >
-                Cetak Tiket
+                {t('report.printTickets')}
               </Button>
             </Flex>
           </Stack>
@@ -3064,7 +3073,7 @@ Halaman Report Event Anda
         title={
           <Flex align="center" gap="sm">
             <FontAwesomeIcon icon={faPencil} color="white" />
-            <Text fw={600} size="md" c="white">Edit Data Pemesan</Text>
+            <Text fw={600} size="md" c="white">{t('report.editAttendeeTitle')}</Text>
           </Flex>
         }
         radius="md"
@@ -3076,36 +3085,36 @@ Halaman Report Event Anda
       >
         <Stack gap="md">
           <TextInput
-            label="Nama Lengkap"
-            placeholder="Masukkan nama lengkap"
+            label={t('fullName')}
+            placeholder={t('report.enterFullName')}
             value={editIdentityForm.full_name}
             onChange={(e) => setEditIdentityForm({ ...editIdentityForm, full_name: e.target.value })}
             required
           />
           <TextInput
-            label="Email"
-            placeholder="Masukkan email"
+            label={t('common.email')}
+            placeholder={t('report.enterEmail')}
             value={editIdentityForm.email}
             onChange={(e) => setEditIdentityForm({ ...editIdentityForm, email: e.target.value })}
             required
           />
           <TextInput
-            label="No. Telepon"
-            placeholder="Masukkan nomor telepon"
+            label={t('common.phone')}
+            placeholder={t('report.enterPhone')}
             value={editIdentityForm.no_telp}
             onChange={(e) => setEditIdentityForm({ ...editIdentityForm, no_telp: e.target.value })}
             required
           />
           <TextInput
-            label="NIK"
-            placeholder="Masukkan NIK"
+            label={t('ktpNumber')}
+            placeholder={t('report.enterNik')}
             value={editIdentityForm.nik}
             onChange={(e) => setEditIdentityForm({ ...editIdentityForm, nik: e.target.value })}
           />
 
           <Group justify="flex-end" mt="md">
             <Button variant="outline" onClick={() => setEditPemesanModalOpen(false)} disabled={loading.includes("savePemesan")}>
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSavePemesan}
@@ -3113,7 +3122,7 @@ Halaman Report Event Anda
               leftSection={<FontAwesomeIcon icon={faSave} />}
               bg="#0b387c"
             >
-              Simpan Perubahan
+              {t('crew.saveChanges')}
             </Button>
           </Group>
         </Stack>
@@ -3126,7 +3135,7 @@ Halaman Report Event Anda
         title={
           <Flex align="center" gap="sm">
             <FontAwesomeIcon icon={faQrcode} color="white" />
-            <Text fw={600} size="md" c="white">Konfirmasi Check-in Manual</Text>
+            <Text fw={600} size="md" c="white">{t('checkinReport.confirmManualCheckin')}</Text>
           </Flex>
         }
         radius="md"
@@ -3137,20 +3146,20 @@ Halaman Report Event Anda
         }}
       >
         <Stack gap="md">
-          <Text size="sm">Apakah Anda yakin ingin melakukan check-in manual untuk peserta berikut?</Text>
+          <Text size="sm">{t('checkinReport.confirmCheckinDesc')}</Text>
 
           <Box p="md" bg="gray.0" style={{ borderRadius: 8, border: '1px solid #eef0f2' }}>
             <Stack gap={8}>
               <Flex justify="space-between" align="center">
-                <Text size="sm" fw={600} c="dimmed">Nama:</Text>
+                <Text size="sm" fw={600} c="dimmed">{t('checkinReport.nameLabel')}</Text>
                 <Text size="sm" fw={700}>{selectedCheckin?.nama}</Text>
               </Flex>
               <Flex justify="space-between" align="center">
-                <Text size="sm" fw={600} c="dimmed">Invoice:</Text>
+                <Text size="sm" fw={600} c="dimmed">{t('checkinReport.invoiceLabel')}</Text>
                 <Text size="sm" fw={700} className="font-mono">{selectedCheckin?.invoice}</Text>
               </Flex>
               <Flex justify="space-between" align="center">
-                <Text size="sm" fw={600} c="dimmed">Kode Tiket:</Text>
+                <Text size="sm" fw={600} c="dimmed">{t('checkinReport.ticketCodeLabel')}</Text>
                 <Text size="sm" fw={700} c="blue" className="font-mono">{selectedCheckin?.qr_code}</Text>
               </Flex>
             </Stack>
@@ -3158,14 +3167,14 @@ Halaman Report Event Anda
 
           <Group justify="flex-end" mt="md">
             <Button variant="outline" onClick={() => setIsCheckinModalOpen(false)}>
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleManualCheckin}
               loading={checkingIn}
               bg="#0b387c"
             >
-              Konfirmasi Check-in
+              {t('checkinReport.confirmCheckin')}
             </Button>
           </Group>
         </Stack>

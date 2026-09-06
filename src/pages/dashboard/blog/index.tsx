@@ -10,6 +10,7 @@ import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import CardSkeleton from '@/components/CardSkeleton';
 
 const BlogDashboard = () => {
   const router = useRouter();
@@ -119,6 +120,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
             <Divider />
 
+            {loading.includes('getdata') ? (
+                <CardSkeleton count={4} variant="image" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5" />
+            ) : (
+              <>
             <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-xgrow [&>*]:!w-full md:[&>*]:!max-w-[300px]`}>
                 {blogs?.map((e, i) => (
                     <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/blog/${e.id}`} p={0}>
@@ -192,6 +197,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </Button>
                     </div>
                 </Center>
+            )}
+              </>
             )}
         </Stack>
     );

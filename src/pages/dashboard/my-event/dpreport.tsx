@@ -1,4 +1,5 @@
-import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip, Portal, Transition } from "@mantine/core";
+import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip, Portal, Transition } from "@mantine/core";
+import TablePagination from "@/components/TablePagination";
 import { notifications } from "@mantine/notifications";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
@@ -194,8 +195,6 @@ const DPReport = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredData.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredData, currentPage]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
 
   const exportToExcel = () => {
     if (!filteredData.length) return;
@@ -429,13 +428,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           </Table>
         </Box>
 
-        {totalPages > 1 && (
-          <Box p="md" style={{ borderTop: '1px solid #eee' }}>
-            <Flex justify="center">
-              <Pagination total={totalPages} value={currentPage} onChange={setCurrentPage} color="blue" />
-            </Flex>
-          </Box>
-        )}
+        <TablePagination
+          page={currentPage}
+          onPageChange={setCurrentPage}
+          total={filteredData.length}
+          rowsPerPage={itemsPerPage}
+          unit="transaksi"
+        />
       </Card>
 
       {/* Detail Modal */}

@@ -23,10 +23,13 @@ export default function CheckinPage() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<SuccessCheckinData | null>(null);
   const [invoiceNo, setInvoiceNo] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
   const { slug } = router.query;
 
   const handleManualSubmit = () => {
+    if (submitting || !invoiceNo.trim()) return;
+    setSubmitting(true);
     Post('eticket/checkin', { eticket_number: invoiceNo })
       .then((res: any) => {
         console.log(res);
@@ -37,7 +40,8 @@ export default function CheckinPage() {
       .catch((err: any) => {
         console.log(err);
         toast.error('Qr tidak ditemukan');
-      });
+      })
+      .finally(() => setSubmitting(false));
   };
 
 
@@ -66,9 +70,10 @@ export default function CheckinPage() {
               />
               <div className="flex justify-end my-4">
                 <Button
-                  label="Submit"
+                  label={submitting ? 'Memproses...' : 'Submit'}
                   onClick={handleManualSubmit}
                   color="primary"
+                  disabled={submitting || !invoiceNo.trim()}
                 />
               </div>
             </div>

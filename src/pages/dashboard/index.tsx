@@ -12,6 +12,7 @@ import { Alert, Box, Card } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@mantine/core";
 
 interface EventData {
   creator_id: string;
@@ -59,11 +60,7 @@ export default function Dashboard() {
 
   const now = new Date();
 
-  // const calculateTotal = (key: keyof EventData) => {
-  //   if (!eventData || eventData.length === 0) return 0;
-
-  //   return eventData.reduce((total, event) => total + Number(event[key] || 0), 0);
-  // };
+  const isLoadingStats = Boolean(user?.has_creator) && eventData === null;
 
   // Coba perubahan di bagian calculate
   const calculateTotal = (key: keyof EventData) => {
@@ -114,15 +111,24 @@ export default function Dashboard() {
           {/* Event Section */}
           <AccordionItem key="event" title={t("dash.eventRecap")}>
             <div className="">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
-                <CreatorTable icon="mdi:event-star" title={t("dash.eventCount")} value={calculateTotalEvents()} />
-                {/* <CreatorTable icon="mdi:event-edit" title="Event Draf" value={calculateTotal("total_unpaid")} yBorderNone /> */}
-                <CreatorTable icon="lucide:users-round" title={t("dash.totalVisitors")} value={calculateTotal("total_views")} yBorderNone />
-                <CreatorTable icon="hugeicons:invoice" title={t("dash.totalTransactions")} value={calculateTotal("total_paid")} yBorderNone />
-                <CreatorTable icon="heroicons-outline:ticket" title={t("dash.ticketTypeCount")} value={calculateTotal("total_ticket")} xBorderNone />
-                {/* <CreatorTable icon="mdi:event-multiple-check" title="Total Penjualan" currency value={calculateTotal("total_price_sell")} /> */}
-                <CreatorTable icon="mdi:event-multiple-check" title={t("dash.totalEventSales")} currency value={calculateTotal("total_price_sell")} />
-              </div>
+              {isLoadingStats ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="p-4 bg-white flex flex-col gap-2">
+                      <Skeleton height={10} width="55%" radius="sm" />
+                      <Skeleton height={20} width="40%" radius="sm" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-primary-light-200 rounded-md divide-x divide-y divide-primary-light-200 my-3">
+                  <CreatorTable icon="mdi:event-star" title={t("dash.eventCount")} value={calculateTotalEvents()} />
+                  <CreatorTable icon="lucide:users-round" title={t("dash.totalVisitors")} value={calculateTotal("total_views")} yBorderNone />
+                  <CreatorTable icon="hugeicons:invoice" title={t("dash.totalTransactions")} value={calculateTotal("total_paid")} yBorderNone />
+                  <CreatorTable icon="heroicons-outline:ticket" title={t("dash.ticketTypeCount")} value={calculateTotal("total_ticket")} xBorderNone />
+                  <CreatorTable icon="mdi:event-multiple-check" title={t("dash.totalEventSales")} currency value={calculateTotal("total_price_sell")} />
+                </div>
+              )}
             </div>
           </AccordionItem>
 

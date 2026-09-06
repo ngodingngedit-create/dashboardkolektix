@@ -1,4 +1,5 @@
 import { Get, Post, Put, Delete } from "@/utils/REST";
+import TablePagination from "@/components/TablePagination";
 import { useEffect, useState, useCallback, useRef } from "react";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useRouter } from "next/router";
@@ -162,6 +163,8 @@ const StoreLocationPage = () => {
     const router = useRouter();
     const [loading, setLoading] = useListState<string>();
     const [dataList, setDataList] = useState<StoreLocation[]>([]);
+    const [page, setPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedItem, setSelectedItem] = useState<StoreLocation | null>(null);
@@ -384,12 +387,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     </Stack>
                                 </td></tr>
                             ) : (
-                                dataList.map((item, idx) => (
+                                dataList.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((item, idx) => (
                                     <tr key={item.id} style={{ borderBottom: "1px solid #f1f3f5" }}
                                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
                                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}>
                                         <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                                            <Text size="xs" fw={700}>{idx + 1}</Text>
+                                            <Text size="xs" fw={700}>{(page - 1) * rowsPerPage + idx + 1}</Text>
                                         </td>
                                         <td style={{ padding: "12px 14px" }}>
                                             <Text size="sm" fw={600}>{item.store_name}</Text>
@@ -437,6 +440,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </tbody>
                     </table>
                 </Box>
+
+                <TablePagination
+                    page={page}
+                    onPageChange={setPage}
+                    total={dataList.length}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(val) => { setRowsPerPage(val); setPage(1); }}
+                    unit="lokasi"
+                />
             </Card>
         </Stack>
     );

@@ -10,7 +10,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { useRouter } from 'next/router';
 import 'react-toastify/dist/ReactToastify.css';
 import React from 'react';
-import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Checkbox, NumberInput, MultiSelect, Switch, ActionIcon, Divider, Group, FileInput, Tabs, Badge, Grid } from '@mantine/core';
+import { Stack, Select, TextInput, Textarea, InputWrapper, Card, Text, Box, Checkbox, NumberInput, MultiSelect, Switch, ActionIcon, Divider, Group, FileInput, Tabs, Badge, Grid, Skeleton } from '@mantine/core';
 import { useForm, zodResolver } from '@mantine/form';
 import { z } from 'zod';
 import useLoggedUser from '@/utils/useLoggedUser';
@@ -191,7 +191,9 @@ const Talenta = () => {
   }
 
   // Function to fetch existing data
+  const [fetching, setFetching] = useState(false);
   const getTalentData = () => {
+    setFetching(true);
     setLoading(true);
     Get(`talent/${user?.id}`, {})
       .then((res: any) => {
@@ -226,10 +228,12 @@ const Talenta = () => {
           setIsEditMode(false);
         }
         setLoading(false);
+        setFetching(false);
       })
       .catch((err: any) => {
         console.log(err);
         setLoading(false);
+        setFetching(false);
       });
   };
 
@@ -379,7 +383,27 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
             {/* Form Container */}
             <div className='lg:col-span-12'>
-              {!isEditMode ? (
+              {fetching ? (
+                <Card withBorder shadow="sm" p="xl" radius="md" className="bg-white">
+                  <div className="flex flex-col md:flex-row gap-8">
+                    <div className="w-full md:w-1/3 flex flex-col items-center gap-4">
+                      <Skeleton circle width={192} height={192} />
+                      <Skeleton height={16} width="60%" radius="sm" />
+                      <Skeleton height={10} width="40%" radius="sm" />
+                    </div>
+                    <div className="w-full md:w-2/3 flex flex-col gap-5">
+                      <Skeleton height={14} width="30%" radius="sm" />
+                      <Skeleton height={40} radius="sm" />
+                      <Skeleton height={14} width="30%" radius="sm" />
+                      <Skeleton height={80} radius="sm" />
+                      <div className="grid grid-cols-2 gap-4">
+                        <Skeleton height={40} radius="sm" />
+                        <Skeleton height={40} radius="sm" />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ) : !isEditMode ? (
                 <Card withBorder shadow="sm" p="xl" radius="md" className="bg-white">
                   <div className="flex flex-col md:flex-row gap-8">
                     <div className="w-full md:w-1/3 flex flex-col items-center text-center">

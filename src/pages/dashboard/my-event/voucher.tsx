@@ -37,11 +37,13 @@ import {
   faSort,
   faSortUp,
   faSortDown,
-  faArrowsRotate
+  faArrowsRotate,
+  faFileExcel
 } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
 import moment from "moment";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import config from "@/Config";
 import Cookies from "js-cookie";
 import { notifications } from "@mantine/notifications";
@@ -442,6 +444,50 @@ const VoucherPage = () => {
     return { total, used };
   }, [vouchers]);
 
+  const handleExport = () => {
+    try {
+      if (sortedVouchers.length === 0) {
+        alert(t("voucher.exportEmpty"));
+        return;
+      }
+      const rows = sortedVouchers.map((v, idx) => {
+        const now = moment();
+        const startDate = moment(v.date_start);
+        const endDate = moment(v.date_end);
+        const sysStat = v.status === 1 ? "Aktif" : "Nonaktif";
+        let bStat = "Aktif";
+        if (now.isBefore(startDate)) bStat = "Belum Mulai";
+        else if (now.isAfter(endDate)) bStat = "Kadaluarsa";
+        else if (v.used_count >= v.max_use) bStat = "Terpakai";
+        else if (v.stock <= 0) bStat = "Habis";
+        else if (sysStat === "Nonaktif") bStat = "Nonaktif";
+
+        const discount = v.type === "persentase" ? `${v.discount}%` : `Rp ${v.discount.toLocaleString()}`;
+
+        return {
+          No: idx + 1,
+          Kode: v.code,
+          Tipe: v.event_id && !v.product_id ? "Event" : "Produk",
+          Diskon: discount,
+          Kuota: v.max_use,
+          Terpakai: v.used_count,
+          Stok: v.stock,
+          "Periode Mulai": moment(v.date_start).format("YYYY-MM-DD"),
+          "Periode Berakhir": moment(v.date_end).format("YYYY-MM-DD"),
+          Status: bStat,
+        };
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Vouchers");
+      const today = moment().format("YYYY-MM-DD");
+      XLSX.writeFile(wb, `vouchers-${today}.xlsx`);
+    } catch (err) {
+      console.error("Export voucher error:", err);
+      alert(t("voucher.exportError"));
+    }
+  };
+
   const renderList = () => (
     <Stack gap={25}>
 <Flex gap={20} justify="space-between" align="center">
@@ -488,6 +534,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <Select placeholder={t("voucher.allTypes")} value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: t("voucher.allTypes") }, { value: "persentase", label: t("voucher.percentage") }, { value: "nominal", label: t("voucher.nominal") }]} style={{ width: 140 }} />
           <Select placeholder={t("voucher.allStatus")} value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: t("voucher.allStatus") }, { value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }, { value: "expired", label: t("voucher.expired") }]} style={{ width: 140 }} />
           <Button variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
+          <Button variant="filled" color="green" radius="md" leftSection={<FontAwesomeIcon icon={faFileExcel} />} onClick={handleExport} disabled={sortedVouchers.length === 0}>{t("voucher.export")}</Button>
           <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>{t("voucher.reset")}</Button>
         </Flex>
       </Card>
