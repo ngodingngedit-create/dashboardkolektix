@@ -127,8 +127,34 @@ const StockManagement = () => {
     }));
   }, [allProductsData]);
 
-  const pagedHistory = historyData;
-  const totalPages = Math.ceil(totalHistoryCount / rowsPerPage);
+  // Client-side fallback filter on top of server response (in case API ignores params)
+  const clientFilteredHistory = useMemo(() => {
+    let list = historyData;
+
+    if (selectedReferenceFilter && selectedReferenceFilter !== "all") {
+      const wanted = selectedReferenceFilter.toLowerCase();
+      list = list.filter((h: any) => {
+        const ref = (h.reference_type || h.reference || "").toString().toLowerCase();
+        return ref === wanted || ref.includes(wanted) || wanted.includes(ref);
+      });
+    }
+
+    if (dateRangeFilter[0] && dateRangeFilter[1]) {
+      const start = moment(dateRangeFilter[0]).startOf("day");
+      const end = moment(dateRangeFilter[1]).endOf("day");
+      list = list.filter((h: any) => {
+        const ts = h.created_at || h.date;
+        if (!ts) return false;
+        const m = moment(ts);
+        return m.isValid() && m.isSameOrAfter(start) && m.isSameOrBefore(end);
+      });
+    }
+
+    return list;
+  }, [historyData, selectedReferenceFilter, dateRangeFilter]);
+
+  const pagedHistory = clientFilteredHistory;
+  const totalPages = Math.max(1, Math.ceil(clientFilteredHistory.length / rowsPerPage));
 
   const handleSort = (key: string) => {
     if (sortBy === key) {
@@ -1097,7 +1123,7 @@ const StockManagement = () => {
       </Head>
 
       <div className="p-4 md:p-8 bg-gray-50/50 min-h-screen">
-        <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+        <div className="flex flex-col gap-6 w-full">
 
           {/* Header */}
           <Flex justify="space-between" align="center">
@@ -1123,7 +1149,7 @@ const StockManagement = () => {
                 <button
                   type="button"
                   onClick={() => router.push('/dashboard')}
-                  className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                  className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm flex items-center justify-center"
                 >
                   <Icon icon="ph:arrow-left-bold" />
                 </button>

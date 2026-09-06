@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import * as XLSX from "xlsx";
 import TableSkeleton from "@/components/TableSkeleton";
 import {
   Modal as NextUIModal,
@@ -843,11 +844,32 @@ const MerchandiseTransaction: React.FC = () => {
   const getTransactionStatuses = async () => {
     try {
       const res: any = await Get("transaction-statuses", {});
-      if (res?.data) {
-        setTransactionStatuses(res.data);
+      const fallbackStatuses = [
+        { id: 1, name: "Pending" },
+        { id: 2, name: "Paid" },
+        { id: 3, name: "Failed" },
+        { id: 4, name: "Expired" },
+        { id: 5, name: "Refund" },
+      ];
+      if (Array.isArray(res?.data) && res.data.length > 0) {
+        // Merge: use API values, fill any known-id gaps from fallback
+        const merged = [...res.data];
+        fallbackStatuses.forEach((fb) => {
+          if (!merged.some((s: any) => s.id === fb.id)) merged.push(fb);
+        });
+        setTransactionStatuses(merged);
+      } else {
+        setTransactionStatuses(fallbackStatuses);
       }
     } catch (err) {
       console.error("Failed to fetch transaction statuses:", err);
+      setTransactionStatuses([
+        { id: 1, name: "Pending" },
+        { id: 2, name: "Paid" },
+        { id: 3, name: "Failed" },
+        { id: 4, name: "Expired" },
+        { id: 5, name: "Refund" },
+      ]);
     }
   };
 
@@ -1167,14 +1189,21 @@ const MerchandiseTransaction: React.FC = () => {
   const handleBulkPrint = async () => {
     if (selectedInvoiceIds.length === 0) return;
 
+    // Open window synchronously (inside the click gesture) to avoid popup blockers
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Popup blocked. Izinkan popup untuk mencetak resi.");
+      return;
+    }
+
     setPrintLoading(true);
     try {
       const allResiHTML: string[] = [];
-      
+
       for (const id of selectedInvoiceIds) {
         const transaction = data.find(t => t.id === id);
         if (!transaction?.invoice_no) continue;
-        
+
         try {
           const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
           if (res?.data) {
@@ -1186,6 +1215,7 @@ const MerchandiseTransaction: React.FC = () => {
       }
 
       if (allResiHTML.length === 0) {
+        printWindow.close();
         alert(t('merchTrx.invoiceDetailFailed'));
         return;
       }
@@ -1210,11 +1240,11 @@ const MerchandiseTransaction: React.FC = () => {
         </html>
       `;
 
-      const blob = new Blob([combinedHTML], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      printWindow.document.open();
+      printWindow.document.write(combinedHTML);
+      printWindow.document.close();
     } catch (err) {
+      printWindow.close();
       console.error("Bulk print failed:", err);
     } finally {
       setPrintLoading(false);
@@ -1231,13 +1261,17 @@ const MerchandiseTransaction: React.FC = () => {
 
   const executePrintSingle = async () => {
     if (!selectedInvoiceForPrint) return;
-    
+
     setPrintLoading(true);
     setShowPrintOptions(false);
-    
+
+    // Open window synchronously (inside the click gesture) to avoid popup blockers;
+    // content is written after the fetch completes.
+    const printWindow = window.open('', '_blank');
+
     try {
       const res: any = await Get(`order-product-invoice/${selectedInvoiceForPrint.invoice_no}`, {});
-      if (res?.data) {
+      if (res?.data && printWindow) {
         const resiHTML = `
           <!DOCTYPE html>
           <html>
@@ -1258,13 +1292,16 @@ const MerchandiseTransaction: React.FC = () => {
           </html>
         `;
 
-        const blob = new Blob([resiHTML], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        printWindow.document.open();
+        printWindow.document.write(resiHTML);
+        printWindow.document.close();
+      } else if (!printWindow) {
+        alert("Popup blocked. Izinkan popup untuk mencetak resi.");
       }
     } catch (err) {
+      if (printWindow) printWindow.close();
       console.error("Print failed:", err);
+      alert(t('merchTrx.invoiceDetailFailed'));
     } finally {
       setPrintLoading(false);
       setSelectedInvoiceForPrint(null);
@@ -1401,73 +1438,25 @@ const MerchandiseTransaction: React.FC = () => {
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     const successfulRows = rows.filter(item => item.transaction_status_id === 2);
 
-    if (!successfulRows || successfulRows.length === 0) {
-      const headers = [
-        "Invoice Number",
-        "Nama Produk (dengan Varian)",
-        "SKU",
-        "Total Qty",
-        "Total Price",
-        "Transaction Status",
-        "Voucher",
-      ];
-      const csvContent = headers.join(",") + "\n";
-      downloadCSV(csvContent);
-      return;
-    }
+    const exportData = successfulRows.map((r, index) => ({
+      No: index + 1,
+      "Invoice Number": r.invoice_no || "-",
+      "Nama Produk (dengan Varian)": r.product_name || "-",
+      SKU: r.sku || "-",
+      "Total Qty": r.total_qty,
+      "Total Price": r.total_price,
+      "Transaction Status": getStatusInfo(r.transaction_status_id).text,
+      Voucher: r.voucher || "-",
+    }));
 
-    const headers = [
-      "Invoice Number",
-      "Nama Produk (dengan Varian)",
-      "SKU",
-      "Total Qty",
-      "Total Price",
-      "Transaction Status",
-      "Voucher",
-    ];
-    const escapeCell = (value: any) => {
-      if (value === null || value === undefined) return "";
-      const str = String(value);
-      const needsQuotes = /[,"\n]/.test(str);
-      const escaped = str.replace(/"/g, '""');
-      return needsQuotes ? `"${escaped}"` : escaped;
-    };
-
-    const lines = successfulRows.map((r) =>
-      [
-        escapeCell(r.invoice_no),
-        escapeCell(r.product_name),
-        escapeCell(r.sku),
-        escapeCell(r.total_qty),
-        escapeCell(r.total_price),
-        escapeCell(getStatusInfo(r.transaction_status_id).text),
-        escapeCell(r.voucher),
-      ].join(",")
-    );
-
-    const csvContent = headers.join(",") + "\n" + lines.join("\n");
-    downloadCSV(csvContent);
-  };
-
-  const downloadCSV = (csvContent: string) => {
     try {
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      a.href = url;
-      a.download = `merchandise-transaction-${timestamp}.csv`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Merchandise Transactions");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `merchandise-transaction-${timestamp}.xlsx`);
     } catch (e) {
-      const win = window.open();
-      if (win) {
-        win.document.write(`<pre>${csvContent}</pre>`);
-        win.document.close();
-      }
+      console.error("Export error:", e);
     }
   };
 
@@ -1657,16 +1646,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             style={{ width: 70 }}
                             size="sm"
                         />
-                        <MantineButton 
-                            variant="filled" 
-                            color="green" 
+                        <MantineButton
+                            variant="filled"
+                            color="green"
                             leftSection={<Icon icon="solar:file-download-bold" width={18} />}
                             onClick={() => exportToCSV(filtered)}
                             disabled={filtered.length === 0}
                             size="sm"
                             styles={{ root: { color: 'white' } }}
                         >
-                            {t('merchTrx.exportCsv', { count: filtered.length })}
+                            {t('event.exportExcel')}
                         </MantineButton>
                     </Group>
                             <Group gap="sm" align="flex-end">
@@ -2402,10 +2391,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                           selectedTransaction?.invoice_no &&
                           selectedTransaction.invoice_no !== '-'
                         ) {
-                          const baseUrl =
-                            process.env.NEXT_PUBLIC_URL_MERCH || window.location.origin;
-                          const viewUrl = `${baseUrl}merch-invoice/${selectedTransaction.invoice_no}`;
-                          window.open(viewUrl, '_blank', 'noopener,noreferrer');
+                          window.open(`https://kolektix.com/merch-invoice/${selectedTransaction.invoice_no}`, '_blank', 'noopener,noreferrer');
                         }
                       }}
                       isDisabled={

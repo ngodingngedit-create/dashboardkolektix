@@ -2291,11 +2291,11 @@ const Merch = () => {
 <Flex gap={20} justify="space-between" align="center">
 <Flex align="center" gap={15}>
 <button
-type="button"
-onClick={() => router.push('/dashboard/my-event')}
-className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+  type="button"
+  onClick={() => router.push('/dashboard/my-event')}
+  className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
 >
-<FontAwesomeIcon icon={faArrowLeft} />
+  <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
             <Title order={1} size="h2">
@@ -2307,7 +2307,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Stack>
 </Flex>
 
-        <Flex gap="md" wrap="wrap">
+        {/* Stats cards - same row as title, right side */}
+        <Flex gap="md" wrap="nowrap" align="center">
           <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.pendingTrx')}</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} {t('report.trxUnit')}</p>
@@ -2354,7 +2355,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         </div>
 
         {/* Global Filter Bar */}
-        <Flex justify="space-between" align="flex-end" mb="md" wrap="wrap" gap="sm">
+        <Flex justify="space-between" align="flex-end" mb="md" wrap="nowrap" gap="sm">
           {/* Online/Offline Filter - Left side */}
           <SegmentedControl
             value={transactionSegment}
@@ -2370,7 +2371,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           />
 
           {/* Export Excel + Filters - Right side */}
-          <Flex gap={8} align="flex-end" wrap="wrap">
+          <Flex gap={8} align="flex-end" wrap="nowrap" style={{ flexShrink: 0 }}>
             {selectedTab === "transaksi" ? (
               <Menu shadow="md" width={200} position="bottom-end">
                 <Menu.Target>
@@ -3057,9 +3058,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 radius="md"
                 h={44}
                 leftSection={<FontAwesomeIcon icon={faPrint} />}
-                onClick={() => window.print()}
+                onClick={() => window.open(`https://kolektix.com/success/${selectedTransaction?.invoice_no}`, "_blank", "noopener,noreferrer")}
               >
-                {t('report.printTickets')}
+                {t('report.viewInvoice')}
               </Button>
             </Flex>
           </Stack>

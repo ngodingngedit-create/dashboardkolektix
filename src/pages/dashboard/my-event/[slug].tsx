@@ -983,10 +983,10 @@ const MyEventDetail = () => {
             </div>
 
             <div className="text-center w-full my-4">
-              <Button label={t("event.checkIn")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin/${data.slug}`)} />
+              <Button label={t("event.checkIn")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin`)} />
             </div>
             <div className="text-center w-full my-4">
-              <Button label={t("event.sales")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/sell/${data.slug}`)} />
+              <Button label={t("event.sales")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/report`)} />
             </div>
           </div>
 

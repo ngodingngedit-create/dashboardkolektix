@@ -10,6 +10,7 @@ import {
     Button,
     Card,
     Flex,
+    Group,
     LoadingOverlay,
     Modal,
     Select,
@@ -31,6 +32,7 @@ import {
     faPencil,
     faPlus,
     faSave,
+    faSearch,
     faStore,
     faTrash,
     faXmark,
@@ -165,6 +167,8 @@ const StoreLocationPage = () => {
     const [dataList, setDataList] = useState<StoreLocation[]>([]);
     const [page, setPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedItem, setSelectedItem] = useState<StoreLocation | null>(null);
@@ -324,6 +328,24 @@ const StoreLocationPage = () => {
             .finally(() => setLoading.filter((e) => e !== "delete"));
     };
 
+    // ─── Client-side filter (status + search) ────────────────────────────────
+    const filteredList = dataList.filter((item) => {
+        const matchStatus =
+            statusFilter === "all" ||
+            (statusFilter === "active" && item.is_active) ||
+            (statusFilter === "inactive" && !item.is_active);
+        if (!matchStatus) return false;
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            return (
+                (item.store_name || "").toLowerCase().includes(q) ||
+                (item.full_address || "").toLowerCase().includes(q) ||
+                (item.phone || "").toLowerCase().includes(q)
+            );
+        }
+        return true;
+    });
+
     // ─── Render List ───────────────────────────────────────────────────────────
     const renderList = () => (
         <Stack gap={20}>
@@ -347,11 +369,35 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             </Flex>
 
             <Card withBorder p="md" radius="md" shadow="sm">
-                <Flex justify="flex-end" mb="md">
-                    <Button variant="light" color="blue" size="sm" onClick={() => creatorSlugUrl && getData(creatorSlugUrl)}
-                        loading={loading.includes("getdata")} leftSection={<FontAwesomeIcon icon={faArrowsRotate} />}>
-                        Refresh
-                    </Button>
+                <Flex justify="space-between" align="center" mb="md" gap="sm" wrap="wrap">
+                    <Select
+                        placeholder="Status"
+                        value={statusFilter}
+                        onChange={(val) => { setStatusFilter(val || "all"); setPage(1); }}
+                        data={[
+                            { value: "all", label: "Semua Status" },
+                            { value: "active", label: "Aktif" },
+                            { value: "inactive", label: "Non-aktif" },
+                        ]}
+                        w={160}
+                        size="sm"
+                        clearable={false}
+                    />
+                    <Group gap="sm">
+                        <TextInput
+                            placeholder="Cari nama toko, alamat, atau telepon..."
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                            leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
+                            w={280}
+                            size="sm"
+                        />
+                        <Tooltip label="Refresh">
+                            <Button variant="filled" color="blue" size="sm" onClick={() => creatorSlugUrl && getData(creatorSlugUrl)}
+                                loading={loading.includes("getdata")} leftSection={<FontAwesomeIcon icon={faArrowsRotate} />}
+                                aria-label="Refresh" />
+                        </Tooltip>
+                    </Group>
                 </Flex>
 
                 <Box style={{ overflowX: "auto" }}>
@@ -378,7 +424,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center" }}>
                                     <Text c="dimmed">Memuat data...</Text>
                                 </td></tr>
-                            ) : dataList.length === 0 ? (
+                            ) : filteredList.length === 0 ? (
                                 <tr><td colSpan={8} style={{ padding: "60px", textAlign: "center" }}>
                                     <Stack align="center" gap={10}>
                                         <FontAwesomeIcon icon={faStore} size="2x" color="#adb5bd" />
@@ -387,7 +433,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     </Stack>
                                 </td></tr>
                             ) : (
-                                dataList.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((item, idx) => (
+                                filteredList.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((item, idx) => (
                                     <tr key={item.id} style={{ borderBottom: "1px solid #f1f3f5" }}
                                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
                                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}>
@@ -444,7 +490,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 <TablePagination
                     page={page}
                     onPageChange={setPage}
-                    total={dataList.length}
+                    total={filteredList.length}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={(val) => { setRowsPerPage(val); setPage(1); }}
                     unit="lokasi"

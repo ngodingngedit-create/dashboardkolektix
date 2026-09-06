@@ -870,12 +870,10 @@ Full Report
         )}
 
         {/* Right Column: Buyer Details / Table (Fills remaining space) */}
-        <div className={`w-full transition-all duration-300 ease-in-out ${
-          !isFestival && seatViewMode === "grid" ? "md:w-3/4" : "md:w-full"
-        }`}>
-          <Card withBorder radius="md" p={0} shadow="sm" className="min-h-[75vh] flex flex-col border-light-grey">
+        <div className={`w-full flex-1 min-w-0 transition-all duration-300 ease-in-out`}>
+          <Card withBorder radius="md" p={0} shadow="sm" className="min-h-[75vh] flex flex-col border-light-grey overflow-hidden">
             {/* Header */}
-            <div className="p-4 border-b border-light-grey flex justify-between items-center">
+            <div className="p-4 border-b border-light-grey flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-3">
                 {selectedSeat && (
                   <ActionIcon

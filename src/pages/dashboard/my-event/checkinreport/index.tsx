@@ -33,7 +33,7 @@ const CheckinReport = () => {
 
   // Filter state for tickets
   const [selectedTicket, setSelectedTicket] = useState<string>("all");
-  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: "Semua Tiket" }]);
+  const [availableTickets, setAvailableTickets] = useState<{ value: string; label: string }[]>([{ value: "all", label: t("checkinReport.allTickets") }]);
 
   // Table state matching report.tsx standard
   const [searchValue, setSearchValue] = useState("");
@@ -71,9 +71,9 @@ const CheckinReport = () => {
           value: name,
           label: name,
         }));
-        setAvailableTickets([{ value: "all", label: "Semua Tiket" }, ...ticketsArray]);
+        setAvailableTickets([{ value: "all", label: t("checkinReport.allTickets") }, ...ticketsArray]);
       } else {
-        setAvailableTickets([{ value: "all", label: "Semua Tiket" }]);
+        setAvailableTickets([{ value: "all", label: t("checkinReport.allTickets") }]);
       }
     }
   }, [selectedEvent, eventList]);
@@ -235,19 +235,19 @@ const CheckinReport = () => {
 
       if (response.data?.success || response.data?.status === 200 || response.data?.status === true) {
         notifications.show({
-          title: "Berhasil",
-          message: "Check-in manual berhasil dilakukan",
+          title: t("common.success"),
+          message: t("checkinReport.manualCheckinSuccess"),
           color: "green"
         });
         setIsCheckinModalOpen(false);
         getData();
       } else {
-        throw new Error(response.data?.message || "Gagal melakukan check-in manual");
+        throw new Error(response.data?.message || t("checkinReport.manualCheckinFailed"));
       }
     } catch (error: any) {
       notifications.show({
-        title: "Gagal",
-        message: error.response?.data?.message || error.message || "Terjadi kesalahan",
+        title: t("common.failed"),
+        message: error.response?.data?.message || error.message || t("common.error"),
         color: "red"
       });
     } finally {
@@ -430,12 +430,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={2}>
-<Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
-Check-in Report {reportType === "eticket" ? "E-Ticket" : "Invitation"}
-</Title>
-<Text size="sm" c="dimmed">
-Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket" : "undangan"} yang valid.
-</Text>
+                <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
+                  {t("checkinReport.title")} {reportType === "eticket" ? "E-Ticket" : "Invitation"}
+                </Title>
+                <Text size="sm" c="dimmed">
+                  {t("checkinReport.subtitle", { type: reportType === "eticket" ? t("checkinReport.ticketTypeEticket") : t("checkinReport.ticketTypeInvitation") })}
+                </Text>
 </Stack>
 </Flex>
 
@@ -457,23 +457,22 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
         </Flex>
 
         <Card p={0} withBorder radius="md" style={{ overflow: 'hidden', border: '1px solid #f0f0f0' }}>
-          {/* Filter Bar */}
-          <Flex justify="space-between" align="center" p="md" bg="white" gap="md" wrap="wrap">
-            <Flex gap="md" align="center">
+          {/* Filter Bar - single row: stat cards shrink when space is tight, filters pinned right and never shift */}
+          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4 px-4 pt-4 pb-2 overflow-x-auto">
+            <Flex gap="md" align="center" className="min-w-0 flex-1">
               {/* Stats Cards */}
-              <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-                <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL {reportType === "eticket" ? "TIKET PAID" : "INVITATION"}</Text>
+              <Card withBorder radius="md" p="xs" className="min-w-0">
+                <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("checkinReport.totalTickets", { type: reportType === "eticket" ? t("checkinReport.ticketTypeEticket") : t("checkinReport.ticketTypeInvitation") })}</Text>
                 <Text size="lg" fw={700}>{stats.total}</Text>
               </Card>
-              <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-                <Text size="xs" c="dimmed" fw={700} tt="uppercase">TOTAL CHECKIN</Text>
+              <Card withBorder radius="md" p="xs" className="min-w-0">
+                <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("checkinReport.totalCheckin")}</Text>
                 <Text size="lg" fw={700} c="green">{stats.checkin}</Text>
               </Card>
             </Flex>
-
-            <Flex gap="sm" align="flex-end">
+            <Flex gap="sm" align="flex-end" className="shrink-0 flex-wrap md:flex-nowrap">
               <Select
-                label="Pilih Event"
+                label={t("checkinReport.selectEvent")}
                 value={selectedEvent ? String(selectedEvent) : null}
                 onChange={(val) => {
                   if (val) {
@@ -482,7 +481,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                   }
                 }}
                 data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
-                placeholder={loading.includes("getevent") ? "Memuat list event..." : "Pilih event untuk melihat laporan..."}
+                placeholder={loading.includes("getevent") ? t("checkinReport.loadingEvents") : t("checkinReport.selectEventPlaceholder")}
                 disabled={loading.includes("getevent")}
                 searchable
                 w={220}
@@ -494,7 +493,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                 }}
               />
               <Select
-                label="Filter Jenis Tiket"
+                label={t("checkinReport.filterTicketType")}
                 value={selectedTicket}
                 onChange={(val) => {
                   if (val) {
@@ -503,7 +502,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                   }
                 }}
                 data={availableTickets}
-                placeholder="Pilih jenis tiket..."
+                placeholder={t("checkinReport.selectTicketType")}
                 disabled={availableTickets.length <= 1 || reportType === "invitation"}
                 w={180}
                 radius="md"
@@ -514,8 +513,8 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                 }}
               />
               <TextInput
-                label="Cari"
-                placeholder="Cari nama, email, atau no. telepon..."
+                label={t("checkinReport.searchLabel")}
+                placeholder={t("checkinReport.searchPlaceholder")}
                 value={searchValue}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearchValue(e.target.value);
@@ -540,40 +539,40 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                 {t("checkinReport.export")}
               </Button>
             </Flex>
-          </Flex>
+          </div>
 
           {/* Custom Table Standard report.tsx */}
           <Box style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f5f7fa", borderBottom: "2px solid #e8e8e8" }}>
-                  <th style={headerStyle(true)}>NO</th>
+                  <th style={headerStyle(true)}>{t("report.colNo")}</th>
                   <th onClick={() => handleSort('invoice')} style={headerStyle(false, sortBy === 'invoice', sortDir)}>
-                    {reportType === "eticket" ? "NOMOR INVOICE" : "NOMOR UNDANGAN"} <SortIcon active={sortBy === 'invoice'} dir={sortDir} />
+                    {reportType === "eticket" ? t("report.invoiceNo") : t("checkinReport.invitationNumber")} <SortIcon active={sortBy === 'invoice'} dir={sortDir} />
                   </th>
                   <th onClick={() => handleSort('nama')} style={headerStyle(false, sortBy === 'nama', sortDir)}>
-                    NAMA <SortIcon active={sortBy === 'nama'} dir={sortDir} />
+                    {t("report.colName")} <SortIcon active={sortBy === 'nama'} dir={sortDir} />
                   </th>
                   <th onClick={() => handleSort('telepon')} style={headerStyle(false, sortBy === 'telepon', sortDir)}>
-                    NO. TELEPON <SortIcon active={sortBy === 'telepon'} dir={sortDir} />
+                    {t("checkinReport.phoneNo")} <SortIcon active={sortBy === 'telepon'} dir={sortDir} />
                   </th>
                   <th onClick={() => handleSort('email')} style={headerStyle(false, sortBy === 'email', sortDir)}>
-                    EMAIL <SortIcon active={sortBy === 'email'} dir={sortDir} />
+                    {t("common.email")} <SortIcon active={sortBy === 'email'} dir={sortDir} />
                   </th>
                   <th onClick={() => handleSort('seat_number')} style={headerStyle(false, sortBy === 'seat_number', sortDir)}>
-                    NOMOR KURSI <SortIcon active={sortBy === 'seat_number'} dir={sortDir} />
+                    {t("checkinReport.seatNumber")} <SortIcon active={sortBy === 'seat_number'} dir={sortDir} />
                   </th>
                   <th onClick={() => handleSort('status_checkin')} style={headerStyle(false, sortBy === 'status_checkin', sortDir)}>
-                    STATUS CHECK-IN <SortIcon active={sortBy === 'status_checkin'} dir={sortDir} />
+                    {t("checkinReport.checkinStatus")} <SortIcon active={sortBy === 'status_checkin'} dir={sortDir} />
                   </th>
-                  <th style={headerStyle()}>ACTION</th>
+                  <th style={headerStyle()}>{t("common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading.includes("getdata") ? (
                   <tr>
                     <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
-                      <Text fw={500} c="dimmed">Memuat data...</Text>
+                      <Text fw={500} c="dimmed">{t("common.loading")}</Text>
                     </td>
                   </tr>
                 ) : isLoadingRemaining ? (
@@ -606,22 +605,22 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                           </td>
                           <td style={cellStyle()}>
                             <Badge
-                              color={item.is_checkin === 1 ? "green" : "gray"}
+                              color={item.status_checkin ? "green" : "gray"}
                               variant="light"
                               size="sm"
                               className="font-semibold px-3 py-1"
                             >
-                              {item.is_checkin === 1 ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
+                              {item.status_checkin ? t("checkinReport.checkedIn") : t("checkinReport.notCheckedIn")}
                             </Badge>
                           </td>
                           <td style={cellStyle()}>
                             <Flex gap="md" align="center">
-                              {item.is_checkin !== 1 && (
+                              {!item.status_checkin && (
                                 <FontAwesomeIcon
                                   icon={faCheckCircle}
                                   className="text-blue-500 hover:text-blue-700 transition-colors"
                                   style={{ cursor: 'pointer', fontSize: '16px' }}
-                                  title="Checkin Manual"
+                                  title={t("checkinReport.manualCheckin")}
                                   onClick={() => {
                                     setSelectedCheckin({
                                       ...item,
@@ -637,7 +636,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                                   href={`${config.wsUrl}transaction-document/${item.invoice}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  title="Download Invoice"
+                                  title={t("report.downloadInvoice")}
                                   style={{ lineHeight: 0 }}
                                 >
                                   <FontAwesomeIcon
@@ -654,7 +653,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                     ) : (
                       <tr>
                         <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
-                          <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
+                          <Text c="dimmed" fw={500}>{t("checkinReport.dataNotFound")}</Text>
                         </td>
                       </tr>
                     )}
@@ -663,7 +662,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                       <td colSpan={8} style={{ textAlign: "center", padding: "12px", backgroundColor: "#f8f9ff" }}>
                         <Text size="sm" c="blue" fw={500}>
                           <FontAwesomeIcon icon={faDownload} spin style={{ marginRight: 8 }} />
-                          Memuat sisa data...
+                          {t("checkinReport.loadingRemaining")}
                         </Text>
                       </td>
                     </tr>
@@ -694,57 +693,57 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
                       <td style={cellStyle()}>
                         <Text size="sm" fw={500}>{item.seat_number}</Text>
                       </td>
-                      <td style={cellStyle()}>
-                        <Badge
-                          color={item.status_checkin ? "green" : "gray"}
-                          variant="light"
-                          size="sm"
-                          className="font-semibold px-3 py-1"
-                        >
-                          {item.status_checkin ? "SUDAH CHECKIN" : "BELUM CHECKIN"}
-                        </Badge>
-                      </td>
-                      <td style={cellStyle()}>
-                        <Flex gap="md" align="center">
-                          {!item.status_checkin && (
-                            <FontAwesomeIcon
-                              icon={faCheckCircle}
-                              className="text-blue-500 hover:text-blue-700 transition-colors"
-                              style={{ cursor: 'pointer', fontSize: '16px' }}
-                              title="Checkin Manual"
-                              onClick={() => {
-                                setSelectedCheckin({
-                                  ...item,
-                                  invitation_number: item.invoice,
-                                  qr_code: item.qr_code
-                                });
-                                setIsCheckinModalOpen(true);
-                              }}
-                            />
-                          )}
-                          {reportType === "eticket" && (
-                            <a
-                              href={`${config.wsUrl}transaction-document/${item.invoice}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Download Invoice"
-                              style={{ lineHeight: 0 }}
-                            >
+                        <td style={cellStyle()}>
+                          <Badge
+                            color={item.status_checkin ? "green" : "gray"}
+                            variant="light"
+                            size="sm"
+                            className="font-semibold px-3 py-1"
+                          >
+                            {item.status_checkin ? t("checkinReport.checkedIn") : t("checkinReport.notCheckedIn")}
+                          </Badge>
+                        </td>
+                        <td style={cellStyle()}>
+                          <Flex gap="md" align="center">
+                            {!item.status_checkin && (
                               <FontAwesomeIcon
-                                icon={faDownload}
+                                icon={faCheckCircle}
                                 className="text-blue-500 hover:text-blue-700 transition-colors"
-                                style={{ fontSize: '16px' }}
+                                style={{ cursor: 'pointer', fontSize: '16px' }}
+                                title={t("checkinReport.manualCheckin")}
+                                onClick={() => {
+                                  setSelectedCheckin({
+                                    ...item,
+                                    invitation_number: item.invoice,
+                                    qr_code: item.qr_code
+                                  });
+                                  setIsCheckinModalOpen(true);
+                                }}
                               />
-                            </a>
-                          )}
-                        </Flex>
-                      </td>
+                            )}
+                            {reportType === "eticket" && (
+                              <a
+                                href={`${config.wsUrl}transaction-document/${item.invoice}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={t("report.downloadInvoice")}
+                                style={{ lineHeight: 0 }}
+                              >
+                                <FontAwesomeIcon
+                                  icon={faDownload}
+                                  className="text-blue-500 hover:text-blue-700 transition-colors"
+                                  style={{ fontSize: '16px' }}
+                                />
+                              </a>
+                            )}
+                          </Flex>
+                        </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan={8} style={{ textAlign: "center", padding: "80px" }}>
-                      <Text c="dimmed" fw={500}>Data Tidak Ditemukan</Text>
+                      <Text c="dimmed" fw={500}>{t("checkinReport.dataNotFound")}</Text>
                     </td>
                   </tr>
                 )}
@@ -756,7 +755,7 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
           {totalItems > 0 && (
             <Flex justify="space-between" align="center" p="md" bg="white" style={{ borderTop: "1px solid #f0f0f0" }}>
               <Text size="sm" c="dimmed">
-                Menampilkan <strong>{((currentPage - 1) * itemsPerPage) + 1}</strong> sampai <strong>{Math.min(currentPage * itemsPerPage, totalItems)}</strong> dari <strong>{totalItems}</strong> data
+                {t("checkinReport.showingData", { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, totalItems), total: totalItems })}
               </Text>
 
               <Pagination
@@ -782,28 +781,28 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
           <Modal.Overlay />
           <Modal.Content style={{ overflow: 'hidden' }}>
             <Modal.Header style={{ borderBottom: '1px solid #f0f0f0', padding: '12px 20px' }}>
-              <Modal.Title><Text fw={700} size="sm">Konfirmasi Check-in Manual</Text></Modal.Title>
+              <Modal.Title><Text fw={700} size="sm">{t("checkinReport.confirmManualCheckin")}</Text></Modal.Title>
               <Modal.CloseButton />
             </Modal.Header>
 
             <Modal.Body style={{ padding: '20px' }}>
               <Stack gap="sm">
                 <Text size="sm" c="dimmed">
-                  Apakah Anda yakin ingin melakukan check-in manual untuk peserta berikut?
+                  {t("checkinReport.confirmCheckinDesc")}
                 </Text>
                 <Box p="md" bg="gray.0" style={{ borderRadius: 8, border: '1px solid #eef0f2' }}>
                   <Stack gap={8}>
                     <Flex justify="space-between" align="center">
-                      <Text size="sm" fw={600} c="dimmed">Nama:</Text>
+                      <Text size="sm" fw={600} c="dimmed">{t("checkinReport.nameLabel")}</Text>
                       <Text size="sm" fw={700}>{selectedCheckin?.nama}</Text>
                     </Flex>
                     <Flex justify="space-between" align="center">
-                      <Text size="sm" fw={600} c="dimmed">{reportType === "eticket" ? "Invoice" : "No. Undangan"}:</Text>
+                      <Text size="sm" fw={600} c="dimmed">{reportType === "eticket" ? t("checkinReport.invoiceLabel") : t("checkinReport.invitationNoLabel")}</Text>
                       <Text size="sm" fw={700} className="font-mono">{selectedCheckin?.invoice}</Text>
                     </Flex>
                     {reportType === "eticket" && (
                       <Flex justify="space-between" align="center">
-                        <Text size="sm" fw={600} c="dimmed">Kode Tiket:</Text>
+                        <Text size="sm" fw={600} c="dimmed">{t("checkinReport.ticketCodeLabel")}</Text>
                         <Text size="sm" fw={700} color="blue" className="font-mono">{selectedCheckin?.qr_code}</Text>
                       </Flex>
                     )}
@@ -833,8 +832,8 @@ Daftar status kedatangan peserta berdasarkan {reportType === "eticket" ? "tiket"
           }}
         >
           <Group>
-            <Button variant="subtle" color="gray" onClick={() => setIsCheckinModalOpen(false)}>Batal</Button>
-            <Button onClick={handleManualCheckin} loading={checkingIn} color="blue" radius="md" px="xl">Konfirmasi Check-in</Button>
+            <Button variant="subtle" color="gray" onClick={() => setIsCheckinModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={handleManualCheckin} loading={checkingIn} color="blue" radius="md" px="xl">{t("checkinReport.confirmCheckin")}</Button>
           </Group>
         </Box>
       )}

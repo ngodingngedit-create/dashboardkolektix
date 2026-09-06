@@ -418,14 +418,14 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
         if (data?.data) {
           formattedTransactions = data.data.map((item: any) => {
-            const pm = (item.payment_method_custom || item.payment_method || "").toLowerCase();
-            const isCash = pm.includes("cash") || pm === "";
+            const rawItems: any[] = item.items || item.products || [];
+            const productTotal = rawItems.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty ?? it.quantity) || 0), 0);
             return ({
               id: item.id,
               invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
               invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
               customer_name: item.customer_name || item.nama_pemesan || "Guest",
-              total_amount: isCash ? (item.total_price || item.grandtotal || item.total_amount || 0) : (item.grandtotal || item.total_amount || 0),
+              total_amount: productTotal > 0 ? productTotal : (item.total_price || item.grandtotal || item.total_amount || 0),
               status: item.status || "completed",
               transaction_status_id: item.transaction_status_id ||
                 (item.status === "pending" ? 1 :
@@ -440,14 +440,14 @@ export default function Index({ }: Readonly<ComponentProps>) {
           total = data.total || data.meta?.total || formattedTransactions.length;
         } else if (Array.isArray(data)) {
           formattedTransactions = data.map((item: any) => {
-            const pm = (item.payment_method_custom || item.payment_method || "").toLowerCase();
-            const isCash = pm.includes("cash") || pm === "";
+            const rawItems: any[] = item.items || item.products || [];
+            const productTotal = rawItems.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty ?? it.quantity) || 0), 0);
             return ({
               id: item.id,
               invoice_number: item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
               invoice_no: item.invoice_no || item.invoice_number || `KL-${item.id}`.padStart(6, "0"),
               customer_name: item.customer_name || item.nama_pemesan || "Guest",
-              total_amount: isCash ? (item.total_price || item.grandtotal || item.total_amount || 0) : (item.grandtotal || item.total_amount || 0),
+              total_amount: productTotal > 0 ? productTotal : (item.total_price || item.grandtotal || item.total_amount || 0),
               status: item.status || "completed",
               transaction_status_id: item.transaction_status_id ||
                 (item.status === "pending" ? 1 :
@@ -1015,6 +1015,15 @@ export default function Index({ }: Readonly<ComponentProps>) {
               return;
             }
 
+            const errMsg = [err?.response?.data?.message, err?.response?.data?.error, err?.response?.data?.message?.error].find(Boolean);
+            if (errMsg && String(errMsg).toLowerCase().includes("tidak support pickup")) {
+              notifications.show({
+                color: "red",
+                message: "Produk tidak support POS, Hubungi Admin untuk mengaktifkannya",
+              });
+              return;
+            }
+
             const msg = err?.response?.data?.message ?? "Gagal checkout. Periksa kembali input.";
             notifications.show({ message: msg, color: "red" });
           },
@@ -1057,6 +1066,15 @@ export default function Index({ }: Readonly<ComponentProps>) {
           notifications.show({
             color: "red",
             message: "Produk sudah habis stok",
+          });
+          return;
+        }
+
+        const errMsg = [err?.response?.data?.message, err?.response?.data?.error, err?.response?.data?.message?.error].find(Boolean);
+        if (errMsg && String(errMsg).toLowerCase().includes("tidak support pickup")) {
+          notifications.show({
+            color: "red",
+            message: "Produk tidak support POS, Hubungi Admin untuk mengaktifkannya",
           });
           return;
         }
@@ -1765,42 +1783,51 @@ export default function Index({ }: Readonly<ComponentProps>) {
                   )}
 
                   {/* DATA PEMBELI Row */}
-                  <UnstyledButton
-                    onClick={() => {
-                      const randomId = Math.floor(100000 + Math.random() * 900000);
-                      const randomName = `Guest ${randomId}`;
-                      const randomEmail = `guest_${randomId}@mail.com`;
-                      const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
-                      const addrA = Math.floor(Math.random() * 101);
-                      const addrB = Math.floor(Math.random() * 101);
-                      const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
+                  <div className="w-full flex items-center justify-between transition-all duration-200">
+                    <UnstyledButton
+                      onClick={() => {
+                        const randomId = Math.floor(100000 + Math.random() * 900000);
+                        const randomName = `Guest ${randomId}`;
+                        const randomEmail = `guest_${randomId}@mail.com`;
+                        const randomPhone = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("");
+                        const addrA = Math.floor(Math.random() * 101);
+                        const addrB = Math.floor(Math.random() * 101);
+                        const randomAddress = `Jalanan ${addrA} Rumah ${addrB}`;
 
-                      custSetValues({
-                        name: randomName,
-                        email: randomEmail,
-                        phone: randomPhone,
-                        address: randomAddress
-                      });
-                    }}
-                    className="w-full border border-gray-100 hover:border-blue-200 hover:bg-blue-50/5 p-4 rounded-xl flex items-center justify-between transition-all duration-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#EEF2F8] flex items-center justify-center text-blue-600">
-                        <Icon icon="ph:user" width={20} />
+                        custSetValues({
+                          name: randomName,
+                          email: randomEmail,
+                          phone: randomPhone,
+                          address: randomAddress
+                        });
+                      }}
+                      className="flex-1 p-4 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#EEF2F8] flex items-center justify-center text-blue-600">
+                          <Icon icon="ph:user" width={20} />
+                        </div>
+                        <div className="text-left">
+                          <Text size="10px" fw={700} c="gray.4" className="tracking-wider uppercase">
+                            DATA PEMBELI
+                          </Text>
+                          <Text size="sm" fw={700} c="gray.8">
+                            {custValue.name || "Guest Customer"}
+                          </Text>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <Text size="10px" fw={700} c="gray.4" className="tracking-wider uppercase">
-                          DATA PEMBELI
-                        </Text>
-                        <Text size="sm" fw={700} c="gray.8">
-                          {custValue.name || "Guest Customer"}
-                        </Text>
-                      </div>
-                    </div>
-                    <Badge variant="light" color="blue" size="sm" radius="md">
-                      Gunakan Guest
-                    </Badge>
-                  </UnstyledButton>
+                      <Badge variant="light" color="blue" size="sm" radius="md">
+                        Gunakan Guest
+                      </Badge>
+                    </UnstyledButton>
+                    <UnstyledButton
+                      onClick={() => setOpenCustForm(true)}
+                      aria-label="Isi data pembeli manual"
+                      className="p-4 pl-2 flex items-center justify-center"
+                    >
+                      <Icon icon="ph:caret-right" width={20} className="text-gray-400" />
+                    </UnstyledButton>
+                  </div>
 
                   {/* METODE PEMBAYARAN Row */}
                   <UnstyledButton
@@ -1960,7 +1987,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                       </div>
                     </Card>
                   ) : (
-                    <div className="max-h-[calc(100vh-380px)] overflow-y-auto flex flex-col">
+                    <div className="max-h-[calc(100vh-260px)] overflow-y-auto flex flex-col">
                       <div className="overflow-x-auto rounded-xl border border-light-grey">
                         <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                           <thead>

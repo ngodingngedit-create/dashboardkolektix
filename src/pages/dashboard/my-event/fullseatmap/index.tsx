@@ -484,6 +484,16 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     return seats;
   }, [transactions, selectedSession]);
 
+  // Ticket names (dropdown) and seatmap area labels (area.text) are different vocabularies.
+  // Normalize both and allow containment matching so a filter actually highlights seats.
+  const matchesCategory = useCallback((areaText: string | undefined, category: string) => {
+    if (!areaText || !category) return false;
+    const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]+/g, " ").trim();
+    const a = norm(areaText);
+    const c = norm(category);
+    return a === c || a.includes(c) || c.includes(a);
+  }, []);
+
   const seatCounts = useMemo(() => {
     let total = 0;
     let sold = 0;
@@ -492,7 +502,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     const hasCategoryFilter = selectedCategory !== "all";
 
     seatmapData.forEach((area) => {
-      if (hasCategoryFilter && area.text !== selectedCategory) {
+      if (hasCategoryFilter && !matchesCategory(area.text, selectedCategory)) {
         return;
       }
       if (area.type !== "seat") return;
@@ -513,7 +523,7 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     const available = total - sold - reserved;
 
     return { total, sold, reserved, available };
-  }, [seatmapData, takenSeatsFromAPI, reservedSeatsSet, selectedCategory]);
+  }, [seatmapData, takenSeatsFromAPI, reservedSeatsSet, selectedCategory, matchesCategory]);
 
   // Handle Zoom and Pan
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -841,7 +851,7 @@ Seatmap Report
                                       const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                       const displaySeatNumber = seatCode.replace(/-/g, "");
                                       const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
-                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || matchesCategory(area.text, selectedCategory);
                                       const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
                                       const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
                                       return (
@@ -866,7 +876,7 @@ Seatmap Report
                                       const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                       const displaySeatNumber = seatCode.replace(/-/g, "");
                                       const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
-                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                      const isMatchedCategory = !seatFilter.hasCategoryFilter || matchesCategory(area.text, selectedCategory);
                                       const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
                                       const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
                                       return (
@@ -892,7 +902,7 @@ Seatmap Report
                                     const isBought = takenSeatsFromAPI.has(seatCode) || isReserved;
                                     const displaySeatNumber = seatCode.replace(/-/g, "");
                                     const isMatchedSearch = !seatFilter.hasSearch || displaySeatNumber.toLowerCase().includes(seatFilter.lowerSearch);
-                                    const isMatchedCategory = !seatFilter.hasCategoryFilter || area.text === selectedCategory;
+                                    const isMatchedCategory = !seatFilter.hasCategoryFilter || matchesCategory(area.text, selectedCategory);
                                     const isHighlighted = (seatFilter.hasCategoryFilter && isMatchedCategory) || (seatFilter.hasSearch && isMatchedSearch);
                                     const isDimmed = (seatFilter.hasCategoryFilter || seatFilter.hasSearch) && !isHighlighted;
                                     return (

@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import * as XLSX from "xlsx";
+import TableSkeleton from "@/components/TableSkeleton";
 import TrackingUpdateForm from "./trackingupt";
 import ResiUpdateForm from "./resiupt";
 import {
@@ -1386,73 +1388,25 @@ const DeliveryPage: React.FC = () => {
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
     const successfulRows = rows.filter(item => item.transaction_status_id === 2);
 
-    if (!successfulRows || successfulRows.length === 0) {
-      const headers = [
-        "Invoice Number",
-        "Nama Produk (dengan Varian)",
-        "SKU",
-        "Total Qty",
-        "Total Price",
-        "Transaction Status",
-        "Voucher",
-      ];
-      const csvContent = headers.join(",") + "\n";
-      downloadCSV(csvContent);
-      return;
-    }
+    const exportData = successfulRows.map((r, index) => ({
+      No: index + 1,
+      "Invoice Number": r.invoice_no || "-",
+      "Nama Produk (dengan Varian)": r.product_name || "-",
+      SKU: r.sku || "-",
+      "Total Qty": r.total_qty,
+      "Total Price": r.total_price,
+      "Transaction Status": getStatusInfo(r.transaction_status_id).text,
+      Voucher: r.voucher || "-",
+    }));
 
-    const headers = [
-      "Invoice Number",
-      "Nama Produk (dengan Varian)",
-      "SKU",
-      "Total Qty",
-      "Total Price",
-      "Transaction Status",
-      "Voucher",
-    ];
-    const escapeCell = (value: any) => {
-      if (value === null || value === undefined) return "";
-      const str = String(value);
-      const needsQuotes = /[,"\n]/.test(str);
-      const escaped = str.replace(/"/g, '""');
-      return needsQuotes ? `"${escaped}"` : escaped;
-    };
-
-    const lines = successfulRows.map((r) =>
-      [
-        escapeCell(r.invoice_no),
-        escapeCell(r.product_name),
-        escapeCell(r.sku),
-        escapeCell(r.total_qty),
-        escapeCell(r.total_price),
-        escapeCell(getStatusInfo(r.transaction_status_id).text),
-        escapeCell(r.voucher),
-      ].join(",")
-    );
-
-    const csvContent = headers.join(",") + "\n" + lines.join("\n");
-    downloadCSV(csvContent);
-  };
-
-  const downloadCSV = (csvContent: string) => {
     try {
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      a.href = url;
-      a.download = `merchandise-transaction-${timestamp}.csv`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Merchandise Transactions");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `merchandise-transaction-${timestamp}.xlsx`);
     } catch (e) {
-      const win = window.open();
-      if (win) {
-        win.document.write(`<pre>${csvContent}</pre>`);
-        win.document.close();
-      }
+      console.error("Export error:", e);
     }
   };
 
@@ -1599,8 +1553,8 @@ const DeliveryPage: React.FC = () => {
 
   if (loading || loadingCreators) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-4">
+        <TableSkeleton rows={10} cols={9} hasAction />
       </div>
     );
   }
@@ -1718,6 +1672,17 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   style={{ width: 300 }}
                   size="sm"
                 />
+                <MantineButton
+                  variant="filled"
+                  color="green"
+                  leftSection={<Icon icon="solar:file-download-bold" width={18} />}
+                  onClick={() => exportToCSV(filtered)}
+                  disabled={filtered.length === 0}
+                  size="sm"
+                  styles={{ root: { color: 'white' } }}
+                >
+                  Export Excel
+                </MantineButton>
               </Group>
             </Flex>
 
