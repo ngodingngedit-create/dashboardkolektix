@@ -1142,14 +1142,14 @@ const MyEventDetail = () => {
             </Accordion>
 
             <div className="border border-primary-light-200 rounded-lg shadow-sm">
-              <Tabs className="flex flex-col" variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key.toString())}>
+              <Tabs className="flex flex-col" variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key.toString())} classNames={{ tabList: "overflow-x-auto flex-nowrap", tab: "whitespace-nowrap" }}>
                 <Tab key="Detail" title="Detail" className="px-2">
                   <Tabs
                     radius="full"
                     color="secondary"
                     classNames={{
-                      tabList: "bg-transparent",
-                      tab: "data-[selected=true]:text-primary",
+                      tabList: "bg-transparent overflow-x-auto flex-nowrap",
+                      tab: "data-[selected=true]:text-primary whitespace-nowrap",
                       cursor: "border border-primary-base",
                     }}
                   >
@@ -1208,19 +1208,19 @@ const MyEventDetail = () => {
                           </select>
                         </div>
 
-                        <div className="flex gap-4 mb-4 items-center">
+                        <div className="flex flex-wrap gap-2 md:gap-4 mb-4 items-center">
                           <Button label="All" onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
                           <Button label="Online" onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
                           <Button label="Offline" onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />
-                          <ButtonM className={`shrink-0`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
-                            Download
+                          <ButtonM className={`shrink-0 !px-2 md:!px-4`} leftSection={<Icon icon="uiw:download" className={`text-[20px]`} />} variant="transparent" color="#194e9e" onClick={handleDownloadTransaction}>
+                            <span className="hidden md:inline">Download</span>
                           </ButtonM>
                         </div>
 
                         {transactionLoading ? (
                           <div className="py-3 px-3">
                             {Array.from({ length: 6 }).map((_, i) => (
-                              <div key={i} className="grid grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
+                              <div key={i} className="grid grid-cols-4 md:grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
                                 {Array.from({ length: 7 }).map((_, j) => (
                                   <Skeleton key={j} className="rounded-md">
                                     <div className={`h-4 rounded-md bg-default-200 ${j === 6 ? "w-16 ml-auto" : "w-full"}`} />
@@ -1345,7 +1345,7 @@ const MyEventDetail = () => {
                             <option value={10}>10</option>
                             <option value={20}>20</option>
                           </select>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 shrink-0">
                             <Tooltip label={t("event.exportExcel")}>
                               <button className="w-10 h-10 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-md p-2" onClick={downloadInvitationExcel}>
                                 <FontAwesomeIcon icon={faDownload} className="text-white text-sm" />
@@ -1361,7 +1361,7 @@ const MyEventDetail = () => {
                         {invitationLoading ? (
                           <div className="py-3 px-3">
                             {Array.from({ length: 6 }).map((_, i) => (
-                              <div key={i} className="grid grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
+                              <div key={i} className="grid grid-cols-4 md:grid-cols-7 gap-4 items-center py-3 border-b border-b-primary-light-200">
                                 {Array.from({ length: 7 }).map((_, j) => (
                                   <Skeleton key={j} className="rounded-md">
                                     <div className={`h-4 rounded-md bg-default-200 ${j === 6 ? "w-16 ml-auto" : "w-full"}`} />

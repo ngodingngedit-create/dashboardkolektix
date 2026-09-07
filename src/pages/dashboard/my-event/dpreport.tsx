@@ -524,7 +524,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 {/* Tickets Table */}
                 <Box>
                   <Text mb="xs" size="sm" c="gray" tt="uppercase">Daftar Tiket</Text>
-                  <Box className="overflow-hidden rounded-xl border" style={{ borderColor: '#eee' }}>
+                  <Box className="overflow-x-auto rounded-xl border" style={{ borderColor: '#eee' }}>
                     <Table variant="simple" verticalSpacing="sm">
                       <thead style={{ backgroundColor: '#f8f9fa' }}>
                         <tr>
@@ -581,7 +581,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </Accordion.Control>
                         <Accordion.Panel>
                           <Box p="md" className="bg-gray-50 rounded-lg">
-                            <div className="grid grid-cols-2 gap-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3">
                               <Box>
                                 <Text size="xs" c="gray">Jumlah Tagihan</Text>
                                 <Text size="sm">Rp {inst.grandtotal.toLocaleString("id-ID")}</Text>

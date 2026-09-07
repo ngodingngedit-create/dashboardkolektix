@@ -27,10 +27,18 @@ type UserOption = { user_id: number; name: string };
 
 // --- Sub-components ---
 
-const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
+const WorkspaceSidebar = ({ projects, selectedProject, onSelect, mobileOpen, onCloseMobile }: any) => {
     const { t } = useTranslation();
     return (
-        <div className="w-[280px] bg-slate-50 text-slate-600 flex flex-col h-full border-r border-light-grey">
+        <>
+            {/* Mobile backdrop */}
+            {mobileOpen && (
+                <div
+                    className="md:hidden fixed inset-0 bg-black/40 z-[1100]"
+                    onClick={onCloseMobile}
+                />
+            )}
+            <div className={`w-[280px] bg-slate-50 text-slate-600 flex-col h-full border-r border-light-grey hidden md:flex ${mobileOpen ? '!flex fixed inset-y-0 left-0 z-[1150] shadow-2xl' : ''}`}>
             <div className="p-4 border-b border-light-grey bg-white">
                 <div className="flex flex-col px-2">
                     <div className="flex items-center gap-2">
@@ -66,15 +74,23 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect }: any) => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
-const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel, onSave }: any) => {
+const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel, onSave, onOpenSidebar }: any) => {
     const { t } = useTranslation();
     return (
-        <div className="px-6 py-4 space-y-4 bg-white border-b border-light-grey">
-            <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-full cursor-pointer select-none">
+        <div className="px-4 md:px-6 py-4 space-y-4 bg-white border-b border-light-grey">
+            <div className="flex items-center gap-3 md:gap-6">
+                <button
+                    className="md:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"
+                    onClick={onOpenSidebar}
+                    aria-label="Buka daftar workspace"
+                >
+                    <Icon icon="mdi:menu" width={22} />
+                </button>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-full cursor-pointer select-none shrink-0">
                     <Icon icon="mdi:cube-outline" className="text-blue-600" width={16} />
                     <span className="text-sm font-bold text-slate-700">{t("issue.productSpace")}</span>
                     <Icon icon="mdi:chevron-down" className="text-slate-400" width={16} />
@@ -1097,6 +1113,7 @@ const IssueManagement = () => {
     const [viewMode, setViewMode] = useState<'BOARD' | 'TABLE' | 'FORM'>('BOARD');
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<Project>({
@@ -1254,7 +1271,9 @@ const IssueManagement = () => {
             <WorkspaceSidebar 
                 projects={projects} 
                 selectedProject={selectedProject} 
-                onSelect={handleSelectProject}
+                onSelect={(p: Project) => { handleSelectProject(p); setMobileSidebarOpen(false); }}
+                mobileOpen={mobileSidebarOpen}
+                onCloseMobile={() => setMobileSidebarOpen(false)}
             />
             
             <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -1265,6 +1284,7 @@ const IssueManagement = () => {
                     setViewMode={setViewMode}
                     onCancel={() => setViewMode('BOARD')}
                     onSave={handleSubmit}
+                    onOpenSidebar={() => setMobileSidebarOpen(true)}
                 />
                 
                 <div className="flex-1 overflow-hidden flex flex-col">

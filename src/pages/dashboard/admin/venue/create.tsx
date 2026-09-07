@@ -271,7 +271,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     {...inputProps('description')}
                 />
 
-                <Tabs defaultValue="detail" mt={10}>
+                <Tabs defaultValue="detail" mt={10} classNames={{ list: 'overflow-x-auto flex-nowrap' }}>
                     <Tabs.List>
                         <Tabs.Tab value="detail" leftSection={<Icon icon="ph:gear" />}>{t("admin.venue.create.detail.venue")}</Tabs.Tab>
                         <Tabs.Tab value="fasilitas" leftSection={<Icon icon="ph:app-store-logo" />}>{t("admin.venue.create.fasilitas.venue")}</Tabs.Tab>

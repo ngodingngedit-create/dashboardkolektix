@@ -708,7 +708,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     nothingFoundMessage="Tidak ada event ditemukan"
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <NumberInput
                       label="Down Payment Awal (%)"
                       description="Uang muka wajib saat pembelian tiket"
@@ -829,7 +829,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                               required
                             />
 
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <NumberInput
                                 label="Porsi (%)"
                                 size="xs"
@@ -953,7 +953,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               <Text fw={700} size="lg" c="blue">{selectedConfig.event_name}</Text>
             </Box>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Box p="md" className="rounded-xl border bg-gray-50" style={{ borderColor: "#eee" }}>
                 <Text size="xs" c="dimmed" fw={700}>DOWN PAYMENT AWAL</Text>
                 <Text size="xl" fw={700} c="blue">{selectedConfig.initial_dp_percent}%</Text>

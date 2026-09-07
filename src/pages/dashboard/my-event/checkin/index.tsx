@@ -742,50 +742,54 @@ const Merch = () => {
             </div>
             {/* Header and Tabs */}
             <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                    <div className="flex flex-col w-full sm:w-auto">
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectEvent")}</span>
-                        <Select
-                            value={selectedEvent ? String(selectedEvent) : null}
-                            onChange={(val) => {
-                                if (val) {
-                                    setSelectedEvent(parseInt(val));
-                                }
-                            }}
-                            data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
-                            placeholder={eventList.length === 0 ? t("event.loadingEvents") : t("event.selectEvent")}
-                            disabled={eventList.length === 0}
-                            searchable
-                            style={{ width: 220 }}
-                            radius="md"
-                            styles={{
-                                input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
-                            }}
-                        />
-                    </div>
-
-                    {activeTab === 'ticket' && selectedEvent && (
-                        <div className="flex flex-col w-full sm:w-auto">
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectTicket")}</span>
+                <div className="flex flex-col md:flex-row md:items-center gap-3 w-full">
+                    <div className="flex flex-row items-center gap-3 w-full">
+                        <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectEvent")}</span>
                             <Select
-                                value={selectedTicket}
+                                value={selectedEvent ? String(selectedEvent) : null}
                                 onChange={(val) => {
-                                    setSelectedTicket(val || 'all');
+                                    if (val) {
+                                        setSelectedEvent(parseInt(val));
+                                    }
                                 }}
-                                data={[{ value: 'all', label: t("event.allTicketsOption") }, ...ticketList]}
-                                disabled={ticketList.length === 0}
+                                data={eventList?.map(ev => ({ value: String(ev.id), label: ev.name })) || []}
+                                placeholder={eventList.length === 0 ? t("event.loadingEvents") : t("event.selectEvent")}
+                                disabled={eventList.length === 0}
                                 searchable
-                                style={{ width: 180 }}
+                                className="flex-1"
+                                size="xs"
                                 radius="md"
                                 styles={{
                                     input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
                                 }}
                             />
                         </div>
-                    )}
+
+                        {activeTab === 'ticket' && selectedEvent && (
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectTicket")}</span>
+                                <Select
+                                    value={selectedTicket}
+                                    onChange={(val) => {
+                                        setSelectedTicket(val || 'all');
+                                    }}
+                                    data={[{ value: 'all', label: t("event.allTicketsOption") }, ...ticketList]}
+                                    disabled={ticketList.length === 0}
+                                    searchable
+                                    className="flex-1"
+                                    size="xs"
+                                    radius="md"
+                                    styles={{
+                                        input: { border: "1px solid #e2e8f0", backgroundColor: "#f8fafc" },
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     {selectedEvent && (
-                        <div className="flex gap-3">
+                        <div className="flex gap-2 justify-center md:justify-start">
                             <div className="flex flex-col items-center bg-gray-50 border border-light-grey rounded-md px-3 py-1">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("event.total")} {activeTab === 'ticket' ? t("event.paidTickets") : t("event.invitation")}</span>
                                 <span className="text-sm font-bold text-gray-800">{isLoadingStats ? '...' : stats.total}</span>

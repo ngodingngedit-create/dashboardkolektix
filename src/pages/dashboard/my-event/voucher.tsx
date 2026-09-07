@@ -692,7 +692,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       <Modal opened={viewModalOpen} onClose={() => setViewModalOpen(false)} title={t("voucher.detailTitle")} size="md">
         {selectedVoucher && (
           <Stack gap="md">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Text size="xs" c="dimmed">{t("voucher.codeField")}</Text><Text fw={700}>{selectedVoucher.code}</Text></div>
               <div><Text size="xs" c="dimmed">{selectedVoucher.product_id ? t("voucher.productBadge") : t("voucher.eventBadge")}</Text><Text fw={700}>{selectedVoucher.event?.name || selectedVoucher.event_id || selectedVoucher.product_id}</Text></div>
             </div>

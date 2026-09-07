@@ -233,7 +233,7 @@ const Chat = () => {
     user.id && (
       <div className='flex text-dark bg-white h-[calc(100vh-81px)] overflow-hidden'>
         {/* SIDEBAR */}
-        <div className='w-[350px] flex flex-col border-r border-light-grey bg-gray-50/20'>
+        <div className={`w-full md:w-[350px] flex flex-col border-r border-light-grey bg-gray-50/20 ${messagerName !== '' ? 'hidden md:flex' : 'flex'}`}>
           <div className='p-4 bg-white border-b border-light-grey'>
             <Text fw={800} size="xl" className="mb-4 text-primary-dark">Pesan</Text>
             <TextInput
@@ -310,7 +310,7 @@ const Chat = () => {
         </div>
 
         {/* MAIN CHAT AREA */}
-        <div className='flex-grow flex flex-col relative' style={{ 
+        <div className={`flex-grow flex-col relative ${messagerName !== '' ? 'flex' : 'hidden md:flex'}`} style={{ 
           backgroundColor: '#e5ddd5',
           backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
           backgroundRepeat: 'repeat',
@@ -320,6 +320,13 @@ const Chat = () => {
             <>
               {/* Header */}
               <div className='flex items-center py-3 px-5 h-16 gap-3 bg-white border-b border-light-grey shadow-sm z-10'>
+                <button
+                  className='md:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors shrink-0'
+                  onClick={() => { setSelected(0); setName(''); }}
+                  aria-label="Kembali ke daftar chat"
+                >
+                  <Icon icon="solar:arrow-left-linear" width={22} className="text-gray-500" />
+                </button>
                 <ImageM 
                   src={currentInbox?.from.has_creator?.image_url ?? '/images/layanan-pelanggan.png'} 
                   className="rounded-full border border-gray-100 shadow-sm" 

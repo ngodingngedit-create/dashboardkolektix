@@ -659,7 +659,7 @@ const CreateEventAdmin = () => {
                                       <div className="w-2 h-2 rounded-full bg-primary-base"></div>
                                       <h4 className="font-semibold text-sm">{ses.session_name}</h4>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 text-xs text-grey ml-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-grey ml-4">
                                       <div className="flex items-center gap-1">
                                         <Icon icon="mdi:calendar" width={14} />
                                         <span>{ses.session_date || "-"}</span>
@@ -891,7 +891,7 @@ const CreateEventAdmin = () => {
                   onChange={(e) => setEditSessionData({ ...editSessionData, session_date: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-dark">{t("admin.event.create.waktu.mulai")}</label>
                   <input

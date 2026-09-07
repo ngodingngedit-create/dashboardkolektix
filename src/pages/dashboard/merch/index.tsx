@@ -1331,8 +1331,8 @@ const Merch: React.FC = () => {
               aria-label="Tabs variants"
               className="md:col-start-1 md:row-start-1 md:self-start"
               classNames={{
-                tabList: "pb-0 self-center font-semibold bg-white",
-                tab: "p-5",
+                tabList: "pb-0 self-center font-semibold bg-white overflow-x-auto",
+                tab: "p-2 md:p-5",
                 cursor: "!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base",
                 panel: "md:col-start-1 md:col-span-2 md:row-start-2",
               }}

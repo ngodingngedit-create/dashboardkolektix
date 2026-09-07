@@ -3301,7 +3301,7 @@ export default function MerchDetail() {
                                                                     <FontAwesomeIcon icon={faBox} className="text-blue-500 h-4 w-4" />
                                                                     <span className="text-sm font-bold text-blue-900">{t('merchDetail.packageInfo')}</span>
                                                                 </div>
-                                                                <div className="p-0 overflow-hidden">
+                                                                <div className="p-0 overflow-x-auto">
                                                                     <table className="w-100 min-w-full divide-y divide-gray-100">
                                                                         <thead className="bg-gray-50/50">
                                                                             <tr>
@@ -3611,7 +3611,7 @@ export default function MerchDetail() {
                     ) : variantHistory.length === 0 ? (
                         <Text ta="center" c="dimmed">{t('stock.noVariantHistory')}</Text>
                     ) : (
-                        <Box style={{ maxHeight: 300, overflowY: 'auto' }}>
+                        <Box style={{ maxHeight: 300, overflowY: 'auto', overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                 <thead>
                                     <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>

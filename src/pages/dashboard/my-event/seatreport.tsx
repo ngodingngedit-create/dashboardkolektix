@@ -764,7 +764,7 @@ Full Report
               {/* Seat Grid */}
               <div className="flex-grow overflow-y-auto p-4">
                 {filteredSeats.length > 0 ? (
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                     {filteredSeats.map((seat) => {
                       const isReserved = reservedSeatsSet.has(seat);
                       const isBought = !!seatMap[seat] || isReserved;

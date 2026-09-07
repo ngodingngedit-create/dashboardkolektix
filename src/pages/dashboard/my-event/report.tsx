@@ -2288,7 +2288,7 @@ const Merch = () => {
 
   return (
     <div className={`p-[30px_20px] text-black flex flex-col gap-[25px]`}>
-<Flex gap={20} justify="space-between" align="center">
+<Flex gap={20} justify="space-between" align="center" wrap="wrap">
 <Flex align="center" gap={15}>
 <button
   type="button"
@@ -2298,30 +2298,30 @@ const Merch = () => {
   <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
-            <Title order={1} size="h2">
+            <Title order={1} size="h4" className="!text-lg md:!text-2xl">
               {t('report.title')}
             </Title>
-            <Text size="sm" c="gray">
+            <Text size="sm" c="gray" className="!text-xs md:!text-sm">
               {t('report.subtitle')}
             </Text>
 </Stack>
 </Flex>
 
         {/* Stats cards - same row as title, right side */}
-        <Flex gap="md" wrap="nowrap" align="center">
-          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+        <Flex gap="sm" wrap="wrap" align="center" className="min-w-0">
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-3 shadow-sm flex-1 min-w-[120px]">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.pendingTrx')}</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.pendingTransactions} {t('report.trxUnit')}</p>
           </div>
-          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-3 shadow-sm flex-1 min-w-[120px]">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalPaidTickets')}</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTicketsPaid} {t('report.ticketUnit')}</p>
           </div>
-          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-3 shadow-sm flex-1 min-w-[120px]">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalCheckin')}</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalCheckin} {t('report.checkinUnit')}</p>
           </div>
-          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-4 shadow-sm">
+          <div className="bg-white border border-[#e9ecef] rounded-xl p-2 px-3 shadow-sm flex-1 min-w-[120px]">
             <h3 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('report.totalPaidTrx')}</h3>
             <p className="text-sm font-semibold text-gray-800">{salesStatistics.totalTransactions} {t('report.trxUnit')}</p>
           </div>
@@ -2354,8 +2354,9 @@ const Merch = () => {
           </div>
         </div>
 
-        {/* Global Filter Bar */}
-        <Flex justify="space-between" align="flex-end" mb="md" wrap="nowrap" gap="sm">
+        {/* Global Filter Bar - single scrollable row on mobile */}
+        <div className="overflow-x-auto">
+          <Flex justify="space-between" align="flex-end" mb="md" wrap="nowrap" gap="sm" style={{ minWidth: 'max-content' }}>
           {/* Online/Offline Filter - Left side */}
           <SegmentedControl
             value={transactionSegment}
@@ -2433,6 +2434,7 @@ const Merch = () => {
               placeholder={loading.includes("fetchEvents") ? t('event.loadingEvents') : t('event.selectEvent')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={190}
+              className="shrink-0"
               disabled={loading.includes("fetchEvents")}
               nothingFoundMessage={t('report.noEvents')}
               searchable
@@ -2449,6 +2451,7 @@ const Merch = () => {
               placeholder={t('report.allTickets')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={155}
+              className="shrink-0"
               disabled={availableTickets.length <= 1}
               size="sm"
             />
@@ -2462,6 +2465,7 @@ const Merch = () => {
               placeholder={t('report.allSessions')}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={155}
+              className="shrink-0"
               disabled={availableSessions.length <= 1}
               size="sm"
             />
@@ -2481,6 +2485,7 @@ const Merch = () => {
               ]}
               styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
               w={165}
+              className="shrink-0"
               leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
               size="sm"
             />
@@ -2495,9 +2500,11 @@ const Merch = () => {
               w={220}
               leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
               size="sm"
+              className="shrink-0"
             />
           </Flex>
         </Flex>
+        </div>
 
         {/* Tab Content - Data Penjualan */}
         {selectedTab === "transaksi" && (

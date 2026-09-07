@@ -2368,7 +2368,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
           <button
             onClick={() => setCollapse(true)}
             aria-label="Open sidebar"
-            className={`md:hidden fixed top-4 left-4 z-[1200] bg-primary-darker text-white p-2.5 rounded-md shadow-lg transition-opacity duration-200 ${collapse ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+            className={`md:hidden fixed top-[14px] left-3 z-[1200] bg-transparent text-gray-700 p-1.5 rounded-md outline-none border-none transition-opacity duration-200 ${collapse ? "opacity-0 pointer-events-none" : "opacity-100"}`}
           >
             <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
           </button>
@@ -2578,7 +2578,9 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
             <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
               <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Burgers isOpen={collapse} setIsOpen={setCollapse} />
+                  <div className="hidden md:block">
+                    <Burgers isOpen={collapse} setIsOpen={setCollapse} />
+                  </div>
                   {/* <h3>
                                     {route === '/dashboard'
                                         ? 'Dashboard'
@@ -2607,7 +2609,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   <Flex gap={8} align="center" justify="end">
                     <Fade isShowing={showNotifications}>
                       <div
-                        className={`absolute right-10 top-10 z-10 mt-2 w-80 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 transition-opacity duration-200 ${showNotifications ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                        className={`absolute right-2 md:right-10 top-10 z-10 mt-2 w-72 md:w-80 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 transition-opacity duration-200 ${showNotifications ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                         role="menu"
                         aria-orientation="vertical"
                         aria-labelledby="user-menu-button"
@@ -2673,12 +2675,23 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                       <FontAwesomeIcon icon={showNotifications ? Bell : faBell} />
                     </button>
                     {role === "Creator" && route !== "/dashboard/my-event/[slug]" ? (
-                      <Button label={t("dashboard.createEvent")} startIcon={faTicket} color="secondary" className="px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
+                      <>
+                        <Button label="" startIcon={faTicket} color="secondary" className="md:hidden !px-3 !py-2" onClick={() => router.push("/dashboard/create-event")} />
+                        <Button label={t("dashboard.createEvent")} startIcon={faTicket} color="secondary" className="hidden md:inline-flex px-4 text-sm font-semibold rounded-full border border-primary-light-200 hover:bg-primary-light-200" onClick={() => router.push("/dashboard/create-event")} />
+                      </>
                     ) : (
                       role === "Creator" && (
                         <>
-                          <Button label={t("dashboard.edit")} color="secondary" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
-                          <Button label={t("dashboard.preview")} color="primary" startIcon={faEye} className="mr-0" onClick={() => {
+                          <Button label="" startIcon={faEdit} color="secondary" className="md:hidden !px-3 !py-2" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} />
+                          <Button label={t("dashboard.edit")} color="secondary" className="hidden md:inline-flex" onClick={() => router.push(`/dashboard/edit-event/${params.slug}`)} startIcon={faEdit} />
+                          <Button label="" startIcon={faEye} color="primary" className="md:hidden !px-3 !py-2 mr-0" onClick={() => {
+                            if (window.location.hostname === "dashboard.kolektix.com") {
+                              window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
+                            } else {
+                              window.open(`${window.location.origin}/event/${params.slug}`, '_blank');
+                            }
+                          }} />
+                          <Button label={t("dashboard.preview")} color="primary" startIcon={faEye} className="hidden md:inline-flex mr-0" onClick={() => {
                             if (window.location.hostname === "dashboard.kolektix.com") {
                               window.open(`https://kolektix.com/event/${params.slug}`, '_blank');
                             } else {

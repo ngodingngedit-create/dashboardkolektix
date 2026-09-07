@@ -419,8 +419,8 @@ const CheckinReport = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white relative">
       {/* Main Content Area */}
-      <div className="p-8 text-black flex flex-col gap-6 flex-grow">
-<Flex justify="space-between" align="flex-end">
+      <div className="p-4 md:p-8 text-black flex flex-col gap-4 md:gap-6 flex-grow">
+<Flex justify="space-between" align="flex-end" wrap="wrap" gap="sm">
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -430,10 +430,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={2}>
-                <Title order={1} size="h2" className="font-bold tracking-tight text-[#1a1c1e]">
+                <Title order={1} size="h4" className="font-bold tracking-tight text-[#1a1c1e] !text-lg md:!text-2xl">
                   {t("checkinReport.title")} {reportType === "eticket" ? "E-Ticket" : "Invitation"}
                 </Title>
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="dimmed" className="!text-xs md:!text-sm">
                   {t("checkinReport.subtitle", { type: reportType === "eticket" ? t("checkinReport.ticketTypeEticket") : t("checkinReport.ticketTypeInvitation") })}
                 </Text>
 </Stack>
@@ -457,20 +457,20 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         </Flex>
 
         <Card p={0} withBorder radius="md" style={{ overflow: 'hidden', border: '1px solid #f0f0f0' }}>
-          {/* Filter Bar - single row: stat cards shrink when space is tight, filters pinned right and never shift */}
-          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4 px-4 pt-4 pb-2 overflow-x-auto">
-            <Flex gap="md" align="center" className="min-w-0 flex-1">
+          {/* Filter Bar - single scrollable row: stats cards + filters visible via horizontal scroll on mobile */}
+          <div className="flex flex-nowrap justify-between items-center gap-4 px-4 pt-4 pb-2 overflow-x-auto">
+            <Flex gap="md" align="center" className="shrink-0">
               {/* Stats Cards */}
-              <Card withBorder radius="md" p="xs" className="min-w-0">
+              <Card withBorder radius="md" p="xs" className="shrink-0">
                 <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("checkinReport.totalTickets", { type: reportType === "eticket" ? t("checkinReport.ticketTypeEticket") : t("checkinReport.ticketTypeInvitation") })}</Text>
                 <Text size="lg" fw={700}>{stats.total}</Text>
               </Card>
-              <Card withBorder radius="md" p="xs" className="min-w-0">
+              <Card withBorder radius="md" p="xs" className="shrink-0">
                 <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("checkinReport.totalCheckin")}</Text>
                 <Text size="lg" fw={700} c="green">{stats.checkin}</Text>
               </Card>
             </Flex>
-            <Flex gap="sm" align="flex-end" className="shrink-0 flex-wrap md:flex-nowrap">
+            <Flex gap="sm" align="flex-end" className="shrink-0 flex-nowrap">
               <Select
                 label={t("checkinReport.selectEvent")}
                 value={selectedEvent ? String(selectedEvent) : null}
@@ -484,7 +484,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 placeholder={loading.includes("getevent") ? t("checkinReport.loadingEvents") : t("checkinReport.selectEventPlaceholder")}
                 disabled={loading.includes("getevent")}
                 searchable
-                w={220}
+                w={150}
                 radius="md"
                 size="sm"
                 styles={{
@@ -504,7 +504,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 data={availableTickets}
                 placeholder={t("checkinReport.selectTicketType")}
                 disabled={availableTickets.length <= 1 || reportType === "invitation"}
-                w={180}
+                w={140}
                 radius="md"
                 size="sm"
                 styles={{
@@ -521,7 +521,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   setCurrentPage(1);
                 }}
                 leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-                w={280}
+                w={180}
                 radius="md"
                 size="sm"
                 styles={{
@@ -535,6 +535,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 leftSection={<FontAwesomeIcon icon={faFileExcel} />}
                 onClick={handleExport}
                 disabled={processedData.length === 0}
+                className="shrink-0"
               >
                 {t("checkinReport.export")}
               </Button>

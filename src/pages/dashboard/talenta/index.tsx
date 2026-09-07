@@ -460,7 +460,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   </div>
                 </Card>
               ) : (
-              <Tabs defaultValue="informasi-dasar" variant="outline" classNames={{ root: 'w-full', panel: 'pt-6' }}>
+              <Tabs defaultValue="informasi-dasar" variant="outline" classNames={{ root: 'w-full', panel: 'pt-6', list: 'overflow-x-auto flex-nowrap' }}>
                 <Tabs.List>
                   <Tabs.Tab value="informasi-dasar">{t('talenta.tabs.basicInfo')}</Tabs.Tab>
                   <Tabs.Tab value="profil-profesional">{t('talenta.tabs.professionalProfile')}</Tabs.Tab>

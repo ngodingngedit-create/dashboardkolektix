@@ -6,7 +6,7 @@ import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
 import ImageInput from "@/components/ImageInput.tsx";
 import { notifications } from "@mantine/notifications";
-import { Box, Checkbox, Flex, LoadingOverlay, Stack } from "@mantine/core";
+import { Box, Checkbox, LoadingOverlay, Stack } from "@mantine/core";
 import { EventProps } from "@/utils/globalInterface";
 import { SeatmapData, EventTicket } from "@/utils/formInterface";
 import Seatmap from "@/components/Seatmap";
@@ -343,7 +343,7 @@ const AddEventModal = ({ isOpen, onClose, onAdded, eventId, eventData, ticket: p
       scrollBehavior="inside"
       classNames={{
         wrapper: "justify-end p-0 overflow-hidden",
-        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-[50vw] max-w-[50vw]",
+        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-full max-w-full md:w-[50vw] md:max-w-[50vw]",
       }}
       motionProps={{
         variants: {
@@ -536,22 +536,24 @@ const AddEventModal = ({ isOpen, onClose, onAdded, eventId, eventData, ticket: p
                   />
                 </div>
 
-                <Flex className={`gap-[15px] md:gap-[30px]`} align="end">
+                <div className="flex flex-col md:flex-row md:items-end gap-4">
                   <Input
                     isInvalid={Boolean(form.errors.total_qty)}
                     description={form.errors.total_qty}
                     min={1}
                     type="number"
-                    className="flex-1 max-w-[20%]"
+                    className="w-full md:w-32 shrink-0"
                     label={<span className="text-dark">Total Qty</span>}
                     value={String(form.values.total_qty)}
                     onChange={(e) => form.setValues({ total_qty: parseInt(e.target.value) })}
                     labelPlacement="outside"
                   />
-                  <Checkbox className={`md:mb-[10px]`} label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
-                  <Checkbox className={`md:mb-[10px]`} label="Sertakan Nomor Kursi" checked={!!form.values.is_seatnumber} onChange={(e) => form.setValues({ is_seatnumber: e.target.checked })} />
-                  <Checkbox className={`md:mb-[10px]`} label="Sertakan Sesi" checked={!!form.values.is_session} onChange={(e) => form.setValues({ is_session: e.target.checked })} />
-                </Flex>
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
+                    <Checkbox label="Kirim ke satu penerima" checked={form.values.is_one_receiver} onChange={(e) => form.setValues({ is_one_receiver: e.target.checked })} />
+                    <Checkbox label="Sertakan Nomor Kursi" checked={!!form.values.is_seatnumber} onChange={(e) => form.setValues({ is_seatnumber: e.target.checked })} />
+                    <Checkbox label="Sertakan Sesi" checked={!!form.values.is_session} onChange={(e) => form.setValues({ is_session: e.target.checked })} />
+                  </div>
+                </div>
 
                 {(form.values.is_one_receiver ? [form.values.details[0]] : form.values.details).map((detail, index) => (
                   <div key={index} className="flex gap-3">

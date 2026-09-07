@@ -33,7 +33,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   </div>
                 </div>
                 <div className='px-4 pb-5 flex flex-col gap-3'>
-                  <div className='grid grid-cols-4 items-center gap-y-4 gap-x-3'>
+                  <div className='grid grid-cols-1 md:grid-cols-4 items-center gap-y-4 gap-x-3'>
                     <p>
                       Nama Profesi/Posisi <span className='text-danger'>*</span>
                     </p>
@@ -75,7 +75,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <p>
                       Rentang Gaji <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3 grid grid-cols-2 gap-x-3'>
+                    <div className='col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-x-3'>
                       <InputField type='text' placeholder='Nama Profesi' required fullWidth />
                       <InputField type='text' placeholder='Nama Profesi' required fullWidth />
                     </div>

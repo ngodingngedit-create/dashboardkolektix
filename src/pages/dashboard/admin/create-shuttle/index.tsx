@@ -705,7 +705,7 @@ export default function AdminCreateShuttle() {
                   onChange={(e: any) => setForm({ ...form, name: e.target.value })}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block flex items-center gap-1"><Icon icon="ph:sun-bold" className="text-amber-500" /> {t("admin.create-shuttle.index.tanggal.waktu.mulai")}</label>
                     <input
