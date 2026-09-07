@@ -1186,74 +1186,102 @@ const MerchandiseTransaction: React.FC = () => {
   };
 
 
+  const openPrintWindow = (html: string, title: string = "Print") => {
+    // Open a new window via Blob URL — the most reliable way to bypass popup blockers
+    // and ensure the document is ready before invoking window.print().
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank");
+    if (!printWindow) {
+      URL.revokeObjectURL(url);
+      alert("Popup blocked. Izinkan popup untuk mencetak resi.");
+      return null;
+    }
+    try {
+      printWindow.document.title = title;
+    } catch {}
+    // Auto-invoke print after content loads. Wrapped in try/catch in case the
+    // user dismisses the window before the load fires.
+    const trigger = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (e) {
+        console.error("Auto-print failed:", e);
+      }
+      // Revoke after a delay so the window has time to load the resource.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    };
+    if (printWindow.document.readyState === "complete") {
+      setTimeout(trigger, 300);
+    } else {
+      printWindow.addEventListener("load", () => setTimeout(trigger, 300));
+    }
+    return printWindow;
+  };
+
   const handleBulkPrint = async () => {
     if (selectedInvoiceIds.length === 0) return;
 
-    // Open window synchronously (inside the click gesture) to avoid popup blockers
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Popup blocked. Izinkan popup untuk mencetak resi.");
+    setPrintLoading(true);
+    const allResiHTML: string[] = [];
+    const failedInvoices: string[] = [];
+
+    for (const id of selectedInvoiceIds) {
+      const transaction = data.find(t => t.id === id);
+      if (!transaction?.invoice_no) continue;
+
+      try {
+        const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
+        if (res?.data) {
+          allResiHTML.push(generateResiHTML(res.data));
+        } else {
+          failedInvoices.push(transaction.invoice_no);
+        }
+      } catch (err) {
+        console.error(`Failed to fetch invoice ${transaction.invoice_no}:`, err);
+        failedInvoices.push(transaction.invoice_no);
+      }
+    }
+
+    if (allResiHTML.length === 0) {
+      setPrintLoading(false);
+      alert(t('merchTrx.invoiceDetailFailed'));
       return;
     }
 
-    setPrintLoading(true);
-    try {
-      const allResiHTML: string[] = [];
+    const combinedHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bulk Print Resi</title>
+      </head>
+      <body style="margin: 0; padding: 0;">
+        ${allResiHTML.join('')}
+      </body>
+      </html>
+    `;
 
-      for (const id of selectedInvoiceIds) {
-        const transaction = data.find(t => t.id === id);
-        if (!transaction?.invoice_no) continue;
-
-        try {
-          const res: any = await Get(`order-product-invoice/${transaction.invoice_no}`, {});
-          if (res?.data) {
-            allResiHTML.push(generateResiHTML(res.data));
-          }
-        } catch (err) {
-          console.error(`Failed to fetch invoice ${transaction.invoice_no}:`, err);
-        }
-      }
-
-      if (allResiHTML.length === 0) {
-        printWindow.close();
-        alert(t('merchTrx.invoiceDetailFailed'));
-        return;
-      }
-
-      const combinedHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Bulk Print Resi</title>
-        </head>
-        <body style="margin: 0; padding: 0;">
-          ${allResiHTML.join('')}
-          <script>
-            window.onload = () => {
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            };
-          </script>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.open();
-      printWindow.document.write(combinedHTML);
-      printWindow.document.close();
-    } catch (err) {
-      printWindow.close();
-      console.error("Bulk print failed:", err);
-    } finally {
+    const w = openPrintWindow(combinedHTML, "Bulk Print Resi");
+    if (!w) {
       setPrintLoading(false);
+      return;
     }
+
+    if (failedInvoices.length > 0) {
+      const preview = failedInvoices.slice(0, 5).join(", ");
+      const more = failedInvoices.length > 5 ? `, +${failedInvoices.length - 5} lainnya` : "";
+      setTimeout(() => {
+        alert(`${allResiHTML.length} resi dicetak, ${failedInvoices.length} gagal: ${preview}${more}`);
+      }, 800);
+    }
+
+    setPrintLoading(false);
   };
 
   const handlePrintSingle = async (transaction: MerchandiseTransactionData) => {
     if (!transaction.invoice_no) return;
-    
+
     // Set selected invoice and show options modal instead of printing immediately
     setSelectedInvoiceForPrint(transaction);
     setShowPrintOptions(true);
@@ -1265,41 +1293,34 @@ const MerchandiseTransaction: React.FC = () => {
     setPrintLoading(true);
     setShowPrintOptions(false);
 
-    // Open window synchronously (inside the click gesture) to avoid popup blockers;
-    // content is written after the fetch completes.
-    const printWindow = window.open('', '_blank');
-
     try {
       const res: any = await Get(`order-product-invoice/${selectedInvoiceForPrint.invoice_no}`, {});
-      if (res?.data && printWindow) {
-        const resiHTML = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Resi - ${selectedInvoiceForPrint.invoice_no}</title>
-          </head>
-          <body style="margin: 0; padding: 0;">
-            ${generateResiHTML(res.data)}
-            <script>
-              window.onload = () => {
-                setTimeout(() => {
-                  window.print();
-                  window.close();
-                }, 500);
-              };
-            </script>
-          </body>
-          </html>
-        `;
+      if (!res?.data) {
+        alert(t('merchTrx.invoiceDetailFailed'));
+        setPrintLoading(false);
+        setSelectedInvoiceForPrint(null);
+        return;
+      }
 
-        printWindow.document.open();
-        printWindow.document.write(resiHTML);
-        printWindow.document.close();
-      } else if (!printWindow) {
-        alert("Popup blocked. Izinkan popup untuk mencetak resi.");
+      const resiHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Resi - ${selectedInvoiceForPrint.invoice_no}</title>
+        </head>
+        <body style="margin: 0; padding: 0;">
+          ${generateResiHTML(res.data)}
+        </body>
+        </html>
+      `;
+
+      const w = openPrintWindow(resiHTML, `Resi - ${selectedInvoiceForPrint.invoice_no}`);
+      if (!w) {
+        setPrintLoading(false);
+        setSelectedInvoiceForPrint(null);
+        return;
       }
     } catch (err) {
-      if (printWindow) printWindow.close();
       console.error("Print failed:", err);
       alert(t('merchTrx.invoiceDetailFailed'));
     } finally {

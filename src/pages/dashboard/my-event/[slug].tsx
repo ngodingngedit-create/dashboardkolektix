@@ -23,7 +23,7 @@ import TarikDanaModal from "@/components/Dashboard/Modal/Withdraw";
 import { BreadcrumbItem, Breadcrumbs } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Card, Divider, Flex, SimpleGrid, Stack, Text, Tooltip, Button as ButtonM } from "@mantine/core";
+import { Divider, Flex, Stack, Text, Tooltip, Button as ButtonM } from "@mantine/core";
 import WithdrawHistoryList from "@/components/MyEvent/WithdrawHistoryList";
 import useLoggedUser from "@/utils/useLoggedUser";
 import fetch from "@/utils/fetch";
@@ -994,40 +994,51 @@ const MyEventDetail = () => {
             <Accordion className="border border-primary-light-200 rounded-lg shadow-sm py-0 pr-5">
               <AccordionItem
                 title={
-                  <div className=" flex flex-col md:flex-row justify-between items-start md:items-center px-4">
-                    <div className="mb-3 md:mb-0">
+                  <div className="flex flex-col md:flex-row items-stretch px-2 md:px-4 gap-0">
+                    {/* Blok 1: Saldo Event */}
+                    <div className="flex flex-col justify-center px-3 py-2 min-w-[120px]">
                       <p className="text-grey text-xs">{t("event.balance")}</p>
-                      <h6>
-                        Rp.
-                        {((eventData?.total_pendapatan || 0) - Number(eventData?.total_voucher || 0)).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      <h6 className="mt-1 font-semibold">
+                        Rp {((eventData?.total_pendapatan || 0) - Number(eventData?.total_voucher || 0)).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
                       </h6>
                     </div>
-                    <Button color="primary" label={t("event.withdrawFunds")} startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    <Divider orientation="vertical" className="hidden md:block self-stretch" />
+
+                    {/* Blok 2: Total Pendapatan */}
+                    <div className="flex flex-col justify-center px-3 py-2 min-w-[120px]">
+                      <p className="text-grey text-xs">{t("event.totalRevenue")}</p>
+                      <h6 className="mt-1 font-semibold">
+                        Rp {(eventData?.total_pendapatan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </div>
+                    <Divider orientation="vertical" className="hidden md:block self-stretch" />
+
+                    {/* Blok 3: Total Withdraw */}
+                    <div className="flex flex-col justify-center px-3 py-2 min-w-[120px]">
+                      <p className="text-grey text-xs">{t("event.totalWithdraw")}</p>
+                      <h6 className="mt-1 font-semibold">
+                        Rp {withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </div>
+                    <Divider orientation="vertical" className="hidden md:block self-stretch" />
+
+                    {/* Blok 4: Total Voucher */}
+                    <div className="flex flex-col justify-center px-3 py-2 min-w-[120px]">
+                      <p className="text-grey text-xs">{t("event.totalVoucher")}</p>
+                      <h6 className="mt-1 font-semibold">
+                        Rp {Number(eventData?.total_voucher || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
+                      </h6>
+                    </div>
+
+                    {/* Spacer + Tombol Tarik Dana */}
+                    <div className="flex-1 hidden md:block" />
+                    <div className="flex items-center justify-center px-3 py-2">
+                      <Button color="primary" label={t("event.withdrawFunds")} startIcon={faMoneyBillTransfer} className="w-full md:w-auto" onClick={() => setIsModalOpen(true)} />
+                    </div>
                   </div>
                 }
               >
                 <Stack p={20} pt={0} gap={10}>
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-                    <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">{t("event.totalRevenue")}</p>
-                      <h6 className="mt-1">
-                        Rp{(eventData?.total_pendapatan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
-                      </h6>
-                    </Card>
-                    <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">{t("event.totalWithdraw")}</p>
-                      <h6 className="mt-1">
-                        Rp{withdrawHistoryList.reduce((sum, item) => sum + item.amount, 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
-                      </h6>
-                    </Card>
-                    <Card withBorder shadow="sm" radius="md" p="md">
-                      <p className="text-grey text-xs">{t("event.totalVoucher")}</p>
-                      <h6 className="mt-1">
-                        Rp{Number(eventData?.total_voucher || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}
-                      </h6>
-                    </Card>
-                  </SimpleGrid>
-                  <Divider />
                   <Text size="sm" fw={600} c="gray">
                     {t("event.withdrawalHistory")}
                   </Text>
