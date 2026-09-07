@@ -229,7 +229,7 @@ export default function AdminCreateShuttle() {
         setTotal(res.data.total || 0);
       }
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal mengambil data shuttle.", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.create-shuttle.index.validation.fetchFailed"), color: "red" });
     } finally {
       setLoading(false);
     }
@@ -363,7 +363,7 @@ export default function AdminCreateShuttle() {
       setTab("info-tiket");
       setShowForm(true);
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal mengambil detail shuttle.", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.create-shuttle.index.modal.fetchDetailFailed"), color: "red" });
     } finally {
       setLoading(false);
     }
@@ -380,7 +380,7 @@ export default function AdminCreateShuttle() {
       setDetailDays(days);
       setDetailTickets(tickets);
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal mengambil detail shuttle.", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.create-shuttle.index.modal.fetchDetailFailed"), color: "red" });
     } finally {
       setLoading(false);
     }
@@ -398,7 +398,7 @@ export default function AdminCreateShuttle() {
     reader.readAsDataURL(file);
   };
 
-  // ── Operation Days / Sessions helpers ──
+  // â”€â”€ Operation Days / Sessions helpers â”€â”€
   const handleAddDay = () => {
     setForm(prev => ({
       ...prev,
@@ -453,7 +453,7 @@ export default function AdminCreateShuttle() {
     });
   };
 
-  // ── Derived session options for the ticket modal ──
+  // â”€â”€ Derived session options for the ticket modal â”€â”€
   const sessionOptions = useMemo(() => {
     const opts: { value: string; label: string }[] = [];
     form.operation_days.forEach((day, di) => {
@@ -462,7 +462,7 @@ export default function AdminCreateShuttle() {
         const sesLabel = ses.session_name || `Sesi ${si + 1}`;
         opts.push({
           value: `${di}-${si}`,
-          label: `${dayLabel} — ${sesLabel} (${ses.session_start_time?.substring(0,5)}-${ses.session_end_time?.substring(0,5)})`,
+          label: `${dayLabel} â€” ${sesLabel} (${ses.session_start_time?.substring(0,5)}-${ses.session_end_time?.substring(0,5)})`,
         });
       });
     });
@@ -588,16 +588,16 @@ export default function AdminCreateShuttle() {
 
       if (isEdit && form.id) {
         await Put(`shuttle/${form.id}`, payload);
-        notifications.show({ title: "Berhasil", message: "Shuttle berhasil diupdate.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.create-shuttle.index.toast.saveSuccessEdit") || t("admin.create-shuttle.index.modal.addTitle"), color: "green" });
       } else {
         await Post("shuttle", payload);
-        notifications.show({ title: "Berhasil", message: "Shuttle berhasil dibuat.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.create-shuttle.index.toast.saveSuccessAdd") || t("admin.create-shuttle.index.modal.addTitle"), color: "green" });
       }
       setShowForm(false);
       fetchData();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal menyimpan shuttle.";
-      notifications.show({ title: "Gagal", message: msg, color: "red" });
+      const msg = err?.response?.data?.message || t("admin.create-shuttle.index.validation.saveFailed");
+      notifications.show({ title: t("common.failed"), message: msg, color: "red" });
     } finally {
       setIsSubmitting(false);
     }
@@ -605,19 +605,19 @@ export default function AdminCreateShuttle() {
 
   const handleDelete = (id: number, name: string) => {
     modals.openConfirmModal({
-      title: "Hapus Shuttle",
+      title: t("admin.create-shuttle.index.confirm.deleteTitle"),
       centered: true,
       children: <Text size="sm">{t("admin.create-shuttle.index.yakin.ingin.menghapus.shuttle")} <b>{name}</b>{t("admin.create-shuttle.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: "red" },
       onConfirm: async () => {
         setLoading(true);
         try {
           await Delete(`shuttle/${id}`, {});
-          notifications.show({ title: "Berhasil", message: "Shuttle berhasil dihapus.", color: "green" });
+          notifications.show({ title: t("common.success"), message: t("admin.create-shuttle.index.toast.deleted"), color: "green" });
           fetchData();
         } catch {
-          notifications.show({ title: "Gagal", message: "Gagal menghapus shuttle.", color: "red" });
+          notifications.show({ title: t("common.failed"), message: t("admin.create-shuttle.index.validation.deleteFailed"), color: "red" });
         } finally {
           setLoading(false);
         }
@@ -625,7 +625,7 @@ export default function AdminCreateShuttle() {
     });
   };
 
-  // Ticket modal state – proxies flat form.tickets
+  // Ticket modal state â€“ proxies flat form.tickets
   const modalTickets = form.tickets;
   const handleSetTicket = (tickets: ShuttleTicket[]) => {
     console.log('[handleSetTicket] called', {
@@ -660,8 +660,8 @@ export default function AdminCreateShuttle() {
 
   const SortIcon = ({ col }: { col: string }) =>
     sortBy === col
-      ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "↑" : "↓"}</span>
-      : <span style={{ marginLeft: 4, opacity: 0.3 }}>↑</span>;
+      ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "â†‘" : "â†“"}</span>
+      : <span style={{ marginLeft: 4, opacity: 0.3 }}>â†‘</span>;
 
   if (showForm) {
     return (
@@ -675,7 +675,7 @@ export default function AdminCreateShuttle() {
               <FontAwesomeIcon icon={faArrowLeft} />
             </button>
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold">{isEdit ? "Edit Shuttle" : "Buat Shuttle"}</h1>
+              <h1 className="text-2xl font-bold">{isEdit ? t("admin.create-shuttle.index.header.editShuttle") : t("admin.create-shuttle.index.header.addShuttle")}</h1>
               <p className="text-grey">{t("admin.create-shuttle.index.lengkapi.form.dibawah.ini.untuk")} {isEdit ? "merubah" : "membuat"} {t("admin.create-shuttle.index.shuttle")}</p>
             </div>
           </div>
@@ -760,7 +760,7 @@ export default function AdminCreateShuttle() {
                 }}
               >
                 <Tab key="info-tiket" title={t("admin.create-shuttle.index.info.tiket")}>
-                  {/* ── Operation Days & Sessions ── */}
+                  {/* â”€â”€ Operation Days & Sessions â”€â”€ */}
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto overflow-hidden">
                     <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center bg-primary-light-200/30">
                       <h3 className="text-medium font-semibold flex items-center gap-2">
@@ -830,7 +830,7 @@ export default function AdminCreateShuttle() {
                                         onChange={(e) => updateSessionField(di, si, "session_start_time", e.target.value + ":00")}
                                         className="w-[110px] border border-light-grey rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                       />
-                                      <span className="text-gray-400 text-sm">—</span>
+                                      <span className="text-gray-400 text-sm">â€”</span>
                                       <input
                                         type="time"
                                         value={ses.session_end_time?.substring(0, 5)}
@@ -885,7 +885,7 @@ export default function AdminCreateShuttle() {
                     </div>
                   </div>
 
-                  {/* ── Flat Ticket List (legacy / fallback) ── */}
+                  {/* â”€â”€ Flat Ticket List (legacy / fallback) â”€â”€ */}
                   <div className="border-2 border-light-grey rounded-2xl my-5 mx-auto">
                     <div className="border-b-2 border-light-grey px-4 py-3 flex justify-between items-center">
                       <h3 className="text-medium font-semibold">{t("admin.create-shuttle.index.daftar.tiket")}</h3>
@@ -1056,7 +1056,7 @@ export default function AdminCreateShuttle() {
           <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
             <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
               <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0 font-bold">
-                {isEdit ? "Simpan perubahan shuttle ini." : "Selangkah lagi shuttle kamu berhasil dibuat."}
+                {isEdit ? t("admin.create-shuttle.index.modal.saveEdit") : t("admin.create-shuttle.index.modal.addDesc")}
               </p>
               <div className="flex gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
                 <Button
@@ -1065,7 +1065,7 @@ export default function AdminCreateShuttle() {
                   color="primary"
                   disabled={isSubmitting}
                   startIcon={faSave}
-                  label={isSubmitting ? "Loading..." : "Simpan"}
+                  label={isSubmitting ? t("admin.create-shuttle.index.button.loading") : t("admin.create-shuttle.index.button.save")}
                 />
               </div>
             </div>
@@ -1105,7 +1105,7 @@ export default function AdminCreateShuttle() {
                 color="blue"
                 leftSection={<Icon icon="ph:check-bold" />}
                 onClick={() => {
-                  notifications.show({ title: "Seatmap Disimpan", message: "Denah kursi berhasil dikonfigurasi.", color: "green" });
+                  notifications.show({ title: t("admin.create-shuttle.index.toast.seatmapSaved"), message: t("admin.create-shuttle.index.modal.seatmapSuccess"), color: "green" });
                   setSeatmapModalOpen(false);
                 }}
               >
@@ -1387,7 +1387,7 @@ export default function AdminCreateShuttle() {
                   <p className="text-grey text-sm mt-1 line-clamp-2">{item.description}</p>
                   <p className="text-dark text-sm mt-3">
                     <Icon icon="ph:calendar-blank" className="inline text-gray-400 mr-1.5" />
-                    {moment(item.start_date).format("DD MMM YYYY")} • {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                    {moment(item.start_date).format("DD MMM YYYY")} â€¢ {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
                   </p>
                   <Group gap={4} wrap="wrap" mt={8}>
                     {item.payment_method_custom?.split(",").map(m => (

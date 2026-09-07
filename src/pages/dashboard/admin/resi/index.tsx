@@ -140,8 +140,8 @@ export default function OrderTracking() {
             delivery_id: '',
         },
         validate: {
-            courier_company: (value) => value?.trim() ? null : 'Kurir harus diisi',
-            resi_no: (value) => value?.trim() ? null : 'Nomor resi harus diisi',
+            courier_company: (value) => value?.trim() ? null : t("admin.resi.index.validation.courierRequired"),
+            resi_no: (value) => value?.trim() ? null : t("admin.resi.index.validation.trackingRequired"),
         }
     });
 
@@ -170,16 +170,16 @@ export default function OrderTracking() {
                     setCreators(response.data);
                 } else {
                     notifications.show({
-                        title: 'Info',
-                        message: 'Tidak ada data creator',
+                        title: t("admin.resi.index.toast.infoTitle"),
+                        message: t("admin.trackcheck.index.toast.noCreator"),
                         color: 'blue'
                     });
                 }
             },
             error: () => {
                 notifications.show({
-                    title: 'Error',
-                    message: 'Gagal mengambil data creator',
+                    title: t("admin.resi.index.toast.errorTitle"),
+                    message: t("admin.trackcheck.index.toast.fetchCreatorFailed"),
                     color: 'red'
                 });
             },
@@ -243,8 +243,8 @@ export default function OrderTracking() {
             },
             error: () => {
                 notifications.show({
-                    title: 'Error',
-                    message: 'Gagal mengambil data transaksi',
+                    title: t("admin.resi.index.toast.errorTitle"),
+                    message: t("admin.trackcheck.index.toast.fetchTrxFailed"),
                     color: 'red'
                 });
                 if (page === 1) {
@@ -329,16 +329,16 @@ export default function OrderTracking() {
                     setStep(3);
                 } else {
                     notifications.show({
-                        title: 'Error',
-                        message: 'Data invoice tidak ditemukan',
+                        title: t("admin.resi.index.toast.errorTitle"),
+                        message: t("admin.resi.index.toast.noInvoice"),
                         color: 'red'
                     });
                 }
             },
             error: () => {
                 notifications.show({
-                    title: 'Error',
-                    message: 'Gagal mengambil data invoice',
+                    title: t("admin.resi.index.toast.errorTitle"),
+                    message: t("admin.resi.index.toast.fetchInvoiceFailed"),
                     color: 'red'
                 });
             },
@@ -350,8 +350,8 @@ export default function OrderTracking() {
         const validation = form.validate();
         if (validation.hasErrors) {
             notifications.show({
-                title: 'Error',
-                message: 'Mohon lengkapi semua field yang diperlukan',
+                title: t("admin.resi.index.toast.errorTitle"),
+                message: t("admin.trackcheck.index.toast.completeFields"),
                 color: 'red'
             });
             return;
@@ -359,8 +359,8 @@ export default function OrderTracking() {
 
         if (!orderDetail) {
             notifications.show({
-                title: 'Error',
-                message: 'Data order tidak ditemukan',
+                title: t("admin.resi.index.toast.errorTitle"),
+                message: t("admin.trackcheck.index.toast.orderNotFound"),
                 color: 'red'
             });
             return;
@@ -382,8 +382,8 @@ export default function OrderTracking() {
             before: () => setLoading.append('submittracking'),
             success: () => {
                 notifications.show({
-                    title: 'Sukses',
-                    message: 'Data tracking berhasil diperbarui',
+                    title: t("admin.resi.index.toast.successTitle"),
+                    message: t("admin.resi.index.toast.updateSuccess"),
                     color: 'green'
                 });
 
@@ -391,8 +391,8 @@ export default function OrderTracking() {
             },
             error: (error: any) => {
                 notifications.show({
-                    title: 'Error',
-                    message: error?.message || 'Gagal memperbarui data',
+                    title: t("admin.resi.index.toast.errorTitle"),
+                    message: error?.message || t("admin.resi.index.toast.updateFailed"),
                     color: 'red'
                 });
             },
@@ -429,10 +429,10 @@ export default function OrderTracking() {
                         <Text fw={700}>{s}</Text>
                     </ThemeIcon>
                     <Text size="xs" mt={4} c={step >= s ? 'blue' : 'dimmed'}>
-                        {s === 1 && 'Pilih Creator'}
-                        {s === 2 && 'Cari Invoice'}
-                        {s === 3 && 'Detail Order'}
-                        {s === 4 && 'Update Tracking'}
+                        {s === 1 && t("admin.resi.index.step.1")}
+                        {s === 2 && t("admin.resi.index.step.2")}
+                        {s === 3 && t("admin.resi.index.step.3")}
+                        {s === 4 && t("admin.resi.index.step.4")}
                     </Text>
                 </Box>
             ))}
@@ -647,8 +647,8 @@ export default function OrderTracking() {
                                 {/* Info Ringkas */}
                                 <Text size="sm" c="dimmed">
                                     {transactions.length > 0
-                                        ? `Tersedia ${transactions.length} transaksi terbaru`
-                                        : 'Gunakan search manual jika tidak ada dalam daftar'}
+                                        ? t("admin.resi.index.availableTrx", { count: transactions.length })
+                                        : t("admin.resi.index.manualSearchHint")}
                                 </Text>
                             </Stack>
 
@@ -845,12 +845,12 @@ export default function OrderTracking() {
                                                 </ThemeIcon>
                                                 <Box ta="center">
                                                     <Title order={5} fw={500}>
-                                                        {searchQuery ? 'Tidak ada hasil ditemukan' : 'Belum ada transaksi'}
+                                                        {searchQuery ? t("admin.resi.index.empty.noResultTitle") : t("admin.resi.index.empty.noTrxTitle")}
                                                     </Title>
                                                     <Text size="sm" c="dimmed" mt={4}>
                                                         {searchQuery
-                                                            ? `Tidak ditemukan invoice dengan kata kunci "${searchQuery}"`
-                                                            : 'Tidak ada transaksi yang tersedia untuk creator ini'}
+                                                            ? t("admin.resi.index.empty.noResultDesc", { query: searchQuery })
+                                                            : t("admin.resi.index.empty.noTrxDesc")}
                                                     </Text>
                                                 </Box>
                                                 {searchQuery && (

@@ -34,8 +34,8 @@ export default function AdminCreateVenue() {
                 { day_of_week: 0, open_time: "08:00", close_time: "22:00", is_closed: true }
             ],
             schedule: {
-                name: "Regular Schedule",
-                description: "Schedule utama venue",
+                name: t("admin.venue.create.regular.schedule.name"),
+                description: t("admin.venue.create.regular.schedule.desc"),
                 start_date: "",
                 end_date: "",
                 status: "active"
@@ -158,8 +158,8 @@ export default function AdminCreateVenue() {
             before: () => setLoading.append('submitdata'),
             success: () => {
                 notifications.show({
-                    title: 'Berhasil',
-                    message: `Venue berhasil ${id ? 'diperbarui' : 'dibuat'}`,
+                    title: t("common.success"),
+                    message: id ? t("admin.venue.create.toast.saveSuccessEdit") : t("admin.venue.create.toast.saveSuccessAdd"),
                     color: 'green',
                 });
                 router.push('/dashboard/admin/venue');
@@ -183,10 +183,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </button>
 <Stack gap={5}>
 <Text size="1.8rem" fw={600}>
-{id ? 'Edit Venue (Admin)' : 'Buat Venue Baru (Admin)'}
+{id ? t("admin.venue.create.header.editTitle") : t("admin.venue.create.header.addTitle")}
 </Text>
 <Text size="sm" c="gray">
-{t("admin.venue.create.lengkapi.form.untuk")} {id ? 'memperbarui' : 'membuat'} {t("admin.venue.create.venue.baru.sebagai.administrator")}
+{t("admin.venue.create.lengkapi.form.untuk")} {id ? t("admin.venue.create.header.descEdit") : t("admin.venue.create.header.descAdd")} {t("admin.venue.create.header.descSuffix")}
 </Text>
 </Stack>
 </Flex>
@@ -217,7 +217,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <Text size="lg" fw={600}>{t("admin.venue.create.informasi.venue")}</Text>
                 </Flex>
 
-                <InputWrapper error={form.errors.image} label={t("admin.venue.create.gambar.venue")} description="Direkomendasikan 1280px X 400px" withAsterisk>
+                <InputWrapper error={form.errors.image} label={t("admin.venue.create.gambar.venue")} description={t("admin.venue.create.image.recommendation")} withAsterisk>
                     <Flex wrap="wrap" gap={10} pt={5}>
                         {Array(5).fill(null).map((e, i) => (
                             <ImageInput
@@ -357,7 +357,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <TextInput label={t("admin.venue.create.nama.jadwal")} withAsterisk placeholder={t("admin.venue.create.regular.schedule")} {...inputProps('schedule.name')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
-                                    <Select label={t("admin.venue.create.status.jadwal")} data={[{ value: 'active', label: 'Aktif' }, { value: 'inactive', label: 'Inaktif' }]} {...inputProps('schedule.status')} />
+                                    <Select label={t("admin.venue.create.status.jadwal")} data={[{ value: 'active', label: t("admin.venue.create.option.scheduleActive") }, { value: 'inactive', label: t("admin.venue.create.option.scheduleInactive") }]} {...inputProps('schedule.status')} />
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, md: 6 }}>
                                     <TextInput type="date" label={t("admin.venue.create.tanggal.mulai")} withAsterisk {...inputProps('schedule.start_date')} />
@@ -375,7 +375,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Text fw={600} size="lg">{t("admin.venue.create.jam.operasional")}</Text>
                             <Stack gap={10}>
                                 {form.values.operating_hours?.map((item: any, index: number) => {
-                                    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+                                    const days = [t("admin.venue.create.day.sunday"), t("admin.venue.create.day.monday"), t("admin.venue.create.day.tuesday"), t("admin.venue.create.day.wednesday"), t("admin.venue.create.day.thursday"), t("admin.venue.create.day.friday"), t("admin.venue.create.day.saturday")];
                                     const dayName = days[item.day_of_week];
                                     return (
                                         <Card key={index} withBorder p="sm" radius="md">
@@ -456,10 +456,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <Card key={index} withBorder p="sm" radius="md">
                                         <Grid align="flex-end">
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label={t("admin.venue.create.tipe.harga")} data={[{ value: 'hourly', label: 'Per Jam' }, { value: 'daily', label: 'Per Hari' }]} {...inputProps(`prices.${index}.pricing_type`)} />
+                                                <Select label={t("admin.venue.create.tipe.harga")} data={[{ value: 'hourly', label: t("admin.venue.create.option.pricingHourly") }, { value: 'daily', label: t("admin.venue.create.option.pricingDaily") }]} {...inputProps(`prices.${index}.pricing_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
-                                                <Select label={t("admin.venue.create.tipe.hari")} data={[{ value: 'weekday', label: 'Weekday' }, { value: 'weekend', label: 'Weekend' }]} {...inputProps(`prices.${index}.day_type`)} />
+                                                <Select label={t("admin.venue.create.tipe.hari")} data={[{ value: 'weekday', label: t("admin.venue.create.option.dayWeekday") }, { value: 'weekend', label: t("admin.venue.create.option.dayWeekend") }]} {...inputProps(`prices.${index}.day_type`)} />
                                             </Grid.Col>
                                             <Grid.Col span={{ base: 12, md: 2 }}>
                                                 <TextInput type="time" label={t("admin.venue.create.waktu.mulai")} {...inputProps(`prices.${index}.start_time`)} />

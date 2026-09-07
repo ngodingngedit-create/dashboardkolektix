@@ -135,7 +135,7 @@ export default function AdminBusManagement() {
         setTotal(res.data.total || 0);
       }
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal mengambil data bus.", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.bus.index.toast.fetchFailed"), color: "red" });
     } finally {
       setLoading(false);
     }
@@ -172,23 +172,23 @@ export default function AdminBusManagement() {
 
   const handleSubmit = async () => {
     if (!form.bus_name || !form.plate_number) {
-      notifications.show({ title: "Validasi", message: "Nama bus dan nomor plat wajib diisi.", color: "orange" });
+      notifications.show({ title: t("admin.bus.index.validation.requiredTitle"), message: t("admin.bus.index.validation.requiredMessage"), color: "orange" });
       return;
     }
     setIsSubmitting(true);
     try {
       if (isEdit && editId) {
         await Put(`shuttlebuses/${editId}`, form);
-        notifications.show({ title: "Berhasil", message: "Bus berhasil diupdate.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.bus.index.toast.updated"), color: "green" });
       } else {
         await Post("shuttlebuses", form);
-        notifications.show({ title: "Berhasil", message: "Bus berhasil ditambahkan.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.bus.index.toast.added"), color: "green" });
       }
       setOpened(false);
       fetchData();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal menyimpan bus.";
-      notifications.show({ title: "Gagal", message: msg, color: "red" });
+      const msg = err?.response?.data?.message || t("admin.bus.index.toast.saveFailed");
+      notifications.show({ title: t("common.failed"), message: msg, color: "red" });
     } finally {
       setIsSubmitting(false);
     }
@@ -196,19 +196,19 @@ export default function AdminBusManagement() {
 
   const handleDelete = (id: number, name: string) => {
     modals.openConfirmModal({
-      title: "Hapus Bus",
+      title: t("admin.bus.index.confirm.deleteTitle"),
       centered: true,
       children: <Text size="sm">{t("admin.bus.index.yakin.ingin.menghapus.bus")} <b>{name}</b>{t("admin.bus.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: "red" },
       onConfirm: async () => {
         setLoading(true);
         try {
           await Delete(`shuttlebuses/${id}`, {});
-          notifications.show({ title: "Berhasil", message: "Bus berhasil dihapus.", color: "green" });
+          notifications.show({ title: t("common.success"), message: t("admin.bus.index.toast.deleted"), color: "green" });
           fetchData();
         } catch {
-          notifications.show({ title: "Gagal", message: "Gagal menghapus bus.", color: "red" });
+          notifications.show({ title: t("common.failed"), message: t("admin.bus.index.toast.deleteFailed"), color: "red" });
         } finally {
           setLoading(false);
         }
@@ -294,7 +294,7 @@ export default function AdminBusManagement() {
                   <Icon icon="ph:van-bold" style={{ fontSize: 44, color: "#ccc" }} />
                   <div className="absolute right-2 top-2">
                     <Badge variant="filled" size="sm" color={item.status ? "green" : "gray"} radius="sm">
-                      {item.status ? "Aktif" : "Nonaktif"}
+                      {item.status ? t("admin.bus.index.status.aktif") : t("admin.bus.index.status.nonaktif")}
                     </Badge>
                   </div>
                 </div>
@@ -359,7 +359,7 @@ export default function AdminBusManagement() {
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title={<Text fw={700} size="lg" c="#0B387C">{isEdit ? "Edit Bus" : "Tambah Bus Baru"}</Text>}
+        title={<Text fw={700} size="lg" c="#0B387C">{isEdit ? t("admin.bus.index.header.editBus") : t("admin.bus.index.header.addBus")}</Text>}
         size="lg"
         centered
         padding="xl"
@@ -451,7 +451,7 @@ export default function AdminBusManagement() {
               loading={isSubmitting}
               onClick={handleSubmit}
             >
-              {isEdit ? "Simpan Perubahan" : "Tambah Bus"}
+              {isEdit ? t("admin.bus.index.button.saveEdit") : t("admin.bus.index.button.addBus")}
             </ButtonM>
           </Group>
         </Stack>
@@ -482,7 +482,7 @@ export default function AdminBusManagement() {
                   <Text size="sm" c="dimmed" ff="monospace">{selectedItem.bus_code} • {selectedItem.plate_number}</Text>
                 </div>
                 <Badge color={selectedItem.status ? "green" : "gray"} variant="filled" size="sm" ml="auto">
-                  {selectedItem.status ? "Aktif" : "Nonaktif"}
+                  {selectedItem.status ? t("admin.bus.index.status.aktif") : t("admin.bus.index.status.nonaktif")}
                 </Badge>
               </Group>
             </div>

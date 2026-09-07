@@ -107,10 +107,10 @@ export default function KelolaUser() {
     },
 
     validate: {
-      name: (value) => (!value ? "Nama user harus diisi" : null),
+      name: (value) => (!value ? t("admin.user.index.validation.nameRequired") : null),
       email: (value) => {
-        if (!value) return "Email harus diisi";
-        if (!/^\S+@\S+$/.test(value)) return "Email tidak valid";
+        if (!value) return t("admin.user.index.validation.emailRequired");
+        if (!/^\S+@\S+$/.test(value)) return t("admin.user.index.validation.emailInvalid");
         return null;
       },
     },
@@ -159,8 +159,8 @@ export default function KelolaUser() {
           error: (error) => {
             console.error("Error fetching data:", error);
             notifications.show({
-              title: "Gagal",
-              message: "Gagal mengambil data user",
+              title: t("common.failed"),
+              message: t("admin.user.index.toast.fetchFailed"),
               color: "red",
             });
           },
@@ -207,7 +207,7 @@ export default function KelolaUser() {
 
   const handleDelete = async (user: any) => {
     const userData = user as CreatorProps;
-    if (!confirm(`Apakah Anda yakin ingin menghapus user "${userData.has_user?.name}"?`)) {
+    if (!confirm(t("admin.user.index.confirm.delete", { name: userData.has_user?.name || "" }))) {
       return;
     }
 
@@ -220,16 +220,16 @@ export default function KelolaUser() {
       before: () => setLoading.append("delete"),
       success: () => {
         notifications.show({
-          title: "Berhasil",
-          message: "User berhasil dihapus",
+          title: t("common.success"),
+          message: t("admin.user.index.toast.deleted"),
           color: "green",
         });
         getData();
       },
       error: () => {
         notifications.show({
-          title: "Gagal",
-          message: "Gagal menghapus user",
+          title: t("common.failed"),
+          message: t("admin.user.index.toast.deleteFailed"),
           color: "red",
         });
       },
@@ -289,8 +289,8 @@ export default function KelolaUser() {
               await updateCreatorData(values);
             } else {
               notifications.show({
-                title: "Berhasil",
-                message: "User berhasil diperbarui",
+                title: t("common.success"),
+                message: t("admin.user.index.toast.updated"),
                 color: "green",
               });
               getData();
@@ -300,8 +300,8 @@ export default function KelolaUser() {
           },
           error: (error) => {
             notifications.show({
-              title: "Gagal",
-              message: error.message || "Gagal memperbarui user",
+              title: t("common.failed"),
+              message: error.message || t("admin.user.index.toast.updateFailed"),
               color: "red",
             });
           },
@@ -310,8 +310,8 @@ export default function KelolaUser() {
       } catch (error) {
         console.error("Update error:", error);
         notifications.show({
-          title: "Error",
-          message: "Terjadi kesalahan saat memperbarui user",
+          title: t("common.error"),
+          message: t("admin.user.index.toast.updateSystemError"),
           color: "red",
         });
       }
@@ -354,20 +354,20 @@ export default function KelolaUser() {
             // Tampilkan notifikasi berdasarkan hasil
             if (verificationSuccess) {
               notifications.show({
-                title: "Berhasil",
-                message: "User berhasil ditambahkan dan diverifikasi otomatis",
+                title: t("common.success"),
+                message: t("admin.user.index.toast.addedAutoVerified"),
                 color: "green",
               });
             } else if (otpCode) {
               notifications.show({
-                title: "Berhasil",
-                message: "User berhasil ditambahkan, tetapi verifikasi otomatis gagal",
+                title: t("common.success"),
+                message: t("admin.user.index.toast.addedVerifiedFailed"),
                 color: "orange",
               });
             } else {
               notifications.show({
-                title: "Berhasil",
-                message: "User berhasil ditambahkan",
+                title: t("common.success"),
+                message: t("admin.user.index.toast.added"),
                 color: "green",
               });
             }
@@ -379,8 +379,8 @@ export default function KelolaUser() {
           error: (error) => {
             console.error("Register error:", error);
             notifications.show({
-              title: "Gagal",
-              message: error.message || "Gagal menambahkan user",
+              title: t("common.failed"),
+              message: error.message || t("admin.user.index.toast.addFailed"),
               color: "red",
             });
           },
@@ -389,8 +389,8 @@ export default function KelolaUser() {
       } catch (error) {
         console.error("Create error:", error);
         notifications.show({
-          title: "Error",
-          message: "Terjadi kesalahan saat menambahkan user",
+          title: t("common.error"),
+          message: t("admin.user.index.toast.createSystemError"),
           color: "red",
         });
       }
@@ -434,15 +434,15 @@ export default function KelolaUser() {
       },
       success: () => {
         notifications.show({
-          title: "Berhasil",
-          message: "User dan data creator berhasil diperbarui",
+          title: t("common.success"),
+          message: t("admin.user.index.toast.creatorUpdateSuccess"),
           color: "green",
         });
       },
       error: (error) => {
         notifications.show({
-          title: "Peringatan",
-          message: "User berhasil diperbarui, tetapi gagal update data creator: " + (error.message || ""),
+          title: t("common.warning"),
+          message: t("admin.user.index.toast.creatorUpdateWarning", { error: error.message || "" }),
           color: "orange",
         });
       },
@@ -488,8 +488,8 @@ export default function KelolaUser() {
       error: (error) => {
         console.error("Create creator error:", error);
         notifications.show({
-          title: "Peringatan",
-          message: "User berhasil ditambahkan, tetapi gagal membuat data creator: " + (error.message || ""),
+          title: t("common.warning"),
+          message: t("admin.user.index.toast.creatorCreateWarning", { error: error.message || "" }),
           color: "orange",
         });
       },
@@ -551,7 +551,7 @@ export default function KelolaUser() {
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
-          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit User" : "Tambah User Baru"}</Text>
+          <Text size="1.5rem" fw={600}>{isEditMode ? t("admin.user.index.header.editUser") : t("admin.user.index.header.addUser")}</Text>
           <Text size="xs" c="dimmed">{t("admin.user.index.isi.form.di.bawah.untuk.mengelola.data.user")}</Text>
         </Stack>
       </Flex>
@@ -575,8 +575,8 @@ export default function KelolaUser() {
                 <Select
                   label={t("admin.user.index.status.verifikasi.user")}
                   data={[
-                    { value: "1", label: "Terverifikasi" },
-                    { value: "0", label: "Belum Terverifikasi" },
+                    { value: "1", label: t("admin.user.index.option.verified") },
+                    { value: "0", label: t("admin.user.index.option.unverified") },
                   ]}
                   value={form.values.verified_status_id?.toString()}
                   onChange={(value) => form.setFieldValue("verified_status_id", parseInt(value || "1"))}
@@ -586,7 +586,7 @@ export default function KelolaUser() {
 
             <Switch
               label={t("admin.user.index.jadikan.sebagai.creator")}
-              description="Jika aktif, user ini akan memiliki akses sebagai creator/event organizer"
+              description={t("admin.user.index.switch.creatorDesc")}
               checked={form.values.is_creator === 1}
               onChange={(event) => form.setFieldValue("is_creator", event.currentTarget.checked ? 1 : 0)}
               mt="md"
@@ -616,8 +616,8 @@ export default function KelolaUser() {
                 <Select
                   label={t("admin.user.index.status.creator")}
                   data={[
-                    { value: "active", label: "Aktif" },
-                    { value: "inactive", label: "Nonaktif" },
+                    { value: "active", label: t("admin.user.index.option.active") },
+                    { value: "inactive", label: t("admin.user.index.option.inactive") },
                   ]}
                   required
                   {...form.getInputProps("status")}
@@ -631,7 +631,7 @@ export default function KelolaUser() {
                   accept="image/*"
                   onChange={(file) => form.setFieldValue("image", file)}
                   clearable
-                  description={isEditMode && selectedUser?.image_url ? "Biarkan kosong untuk tetap menggunakan gambar saat ini" : ""}
+                  description={isEditMode && selectedUser?.image_url ? t("admin.user.index.file.keepCurrent") : ""}
                 />
               </>
             )}
@@ -644,7 +644,7 @@ export default function KelolaUser() {
               {t("admin.user.index.batal")}
             </Button>
             <Button type="submit" form="user-form" color="blue" loading={loading.includes("submit")}>
-              {isEditMode ? "Simpan Perubahan" : "Simpan User"}
+              {isEditMode ? t("admin.user.index.button.saveEdit") : t("admin.user.index.button.saveAdd")}
             </Button>
           </Flex>
         </Box>
@@ -706,13 +706,13 @@ export default function KelolaUser() {
             <thead>
               <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
-                  { label: "No", sortable: false },
-                  { label: "Tanggal Dibuat", sortable: true, key: "created_at" },
-                  { label: "User", sortable: true, key: "user" },
-                  { label: "Kontak", sortable: false },
-                  { label: "Status", sortable: true, key: "status" },
-                  { label: "Verifikasi", sortable: true, key: "is_verified" },
-                  { label: "Aksi", sortable: false },
+                  { label: t("admin.user.index.table.no"), sortable: false },
+                  { label: t("admin.user.index.table.createdAt"), sortable: true, key: "created_at" },
+                  { label: t("admin.user.index.table.user"), sortable: true, key: "user" },
+                  { label: t("admin.user.index.table.contact"), sortable: false },
+                  { label: t("admin.user.index.table.status"), sortable: true, key: "status" },
+                  { label: t("admin.user.index.table.verification"), sortable: true, key: "is_verified" },
+                  { label: t("admin.user.index.table.actions"), sortable: false },
                 ].map((col, i) => (
                   <th 
                     key={i} 
@@ -720,10 +720,10 @@ export default function KelolaUser() {
                     style={{ 
                       ...tableHeadStyle,
                       cursor: col.sortable ? "pointer" : "default",
-                      position: col.label === "Aksi" ? "sticky" : "static", 
-                      right: col.label === "Aksi" ? 0 : "auto", 
-                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent", 
-                      zIndex: col.label === "Aksi" ? 10 : 1 
+                      position: col.label === t("admin.user.index.table.actions") ? "sticky" : "static", 
+                      right: col.label === t("admin.user.index.table.actions") ? 0 : "auto", 
+                      backgroundColor: col.label === t("admin.user.index.table.actions") ? "#f8fafd" : "transparent", 
+                      zIndex: col.label === t("admin.user.index.table.actions") ? 10 : 1 
                     }}
                   >
                     <Flex align="center" gap={6}>
@@ -788,7 +788,7 @@ export default function KelolaUser() {
                         radius="xs"
                         size="xs"
                       >
-                        {item.status === "active" ? "AKTIF" : "NONAKTIF"}
+                        {item.status === "active" ? t("admin.user.index.badge.aktif") : t("admin.user.index.badge.nonaktif")}
                       </Badge>
                     </td>
                     <td style={tableCellStyle}>
@@ -798,7 +798,7 @@ export default function KelolaUser() {
                         radius="xs"
                         size="xs"
                       >
-                        {item.is_verified === 1 ? "VERIFIED" : "PENDING"}
+                        {item.is_verified === 1 ? t("admin.user.index.badge.verified") : t("admin.user.index.badge.pending")}
                       </Badge>
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>

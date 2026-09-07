@@ -113,7 +113,7 @@ export default function AdminRouteManagement() {
         setTotal(res.data.total || 0);
       }
     } catch {
-      notifications.show({ title: "Gagal", message: "Gagal mengambil data rute.", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.routebus.index.toast.fetchFailed"), color: "red" });
     } finally {
       setLoading(false);
     }
@@ -155,23 +155,23 @@ export default function AdminRouteManagement() {
 
   const handleSubmit = async () => {
     if (!form.route_name || !form.origin_name || !form.destination_name) {
-      notifications.show({ title: "Validasi", message: "Nama rute, asal, dan tujuan wajib diisi.", color: "orange" });
+      notifications.show({ title: t("admin.routebus.index.validation.title"), message: t("admin.routebus.index.validation.message"), color: "orange" });
       return;
     }
     setIsSubmitting(true);
     try {
       if (isEdit && editId) {
         await Put(`shuttleroutes/${editId}`, form);
-        notifications.show({ title: "Berhasil", message: "Rute berhasil diupdate.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.routebus.index.toast.updated"), color: "green" });
       } else {
         await Post("shuttleroutes", form);
-        notifications.show({ title: "Berhasil", message: "Rute berhasil ditambahkan.", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.routebus.index.toast.added"), color: "green" });
       }
       setOpened(false);
       fetchData();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal menyimpan rute.";
-      notifications.show({ title: "Gagal", message: msg, color: "red" });
+      const msg = err?.response?.data?.message || t("admin.routebus.index.toast.saveFailed");
+      notifications.show({ title: t("common.failed"), message: msg, color: "red" });
     } finally {
       setIsSubmitting(false);
     }
@@ -179,19 +179,19 @@ export default function AdminRouteManagement() {
 
   const handleDelete = (item: RouteItem) => {
     modals.openConfirmModal({
-      title: "Hapus Rute",
+      title: t("admin.routebus.index.confirm.deleteTitle"),
       centered: true,
       children: <Text size="sm">{t("admin.routebus.index.yakin.ingin.menghapus.rute")} <b>{item.route_name}</b>{t("admin.routebus.index.tindakan.ini.tidak.dapat.dibatalkan")}</Text>,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: "red" },
       onConfirm: async () => {
         setLoading(true);
         try {
           await Delete(`shuttleroutes/${item.id}`, {});
-          notifications.show({ title: "Berhasil", message: "Rute berhasil dihapus.", color: "green" });
+          notifications.show({ title: t("common.success"), message: t("admin.routebus.index.toast.deleted"), color: "green" });
           fetchData();
         } catch {
-          notifications.show({ title: "Gagal", message: "Gagal menghapus rute.", color: "red" });
+          notifications.show({ title: t("common.failed"), message: t("admin.routebus.index.toast.deleteFailed"), color: "red" });
         } finally {
           setLoading(false);
         }
@@ -332,9 +332,9 @@ export default function AdminRouteManagement() {
                       <Text size="sm" fw={600}>{formatDuration(item.duration_minutes)}</Text>
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                      <Badge variant="filled" size="sm" color={item.status ? "green" : "gray"} radius="sm">
-                        {item.status ? "Aktif" : "Nonaktif"}
-                      </Badge>
+                        <Badge variant="filled" size="sm" color={item.status ? "green" : "gray"} radius="sm">
+                          {item.status ? t("admin.routebus.index.status.aktif") : t("admin.routebus.index.status.nonaktif")}
+                        </Badge>
                     </td>
                     <td style={{ ...tableCellStyle, textAlign: "center" }}>
                       <Group gap={6} justify="center" wrap="nowrap">
@@ -380,7 +380,7 @@ export default function AdminRouteManagement() {
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title={<Text fw={700} size="lg" c="#0B387C">{isEdit ? "Edit Rute" : "Tambah Rute Baru"}</Text>}
+        title={<Text fw={700} size="lg" c="#0B387C">{isEdit ? t("admin.routebus.index.header.editRoute") : t("admin.routebus.index.header.addRoute")}</Text>}
         size="md"
         centered
         padding="xl"
@@ -444,7 +444,7 @@ export default function AdminRouteManagement() {
               loading={isSubmitting}
               onClick={handleSubmit}
             >
-              {isEdit ? "Simpan Perubahan" : "Tambah Rute"}
+              {isEdit ? t("admin.routebus.index.button.saveEdit") : t("admin.routebus.index.button.addRoute")}
             </ButtonM>
           </Group>
         </Stack>
@@ -488,9 +488,9 @@ export default function AdminRouteManagement() {
               </div>
               <div style={{ textAlign: "center", background: "#f1f3f5", borderRadius: 10, padding: 14 }}>
                 <Icon icon="ph:check-circle-bold" style={{ fontSize: 24, color: selectedItem.status ? "#2f9e44" : "#aaa", marginBottom: 4 }} />
-                <Text size="sm" fw={700} c={selectedItem.status ? "green" : "gray"}>
-                  {selectedItem.status ? "Aktif" : "Nonaktif"}
-                </Text>
+                  <Text size="sm" fw={700} c={selectedItem.status ? "green" : "gray"}>
+                    {selectedItem.status ? t("admin.routebus.index.status.aktif") : t("admin.routebus.index.status.nonaktif")}
+                  </Text>
                 <Text size="xs" c="dimmed">{t("admin.routebus.index.status.2")}</Text>
               </div>
             </div>

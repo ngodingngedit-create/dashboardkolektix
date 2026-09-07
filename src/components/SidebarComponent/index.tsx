@@ -1809,7 +1809,7 @@ const sidebarData: SidebarData = [
   },
   {
     id: 3,
-    moduleId: 1,
+    // moduleId: 1,
     name: "Event",
     iconify: "mdi:event-star",
     role: "Creator",

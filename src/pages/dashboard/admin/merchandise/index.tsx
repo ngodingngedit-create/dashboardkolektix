@@ -180,9 +180,9 @@ const Merch: React.FC = () => {
     const item = merchList.find((p) => p.id === id);
     modals.openConfirmModal({
       centered: true,
-      title: "Hapus Produk?",
-      children: `Apakah anda yakin ingin menghapus produk "${item?.product_name || "ini"}"?`,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      title: t("admin.merchandise.index.confirm.deleteTitle"),
+      children: t("admin.merchandise.index.confirm.delete", { name: item?.product_name || t("admin.merchandise.index.confirm.deleteFallback") }),
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: 'red' },
       onConfirm: () => {
         Delete(`product/${id}`, { admin_override: true })
@@ -209,9 +209,9 @@ const Merch: React.FC = () => {
   };
 
   const getCreatorName = (creatorId?: number) => {
-    if (!creatorId) return "Unknown";
+    if (!creatorId) return t("admin.merchandise.index.fallback.unknown");
     const creator = creators.find(c => c.id === creatorId);
-    return creator?.name || creator?.has_user?.name || "Unknown";
+    return creator?.name || creator?.has_user?.name || t("admin.merchandise.index.fallback.unknown");
   };
 
   const filteredList = useMemo(() => {
@@ -294,7 +294,7 @@ const Merch: React.FC = () => {
             <Select
               label={t("admin.merchandise.index.penyelenggara")}
               placeholder={t("admin.merchandise.index.semua.creator")}
-              data={creators.map(c => ({ value: String(c.id), label: c.name || "Unknown" }))}
+              data={creators.map(c => ({ value: String(c.id), label: c.name || t("admin.merchandise.index.fallback.unknown") }))}
               value={selectedCreator}
               onChange={(val) => { setSelectedCreator(val || ""); setPage(1); }}
               size="sm" searchable clearable radius="md"
@@ -346,10 +346,10 @@ const Merch: React.FC = () => {
                   const safePrice = parseInt(String(item.product_varian?.[0]?.price ?? item.price ?? "0"), 10) || 0;
                   const stock = item.product_varian?.length ? _.sumBy(item.product_varian, "stock_qty") : item.qty;
                   const statusId = item.product_status_id;
-                  let statusLabel = "Tidak Aktif";
+                  let statusLabel = t("admin.merchandise.index.status.inactive");
                   let statusColor = "red";
-                  if (statusId === 2) { statusLabel = "Aktif"; statusColor = "green"; }
-                  else if (statusId === 1) { statusLabel = "Draf"; statusColor = "blue"; }
+                  if (statusId === 2) { statusLabel = t("admin.merchandise.index.status.active"); statusColor = "green"; }
+                  else if (statusId === 1) { statusLabel = t("admin.merchandise.index.status.draft"); statusColor = "blue"; }
 
                   return (
                     <tr key={item.id} style={{ borderBottom: "1px solid #f8f9fa" }}>

@@ -66,7 +66,7 @@ export default function KelolaModule() {
     },
 
     validate: {
-      module_name: (value) => (!value ? "Nama module harus diisi" : null),
+      module_name: (value) => (!value ? t("admin.module.index.validation.nameRequired") : null),
     },
   });
 
@@ -78,8 +78,8 @@ export default function KelolaModule() {
     // Cek apakah bearer token ada
     if (!token) {
       notifications.show({
-        title: "Unauthorized",
-        message: "Bearer token tidak ditemukan. Silakan login kembali.",
+        title: t("admin.module.index.auth.unauthorizedTitle"),
+        message: t("admin.module.index.auth.tokenMissing"),
         color: "red",
       });
       router.push("/login");
@@ -96,8 +96,8 @@ export default function KelolaModule() {
 
     if (!userData || userData.role !== "Admin") {
       notifications.show({
-        title: "Access Denied",
-        message: "Anda tidak memiliki akses ke halaman ini. Hanya Admin yang diperbolehkan.",
+        title: t("admin.module.index.auth.accessDeniedTitle"),
+        message: t("admin.module.index.auth.accessDeniedMessage"),
         color: "red",
       });
       router.push("/dashboard");
@@ -145,7 +145,7 @@ export default function KelolaModule() {
           complete: () => setLoading.filter((e) => e !== "getdata"),
           error: (error) => {
             console.error("Error fetching modules:", error);
-            notifications.show({ title: "Gagal", message: "Gagal mengambil data module", color: "red" });
+            notifications.show({ title: t("common.failed"), message: t("admin.module.index.toast.fetchFailed"), color: "red" });
           },
         });
       } catch (error) {
@@ -173,17 +173,17 @@ export default function KelolaModule() {
   };
 
   const handleDelete = async (module: ModuleProps) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus module "${module.module_name}"?`)) return;
+    if (!confirm(t("admin.module.index.confirm.delete", { name: module.module_name || "" }))) return;
     await fetch({
       url: `modules/${module.id}`,
       method: "DELETE",
       data: {},
       before: () => setLoading.append("delete"),
       success: () => {
-        notifications.show({ title: "Berhasil", message: "Module berhasil dihapus", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.module.index.toast.deleted"), color: "green" });
         getData();
       },
-      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menghapus", color: "red" }),
+      error: (error) => notifications.show({ title: t("common.failed"), message: error.message || t("admin.module.index.toast.deleteFailed"), color: "red" }),
       complete: () => setLoading.filter((e) => e !== "delete"),
     });
   };
@@ -204,12 +204,12 @@ export default function KelolaModule() {
       data: formData,
       before: () => setLoading.append("submit"),
       success: () => {
-        notifications.show({ title: "Berhasil", message: `Module berhasil ${isEditMode ? "diperbarui" : "ditambahkan"}`, color: "green" });
+        notifications.show({ title: t("common.success"), message: isEditMode ? t("admin.module.index.toast.savedEdit") : t("admin.module.index.toast.savedAdd"), color: "green" });
         getData();
         setIsFormVisible(false);
         form.reset();
       },
-      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menyimpan", color: "red" }),
+      error: (error) => notifications.show({ title: t("common.failed"), message: error.message || t("admin.module.index.toast.saveFailed"), color: "red" }),
       complete: () => setLoading.filter((e) => e !== "submit"),
     });
   };
@@ -262,7 +262,7 @@ export default function KelolaModule() {
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
-          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Module" : "Tambah Module Baru"}</Text>
+          <Text size="1.5rem" fw={600}>{isEditMode ? t("admin.module.index.header.editModule") : t("admin.module.index.header.addModule")}</Text>
           <Text size="xs" c="dimmed">{t("admin.module.index.kelola.data.module.sistem")}</Text>
         </Stack>
       </Flex>
@@ -303,7 +303,7 @@ export default function KelolaModule() {
           <Flex justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.module.index.batal")}</Button>
             <Button type="submit" form="module-form" color="indigo" loading={loading.includes("submit")}>
-              {isEditMode ? "Simpan Perubahan" : "Simpan Module"}
+              {isEditMode ? t("admin.module.index.button.saveEdit") : t("admin.module.index.button.saveAdd")}
             </Button>
           </Flex>
         </Box>
@@ -357,12 +357,12 @@ export default function KelolaModule() {
             <thead>
               <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
-                  { label: "No", sortable: false },
-                  { label: "Nama Module", sortable: true, key: "module_name" },
-                  { label: "Deskripsi", sortable: true, key: "module_description" },
-                  { label: "Link", sortable: true, key: "module_link" },
-                  { label: "Dibuat", sortable: true, key: "created_at" },
-                  { label: "Aksi", sortable: false },
+                  { label: t("admin.module.index.table.no"), sortable: false },
+                  { label: t("admin.module.index.table.nameModule"), sortable: true, key: "module_name" },
+                  { label: t("admin.module.index.table.desc"), sortable: true, key: "module_description" },
+                  { label: t("admin.module.index.table.link"), sortable: true, key: "module_link" },
+                  { label: t("admin.module.index.table.createdAt"), sortable: true, key: "created_at" },
+                  { label: t("admin.module.index.table.actions"), sortable: false },
                 ].map((col, i) => (
                   <th 
                     key={i} 
@@ -370,10 +370,10 @@ export default function KelolaModule() {
                     style={{ 
                       ...tableHeadStyle,
                       cursor: col.sortable ? "pointer" : "default",
-                      position: col.label === "Aksi" ? "sticky" : "static", 
-                      right: col.label === "Aksi" ? 0 : "auto", 
-                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent",
-                      zIndex: col.label === "Aksi" ? 10 : 1
+                      position: col.label === t("admin.module.index.table.actions") ? "sticky" : "static", 
+                      right: col.label === t("admin.module.index.table.actions") ? 0 : "auto", 
+                      backgroundColor: col.label === t("admin.module.index.table.actions") ? "#f8fafd" : "transparent", 
+                      zIndex: col.label === t("admin.module.index.table.actions") ? 10 : 1 
                     }}
                   >
                     <Flex align="center" gap={6}>

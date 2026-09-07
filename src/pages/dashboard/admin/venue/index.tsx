@@ -130,8 +130,8 @@ export default function AdminVenueManagement() {
     } catch (error) {
       console.error("Error fetching venue data:", error);
       notifications.show({
-        title: "Gagal",
-        message: "Gagal mengambil data venue. Silakan coba lagi.",
+        title: t("common.failed"),
+        message: t("admin.venue.index.toast.fetchFailed"),
         color: "red",
       });
     } finally {
@@ -152,28 +152,28 @@ export default function AdminVenueManagement() {
 
   const handleDelete = (id: number) => {
     const item = data.find(v => v.id === id);
-    const itemName = item?.name || "venue ini";
+    const itemName = item?.name || t("admin.venue.index.confirm.deleteFallback");
 
     modals.openConfirmModal({
       centered: true,
-      title: "Hapus Venue?",
-      children: `Apakah anda yakin ingin menghapus venue "${itemName}"? Tindakan ini tidak dapat dibatalkan.`,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      title: t("admin.venue.index.confirm.deleteTitle"),
+      children: t("admin.venue.index.confirm.delete", { name: itemName }),
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         try {
           await Delete(`venue/${id}`, { admin_override: true });
           notifications.show({
-            title: "Berhasil",
-            message: "Venue berhasil dihapus",
+            title: t("common.success"),
+            message: t("admin.venue.index.toast.deleted"),
             color: "green",
           });
           fetchData();
         } catch (err) {
           console.error(err);
           notifications.show({
-            title: "Gagal",
-            message: "Gagal menghapus venue",
+            title: t("common.failed"),
+            message: t("admin.venue.index.toast.deleteFailed"),
             color: "red",
           });
         }
@@ -220,7 +220,7 @@ export default function AdminVenueManagement() {
               placeholder={t("admin.venue.index.semua.creator")}
               data={creators.map(c => ({
                 value: String(c.id),
-                label: c.name || c.has_user?.name || "Unknown"
+                label: c.name || c.has_user?.name || t("admin.venue.index.fallback.unknown")
               }))}
               value={selectedCreator}
               onChange={(val) => {
@@ -351,7 +351,7 @@ export default function AdminVenueManagement() {
                       </td>
                       <td style={tableCellStyle}>
                         <Badge color="blue" variant="light" radius="xs" size="xs">
-                          {item.has_venue_category?.name || "Uncategorized"}
+                          {item.has_venue_category?.name || t("admin.venue.index.fallback.uncategorized")}
                         </Badge>
                       </td>
                       <td style={tableCellStyle}>

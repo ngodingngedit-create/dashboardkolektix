@@ -243,7 +243,7 @@ const EditEventAdmin = () => {
         setSeatmapData.setState(seatmap);
       })
       .catch((err) => {
-        toast.error("Gagal memuat data event");
+        toast.error(t("admin.event.edit.slug_url.toast.failed"));
         console.error(err);
       })
       .finally(() => setLoadingInitial(false));
@@ -273,13 +273,11 @@ const EditEventAdmin = () => {
 
     Put(`admin-data/event/${slug_url}`, payload)
       .then((res: any) => {
-        toast.success("Event Berhasil Diupdate (Admin)");
+        toast.success(t("admin.event.edit.slug_url.toast.successUpdate"));
         router.push("/dashboard/admin/event");
       })
       .catch((err) => {
-        const errorObj = err?.response?.data?.errors || {};
-        toast.error(err?.response?.data?.message || "Terjadi Kesalahan");
-        setError(errorObj);
+        toast.error(err?.response?.data?.message || t("admin.event.edit.slug_url.toast.failed"));
       })
       .finally(() => setLoading(false));
   };
@@ -399,7 +397,7 @@ const EditEventAdmin = () => {
               <div className="w-full border-primary-light-200 text-grey text-sm py-2 px-2 mb-3 flex items-center cursor-pointer" onClick={() => setShowLocation(!showLocation)}>
                 <FontAwesomeIcon icon={faLocationDot} size="lg" className="w-5 mr-2" />
                 {form.organization_method !== "" ? (
-                  <p className="text-dark">{form.location_name || form.location_map || "Lokasi Teratur"}</p>
+                  <p className="text-dark">{form.location_name || form.location_map || t("admin.create-shuttle.index.option.locationRegular")}</p>
                 ) : (
                   <p>{t("admin.event.edit.slug_url.atur.alamat.event")}</p>
                 )}
@@ -670,7 +668,7 @@ const EditEventAdmin = () => {
           <p className="text-sm font-bold hidden md:block">{t("admin.event.edit.slug_url.mode.admin.konfigurasi.event.secara.penuh")}</p>
           <div className="flex gap-4 w-full md:w-auto">
             <Button className="flex-1 md:flex-none" onClick={() => router.back()} color="secondary" label={t("admin.event.edit.slug_url.batal")} />
-            <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? "Loading..." : "Simpan Perubahan"} />
+            <Button className="flex-1 md:flex-none" onClick={submitEvent} color="primary" disabled={loading} startIcon={faSave} label={loading ? t("admin.create-shuttle.index.button.loading") : t("admin.event.edit.slug_url.button.saveEdit")} />
           </div>
         </div>
       </div>

@@ -38,9 +38,9 @@ export default function AdminEventManagement() {
 
   // Status Tabs
   const tabStatus = [
-    ["all", "Semua"],
-    ["3", "Disetujui"],
-    ["1", "Review"],
+    ["all", t("admin.event.index.status.all")],
+    ["3", t("admin.event.index.status.approved")],
+    ["1", t("admin.event.index.status.review")],
   ];
   const [activeTab, setActiveTab] = useState("all");
 
@@ -127,8 +127,8 @@ export default function AdminEventManagement() {
       }
     } catch (error) {
       notifications.show({
-        title: "Gagal",
-        message: "Gagal mengambil data event. Silakan coba lagi.",
+        title: t("common.failed"),
+        message: t("admin.event.index.toast.fetchFailed"),
         color: "red",
       });
     } finally {
@@ -176,16 +176,16 @@ export default function AdminEventManagement() {
         event_status_id: status ? 3 : 1,
       });
       notifications.show({
-        title: "Berhasil",
-        message: `Status event berhasil ${status ? "disetujui" : "dibatalkan"}`,
+        title: t("common.success"),
+        message: t("admin.event.index.toast.approveSuccess", { status: status ? t("admin.event.index.status.approved") : t("admin.event.index.status.review") }),
         color: "green",
       });
       fetchData();
       if (detailOpened) setDetailOpened(false);
     } catch (err: any) {
       notifications.show({
-        title: "Gagal",
-        message: err.message || "Gagal memperbarui status event",
+        title: t("common.failed"),
+        message: err.message || t("admin.event.index.toast.approveFailed"),
         color: "red",
       });
     } finally {
@@ -251,7 +251,7 @@ export default function AdminEventManagement() {
                     placeholder={t("admin.event.index.semua.creator")}
                     data={creators.map(c => ({
                       value: String(c.id),
-                      label: c.name || c.name_event_organizer || "No Name"
+                      label: c.name || c.name_event_organizer || t("admin.event.index.placeholder.creatorName")
                     }))}
                     value={selectedCreator}
                     onChange={(val) => {
@@ -337,7 +337,7 @@ export default function AdminEventManagement() {
                     {sortedData.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>
-                          <Text c="dimmed">{loading ? 'Sedang memuat...' : 'Tidak ada event ditemukan'}</Text>
+                          <Text c="dimmed">{loading ? t("admin.event.index.tabel.loadingEmpty") : t("admin.event.index.tabel.noData")}</Text>
                         </td>
                       </tr>
                     ) : (
@@ -366,7 +366,7 @@ export default function AdminEventManagement() {
                               <Avatar src={item.has_creator?.image_url || undefined} size="sm" radius="xl" color="blue">
                                 {item.has_creator?.name?.substring(0, 1)}
                               </Avatar>
-                              <Text size="sm" fw={500} lineClamp={1}>{item.has_creator?.name || "Unknown"}</Text>
+                              <Text size="sm" fw={500} lineClamp={1}>{item.has_creator?.name || t("admin.event.index.fallback.unknown")}</Text>
                             </Group>
                           </td>
                           <td style={{ padding: '12px 14px' }}>
@@ -399,7 +399,7 @@ export default function AdminEventManagement() {
                                 }
                               }}
                             >
-                              {item.event_status_id === 3 ? "Disetujui" : "Review"}
+                              {item.event_status_id === 3 ? t("admin.event.index.status.approved") : t("admin.event.index.status.review")}
                             </Badge>
                           </td>
                           <td style={{ padding: '12px 14px' }}>
@@ -478,7 +478,7 @@ export default function AdminEventManagement() {
               )}
               <div className="absolute top-4 right-4">
                 <Badge size="lg" color={selectedEvent.event_status_id === 3 ? "green" : "orange"} variant="filled">
-                  {selectedEvent.event_status_id === 3 ? "Disetujui" : "Menunggu Review"}
+                  {selectedEvent.event_status_id === 3 ? t("admin.event.index.modal.badgeApproved") : t("admin.event.index.modal.badgeReview")}
                 </Badge>
               </div>
             </div>
@@ -501,7 +501,7 @@ export default function AdminEventManagement() {
                       <Text size="sm" fw={600}>{moment(selectedEvent.start_date).format("DD MMMM YYYY")}</Text>
                     </Group>
                     <Text size="xs" c="dimmed" ml={26}>
-                      {selectedEvent.start_time} - {selectedEvent.end_time || "Selesai"}
+                      {selectedEvent.start_time} - {selectedEvent.end_time || t("admin.event.index.modal.endTime")}
                     </Text>
                   </div>
                 </Group>
@@ -526,7 +526,7 @@ export default function AdminEventManagement() {
                       <Avatar src={selectedEvent.has_creator?.image_url || undefined} size="lg" radius="md" />
                       <div>
                         <Text fw={700} size="sm">{selectedEvent.has_creator?.name}</Text>
-                        <Text size="xs" c="dimmed">{selectedEvent.has_creator?.email || "Email tidak publik"}</Text>
+                        <Text size="xs" c="dimmed">{selectedEvent.has_creator?.email || t("admin.event.index.modal.emailNotPublic")}</Text>
                       </div>
                     </Group>
                   </Paper>
@@ -536,7 +536,7 @@ export default function AdminEventManagement() {
                   <Text size="xs" fw={700} c="dimmed" className="uppercase mb-2">{t("admin.event.index.tentang.event")}</Text>
                   <ScrollArea.Autosize mah={150} type="scroll">
                     <Text size="sm" className="whitespace-pre-line text-gray-700 leading-relaxed">
-                      {selectedEvent.description?.replace(/<[^>]*>/g, '') || "Tidak ada deskripsi."}
+                      {selectedEvent.description?.replace(/<[^>]*>/g, '') || t("admin.event.index.modal.noDescription")}
                     </Text>
                   </ScrollArea.Autosize>
                 </div>

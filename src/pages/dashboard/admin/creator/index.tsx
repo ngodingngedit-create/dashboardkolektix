@@ -111,9 +111,9 @@ export default function KelolaCreator() {
     },
 
     validate: {
-      name: (value) => (!value ? "Nama creator harus diisi" : null),
-      phone_number: (value) => (!value ? "Nomor telepon harus diisi" : null),
-      email: (value) => (!value ? "Email harus diisi" : null),
+      name: (value) => (!value ? t("admin.creator.index.validation.nameRequired") : null),
+      phone_number: (value) => (!value ? t("admin.creator.index.validation.phoneRequired") : null),
+      email: (value) => (!value ? t("admin.creator.index.validation.emailRequired") : null),
     },
   });
 
@@ -157,8 +157,8 @@ export default function KelolaCreator() {
           error: (error) => {
             console.error("Error fetching data:", error);
             notifications.show({
-              title: "Gagal",
-              message: "Gagal mengambil data creator",
+              title: t("common.failed"),
+              message: t("admin.creator.index.toast.fetchFailed"),
               color: "red",
             });
           },
@@ -203,7 +203,7 @@ export default function KelolaCreator() {
 
   const handleDelete = async (creator: any) => {
     const creatorData = creator as CreatorProps;
-    if (!confirm(`Apakah Anda yakin ingin menghapus creator "${creatorData.name}"?`)) {
+    if (!confirm(t("admin.creator.index.confirm.delete", { name: creatorData.name || "" }))) {
       return;
     }
 
@@ -214,16 +214,16 @@ export default function KelolaCreator() {
       before: () => setLoading.append("delete"),
       success: () => {
         notifications.show({
-          title: "Berhasil",
-          message: "Creator berhasil dihapus",
+          title: t("common.success"),
+          message: t("admin.creator.index.toast.deleted"),
           color: "green",
         });
         getData();
       },
       error: () => {
         notifications.show({
-          title: "Gagal",
-          message: "Gagal menghapus creator",
+          title: t("common.failed"),
+          message: t("admin.creator.index.toast.deleteFailed"),
           color: "red",
         });
       },
@@ -239,16 +239,16 @@ export default function KelolaCreator() {
         setImagePreview(base64DataURL);
 
         notifications.show({
-          title: "Gambar berhasil diproses",
-          message: "Gambar siap diupload",
+          title: t("admin.creator.index.toast.imageProcessedTitle"),
+          message: t("admin.creator.index.toast.imageProcessed"),
           color: "green",
           autoClose: 2000,
         });
       } catch (error) {
         console.error("Error converting image to base64:", error);
         notifications.show({
-          title: "Gagal",
-          message: "Gagal memproses gambar",
+          title: t("common.failed"),
+          message: t("admin.creator.index.toast.imageProcessFailed"),
           color: "red",
         });
       }
@@ -288,8 +288,8 @@ export default function KelolaCreator() {
       before: () => setLoading.append("submit"),
       success: (response) => {
         notifications.show({
-          title: "Berhasil",
-          message: `Creator berhasil ${isEditMode ? "diperbarui" : "ditambahkan"}`,
+          title: t("common.success"),
+          message: isEditMode ? t("admin.creator.index.toast.savedEdit") : t("admin.creator.index.toast.savedAdd"),
           color: "green",
         });
         getData();
@@ -302,14 +302,14 @@ export default function KelolaCreator() {
         console.error("Error submitting form:", error);
         if (error.response?.status === 422) {
           notifications.show({
-            title: "Gagal",
-            message: error.response.data.message || `Gagal memproses data`,
+            title: t("common.failed"),
+            message: error.response.data.message || t("admin.creator.index.toast.processFailed"),
             color: "red",
           });
         } else {
           notifications.show({
-            title: "Gagal",
-            message: error.message || `Gagal menyimpan data`,
+            title: t("common.failed"),
+            message: error.message || t("admin.creator.index.toast.saveFailed"),
             color: "red",
           });
         }
@@ -357,7 +357,7 @@ export default function KelolaCreator() {
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
-          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Creator" : "Tambah Creator Baru"}</Text>
+          <Text size="1.5rem" fw={600}>{isEditMode ? t("admin.creator.index.header.editCreator") : t("admin.creator.index.header.addCreator")}</Text>
           <Text size="xs" c="dimmed">{t("admin.creator.index.isi.form.di.bawah.untuk.mengelola.data.creator")}</Text>
         </Stack>
       </Flex>
@@ -397,8 +397,8 @@ export default function KelolaCreator() {
             <Select
               label={t("admin.creator.index.status")}
               data={[
-                { value: "active", label: "Aktif" },
-                { value: "inactive", label: "Nonaktif" },
+                { value: "active", label: t("admin.creator.index.option.active") },
+                { value: "inactive", label: t("admin.creator.index.option.inactive") },
               ]}
               required
               {...form.getInputProps("status")}
@@ -410,7 +410,7 @@ export default function KelolaCreator() {
           <Flex justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.creator.index.batal")}</Button>
             <Button type="submit" form="creator-form" color="indigo" loading={loading.includes("submit")}>
-              {isEditMode ? "Simpan Perubahan" : "Simpan Creator"}
+              {isEditMode ? t("admin.creator.index.button.saveEdit") : t("admin.creator.index.button.saveAdd")}
             </Button>
           </Flex>
         </Box>
@@ -464,14 +464,14 @@ export default function KelolaCreator() {
             <thead>
               <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
-                  { label: "No", sortable: false },
-                  { label: "Tanggal", sortable: true, key: "created_at" },
-                  { label: "Logo", sortable: false },
-                  { label: "Creator & EO", sortable: true, key: "name" },
-                  { label: "Kontak & Lokasi", sortable: false },
-                  { label: "User Akun", sortable: false },
-                  { label: "Status", sortable: true, key: "status" },
-                  { label: "Aksi", sortable: false },
+                  { label: t("admin.creator.index.table.no"), sortable: false },
+                  { label: t("admin.creator.index.table.createdAt"), sortable: true, key: "created_at" },
+                  { label: t("admin.creator.index.table.logo"), sortable: false },
+                  { label: t("admin.creator.index.table.creatorEo"), sortable: true, key: "name" },
+                  { label: t("admin.creator.index.table.contactLocation"), sortable: false },
+                  { label: t("admin.creator.index.table.userAccount"), sortable: false },
+                  { label: t("admin.creator.index.table.status"), sortable: true, key: "status" },
+                  { label: t("admin.creator.index.table.actions"), sortable: false },
                 ].map((col, i) => (
                   <th 
                     key={i} 
@@ -479,10 +479,10 @@ export default function KelolaCreator() {
                     style={{ 
                       ...tableHeadStyle,
                       cursor: col.sortable ? "pointer" : "default",
-                      position: col.label === "Aksi" ? "sticky" : "static", 
-                      right: col.label === "Aksi" ? 0 : "auto", 
-                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent",
-                      zIndex: col.label === "Aksi" ? 10 : 1
+                      position: col.label === t("admin.creator.index.table.actions") ? "sticky" : "static", 
+                      right: col.label === t("admin.creator.index.table.actions") ? 0 : "auto", 
+                      backgroundColor: col.label === t("admin.creator.index.table.actions") ? "#f8fafd" : "transparent", 
+                      zIndex: col.label === t("admin.creator.index.table.actions") ? 10 : 1 
                     }}
                   >
                     <Flex align="center" gap={6}>
@@ -547,17 +547,17 @@ export default function KelolaCreator() {
                     </td>
                     <td style={tableCellStyle}>
                       <Stack gap={0}>
-                        <Text size="xs" fw={600}>{item.has_user?.name || "Bukan User Akun"}</Text>
+                        <Text size="xs" fw={600}>{item.has_user?.name || t("admin.creator.index.noUserAccount")}</Text>
                         <Text size="xs" c="dimmed">{item.has_user?.email || ""}</Text>
                       </Stack>
                     </td>
                     <td style={tableCellStyle}>
                       <Stack gap={4} align="flex-start">
                         <Badge color={item.status === "active" ? "teal" : "red"} variant="filled" size="xs" radius="xs">
-                          {item.status === "active" ? "AKTIF" : "NONAKTIF"}
+                          {item.status === "active" ? t("admin.creator.index.badge.aktif") : t("admin.creator.index.badge.nonaktif")}
                         </Badge>
                         <Badge color={item.is_verified === 1 ? "indigo" : "gray"} variant="filled" size="xs" radius="xs">
-                          {item.is_verified === 1 ? "VERIFIED" : "UNVERIFIED"}
+                          {item.is_verified === 1 ? t("admin.creator.index.badge.verified") : t("admin.creator.index.badge.unverified")}
                         </Badge>
                       </Stack>
                     </td>

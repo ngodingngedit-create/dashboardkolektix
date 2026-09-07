@@ -260,7 +260,7 @@ const AdminEventDetailView = () => {
     try {
       const payload = {
         event_id: data?.id,
-        invitation_title: invitationItem?.invitation_title || "Undangan Event",
+        invitation_title: invitationItem?.invitation_title || t("admin.event.view.slug.export.invitationTitle"),
         invitation_description: invitationItem?.invitation_description || "",
         total_qty: invitationItem?.total_qty || 0,
         details: invitationItem?.event_invitation_detail?.map((detail: any) => ({ fullname: detail?.fullname || "", email: detail?.email || "", phone: detail?.phone || "" })) || [],
@@ -273,12 +273,12 @@ const AdminEventDetailView = () => {
         method: "POST",
         data: payload,
         success: (res) => {
-          notifications.show({ title: "Berhasil!", message: `Invitation berhasil dikirim`, color: "green" });
+          notifications.show({ title: t("common.success"), message: t("admin.event.view.slug.toast.invitationSent"), color: "green" });
           setTimeout(() => getInvitationEventData(data?.id || 0), 1000);
         },
       });
     } catch (error: any) {
-      notifications.show({ title: "Gagal!", message: error.message || "Gagal mengirim invitation", color: "red" });
+      notifications.show({ title: t("common.failed"), message: error.message || t("admin.event.view.slug.toast.invitationFailed"), color: "red" });
     } finally {
       setSendingInvitations((prev) => ({ ...prev, [invitationIdStr]: false }));
     }
@@ -293,7 +293,7 @@ const AdminEventDetailView = () => {
         await sendInvitationEmail(item);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      notifications.show({ title: "Selesai!", message: "Semua invitation telah diproses", color: "green" });
+      notifications.show({ title: t("common.success"), message: t("admin.event.view.slug.toast.invitationAllProcessed"), color: "green" });
     } finally {
       setIsSendingInvitation(false);
     }
@@ -369,9 +369,9 @@ const AdminEventDetailView = () => {
     setSendingEmails((prev) => ({ ...prev, [itemIdStr]: true }));
     try {
       await axios.get(`${config.wsUrl}transaction/send/eticket/${invoiceNo}`, { params: { email }, headers: { "X-Email-Type": "transaction", "X-Event-Id": data?.id } });
-      notifications.show({ title: "Berhasil!", message: `E-ticket berhasil dikirim ke ${email}`, color: "green" });
+      notifications.show({ title: t("common.success"), message: t("admin.event.view.slug.toast.ETicketSent", { email }), color: "green" });
     } catch (error: any) {
-      notifications.show({ title: "Gagal!", message: error.response?.data?.message || "Gagal mengirim e-ticket", color: "red" });
+      notifications.show({ title: t("common.failed"), message: error.response?.data?.message || t("admin.event.view.slug.toast.ETicketFailed"), color: "red" });
     } finally {
       setTimeout(() => setSendingEmails((prev) => ({ ...prev, [itemIdStr]: false })), 300);
     }
@@ -379,7 +379,7 @@ const AdminEventDetailView = () => {
 
   const handleDownloadTransaction = async () => {
     if (!data?.id) {
-      notifications.show({ title: "Gagal!", message: "Data event belum dimuat", color: "red" });
+      notifications.show({ title: t("common.failed"), message: t("admin.event.view.slug.toast.eventNotLoaded"), color: "red" });
       return;
     }
     try {
@@ -395,7 +395,7 @@ const AdminEventDetailView = () => {
       const result = response.data as any;
       const allTxns = result?.data && Array.isArray(result.data) ? result.data : [];
       if (allTxns.length === 0) {
-        notifications.show({ title: "Gagal!", message: "Tidak ada data transaksi untuk diexport", color: "red" });
+        notifications.show({ title: t("common.failed"), message: t("admin.event.view.slug.toast.noTrxExport"), color: "red" });
         return;
       }
 
@@ -412,14 +412,14 @@ const AdminEventDetailView = () => {
         }
         return {
           "No": index + 1,
-          "No. Invoice": item.invoice_no || "-",
+          [t("admin.event.view.slug.export.invoiceNo")]: item.invoice_no || "-",
           "Nama": pemesanIdentity?.full_name || "-",
           "Email": pemesanIdentity?.email || "-",
-          "No. Telepon": pemesanIdentity?.no_telp || "-",
-          "Nama Tiket": ticketName,
+          [t("admin.event.view.slug.export.phoneNo")]: pemesanIdentity?.no_telp || "-",
+          [t("admin.event.view.slug.export.ticketName")]: ticketName,
           "Qty": ticketQty,
-          "Harga Tiket": Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
-          "Metode Pembayaran": item.payment_method?.payment_name || "-",
+          [t("admin.event.view.slug.export.ticketPrice")]: Math.max((Number(item.total_price) || 0) - (Number(item.total_voucher) || 0), 0),
+          [t("admin.event.view.slug.export.paymentMethod")]: item.payment_method?.payment_name || "-",
           "Status": getStatusText(item.transaction_status_id),
         };
       });
@@ -430,7 +430,7 @@ const AdminEventDetailView = () => {
       XLSX.writeFile(wb, `transaksi-event-${data.id}.xlsx`);
     } catch (error: any) {
       console.error("Error downloading transactions:", error);
-      notifications.show({ title: "Gagal!", message: error.response?.data?.message || "Gagal mengunduh data transaksi", color: "red" });
+      notifications.show({ title: t("common.failed"), message: error.response?.data?.message || t("admin.event.view.slug.toast.exportFailed"), color: "red" });
     }
   };
 
@@ -511,20 +511,20 @@ const AdminEventDetailView = () => {
 
   const getStatusText = (statusId: any) => {
     switch (statusId) {
-      case 1: return "Pending";
-      case 2: return "Verified";
-      case 3: return "Failed";
-      case 4: return "Expired";
-      default: return "Unknown";
+      case 1: return t("admin.event.view.slug.status.pending");
+      case 2: return t("admin.event.view.slug.status.verified");
+      case 3: return t("admin.event.view.slug.status.failed");
+      case 4: return t("admin.event.view.slug.status.expired");
+      default: return t("admin.event.view.slug.status.unknown");
     }
   };
 
   const getStatusTextInvitation = (statusId: any) => {
     switch (statusId) {
-      case 0: return "Cancel";
-      case 1: return "Active";
-      case 2: return "Sent";
-      default: return "Unknown";
+      case 0: return t("admin.event.view.slug.status.cancel");
+      case 1: return t("admin.event.view.slug.status.active");
+      case 2: return t("admin.event.view.slug.status.sent");
+      default: return t("admin.event.view.slug.status.unknown");
     }
   };
 
@@ -877,8 +877,8 @@ const AdminEventDetailView = () => {
                                               sendETicket(item.invoice_no, email, item.id);
                                             } else {
                                               notifications.show({
-                                                title: "Error",
-                                                message: "Email tidak tersedia untuk pengguna ini.",
+                                                title: t("common.error"),
+                                                message: t("admin.event.view.slug.toast.emailNotAvailable"),
                                                 color: "red",
                                                 position: "top-right",
                                               });

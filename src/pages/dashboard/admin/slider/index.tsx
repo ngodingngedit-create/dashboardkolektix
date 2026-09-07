@@ -138,8 +138,8 @@ export default function AdminSliderManagement() {
     } catch (error) {
       console.error("Error fetching slider data:", error);
       notifications.show({
-        title: "Gagal",
-        message: "Gagal mengambil data slider. Silakan coba lagi.",
+        title: t("common.failed"),
+        message: t("admin.slider.index.toast.fetchFailed"),
         color: "red",
       });
     } finally {
@@ -149,28 +149,28 @@ export default function AdminSliderManagement() {
 
   const handleDelete = (id: number) => {
     const item = data.find(v => v.id === id);
-    const itemName = item?.name || "slider ini";
+    const itemName = item?.name || t("admin.slider.index.confirm.deleteFallback");
 
     modals.openConfirmModal({
       centered: true,
-      title: "Hapus Slider?",
-      children: `Apakah anda yakin ingin menghapus slider "${itemName}"? Tindakan ini tidak dapat dibatalkan.`,
-      labels: { confirm: "Hapus", cancel: "Batal" },
+      title: t("admin.slider.index.confirm.deleteTitle"),
+      children: t("admin.slider.index.confirm.delete", { name: itemName }),
+      labels: { confirm: t("common.delete"), cancel: t("common.cancel") },
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         try {
           await Delete(`slider/${id}`, { admin_override: true });
           notifications.show({
-            title: "Berhasil",
-            message: "Slider berhasil dihapus",
+            title: t("common.success"),
+            message: t("admin.slider.index.toast.deleted"),
             color: "green",
           });
           fetchData();
         } catch (err) {
           console.error(err);
           notifications.show({
-            title: "Gagal",
-            message: "Gagal menghapus slider",
+            title: t("common.failed"),
+            message: t("admin.slider.index.toast.deleteFailed"),
             color: "red",
           });
         }
@@ -216,66 +216,66 @@ export default function AdminSliderManagement() {
     reader.onerror = error => reject(error);
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || (!isEdit && !imageFile)) {
-        notifications.show({
-            title: "Peringatan",
-            message: "Nama dan Gambar wajib diisi!",
-            color: "yellow"
-        });
-        return;
-    }
-
-    setIsSubmitting(true);
-    try {
-        let base64Image = undefined;
-        if (imageFile) {
-            base64Image = await toBase64(imageFile);
-        }
-
-        const payload: any = {
-            name,
-            description,
-            status
-        };
-
-        if (rank !== "") {
-            payload.rank = Number(rank);
-        }
-
-        if (base64Image) {
-            payload.image = base64Image;
-        }
-
-        if (isEdit && editId) {
-            await Put(`slider/${editId}`, payload);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name || (!isEdit && !imageFile)) {
             notifications.show({
-                title: "Berhasil",
-                message: "Slider berhasil diupdate",
-                color: "green"
+                title: t("common.warning"),
+                message: t("admin.slider.index.validation.nameRequired"),
+                color: "yellow"
             });
-        } else {
-            await Post(`slider`, payload);
-            notifications.show({
-                title: "Berhasil",
-                message: "Slider berhasil ditambahkan",
-                color: "green"
-            });
+            return;
         }
-        setOpened(false);
-        fetchData();
-    } catch (error) {
-        console.error(error);
-        notifications.show({
-            title: "Gagal",
-            message: "Terjadi kesalahan saat menyimpan slider",
-            color: "red"
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
+
+        setIsSubmitting(true);
+        try {
+            let base64Image = undefined;
+            if (imageFile) {
+                base64Image = await toBase64(imageFile);
+            }
+
+            const payload: any = {
+                name,
+                description,
+                status
+            };
+
+            if (rank !== "") {
+                payload.rank = Number(rank);
+            }
+
+            if (base64Image) {
+                payload.image = base64Image;
+            }
+
+            if (isEdit && editId) {
+                await Put(`slider/${editId}`, payload);
+                notifications.show({
+                    title: t("common.success"),
+                    message: t("admin.slider.index.toast.updateSuccess"),
+                    color: "green"
+                });
+            } else {
+                await Post(`slider`, payload);
+                notifications.show({
+                    title: t("common.success"),
+                    message: t("admin.slider.index.toast.addSuccess"),
+                    color: "green"
+                });
+            }
+            setOpened(false);
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            notifications.show({
+                title: t("common.failed"),
+                message: t("admin.slider.index.toast.saveFailed"),
+                color: "red"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -399,7 +399,7 @@ export default function AdminSliderManagement() {
                       </td>
                       <td style={tableCellStyle}>
                         <Badge color={item.status === 'active' ? 'green' : 'gray'} variant="light" radius="xs" size="xs">
-                          {item.status === 'active' ? 'Aktif' : (item.status === 'inactive' ? 'Tidak Aktif' : (item.status || 'Aktif'))}
+                          {item.status === 'active' ? t("admin.slider.index.option.active") : (item.status === 'inactive' ? t("admin.slider.index.option.inactive") : (item.status || t("admin.slider.index.option.active")))}
                         </Badge>
                       </td>
                       <td style={{ ...tableCellStyle, textAlign: "center" }}>
@@ -441,7 +441,7 @@ export default function AdminSliderManagement() {
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title={<Text fw={600}>{isEdit ? "Edit Slider" : "Tambah Slider"}</Text>}
+        title={<Text fw={600}>{isEdit ? t("admin.slider.index.header.editSlider") : t("admin.slider.index.header.addSlider")}</Text>}
         centered
         size="lg"
       >
@@ -466,8 +466,8 @@ export default function AdminSliderManagement() {
                         label={t("admin.slider.index.status")}
                         placeholder={t("admin.slider.index.pilih.status")}
                         data={[
-                            { value: 'active', label: 'Aktif' },
-                            { value: 'inactive', label: 'Tidak Aktif' }
+                            { value: 'active', label: t("admin.slider.index.option.active") },
+                            { value: 'inactive', label: t("admin.slider.index.option.inactive") }
                         ]}
                         value={status}
                         onChange={(val) => setStatus(val || 'active')}

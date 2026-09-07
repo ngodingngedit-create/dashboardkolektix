@@ -116,9 +116,9 @@ export default function KelolaPermission() {
     },
 
     validate: {
-      user_id: (value) => (!value ? "User harus dipilih" : null),
-      role_id: (value) => (!value ? "Role harus dipilih" : null),
-      module_id: (value) => (!value ? "Module harus dipilih" : null),
+      user_id: (value) => (!value ? t("admin.permission.index.validation.userRequired") : null),
+      role_id: (value) => (!value ? t("admin.permission.index.validation.roleRequired") : null),
+      module_id: (value) => (!value ? t("admin.permission.index.validation.moduleRequired") : null),
     },
   });
 
@@ -130,8 +130,8 @@ export default function KelolaPermission() {
     // Cek apakah bearer token ada
     if (!token) {
       notifications.show({
-        title: "Unauthorized",
-        message: "Bearer token tidak ditemukan. Silakan login kembali.",
+        title: t("admin.permission.index.auth.unauthorizedTitle"),
+        message: t("admin.permission.index.auth.tokenMissing"),
         color: "red",
       });
       router.push("/login");
@@ -148,8 +148,8 @@ export default function KelolaPermission() {
 
     if (!userData || userData.role !== "Admin") {
       notifications.show({
-        title: "Access Denied",
-        message: "Anda tidak memiliki akses ke halaman ini. Hanya Admin yang diperbolehkan.",
+        title: t("admin.permission.index.auth.accessDeniedTitle"),
+        message: t("admin.permission.index.auth.accessDeniedMessage"),
         color: "red",
       });
       router.push("/dashboard");
@@ -208,7 +208,7 @@ export default function KelolaPermission() {
           },
           complete: () => setLoading.filter((e) => e !== "getdata"),
           error: (error) => {
-            notifications.show({ title: "Gagal", message: "Gagal mengambil data permission", color: "red" });
+            notifications.show({ title: t("common.failed"), message: t("admin.permission.index.toast.fetchFailed"), color: "red" });
           },
         });
       } catch (error) {
@@ -290,17 +290,17 @@ export default function KelolaPermission() {
   };
 
   const handleDelete = async (permission: any) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus permission ini?`)) return;
+    if (!confirm(t("admin.permission.index.confirm.delete"))) return;
     await fetch({
       url: `permission/${permission.id}`,
       method: "DELETE",
       data: {},
       before: () => setLoading.append("delete"),
       success: () => {
-        notifications.show({ title: "Berhasil", message: "Permission berhasil dihapus", color: "green" });
+        notifications.show({ title: t("common.success"), message: t("admin.permission.index.toast.deleted"), color: "green" });
         getData();
       },
-      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menghapus", color: "red" }),
+      error: (error) => notifications.show({ title: t("common.failed"), message: error.message || t("admin.permission.index.toast.deleteFailed"), color: "red" }),
       complete: () => setLoading.filter((e) => e !== "delete"),
     });
   };
@@ -327,12 +327,12 @@ export default function KelolaPermission() {
       data: formData,
       before: () => setLoading.append("submit"),
       success: () => {
-        notifications.show({ title: "Berhasil", message: `Permission berhasil ${isEditMode ? "diperbarui" : "ditambahkan"}`, color: "green" });
+        notifications.show({ title: t("common.success"), message: isEditMode ? t("admin.permission.index.toast.savedEdit") : t("admin.permission.index.toast.savedAdd"), color: "green" });
         getData();
         setIsFormVisible(false);
         form.reset();
       },
-      error: (error) => notifications.show({ title: "Gagal", message: error.message || "Gagal menyimpan", color: "red" }),
+      error: (error) => notifications.show({ title: t("common.failed"), message: error.message || t("admin.permission.index.toast.saveFailed"), color: "red" }),
       complete: () => setLoading.filter((e) => e !== "submit"),
     });
   };
@@ -382,7 +382,7 @@ export default function KelolaPermission() {
           </ActionIcon>
         </Tooltip>
         <Stack gap={0}>
-          <Text size="1.5rem" fw={600}>{isEditMode ? "Edit Permission" : "Tambah Permission Baru"}</Text>
+          <Text size="1.5rem" fw={600}>{isEditMode ? t("admin.permission.index.header.editPermission") : t("admin.permission.index.header.addPermission")}</Text>
           <Text size="xs" c="dimmed">{t("admin.permission.index.kelola.hak.akses.user.ke.modul.tertentu")}</Text>
         </Stack>
       </Flex>
@@ -406,12 +406,12 @@ export default function KelolaPermission() {
 
           <Grid>
             {[
-              { key: "is_index", label: "Index", icon: "ph:list-bullets" },
-              { key: "is_view", label: "View", icon: "ph:eye" },
-              { key: "is_update", label: "Update", icon: "ph:pencil-simple" },
-              { key: "is_delete", label: "Delete", icon: "ph:trash" },
-              { key: "is_download", label: "Download", icon: "ph:download-simple" },
-              { key: "is_import", label: "Import", icon: "ph:upload-simple" },
+              { key: "is_index", label: t("admin.permission.index.rights.index"), icon: "ph:list-bullets" },
+              { key: "is_view", label: t("admin.permission.index.rights.view"), icon: "ph:eye" },
+              { key: "is_update", label: t("admin.permission.index.rights.update"), icon: "ph:pencil-simple" },
+              { key: "is_delete", label: t("admin.permission.index.rights.delete"), icon: "ph:trash" },
+              { key: "is_download", label: t("admin.permission.index.rights.download"), icon: "ph:download-simple" },
+              { key: "is_import", label: t("admin.permission.index.rights.import"), icon: "ph:upload-simple" },
             ].map((perm) => (
               <Grid.Col span={4} key={perm.key}>
                 <Checkbox 
@@ -429,7 +429,7 @@ export default function KelolaPermission() {
           <Flex justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)}>{t("admin.permission.index.batal")}</Button>
             <Button type="submit" form="permission-form" color="indigo" loading={loading.includes("submit")}>
-              {isEditMode ? "Simpan Perubahan" : "Simpan Permission"}
+              {isEditMode ? t("admin.permission.index.button.saveEdit") : t("admin.permission.index.button.saveAdd")}
             </Button>
           </Flex>
         </Box>
@@ -483,12 +483,12 @@ export default function KelolaPermission() {
             <thead>
               <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
                 {[
-                  { label: "No", sortable: false },
-                  { label: "User", sortable: true, key: "user" },
-                  { label: "Role", sortable: true, key: "role" },
-                  { label: "Module", sortable: true, key: "module" },
-                  { label: "Rights", sortable: false },
-                  { label: "Aksi", sortable: false },
+                  { label: t("admin.permission.index.table.no"), sortable: false },
+                  { label: t("admin.permission.index.table.user"), sortable: true, key: "user" },
+                  { label: t("admin.permission.index.table.role"), sortable: true, key: "role" },
+                  { label: t("admin.permission.index.table.module"), sortable: true, key: "module" },
+                  { label: t("admin.permission.index.table.rights"), sortable: false },
+                  { label: t("admin.permission.index.table.actions"), sortable: false },
                 ].map((col, i) => (
                   <th 
                     key={i} 
@@ -496,10 +496,10 @@ export default function KelolaPermission() {
                     style={{ 
                       ...tableHeadStyle,
                       cursor: col.sortable ? "pointer" : "default",
-                      position: col.label === "Aksi" ? "sticky" : "static", 
-                      right: col.label === "Aksi" ? 0 : "auto", 
-                      backgroundColor: col.label === "Aksi" ? "#f8fafd" : "transparent",
-                      zIndex: col.label === "Aksi" ? 10 : 1
+                      position: col.label === t("admin.permission.index.table.actions") ? "sticky" : "static", 
+                      right: col.label === t("admin.permission.index.table.actions") ? 0 : "auto", 
+                      backgroundColor: col.label === t("admin.permission.index.table.actions") ? "#f8fafd" : "transparent",
+                      zIndex: col.label === t("admin.permission.index.table.actions") ? 10 : 1
                     }}
                   >
                     <Flex align="center" gap={6}>
@@ -541,8 +541,8 @@ export default function KelolaPermission() {
                     </td>
                     <td style={tableCellStyle}>
                       <Stack gap={0}>
-                        <Text fw={600} size="sm" c="gray.8">{item.has_user?.name || "Admin?"}</Text>
-                        <Text size="xs" c="dimmed">{item.has_user?.email || "ID: "+item.user_id}</Text>
+                        <Text fw={600} size="sm" c="gray.8">{item.has_user?.name || t("admin.permission.index.fallback.adminName")}</Text>
+                        <Text size="xs" c="dimmed">{item.has_user?.email || t("admin.permission.index.fallback.userId") + item.user_id}</Text>
                       </Stack>
                     </td>
                     <td style={tableCellStyle}>
@@ -551,7 +551,7 @@ export default function KelolaPermission() {
                       </Badge>
                     </td>
                     <td style={tableCellStyle}>
-                      <Text fw={500} size="sm">{item.has_module?.module_name || "Module "+item.module_id}</Text>
+                      <Text fw={500} size="sm">{item.has_module?.module_name || t("admin.permission.index.fallback.module") + item.module_id}</Text>
                     </td>
                     <td style={tableCellStyle}>
                       <Group gap={4}>

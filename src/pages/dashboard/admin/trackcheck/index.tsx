@@ -135,14 +135,14 @@ export default function OrderTracking() {
             tracking_status_id: null,
             status_name: '',
             description: '',
-            location: 'Warehouse Jakarta',
+            location: t("admin.trackcheck.index.default.location"),
             courier_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            pic_name: 'system'
+            pic_name: t("admin.trackcheck.index.default.picName")
         },
         validate: {
-            tracking_status_id: (value) => (value !== null && value > 0) ? null : 'Status tracking harus dipilih',
-            status_name: (value) => value?.trim() ? null : 'Nama status harus diisi',
-            description: (value) => value?.trim() ? null : 'Deskripsi harus diisi',
+            tracking_status_id: (value) => (value !== null && value > 0) ? null : t("admin.trackcheck.index.validation.statusRequired"),
+            status_name: (value) => value?.trim() ? null : t("admin.trackcheck.index.validation.nameRequired"),
+            description: (value) => value?.trim() ? null : t("admin.trackcheck.index.validation.descRequired"),
         }
     });
 
@@ -171,16 +171,16 @@ export default function OrderTracking() {
                     setCreators(response.data);
                 } else {
                     notifications.show({
-                        title: 'Info',
-                        message: 'Tidak ada data creator',
+                        title: t("admin.trackcheck.index.toast.infoTitle"),
+                        message: t("admin.trackcheck.index.toast.noCreator"),
                         color: 'blue'
                     });
                 }
             },
             error: () => {
                 notifications.show({
-                    title: 'Error',
-                    message: 'Gagal mengambil data creator',
+                    title: t("admin.trackcheck.index.toast.errorTitle"),
+                    message: t("admin.trackcheck.index.toast.fetchCreatorFailed"),
                     color: 'red'
                 });
             },
@@ -244,8 +244,8 @@ export default function OrderTracking() {
             },
             error: () => {
                 notifications.show({
-                    title: 'Error',
-                    message: 'Gagal mengambil data transaksi',
+                    title: t("admin.trackcheck.index.toast.errorTitle"),
+                    message: t("admin.trackcheck.index.toast.fetchTrxFailed"),
                     color: 'red'
                 });
                 if (page === 1) {
@@ -291,8 +291,8 @@ export default function OrderTracking() {
         const validation = form.validate();
         if (validation.hasErrors) {
             notifications.show({
-                title: 'Error',
-                message: 'Mohon lengkapi semua field yang diperlukan',
+                title: t("admin.trackcheck.index.toast.errorTitle"),
+                message: t("admin.trackcheck.index.toast.completeFields"),
                 color: 'red'
             });
             return;
@@ -300,8 +300,8 @@ export default function OrderTracking() {
 
         if (!orderDetail) {
             notifications.show({
-                title: 'Error',
-                message: 'Data order tidak ditemukan',
+                title: t("admin.trackcheck.index.toast.errorTitle"),
+                message: t("admin.trackcheck.index.toast.orderNotFound"),
                 color: 'red'
             });
             return;
@@ -313,9 +313,9 @@ export default function OrderTracking() {
             tracking_status_id: Number(form.values.tracking_status_id),
             status_name: form.values.status_name,
             description: form.values.description,
-            location: 'Warehouse Jakarta',
+            location: t("admin.trackcheck.index.default.location"),
             courier_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            pic_name: 'system',
+            pic_name: t("admin.trackcheck.index.default.picName"),
         };
 
         await fetch({
@@ -325,8 +325,8 @@ export default function OrderTracking() {
             before: () => setLoading.append('submittracking'),
             success: () => {
                 notifications.show({
-                    title: 'Sukses',
-                    message: 'Data tracking berhasil disimpan',
+                    title: t("admin.trackcheck.index.toast.successTitle"),
+                    message: t("admin.trackcheck.index.toast.saveSuccess"),
                     color: 'green'
                 });
 
@@ -334,8 +334,8 @@ export default function OrderTracking() {
             },
             error: (error: any) => {
                 notifications.show({
-                    title: 'Error',
-                    message: error?.message || 'Gagal menyimpan data',
+                    title: t("admin.trackcheck.index.toast.errorTitle"),
+                    message: error?.message || t("admin.trackcheck.index.toast.saveFailed"),
                     color: 'red'
                 });
             },
@@ -372,10 +372,10 @@ export default function OrderTracking() {
                         <Text fw={700}>{s}</Text>
                     </ThemeIcon>
                     <Text size="xs" mt={4} c={step >= s ? 'blue' : 'dimmed'}>
-                        {s === 1 && 'Pilih Creator'}
-                        {s === 2 && 'Pilih Invoice'}
-                        {s === 3 && 'Detail Order'}
-                        {s === 4 && 'Form Tracking'}
+                        {s === 1 && t("admin.trackcheck.index.step.selectCreator")}
+                        {s === 2 && t("admin.trackcheck.index.step.selectInvoice")}
+                        {s === 3 && t("admin.trackcheck.index.step.detailOrder")}
+                        {s === 4 && t("admin.trackcheck.index.step.formTracking")}
                     </Text>
                 </Box>
             ))}
@@ -529,12 +529,12 @@ export default function OrderTracking() {
                                         <ThemeIcon size="lg" variant="light" color="blue" radius="md">
                                             <Icon icon="mdi:file-document" />
                                         </ThemeIcon>
-                                        <Box>
-                                            <Title order={4} fw={600}>{t("admin.trackcheck.index.daftar.invoice")}</Title>
-                                            <Text size="sm" c="dimmed">
-                                                {selectedCreator && `Creator: ${selectedCreator.name}`}
-                                            </Text>
-                                        </Box>
+                                            <Box>
+                                                <Title order={4} fw={600}>{t("admin.trackcheck.index.daftar.invoice")}</Title>
+                                                <Text size="sm" c="dimmed">
+                                                    {selectedCreator && `${t("admin.trackcheck.index.option.creatorLabel") || "Creator: "}${selectedCreator.name}`}
+                                                </Text>
+                                            </Box>
                                     </Group>
 
                                     {/* Statistik Ringkas */}
@@ -557,8 +557,8 @@ export default function OrderTracking() {
                                     />
                                     <Select
                                         placeholder={t("admin.trackcheck.index.filter.status")}
-                                        data={['Semua', 'Verified', 'Pending', 'Unpaid']}
-                                        defaultValue="Semua"
+                                        data={[t("admin.trackcheck.index.option.statusAll"), t("admin.trackcheck.index.option.verified"), t("admin.trackcheck.index.option.pending"), t("admin.trackcheck.index.option.unpaid")]}
+                                        defaultValue={t("admin.trackcheck.index.option.statusAll")}
                                         size="md"
                                         radius="md"
                                         leftSection={<Icon icon="mdi:filter" width={20} />}
@@ -568,8 +568,8 @@ export default function OrderTracking() {
                                 {/* Info Ringkas */}
                                 <Text size="sm" c="dimmed">
                                     {filteredTransactions.length > 0
-                                        ? `Menampilkan ${filteredTransactions.length} dari ${pagination.total} transaksi`
-                                        : 'Tidak ada transaksi yang ditemukan'}
+                                        ? t("admin.trackcheck.index.info.summary", { shown: filteredTransactions.length, total: pagination.total })
+                                        : t("admin.trackcheck.index.info.empty")}
                                 </Text>
                             </Stack>
 
@@ -766,12 +766,12 @@ export default function OrderTracking() {
                                                 </ThemeIcon>
                                                 <Box ta="center">
                                                     <Title order={5} fw={500}>
-                                                        {searchQuery ? 'Tidak ada hasil ditemukan' : 'Belum ada transaksi'}
+                                                        {searchQuery ? t("admin.trackcheck.index.empty.searchTitle") : t("admin.trackcheck.index.empty.title")}
                                                     </Title>
                                                     <Text size="sm" c="dimmed" mt={4}>
                                                         {searchQuery
-                                                            ? `Tidak ditemukan invoice dengan kata kunci "${searchQuery}"`
-                                                            : 'Tidak ada transaksi yang tersedia untuk creator ini'}
+                                                            ? t("admin.trackcheck.index.empty.searchDesc", { query: searchQuery })
+                                                            : t("admin.trackcheck.index.empty.desc")}
                                                     </Text>
                                                 </Box>
                                                 {searchQuery && (
@@ -910,10 +910,10 @@ export default function OrderTracking() {
                                     label={t("admin.trackcheck.index.status.tracking")}
                                     placeholder={t("admin.trackcheck.index.pilih.status.tracking")}
                                     data={[
-                                        { value: '1', label: '1 - Dalam Proses' },
-                                        { value: '2', label: '2 - Dalam Perjalanan' },
-                                        { value: '3', label: '3 - Telah Diterima' },
-                                        { value: '4', label: '4 - Gagal Dikirim' },
+                                        { value: '1', label: t("admin.trackcheck.index.option.status1") },
+                                        { value: '2', label: t("admin.trackcheck.index.option.status2") },
+                                        { value: '3', label: t("admin.trackcheck.index.option.status3") },
+                                        { value: '4', label: t("admin.trackcheck.index.option.status4") },
                                     ]}
                                     size="md"
                                     searchable
