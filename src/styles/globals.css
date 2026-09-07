@@ -80,6 +80,21 @@
 }
 
 /* === MOBILE RESPONSIVE === */
+/* Force all Mantine modals to be full-width on mobile while keeping their size on desktop */
+@media (max-width: 767px) {
+  .mantine-Modal-modal,
+  .mantine-Modal-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+  .mantine-Modal-content {
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* === MOBILE RESPONSIVE === */
 @media (max-width: 480px) {
   .special-banner {
     width: 90%;

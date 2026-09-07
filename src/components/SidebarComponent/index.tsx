@@ -2214,6 +2214,10 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
   const outsideClickMenu = useClickOutside(() => {
     setShowUserMenu(false);
   });
+  // Auto-close sidebar on route change (mobile + desktop safety net)
+  useEffect(() => {
+    setCollapse(false);
+  }, [router.route]);
   useEffect(() => {
     const userDataCookie = Cookies.get("user_data");
     if (userDataCookie) {
@@ -2360,6 +2364,22 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     <SidebarContext.Provider value={{ collapse }}>
       <div>
         <div className="flex max-w-[100vw] !overflow-x-hidden">
+          {/* Mobile floating burger — only visible on small screens when sidebar is hidden */}
+          <button
+            onClick={() => setCollapse(true)}
+            aria-label="Open sidebar"
+            className={`md:hidden fixed top-4 left-4 z-[1200] bg-primary-darker text-white p-2.5 rounded-md shadow-lg transition-opacity duration-200 ${collapse ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          >
+            <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
+          </button>
+          {/* Backdrop overlay when sidebar is open on mobile */}
+          {collapse && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-[1050]"
+              onClick={() => setCollapse(false)}
+              aria-hidden="true"
+            />
+          )}
           <nav
             ref={outsideClick}
             className={`
@@ -2371,7 +2391,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     `}
           >
             <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "" : "overflow-y-hidden"}`}>
-              <li className={`${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
+              <li className={`relative ${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
                 <Link href="/dashboard" className="flex items-center justify-center">
                   {collapse ? (
                     <Image src={Logo} alt="Logo" className="w-1/2" />
@@ -2379,6 +2399,16 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <Image src={LogoSquare} alt="Logo" className={` ${collapse ? "opacity-0" : "opacity-100 "} transition-all delay-300 ease-in-out w-[40px] h-[40px] object-contain`} />
                   )}
                 </Link>
+                {/* Mobile close button — only visible on small screens when sidebar is expanded */}
+                {collapse && (
+                  <button
+                    onClick={() => setCollapse(false)}
+                    aria-label="Close sidebar"
+                    className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 text-white p-1.5 hover:bg-white/10 rounded transition-colors"
+                  >
+                    <FontAwesomeIcon icon={faClose} className="h-4 w-4" />
+                  </button>
+                )}
               </li>
               <li className={`border border-[#1b3a6a] border-x-0 border-t-0 mb-3 mt-2 transition-[padding] duration-300 ease-in-out ${collapse ? "p-2" : "px-0 py-2"}`}>
                 <div className={`flex items-center [&_*]:!text-white w-full transition-[padding,gap] duration-300 ease-in-out ${collapse ? "gap-3 px-3" : "gap-0 px-[14px]"}`}>

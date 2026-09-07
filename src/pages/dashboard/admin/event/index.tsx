@@ -308,7 +308,7 @@ export default function AdminEventManagement() {
                 </div>
               </Flex>
 
-              <div className="w-full bg-white">
+              <div className="w-full bg-white overflow-x-auto">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #e8e8e8' }}>

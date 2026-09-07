@@ -32,7 +32,8 @@ import {
     Divider,
     Tabs,
     Card as MantineCard,
-    Modal
+    Modal,
+    Loader
 } from "@mantine/core";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -432,8 +433,9 @@ const MerchandiseTransaction: React.FC = () => {
   // Helper function untuk sensor telepon
   const maskPhone = (phone: string, sensor: boolean): string => {
     if (!sensor || !phone) return phone || '-';
-    if (phone.length <= 6) return phone.substring(0, 2) + '*'.repeat(phone.length - 2);
-    return phone.substring(0, 4) + '*'.repeat(phone.length - 7) + phone.substring(phone.length - 3);
+    if (phone.length <= 3) return phone[0] + '**'.repeat(Math.max(1, phone.length - 1));
+    if (phone.length <= 6) return phone.substring(0, 2) + '*'.repeat(Math.max(1, phone.length - 2));
+    return phone.substring(0, 4) + '*'.repeat(Math.max(1, phone.length - 7)) + phone.substring(phone.length - 3);
   };
 
   // Helper function untuk sensor alamat
@@ -1099,38 +1101,228 @@ const MerchandiseTransaction: React.FC = () => {
       <head>
           <title>Resi Pengiriman - ${trackingNumber}</title>
           <style>
-              * { box-sizing: border-box; margin: 0; padding: 0; }
-              body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-              @media print {
-                  @page { size: A6; margin: 0; }
-                  body { background: white; margin: 0; padding: 0; }
-                  .resi-container { box-shadow: none; border: 2px solid #000 !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 5mm !important; height: 146mm; overflow: hidden; box-sizing: border-box; page-break-after: avoid; }
+              * {
+                  box-sizing: border-box;
+                  margin: 0;
+                  padding: 0;
               }
-              .resi-container { max-width: 95mm; width: 100%; margin: 10px auto; background: white; border: 2px solid #000; padding: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
-              .header { text-align: center; margin-bottom: 6px; border-bottom: 2px solid #000; padding-bottom: 6px; }
-              .header h1 { font-size: 20px; font-weight: 800; margin: 0; color: #000; letter-spacing: 1px; }
-              .header .subtitle { font-size: 11px; color: #000; margin-top: 2px; font-weight: 500; }
-              .powered-by { text-align: center; margin: 4px 0; font-size: 9px; color: #000; border-bottom: 1px dashed #000; padding-bottom: 4px; font-weight: 600; text-transform: uppercase; }
-              .tracking-number { text-align: center; font-size: 13px; font-weight: bold; margin: 4px 0; padding: 6px; border: 2px solid #000; background-color: #f0f0f0; letter-spacing: 1px; }
-              .qr-container { display: flex; justify-content: center; margin: 6px 0; }
-              .qr-code { width: 90px; height: 90px; background-color: white; border: 2px solid #000; display: flex; justify-content: center; align-items: center; padding: 2px; }
-              .qr-code svg { width: 100%; height: 100%; display: block; }
-              .info-row { display: flex; justify-content: space-between; margin: 4px 0; padding: 4px 0; border-bottom: 2px solid #000; font-size: 11px; }
-              .reference { margin: 4px 0; padding: 6px; border: 2px solid #000; background-color: #f0f0f0; }
-              .reference-label { font-weight: bold; margin-right: 10px; display: block; margin-bottom: 2px; font-size: 11px; }
-              .reference-value { font-family: monospace; font-size: 11px; word-break: break-all; font-weight: 500; }
-              .address-section { margin: 4px 0; border: 2px solid #000; }
-              .address-box { padding: 6px; border-bottom: 2px solid #000; }
-              .address-box:last-child { border-bottom: none; }
-              .address-label { font-weight: bold; margin-bottom: 2px; font-size: 11px; text-decoration: underline; }
-              .address-name { font-weight: bold; margin: 2px 0; font-size: 12px; }
-              .address-phone { color: #000; margin: 2px 0; font-size: 11px; }
-              .address-detail { line-height: 1.3; margin: 2px 0 0 0; padding: 0; font-size: 10px; }
-              .product-info { margin: 4px 0; padding: 6px; border: 2px solid #000; background-color: #f9f9f9; }
-              .product-label { font-weight: bold; margin-bottom: 4px; display: block; text-decoration: underline; font-size: 11px; }
-              .product-detail { font-size: 11px; line-height: 1.3; }
-              .notes { margin: 4px 0; padding: 6px; border: 2px solid #000; background-color: #f9f9f9; font-style: italic; font-size: 10px; }
-              .footer { margin-top: 6px; padding-top: 6px; border-top: 2px solid #000; text-align: center; font-size: 9px; color: #000; }
+
+              body {
+                  font-family: 'Arial', sans-serif;
+                  margin: 0;
+                  padding: 20px;
+                  background: #f5f5f5;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  min-height: 100vh;
+              }
+
+              @media print {
+                  @page {
+                      size: A4;
+                      margin: 10mm;
+                  }
+                  body {
+                      background: white;
+                      margin: 0;
+                      padding: 0;
+                  }
+                  .resi-container {
+                      box-shadow: none;
+                      border: 2px solid #000 !important;
+                      max-width: 100% !important;
+                      width: 100% !important;
+                      margin: 0 !important;
+                  }
+              }
+
+              .resi-container {
+                  max-width: 190mm;
+                  width: 100%;
+                  margin: 20px auto;
+                  background: white;
+                  border: 2px solid #000;
+                  padding: 25px;
+                  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+              }
+
+              .header {
+                  text-align: center;
+                  margin-bottom: 20px;
+                  border-bottom: 3px solid #000;
+                  padding-bottom: 15px;
+              }
+
+              .header h1 {
+                  font-size: 42px;
+                  font-weight: 800;
+                  margin: 0;
+                  color: #000;
+                  letter-spacing: 3px;
+              }
+
+              .header .subtitle {
+                  font-size: 16px;
+                  color: #000;
+                  margin-top: 5px;
+                  font-weight: 500;
+              }
+
+              .powered-by {
+                  text-align: center;
+                  margin: 15px 0;
+                  font-size: 16px;
+                  color: #000;
+                  border-bottom: 2px dashed #000;
+                  padding-bottom: 12px;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+              }
+
+              .tracking-number {
+                  text-align: center;
+                  font-size: 22px;
+                  font-weight: bold;
+                  margin: 20px 0;
+                  padding: 15px;
+                  border: 3px solid #000;
+                  background-color: #f0f0f0;
+                  letter-spacing: 1px;
+              }
+
+              .qr-container {
+                  display: flex;
+                  justify-content: center;
+                  margin: 25px 0;
+              }
+
+              .qr-code {
+                  width: 210px;
+                  height: 210px;
+                  background-color: white;
+                  border: 3px solid #000;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 5px;
+              }
+
+              .qr-code svg {
+                  width: 100%;
+                  height: 100%;
+                  display: block;
+              }
+
+              .info-row {
+                  display: flex;
+                  justify-content: space-between;
+                  margin: 15px 0;
+                  padding: 12px 0;
+                  border-bottom: 2px solid #000;
+                  font-size: 16px;
+              }
+
+              .reference {
+                  margin: 20px 0;
+                  padding: 15px;
+                  border: 3px solid #000;
+                  background-color: #f0f0f0;
+              }
+
+              .reference-label {
+                  font-weight: bold;
+                  margin-right: 10px;
+                  display: block;
+                  margin-bottom: 8px;
+                  font-size: 16px;
+              }
+
+              .reference-value {
+                  font-family: monospace;
+                  font-size: 18px;
+                  word-break: break-all;
+                  font-weight: 500;
+              }
+
+              .address-section {
+                  margin: 20px 0;
+                  border: 3px solid #000;
+              }
+
+              .address-box {
+                  padding: 15px;
+                  border-bottom: 3px solid #000;
+              }
+
+              .address-box:last-child {
+                  border-bottom: none;
+              }
+
+              .address-label {
+                  font-weight: bold;
+                  margin-bottom: 10px;
+                  font-size: 16px;
+                  text-decoration: underline;
+              }
+
+              .address-name {
+                  font-weight: bold;
+                  margin: 5px 0;
+                  font-size: 18px;
+              }
+
+              .address-phone {
+                  color: #000;
+                  margin: 5px 0 10px 0;
+                  font-size: 16px;
+              }
+
+              .address-detail {
+                  line-height: 1.6;
+                  margin: 5px 0 0 0;
+                  padding: 0;
+                  font-size: 15px;
+              }
+
+              .product-info {
+                  margin: 20px 0;
+                  padding: 15px;
+                  border: 3px solid #000;
+                  background-color: #f9f9f9;
+              }
+
+              .product-label {
+                  font-weight: bold;
+                  margin-bottom: 10px;
+                  display: block;
+                  text-decoration: underline;
+                  font-size: 16px;
+              }
+
+              .product-detail {
+                  font-size: 16px;
+                  line-height: 1.6;
+              }
+
+              .notes {
+                  margin: 20px 0;
+                  padding: 15px;
+                  border: 3px solid #000;
+                  background-color: #f9f9f9;
+                  font-style: italic;
+                  font-size: 15px;
+              }
+
+              .footer {
+                  margin-top: 25px;
+                  padding-top: 15px;
+                  border-top: 3px solid #000;
+                  text-align: center;
+                  font-size: 14px;
+                  color: #000;
+              }
           </style>
       </head>
       <body>
@@ -1282,51 +1474,45 @@ const MerchandiseTransaction: React.FC = () => {
   const handlePrintSingle = async (transaction: MerchandiseTransactionData) => {
     if (!transaction.invoice_no) return;
 
-    // Set selected invoice and show options modal instead of printing immediately
+    // Reset state
     setSelectedInvoiceForPrint(transaction);
+    setInvoiceDetail(null);
+    setDetailError(null);
+
+    // Show modal immediately (user can start toggling sensors while fetch runs)
     setShowPrintOptions(true);
+
+    // Fetch invoice detail in background
+    await getInvoiceDetail(transaction.invoice_no);
   };
 
-  const executePrintSingle = async () => {
+  const executePrintSingle = () => {
     if (!selectedInvoiceForPrint) return;
 
-    setPrintLoading(true);
+    if (loadingDetail) return;
+    if (!invoiceDetail) {
+      alert(t('merchTrx.invoiceDetailFailed'));
+      return;
+    }
+
     setShowPrintOptions(false);
 
-    try {
-      const res: any = await Get(`order-product-invoice/${selectedInvoiceForPrint.invoice_no}`, {});
-      if (!res?.data) {
-        alert(t('merchTrx.invoiceDetailFailed'));
-        setPrintLoading(false);
-        setSelectedInvoiceForPrint(null);
-        return;
-      }
+    const resiHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Resi - ${selectedInvoiceForPrint.invoice_no}</title>
+      </head>
+      <body style="margin: 0; padding: 0;">
+        ${generateResiHTML(invoiceDetail)}
+      </body>
+      </html>
+    `;
 
-      const resiHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Resi - ${selectedInvoiceForPrint.invoice_no}</title>
-        </head>
-        <body style="margin: 0; padding: 0;">
-          ${generateResiHTML(res.data)}
-        </body>
-        </html>
-      `;
+    openPrintWindow(resiHTML, `Resi - ${selectedInvoiceForPrint.invoice_no}`);
 
-      const w = openPrintWindow(resiHTML, `Resi - ${selectedInvoiceForPrint.invoice_no}`);
-      if (!w) {
-        setPrintLoading(false);
-        setSelectedInvoiceForPrint(null);
-        return;
-      }
-    } catch (err) {
-      console.error("Print failed:", err);
-      alert(t('merchTrx.invoiceDetailFailed'));
-    } finally {
-      setPrintLoading(false);
-      setSelectedInvoiceForPrint(null);
-    }
+    setSelectedInvoiceForPrint(null);
+    setInvoiceDetail(null);
   };
 
   useEffect(() => {
@@ -2440,6 +2626,17 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           <Stack>
               <Text size="sm">{t('merchDetail.printOptionsFor', { invoice: selectedInvoiceForPrint?.invoice_no })}</Text>
 
+              {loadingDetail && (
+                  <Group gap="xs" c="blue">
+                      <Loader size="xs" />
+                      <Text size="sm">Memuat data resi...</Text>
+                  </Group>
+              )}
+
+              {detailError && (
+                  <Text size="sm" c="red">{detailError}</Text>
+              )}
+
               <Group gap="sm">
                   <Checkbox
                       id="sensorNama"
@@ -2478,7 +2675,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
               <Group justify="flex-end" mt="xl">
                   <MantineButton variant="light" onClick={() => setShowPrintOptions(false)}>{t('common.cancel')}</MantineButton>
-                  <MantineButton onClick={executePrintSingle} loading={printLoading}>{t('merchDetail.printLabel')}</MantineButton>
+                  <MantineButton onClick={executePrintSingle} disabled={loadingDetail || !invoiceDetail || !!detailError}>{t('merchDetail.printLabel')}</MantineButton>
               </Group>
           </Stack>
       </Modal>
