@@ -623,8 +623,8 @@ const Scanner = () => {
 
             {/* Floating Submit Action */}
             {selectedProducts.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-                    <Flex justify="flex-end" className="max-w-7xl mx-auto w-full">
+                <div className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-4 sm:px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
+                    <Flex justify="flex-end" wrap="wrap" className="max-w-7xl mx-auto w-full">
                         <Button
                             color="blue"
                             size="md"
@@ -632,7 +632,7 @@ const Scanner = () => {
                             loading={submitting}
                             onClick={handleSubmit}
                             leftSection={<Icon icon="solar:diskette-bold" width={20} />}
-                            className="shadow-sm hover:shadow-md transition-shadow min-w-[200px]"
+                            className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto sm:min-w-[200px]"
                         >
                             Simpan Perubahan
                         </Button>

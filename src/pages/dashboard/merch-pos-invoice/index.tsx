@@ -149,7 +149,7 @@ export default function MerchPosInvoice({  }: Readonly<ComponentProps>) {
                     </div>
                 </div>
             </Card>
-            <Flex gap={20}>
+            <Flex gap={20} wrap="wrap" justify="center">
                 <Button size="md" variant="light" color="gray" onClick={() => router.push('/dashboard/merch-pos')} leftSection={<Icon icon="uiw:left" className="text-lg" />}>
                     Kembali
                 </Button>

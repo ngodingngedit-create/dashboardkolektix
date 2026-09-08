@@ -57,8 +57,10 @@ const TablePagination = ({
       </Text>
 
       <Flex
-        justify="space-between"
+        justify={{ base: "center", sm: "space-between" }}
         align="center"
+        direction={{ base: "column", sm: "row" }}
+        gap="xs"
         mt={10}
         px={4}
         py={14}
@@ -68,7 +70,7 @@ const TablePagination = ({
           borderRadius: "0 0 8px 8px",
         }}
       >
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="dimmed" className="hidden sm:block">
           Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
         </Text>
         <MantinePagination
@@ -81,7 +83,9 @@ const TablePagination = ({
           color={color}
           styles={{ control: { border: "1px solid #e0e0e0", fontWeight: 600 } }}
         />
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="dimmed" ta={{ base: "center", sm: "right" }}>
+          Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>{" "}
+          <span className="sm:hidden">·</span>{" "}
           {total > 0 ? `${start}\u2013${end}` : "0"} / {total}
         </Text>
       </Flex>

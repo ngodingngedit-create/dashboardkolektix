@@ -35,6 +35,7 @@ import {
     Modal,
     Loader
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { Get } from "@/utils/REST";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -383,6 +384,7 @@ const MerchandiseTransaction: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useLoggedUser();
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [creators, setCreators] = useState<CreatorData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -1820,7 +1822,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 >
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
-<Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">{t('merchTrx.title')}</Text>
+<Text fw={800} style={{ fontSize: 'clamp(20px, 5vw, 26px)' }} mb={0} c="dark.9">{t('merchTrx.title')}</Text>
 </Flex>
           <Group gap="xl">
               <Stack gap={2}>
@@ -1840,9 +1842,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       <MantineCard p={25} mt={20} mx={15} mb={15} withBorder radius="md">
         <Stack gap="xl">
             <Box>
-                {/* Row 1: Pagination + Export (kiri) | Filter Produk + Search (kanan) */}
-                <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
-                    <Group gap="sm">
+                {/* Row 1: Pagination + Export + Filter + Search — 1 baris scroll-x di mobile */}
+                <Box
+                  mb="sm"
+                  className="md:!flex md:!items-center md:!justify-between"
+                  style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
+                >
+                    <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
                         <MantineSelect
                             value={rowsPerPage.toString()}
                             onChange={(val) => {
@@ -1860,12 +1866,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             onClick={() => exportToCSV(filtered)}
                             disabled={filtered.length === 0}
                             size="sm"
-                            styles={{ root: { color: 'white' } }}
+                            styles={{ root: { color: 'white', flexShrink: 0 } }}
                         >
                             {t('event.exportExcel')}
                         </MantineButton>
                     </Group>
-                            <Group gap="sm" align="flex-end">
+                            <Group gap="sm" wrap="nowrap" align="flex-end" style={{ flexShrink: 0 }}>
                                 <MantineSelect
                                     label={t('merchTrx.payStatus')}
                                     placeholder={t('merchTrx.payStatus')}
@@ -1877,8 +1883,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     onChange={(val) => { setPaymentStatusFilter(val || 'all'); setPage(1); }}
                                     w={140}
                                     size="sm"
+                                    classNames={{ root: 'shrink-0' }}
                                     styles={{
-                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
                                     }}
                                 />
                                 <MantineSelect
@@ -1894,8 +1901,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     size="sm"
                                     searchable
                                     clearable
+                                    classNames={{ root: 'shrink-0' }}
                                     styles={{
-                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
                                     }}
                                 />
                                 <MantineTextInput
@@ -1909,12 +1917,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     }}
                                     w={300}
                                     size="sm"
+                                    classNames={{ root: 'shrink-0' }}
                                     styles={{
-                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 }
+                                        label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
                                     }}
                                 />
                             </Group>
-                        </Flex>
+                </Box>
 
                         {/* Row 2: info transaksi kiri */}
                         <Flex align="center" gap="sm" mb="md">
@@ -1928,17 +1937,17 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <TableSkeleton rows={8} cols={8} hasAction />
                         ) : (
                         <Box style={{ overflowX: 'auto', position: 'relative' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
+                            <table style={{ width: '100%', minWidth: isMobile ? 900 : '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('invoice_no')}>{t('merchDetail.colInvoiceNo')} {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: isMobile ? 'static' : 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: isMobile ? 'static' : 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }) }} onClick={() => handleMTSort('invoice_no')}>{t('merchDetail.colInvoiceNo')} {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('customer_name')}>{t('merchDetail.customerName')} {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('product_name')}>{t('merchTrx.product')} {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleMTSort('total_price')}>{t('event.total')} {mtSortBy === 'total_price' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('merchTrx.paymentMethodShort')}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', right: 270, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleMTSort('transaction_status_id')}>{t('merchTrx.payStatus')} {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
-                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', minWidth: 150, position: 'sticky', right: 120, backgroundColor: '#f5f7fa', zIndex: 2 }}>{t('merchTrx.shipStatus')}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: isMobile ? 'static' : 'sticky', right: 270, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }) }} onClick={() => handleMTSort('transaction_status_id')}>{t('merchTrx.payStatus')} {mtSortBy === 'transaction_status_id' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', minWidth: 150, position: isMobile ? 'static' : 'sticky', right: 120, backgroundColor: '#f5f7fa', zIndex: 2 }}>{t('merchTrx.shipStatus')}</th>
                                         <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 3, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)', minWidth: 120 }}>
                                             <Flex align="center" gap="xs">
                                                 <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('common.actions')}</span>
@@ -1975,10 +1984,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                         const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                                         return (
                                             <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: isMobile ? 'static' : 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
                                                     <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: isMobile ? 'static' : 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }) }}>
                                                     <Text size="sm" fw={600}>{item.invoice_no}</Text>
                                                     <Text size="xs" c="dimmed">{formatDate(item.order_date)}</Text>
                                                 </td>
@@ -2004,7 +2013,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                          (item.payment_method_custom || item.payment_method || '-')}
                                                     </Text>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', right: 270, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: isMobile ? 'static' : 'sticky', right: 270, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }) }}>
                                                     <Badge 
                                                         color={statusInfo.isHex ? undefined : statusInfo.color} 
                                                         variant="filled" 
@@ -2018,7 +2027,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                         {statusInfo.text}
                                                     </Badge>
                                                 </td>
-                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', right: 120, backgroundColor: 'white', zIndex: 1 }}>
+                                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: isMobile ? 'static' : 'sticky', right: 120, backgroundColor: 'white', zIndex: 1 }}>
                                                     <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                                                         {shippingInfo.text}
                                                     </Badge>
@@ -2070,14 +2079,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         )}
 
                         {!loading && !loadingCreators && (
-                        <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
-                            <Text size="xs" c="dimmed">
+                        <Flex justify="space-between" align="center" mt={0} px={4} py={14} gap="sm" direction={{ base: 'column', sm: 'row' }} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
+                            <Text size="xs" c="dimmed" className="hidden sm:block">
                                 {t('report.pageOf', { page, total: totalPages })}
                             </Text>
-                            <MantinePagination 
-                                total={totalPages} 
-                                value={page} 
-                                onChange={setPage} 
+                            <Flex align="center" justify={{ base: 'center', sm: 'flex-start' }} className="w-full sm:w-auto">
+                            <MantinePagination
+                                total={totalPages}
+                                value={page}
+                                onChange={setPage}
                                 size="sm"
                                 radius="xl"
                                 withEdges
@@ -2086,8 +2096,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     control: { border: '1px solid #e0e0e0', fontWeight: 600 },
                                 }}
                             />
-                            <Text size="xs" c="dimmed">
-                                {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}–${Math.min(page*rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
+                            </Flex>
+                            <Text size="xs" c="dimmed" ta={{ base: 'center', sm: 'right' }}>
+                                {t('report.pageOf', { page, total: totalPages })} <span className="sm:hidden">·</span> {filtered.length > 0 ? `${(page-1)*rowsPerPage+1}–${Math.min(page*rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
                             </Text>
                         </Flex>
                         )}
@@ -2164,9 +2175,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </div>
                   ) : invoiceDetail ? (
                     <div className="bg-gray-50">
-                      <div className="bg-white border-b border-primary-light-200 px-6 py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                      <div className="bg-white border-b border-primary-light-200 px-4 sm:px-6 py-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                             <div className="flex items-center gap-2">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired')
                                   ? 'bg-gray-100'
@@ -2338,7 +2349,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                   </h3>
                                 </div>
                                 <div className="p-4">
-                                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
                                     <div>
                                       <p className="text-xs text-gray-500 mb-1">Order ID</p>
                                       <p className="font-mono text-sm font-semibold flex items-center gap-2">

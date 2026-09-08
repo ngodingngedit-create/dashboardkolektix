@@ -115,7 +115,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [merch, setMerch] = useState<MerchListResponse[]>([]);
   const [productCache, setProductCache] = useState<Record<number, MerchListResponse>>({});
   const [discount, setDiscount] = useState(0);
-  const [openSelect, setOpenSelect] = useState(false);
   const [openCustForm, setOpenCustForm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("QRIS");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -563,7 +562,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
           setSelected([...selected, { id: product.id, variant_id: variant.id, count: 1 }]);
         }
         modals.closeAll();
-        setOpenSelect(!openSelect);
       };
 
       modals.open({
@@ -594,7 +592,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
       } else {
         setSelected([...selected, { id: product.id, count: 1 }]);
       }
-      setOpenSelect(!openSelect);
     }
   };
 
@@ -1188,7 +1185,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const isGuest = custValue.name?.startsWith("Guest ") && custValue.email?.includes("guest_");
 
   return (
-    <Stack className={`md:!p-[20px_30px] h-screen flex flex-col`}>
+    <Stack className={`md:!p-[20px_30px] h-[100dvh] flex flex-col`}>
       <Modal
         opened={showPaymentModal}
         onClose={() => {
@@ -1438,11 +1435,11 @@ export default function Index({ }: Readonly<ComponentProps>) {
         )}
       </Modal>
 
-      <Flex gap={15} className={`flex-grow min-h-0 overflow-hidden pb-24`}>
-        <Card withBorder w="100%" radius={10} h="100%" className={`!absolute z-30 transition-all duration-300 ${openSelect ? "" : "translate-x-[120%] md:!translate-x-0"} md:!static md:min-w-0 overflow-hidden flex flex-col ${activeTab === "transactions" ? "md:!w-[360px]" : "md:!w-[46%]"}`}>
+      <Flex gap={15} direction={{ base: 'column', sm: 'row' }} className={`flex-grow min-h-0 overflow-y-auto md:overflow-hidden pb-24 md:pb-0`}>
+        <Card withBorder w="100%" radius={10} className={`h-auto md:h-full md:min-w-0 overflow-hidden flex flex-col ${activeTab === "transactions" ? "md:!w-[360px]" : "md:!w-[46%]"}`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
           <Stack gap={20} h="100%" className="flex flex-col">
-            <div className="flex justify-between items-center border-b border-light-grey pb-4">
+            <div className="justify-between items-center border-b border-light-grey pb-4 flex flex-col md:flex-row gap-3 md:gap-0">
               <div>
                 <Text fw={700} size="lg" c="#0B387C">
                   Pilih Produk
@@ -1456,7 +1453,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftSection={<Icon icon="uiw:search" />}
                 placeholder="Cari Produk..."
-                className="w-64"
+                className="w-full md:w-64 shrink-0"
                 styles={{
                   input: {
                     backgroundColor: "#F0F4FA",
@@ -1467,7 +1464,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
               />
             </div>
 
-            <div className="overflow-y-auto flex-grow">
+            <div className="overflow-y-auto flex-grow max-h-[50vh] md:max-h-none">
               {merchList?.length === 0 ? (
                 <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />} mt={20}>
                   {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan untuk toko Anda"}
@@ -1610,17 +1607,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
                 </Flex>
               </div>
             )}
-
-            <Button
-              size="md"
-              onClick={() => setOpenSelect(!openSelect)}
-              rightSection={<Icon icon="uiw:right" />}
-              className={`shrink-0 md:!hidden`}
-              c="gray"
-              variant="light"
-            >
-              Tutup
-            </Button>
           </Stack>
         </Card>
 
@@ -1694,11 +1680,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         Belum ada produk yang dipilih
                       </Text>
                       <Text size="xs" c="gray.4" className="text-center font-medium">
-                        Silakan pilih produk dari panel kiri
+                        Silakan pilih produk dari panel di atas
                       </Text>
-                      <Button size="md" className="md:!hidden mt-4" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="filled" color="primary" radius="md" fullWidth>
-                        Tambah Produk
-                      </Button>
                     </div>
                   ) : (
                     <ScrollArea h={240} scrollbarSize={6}>
@@ -1890,12 +1873,6 @@ export default function Index({ }: Readonly<ComponentProps>) {
                       <NumberFormatter prefix="Rp " value={selectedList.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)} />
                     </Text>
                   </div>
-
-                  {selectedList.length > 0 && (
-                    <Button size="md" className="md:!hidden mt-2" onClick={() => setOpenSelect(!openSelect)} leftSection={<Icon icon="uiw:plus" />} variant="light" color="primary" radius="md" fullWidth>
-                      Tambah Produk Lain
-                    </Button>
-                  )}
                 </Card>
 
                 <Card p="12px 16px 16px" className={`border-t border-t-[#d0d0d0]`} radius={0}>
@@ -1959,7 +1936,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                       onChange={(e) => setTransactionSearch(e.target.value)}
                       leftSection={<Icon icon="uiw:search" />}
                       placeholder="Cari invoice..."
-                      className="w-64"
+                      className="w-full md:w-64"
                       styles={{
                         input: {
                           backgroundColor: "#F0F4FA",
@@ -2043,7 +2020,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
                         </table>
                       </div>
 
-                      <Flex justify="space-between" align="center" mt="md" className="sticky bottom-0 bg-white border-t border-light-grey pt-3 pb-2 z-10">
+                      <Flex justify="space-between" align="center" mt="md" gap="sm" wrap="wrap" className="sticky bottom-0 bg-white border-t border-light-grey pt-3 pb-2 z-10">
                         <Text size="sm" c="gray.6">
                           Halaman {transactionPage} - Menampilkan {visibleTransactions.length} dari {filteredTransactionCount} transaksi
                         </Text>
@@ -2071,8 +2048,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
 
       {activeTab === "order" && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl px-4 pointer-events-none">
-          <div className="bg-white/95 backdrop-blur-xl border border-light-grey rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] px-6 py-3 pointer-events-auto">
-            <Flex justify="space-between" align="center" gap={20}>
+          <div className="bg-white/95 backdrop-blur-xl border border-light-grey rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] px-4 sm:px-6 py-3 pointer-events-auto">
+            <Flex justify="space-between" align="center" gap={20} wrap="wrap">
               <Flex align="center" gap={16}>
                 <Button
                   variant="subtle"

@@ -648,7 +648,7 @@ export default function KelolaCrew() {
     return (
       <Stack gap={30}>
         {/* Header & Statistics */}
-<Flex justify="space-between" align="flex-start">
+<Flex justify="space-between" align="flex-start" wrap="wrap" gap="md">
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -658,16 +658,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
-<Title order={1} size="h2">
+<Title order={1} size="h4" className="!text-lg md:!text-2xl">
 {t("crew.title")}
 </Title>
-<Text size="sm" c="gray">
+<Text size="sm" c="gray" className="!text-xs md:!text-sm">
 {t("crew.subtitle")}
 </Text>
 </Stack>
 </Flex>
           
-          <Stack align="flex-end" gap="md">
+          <Stack align="flex-start md:flex-end" gap="md">
             <Flex gap={8} wrap="wrap" justify="flex-end">
               {[
                 { label: t("crew.totalCrew"), value: stats.total, unit: "crew" },
@@ -719,10 +719,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         </Flex>
 
         <Card withBorder p="md" radius="md" shadow="sm">
-          <Flex justify="space-between" align="center" mb="lg">
-            <Box /> {/* Empty left space */}
-            <Flex gap="sm" align="center">
+          <div className="overflow-x-auto">
+            <Flex gap="sm" align="center" wrap="nowrap" mb="lg" justify="flex-end" style={{ minWidth: 'max-content' }}>
               <Select
+                className="shrink-0"
                 placeholder={t("crew.filterDivision")}
                 data={[
                   { value: "all", label: t("crew.allDivisions") },
@@ -730,19 +730,21 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 ]}
                 value={divisionFilter}
                 onChange={(val) => setDivisionFilter(val || "all")}
-                style={{ width: 180 }}
+                style={{ width: 160 }}
                 radius="md"
               />
               <TextInput
+                className="shrink-0"
                 placeholder={t("crew.searchPlaceholder")}
                 leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                style={{ width: 300 }}
+                style={{ width: 220 }}
                 radius="md"
               />
               <Tooltip label={t("common.refresh")}>
                 <ActionIcon
+                  className="shrink-0"
                   variant="filled"
                   color="blue.4"
                   size="36px"
@@ -754,7 +756,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 </ActionIcon>
               </Tooltip>
             </Flex>
-          </Flex>
+          </div>
 
           <Box style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>

@@ -2758,7 +2758,7 @@ export default function MerchDetail() {
                                     </Flex>
                                 </Accordion.Control>
                                 <Accordion.Panel>
-                                    <SimpleGrid cols={2} spacing="md">
+                                    <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
                                         {statistics.map((statistic, index) => (
                                             <Card key={index} radius={12} withBorder pos='relative' p="md" className="hover:!bg-grey/10 transition-colors">
                                                 <Stack gap={4}>
@@ -2917,7 +2917,7 @@ export default function MerchDetail() {
                                             style={{ width: 70 }}
                                             size="sm"
                                         />
-                                        <Group gap="sm">
+                                        <Group gap="sm" wrap="wrap">
                                             <Select
                                                 placeholder={t('common.status')}
                                                 data={[
@@ -3257,8 +3257,8 @@ export default function MerchDetail() {
                                     ) : invoiceDetail ? (
                                         <div className="bg-gray-50 pb-10">
                                             <div className="bg-white border-b border-primary-light-200 px-6 py-4">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                                         <div className="flex items-center gap-2">
                                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                                                                 <FontAwesomeIcon icon={invoiceDetail.transaction_status?.name.toLowerCase().includes('expired') ? faExclamationCircle : faCheckCircle} className="h-5 w-5" />
@@ -3563,7 +3563,7 @@ export default function MerchDetail() {
                                 readOnly
                                 variant="filled"
                             />
-                            <SimpleGrid cols={2}>
+                            <SimpleGrid cols={{ base: 1, sm: 2 }}>
                                 <NumberInput
                                     label={t('merchDetail.qtyLabel')}
                                     placeholder={t('merchDetail.enterQty')}

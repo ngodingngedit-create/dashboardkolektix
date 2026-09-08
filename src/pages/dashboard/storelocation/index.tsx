@@ -349,7 +349,7 @@ const StoreLocationPage = () => {
     // ─── Render List ───────────────────────────────────────────────────────────
     const renderList = () => (
         <Stack gap={20}>
-<Flex justify="space-between" align="center">
+<Flex justify="space-between" align="center" wrap="wrap" gap="sm">
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -369,7 +369,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             </Flex>
 
             <Card withBorder p="md" radius="md" shadow="sm">
-                <Flex justify="space-between" align="center" mb="md" gap="sm" wrap="wrap">
+                <Box
+                    mb="md"
+                    className="md:!flex md:!items-center md:!justify-between"
+                    style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
+                >
                     <Select
                         placeholder="Status"
                         value={statusFilter}
@@ -382,8 +386,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         w={160}
                         size="sm"
                         clearable={false}
+                        classNames={{ root: 'shrink-0' }}
                     />
-                    <Group gap="sm">
+                    <Group gap="sm" wrap="nowrap">
                         <TextInput
                             placeholder="Cari nama toko, alamat, atau telepon..."
                             value={searchQuery}
@@ -391,6 +396,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
                             w={280}
                             size="sm"
+                            classNames={{ root: 'shrink-0' }}
                         />
                         <Tooltip label="Refresh">
                             <Button variant="filled" color="blue" size="sm" onClick={() => creatorSlugUrl && getData(creatorSlugUrl)}
@@ -398,10 +404,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 aria-label="Refresh" />
                         </Tooltip>
                     </Group>
-                </Flex>
+                </Box>
 
                 <Box style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+                    <table style={{ width: "100%", minWidth: 900, borderCollapse: "separate", borderSpacing: 0 }}>
                         <thead>
                             <tr style={{ backgroundColor: "#f8f9fa" }}>
                                 {["No", "Nama Toko", "Alamat", "Kota", "Telepon", "Pinpoin", "Status", "Aksi"].map((col, i) => (
@@ -593,7 +599,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
             {/* Sticky Footer */}
             <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-                <Flex justify="flex-end" gap="md">
+                <Flex justify="flex-end" gap="md" wrap="wrap">
                     <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} leftSection={<FontAwesomeIcon icon={faXmark} />}>
                         Batalkan
                     </Button>

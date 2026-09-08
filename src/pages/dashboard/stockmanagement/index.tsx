@@ -560,8 +560,11 @@ const StockManagement = () => {
   const renderHistory = () => (
     <Box mt={0}>
       <Stack gap="xs" mb="md">
-        <Flex align="center" justify="space-between" wrap="wrap" gap="sm">
-          <Group gap="sm">
+        <Box
+          className="md:!flex md:!items-center md:!justify-between"
+          style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
+        >
+          <Group gap="sm" wrap="nowrap">
             <Select
               value={rowsPerPage.toString()}
               onChange={(val) => {
@@ -569,12 +572,12 @@ const StockManagement = () => {
                 setCurrentPage(1);
               }}
               data={["10", "20", "50", "100"]}
-              style={{ width: 80 }}
+              style={{ width: 80, flexShrink: 0 }}
               size="sm"
             />
           </Group>
 
-          <Group gap="sm">
+          <Group gap="sm" wrap="nowrap">
             <DatePickerInput
               type="range"
               placeholder="Semua Tanggal"
@@ -586,6 +589,7 @@ const StockManagement = () => {
               clearable
               size="sm"
               w={240}
+              classNames={{ root: 'shrink-0' }}
             />
             <Select
               placeholder="Semua Referensi"
@@ -597,6 +601,7 @@ const StockManagement = () => {
               }}
               size="sm"
               w={180}
+              classNames={{ root: 'shrink-0' }}
             />
             <Select
               placeholder="Semua Produk"
@@ -606,7 +611,7 @@ const StockManagement = () => {
                 setSelectedProductFilter(val || "all");
                 setCurrentPage(1);
               }}
-              style={{ minWidth: 200 }}
+              style={{ width: 200, flexShrink: 0 }}
               size="sm"
               searchable
               clearable
@@ -620,19 +625,20 @@ const StockManagement = () => {
                 setCurrentPage(1);
               }}
               size="sm"
-              style={{ minWidth: 250 }}
+              style={{ width: 250, flexShrink: 0 }}
             />
-            <Button 
-              variant="filled" 
-              color="blue" 
+            <Button
+              variant="filled"
+              color="blue"
               size="sm"
-              onClick={() => user?.has_creator?.id && fetchHistory(user.has_creator.id)} 
+              onClick={() => user?.has_creator?.id && fetchHistory(user.has_creator.id)}
               loading={loading.includes("getdata")}
+              styles={{ root: { flexShrink: 0 } }}
             >
               <FontAwesomeIcon icon={faArrowsRotate} />
             </Button>
           </Group>
-        </Flex>
+        </Box>
         <Text size="xs" c="dimmed">
           Menampilkan {Math.min((currentPage - 1) * rowsPerPage + 1, totalHistoryCount)}-
           {Math.min(currentPage * rowsPerPage, totalHistoryCount)} dari {totalHistoryCount} data
@@ -641,7 +647,7 @@ const StockManagement = () => {
 
       <Card withBorder p={0} radius="md" shadow="sm" style={{ overflow: 'hidden', border: '1px solid #f0f0f0' }}>
         <Box style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+          <table style={{ width: '100%', minWidth: 800, borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
                 <th style={{ padding: '14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#495057', textTransform: 'uppercase', borderBottom: '2px solid #e9ecef', width: 60 }}>
@@ -771,15 +777,15 @@ const StockManagement = () => {
       </Card>
       
       {totalHistoryCount > 0 && (
-        <Flex justify="space-between" align="center" mt="md">
+        <Flex justify={{ base: 'center', sm: 'space-between' }} align="center" direction={{ base: 'column', sm: 'row' }} gap="xs" mt="md">
           <Text size="xs" c="dimmed">Total {totalHistoryCount} riwayat</Text>
-          <Pagination 
-            value={currentPage} 
-            onChange={setCurrentPage} 
-            total={totalPages} 
-            radius="md" 
-            size="sm" 
-            withEdges 
+          <Pagination
+            value={currentPage}
+            onChange={setCurrentPage}
+            total={totalPages}
+            radius="md"
+            size="sm"
+            withEdges
           />
         </Flex>
       )}
@@ -789,7 +795,7 @@ const StockManagement = () => {
   const renderForm = () => (
     <Card p="xl" radius="lg" className="border border-light-grey shadow-sm pb-[100px]">
       {/* Title row */}
-      <Flex justify="space-between" align="center" mb="lg">
+      <Flex justify="space-between" align="center" mb="lg" wrap="wrap" gap="sm">
         <Group>
           <Icon icon="solar:box-minimalistic-bold-duotone" className="text-blue-500" width={24} />
           <Title order={4} className="text-gray-800">Daftar Produk Terpilih</Title>
@@ -801,7 +807,7 @@ const StockManagement = () => {
 
       {/* Search bar + inline variant dropdown */}
       <Flex align="flex-end" gap="sm" mb="md" wrap="wrap">
-        <Box style={{ flex: "0 0 360px", minWidth: 240 }}>
+        <Box style={{ flex: "1 1 240px", minWidth: 0 }}>
           <Autocomplete
             label="Cari Produk"
             placeholder="Ketik nama atau SKU produk..."
@@ -1086,8 +1092,8 @@ const StockManagement = () => {
       )}
 
       {/* Unified Floating Footer - Fixed Position */}
-      <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-        <Flex justify="flex-end" gap="md">
+      <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white p-4 px-4 sm:px-6 border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
+        <Flex justify="flex-end" gap="md" wrap="wrap">
           <Button
             variant="subtle"
             color="gray"
@@ -1126,7 +1132,7 @@ const StockManagement = () => {
         <div className="flex flex-col gap-6 w-full">
 
           {/* Header */}
-          <Flex justify="space-between" align="center">
+          <Flex justify="space-between" align="center" wrap="wrap" gap="md">
             <Flex gap="md" align="flex-start">
               {isFormVisible && (
                 <ActionIcon

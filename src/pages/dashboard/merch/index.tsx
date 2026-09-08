@@ -1298,7 +1298,7 @@ const Merch: React.FC = () => {
                     <Icon icon="solar:wallet-money-bold" className="text-[20px]" />
                   </ActionIcon>
                 </Flex>
-                <Flex gap="md" mt={4}>
+                <Flex gap="md" mt={4} wrap="wrap">
                   <Stack gap={0}>
                     <Text size="xs" c="dimmed">{t("merch.withdrawn")}</Text>
                     <Text size="xs" fw={600} c="red">
@@ -1320,6 +1320,7 @@ const Merch: React.FC = () => {
               leftSection={<Icon icon="icon-park-outline:add-one" className="text-[24px]" />}
               radius="xl"
               color="#0B387C"
+              className="shrink-0"
             >
               {t("merch.createProduct")}
             </ButtonM>
@@ -1436,7 +1437,7 @@ const Merch: React.FC = () => {
             })}
           </Tabs>
 
-          <div className="flex items-center gap-3 pb-0 md:pt-3 md:pr-4 md:col-start-2 md:row-start-1 md:self-start">
+          <div className="order-first flex items-center gap-3 pb-0 md:pt-3 md:pr-4 md:col-start-2 md:row-start-1 md:self-start md:order-none">
             <InputField
               type="text"
               size="sm"

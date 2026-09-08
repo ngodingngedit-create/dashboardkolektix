@@ -35,6 +35,7 @@ import {
   Card as MantineCard,
   Modal
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { Get } from "@/utils/REST";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -386,6 +387,7 @@ interface FilterOption {
 const DeliveryPage: React.FC = () => {
   const router = useRouter();
   const user = useLoggedUser();
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [creators, setCreators] = useState<CreatorData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -1815,15 +1817,15 @@ const DeliveryPage: React.FC = () => {
 
   return (
     <>
-      <Flex align="center" gap={12} mx={15} mt={15} mb={0}>
+      <Flex align="center" gap={12} mx={15} mt={15} mb={0} wrap="wrap">
 <button
 type="button"
 onClick={() => router.push('/dashboard')}
-className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
 >
 <Icon icon="ph:arrow-left-bold" />
 </button>
-<Text fw={800} style={{ fontSize: '26px' }} c="dark.9">Data Pengiriman</Text>
+<Text fw={800} style={{ fontSize: 'clamp(20px, 5vw, 26px)' }} c="dark.9">Data Pengiriman</Text>
 </Flex>
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
@@ -1831,16 +1833,20 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
 
           <Box mt={15}>
-            {/* Row 1: Pagination (kiri) | Filter Produk + Search (kanan) */}
-            <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+            {/* Row 1: Pagination | Filter Produk + Search + Export — 1 baris scroll-x di mobile */}
+            <Box
+              mb="sm"
+              className="md:!flex md:!items-center md:!justify-between"
+              style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
+            >
               <MantineSelect
                 value={rowsPerPage.toString()}
                 onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
                 data={['10', '20', '50', '100']}
-                style={{ width: 70 }}
+                style={{ width: 70, flexShrink: 0 }}
                 size="sm"
               />
-              <Group gap="sm">
+              <Group gap="sm" wrap="nowrap">
                 <MantineSelect
                   placeholder="Filter Produk"
                   data={[
@@ -1849,18 +1855,20 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   ]}
                   value={selectedProduct}
                   onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
-                  style={{ minWidth: 200 }}
+                  w={200}
                   size="sm"
                   searchable
                   clearable
+                  classNames={{ root: 'shrink-0' }}
                 />
                 <MantineTextInput
                   placeholder="Cari invoice..."
                   leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                   value={filterValue}
                   onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
-                  style={{ width: 300 }}
+                  w={300}
                   size="sm"
+                  classNames={{ root: 'shrink-0' }}
                 />
                 <MantineButton
                   variant="filled"
@@ -1869,12 +1877,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   onClick={() => exportToCSV(filtered)}
                   disabled={filtered.length === 0}
                   size="sm"
-                  styles={{ root: { color: 'white' } }}
+                  styles={{ root: { color: 'white', flexShrink: 0 } }}
                 >
                   Export Excel
                 </MantineButton>
               </Group>
-            </Flex>
+            </Box>
 
             {/* Row 2: Menampilkan kiri */}
             <Flex align="center" gap="sm" mb="md">
@@ -1888,14 +1896,14 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: isMobile ? 'static' : 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2 }}>#</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', minWidth: 150, position: isMobile ? 'static' : 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }) }} onClick={() => handleSort('invoice_no')}>Invoice <SortIcon col="invoice_no" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('customer_name')}>Customer <SortIcon col="customer_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('product_name')}>Produk <SortIcon col="product_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('resi_no')}>Resi <SortIcon col="resi_no" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('ongkir')}>Ongkir <SortIcon col="ongkir" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('shipping_address')}>Alamat Tujuan <SortIcon col="shipping_address" /></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: isMobile ? 'static' : 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }) }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
                       <Flex align="center" gap="xs">
                         <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
@@ -1931,10 +1939,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                     return (
                       <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: isMobile ? 'static' : 'sticky', left: 0, backgroundColor: 'white', zIndex: 1 }}>
                           <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                         </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: 150, position: isMobile ? 'static' : 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }) }}>
                           <Text
                             size="sm"
                             fw={600}
@@ -1972,7 +1980,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             {formatShippingAddress((item as any).address || item.shipping_address)}
                           </Text>
                         </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: isMobile ? 'static' : 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }) }}>
                           <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                             {shippingInfo.text}
                           </Badge>
@@ -2039,10 +2047,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               </Box>
             )}
 
-            <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
-              <Text size="xs" c="dimmed">
+            <Flex justify="space-between" align="center" mt={0} px={4} py={14} gap="sm" direction={{ base: 'column', sm: 'row' }} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
+              <Text size="xs" c="dimmed" className="hidden sm:block">
                 Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
               </Text>
+              <Flex align="center" justify={{ base: 'center', sm: 'flex-start' }} className="w-full sm:w-auto">
               <MantinePagination
                 total={totalPages}
                 value={page}
@@ -2055,8 +2064,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   control: { border: '1px solid #e0e0e0', fontWeight: 600 },
                 }}
               />
-              <Text size="xs" c="dimmed">
-                {filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}–${Math.min(page * rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
+              </Flex>
+              <Text size="xs" c="dimmed" ta={{ base: 'center', sm: 'right' }}>
+                Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong> <span className="sm:hidden">·</span> {filtered.length > 0 ? `${(page - 1) * rowsPerPage + 1}–${Math.min(page * rowsPerPage, filtered.length)}` : '0'} / {filtered.length}
               </Text>
             </Flex>
           </Box>
@@ -2069,7 +2079,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         size="5xl"
         scrollBehavior="inside"
         classNames={{
-          base: 'bg-white',
+          base: 'bg-white max-w-full mx-4 sm:mx-6',
           backdrop: 'backdrop-blur-sm',
           header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
           body: 'p-0',
@@ -2131,9 +2141,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </div>
                   ) : invoiceDetail ? (
                     <div className="bg-gray-50">
-                      <div className="bg-white border-b border-primary-light-200 px-6 py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                      <div className="bg-white border-b border-primary-light-200 px-4 sm:px-6 py-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                             <div className="flex items-center gap-2">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${invoiceDetail.transaction_status?.name.toLowerCase().includes('expired')
                                 ? 'bg-gray-100'
@@ -2307,7 +2317,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                   </h3>
                                 </div>
                                 <div className="p-4">
-                                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
                                     <div>
                                       <p className="text-xs text-gray-500 mb-1">Order ID</p>
                                       <p className="font-mono text-sm font-semibold flex items-center gap-2">

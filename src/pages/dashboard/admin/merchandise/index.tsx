@@ -269,7 +269,7 @@ const Merch: React.FC = () => {
         </div>
       </Modal>
 
-      <Flex justify="space-between" align="center">
+      <Flex justify="space-between" align="center" wrap="wrap" gap="md">
         <Flex align="center" gap={12}>
           <button
             onClick={() => router.push("/dashboard/admin")}
@@ -383,9 +383,9 @@ const Merch: React.FC = () => {
         </div>
 
         {sortedList.length > 0 && (
-          <div className="flex justify-between items-center px-6 py-4 border-t border-light-grey bg-gray-50/30">
+          <div className="flex flex-wrap justify-between items-center gap-2 px-4 md:px-6 py-4 border-t border-light-grey bg-gray-50/30">
             <Text size="sm" c="dimmed">{t("admin.merchandise.index.menampilkan")} {sortedList.length} {t("admin.merchandise.index.produk")}</Text>
-            <Group gap={8}>
+            <Group gap={8} wrap="wrap">
               <ButtonM variant="white" color="gray" disabled={page <= 1} onClick={() => setPage(p => p - 1)} size="xs">{t("admin.merchandise.index.sebelumnya")}</ButtonM>
               <Text size="xs" fw={700}>{page} / {lastPage}</Text>
               <ButtonM variant="white" color="gray" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)} size="xs">{t("admin.merchandise.index.berikutnya")}</ButtonM>

@@ -490,7 +490,7 @@ const VoucherPage = () => {
 
   const renderList = () => (
     <Stack gap={25}>
-<Flex gap={20} justify="space-between" align="center">
+<Flex gap={20} justify="space-between" align="center" wrap="wrap">
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -500,8 +500,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
 <Stack gap={0}>
-<Title order={1} size="h2">{t("voucher.title")}</Title>
-<Text size="sm" c="gray">{t("voucher.subtitle")}</Text>
+<Title order={1} size="h4" className="!text-lg md:!text-2xl">{t("voucher.title")}</Title>
+<Text size="sm" c="gray" className="!text-xs md:!text-sm">{t("voucher.subtitle")}</Text>
 </Stack>
 </Flex>
         <Flex gap="md" align="center">
@@ -527,16 +527,18 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       </Flex>
 
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex gap="md" align="center" wrap="wrap">
-          <TextInput placeholder={t("voucher.searchCode")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
-          <Select placeholder={t("voucher.allModules")} value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: t("voucher.allModules") }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 140 }} />
-          <Select placeholder={t("voucher.allEvents")} value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: t("voucher.allEvents") }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 180 }} />
-          <Select placeholder={t("voucher.allTypes")} value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: t("voucher.allTypes") }, { value: "persentase", label: t("voucher.percentage") }, { value: "nominal", label: t("voucher.nominal") }]} style={{ width: 140 }} />
-          <Select placeholder={t("voucher.allStatus")} value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: t("voucher.allStatus") }, { value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }, { value: "expired", label: t("voucher.expired") }]} style={{ width: 140 }} />
-          <Button variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
-          <Button variant="filled" color="green" radius="md" leftSection={<FontAwesomeIcon icon={faFileExcel} />} onClick={handleExport} disabled={sortedVouchers.length === 0}>{t("voucher.export")}</Button>
-          <Button variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>{t("voucher.reset")}</Button>
-        </Flex>
+        <div className="overflow-x-auto">
+          <Flex gap="md" align="center" wrap="nowrap" style={{ minWidth: 'max-content' }}>
+          <TextInput className="shrink-0" placeholder={t("voucher.searchCode")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
+          <Select className="shrink-0" placeholder={t("voucher.allModules")} value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: t("voucher.allModules") }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 130 }} />
+          <Select className="shrink-0" placeholder={t("voucher.allEvents")} value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: t("voucher.allEvents") }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 160 }} />
+          <Select className="shrink-0" placeholder={t("voucher.allTypes")} value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: t("voucher.allTypes") }, { value: "persentase", label: t("voucher.percentage") }, { value: "nominal", label: t("voucher.nominal") }]} style={{ width: 130 }} />
+          <Select className="shrink-0" placeholder={t("voucher.allStatus")} value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: t("voucher.allStatus") }, { value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }, { value: "expired", label: t("voucher.expired") }]} style={{ width: 130 }} />
+          <Button className="shrink-0" variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
+          <Button className="shrink-0" variant="filled" color="green" radius="md" leftSection={<FontAwesomeIcon icon={faFileExcel} />} onClick={handleExport} disabled={sortedVouchers.length === 0}>{t("voucher.export")}</Button>
+          <Button className="shrink-0" variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>{t("voucher.reset")}</Button>
+          </Flex>
+        </div>
       </Card>
 
       <Card withBorder p={0} radius="md" shadow="sm" style={{ overflow: 'hidden' }}>
@@ -610,7 +612,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         </Box>
       </Card>
       {vouchers.length > 0 && (
-        <Flex justify="space-between" align="center">
+        <Flex justify="space-between" align="center" wrap="wrap" gap="xs">
           <Text size="xs" c="dimmed">{t("voucher.totalCount", { count: pagination.total })}</Text>
           <Pagination value={pagination.current_page} onChange={handlePageChange} total={pagination.last_page} radius="md" size="sm" withEdges />
         </Flex>

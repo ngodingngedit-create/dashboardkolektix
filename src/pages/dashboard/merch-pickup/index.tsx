@@ -1410,9 +1410,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 >
 <FontAwesomeIcon icon={faArrowLeft} />
 </button>
-<Text fw={800} style={{ fontSize: '26px' }} mb={0} c="dark.9">Pickup Merchandise</Text>
+<Text fw={800} style={{ fontSize: 'clamp(20px, 5vw, 26px)' }} mb={0} c="dark.9">Pickup Merchandise</Text>
 </Flex>
-          <Group gap="xl">
+          <Group gap="xl" wrap="wrap">
               <Stack gap={2}>
                   <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Transaksi</Text>
                   <Text size="xl" fw={700}>{filtered.length}</Text>
@@ -1472,7 +1472,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 setFilterValue(e.target.value);
                                 setPage(1);
                             }}
-                            style={{ width: 300 }}
+                            style={{ width: '100%', maxWidth: 300 }}
                             size="sm"
                         />
                     </Group>
@@ -1485,7 +1485,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 </Flex>
 
                 <Box style={{ overflow: 'auto', maxHeight: '70vh', position: 'relative' }}>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #f0f0f0' }}>
+                    <table style={{ width: '100%', minWidth: 900, borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #f0f0f0' }}>
                         <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                             <tr style={{ backgroundColor: '#f5f7fa' }}>
                                 <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, borderBottom: '2px solid #e8e8e8' }}>#</th>
@@ -1595,7 +1595,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </Box>
                 )}
 
-                <Flex justify="space-between" align="center" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
+                <Flex justify="space-between" align="center" wrap="wrap" gap="xs" mt={0} px={4} py={14} style={{ borderTop: '1px solid #ebebeb', backgroundColor: '#fafafa', borderRadius: '0 0 8px 8px' }}>
                     <Text size="xs" c="dimmed">
                         Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
                     </Text>
@@ -1625,7 +1625,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         size="lg"
         backdrop="blur"
         classNames={{
-          base: "bg-gradient-to-b from-gray-50 to-white",
+          base: "bg-gradient-to-b from-gray-50 to-white max-w-full mx-4 sm:mx-6",
           backdrop: "backdrop-blur-sm",
           header: "border-b-0 pb-0",
           footer: "border-t-0",
@@ -1711,7 +1711,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         backdrop="blur"
         scrollBehavior="inside"
         classNames={{
-          base: "bg-gradient-to-b from-gray-50 to-white",
+          base: "bg-gradient-to-b from-gray-50 to-white max-w-full mx-4 sm:mx-6",
           backdrop: "backdrop-blur-sm",
           header: "border-b-0",
           footer: "border-t-0",
