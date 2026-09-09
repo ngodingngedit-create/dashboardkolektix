@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import bankEmpty from "../../../assets/icon/bank.png";
 import Image from "next/image";
@@ -211,11 +211,11 @@ const Bank = () => {
     return sortConfig.direction === "asc" ? faSortUp : faSortDown;
   };
 
-  // ─── List View ───────────────────────────────────────────────────────────
+  // â”€â”€â”€ List View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderList = () => (
     <Stack gap={30}>
       {/* Header */}
-      <Flex gap={20} justify="space-between" align="center">
+      <Flex gap={20} justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }}>
         <Flex align="center" gap={12}>
           <button
             onClick={() => router.push('/dashboard')}
@@ -242,27 +242,27 @@ const Bank = () => {
 
       {/* Table Card */}
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="center" mb="lg">
-          <Flex gap={10}>
-            <Button
-              variant="filled"
-              color="blue"
-              size="sm"
-              onClick={getData}
-              loading={loading.includes("getdata")}
-            >
-              <FontAwesomeIcon icon={faArrowsRotate} />
-            </Button>
-          </Flex>
+        <div className="overflow-x-auto flex gap-2 items-center" style={{ marginBottom: 12 }}>
+          <Button
+            variant="filled"
+            color="blue"
+            size="sm"
+            onClick={getData}
+            loading={loading.includes("getdata")}
+            className="shrink-0"
+          >
+            <FontAwesomeIcon icon={faArrowsRotate} />
+          </Button>
           <TextInput
             placeholder={t('bank.searchPlaceholder')}
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
             value={searchValue}
             onChange={(e) => { setSearchValue(e.target.value); setPage(1); }}
-            style={{ width: 320 }}
+            style={{ width: 320, flexShrink: 0 }}
           />
-        </Flex>
+        </div>
 
+        {/* Table — scroll-x di layar sempit */}
         <Box style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
@@ -396,7 +396,7 @@ const Bank = () => {
     </Stack>
   );
 
-  // ─── Form View ───────────────────────────────────────────────────────────
+  // â”€â”€â”€ Form View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderForm = () => (
     <Stack gap={25}>
       {/* Header */}

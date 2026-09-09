@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import filePlus from '../../../assets/icon/filePlus.png';
 import imagePlus from '../../../assets/icon/camera-plus.png';
@@ -41,7 +41,7 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface FormCreatorProfileProps {
   creator_id: number;
@@ -105,7 +105,7 @@ interface FormResetPasswordProps {
 
 type FormType = 'ktp' | 'npwp' | null;
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ProfileCreator = () => {
   const [loading, setLoading] = useListState<string>();
@@ -113,7 +113,7 @@ const ProfileCreator = () => {
   const router = useRouter();
   const { t } = useTranslation();
 
-  // ── Tab 1: Profil Creator ──────────────────────────────────────────────────
+  // â”€â”€ Tab 1: Profil Creator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [profileList, setProfileList] = useState<CreatorProfileRecord[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -276,7 +276,7 @@ const ProfileCreator = () => {
     return sortProfile.direction === 'asc' ? faSortUp : faSortDown;
   };
 
-  // ── Tab 2: Informasi Legal ─────────────────────────────────────────────────
+  // â”€â”€ Tab 2: Informasi Legal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [ktpList, setKtpList] = useState<LegalRecord[]>([]);
   const [npwpList, setNpwpList] = useState<LegalRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<LegalRecord | null>(null);
@@ -486,7 +486,7 @@ const ProfileCreator = () => {
     return result;
   }, [npwpList, searchNpwp, sortNpwp]);
 
-  // ── Tab 3: Reset Password ──────────────────────────────────────────────────
+  // â”€â”€ Tab 3: Reset Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const resetPasswordForm = useForm<FormResetPasswordProps>({
     initialValues: { email: '', password: '' },
     validate: {
@@ -507,7 +507,7 @@ const ProfileCreator = () => {
       .finally(() => setLoading.filter((e) => e !== 'resetpassword'));
   };
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
+  // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (userData) {
       const creatorId = userData.has_creator?.id ?? 0;
@@ -517,31 +517,33 @@ const ProfileCreator = () => {
     }
   }, [userData]);
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // RENDER: Profil Creator
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   const renderProfileList = () => (
     <Stack gap={20}>
-      <Flex justify="space-between" align="center">
+      <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap="sm">
         <Stack gap={0}>
           <Title order={2} size="h3">{t('profileCreator.title')}</Title>
           <Text size="sm" c="gray">{t('profileCreator.subtitle')}</Text>
         </Stack>
-        {!hasProfileData && (
-          <Button onClick={handleAddProfile} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">
-            {t('profileCreator.addProfile')}
-          </Button>
-        )}
-        {hasProfileData && (
-          <Button onClick={() => profileList[0] && handleEditProfile(profileList[0])} leftSection={<FontAwesomeIcon icon={faPencil} />} color="blue" size="md" radius="xl">
-            {t('profileCreator.editProfile')}
-          </Button>
-        )}
+        <Flex gap={10} wrap="wrap">
+          {!hasProfileData && (
+            <Button onClick={handleAddProfile} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">
+              {t('profileCreator.addProfile')}
+            </Button>
+          )}
+          {hasProfileData && (
+            <Button onClick={() => profileList[0] && handleEditProfile(profileList[0])} leftSection={<FontAwesomeIcon icon={faPencil} />} color="blue" size="md" radius="xl">
+              {t('profileCreator.editProfile')}
+            </Button>
+          )}
+        </Flex>
       </Flex>
 
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="center" mb="lg">
+        <Flex justify="space-between" align={{ base: "stretch", md: "center" }} direction={{ base: "column", md: "row" }} mb="lg" gap="sm">
           <Flex gap={10}>
             <Button variant="filled" color="blue" size="sm" onClick={() => getProfileData()} loading={loading.includes('getprofile')}>
               <FontAwesomeIcon icon={faArrowsRotate} />
@@ -552,10 +554,12 @@ const ProfileCreator = () => {
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
             value={searchProfile}
             onChange={(e) => setSearchProfile(e.target.value)}
-            style={{ width: 300 }}
+            w={{ base: "100%", md: 300 }}
+            className="shrink-0"
           />
         </Flex>
 
+        {/* Table — scroll-x di layar sempit */}
         <Box style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
@@ -694,7 +698,7 @@ const ProfileCreator = () => {
       </Card>
 
       <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-        <Flex justify="flex-end" gap="md">
+        <Flex justify="flex-end" gap="md" wrap="wrap" className="w-full [&>*]:grow sm:[&>*]:grow-0">
           <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>
             {t('profileCreator.cancel')}
           </Button>
@@ -708,9 +712,9 @@ const ProfileCreator = () => {
     </Stack>
   );
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // RENDER: Informasi Legal (identik dengan dashboard/legal)
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   const renderLegalTable = (
     title: string,
@@ -745,31 +749,35 @@ const ProfileCreator = () => {
 
     return (
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="center" mb="lg">
+        <Flex justify="space-between" align={{ base: "stretch", md: "center" }} direction={{ base: "column", md: "row" }} mb="lg" gap="sm">
           <Flex align="center" gap={12}>
             <Box
               w={32} h={32} bg={type === 'ktp' ? 'blue.7' : 'teal.7'}
-              style={{ borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >
               <FontAwesomeIcon icon={faIdCard} style={{ color: '#fff' }} size="sm" />
             </Box>
             <Text fw={700} size="lg" c="gray.9">{title}</Text>
           </Flex>
-          <Flex gap={10} align="center">
-            <Button variant="filled" color="blue" size="sm"
-              onClick={() => getLegalData(userData?.has_creator?.id ?? 0)} loading={loading.includes('getlegal')}>
-              <FontAwesomeIcon icon={faArrowsRotate} />
-            </Button>
+          <Flex gap={10} align="center" className="overflow-x-auto shrink-0">
+            <div className="hidden md:block">
+              <Button variant="filled" color="blue" size="sm"
+                onClick={() => getLegalData(userData?.has_creator?.id ?? 0)} loading={loading.includes('getlegal')}>
+                <FontAwesomeIcon icon={faArrowsRotate} />
+              </Button>
+            </div>
             <TextInput
               placeholder={t('profileCreator.searchType', { type: title })}
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: 240 }}
+              w={{ base: "100%", sm: 240 }}
+              className="shrink-0"
             />
           </Flex>
         </Flex>
 
+        {/* Table — scroll-x di layar sempit */}
         <Box style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
@@ -927,7 +935,7 @@ const ProfileCreator = () => {
         </Card>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-          <Flex justify="flex-end" gap="md">
+          <Flex justify="flex-end" gap="md" wrap="wrap" className="w-full [&>*]:grow sm:[&>*]:grow-0">
             <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>{t('profileCreator.cancel')}</Button>
             <Button type="submit" form="ktp-form-creator" color="blue" size="md" loading={loading.includes('submitlegal')}
               leftSection={!loading.includes('submitlegal') && <FontAwesomeIcon icon={faSave} />}>
@@ -992,7 +1000,7 @@ const ProfileCreator = () => {
         </Card>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-          <Flex justify="flex-end" gap="md">
+          <Flex justify="flex-end" gap="md" wrap="wrap" className="w-full [&>*]:grow sm:[&>*]:grow-0">
             <Button variant="subtle" color="gray" onClick={() => setActiveForm(null)} size="md" leftSection={<FontAwesomeIcon icon={faXmark} />}>{t('profileCreator.cancel')}</Button>
             <Button type="submit" form="npwp-form-creator" color="teal" size="md" loading={loading.includes('submitlegal')}
               leftSection={!loading.includes('submitlegal') && <FontAwesomeIcon icon={faSave} />}>
@@ -1006,12 +1014,12 @@ const ProfileCreator = () => {
 
   const renderLegalList = () => (
     <Stack gap={30}>
-      <Flex justify="space-between" align="center">
+      <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap="sm">
         <Stack gap={0}>
           <Title order={1} size="h2">{t('profileCreator.legalInfo')}</Title>
           <Text size="sm" c="gray">{t('profileCreator.legalDesc')}</Text>
         </Stack>
-        <Flex gap={10}>
+        <Flex gap={10} wrap="wrap">
           {ktpList.length === 0 && (
             <Button onClick={handleAddKTP} leftSection={<FontAwesomeIcon icon={faPlus} />} color="blue" size="md" radius="xl">
               {t('profileCreator.addKtp')}
@@ -1067,7 +1075,7 @@ const ProfileCreator = () => {
             form="reset-password-form"
             color="blue"
             size="md"
-            style={{ minWidth: 200 }}
+            style={{ minWidth: 200, width: '100%' }}
             loading={loading.includes('resetpassword')}
             leftSection={!loading.includes('resetpassword') && <FontAwesomeIcon icon={faSave} />}
           >
@@ -1078,9 +1086,9 @@ const ProfileCreator = () => {
     </Stack>
   );
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // MAIN RENDER
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   return (
     <div className="p-5">
@@ -1108,7 +1116,7 @@ const ProfileCreator = () => {
           cursor: '!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base',
         }}
       >
-        {/* ── Tab 1: Profil Creator ── */}
+        {/* â”€â”€ Tab 1: Profil Creator â”€â”€ */}
         <Tab key="profil-creator" title={t('profileCreator.profileTab')}>
           <div className="p-5 pb-[100px]">
             <LoadingOverlay visible={loading.includes('submitprofile')} overlayProps={{ blur: 2 }} />
@@ -1116,7 +1124,7 @@ const ProfileCreator = () => {
           </div>
         </Tab>
 
-        {/* ── Tab 2: Informasi Legal ── */}
+        {/* â”€â”€ Tab 2: Informasi Legal â”€â”€ */}
         <Tab key="informasi-legal" title={t('profileCreator.legalTab')}>
           <div className="p-5 pb-[100px] min-h-screen bg-[#fcfcfc]">
             <LoadingOverlay visible={loading.includes('submitlegal')} overlayProps={{ blur: 2 }} />
@@ -1124,7 +1132,7 @@ const ProfileCreator = () => {
           </div>
         </Tab>
 
-        {/* ── Tab 3: Reset Password ── */}
+        {/* â”€â”€ Tab 3: Reset Password â”€â”€ */}
         <Tab key="reset-password" title={t('profileCreator.resetPassword')}>
           <div className="p-5 pb-[100px] min-h-[500px] bg-[#fcfcfc]">
             <LoadingOverlay visible={loading.includes('resetpassword')} overlayProps={{ blur: 2 }} />

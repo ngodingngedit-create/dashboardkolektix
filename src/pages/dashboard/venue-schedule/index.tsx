@@ -252,7 +252,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             <Button 
                                 variant="flat" 
                                 color="primary"
-                                className="bg-white border border-light-grey font-bold min-w-[250px] justify-between h-11 rounded-xl shadow-sm"
+                                className="bg-white border border-light-grey font-bold w-full md:w-auto md:min-w-[250px] justify-between h-11 rounded-xl shadow-sm"
                                 endContent={<Icon icon="mdi:chevron-down" />}
                                 isLoading={loadingVenues}
                             >
@@ -483,7 +483,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             {/* Calendar Grid */}
                             <div className="flex-1 overflow-auto flex flex-col relative bg-white">
                                 {/* Day Headers */}
-                                <div className="flex border-b border-light-grey sticky top-0 z-20 bg-white">
+                                <div className="flex border-b border-light-grey sticky top-0 z-20 bg-white min-w-[640px]">
                                     <div className="w-[80px] shrink-0 border-r border-light-grey bg-slate-50/50"></div>
                                     {weekDays.map((day, i) => {
                                         const isToday = day.isSame(moment(), 'day');
@@ -501,7 +501,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 </div>
 
                                 {/* Time Grid */}
-                                <div className="flex flex-1">
+                                <div className="flex flex-1 min-w-[640px]">
                                     {/* Time Labels */}
                                     <div className="w-[80px] shrink-0 bg-slate-50/50 border-r border-light-grey">
                                         {hours.map(h => (
@@ -669,7 +669,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         left: 0,
                         right: 0,
                         backgroundColor: 'white',
-                        padding: '16px 40px',
+                        padding: '16px clamp(16px, 4vw, 40px)',
                         borderTop: '1px solid #e9ecef',
                         boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
                         zIndex: 40,

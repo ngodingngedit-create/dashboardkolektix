@@ -261,12 +261,13 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     </Flex>
                 </InputWrapper>
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap">
                     <TextInput
                         withAsterisk
                         label={t('venue.name')}
                         placeholder={t('venue.enterName')}
-                        w="100%"
+                        w={{ base: "100%", md: "auto" }}
+                        className="flex-1 min-w-[200px]"
                         {...inputProps('name')}
                     />
                     <Select
@@ -275,7 +276,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         placeholder={t('venue.selectCategory')}
                         disabled={loading.includes('getdatacat')}
                         data={category?.map(e => ({ value: String(e.id), label: e.name }))}
-                        miw={250}
+                        w={{ base: "100%", md: 250 }}
                         {...inputProps('venue_category_id')}
                         onChange={e => e && form.setValues({ venue_category_id: parseInt(e) })}
                     />
@@ -291,7 +292,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                 />
 
                 <Tabs defaultValue="detail" mt={10}>
-                    <Tabs.List>
+                    <Tabs.List className="overflow-x-auto flex-nowrap [&_*]:whitespace-nowrap">
                         <Tabs.Tab value="detail" leftSection={<Icon icon="uiw:setting-o" />}>{t('venue.detailTab')}</Tabs.Tab>
                         <Tabs.Tab value="fasilitas" leftSection={<Icon icon="uiw:appstore-o" />}>{t('venue.facilitiesTab')}</Tabs.Tab>
                         <Tabs.Tab value="jadwal" leftSection={<Icon icon="uiw:time" />}>{t('venue.scheduleTab')}</Tabs.Tab>
@@ -610,19 +611,19 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Text size="lg" fw={600}>{t('venue.address')}</Text>
                 </Flex>
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap">
                     <TextInput
                         withAsterisk
                         label={t('venue.region')}
                         placeholder="Bandung, Jawa Barat"
-                        w="100%"
+                        w={{ base: "100%", md: "50%" }}
                         {...inputProps('location_name')}
                     />
                     <TextInput
                         withAsterisk
                         label={t('venue.mapsLink')}
                         placeholder="https://maps.google.com/..."
-                        w="100%"
+                        w={{ base: "100%", md: "50%" }}
                         {...inputProps('location')}
                     />
                 </Flex>
@@ -641,19 +642,19 @@ export default function Create({ }: Readonly<ComponentProps>) {
                     <Text size="lg" fw={600}>{t('venue.contactPerson')}</Text>
                 </Flex>
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap">
                     <TextInput
                         withAsterisk
                         label={t('venue.contactName')}
                         placeholder={t('venue.enterContactName')}
-                        w="100%"
+                        w={{ base: "100%", md: "50%" }}
                         {...inputProps('contact_person_name')}
                     />
                     <TextInput
                         withAsterisk
                         label={t('venue.contactEmail')}
                         placeholder={t('venue.enterContactEmail')}
-                        w="100%"
+                        w={{ base: "100%", md: "50%" }}
                         {...inputProps('contact_person_email')}
                     />
                 </Flex>
@@ -669,13 +670,14 @@ export default function Create({ }: Readonly<ComponentProps>) {
                 <Space h={50} />
             </Stack>
 
-            <Card pos="fixed" className={`!bottom-0 !left-0 !right-0 !z-10 !border-t !border-[#d0d0d0]`} radius={0} py={15} px={30} style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
-                <Flex ml="auto" w="fit-content" gap={10}>
+            <Card pos="fixed" className={`!bottom-0 !left-0 !right-0 !z-10 !border-t !border-[#d0d0d0]`} radius={0} py={15} px={{ base: 15, md: 30 }} style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
+                <Flex ml={{ base: 0, md: "auto" }} w={{ base: "100%", md: "fit-content" }} gap={10} justify={{ base: "stretch", md: "flex-end" }} wrap={{ base: "wrap", md: "nowrap" }}>
                     <Button
                         variant="default"
                         onClick={() => router.back()}
                         radius="xl"
                         leftSection={<Icon icon="uiw:close" />}
+                        className="flex-1 md:flex-none"
                     >
                         {t('common.cancel')}
                     </Button>
@@ -683,6 +685,7 @@ export default function Create({ }: Readonly<ComponentProps>) {
                         loading={loading.includes('submitdata')}
                         onClick={submitData}
                         w="fit-content"
+                        className="flex-1 md:flex-none"
                         color="#194e9e"
                         rightSection={<Icon icon="uiw:check" />}
                         radius="xl">

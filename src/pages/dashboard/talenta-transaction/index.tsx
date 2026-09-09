@@ -252,7 +252,7 @@ export default function TalentaTransaction() {
 
   return (
     <>
-<Flex justify="space-between" align="center" mx={15} mt={15} mb={10}>
+<Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap="md" mx={15} mt={15} mb={10}>
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -262,7 +262,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={0}>
-<Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
+<Text fw={800} style={{ fontSize: "clamp(20px, 5vw, 26px)" }} mb={0} c="dark.9">
 {t('talentaTrx.title')}
 </Text>
 <Text size="sm" c="gray">
@@ -270,26 +270,27 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Text>
 </Stack>
 </Flex>
-        <Flex gap="md" align="center">
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalSales')}</Text>
             <Text size="lg" fw={700}>Rp {stats.totalSales.toLocaleString('id-ID')}</Text>
           </MantineCard>
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalTransactions')}</Text>
             <Text size="lg" fw={700}>{stats.totalTransactions}</Text>
           </MantineCard>
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('talentaTrx.totalBookings')}</Text>
             <Text size="lg" fw={700}>{stats.totalBooking}</Text>
           </MantineCard>
-        </Flex>
+        </div>
       </Flex>
 
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
           <Box mt={0}>
-            <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+            {/* Filter row — satu baris, scroll-x di layar sempit */}
+            <div className="overflow-x-auto flex gap-2 items-center mb-sm" style={{ marginBottom: 12 }}>
               <MantineSelect
                 value={rowsPerPage.toString()}
                 onChange={(val) => {
@@ -297,56 +298,53 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   setPage(1);
                 }}
                 data={["10", "20", "50", "100"]}
-                style={{ width: 70 }}
+                style={{ width: 70, flexShrink: 0 }}
                 size="sm"
               />
-              <Flex gap="sm" align="center" wrap="wrap">
-                <Box style={{ position: "relative" }}>
-                  <MantineTextInput
-                    type="date"
-                    placeholder={t('talentaTrx.filterDate')}
-                    value={dateFilter}
-                    onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
-                    size="sm"
-                    style={{ width: 160 }}
-                    leftSection={<FontAwesomeIcon icon={faCalendarAlt} style={{ width: 14 }} />}
-                  />
-                </Box>
-                <MantineTextInput
-                  placeholder={t('talentaTrx.searchPlaceholder')}
-                  leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                  value={filterValue}
-                  onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
-                  style={{ width: 280 }}
-                  size="sm"
-                />
-                <Button
+              <MantineTextInput
+                type="date"
+                placeholder={t('talentaTrx.filterDate')}
+                value={dateFilter}
+                onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+                size="sm"
+                style={{ width: 160, flexShrink: 0 }}
+                leftSection={<FontAwesomeIcon icon={faCalendarAlt} style={{ width: 14 }} />}
+              />
+              <MantineTextInput
+                placeholder={t('talentaTrx.searchPlaceholder')}
+                leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                value={filterValue}
+                onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
+                style={{ width: 280, flexShrink: 0 }}
+                size="sm"
+              />
+              <Button
+                variant="filled"
+                color="green"
+                radius="md"
+                size="sm"
+                leftSection={<Icon icon="uiw:download" width={16} />}
+                onClick={handleExport}
+                disabled={filtered.length === 0}
+                className="shrink-0"
+              >
+                {t('talentaTrx.export')}
+              </Button>
+              <Tooltip label={t('talentaTrx.resetFilters')}>
+                <ActionIcon
                   variant="filled"
-                  color="green"
-                  radius="md"
-                  size="sm"
-                  leftSection={<Icon icon="uiw:download" width={16} />}
-                  onClick={handleExport}
-                  disabled={filtered.length === 0}
+                  color="gray.1"
+                  size="40px"
+                  radius="xl"
+                  onClick={clearFilters}
+                  styles={{
+                    root: { color: '#495057', flexShrink: 0 }
+                  }}
                 >
-                  {t('talentaTrx.export')}
-                </Button>
-                <Tooltip label={t('talentaTrx.resetFilters')}>
-                  <ActionIcon 
-                    variant="filled" 
-                    color="gray.1" 
-                    size="40px" 
-                    radius="xl"
-                    onClick={clearFilters}
-                    styles={{
-                      root: { color: '#495057' }
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faUndo} style={{ width: 16 }} />
-                  </ActionIcon>
-                </Tooltip>
-              </Flex>
-            </Flex>
+                  <FontAwesomeIcon icon={faUndo} style={{ width: 16 }} />
+                </ActionIcon>
+              </Tooltip>
+            </div>
 
             <Flex align="center" gap="sm" mb="md">
               <Text size="xs" c="gray">
@@ -358,6 +356,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               </Text>
             </Flex>
 
+            {/* Table — scroll-x di layar sempit */}
             <Box style={{ overflowX: "auto", overflowY: "auto", position: "relative" }}>
               <table
                 style={{
@@ -471,19 +470,19 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         {selectedTransaction && (
           <Stack gap="md">
             <Grid>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="sm" c="dimmed">{t('talentaTrx.modal.orderNo')}</Text>
                 <Text fw={600}>{selectedTransaction.order_no || "-"}</Text>
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="sm" c="dimmed">Status</Text>
                 <Badge color={getStatusInfo(selectedTransaction).color}>{getStatusInfo(selectedTransaction).text}</Badge>
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="sm" c="dimmed">{t('talentaTrx.modal.transactionDate')}</Text>
                 <Text fw={600}>{formatDate(selectedTransaction.created_at)}</Text>
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="sm" c="dimmed">{t('talentaTrx.table.talent')}</Text>
                 <Text fw={600}>{selectedTransaction.product_name || selectedTransaction.talenta?.name || "-"}</Text>
               </Grid.Col>

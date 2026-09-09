@@ -1,4 +1,4 @@
-import { VenueProps } from "@/utils/globalInterface";
+﻿import { VenueProps } from "@/utils/globalInterface";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { Accordion, ActionIcon, Alert, Box, Button, Card, Center, Divider, Flex, Grid, Group, Image, Modal, NumberFormatter, NumberInput, Select, Skeleton, Stack, Text, TextInput, Title, UnstyledButton } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
@@ -75,7 +75,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
                 <Divider my="sm" />
 
-                <Flex className={`[&>*]:!flex-grow`} gap={20}>
+                <div className="flex flex-col md:flex-row gap-5 [&>*]:grow">
                     <Stack>
                         <Card withBorder radius="xl" p={25}>
                             <Stack>
@@ -145,7 +145,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                     <Box className="p-4 rounded-2xl bg-gray-50 border border-light-grey">
                                         <Text size="xs" fw={700} mb={10} c="gray.6" className="uppercase tracking-wider">{t('venue.pos.bookingDuration')}</Text>
                                         <Grid align="center" gutter="sm">
-                                            <Grid.Col span={5}>
+                                            <Grid.Col span={{ base: 12, sm: 5 }}>
                                                 <Select
                                                     label={t('venue.pos.startTime')}
                                                     placeholder={t('venue.pos.selectTime')}
@@ -163,12 +163,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                     searchable
                                                 />
                                             </Grid.Col>
-                                            <Grid.Col span={2}>
-                                                <Center pt={25}>
+                                            <Grid.Col span={{ base: 12, sm: 2 }}>
+                                                <Center pt={{ base: 0, sm: 25 }}>
                                                     <Icon icon="solar:arrow-right-linear" className="text-gray-400" width={20} />
                                                 </Center>
                                             </Grid.Col>
-                                            <Grid.Col span={5}>
+                                            <Grid.Col span={{ base: 12, sm: 5 }}>
                                                 <Select
                                                     label={t('venue.pos.endTime')}
                                                     placeholder={t('venue.pos.selectTime')}
@@ -224,7 +224,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                                     <Text fw={700} size="md" className="text-gray-800">{moment(e.date).format('DD MMMM YYYY')}</Text>
                                                                     <Group gap={6}>
                                                                         <Icon icon="solar:clock-circle-linear" width={14} className="text-gray-400" />
-                                                                        <Text size="sm" fw={600} className="text-primary-base">{e.start_time} — {e.end_time}</Text>
+                                                                        <Text size="sm" fw={600} className="text-primary-base">{e.start_time} â€” {e.end_time}</Text>
                                                                     </Group>
                                                                 </Stack>
                                                             </Group>
@@ -275,8 +275,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </Accordion>
                     </Stack>
 
-                    <Stack maw={300}>
-                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
+                    <Stack w={{ base: "100%", md: 300 }} className="shrink-0">
+                        <Card p={20} withBorder radius="xl" className={`static md:sticky md:top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ep:money" className="text-primary-base text-[20px]" />
@@ -293,7 +293,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             </Stack>
                         </Card>
 
-                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
+                        <Card p={20} withBorder radius="xl" className={`static md:sticky md:top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="ic:baseline-percent" className="text-primary-base text-[20px]" />
@@ -310,7 +310,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             </Stack>
                         </Card>
 
-                        <Card p={20} withBorder radius="xl" className={`!sticky !top-0 !overflow-visible`}>
+                        <Card p={20} withBorder radius="xl" className={`static md:sticky md:top-0 !overflow-visible`}>
                             <Stack>
                                 <Flex align="center" gap={10}>
                                     <Icon icon="material-symbols-light:order-approve-outline" className="text-primary-base text-[20px]" />
@@ -325,7 +325,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </Card>
 
                     </Stack>
-                </Flex>
+                </div>
             </Stack>
 
             <Card pos="fixed" className={`!bottom-0 !left-0 !right-0 !z-10 !border-t !border-[#d0d0d0]`} radius={0} py={15} px={30} style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>

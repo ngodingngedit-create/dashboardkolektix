@@ -1,4 +1,4 @@
-import { Get, Post } from '@/utils/REST';
+﻿import { Get, Post } from '@/utils/REST';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import imagePlus from '../../../assets/icon/camera-plus.png';
@@ -435,11 +435,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       </div>
                       <Divider />
                       <Grid>
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{ base: 12, xs: 6 }}>
                           <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.location')}</Text>
                           <Text size="md" fw={500}>{form.values.location || '-'}</Text>
                         </Grid.Col>
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{ base: 12, xs: 6 }}>
                           <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.experienceYears')}</Text>
                           <Text size="md" fw={500}>{form.values.experience_year ? t('talenta.yearsCount', { count: form.values.experience_year }) : '-'}</Text>
                         </Grid.Col>
@@ -447,11 +447,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                           <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.salaryExpectation')}</Text>
                           <Text size="md" fw={500} c="green.7">Rp {Number(form.values.expected_salary || 0).toLocaleString('id-ID')} / {salaryStatusLabel(form.values.salary_status)}</Text>
                         </Grid.Col>
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{ base: 12, xs: 6 }}>
                           <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.availability')}</Text>
                           <Text size="md" fw={500}>{form.values.is_available ? t('talenta.available') : t('talenta.notAvailable')}</Text>
                         </Grid.Col>
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{ base: 12, xs: 6 }}>
                           <Text size="sm" fw={600} c="dimmed" tt="uppercase">{t('talenta.verificationStatus')}</Text>
                           <Text size="md" fw={500}>{form.values.is_verified ? t('talenta.verified') : t('talenta.notVerified')}</Text>
                         </Grid.Col>
@@ -461,7 +461,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 </Card>
               ) : (
               <Tabs defaultValue="informasi-dasar" variant="outline" classNames={{ root: 'w-full', panel: 'pt-6', list: 'overflow-x-auto flex-nowrap' }}>
-                <Tabs.List>
+                <Tabs.List className="overflow-x-auto flex-nowrap [&_*]:whitespace-nowrap">
                   <Tabs.Tab value="informasi-dasar">{t('talenta.tabs.basicInfo')}</Tabs.Tab>
                   <Tabs.Tab value="profil-profesional">{t('talenta.tabs.professionalProfile')}</Tabs.Tab>
                   <Tabs.Tab value="portofolio">{t('talenta.tabs.portfolio')}</Tabs.Tab>

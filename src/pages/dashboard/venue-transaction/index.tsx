@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+﻿import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Flex,
   Select as MantineSelect,
@@ -107,7 +107,7 @@ export default function VenueTransaction() {
 
   const SortIcon = ({ col }: { col: string }) => (
     <span style={{ marginLeft: 4, opacity: sortBy === col ? 1 : 0.3, cursor: "pointer" }}>
-      {sortBy === col && sortDir === "desc" ? "↓" : "↑"}
+      {sortBy === col && sortDir === "desc" ? "â†“" : "â†‘"}
     </span>
   );
 
@@ -279,7 +279,7 @@ export default function VenueTransaction() {
 
   return (
     <>
-<Flex justify="space-between" align="center" mx={15} mt={15} mb={10}>
+<Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap="md" mx={15} mt={15} mb={10}>
 <Flex align="center" gap={15}>
 <button
 type="button"
@@ -289,7 +289,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 <Icon icon="ph:arrow-left-bold" />
 </button>
 <Stack gap={0}>
-<Text fw={800} style={{ fontSize: "26px" }} mb={0} c="dark.9">
+<Text fw={800} style={{ fontSize: "clamp(20px, 5vw, 26px)" }} mb={0} c="dark.9">
 {t('venue.transaction.title')}
 </Text>
 <Text size="sm" c="gray">
@@ -297,27 +297,27 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Text>
 </Stack>
 </Flex>
-        <Flex gap="md" align="center">
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 150 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto">
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalSales')}</Text>
             <Text size="lg" fw={700}>Rp {stats.totalSales.toLocaleString('id-ID')}</Text>
           </MantineCard>
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalTransactions')}</Text>
             <Text size="lg" fw={700}>{stats.totalTransactions}</Text>
           </MantineCard>
-          <MantineCard withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <MantineCard withBorder radius="md" p="xs">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t('venue.transaction.totalBookings')}</Text>
             <Text size="lg" fw={700}>{stats.totalBooking}</Text>
           </MantineCard>
-        </Flex>
+        </div>
       </Flex>
 
       <MantineCard p={25} m={15} withBorder radius="md">
         <Stack gap="xl">
           <Box mt={0}>
-            {/* Row 1: rows per page kiri | filter kanan */}
-            <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
+            {/* Filter row — satu baris, scroll-x di layar sempit */}
+            <div className="overflow-x-auto flex gap-2 items-center" style={{ marginBottom: 12 }}>
               <MantineSelect
                 value={rowsPerPage.toString()}
                 onChange={(val) => {
@@ -325,57 +325,54 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   setPage(1);
                 }}
                 data={["10", "20", "50", "100"]}
-                style={{ width: 70 }}
+                style={{ width: 70, flexShrink: 0 }}
                 size="sm"
               />
-              <Flex gap="sm" align="center" wrap="wrap">
-                {/* Filter tanggal */}
-                <Box style={{ position: "relative" }}>
-                  <MantineTextInput
-                    type="date"
-                    placeholder={t('venue.transaction.filterDate')}
-                    value={dateFilter}
-                    onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
-                    size="sm"
-                    style={{ width: 160 }}
-                    leftSection={<FontAwesomeIcon icon={faCalendarAlt} style={{ width: 14 }} />}
-                  />
-                </Box>
+              {/* Filter tanggal */}
+              <MantineTextInput
+                type="date"
+                placeholder={t('venue.transaction.filterDate')}
+                value={dateFilter}
+                onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+                size="sm"
+                style={{ width: 160, flexShrink: 0 }}
+                leftSection={<FontAwesomeIcon icon={faCalendarAlt} style={{ width: 14 }} />}
+              />
 
-                {/* Filter status */}
-                <MantineSelect
-                  placeholder={t('venue.transaction.filterStatus')}
-                  value={statusFilter}
-                  onChange={(val) => { setStatusFilter(val || ""); setPage(1); }}
-                  data={[t('venue.transaction.paid'), t('venue.transaction.pending'), t('venue.transaction.expired')]}
-                  style={{ width: 150 }}
-                  size="sm"
-                  clearable
-                />
+              {/* Filter status */}
+              <MantineSelect
+                placeholder={t('venue.transaction.filterStatus')}
+                value={statusFilter}
+                onChange={(val) => { setStatusFilter(val || ""); setPage(1); }}
+                data={[t('venue.transaction.paid'), t('venue.transaction.pending'), t('venue.transaction.expired')]}
+                style={{ width: 150, flexShrink: 0 }}
+                size="sm"
+                clearable
+              />
 
-                {/* Searchbar */}
-                <MantineTextInput
-                  placeholder={t('venue.transaction.searchPlaceholder')}
-                  leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                  value={filterValue}
-                  onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
-                  style={{ width: 280 }}
-                  size="sm"
-                />
+              {/* Searchbar */}
+              <MantineTextInput
+                placeholder={t('venue.transaction.searchPlaceholder')}
+                leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                value={filterValue}
+                onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
+                style={{ width: 280, flexShrink: 0 }}
+                size="sm"
+              />
 
-                <Button
-                  variant="filled"
-                  color="green"
-                  radius="md"
-                  size="sm"
-                  onClick={handleExport}
-                  disabled={filtered.length === 0}
-                  leftSection={<Icon icon="uiw:download" width={18} />}
-                >
-                  {t('venueTrx.export')}
-                </Button>
-                </Flex>
-            </Flex>
+              <Button
+                variant="filled"
+                color="green"
+                radius="md"
+                size="sm"
+                onClick={handleExport}
+                disabled={filtered.length === 0}
+                leftSection={<Icon icon="uiw:download" width={18} />}
+                className="shrink-0"
+              >
+                {t('venueTrx.export')}
+              </Button>
+            </div>
 
             {/* Info row */}
             <Flex align="center" gap="sm" mb="md">
@@ -389,7 +386,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               </Text>
             </Flex>
 
-            {/* Table */}
+            {/* Table — scroll-x di layar sempit */}
             <Box style={{ overflowX: "auto", overflowY: "auto", position: "relative" }}>
               <table
                 style={{
@@ -711,7 +708,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             </Flex>
                           </td>
 
-                          {/* Status — sticky */}
+                          {/* Status â€” sticky */}
                           <td
                             style={{
                               padding: "12px 14px",
@@ -732,7 +729,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             </Badge>
                           </td>
 
-                          {/* Action — sticky */}
+                          {/* Action â€” sticky */}
                           <td
                             style={{
                               padding: "12px 14px",
@@ -763,7 +760,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
             {/* Empty state sudah ada di dalam tbody */}
 
-            {/* Pagination footer — standar TablePagination */}
+            {/* Pagination footer â€” standar TablePagination */}
             <TablePagination
               page={page}
               onPageChange={setPage}
@@ -792,11 +789,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         {selectedTransaction && (
           <Stack gap="md">
             <Grid>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.invoiceNo')}</Text>
                 <Text fw={700} c="blue" style={{ fontFamily: "monospace" }}>{selectedTransaction.invoice_no}</Text>
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('common.status')}</Text>
                 <Badge color={getStatusInfo(selectedTransaction).color} variant="filled">
                   {getStatusInfo(selectedTransaction).text}
@@ -807,11 +804,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             <Divider />
 
             <Grid>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.colOrderDate')}</Text>
                 <Text fw={600}>{formatDate(selectedTransaction.created_at)}</Text>
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>{t('venue.transaction.paymentMethod')}</Text>
                 <Text fw={600}>{selectedTransaction.payment_method?.toLowerCase() === 'xendit' ? 'QRIS' : selectedTransaction.payment_method || "-"}</Text>
               </Grid.Col>
@@ -823,11 +820,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>{t('venue.transaction.eventVenueInfo')}</Text>
               <Paper withBorder p="sm" radius="md" bg="gray.0">
                 <Grid>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
                     <Text size="xs" c="dimmed">{t('venue.transaction.colEvent')}</Text>
                     <Text fw={600}>{selectedTransaction.event_name || "-"}</Text>
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
                     <Text size="xs" c="dimmed">{t('venue.transaction.colVenue')}</Text>
                     <Text fw={600}>{selectedTransaction.venue?.name || "-"}</Text>
                   </Grid.Col>
@@ -846,11 +843,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb={4}>{t('venue.transaction.clientInfo')}</Text>
               <Paper withBorder p="sm" radius="md" bg="gray.0">
                 <Grid>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
                     <Text size="xs" c="dimmed">{t('venue.transaction.colClient')}</Text>
                     <Text fw={600}>{selectedTransaction.user?.name || "-"}</Text>
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
                     <Text size="xs" c="dimmed">{t('common.email')}</Text>
                     <Text fw={600}>{selectedTransaction.user?.email || "-"}</Text>
                   </Grid.Col>
@@ -880,27 +877,28 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
             left: 0,
             right: 0,
             backgroundColor: 'white',
-            padding: '16px 40px',
+            padding: '16px clamp(16px, 4vw, 40px)',
             borderTop: '1px solid #e9ecef',
             boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
             zIndex: 1000,
             transition: 'left 0.3s ease',
           }}
         >
-          <Flex justify="flex-end" gap="md" maw={1400} mx="auto">
-            <Button 
-              variant="default" 
+          <Flex justify="flex-end" gap="md" maw={1400} mx="auto" wrap="wrap">
+            <Button
+              variant="default"
               size="md"
               radius="md"
               onClick={() => setDetailModalOpened(false)}
               leftSection={<FontAwesomeIcon icon={faTimes} />}
+              w={{ base: "100%", sm: "auto" }}
               style={{ minWidth: 120, border: '1px solid #d1d5db' }}
             >
               {t('common.close')}
             </Button>
-            <Button 
-              variant="filled" 
-              color="blue" 
+            <Button
+              variant="filled"
+              color="blue"
               size="md"
               radius="md"
               onClick={() => {
@@ -909,6 +907,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 window.open(`${baseUrl}/venue-invoice/${selectedTransaction.invoice_no}`, '_blank');
               }}
               leftSection={<FontAwesomeIcon icon={faReceipt} />}
+              w={{ base: "100%", sm: "auto" }}
               style={{ minWidth: 200 }}
             >
               {t('venue.transaction.viewInvoiceFull')}

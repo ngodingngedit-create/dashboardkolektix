@@ -145,7 +145,7 @@ export default function VenuePage() {
             <Stack gap={30}>
             {loading.includes('getdata') && !venue ? (
                 <>
-                    <Flex justify="space-between" gap={30}>
+<Flex justify="space-between" gap={{ base: 20, md: 30 }} wrap="wrap">
                         <Stack gap={8}>
                             <Skeleton height={28} width={280} radius="sm" />
                             <Skeleton height={12} width={160} radius="sm" />
@@ -202,7 +202,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             </Flex>
                         </Accordion.Control>
                         <Accordion.Panel>
-                            <SimpleGrid cols={4}>
+                            <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
                                 {statistics.map((statistic, index) => (
                                     <Card key={index} radius={10} withBorder pos='relative' className={`hover:!bg-grey/10`}>
                                         <Stack key={index} gap={0}>
