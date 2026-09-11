@@ -244,8 +244,8 @@ export default function AdminEventManagement() {
         {tabStatus.map(([status, label]) => (
           <Tab key={status} title={label}>
             <div className="mt-0">
-              <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-                <div className="flex flex-col gap-1.5 w-60">
+              <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", width: "max-content", minWidth: "100%", borderBottom: "1px solid #eee" }}>
+                <div className="flex flex-col gap-1.5 w-60 shrink-0">
                   <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.penyelenggara")}</Text>
                   <Select
                     placeholder={t("admin.event.index.semua.creator")}
@@ -269,7 +269,7 @@ export default function AdminEventManagement() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 shrink-0">
                   <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.rentang.tanggal")}</Text>
                   <Group gap={8} wrap="nowrap">
                     <input
@@ -287,7 +287,7 @@ export default function AdminEventManagement() {
                   </Group>
                 </div>
 
-                <div className="flex flex-col gap-1.5 w-72">
+                <div className="flex flex-col gap-1.5 w-72 shrink-0">
                   <Text size="xs" fw={700} c="gray.6" className="uppercase tracking-wider">{t("admin.event.index.pencarian")}</Text>
                   <Input
                     isClearable

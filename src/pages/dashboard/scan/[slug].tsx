@@ -63,7 +63,7 @@ export default function CheckinPage() {
             <div className="px-5">
               <input
                 type="text"
-                className="border-3 border-primary-light-200 rounded-full w-full py-2 px-4 text-sm"
+                className="border-2 border-primary-light-200 rounded-full w-full py-2 px-4 text-sm"
                 placeholder="Input kode tiket"
                 value={invoiceNo}
                 onChange={(e) => setInvoiceNo(e.target.value)}
@@ -111,7 +111,7 @@ export default function CheckinPage() {
         )}
         {step === 2 && (
           <div className='flex flex-col gap-3 py-4 px-6'>
-            <div className='flex flex-col rounded-full border-3 border-danger w-10 h-10 items-center justify-center'>
+            <div className='flex flex-col rounded-full border-2 border-danger w-10 h-10 items-center justify-center'>
               <FontAwesomeIcon icon={faXmark} size='xl' className='text-danger' />
             </div>
             <h6>Check In/Checkout Gagal</h6>

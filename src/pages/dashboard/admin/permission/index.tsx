@@ -374,7 +374,7 @@ export default function KelolaPermission() {
   };
 
   const renderForm = () => (
-    <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
+    <Stack gap={25} className="p-[20px] md:p-[30px] pb-24" pos="relative">
       <Flex align="center" gap={15}>
         <Tooltip label={t("admin.permission.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
@@ -391,10 +391,10 @@ export default function KelolaPermission() {
         <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", padding: "30px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
           <LoadingOverlay visible={loading.includes("submit")} />
           <Grid>
-            <Grid.Col span={6}>
+            <Grid.Col span={{ base: 12, xs: 6 }}>
               <Select label={t("admin.permission.index.user")} placeholder={t("admin.permission.index.pilih.user")} data={users} searchable required {...form.getInputProps("user_id")} variant="filled" />
             </Grid.Col>
-            <Grid.Col span={6}>
+            <Grid.Col span={{ base: 12, xs: 6 }}>
               <Select label={t("admin.permission.index.role")} placeholder={t("admin.permission.index.pilih.role")} data={roles} searchable required {...form.getInputProps("role_id")} variant="filled" />
             </Grid.Col>
             <Grid.Col span={12}>
@@ -413,7 +413,7 @@ export default function KelolaPermission() {
               { key: "is_download", label: t("admin.permission.index.rights.download"), icon: "ph:download-simple" },
               { key: "is_import", label: t("admin.permission.index.rights.import"), icon: "ph:upload-simple" },
             ].map((perm) => (
-              <Grid.Col span={4} key={perm.key}>
+              <Grid.Col span={{ base: 12, xs: 4 }} key={perm.key}>
                 <Checkbox 
                   label={perm.label} 
                   checked={(form.values as any)[perm.key] === 1} 
@@ -466,8 +466,8 @@ export default function KelolaPermission() {
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <div style={{ width: 250 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.permission.index.pencarian")}</Text>
             <TextInput 
               placeholder={t("admin.permission.index.cari.user.role.module")} 

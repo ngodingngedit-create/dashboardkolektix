@@ -1111,7 +1111,7 @@ const ProfileCreator = () => {
         aria-label="Profil Creator Tabs"
         className="border border-b-2 border-primary-light-200 border-x-0 border-t-0"
         classNames={{
-          tabList: 'pb-0 self-center font-semibold rounded-b-none bg-white',
+          tabList: 'pb-0 self-center font-semibold rounded-b-none bg-white overflow-x-auto flex-nowrap',
           tab: 'p-5',
           cursor: '!bg-[#0B387C0D] rounded-[5px_5px_0_0] border-b-2 border-b-primary-base',
         }}

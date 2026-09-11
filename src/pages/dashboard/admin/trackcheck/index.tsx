@@ -546,8 +546,9 @@ export default function OrderTracking() {
                                 </Group>
 
                                 {/* Search dan Filter */}
-                                <Group grow>
+                                <Group wrap="nowrap" style={{ overflowX: "auto" }}>
                                     <TextInput
+                                        miw={280}
                                         placeholder={t("admin.trackcheck.index.cari.invoice.customer.atau.id.order")}
                                         leftSection={<Icon icon="mdi:magnify" width={20} />}
                                         value={searchQuery}
@@ -556,6 +557,7 @@ export default function OrderTracking() {
                                         radius="md"
                                     />
                                     <Select
+                                        miw={200}
                                         placeholder={t("admin.trackcheck.index.filter.status")}
                                         data={[t("admin.trackcheck.index.option.statusAll"), t("admin.trackcheck.index.option.verified"), t("admin.trackcheck.index.option.pending"), t("admin.trackcheck.index.option.unpaid")]}
                                         defaultValue={t("admin.trackcheck.index.option.statusAll")}
@@ -654,7 +656,7 @@ export default function OrderTracking() {
                                                             </Group>
 
                                                             {/* Baris 3: Grid Informasi Tambahan */}
-                                                            <SimpleGrid cols={3} spacing="xs">
+                                                            <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs">
                                                                 <Box>
                                                                     <Text size="xs" c="dimmed">{t("admin.trackcheck.index.order.id")}</Text>
                                                                     <Text size="sm" fw={500}>#{transaction.id}</Text>

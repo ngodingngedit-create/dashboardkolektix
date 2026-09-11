@@ -360,7 +360,7 @@ const Legal = () => {
 
     return (
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex justify="space-between" align="center" mb="lg">
+        <Flex justify="space-between" align="center" mb="lg" wrap="nowrap" style={{ overflowX: "auto" }}>
           <Flex align="center" gap={12}>
             <Box
               w={32} h={32} bg={type === 'ktp' ? 'blue.7' : 'teal.7'}
@@ -370,7 +370,7 @@ const Legal = () => {
             </Box>
             <Text fw={700} size="lg" c="gray.9">{title}</Text>
           </Flex>
-          <Flex gap={10} align="center">
+          <Flex gap={10} align="center" wrap="nowrap" style={{ overflowX: "auto" }}>
             <Button
               variant="filled"
               color="blue"
@@ -385,7 +385,7 @@ const Legal = () => {
               leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              style={{ width: 240 }}
+              style={{ width: 'min(240px, 100%)' }}
             />
           </Flex>
         </Flex>
@@ -695,12 +695,12 @@ const Legal = () => {
   const renderList = () => (
     <Stack gap={30}>
       {/* Page Header */}
-      <Flex justify="space-between" align="center">
+      <Flex justify="space-between" align="center" wrap="wrap" gap={10}>
         <Stack gap={0}>
           <Title order={1} size="h2">Dokumen Legal</Title>
           <Text size="sm" c="gray">Kelola data KTP dan NPWP untuk verifikasi akun Anda</Text>
         </Stack>
-        <Flex gap={10}>
+        <Flex gap={10} wrap="wrap">
           {ktpList.length === 0 && (
             <Button
               onClick={handleAddKTP}

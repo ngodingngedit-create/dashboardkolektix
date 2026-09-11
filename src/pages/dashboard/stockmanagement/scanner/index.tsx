@@ -492,8 +492,10 @@ const Scanner = () => {
                                 </Badge>
                             </div>
 
-                            <ScrollArea className="flex-1" style={{ minHeight: 'calc(100vh - 300px)' }}>
-                                <Table removeWrapper aria-label="Selected Products Table" style={{ minWidth: 800, width: "100%" }}>
+                            {/* ponytail: mobile 800px form table = scroll-heavy; card list layout when touch editing needed */}
+                            <ScrollArea className="flex-1" style={{ minHeight: 'calc(100vh - 300px)' }} type="hover">
+                                <div className="min-w-[800px] md:min-w-0">
+                                <Table removeWrapper aria-label="Selected Products Table" style={{ width: "100%" }}>
                                     <TableHeader>
                                         <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold" style={{ minWidth: 150, padding: "12px 16px" }}>Produk</TableColumn>
                                         <TableColumn className="bg-gray-50/80 text-gray-600 font-semibold text-center" style={{ width: 80, padding: "12px 16px" }}>Stok Awal</TableColumn>
@@ -615,6 +617,7 @@ const Scanner = () => {
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                             </ScrollArea>
                         </div>
                     </div>

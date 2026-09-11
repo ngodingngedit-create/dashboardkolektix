@@ -254,7 +254,7 @@ export default function KelolaModule() {
   };
 
   const renderForm = () => (
-    <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
+    <Stack gap={25} className="p-[20px] md:p-[30px] pb-24" pos="relative">
       <Flex align="center" gap={15}>
         <Tooltip label={t("admin.module.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
@@ -340,8 +340,8 @@ export default function KelolaModule() {
       </Flex>
 
       <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <div style={{ width: 250 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.module.index.pencarian")}</Text>
             <TextInput 
               placeholder={t("admin.module.index.cari.nama.module")} 

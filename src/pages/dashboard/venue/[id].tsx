@@ -158,12 +158,12 @@ export default function VenuePage() {
                 </>
             ) : (
                 <>
-<Flex justify="space-between" gap={30}>
+<Flex justify="space-between" gap={30} wrap="wrap">
 <Flex align="center" gap={15}>
 <button
 type="button"
 onClick={() => router.push('/dashboard/venue')}
-className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm shrink-0"
 >
 <Icon icon="ph:arrow-left-bold" />
 </button>

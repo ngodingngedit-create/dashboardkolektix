@@ -1851,14 +1851,14 @@ const Merch = () => {
               color={paymentMethodInfo.color}
               variant="filled"
               leftSection={paymentMethodInfo.icon && <FontAwesomeIcon icon={paymentMethodInfo.icon} size="xs" />}
-              style={{ width: 100 }}
+              style={{ minWidth: 100 }}
             >
               {paymentMethodInfo.label}
             </Badge>
           </Box>
         ) : (
           <Box style={{ display: 'flex', justifyContent: 'center' }}>
-            <Badge color="gray" variant="filled" style={{ width: 100 }}>
+            <Badge color="gray" variant="filled" style={{ minWidth: 100 }}>
               {transaction.payment_method?.payment_name || "-"}
             </Badge>
           </Box>
@@ -1868,7 +1868,7 @@ const Merch = () => {
             <Badge
               color={transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.bgcolor || "gray"}
               variant="filled"
-              style={{ width: 100 }}
+              style={{ minWidth: 100 }}
             >
               {transactionStatus?.find((z) => z.id == transaction.transaction_status_id)?.name || "Unknown"}
             </Badge>

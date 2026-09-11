@@ -99,7 +99,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Stack>
 </Flex>
 
-                <Flex align="center" gap={10}>
+                <Flex align="center" gap={10} wrap="wrap">
                     <TextInput
                         value={search}
                         onChange={e => setSearch(e.currentTarget.value)}
@@ -124,7 +124,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 <CardSkeleton count={4} variant="image" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5" />
             ) : (
               <>
-            <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-xgrow [&>*]:!w-full md:[&>*]:!max-w-[300px]`}>
+            <Flex gap={20} wrap="wrap" className={`[&>*]:!flex-grow [&>*]:!w-full md:[&>*]:!max-w-[300px]`}>
                 {blogs?.map((e, i) => (
                     <Card key={i} withBorder radius={10} component={Link} href={`/dashboard/blog/${e.id}`} p={0}>
                         <AspectRatio ratio={16 / 9}>

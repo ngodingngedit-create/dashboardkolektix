@@ -733,7 +733,7 @@ export default function OrderTracking() {
                                                             </Group>
 
                                                             {/* Baris 3: Grid Informasi Tambahan */}
-                                                            <SimpleGrid cols={3} spacing="xs">
+                                                            <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs">
                                                                 <Box>
                                                                     <Text size="xs" c="dimmed">{t("admin.resi.index.order.id")}</Text>
                                                                     <Text size="sm" fw={500}>#{transaction.id}</Text>
@@ -985,7 +985,7 @@ export default function OrderTracking() {
                                 </Paper>
 
                                 <Grid gutter="md">
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             withAsterisk
                                             label={t("admin.resi.index.courier.company")}
@@ -994,7 +994,7 @@ export default function OrderTracking() {
                                             {...form.getInputProps('courier_company')}
                                         />
                                     </Grid.Col>
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label={t("admin.resi.index.courier.service")}
                                             placeholder={t("admin.resi.index.e.g.reg")}
@@ -1013,7 +1013,7 @@ export default function OrderTracking() {
                                 />
 
                                 <Grid gutter="md">
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label={t("admin.resi.index.etd.estimation")}
                                             placeholder={t("admin.resi.index.e.g.1.2.hari")}
@@ -1021,7 +1021,7 @@ export default function OrderTracking() {
                                             {...form.getInputProps('etd')}
                                         />
                                     </Grid.Col>
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label={t("admin.resi.index.etd.time")}
                                             type="time"

@@ -1208,7 +1208,7 @@ const MyEventDetail = () => {
                           </select>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 md:gap-4 mb-4 items-center">
+                        <div className="flex flex-nowrap gap-2 md:gap-4 mb-4 items-center overflow-x-auto">
                           <Button label="All" onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
                           <Button label="Online" onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
                           <Button label="Offline" onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />

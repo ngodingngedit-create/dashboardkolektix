@@ -213,8 +213,8 @@ export default function AdminVenueManagement() {
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden border-light-grey">
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <div style={{ width: 220 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 220, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.penyelenggara")}</Text>
             <Select
               placeholder={t("admin.venue.index.semua.creator")}
@@ -233,7 +233,7 @@ export default function AdminVenueManagement() {
               radius="md"
             />
           </div>
-          <div style={{ width: 250 }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.rentang.tanggal")}</Text>
             <Flex gap={5}>
               <input
@@ -256,7 +256,7 @@ export default function AdminVenueManagement() {
               />
             </Flex>
           </div>
-          <div style={{ width: 220 }}>
+          <div style={{ width: 220, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.venue.index.pencarian")}</Text>
             <Input
               isClearable

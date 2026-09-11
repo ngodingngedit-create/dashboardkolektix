@@ -2337,13 +2337,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 
         {/* Sticky Footer */}
         {scanHistory.length > 0 && (
-          <div className="fixed bottom-6 z-50" style={{ 
-            left: 'calc(50% + 16px)',
-            width: 'calc(50% - 32px)'
+          <div className="fixed bottom-4 left-0 right-0 z-50 lg:left-auto lg:right-0" style={{
+            width: '100%'
           }}>
-            <div className="bg-white rounded-xl shadow-lg border border-primary-light-200 p-4 mx-4 lg:mx-0 lg:mr-4">
+            <div className="bg-white rounded-xl shadow-lg border border-primary-light-200 p-4 mx-4 lg:mx-0 lg:mr-4 lg:w-[calc(50%-32px)]">
               {showModalFooter && showSuccessModal && selected === 'qr' ? (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     label="Tutup"
                     onClick={handleCloseSuccessModal}
@@ -2358,7 +2357,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                   />
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     label="Clear History"
                     onClick={() => setScanHistory([])}

@@ -384,7 +384,7 @@ export default function TrackingUpdateForm({
                         </Text>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                    <div className="flex-1 overflow-y-auto px-6 py-5 pb-28">
                         <Stack gap="md">
                             {/* Order Summary */}
                             {invoiceData && (
@@ -482,7 +482,7 @@ export default function TrackingUpdateForm({
             </div>
 
             {/* Unified Floating Footer - Fixed to Viewport Bottom (Edge-to-Edge) */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 px-6 py-4 bg-white border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)] flex items-center justify-between">
+            <div className="fixed bottom-0 left-0 right-0 z-40 px-6 py-4 bg-white border-t border-light-grey shadow-[0_-10px_20px_rgba(0,0,0,0.08)] flex flex-wrap items-center justify-between gap-3">
                 <div>
                     {invoiceData?.courier && (
                         <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">

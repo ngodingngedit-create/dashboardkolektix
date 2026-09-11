@@ -498,7 +498,7 @@ const router = useRouter();
 
         {/* Floating Footer */}
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-8 py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.08)]">
-          <Flex justify="space-between" align="center">
+          <Flex justify="space-between" align="center" wrap="wrap" gap="sm">
             <div>
               {isEditMode && (
                 <Button
@@ -512,7 +512,7 @@ const router = useRouter();
                 </Button>
               )}
             </div>
-            <Flex gap="md">
+            <Flex gap="md" wrap="wrap">
               <Button
                 variant="subtle"
                 color="gray"

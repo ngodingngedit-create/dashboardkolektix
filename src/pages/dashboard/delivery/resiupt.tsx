@@ -177,10 +177,10 @@ export default function ResiUpdateForm({
     };
 
     return (
-        <Box className="flex flex-col relative bg-white">
+        <Box className="flex flex-col relative bg-white pb-24">
             <Grid className="flex-1 w-full m-0">
                 {/* SISI KIRI: Info Resi / Invoice Saat Ini */}
-                <Grid.Col span={5}>
+                <Grid.Col span={{ base: 12, md: 5 }}>
                     <Box p={20}>
                         <Stack gap="xl">
                             <Group justify="space-between" align="flex-start">
@@ -219,7 +219,7 @@ export default function ResiUpdateForm({
                                     <Text fw={600} size="sm">Detail Pengiriman Saat Ini</Text>
 
                                     <Grid>
-                                        <Grid.Col span={6}>
+                                        <Grid.Col span={{ base: 12, xs: 6 }}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="blue" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:box-minimalistic-bold" />
@@ -231,7 +231,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={6}>
+                                        <Grid.Col span={{ base: 12, xs: 6 }}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="teal" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:tag-horizontal-bold" />
@@ -243,7 +243,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={6}>
+                                        <Grid.Col span={{ base: 12, xs: 6 }}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="orange" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:barcode-bold" />
@@ -255,7 +255,7 @@ export default function ResiUpdateForm({
                                             </Group>
                                         </Grid.Col>
 
-                                        <Grid.Col span={6}>
+                                        <Grid.Col span={{ base: 12, xs: 6 }}>
                                             <Group gap="xs" wrap="nowrap" align="flex-start">
                                                 <ThemeIcon variant="light" color="grape" size="md" radius="xl" className="mt-1">
                                                     <Icon icon="solar:calendar-date-bold" />
@@ -292,7 +292,7 @@ export default function ResiUpdateForm({
                 </Grid.Col>
 
                 {/* SISI KANAN: Form Input Resi */}
-                <Grid.Col span={7} className="border-l border-gray-100">
+                <Grid.Col span={{ base: 12, md: 7 }} className="border-l border-gray-100">
                     <Box p={20} pb={30}>
                         <Text fw={600} size="lg" mb={4}>Update Resi Baru</Text>
                         <Text size="sm" c="dimmed" mb="xl">
@@ -302,7 +302,7 @@ export default function ResiUpdateForm({
                         <form onSubmit={form.onSubmit(handleSubmit)} id="resi-form">
                             <Stack gap="md">
                                 <Grid gutter="md">
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             withAsterisk
                                             label="Courier Company"
@@ -311,7 +311,7 @@ export default function ResiUpdateForm({
                                             {...form.getInputProps("courier_company")}
                                         />
                                     </Grid.Col>
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label="Courier Service"
                                             placeholder="Contoh: REG, YES, OKE"
@@ -331,7 +331,7 @@ export default function ResiUpdateForm({
                                 />
 
                                 <Grid gutter="md">
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label="ETD (Estimasi)"
                                             placeholder="Contoh: 1-2 hari"
@@ -339,7 +339,7 @@ export default function ResiUpdateForm({
                                             {...form.getInputProps("etd")}
                                         />
                                     </Grid.Col>
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={{ base: 12, xs: 6 }}>
                                         <TextInput
                                             label="ETD Time"
                                             type="time"

@@ -137,7 +137,7 @@ const EditEventModal = ({ item, isOpen, onClose }: EditEventModalProps) => {
       scrollBehavior="inside"
       classNames={{
         wrapper: "justify-end p-0 overflow-hidden",
-        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-[50vw] max-w-[50vw]",
+        base: "h-screen max-h-screen m-0 !mr-0 overflow-y-auto rounded-l-xl rounded-r-none w-full max-w-full md:w-[50vw] md:max-w-[50vw]",
       }}
       motionProps={{
         variants: {

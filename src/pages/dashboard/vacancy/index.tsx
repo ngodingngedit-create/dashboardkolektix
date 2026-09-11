@@ -59,7 +59,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <p>
                       Nama Profesi/Posisi <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3'>
+                    <div className='md:col-span-3'>
                       <InputField type='text' placeholder='Nama Profesi' required fullWidth />
                     </div>
                     <p>
@@ -67,7 +67,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </p>
 
                     <RadioGroup
-                      className='col-span-3'
+                      className='md:col-span-3'
                       size='md'
                       color='primary'
                       // value={form.ticket_type}
@@ -105,13 +105,13 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                       Pembayaran <span className='text-danger'>*</span>
                     </p>
                     <RadioGroup
-                      className='col-span-3'
+                      className='md:col-span-3'
                       size='md'
                       color='primary'
                       // value={form.ticket_type}
                       // onChange={(e: any) => setForm({ ...form, ticket_type: e.target.value })}
                     >
-                      <div className='grid grid-cols-3 gap-x-3'>
+                      <div className='grid grid-cols-1 sm:grid-cols-3 gap-x-3'>
                         <Radio
                           classNames={{
                             base: 'data-[selected=true]:bg-primary-light-200 data-[selected=true]:border data-[selected=true]:border-primary-dark data-[selected=true]:shadow-md data-[selected=true]:rounded-3xl px-4 gap-2 border shadow-sm border-primary-light-200 max-w-full rounded-3xl ml-0.5 mr-3 my-1',
@@ -145,25 +145,25 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     <p>
                       Tanggal Mulai <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3'>
+                    <div className='md:col-span-3'>
                       <InputField type='date' required fullWidth />
                     </div>
                     <p>
                       Tanggal Berakhir <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3'>
+                    <div className='md:col-span-3'>
                       <InputField type='date' required fullWidth />
                     </div>
                     <p>
                       Lokasi <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3'>
+                    <div className='md:col-span-3'>
                       <InputField type='text' placeholder='Nama Profesi' required fullWidth />
                     </div>
                     <p>
                       Skill <span className='text-danger'>*</span>
                     </p>
-                    <div className='col-span-3'>
+                    <div className='md:col-span-3'>
                       <InputField type='text' placeholder='Nama Profesi' required fullWidth />
                     </div>
                   </div>
@@ -197,7 +197,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           </div>
         </div>
       </div>
-      <div className='border-t-2 border-t-primary-light-200 fixed bottom-0 flex justify-end gap-3 p-5 w-[81%] bg-white'>
+      <div className='border-t-2 border-t-primary-light-200 fixed bottom-0 left-0 right-0 flex flex-wrap justify-end gap-3 p-5 w-full bg-white z-40'>
         <Button label='Simpan Draf' color='secondary' />
         <Button label='Simpan Perubahan' color='primary' />
       </div>

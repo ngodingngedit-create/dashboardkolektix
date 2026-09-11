@@ -289,8 +289,8 @@ const Merch: React.FC = () => {
       </Flex>
 
       <div className="mt-4">
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }} wrap="wrap">
-          <div style={{ width: 220 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", width: "max-content", minWidth: "100%", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 220, flexShrink: 0 }}>
             <Select
               label={t("admin.merchandise.index.penyelenggara")}
               placeholder={t("admin.merchandise.index.semua.creator")}
@@ -300,14 +300,14 @@ const Merch: React.FC = () => {
               size="sm" searchable clearable radius="md"
             />
           </div>
-          <div style={{ width: 250 }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4}>{t("admin.merchandise.index.rentang.tanggal")}</Text>
             <Flex gap={5}>
               <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #ced4da", fontSize: "13px", width: "50%" }} />
               <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} style={{ height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #ced4da", fontSize: "13px", width: "50%" }} />
             </Flex>
           </div>
-          <div style={{ width: 220 }}>
+          <div style={{ width: 220, flexShrink: 0 }}>
             <Input
               label={t("admin.merchandise.index.pencarian")}
               value={search}

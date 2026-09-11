@@ -139,7 +139,7 @@ const DetailEventTicket = () => {
           <BreadcrumbItem>{eventData.name}</BreadcrumbItem>
           <BreadcrumbItem>{t('event.checkIn')}</BreadcrumbItem>
         </Breadcrumbs>
-<div className='flex justify-between'>
+<div className='flex flex-col md:flex-row md:justify-between gap-4'>
 <Flex align="center" gap={12}>
 <button
 type="button"
@@ -184,7 +184,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       </div>
     </div>
         </div>
-        <div className="mt-4 flex items-center border border-primary-light-200 rounded-lg overflow-hidden w-1/4">
+        <div className="mt-4 flex items-center border border-primary-light-200 rounded-lg overflow-hidden w-full md:w-1/4">
           <FontAwesomeIcon icon={faMagnifyingGlass} className="text-grey ml-2" />
           <input
             type="text"

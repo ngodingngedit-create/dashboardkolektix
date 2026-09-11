@@ -667,10 +667,9 @@ const CreateEvent = () => {
               variant="solid"
               aria-label="Tabs variants"
               className="border border-b-2 border-primary-light-200 border-x-0 border-t-0"
-              fullWidth
               classNames={{
-                tabList: "pb-0 self-center font-semibold rounded-b-none bg-white",
-                tab: "p-5",
+                tabList: "pb-0 self-center font-semibold rounded-b-none bg-white overflow-x-auto flex-nowrap",
+                tab: "p-3 md:p-5",
                 cursor: "rounded-b-none border-b-2 border-b-primary-base",
               }}
             >
@@ -911,7 +910,7 @@ const CreateEvent = () => {
           </div>
         </div>
       </div>
-      <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
+      <div className="border-t border-primary-light-200 fixed bottom-0 left-0 md:left-[65px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
         <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
           <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
             <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0 font-bold">

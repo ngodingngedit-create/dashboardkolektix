@@ -245,7 +245,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Flex>
 </Flex>
 
-      <Flex justify="flex-end" gap="sm" align="center" wrap="wrap">
+      <Flex justify="flex-end" gap="sm" align="center" wrap="nowrap" style={{ overflowX: "auto" }}>
         <Button 
           onClick={exportToExcel} 
           variant="filled"
@@ -254,6 +254,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           disabled={filteredData.length === 0}
           radius="xl"
           size="sm"
+          style={{ flexShrink: 0 }}
         >
           Export Excel
         </Button>
@@ -264,6 +265,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           value={String(selectedEvent)}
           onChange={(val) => setSelectedEvent(val as any)}
           w={200}
+          style={{ flexShrink: 0 }}
           size="sm"
           radius="md"
           searchable
@@ -275,6 +277,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           value={selectedTicket}
           onChange={(val) => setSelectedTicket(val || 'all')}
           w={150}
+          style={{ flexShrink: 0 }}
           size="sm"
           radius="md"
         />
@@ -293,6 +296,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           value={selectedStatus}
           onChange={(val) => setSelectedStatus(val || 'all')}
           w={150}
+          style={{ flexShrink: 0 }}
           size="sm"
           radius="md"
         />
@@ -303,6 +307,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           w={220}
+          style={{ flexShrink: 0 }}
           size="sm"
           radius="md"
         />

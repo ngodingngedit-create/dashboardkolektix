@@ -596,7 +596,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         <td style={{ padding: '12px 14px' }}><Text size="xs" c="dimmed">{moment(v.date_start).format("DD/MM/YY")} - {moment(v.date_end).format("DD/MM/YY")}</Text></td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="xs" fw={600}>{v.used_count}/{v.max_use}</Text></td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}><Text size="sm" fw={700}>{v.stock}</Text></td>
-                        <td style={{ padding: '12px 14px' }}><Flex justify="center" direction="column" align="center"><Badge variant="filled" color={sCol} size="sm" style={{ width: 100 }}>{bStat}</Badge></Flex></td>
+                        <td style={{ padding: '12px 14px' }}><Flex justify="center" direction="column" align="center"><Badge variant="filled" color={sCol} size="sm" style={{ minWidth: 100 }}>{bStat}</Badge></Flex></td>
                         <td style={{ padding: '12px 14px', position: 'sticky', right: 0, backgroundColor: 'inherit', textAlign: 'center', borderLeft: '1px solid #f1f3f5' }}>
                           <Flex gap={8} justify="center">
                             <ActionIcon variant="subtle" color="blue" onClick={() => handleViewClick(v)}><FontAwesomeIcon icon={faEye} size="xs" /></ActionIcon>

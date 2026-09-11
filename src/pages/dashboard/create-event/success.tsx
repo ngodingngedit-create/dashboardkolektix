@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const Success = () => {
   return (
-    <div className='flex min-h-screen flex-col justify-center gap-5 px-10 items-center text-dark text-center pt-24 pb-20'>
+    <div className='flex min-h-screen flex-col justify-center gap-5 px-5 md:px-10 items-center text-dark text-center pt-24 pb-20'>
       <FontAwesomeIcon icon={faCheckCircle} size='6x' className='text-[#06c258]' />
 
       <h1 className='text-[20px] text-center'>Event berhasil dibuat!</h1>

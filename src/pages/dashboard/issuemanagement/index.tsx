@@ -105,9 +105,9 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                     />
                 </div>
 
-                <div className="flex items-center gap-4 ml-auto">
-                    <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-end">
+                <div className="flex items-center gap-4 ml-auto shrink-0">
+                    <div className="hidden sm:flex items-center gap-3">
+                        <div className="hidden md:flex flex-col items-end">
                             <span className="text-sm font-black text-slate-800">{project?.name || t("issue.newTask")}</span>
                             <span className="text-[11px] font-medium text-slate-400">{t("issue.membersActive", { count: project?.members?.length || 0 })}</span>
                         </div>
@@ -116,12 +116,12 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                             <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center">EN</div>
                         </div>
                     </div>
-                    <Icon icon="mdi:bell-outline" className="text-slate-400" width={20} />
+                    <Icon icon="mdi:bell-outline" className="text-slate-400 hidden sm:block" width={20} />
                 </div>
             </div>
 
             {viewMode !== 'FORM' && (
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <div className="flex items-center gap-2">
                         <Button size="sm" variant="flat" className="bg-slate-100 text-slate-600 rounded-full h-8 px-3 font-bold border-none" startContent={<Icon icon="mdi:filter-variant" width={14} />}>
                             {t("issue.filter")}
@@ -505,25 +505,25 @@ const IssueDetailsModal = ({ isOpen, onOpenChange, issue, projectLabels, project
                     style={{
                         right: 0,
                         backgroundColor: 'white',
-                        padding: '16px 40px',
+                        padding: '16px 20px',
                         borderTop: '1px solid #e9ecef',
                         boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
-                        zIndex: 10000, 
+                        zIndex: 10000,
                     }}
                 >
-                    <div className="flex justify-between items-center px-10">
+                    <div className="flex flex-wrap justify-between items-center gap-3 px-0 md:px-10">
                         {!readOnly ? (
                             <>
-                                <Button 
-                                    variant="light" 
-                                    color="danger" 
+                                <Button
+                                    variant="light"
+                                    color="danger"
                                     onClick={() => { onDelete(); onOpenChange(false); }}
                                     startContent={<Icon icon="mdi:trash-can-outline" width={18} />}
                                     className="font-bold text-red-500"
                                 >
                                     {t("issue.deleteTask")}
                                 </Button>
-                                <div className="flex gap-4">
+                                <div className="flex flex-wrap gap-4">
                                     <Button 
                                         variant="flat" 
                                         onPress={() => onOpenChange(false)}
@@ -727,6 +727,8 @@ const TableSection = ({ formData, setFormData, readOnly, users, loggedUserId }: 
                         )}
                     </TableBody>
                 </Table>
+                {/* ponytail: NextUI table mobile overflow — wrapper gives h-scroll; replace with card list when >6 cols */}
+                <style>{`@media (max-width: 767px) { [aria-label="${t("issue.tableAriaLabel")}"] { display: block; overflow-x: auto; white-space: nowrap; } }`}</style>
             </div>
 
             {selectedIssue && (

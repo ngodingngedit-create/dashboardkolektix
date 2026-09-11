@@ -89,7 +89,7 @@ const TicketContainer = ({
           )}
         </Flex>
       </div>
-      <div className="p-4 flex justify-between items-center">
+      <div className="p-4 flex flex-wrap gap-3 justify-between items-center">
         <Flex gap={20} align="center" wrap="wrap">
           <div>
              <Text size="xs" c="dimmed">Harga</Text>

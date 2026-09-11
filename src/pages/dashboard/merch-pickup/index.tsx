@@ -1430,8 +1430,8 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       <MantineCard p={25} mt={20} mx={15} mb={15} withBorder radius="md">
         <Stack gap="xl">
             <Box>
-                <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="wrap">
-                    <Group gap="sm">
+                <Flex align="center" gap="sm" mb="sm" justify="space-between" wrap="nowrap" style={{ overflowX: "auto" }}>
+                    <Group gap="sm" wrap="nowrap" style={{ overflowX: "auto" }}>
                         <MantineSelect
                             value={rowsPerPage.toString()}
                             onChange={(val) => {
@@ -1439,7 +1439,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 setPage(1);
                             }}
                             data={['10', '20', '50', '100']}
-                            style={{ width: 70 }}
+                            style={{ width: 70, flexShrink: 0 }}
                             size="sm"
                         />
                         <MantineButton 
@@ -1449,6 +1449,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             onClick={() => exportToCSV(filtered.filter(item => item.isAvailable))}
                             disabled={filtered.filter(item => item.isAvailable).length === 0}
                             size="sm"
+                            className="shrink-0"
                             styles={{ root: { color: 'white' } }}
                         >
                             Export CSV ({filtered.filter(item => item.isAvailable).length})
@@ -1459,11 +1460,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             leftSection={<Icon icon="mdi:qrcode-scan" width={18} />}
                             onClick={handleOpenScanModal}
                             size="sm"
+                            className="shrink-0"
                         >
                             Scan QR/Barcode
                         </MantineButton>
                     </Group>
-                    <Group gap="sm">
+                    <Group gap="sm" wrap="nowrap" style={{ overflowX: "auto" }}>
                         <MantineTextInput
                             placeholder="Cari invoice, dll..."
                             leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
@@ -1472,7 +1474,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 setFilterValue(e.target.value);
                                 setPage(1);
                             }}
-                            style={{ width: '100%', maxWidth: 300 }}
+                            style={{ width: 280, flexShrink: 0 }}
                             size="sm"
                         />
                     </Group>

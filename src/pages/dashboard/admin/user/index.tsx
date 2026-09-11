@@ -543,7 +543,7 @@ export default function KelolaUser() {
   };
 
   const renderForm = () => (
-    <Stack gap={25} className="p-[20px] md:p-[30px]" pos="relative">
+    <Stack gap={25} className="p-[20px] md:p-[30px] pb-24" pos="relative">
       <Flex align="center" gap={15}>
         <Tooltip label={t("admin.user.index.kembali")}>
           <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
@@ -562,16 +562,16 @@ export default function KelolaUser() {
           <Stack gap="md">
             <Text fw={600} size="lg">{t("admin.user.index.data.user")}</Text>
             <Grid>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, xs: 6 }}>
                 <TextInput label={t("admin.user.index.nama.lengkap")} placeholder={t("admin.user.index.contoh.john.doe")} required {...form.getInputProps("name")} />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, xs: 6 }}>
                 <TextInput label={t("admin.user.index.email")} placeholder={t("admin.user.index.contoh.user.example.com")} required type="email" {...form.getInputProps("email")} />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, xs: 6 }}>
                 <TextInput label={t("admin.user.index.nomor.telepon")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone")} />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, xs: 6 }}>
                 <Select
                   label={t("admin.user.index.status.verifikasi.user")}
                   data={[
@@ -599,16 +599,16 @@ export default function KelolaUser() {
                 <Text size="sm" c="dimmed">{t("admin.user.index.isi.data.berikut.jika.user.ini.juga.berperan.sebagai.creator.event.org")}</Text>
 
                 <Grid>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, xs: 6 }}>
                     <TextInput label={t("admin.user.index.nama.event.organizer")} placeholder={t("admin.user.index.masukkan.nama.event.organizer")} {...form.getInputProps("name_event_organizer")} />
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, xs: 6 }}>
                     <TextInput label={t("admin.user.index.lokasi")} placeholder={t("admin.user.index.contoh.jakarta")} {...form.getInputProps("location")} />
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, xs: 6 }}>
                     <TextInput label={t("admin.user.index.nomor.telepon.creator")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone_number")} />
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                  <Grid.Col span={{ base: 12, xs: 6 }}>
                     <TextInput label={t("admin.user.index.website")} placeholder={t("admin.user.index.contoh.https.example.com")} {...form.getInputProps("website")} />
                   </Grid.Col>
                 </Grid>
@@ -689,8 +689,8 @@ export default function KelolaUser() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.03)"
         }}
       >
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <div style={{ width: 250 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.user.index.pencarian")}</Text>
             <TextInput 
               placeholder={t("admin.user.index.cari.user.nama.email")} 

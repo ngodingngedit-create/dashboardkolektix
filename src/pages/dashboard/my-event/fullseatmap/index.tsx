@@ -559,6 +559,30 @@ const FullSeatmapReport = ({ initialEvents, initialCreatorId }: Props) => {
     }
   };
 
+  // Touch pan support (mobile)
+  const lastTouch = useRef<{ x: number; y: number } | null>(null);
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length === 1) {
+      lastTouch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      setIsDragging(true);
+    }
+  };
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (isDragging && lastTouch.current && event.touches.length === 1) {
+      const dx = event.touches[0].clientX - lastTouch.current.x;
+      const dy = event.touches[0].clientY - lastTouch.current.y;
+      lastTouch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      setCanvasPos([
+        canvasPos[0] + dx / scale,
+        canvasPos[1] + dy / scale
+      ]);
+    }
+  };
+  const handleTouchEnd = () => {
+    lastTouch.current = null;
+    setIsDragging(false);
+  };
+
   const ticketCategories = useMemo(() => {
     const list: string[] = [];
     const isSessionFiltered = selectedSession !== "all";
@@ -609,7 +633,7 @@ Seatmap Report
 
       {/* Filter Bar */}
       <Card withBorder radius="md" p="md" shadow="sm">
-        <Flex justify="flex-end" align="center" wrap="wrap" gap="md">
+        <Flex justify="flex-end" align="center" wrap="nowrap" gap="md" style={{ overflowX: "auto" }}>
           <Select
             value={selectedEventId}
             data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
@@ -620,7 +644,7 @@ Seatmap Report
               }
             }}
             placeholder={t("fullseatmap.selectEvent")}
-            style={{ width: 220 }}
+            style={{ width: 220, flexShrink: 0 }}
             searchable
             clearable
             size="sm"
@@ -635,7 +659,7 @@ Seatmap Report
                 value: sess,
                 label: sess === "all" ? t("fullseatmap.allSessions") : sess
               }))}
-              style={{ width: 180 }}
+              style={{ width: 180, flexShrink: 0 }}
               size="sm"
             />
           )}
@@ -648,7 +672,7 @@ Seatmap Report
               value: cat,
               label: cat === "all" ? t("fullseatmap.allTickets") : cat
             }))}
-            style={{ width: 180 }}
+            style={{ width: 180, flexShrink: 0 }}
             leftSection={<FontAwesomeIcon icon={faTicket} size="sm" />}
             size="sm"
           />
@@ -658,7 +682,7 @@ Seatmap Report
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-            style={{ width: 250 }}
+            style={{ width: 250, flexShrink: 0 }}
             size="sm"
           />
 
@@ -688,6 +712,9 @@ Seatmap Report
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {loadingTrx && (
           <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center">

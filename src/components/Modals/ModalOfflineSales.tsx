@@ -945,7 +945,7 @@ export default function ModalOfflineSales({ isOpen, setIsOpen, paymentList, tick
         centered
         closeOnClickOutside={false}
         title={<Text fw={600}>Selesaikan Pembayaran QRIS</Text>}
-        styles={{ body: { padding: 0, height: "80vh", minHeight: "500px", display: "flex", flexDirection: "column" } }}
+        styles={{ body: { padding: 0, height: "80vh", minHeight: "min(500px, 80vh)", display: "flex", flexDirection: "column" } }}
       >
         <div className="flex items-center justify-between px-4 py-2 border-b border-b-primary-light-200 bg-primary-light">
           <Text size="xs" c="dimmed">

@@ -518,12 +518,12 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       </Flex>
 
       <Card withBorder p="md" radius="md" shadow="sm">
-        <Flex gap="md" align="center" wrap="wrap">
+        <Flex gap="md" align="center" wrap="nowrap" style={{ overflowX: "auto" }}>
           <TextInput
             placeholder="Cari nama event..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: 1, minWidth: 260 }}
+            style={{ width: 260, flexShrink: 0 }}
             leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />}
           />
           <Select
@@ -535,7 +535,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               { value: "active", label: "Aktif" },
               { value: "inactive", label: "Nonaktif" },
             ]}
-            style={{ width: 160 }}
+            style={{ width: 160, flexShrink: 0 }}
           />
           <Button
             variant="light"
@@ -545,6 +545,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
               setStatusFilter("all");
               setCurrentPage(1);
             }}
+            style={{ flexShrink: 0 }}
           >
             Reset Filter
           </Button>
@@ -623,7 +624,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             variant="filled"
                             color={configItem.status === 1 ? "green" : "gray"}
                             size="sm"
-                            style={{ width: 100 }}
+                            style={{ minWidth: 100 }}
                           >
                             {configItem.status === 1 ? "Aktif" : "Nonaktif"}
                           </Badge>

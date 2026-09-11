@@ -75,12 +75,12 @@ const MyVenue = () => {
 
   return (
     <Stack className={`p-[20px] md:p-[30px]`} gap={30}>
-<Flex gap={20} justify="space-between" align="center">
+<Flex gap={20} justify="space-between" align="center" wrap="wrap">
 <Flex align="center" gap={15}>
 <button
 type="button"
 onClick={() => router.push('/dashboard')}
-className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm shrink-0"
 >
 <Icon icon="ph:arrow-left-bold" />
 </button>
@@ -90,7 +90,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Stack>
 </Flex>
 
-        <Flex align="center" gap={10}>
+        <Flex align="center" gap={10} wrap="wrap">
           <TextInput
             value={search}
             onChange={e => setSearch(e.currentTarget.value)}

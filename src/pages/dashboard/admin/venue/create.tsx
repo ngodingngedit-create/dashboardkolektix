@@ -242,7 +242,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </Flex>
                 </InputWrapper>
 
-                <Flex gap={15}>
+                <Flex gap={15} wrap="wrap">
                     <TextInput
                         withAsterisk
                         label={t("admin.venue.create.nama.venue")}
@@ -257,6 +257,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         disabled={loading.includes('getdatacat')}
                         data={category?.map(e => ({ value: String(e.id), label: e.name }))}
                         miw={250}
+                        style={{ flex: '1 1 250px' }}
                         {...inputProps('venue_category_id')}
                         onChange={e => e && form.setValues({ venue_category_id: parseInt(e) })}
                     />

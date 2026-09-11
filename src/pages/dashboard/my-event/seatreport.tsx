@@ -664,20 +664,20 @@ Full Report
 
       {/* Filter Bar - New Design */}
       <Card withBorder radius="md" p="md" shadow="sm">
-        <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+        <Flex justify="space-between" align="center" wrap="nowrap" style={{ overflowX: "auto" }}>
           {/* Left: Search Bar */}
           <TextInput
             placeholder={t("seatreport.searchNameInvoiceSeat")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
-            style={{ minWidth: 320, flex: 1, maxWidth: 400 }}
+            style={{ width: 320, flexShrink: 0 }}
             size="sm"
           />
 
           {/* Right: Controls */}
-          <Flex align="center" gap="sm">
-            <Text size="sm" fw={600} c="dimmed">{t("seatreport.selectEventData")}</Text>
+          <Flex align="center" gap="sm" wrap="nowrap" style={{ overflowX: "auto" }}>
+            <Text size="sm" fw={600} c="dimmed" className="shrink-0">{t("seatreport.selectEventData")}</Text>
             <Select
               value={selectedEventId}
               data={events.map((evt) => ({ value: String(evt.id), label: evt.name }))}
@@ -691,7 +691,7 @@ Full Report
                 }
               }}
               placeholder={t("event.selectEvent")}
-              style={{ width: 200 }}
+              style={{ width: 200, flexShrink: 0 }}
               searchable
               size="sm"
             />
@@ -707,7 +707,7 @@ Full Report
                 value: cat, 
                 label: cat === "seated" ? "Seatmap" : "Festival" 
               }))}
-              style={{ width: 150 }}
+              style={{ width: 150, flexShrink: 0 }}
               size="sm"
             />
 
@@ -716,7 +716,7 @@ Full Report
               value={selectedStatus}
               onChange={(val) => setSelectedStatus(val || "all")}
               data={[{ value: "all", label: t("seatreport.allStatus") }, ...statuses.map(stat => ({ value: stat, label: stat }))]}
-              style={{ width: 160 }}
+              style={{ width: 160, flexShrink: 0 }}
               size="sm"
             />
           </Flex>

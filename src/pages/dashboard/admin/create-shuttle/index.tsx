@@ -815,14 +815,14 @@ export default function AdminCreateShuttle() {
                               ) : (
                                 <div className="px-4 py-3 flex flex-col gap-3">
                                   {day.sessions.map((ses, si) => (
-                                    <div key={si} className="flex items-center gap-3 bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
+                                    <div key={si} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
                                       <Icon icon="ph:clock-bold" className="text-blue-500 shrink-0" />
                                       <input
                                         type="text"
                                         placeholder={`Nama sesi ${si + 1} (contoh: Pagi, Siang, ...)`}
                                         value={ses.session_name}
                                         onChange={(e) => updateSessionField(di, si, "session_name", e.target.value)}
-                                        className="flex-1 border border-light-grey rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
+                                        className="flex-1 basis-[130px] border border-light-grey rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
                                       />
                                       <input
                                         type="time"
@@ -839,7 +839,7 @@ export default function AdminCreateShuttle() {
                                       />
                                       <button
                                         onClick={() => removeSession(di, si)}
-                                        className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                        className="text-red-400 hover:text-red-600 transition-colors shrink-0 ml-auto"
                                         title={t("admin.create-shuttle.index.hapus.sesi")}
                                       >
                                         <Icon icon="ph:x-bold" className="text-lg" />
@@ -1052,7 +1052,7 @@ export default function AdminCreateShuttle() {
         </div>
 
         {/* Footer actions */}
-        <div className="border-t border-light-grey fixed bottom-0 left-0 md:left-[65px] hvr:md:left-[280px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
+        <div className="border-t border-light-grey fixed bottom-0 left-0 md:left-[65px] right-0 bg-white shadow-lg z-40 transition-all duration-300">
           <div className="flex justify-center items-center px-4 md:px-8 py-3 md:py-4 text-dark pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4">
             <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto gap-3 md:gap-4">
               <p className="text-sm md:text-base text-center md:text-left mb-1 md:mb-0 font-bold">
@@ -1336,9 +1336,9 @@ export default function AdminCreateShuttle() {
       </Flex>
 
       <div className="mt-4">
-        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">{t("admin.create-shuttle.index.total")} <b>{total}</b> {t("admin.create-shuttle.index.shuttle")}</Text>
-          <div style={{ width: 280 }}>
+        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <Text size="sm" fw={600} c="gray.7" className="shrink-0">{t("admin.create-shuttle.index.total")} <b>{total}</b> {t("admin.create-shuttle.index.shuttle")}</Text>
+          <div style={{ width: 280, flexShrink: 0 }}>
             <Input
               isClearable
               value={search}

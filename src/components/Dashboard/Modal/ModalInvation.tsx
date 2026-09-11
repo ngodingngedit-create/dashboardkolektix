@@ -478,7 +478,7 @@ const DetailModal = ({ item, isOpen, onClose }: { item: Detail | null; isOpen: b
         <>
           <ModalHeader className="flex flex-col gap-1 text-dark">Detail Transaksi</ModalHeader>
           <ModalBody className="text-dark">
-            <div className="grid grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Bagian Kiri - Accordion */}
               <div>
                 <Accordion defaultExpandedKeys={["pemesan"]}>

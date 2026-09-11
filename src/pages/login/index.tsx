@@ -1559,7 +1559,7 @@ const Auth = () => {
       </div>
 
       {/* Right Side: Form Container */}
-      <div className="w-full md:w-[40%] flex flex-col justify-between px-10 py-8 bg-white min-h-screen relative">
+      <div className="w-full md:w-[40%] flex flex-col justify-between px-5 md:px-10 py-8 bg-white min-h-screen relative">
         {/* Header Bar */}
         <div className="w-full flex justify-between md:justify-end items-center gap-3">
           {/* Logo (Mobile only) */}

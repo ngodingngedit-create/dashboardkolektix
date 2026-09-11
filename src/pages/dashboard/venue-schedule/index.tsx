@@ -447,7 +447,64 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </div>
                     )}
 
-                    {activeView === 'CALENDAR' ? (
+                    {activeView === 'CALENDAR' && isMobile ? (
+                            <Card className="border border-light-grey shadow-sm rounded-2xl overflow-hidden" shadow="none">
+                                <div className="px-4 py-4 border-b border-light-grey flex items-center justify-between bg-white">
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="flat"
+                                            onClick={handleToday}
+                                            className="bg-slate-100 text-slate-700 font-bold px-4"
+                                        >
+                                            {t('venue.schedule.today')}
+                                        </Button>
+                                        <Button isIconOnly size="sm" variant="light" onClick={handlePrevWeek}>
+                                            <Icon icon="mdi:chevron-left" width={20} />
+                                        </Button>
+                                        <Button isIconOnly size="sm" variant="light" onClick={handleNextWeek}>
+                                            <Icon icon="mdi:chevron-right" width={20} />
+                                        </Button>
+                                    </div>
+                                    <h2 className="text-base font-bold text-slate-900">
+                                        {weekStart.format('MMMM YYYY')}
+                                    </h2>
+                                </div>
+                                <div className="divide-y divide-light-grey">
+                                    {weekDays.map((day, dayIdx) => {
+                                        const dayBookings = hours.flatMap(h => getBookingsForDayAndHour(day, h));
+                                        return (
+                                            <div key={dayIdx} className="p-4">
+                                                <p className={`text-xs font-black uppercase tracking-widest mb-2 ${day.isSame(moment(), 'day') ? 'text-[#194e9e]' : 'text-slate-400'}`}>
+                                                    {daysIdLong[day.day()]} · {day.format('DD MMM')}
+                                                </p>
+                                                {dayBookings.length === 0 ? (
+                                                    <p className="text-sm text-slate-400">{t('venue.schedule.noTasksYet')}</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {dayBookings.map((booking: any, bIdx: number) => (
+                                                            <button
+                                                                key={bIdx}
+                                                                type="button"
+                                                                className={`${booking.is_schedule ? 'bg-orange-50 border-orange-400 text-orange-700' : 'bg-[#194e9e]/10 border-[#194e9e] text-[#194e9e]'} w-full text-left border-l-4 rounded-r-xl p-2 shadow-sm`}
+                                                                onClick={() => handleItemClick(booking)}
+                                                            >
+                                                                <p className="text-[11px] font-black leading-tight truncate uppercase">
+                                                                    {booking.event_name}
+                                                                </p>
+                                                                <p className="text-[10px] font-bold opacity-70 mt-1">
+                                                                    {booking.moment.format('HH:mm')} - {moment(booking.end_date).format('HH:mm')}
+                                                                </p>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                 </div>
+                             </Card>
+                    ) : activeView === 'CALENDAR' ? (
                         <Card className="border border-light-grey shadow-sm rounded-2xl overflow-hidden h-[850px]" shadow="none">
                             {/* Calendar Header */}
                             <div className="px-6 py-4 border-b border-light-grey flex items-center justify-between bg-white">

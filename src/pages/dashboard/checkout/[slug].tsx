@@ -64,7 +64,7 @@ export default function CheckoutPage() {
         )}
         {step === 2 && (
           <div className='flex flex-col gap-3 py-4 px-6'>
-            <div className='flex flex-col rounded-full border-3 border-danger w-10 h-10 items-center justify-center'>
+            <div className='flex flex-col rounded-full border-2 border-danger w-10 h-10 items-center justify-center'>
               <FontAwesomeIcon icon={faXmark} size='xl' className='text-danger' />
             </div>
             <h6>Checkout Gagal</h6>

@@ -241,9 +241,9 @@ export default function AdminRouteManagement() {
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden">
-        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">{t("admin.routebus.index.total")} <b>{total}</b> {t("admin.routebus.index.rute")}</Text>
-          <div style={{ width: 280 }}>
+        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <Text size="sm" fw={600} c="gray.7" className="shrink-0">{t("admin.routebus.index.total")} <b>{total}</b> {t("admin.routebus.index.rute")}</Text>
+          <div style={{ width: 280, flexShrink: 0 }}>
             <Input
               isClearable
               value={search}
@@ -395,7 +395,7 @@ export default function AdminRouteManagement() {
             required
           />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 12 }}>
             <TextInput
               label={t("admin.routebus.index.kota.asal")}
               placeholder={t("admin.routebus.index.jakarta")}
@@ -475,7 +475,7 @@ export default function AdminRouteManagement() {
               </Group>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(120px, 100%), 1fr))", gap: 16 }}>
               <div style={{ textAlign: "center", background: "#f1f3f5", borderRadius: 10, padding: 14 }}>
                 <Icon icon="ph:road-horizon-bold" style={{ fontSize: 24, color: "#0B387C", marginBottom: 4 }} />
                 <Text size="lg" fw={800} c="#0B387C">{selectedItem.distance_km}</Text>

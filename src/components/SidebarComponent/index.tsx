@@ -2386,11 +2386,11 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                         fixed md:relative shrink-0
                         flex flex-col
                         bg-primary-darker duration-300 left-0 h-[100vh]
-                        overflow-y-hidden scrollbar-gutter transition-all ease-in-out delay-150 z-[1100]
+                        ${collapse ? "overflow-y-auto" : "overflow-y-hidden"} scrollbar-gutter transition-all ease-in-out delay-150 z-[1100]
                         ${collapse ? "w-[280px]" : "w-0 md:w-[65px]"}
                     `}
           >
-            <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "" : "overflow-y-hidden"}`}>
+            <ul className={`w-full flex-grow overflow-x-hidden ${collapse ? "overflow-y-auto" : "overflow-y-hidden"}`}>
               <li className={`relative ${collapse ? "px-5 py-4" : "px-3 py-3"} bg-[#031f4d]`}>
                 <Link href="/dashboard" className="flex items-center justify-center">
                   {collapse ? (
@@ -2574,7 +2574,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
               </div>
             </button>
           </nav>
-          <div className="w-full overflow-x-hidden">
+          <div className="w-full overflow-x-clip">
             <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
               <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -2605,7 +2605,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                                         : ''}
                                 </h3> */}
                 </div>
-                <div className="!overflow-x-hidden flex-grow">
+                <div className="flex-grow">
                   <Flex gap={8} align="center" justify="end">
                     <Fade isShowing={showNotifications}>
                       <div
@@ -2744,7 +2744,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   </Flex>
                 </div>
               </div>
-              <div className="max-w-[100vw] overflow-x-hidden">{children}</div>
+              <div className="max-w-[100vw] overflow-x-auto">{children}</div>
             </div>
           </div>
         </div>

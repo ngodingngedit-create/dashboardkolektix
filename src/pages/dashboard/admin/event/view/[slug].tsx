@@ -788,7 +788,7 @@ const AdminEventDetailView = () => {
                           </select>
                         </div>
 
-                        <div className="flex gap-4 mb-4 items-center">
+                        <div className="flex flex-wrap gap-2 md:gap-4 mb-4 items-center">
                           <Button label={t("admin.event.view.slug.all")} onClick={() => handleTransactionFilterChange("all")} color={transactionFilter === "all" ? "primary" : "secondary"} />
                           <Button label={t("admin.event.view.slug.online")} onClick={() => handleTransactionFilterChange("online")} color={transactionFilter === "online" ? "primary" : "secondary"} />
                           <Button label={t("admin.event.view.slug.offline")} onClick={() => handleTransactionFilterChange("offline")} color={transactionFilter === "offline" ? "primary" : "secondary"} />

@@ -258,9 +258,9 @@ export default function AdminBusManagement() {
       </Flex>
 
       <div className="mt-4">
-        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <Text size="sm" fw={600} c="gray.7">{t("admin.bus.index.total")} <b>{total}</b> {t("admin.bus.index.bus")}</Text>
-          <div style={{ width: 280 }}>
+        <Flex justify="space-between" align="center" gap={12} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <Text size="sm" fw={600} c="gray.7" className="shrink-0">{t("admin.bus.index.total")} <b>{total}</b> {t("admin.bus.index.bus")}</Text>
+          <div style={{ width: 280, flexShrink: 0 }}>
             <Input
               isClearable
               value={search}
@@ -366,7 +366,7 @@ export default function AdminBusManagement() {
         radius="md"
       >
         <Stack gap="md">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 12 }}>
             <TextInput
               label={t("admin.bus.index.nama.bus")}
               placeholder={t("admin.bus.index.hiace.premium.jakarta")}
@@ -395,7 +395,7 @@ export default function AdminBusManagement() {
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(130px, 100%), 1fr))", gap: 12 }}>
             <div>
               <Text size="xs" fw={700} c="gray.6" mb={4} className="uppercase">{t("admin.bus.index.tipe.bus")}</Text>
               <select
@@ -487,7 +487,7 @@ export default function AdminBusManagement() {
               </Group>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(120px, 100%), 1fr))", gap: 12 }}>
               <div>
                 <Text size="xs" fw={700} c="dimmed" className="uppercase">{t("admin.bus.index.tipe")}</Text>
                 <Badge variant="light" color={selectedItem.bus_type === "MINIBUS" ? "violet" : selectedItem.bus_type === "MEDIUM_BUS" ? "blue" : "teal"} size="sm">

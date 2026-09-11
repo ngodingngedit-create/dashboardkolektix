@@ -315,8 +315,8 @@ export default function AdminSliderManagement() {
       </Flex>
 
       <Card withBorder radius="md" p={0} className="shadow-sm overflow-hidden border-light-grey">
-        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" style={{ borderBottom: "1px solid #eee" }}>
-          <div style={{ width: 220 }}>
+        <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
+          <div style={{ width: 220, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.slider.index.pencarian")}</Text>
             <Input
               isClearable

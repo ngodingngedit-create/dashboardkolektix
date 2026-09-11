@@ -690,7 +690,7 @@ const WithDraw = () => {
           </Flex>
 
           {/* Filter bar */}
-          <Flex align="center" gap="md" wrap="wrap">
+          <Flex align="center" gap="md" wrap="nowrap" style={{ overflowX: "auto" }}>
             <Select
               placeholder="Semua Kategori"
               data={[
@@ -705,7 +705,7 @@ const WithDraw = () => {
                 setCategoryFilter(val || "all");
                 setPage(1);
               }}
-              style={{ minWidth: 180 }}
+              style={{ width: 180, flexShrink: 0 }}
               size="sm"
             />
             <DateInput
@@ -716,7 +716,7 @@ const WithDraw = () => {
               }}
               placeholder="Dari Tanggal"
               valueFormat="DD MMM YYYY"
-              style={{ width: 180 }}
+              style={{ width: 180, flexShrink: 0 }}
               size="sm"
             />
             <DateInput
@@ -727,7 +727,7 @@ const WithDraw = () => {
               }}
               placeholder="Sampai Tanggal"
               valueFormat="DD MMM YYYY"
-              style={{ width: 180 }}
+              style={{ width: 180, flexShrink: 0 }}
               size="sm"
             />
             {(categoryFilter !== "all" || dateFrom || dateTo) && (

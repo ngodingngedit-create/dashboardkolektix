@@ -845,7 +845,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         <td style={{ padding: '12px 14px' }}><Text size="xs" lineClamp={2} style={{ maxWidth: 200 }}>{mapped.event}</Text></td>
                         <td style={{ padding: '12px 14px' }}>
                           <Flex justify="center">
-                            <Badge variant="filled" color="blue" size="sm" style={{ width: 100 }}>
+                            <Badge variant="filled" color="blue" size="sm" style={{ minWidth: 100 }}>
                               {item.has_teritorial?.name || t("crew.unknownFallback")}
                             </Badge>
                           </Flex>
@@ -856,7 +856,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                               variant="filled"
                               color={item.status === "active" ? "green" : "red"}
                               size="sm"
-                              style={{ width: 100 }}
+                              style={{ minWidth: 100 }}
                             >
                               {item.status === "active" ? t("common.active") : t("common.inactive")}
                             </Badge>

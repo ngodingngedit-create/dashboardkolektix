@@ -175,7 +175,7 @@ const [data, setData] = useState<MerchandiseTransaction[]>([]);
     <div className="p-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
           <div className="flex items-center gap-3">
             <button
               type="button"

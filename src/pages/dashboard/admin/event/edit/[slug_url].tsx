@@ -568,10 +568,10 @@ const EditEventAdmin = () => {
               <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> {t("admin.event.edit.slug_url.admin")}</div>}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 p-5">
                   <MantineGrid>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.edit.slug_url.url.slug")} type="text" fullWidth noShadow value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <Select
                         label={t("admin.event.edit.slug_url.status.id.1.review.3.active")}
                         placeholder={t("admin.event.edit.slug_url.pilih.status")}
@@ -590,7 +590,7 @@ const EditEventAdmin = () => {
                     <MantineGrid.Col span={12}>
                       <InputField label={t("admin.event.edit.slug_url.metode.pembayaran.custom")} type="text" fullWidth noShadow value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <Select
                         label={t("admin.event.edit.slug_url.tipe.ppn")}
                         placeholder={t("admin.event.edit.slug_url.pilih.tipe.ppn")}
@@ -606,7 +606,7 @@ const EditEventAdmin = () => {
                         <SelectItem key="nominal" value="nominal">{t("admin.event.edit.slug_url.nominal.rp")}</SelectItem>
                       </Select>
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField
                         label={form.ppn_type === "percentage" ? "PPN (%)" : "PPN (Nominal)"}
                         type="num"
@@ -616,10 +616,10 @@ const EditEventAdmin = () => {
                         onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })}
                       />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
+                    <MantineGrid.Col span={{ base: 12, xs: 4 }}>
                       <InputField label={t("admin.event.edit.slug_url.starting.price")} type="text" fullWidth noShadow value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
+                    <MantineGrid.Col span={{ base: 12, xs: 4 }}>
                       <InputField label={t("admin.event.edit.slug_url.maks.penggunaan.voucher")} type="num" fullWidth noShadow value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>

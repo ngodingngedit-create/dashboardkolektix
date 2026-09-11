@@ -741,10 +741,10 @@ const CreateEventAdmin = () => {
               <Tab key="admin" title={<div className="flex items-center gap-2"><FontAwesomeIcon icon={faGear} /> {t("admin.event.create.admin")}</div>}>
                 <div className="border-2 border-primary-light-200 rounded-2xl my-5 p-5">
                   <MantineGrid>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.create.url.slug")} type="text" fullWidth value={form.slug} onChange={(e: any) => setForm({ ...form, slug: e.target.value })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <Select
                         label={t("admin.event.create.status.id.1.review.3.active")}
                         placeholder={t("admin.event.create.pilih.status")}
@@ -763,19 +763,19 @@ const CreateEventAdmin = () => {
                     <MantineGrid.Col span={12}>
                       <InputField label={t("admin.event.create.metode.pembayaran.custom")} type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.create.admin.fee")} type="text" fullWidth value={formatPrice(form.admin_fee)} onChange={(e: any) => setForm({ ...form, admin_fee: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={6}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.create.admin.fee.plus")} type="text" fullWidth value={form.admin_fee_plus} onChange={(e: any) => setForm({ ...form, admin_fee_plus: e.target.value })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
+                    <MantineGrid.Col span={{ base: 12, xs: 4 }}>
                       <InputField label={t("admin.event.create.ppn")} type="num" fullWidth value={form.ppn} onChange={(e: any) => setForm({ ...form, ppn: Number(e.target.value) })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
+                    <MantineGrid.Col span={{ base: 12, xs: 4 }}>
                       <InputField label={t("admin.event.create.starting.price")} type="text" fullWidth value={formatPrice(form.starting_price)} onChange={(e: any) => setForm({ ...form, starting_price: parsePrice(e.target.value) })} />
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={4}>
+                    <MantineGrid.Col span={{ base: 12, xs: 4 }}>
                       <InputField label={t("admin.event.create.maks.penggunaan.voucher")} type="num" fullWidth value={form.max_use_voucher} onChange={(e: any) => setForm({ ...form, max_use_voucher: Number(e.target.value) })} />
                     </MantineGrid.Col>
                     <MantineGrid.Col span={12}>

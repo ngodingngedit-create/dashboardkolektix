@@ -236,7 +236,7 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen items-center bg-primary-base px-5 md:px-20">
-      <div className="lg:w-1/2 xs:hidden md:flex flex-col justify-center items-center gap-8">
+      <div className="lg:w-1/2 hidden md:flex flex-col justify-center items-center gap-8">
         <Image
           src={LogoWhite}
           alt="logo"
@@ -248,7 +248,7 @@ const Auth = () => {
         <h3 className={`text-white`}>{displayedText}</h3>
       </div>
       <div className="sm:w-full lg:w-1/2 flex flex-col justify-center items-center lg:px-10 max-w-2xl">
-        <div className="bg-white rounded-2xl flex flex-col justify-center w-full sm:w-[20rem] h-[22rem]">
+        <div className="bg-white rounded-2xl flex flex-col justify-center w-full sm:w-[20rem] min-h-[22rem] py-8">
           {step === 0 && (
             <div
               className={`flex flex-col justify-center items-center transition-opacity duration-100 ${
