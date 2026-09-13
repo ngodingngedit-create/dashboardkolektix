@@ -923,11 +923,13 @@ import {
   Divider as MantineDivider
 } from "@mantine/core";
 import { Get } from "@/utils/REST";
+import * as XLSX from "xlsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faDownload, faSearch, faBoxOpen, faQrcode, faExclamationTriangle, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Icon } from "@iconify/react";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useRouter } from "next/router";
+import TableSkeleton from "@/components/TableSkeleton";
 
 interface MerchandiseTransactionData {
   id: number;
@@ -976,26 +978,31 @@ const MerchPickupPage: React.FC = () => {
         return {
           text: "Pending",
           color: "bg-yellow-100 text-yellow-800 border-primary-light-200",
+          badgeColor: "yellow",
         };
       case 2:
         return {
           text: "Success",
           color: "bg-green-100 text-green-800 border-primary-light-200",
+          badgeColor: "green",
         };
       case 3:
         return {
           text: "Failed",
           color: "bg-red-100 text-red-800 border-primary-light-200",
+          badgeColor: "red",
         };
       case 4:
         return {
           text: "Expired",
           color: "bg-gray-100 text-gray-800 border-primary-light-200",
+          badgeColor: "gray",
         };
       default:
         return {
           text: "Unknown",
           color: "bg-gray-100 text-gray-800 border-primary-light-200",
+          badgeColor: "gray",
         };
     }
   };
@@ -1337,67 +1344,32 @@ const MerchPickupPage: React.FC = () => {
   };
 
   const exportToCSV = (rows: MerchandiseTransactionData[]) => {
-    if (!rows || rows.length === 0) {
-      alert("Tidak ada data untuk di-export");
-      return;
-    }
+    const successfulRows = rows.filter(item => item.isAvailable !== false);
 
-    const headers = ["Invoice Number", "Nama Customer", "Email", "Nama Produk", "SKU", "Total Qty", "Total Price", "Status", "Tanggal Order", "Payment Method"];
-    
-    const escapeCell = (value: any) => {
-      if (value === null || value === undefined) return "";
-      const str = String(value);
-      const needsQuotes = /[,"\n]/.test(str);
-      const escaped = str.replace(/"/g, '""');
-      return needsQuotes ? `"${escaped}"` : escaped;
-    };
+    const exportData = successfulRows.map((r, index) => ({
+      No: index + 1,
+      "Invoice Number": r.invoice_no || "-",
+      "Nama Customer": r.customer_name || "-",
+      "Email": r.customer_email || "-",
+      "Nama Produk": r.product_name || "-",
+      SKU: r.sku || "-",
+      "Total Qty": r.total_qty,
+      "Total Price": r.total_price,
+      Status: getStatusInfo(r.transaction_status_id).text,
+      "Tanggal Order": formatDate(r.order_date),
+      "Payment Method": r.payment_method || "-",
+    }));
 
-    const lines = rows.map((r) =>
-      [
-        escapeCell(r.invoice_no),
-        escapeCell(r.customer_name),
-        escapeCell(r.customer_email),
-        escapeCell(r.product_name),
-        escapeCell(r.sku),
-        escapeCell(r.total_qty),
-        escapeCell(r.total_price),
-        escapeCell(getStatusInfo(r.transaction_status_id).text),
-        escapeCell(formatDate(r.order_date)),
-        escapeCell(r.payment_method)
-      ].join(",")
-    );
-
-    const csvContent = headers.join(",") + "\n" + lines.join("\n");
-    
     try {
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      a.href = url;
-      a.download = `merch-pickup-${timestamp}.csv`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pickup Merchandise");
+      const timestamp = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(wb, `merch-pickup-${timestamp}.xlsx`);
     } catch (e) {
-      const win = window.open();
-      if (win) {
-        win.document.write(`<pre>${csvContent}</pre>`);
-        win.document.close();
-      }
+      console.error("Export error:", e);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Loading pickup data...</span>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -1442,9 +1414,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             style={{ width: 70, flexShrink: 0 }}
                             size="sm"
                         />
-                        <MantineButton 
-                            variant="filled" 
-                            color="green" 
+                        <MantineButton
+                            variant="filled"
+                            color="green"
                             leftSection={<Icon icon="solar:file-download-bold" width={18} />}
                             onClick={() => exportToCSV(filtered.filter(item => item.isAvailable))}
                             disabled={filtered.filter(item => item.isAvailable).length === 0}
@@ -1452,7 +1424,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             className="shrink-0"
                             styles={{ root: { color: 'white' } }}
                         >
-                            Export CSV ({filtered.filter(item => item.isAvailable).length})
+                            Export Excel ({filtered.filter(item => item.isAvailable).length})
                         </MantineButton>
                         <MantineButton
                             variant="filled"
@@ -1486,12 +1458,15 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     </Text>
                 </Flex>
 
-                <Box style={{ overflow: 'auto', maxHeight: '70vh', position: 'relative' }}>
-                    <table style={{ width: '100%', minWidth: 900, borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #f0f0f0' }}>
-                        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                {loading ? (
+                    <TableSkeleton rows={8} cols={8} hasAction />
+                ) : (
+                <Box style={{ overflow: 'auto', position: 'relative' }}>
+                    <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
+                        <thead>
                             <tr style={{ backgroundColor: '#f5f7fa' }}>
-                                <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, borderBottom: '2px solid #e8e8e8' }}>#</th>
-                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48, position: 'sticky', left: 0, backgroundColor: '#f5f7fa', zIndex: 2, borderBottom: '2px solid #e8e8e8' }}>#</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: 'sticky', left: 48, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '2px 0 5px rgba(0,0,0,0.05)', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('invoice_no')}>Invoice {mtSortBy === 'invoice_no' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('customer_name')}>Customer {mtSortBy === 'customer_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('product_name')}>Produk {mtSortBy === 'product_name' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
                                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', borderBottom: '2px solid #e8e8e8' }} onClick={() => handleMTSort('sku')}>SKU {mtSortBy === 'sku' ? (mtSortDir === 'asc' ? '↑' : '↓') : <span style={{opacity:0.3}}>↑</span>}</th>
@@ -1510,11 +1485,11 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                                 
                                 return (
-                                    <tr key={item.id}>
-                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, borderBottom: '1px solid #f0f0f0' }}>
+                                    <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={(e: React.MouseEvent<HTMLTableRowElement>) => e.currentTarget.style.backgroundColor = '#f8fafd'} onMouseLeave={(e: React.MouseEvent<HTMLTableRowElement>) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48, position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 1, borderBottom: '1px solid #f0f0f0' }}>
                                             <Text size="sm" c="dimmed" fw={500}>{rowNumber}</Text>
                                         </td>
-                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: 'sticky', left: 48, backgroundColor: 'white', zIndex: 1, boxShadow: '2px 0 5px rgba(0,0,0,0.05)', borderBottom: '1px solid #f0f0f0' }}>
                                             <Flex align="center" gap="xs">
                                                 <Text size="sm" fw={600}>{item.invoice_no}</Text>
                                             </Flex>
@@ -1529,38 +1504,16 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                                 {item.product_name}
                                             </Text>
                                         </td>
-                                        <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
-                                            <MantineButton 
-                                                color="gray" 
-                                                variant="light" 
-                                                size="xs" 
-                                                radius="sm" 
-                                                w={140}
-                                                styles={{ 
-                                                    root: { minHeight: 28, height: 'auto', padding: '4px 12px' },
-                                                    label: { whiteSpace: 'nowrap', textAlign: 'center', lineHeight: 1.2 } 
-                                                }}
-                                            >
-                                                {item.sku || "-"}
-                                            </MantineButton>
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Text size="sm" c="dimmed" style={{ fontFamily: 'monospace' }}>{item.sku || "-"}</Text>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
                                             <Text size="sm" fw={600}>{isAvailable ? item.total_qty : "-"}</Text>
                                         </td>
-                                        <td style={{ padding: '12px 14px', borderBottom: '1px solid #f0f0f0' }}>
-                                            <MantineButton 
-                                                color={statusInfo.color.includes('yellow') ? 'yellow' : statusInfo.color.includes('green') ? 'green' : statusInfo.color.includes('red') ? 'red' : 'gray'} 
-                                                variant="filled" 
-                                                size="xs"
-                                                radius="xl"
-                                                w={130}
-                                                styles={{ 
-                                                    root: { minHeight: 28, height: 'auto', padding: '4px 8px' },
-                                                    label: { whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.2 } 
-                                                }}
-                                            >
+                                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
+                                            <Badge color={statusInfo.badgeColor} variant="filled" style={{ fontWeight: 600, width: '100%' }}>
                                                 {isAvailable ? statusInfo.text : item.status_name}
-                                            </MantineButton>
+                                            </Badge>
                                         </td>
                                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', borderBottom: '1px solid #f0f0f0' }}>
                                             <Text size="sm" c="dark">{isAvailable ? formatDate(item.order_date) : "-"}</Text>
@@ -1590,6 +1543,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                         </tbody>
                     </table>
                 </Box>
+                )}
 
                 {paginatedItems.length === 0 && (
                     <Box py="xl" ta="center">
@@ -1627,8 +1581,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
         size="lg"
         backdrop="blur"
         classNames={{
+          wrapper: "z-[9999]",
           base: "bg-gradient-to-b from-gray-50 to-white max-w-full mx-4 sm:mx-6",
-          backdrop: "backdrop-blur-sm",
+          backdrop: "backdrop-blur-sm z-[9998]",
           header: "border-b-0 pb-0",
           footer: "border-t-0",
         }}
@@ -1709,28 +1664,30 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
       <Modal
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
-        size="2xl"
-        backdrop="blur"
+        size="5xl"
         scrollBehavior="inside"
         classNames={{
-          base: "bg-gradient-to-b from-gray-50 to-white max-w-full mx-4 sm:mx-6",
-          backdrop: "backdrop-blur-sm",
-          header: "border-b-0",
-          footer: "border-t-0",
+          wrapper: 'z-[9999]',
+          base: 'bg-white m-4 rounded-xl',
+          backdrop: 'backdrop-blur-sm z-[9998]',
+          header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] rounded-t-xl sticky top-0 z-10',
+          body: 'p-0',
+          footer: 'border-t border-primary-light-200 px-6 py-4 bg-gray-50 rounded-b-xl',
+          closeButton: 'text-white hover:bg-white/20 right-4',
         }}
       >
         <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex flex-col gap-1 pt-6">
+              <ModalHeader className="flex flex-col gap-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FontAwesomeIcon icon={faBoxOpen} className="text-blue-600" />
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <FontAwesomeIcon icon={faBoxOpen} className="text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-gray-800">Detail Transaksi Merchandise</h2>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <h2 className="text-lg font-bold text-white">Detail Transaksi Merchandise</h2>
+                      <p className="text-xs text-white/90 mt-1">
                         Informasi lengkap transaksi untuk verifikasi pickup
                       </p>
                     </div>

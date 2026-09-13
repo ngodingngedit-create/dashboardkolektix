@@ -1253,7 +1253,18 @@ export default function Index({ }: Readonly<ComponentProps>) {
           {/* Quick Nominal Buttons */}
           <Stack gap={8}>
             <Text size="xs" c="gray.5" fw={600}>Nominal Cepat</Text>
-            <Flex gap={8}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 overflow-x-auto">
+              {/* Tombol Uang Pas - mengisi uang diterima sesuai total tagihan */}
+              <Button
+                variant="filled"
+                color="blue"
+                size="xs"
+                radius="md"
+                onClick={() => setCashReceived(handleSummary.total)}
+                className="w-full"
+              >
+                Uang Pas
+              </Button>
               {[10000, 20000, 50000, 100000].map((nominal) => (
                 <Button
                   key={nominal}
@@ -1262,12 +1273,12 @@ export default function Index({ }: Readonly<ComponentProps>) {
                   size="xs"
                   radius="md"
                   onClick={() => setCashReceived(nominal)}
-                  styles={{ root: { flex: 1 } }}
+                  className="w-full"
                 >
                   <NumberFormatter value={nominal} thousandSeparator="." />
                 </Button>
               ))}
-            </Flex>
+            </div>
           </Stack>
 
           <Card withBorder p={14} radius="md" className="bg-gray-50">
@@ -1484,7 +1495,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
                       return (
                         <div
                           key={i}
-                          className="flex items-center justify-between py-3 border-b border-light-grey hover:bg-gray-50/50 transition-colors duration-150 px-2"
+                          onClick={() => !isOutOfStock && e.raw && handleAddProduct(e.raw)}
+                          className="flex items-center justify-between py-3 border-b border-light-grey hover:bg-gray-50/50 transition-colors duration-150 px-2 cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <div className="relative w-14 h-14 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
