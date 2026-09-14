@@ -1,6 +1,7 @@
 import { Get, Post, Put, Delete } from "@/utils/REST";
 import TablePagination from "@/components/TablePagination";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useRouter } from "next/router";
 import {
@@ -26,7 +27,6 @@ import { notifications } from "@mantine/notifications";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
-    faArrowsRotate,
     faCrosshairs,
     faMapMarkerAlt,
     faPencil,
@@ -163,6 +163,7 @@ const MapPicker = ({
 // ─── Main Page ─────────────────────────────────────────────────────────────
 const StoreLocationPage = () => {
     const router = useRouter();
+    const { t } = useTranslation();
     const [loading, setLoading] = useListState<string>();
     const [dataList, setDataList] = useState<StoreLocation[]>([]);
     const [page, setPage] = useState(1);
@@ -374,35 +375,48 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     className="md:!flex md:!items-center md:!justify-between"
                     style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
                 >
-                    <Select
-                        placeholder="Status"
-                        value={statusFilter}
-                        onChange={(val) => { setStatusFilter(val || "all"); setPage(1); }}
-                        data={[
-                            { value: "all", label: "Semua Status" },
-                            { value: "active", label: "Aktif" },
-                            { value: "inactive", label: "Non-aktif" },
-                        ]}
-                        w={160}
-                        size="sm"
-                        clearable={false}
-                        classNames={{ root: 'shrink-0' }}
-                    />
-                    <Group gap="sm" wrap="nowrap">
+                    <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
+                        <Select
+                            value={rowsPerPage.toString()}
+                            onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
+                            data={['10', '20', '50', '100']}
+                            style={{ width: 70, flexShrink: 0 }}
+                            size="sm"
+                            aria-label="Rows per page"
+                        />
+                    </Group>
+                    <Group gap="sm" wrap="nowrap" align="flex-end">
+                        <Select
+                            label={t('storeLoc.filterStatus')}
+                            placeholder={t('storeLoc.filterStatus')}
+                            value={statusFilter}
+                            onChange={(val) => { setStatusFilter(val || "all"); setPage(1); }}
+                            data={[
+                                { value: "all", label: t('storeLoc.allStatuses') },
+                                { value: "active", label: t('storeLoc.active') },
+                                { value: "inactive", label: t('storeLoc.inactive') },
+                            ]}
+                            w={160}
+                            size="sm"
+                            clearable={false}
+                            classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
+                        />
                         <TextInput
-                            placeholder="Cari nama toko, alamat, atau telepon..."
+                            label={t('storeLoc.searchLabel')}
+                            placeholder={t('storeLoc.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                             leftSection={<FontAwesomeIcon icon={faSearch} size="sm" />}
                             w={280}
                             size="sm"
                             classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
                         />
-                        <Tooltip label="Refresh">
-                            <Button variant="filled" color="blue" size="sm" onClick={() => creatorSlugUrl && getData(creatorSlugUrl)}
-                                loading={loading.includes("getdata")} leftSection={<FontAwesomeIcon icon={faArrowsRotate} />}
-                                aria-label="Refresh" />
-                        </Tooltip>
                     </Group>
                 </Box>
 
@@ -498,8 +512,9 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                     onPageChange={setPage}
                     total={filteredList.length}
                     rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={(val) => { setRowsPerPage(val); setPage(1); }}
                     unit="lokasi"
+                    hideLeftPageInfo
+                    hideTopInfo
                 />
             </Card>
         </Stack>

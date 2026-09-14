@@ -929,7 +929,13 @@ import { faEye, faDownload, faSearch, faBoxOpen, faQrcode, faExclamationTriangle
 import { Icon } from "@iconify/react";
 import useLoggedUser from "@/utils/useLoggedUser";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 import TableSkeleton from "@/components/TableSkeleton";
+
+interface FilterOption {
+  key: string;
+  label: string;
+}
 
 interface MerchandiseTransactionData {
   id: number;
@@ -953,12 +959,18 @@ interface MerchandiseTransactionData {
 
 const MerchPickupPage: React.FC = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useLoggedUser();
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [filterValue, setFilterValue] = useState<string>("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  const [selectedProduct, setSelectedProduct] = useState<string>("all");
+  const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
+  const [transactionStatuses, setTransactionStatuses] = useState<{ id: number; name: string }[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [page, setPage] = useState<number>(1);
   const [retryCount, setRetryCount] = useState<number>(0);
   
@@ -1124,6 +1136,77 @@ const MerchPickupPage: React.FC = () => {
     }
   };
 
+  const extractProductNames = (list: MerchandiseTransactionData[]): FilterOption[] => {
+    const productSet = new Set<string>();
+
+    list.forEach((item) => {
+      if (item.product_name && item.product_name !== "-") {
+        const products = item.product_name.split(" | ");
+        products.forEach((p) => {
+          const cleanName = p.replace(/\s*\([^)]*\)\s*$/, "").trim();
+          if (cleanName && cleanName !== "-") {
+            productSet.add(cleanName);
+          }
+        });
+      }
+    });
+
+    return Array.from(productSet).map((name) => ({
+      key: name,
+      label: name,
+    }));
+  };
+
+  const parseDate = (dateString: string | undefined): Date => {
+    if (!dateString || dateString === "-") return new Date(0);
+
+    try {
+      const date = new Date(dateString);
+
+      if (isNaN(date.getTime())) {
+        const cleanedDate = dateString.replace(/(\d{2})\/(\d{2})\/(\d{4})/, "$2/$1/$3");
+        const newDate = new Date(cleanedDate);
+
+        return isNaN(newDate.getTime()) ? new Date(0) : newDate;
+      }
+
+      return date;
+    } catch (e) {
+      return new Date(0);
+    }
+  };
+
+  const getTransactionStatuses = async () => {
+    try {
+      const res: any = await Get("transaction-statuses", {});
+      const fallbackStatuses = [
+        { id: 1, name: "Pending" },
+        { id: 2, name: "Paid" },
+        { id: 3, name: "Failed" },
+        { id: 4, name: "Expired" },
+        { id: 5, name: "Refund" },
+      ];
+      if (Array.isArray(res?.data) && res.data.length > 0) {
+        const merged = [...res.data];
+        fallbackStatuses.forEach((fb) => {
+          if (!merged.some((s: any) => s.id === fb.id)) merged.push(fb);
+        });
+        setTransactionStatuses(merged);
+      } else {
+        setTransactionStatuses(fallbackStatuses);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transaction statuses:", err);
+      setTransactionStatuses([
+        { id: 1, name: "Pending" },
+        { id: 2, name: "Paid" },
+        { id: 3, name: "Failed" },
+        { id: 4, name: "Expired" },
+        { id: 5, name: "Refund" },
+      ]);
+    }
+  };
+
   const getData = async () => {
     setLoading(true);
     setError(null);
@@ -1190,6 +1273,7 @@ const MerchPickupPage: React.FC = () => {
       });
 
       setData(allData);
+      setProductOptions(extractProductNames(allData));
       
       // Jika ada data yang tidak tersedia, tampilkan info warning
       if (unavailableItems.length > 0) {
@@ -1233,6 +1317,7 @@ const MerchPickupPage: React.FC = () => {
 
   useEffect(() => {
     getData();
+    getTransactionStatuses();
   }, [retryCount]);
 
   const handleRetry = () => {
@@ -1241,6 +1326,28 @@ const MerchPickupPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     let result = data;
+
+    if (paymentStatusFilter && paymentStatusFilter !== "all") {
+      result = result.filter((item) => String(item.transaction_status_id) === paymentStatusFilter);
+    }
+
+    if (selectedProduct && selectedProduct !== "all") {
+      result = result.filter((item) =>
+        (item.product_name ?? "").toString().toLowerCase().includes(selectedProduct.toLowerCase())
+      );
+    }
+
+    if (dateFilter) {
+      const selectedDate = new Date(dateFilter);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      result = result.filter((item) => {
+        const orderDate = parseDate(item.order_date);
+        if (orderDate.getTime() === 0) return false;
+        orderDate.setHours(0, 0, 0, 0);
+        return orderDate.getTime() === selectedDate.getTime();
+      });
+    }
     
     // Filter by search
     if (filterValue) {
@@ -1254,7 +1361,7 @@ const MerchPickupPage: React.FC = () => {
     }
     
     return result;
-  }, [data, filterValue]);
+  }, [data, filterValue, paymentStatusFilter, selectedProduct, dateFilter]);
 
   const [mtSortBy, setMtSortBy] = useState<string>("");
   const [mtSortDir, setMtSortDir] = useState<"asc" | "desc">("asc");
@@ -1437,9 +1544,60 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             Scan QR/Barcode
                         </MantineButton>
                     </Group>
-                    <Group gap="sm" wrap="nowrap" style={{ overflowX: "auto" }}>
+                    <Group gap="sm" wrap="nowrap" align="flex-end" style={{ overflowX: "auto" }}>
+                        <MantineSelect
+                            label={t('merchTrx.payStatus')}
+                            placeholder={t('merchTrx.payStatus')}
+                            data={[
+                                { value: 'all', label: t('merchDetail.allStatus') },
+                                ...transactionStatuses.map((s) => ({ value: String(s.id), label: s.name }))
+                            ]}
+                            value={paymentStatusFilter}
+                            onChange={(val) => { setPaymentStatusFilter(val || 'all'); setPage(1); }}
+                            w={140}
+                            size="sm"
+                            classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
+                        />
+                        <MantineSelect
+                            label={t('merchTrx.filterProduct')}
+                            placeholder={t('merchTrx.filterProduct')}
+                            data={[
+                                { value: 'all', label: t('merchTrx.allProducts') },
+                                ...productOptions.map((p) => ({ value: p.key, label: p.label }))
+                            ]}
+                            value={selectedProduct}
+                            onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
+                            w={200}
+                            size="sm"
+                            searchable
+                            clearable
+                            classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
+                        />
                         <MantineTextInput
-                            placeholder="Cari invoice, dll..."
+                            label={t('merchTrx.filterDate')}
+                            type="date"
+                            placeholder={t('merchTrx.filterDate')}
+                            value={dateFilter}
+                            onChange={(e) => {
+                                setDateFilter(e.target.value);
+                                setPage(1);
+                            }}
+                            w={160}
+                            size="sm"
+                            classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
+                        />
+                        <MantineTextInput
+                            label={t('report.searchLabel')}
+                            placeholder={t('merchPickup.searchAll')}
                             leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
                             value={filterValue}
                             onChange={(e) => {
@@ -1448,6 +1606,10 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                             }}
                             style={{ width: 280, flexShrink: 0 }}
                             size="sm"
+                            classNames={{ root: 'shrink-0' }}
+                            styles={{
+                                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                            }}
                         />
                     </Group>
                 </Flex>

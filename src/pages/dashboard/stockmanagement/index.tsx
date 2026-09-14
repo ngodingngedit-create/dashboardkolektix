@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Get } from "@/utils/REST";
 import fetch from "@/utils/fetch";
 import { notifications } from "@mantine/notifications";
@@ -34,7 +35,6 @@ import {
   faSort, 
   faSortUp, 
   faSortDown, 
-  faArrowsRotate, 
   faPencil, 
   faEye,
   faPlus 
@@ -72,6 +72,7 @@ const CELL_STYLE: React.CSSProperties = {
 
 const StockManagement = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [productsData, setProductsData] = useState<any[]>([]);
   const [allProductsData, setAllProductsData] = useState<any[]>([]);
@@ -577,10 +578,11 @@ const StockManagement = () => {
             />
           </Group>
 
-          <Group gap="sm" wrap="nowrap">
+          <Group gap="sm" wrap="nowrap" align="flex-end">
             <DatePickerInput
               type="range"
-              placeholder="Semua Tanggal"
+              label={t('stock.filterDate')}
+              placeholder={t('stock.allDates')}
               value={dateRangeFilter}
               onChange={(val) => {
                 setDateRangeFilter(val);
@@ -590,10 +592,14 @@ const StockManagement = () => {
               size="sm"
               w={240}
               classNames={{ root: 'shrink-0' }}
+              styles={{
+                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+              }}
             />
             <Select
-              placeholder="Semua Referensi"
-              data={[{ value: "all", label: "Semua Referensi" }, ...referenceTypeOptions]}
+              label={t('stock.filterReference')}
+              placeholder={t('stock.allReferences')}
+              data={[{ value: "all", label: t('stock.allReferences') }, ...referenceTypeOptions]}
               value={selectedReferenceFilter}
               onChange={(val) => {
                 setSelectedReferenceFilter(val || "all");
@@ -602,10 +608,14 @@ const StockManagement = () => {
               size="sm"
               w={180}
               classNames={{ root: 'shrink-0' }}
+              styles={{
+                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+              }}
             />
             <Select
-              placeholder="Semua Produk"
-              data={[{ value: "all", label: "Semua Produk" }, ...productOptions]}
+              label={t('stock.filterProduct')}
+              placeholder={t('stock.allProducts')}
+              data={[{ value: "all", label: t('stock.allProducts') }, ...productOptions]}
               value={selectedProductFilter}
               onChange={(val) => {
                 setSelectedProductFilter(val || "all");
@@ -615,9 +625,14 @@ const StockManagement = () => {
               size="sm"
               searchable
               clearable
+              classNames={{ root: 'shrink-0' }}
+              styles={{
+                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+              }}
             />
             <TextInput
-              placeholder="Cari data..."
+              label={t('report.searchLabel')}
+              placeholder={t('stock.searchData')}
               leftSection={<Icon icon="uiw:search" width={14} />}
               value={historySearchQuery}
               onChange={(e) => {
@@ -626,17 +641,11 @@ const StockManagement = () => {
               }}
               size="sm"
               style={{ width: 250, flexShrink: 0 }}
+              classNames={{ root: 'shrink-0' }}
+              styles={{
+                label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+              }}
             />
-            <Button
-              variant="filled"
-              color="blue"
-              size="sm"
-              onClick={() => user?.has_creator?.id && fetchHistory(user.has_creator.id)}
-              loading={loading.includes("getdata")}
-              styles={{ root: { flexShrink: 0 } }}
-            >
-              <FontAwesomeIcon icon={faArrowsRotate} />
-            </Button>
           </Group>
         </Box>
         <Text size="xs" c="dimmed">

@@ -2678,9 +2678,9 @@ export default function MerchDetail() {
                                     <button
                                         type="button"
                                         onClick={() => router.push('/dashboard/merch')}
-                                        className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+                                        className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm flex items-center justify-center shrink-0"
                                     >
-                                        <Icon icon="ph:arrow-left-bold" />
+                                        <Icon icon="ph:arrow-left-bold" width={18} />
                                     </button>
                                     <Title size="h2" style={{ fontSize: '24px' }}>{data?.product_name || '-'}</Title>
                                     <Tooltip label={t('merchDetail.showQr')}>

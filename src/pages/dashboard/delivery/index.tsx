@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import TableSkeleton from "@/components/TableSkeleton";
 import TrackingUpdateForm from "./trackingupt";
@@ -386,6 +387,7 @@ interface FilterOption {
 
 const DeliveryPage: React.FC = () => {
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useLoggedUser();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [data, setData] = useState<MerchandiseTransactionData[]>([]);
@@ -397,6 +399,7 @@ const DeliveryPage: React.FC = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
+  const [shippingStatusFilter, setShippingStatusFilter] = useState<string>("all");
 
   const [variantFilter, setVariantFilter] = useState<string>("");
   const [variantOptions, setVariantOptions] = useState<FilterOption[]>([]);
@@ -1490,6 +1493,14 @@ const DeliveryPage: React.FC = () => {
   const filtered = useMemo(() => {
     let result = dataWithCreatorNames;
 
+    if (shippingStatusFilter && shippingStatusFilter !== "all") {
+      if (shippingStatusFilter === "waiting") {
+        result = result.filter((item) => !item.latest_manifest);
+      } else {
+        result = result.filter((item) => String(item.latest_manifest?.tracking_status_id ?? "") === shippingStatusFilter);
+      }
+    }
+
     if (filterValue) {
       result = result.filter((item) =>
         (item.invoice_no ?? "")
@@ -1533,7 +1544,7 @@ const DeliveryPage: React.FC = () => {
     }
 
     return result;
-  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter]);
+  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter, shippingStatusFilter]);
 
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
@@ -1833,42 +1844,19 @@ className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-w
 
 
           <Box mt={15}>
-            {/* Row 1: Pagination | Filter Produk + Search + Export — 1 baris scroll-x di mobile */}
+            {/* Row 1: Pagination + Export | Filter + Search — 1 baris scroll-x di mobile */}
             <Box
               mb="sm"
               className="md:!flex md:!items-center md:!justify-between"
               style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", overflowY: "hidden", paddingBottom: 2, scrollbarWidth: "thin" }}
             >
-              <MantineSelect
-                value={rowsPerPage.toString()}
-                onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
-                data={['10', '20', '50', '100']}
-                style={{ width: 70, flexShrink: 0 }}
-                size="sm"
-              />
-              <Group gap="sm" wrap="nowrap">
+              <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
                 <MantineSelect
-                  placeholder="Filter Produk"
-                  data={[
-                    { value: 'all', label: 'Semua Produk' },
-                    ...extractProductNames(data).map(p => ({ value: p.key, label: p.label }))
-                  ]}
-                  value={selectedProduct}
-                  onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
-                  w={200}
+                  value={rowsPerPage.toString()}
+                  onChange={(val) => { setRowsPerPage(Number(val)); setPage(1); }}
+                  data={['10', '20', '50', '100']}
+                  style={{ width: 70, flexShrink: 0 }}
                   size="sm"
-                  searchable
-                  clearable
-                  classNames={{ root: 'shrink-0' }}
-                />
-                <MantineTextInput
-                  placeholder="Cari invoice..."
-                  leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
-                  value={filterValue}
-                  onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
-                  w={300}
-                  size="sm"
-                  classNames={{ root: 'shrink-0' }}
                 />
                 <MantineButton
                   variant="filled"
@@ -1881,6 +1869,70 @@ className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-w
                 >
                   Export Excel
                 </MantineButton>
+              </Group>
+              <Group gap="sm" wrap="nowrap" align="flex-end" style={{ flexShrink: 0 }}>
+                <MantineSelect
+                  label={t('merchTrx.shipStatus')}
+                  placeholder={t('merchTrx.shipStatus')}
+                  data={[
+                    { value: 'all', label: t('merchDetail.allStatus') },
+                    { value: 'waiting', label: t('merchDetail.waitingSeller') },
+                    ...trackingStatuses.map((s: any) => ({ value: String(s.id), label: s.title ?? s.name ?? s.status_delivery ?? String(s.id) }))
+                  ]}
+                  value={shippingStatusFilter}
+                  onChange={(val) => { setShippingStatusFilter(val || 'all'); setPage(1); }}
+                  w={160}
+                  size="sm"
+                  clearable
+                  classNames={{ root: 'shrink-0' }}
+                  styles={{
+                    label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                  }}
+                />
+                <MantineSelect
+                  label={t('merchTrx.filterProduct')}
+                  placeholder={t('merchTrx.filterProduct')}
+                  data={[
+                    { value: 'all', label: t('merchTrx.allProducts') },
+                    ...productOptions.map(p => ({ value: p.key, label: p.label }))
+                  ]}
+                  value={selectedProduct}
+                  onChange={(val) => { setSelectedProduct(val || 'all'); setPage(1); }}
+                  w={200}
+                  size="sm"
+                  searchable
+                  clearable
+                  classNames={{ root: 'shrink-0' }}
+                  styles={{
+                    label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                  }}
+                />
+                <MantineTextInput
+                  label={t('merchTrx.filterDate')}
+                  type="date"
+                  placeholder={t('merchTrx.filterDate')}
+                  value={dateFilter}
+                  onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+                  w={160}
+                  size="sm"
+                  classNames={{ root: 'shrink-0' }}
+                  styles={{
+                    label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                  }}
+                />
+                <MantineTextInput
+                  label={t('report.searchLabel')}
+                  placeholder={t('merchTrx.searchInvoice')}
+                  leftSection={<Icon icon="solar:magnifer-linear" width={18} />}
+                  value={filterValue}
+                  onChange={(e) => { setFilterValue(e.target.value); setPage(1); }}
+                  w={280}
+                  size="sm"
+                  classNames={{ root: 'shrink-0' }}
+                  styles={{
+                    label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4, whiteSpace: 'nowrap' }
+                  }}
+                />
               </Group>
             </Box>
 

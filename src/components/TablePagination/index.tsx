@@ -15,6 +15,10 @@ interface TablePaginationProps {
   unit?: string;
   /** Reset ke halaman 1 saat rows-per-page berubah */
   color?: MantineColor;
+  /** Sembunyikan teks kiri "Halaman X dari Y" (untuk halaman yang hanya butuh 1 keterangan halaman di footer) */
+  hideLeftPageInfo?: boolean;
+  /** Sembunyikan teks atas "Menampilkan X sampai Y dari Z" */
+  hideTopInfo?: boolean;
 }
 
 /**
@@ -32,6 +36,8 @@ const TablePagination = ({
   rowsPerPageOptions = ["10", "20", "50", "100"],
   unit,
   color = "blue",
+  hideLeftPageInfo = false,
+  hideTopInfo = false,
 }: TablePaginationProps) => {
   const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
   const start = total > 0 ? (page - 1) * rowsPerPage + 1 : 0;
@@ -52,9 +58,11 @@ const TablePagination = ({
         />
       )}
 
-      <Text size="xs" c="gray">
-        Menampilkan {start} sampai {end} dari {total} {unit ?? ""}
-      </Text>
+      {!hideTopInfo && (
+        <Text size="xs" c="gray">
+          Menampilkan {start} sampai {end} dari {total} {unit ?? ""}
+        </Text>
+      )}
 
       <Flex
         justify={{ base: "center", sm: "space-between" }}
@@ -70,9 +78,11 @@ const TablePagination = ({
           borderRadius: "0 0 8px 8px",
         }}
       >
-        <Text size="xs" c="dimmed" className="hidden sm:block">
-          Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
-        </Text>
+        {!hideLeftPageInfo && (
+          <Text size="xs" c="dimmed" className="hidden sm:block">
+            Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+          </Text>
+        )}
         <MantinePagination
           total={totalPages}
           value={page > totalPages ? 1 : page}
