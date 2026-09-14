@@ -1821,13 +1821,13 @@ const DeliveryPage: React.FC = () => {
 <button
 type="button"
 onClick={() => router.push('/dashboard')}
-className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
+className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
 >
-<Icon icon="ph:arrow-left-bold" />
+<Icon icon="ph:arrow-left-bold" width={18} />
 </button>
 <Text fw={800} style={{ fontSize: 'clamp(20px, 5vw, 26px)' }} c="dark.9">Data Pengiriman</Text>
 </Flex>
-      <MantineCard p={25} m={15} withBorder radius="md">
+      <MantineCard p={{ base: 12, sm: 25 }} m={{ base: 8, sm: 15 }} withBorder radius="md" style={{ maxWidth: '100%', overflow: 'hidden' }}>
         <Stack gap="xl">
           {/* ... existing content ... */}
 
@@ -1892,7 +1892,10 @@ className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-
             </Flex>
 
             {/* Table */}
-            <Box style={{ overflowX: 'auto', overflowY: 'auto', position: 'relative' }}>
+            <Box
+              style={{ overflowX: 'auto', overflowY: 'auto', position: 'relative', maxWidth: '100%', scrollbarWidth: 'thin' }}
+              className="[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+            >
               <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', border: '1px solid #f0f0f0' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
@@ -1903,7 +1906,7 @@ className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('resi_no')}>Resi <SortIcon col="resi_no" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('ongkir')}>Ongkir <SortIcon col="ongkir" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }} onClick={() => handleSort('shipping_address')}>Alamat Tujuan <SortIcon col="shipping_address" /></th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: isMobile ? 'static' : 'sticky', right: 145, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }) }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', position: isMobile ? 'static' : 'sticky', right: 160, backgroundColor: '#f5f7fa', zIndex: 2, ...(isMobile ? {} : { boxShadow: '-2px 0 5px rgba(0,0,0,0.06)' }) }} onClick={() => handleSort('status_name')}>Status Kirim <SortIcon col="status_name" /></th>
                     <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', position: 'sticky', right: 0, backgroundColor: '#f5f7fa', zIndex: 2, boxShadow: '-2px 0 5px rgba(0,0,0,0.07)' }}>
                       <Flex align="center" gap="xs">
                         <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>Aksi</span>
@@ -1958,7 +1961,7 @@ className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-
                           <Text size="sm">{item.customer_name}</Text>
                           <Text size="xs" c="dimmed">{item.customer_email}</Text>
                         </td>
-                        <td style={{ padding: '12px 14px' }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                           <Text size="sm" style={{ whiteSpace: 'nowrap' }}>{item.product_name}</Text>
                           <Text size="xs" c="dimmed">Qty: {item.total_qty}</Text>
                         </td>
@@ -1980,7 +1983,7 @@ className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-
                             {formatShippingAddress((item as any).address || item.shipping_address)}
                           </Text>
                         </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: isMobile ? 'static' : 'sticky', right: 145, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }) }}>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', position: isMobile ? 'static' : 'sticky', right: 160, backgroundColor: 'white', zIndex: 1, ...(isMobile ? {} : { boxShadow: '-2px 0 4px rgba(0,0,0,0.05)' }) }}>
                           <Badge color={shippingInfo.color} variant="filled" style={{ fontWeight: 600, width: '100%', minWidth: 'max-content' }}>
                             {shippingInfo.text}
                           </Badge>
@@ -2079,7 +2082,7 @@ className="w-10 h-10 shrink-0 rounded-full bg-white border border-primary-light-
         size="5xl"
         scrollBehavior="inside"
         classNames={{
-          base: 'bg-white max-w-full mx-4 sm:mx-6',
+          base: 'bg-white max-w-full max-w-[calc(100vw-2rem)] mx-4 sm:mx-6',
           backdrop: 'backdrop-blur-sm',
           header: 'border-b border-primary-light-200 px-6 py-4 bg-gradient-to-r from-[#0b387c] to-[#1a4b9c] sticky top-0 z-10',
           body: 'p-0',

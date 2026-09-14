@@ -2574,7 +2574,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
               </div>
             </button>
           </nav>
-          <div className="w-full overflow-x-clip">
+          <div className="min-w-0 flex-1 overflow-x-clip">
             <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
               <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -2744,7 +2744,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                   </Flex>
                 </div>
               </div>
-              <div className="max-w-[100vw] overflow-x-auto">{children}</div>
+              <div className="min-w-0 flex-1 max-w-full overflow-x-clip">{children}</div>
             </div>
           </div>
         </div>
