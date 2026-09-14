@@ -815,7 +815,7 @@ export default function AdminCreateShuttle() {
                               ) : (
                                 <div className="px-4 py-3 flex flex-col gap-3">
                                   {day.sessions.map((ses, si) => (
-                                    <div key={si} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
+                                    <div key={si} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-gray-50/80 rounded-lg px-3 py-2 border border-light-grey">
                                       <Icon icon="ph:clock-bold" className="text-blue-500 shrink-0" />
                                       <input
                                         type="text"
@@ -830,7 +830,7 @@ export default function AdminCreateShuttle() {
                                         onChange={(e) => updateSessionField(di, si, "session_start_time", e.target.value + ":00")}
                                         className="w-[110px] border border-light-grey rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                       />
-                                      <span className="text-gray-400 text-sm">â€”</span>
+                                      <span className="text-gray-400 text-sm">—</span>
                                       <input
                                         type="time"
                                         value={ses.session_end_time?.substring(0, 5)}
@@ -1387,7 +1387,7 @@ export default function AdminCreateShuttle() {
                   <p className="text-grey text-sm mt-1 line-clamp-2">{item.description}</p>
                   <p className="text-dark text-sm mt-3">
                     <Icon icon="ph:calendar-blank" className="inline text-gray-400 mr-1.5" />
-                    {moment(item.start_date).format("DD MMM YYYY")} â€¢ {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                    {moment(item.start_date).format("DD MMM YYYY")} • {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
                   </p>
                   <Group gap={4} wrap="wrap" mt={8}>
                     {item.payment_method_custom?.split(",").map(m => (
