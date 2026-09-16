@@ -40,12 +40,12 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect, mobileOpen, onC
             )}
             <div className={`w-[280px] bg-slate-50 text-slate-600 flex-col h-full border-r border-light-grey hidden md:flex ${mobileOpen ? '!flex fixed inset-y-0 left-0 z-[1150] shadow-2xl' : ''}`}>
             <div className="p-4 border-b border-light-grey bg-white">
-                <div className="flex flex-col px-2">
-                    <div className="flex items-center gap-2">
-                        <Image src="/images/logo.png" alt="Kolektix Logo" width={32} height={32} className="object-contain" />
-                        <span className="font-bold text-slate-900 tracking-tight">{t("issue.work")}</span>
+                <div className="flex items-center gap-2.5 px-2">
+                    <Image src="/images/logo.png" alt="Kolektix Logo" width={32} height={32} className="object-contain shrink-0" />
+                    <div className="flex flex-col leading-none">
+                        <span className="font-bold text-[15px] text-slate-900 tracking-tight leading-tight">{t("issue.work")}</span>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] leading-none mt-1">{t("issue.spaces")}</span>
                     </div>
-                    <p className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest ml-10 leading-none mt-0.5">{t("issue.spaces")}</p>
                 </div>
             </div>
 
@@ -81,8 +81,8 @@ const WorkspaceSidebar = ({ projects, selectedProject, onSelect, mobileOpen, onC
 const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel, onSave, onOpenSidebar }: any) => {
     const { t } = useTranslation();
     return (
-        <div className="px-4 md:px-6 py-4 space-y-4 bg-white border-b border-light-grey">
-            <div className="flex items-center gap-3 md:gap-6">
+        <div className="px-4 md:px-6 py-4 bg-white border-b border-light-grey">
+            <div className="flex flex-wrap items-center gap-3 md:gap-6">
                 <button
                     className="md:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"
                     onClick={onOpenSidebar}
@@ -96,7 +96,7 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                     <Icon icon="mdi:chevron-down" className="text-slate-400" width={16} />
                 </div>
 
-                <div className="relative flex-1 max-w-xl">
+                <div className="relative flex-1 min-w-[200px] max-w-xl">
                     <Icon icon="mdi:magnify" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width={16} />
                     <input
                         type="text"
@@ -105,24 +105,9 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                     />
                 </div>
 
-                <div className="flex items-center gap-4 ml-auto shrink-0">
-                    <div className="hidden sm:flex items-center gap-3">
-                        <div className="hidden md:flex flex-col items-end">
-                            <span className="text-sm font-black text-slate-800">{project?.name || t("issue.newTask")}</span>
-                            <span className="text-[11px] font-medium text-slate-400">{t("issue.membersActive", { count: project?.members?.length || 0 })}</span>
-                        </div>
-                        <div className="flex items-center -space-x-1.5">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white text-[10px] font-bold text-slate-600 flex items-center justify-center">JD</div>
-                            <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center">EN</div>
-                        </div>
-                    </div>
-                    <Icon icon="mdi:bell-outline" className="text-slate-400 hidden sm:block" width={20} />
-                </div>
-            </div>
-
-            {viewMode !== 'FORM' && (
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
+                    {/* HIDDEN-TEMP-FILTERS: hapus class "hidden" untuk mengembalikan Filter / Urutkan / Penanggung Jawab */}
+                    <div className="hidden flex items-center gap-2">
                         <Button size="sm" variant="flat" className="bg-slate-100 text-slate-600 rounded-full h-8 px-3 font-bold border-none" startContent={<Icon icon="mdi:filter-variant" width={14} />}>
                             {t("issue.filter")}
                         </Button>
@@ -133,37 +118,39 @@ const WorkspaceHeader = ({ project, onAddIssue, viewMode, setViewMode, onCancel,
                             {t("issue.assignee")}
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <SegmentedControl
-                            size="xs"
-                            radius="lg"
-                            value={viewMode}
-                            onChange={(value) => setViewMode(value as 'BOARD' | 'TABLE')}
-                            data={[
-                                { label: t("issue.board"), value: 'BOARD' },
-                                { label: t("issue.table"), value: 'TABLE' },
-                            ]}
-                            styles={{
-                                root: { backgroundColor: '#f1f5f9' },
-                                indicator: { backgroundColor: '#fff' },
-                                label: { fontSize: 12, fontWeight: 700 },
-                            }}
-                        />
-                        <Button
-                            color="primary"
-                            size="sm"
-                            onClick={onAddIssue}
-                            className="bg-blue-600 font-bold h-8 rounded-lg shadow-md shadow-blue-200"
-                            startContent={<Icon icon="mdi:plus" width={16} />}
-                        >
-                            {t("issue.createIssue")}
-                        </Button>
-                    </div>
+                    {viewMode !== 'FORM' && (
+                        <>
+                            <SegmentedControl
+                                size="xs"
+                                radius="lg"
+                                value={viewMode}
+                                onChange={(value) => setViewMode(value as 'BOARD' | 'TABLE')}
+                                data={[
+                                    { label: t("issue.board"), value: 'BOARD' },
+                                    { label: t("issue.table"), value: 'TABLE' },
+                                ]}
+                                styles={{
+                                    root: { backgroundColor: '#f1f5f9' },
+                                    indicator: { backgroundColor: '#fff' },
+                                    label: { fontSize: 12, fontWeight: 700 },
+                                }}
+                            />
+                            <Button
+                                color="primary"
+                                size="sm"
+                                onClick={onAddIssue}
+                                className="bg-blue-600 font-bold h-8 rounded-lg shadow-md shadow-blue-200"
+                                startContent={<Icon icon="mdi:plus" width={16} />}
+                            >
+                                {t("issue.createIssue")}
+                            </Button>
+                        </>
+                    )}
                 </div>
-            )}
-        </div>
-    );
-};
+</div>
+            </div>
+        );
+    };
 
 const MembersSection = ({ formData, setFormData, readOnly, users }: { formData: Project, setFormData: any, readOnly?: boolean, users: UserOption[] }) => {
     const { t } = useTranslation();
@@ -1081,7 +1068,7 @@ const ProjectFormSection = ({ formData, setFormData, isReadOnly, setViewMode, ha
                             color="default"
                             radius="lg"
                             startContent={<Icon icon="mdi:close" width={18} />}
-                            onClick={() => setViewMode('BOARD')}
+                            onClick={() => setViewMode('TABLE')}
                             className="px-8 font-bold text-slate-600 h-11"
                         >
                             {t("issue.cancel")}
@@ -1112,7 +1099,7 @@ const IssueManagement = () => {
     const [loading, setLoading] = useState(true);
 
     // View State
-    const [viewMode, setViewMode] = useState<'BOARD' | 'TABLE' | 'FORM'>('BOARD');
+    const [viewMode, setViewMode] = useState<'BOARD' | 'TABLE' | 'FORM'>('TABLE');
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -1223,7 +1210,7 @@ const IssueManagement = () => {
                     }
                 };
                 setFormData(mappedData);
-                setViewMode('BOARD');
+                setViewMode('TABLE');
             }
         } catch (error) {
             console.error("Failed to fetch project detail:", error);

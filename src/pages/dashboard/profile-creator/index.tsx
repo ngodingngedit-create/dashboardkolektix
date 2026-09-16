@@ -1075,7 +1075,8 @@ const ProfileCreator = () => {
             form="reset-password-form"
             color="blue"
             size="md"
-            style={{ minWidth: 200, width: '100%' }}
+            className="w-full md:w-1/4"
+            style={{ minWidth: 200 }}
             loading={loading.includes('resetpassword')}
             leftSection={!loading.includes('resetpassword') && <FontAwesomeIcon icon={faSave} />}
           >
