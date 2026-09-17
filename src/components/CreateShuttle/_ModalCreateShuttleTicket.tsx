@@ -33,6 +33,9 @@ export interface ShuttleTicket {
   seat_color?: string;
   shuttle_id?: number;
   shuttle_session_id?: number;
+  // Kunci UI lokal "dayIdx-sesIdx" — satu tiket hanya untuk satu sesi.
+  // Tidak dikirim ke backend (di-strip saat submit).
+  _sessionKey?: string;
   is_soldout?: number;
   is_fullbook?: number;
   is_finish?: number;
@@ -63,6 +66,9 @@ const emptyTicket: ShuttleTicket = {
 export interface SessionOption {
   value: string; // format: "dayIdx-sesIdx"
   label: string;
+  dayIdx: number;
+  sesIdx: number;
+  sessionId?: number;
 }
 
 interface ModalProps {
@@ -98,20 +104,59 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
   useEffect(() => {
     if (typeof openForm === "number" && openForm >= 0) {
       const t = ticket[openForm];
-      setForm(t || { ...emptyTicket });
+      if (!t) {
+        setForm({ ...emptyTicket });
+        return;
+      }
+      // Tiket lama mungkin belum punya _sessionKey (data dari API).
+      // Resolve dari shuttle_session_id -> sessionId, fallback ke _sessionKey / sesi pertama.
+      let resolved = t._sessionKey;
+      const opts = sessionOptions || [];
+      if ((!resolved || !opts.some((o) => o.value === resolved)) && opts.length > 0) {
+        const byId = opts.find((o) => o.sessionId !== undefined && o.sessionId === t.shuttle_session_id);
+        resolved = byId?.value || t._sessionKey || opts[0]?.value;
+      }
+      setForm({
+        ...t,
+        _sessionKey: resolved,
+        shuttle_session_id:
+          opts.find((o) => o.value === resolved)?.sessionId ?? t.shuttle_session_id ?? 1,
+      });
     } else {
-      setForm({ ...emptyTicket });
+      // Form tiket baru: default ke sesi pertama agar langsung ter-attach.
+      const first = (sessionOptions || [])[0];
+      setForm({
+        ...emptyTicket,
+        _sessionKey: first?.value,
+        shuttle_session_id: first?.sessionId ?? emptyTicket.shuttle_session_id ?? 1,
+      });
     }
-  }, [openForm, ticket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openForm, isOpen]);
 
   const openSeatMap = useMemo(() => addSeatMap, [addSeatMap]);
+
+  const resolveSessionKey = (key?: string): SessionOption | undefined => {
+    const opts = sessionOptions || [];
+    if (key) {
+      const hit = opts.find((o) => o.value === key);
+      if (hit) return hit;
+    }
+    return opts[0];
+  };
 
   const handleSaveTicket = () => {
     if (!form.name || !form.ticket_start_date) {
       notifications.show({ title: "Validasi", message: "Mohon isi nama tiket dan tanggal", color: "red" });
       return;
     }
-    const newForm = { ...form };
+    // Pastikan tiket selalu ter-attach ke satu sesi yang valid.
+    const target = resolveSessionKey(form._sessionKey);
+    const newForm: ShuttleTicket = {
+      ...form,
+      _sessionKey: target?.value ?? form._sessionKey,
+      shuttle_session_id: target?.sessionId ?? form.shuttle_session_id ?? 1,
+    };
     if (newForm.available_seat && newForm.available_seat.length > 0) {
       newForm.available_seat_number = newForm.available_seat.join(",");
       newForm.qty = newForm.available_seat.length;
@@ -235,16 +280,19 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
                 <select
                   className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white"
                   value={(() => {
-                    // Find the session option matching current shuttle_session_id
-                    const match = sessionOptions.find(opt => {
-                      const [, si] = opt.value.split("-").map(Number);
-                      return (si + 1) === form.shuttle_session_id;
-                    });
-                    return match?.value || sessionOptions[0]?.value || "";
+                    // Satu tiket hanya untuk satu sesi — pakai kunci "di-si".
+                    if (form._sessionKey && sessionOptions.some((opt) => opt.value === form._sessionKey)) {
+                      return form._sessionKey;
+                    }
+                    return sessionOptions[0]?.value || "";
                   })()}
                   onChange={(e) => {
-                    const [di, si] = e.target.value.split("-").map(Number);
-                    setForm({ ...form, shuttle_session_id: si + 1 });
+                    const selected = sessionOptions.find((opt) => opt.value === e.target.value);
+                    setForm({
+                      ...form,
+                      _sessionKey: e.target.value,
+                      shuttle_session_id: selected?.sessionId ?? form.shuttle_session_id ?? 1,
+                    });
                   }}
                 >
                   {sessionOptions.map((opt) => (

@@ -1633,6 +1633,7 @@ import { useClickOutside } from "@mantine/hooks";
 import { Flex, Menu, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useTranslation } from "react-i18next";
+import { isStaffCheckinUser, STAFF_CHECKIN_LINK } from "@/utils/staffCheckin";
 
 export const SidebarContext = createContext<{ collapse: boolean }>({ collapse: false });
 export const useSidebar = () => useContext(SidebarContext);
@@ -2229,12 +2230,36 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Label role khusus tampilan: Staff Checkin tetap role "Staff" untuk
+  // filtering menu, tapi labelnya tampil "Staff Checkin".
+  const roleLabel = useMemo(
+    () =>
+      isStaffCheckinUser(users)
+        ? users?.staffRoleNames?.[0]?.trim() || "Staff Checkin"
+        : role,
+    [users, role]
+  );
+
   const filteredSidebarData = useMemo(() => {
     console.log("🔄 Filtering menu with role:", role, "and user:", users?.name);
 
+    // Aditif: Staff Checkin (data.permissions[].role.name) hanya lihat Check In Event.
+    // Role utama tetap "Staff"; Dashboard disembunyikan. Alur lain tidak berubah.
+    const isCheckinStaff = isStaffCheckinUser(users);
     return sidebarData.filter((el) => {
       // Role filtering
       if (el.role !== role) return false;
+
+      if (isCheckinStaff) {
+        // Sembunyikan menu top-level ber-link (mis. Dashboard /dashboard).
+        if (el.link) return el.link === STAFF_CHECKIN_LINK;
+        // Untuk parent ber-submenu (mis. Event), loloskan hanya jika
+        // memuat anak Check In Event. Penyempitan anak dilakukan di render.
+        if (el.submenu) {
+          return el.submenu.some((subEl) => subEl.link === STAFF_CHECKIN_LINK);
+        }
+        return false;
+      }
 
       // Module permission filtering (for Creators)
       if (role === "Creator" && el.moduleId) {
@@ -2417,7 +2442,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                     <>
                       <div className={`w-full ${collapse ? "opacity-100 delay-200" : "opacity-0 delay-75"} transition-opacity `}>
                         <p className="text-sm">{userData && userData.has_creator ? userData.has_creator?.name || userData.has_creator?.name_event_organizer : userData?.name}</p>
-                        <p className="text-[10px] ">{role}</p>
+                        <p className="text-[10px] ">{roleLabel}</p>
                       </div>
                       <div>
                         {hasCreator && role != "Staff" && (
@@ -2497,6 +2522,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                           {el.submenu
                             .filter((subEl) => {
                               if (subEl.role !== role) return false;
+                              // Aditif: Staff Checkin hanya lihat 1 anak (Check In Event).
+                              if (isStaffCheckinUser(users)) return subEl.link === STAFF_CHECKIN_LINK;
                               if (role === "Creator" && subEl.moduleId) {
                                 return users?.permissions?.some((p) => p.module_id === subEl.moduleId);
                               }

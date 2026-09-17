@@ -305,6 +305,9 @@ export interface ModulePermission {
   is_delete: number | null;
   is_download: number | null;
   is_import: number | null;
+  // Flattened copy of role.name for lightweight cookies (see login flow).
+  // Raw API shape uses `role: { id, name }`; cookie shape may use role_name.
+  role_name?: string;
   role?: {
     id: number;
     name: string;
@@ -331,6 +334,10 @@ export type UserProps = Partial<{
   verified_status_id?: number;
   force_creator?: boolean;
   role?: "Staff" | "Creator" | "Pembeli" | "Admin";
+  // Aditif untuk Staff Checkin: role utama tetap "Staff",
+  // flag ini hanya menandai hasil baca data.permissions[].role.name.
+  isCheckinStaff?: boolean;
+  staffRoleNames?: string[];
   bookmarked?: {
     id: number;
     user_id: number;

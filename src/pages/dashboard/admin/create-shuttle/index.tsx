@@ -250,10 +250,10 @@ export default function AdminCreateShuttle() {
     const tickets: ShuttleTicket[] = [];
 
     if (item.operation_days && Array.isArray(item.operation_days)) {
-      item.operation_days.forEach((day: any) => {
+      item.operation_days.forEach((day: any, di: number) => {
         const sessions: ShuttleSession[] = [];
         if (day.sessions && Array.isArray(day.sessions)) {
-          day.sessions.forEach((session: any) => {
+          day.sessions.forEach((session: any, si: number) => {
             const sessionTickets: ShuttleTicket[] = [];
             if (session.tickets && Array.isArray(session.tickets)) {
               session.tickets.forEach((t: any) => {
@@ -281,7 +281,8 @@ export default function AdminCreateShuttle() {
                   available_seat: t.available_seat_number ? t.available_seat_number.split(",") : [],
                   seat_color: t.seat_color || "#194e9e",
                   shuttle_id: t.shuttle_id || 1,
-                  shuttle_session_id: t.shuttle_session_id || 1,
+                  shuttle_session_id: t.shuttle_session_id ?? session.id ?? si + 1,
+                  _sessionKey: `${di}-${si}`,
                   is_soldout: t.is_soldout ?? 0,
                   is_fullbook: t.is_fullbook ?? 0,
                   is_finish: t.is_finish ?? 0,
@@ -453,16 +454,19 @@ export default function AdminCreateShuttle() {
     });
   };
 
-  // â”€â”€ Derived session options for the ticket modal â”€â”€
+  // ── Derived session options for the ticket modal ──
   const sessionOptions = useMemo(() => {
-    const opts: { value: string; label: string }[] = [];
+    const opts: { value: string; label: string; dayIdx: number; sesIdx: number; sessionId?: number }[] = [];
     form.operation_days.forEach((day, di) => {
       day.sessions.forEach((ses, si) => {
         const dayLabel = day.day_name || `Hari ${di + 1}`;
         const sesLabel = ses.session_name || `Sesi ${si + 1}`;
         opts.push({
           value: `${di}-${si}`,
-          label: `${dayLabel} â€” ${sesLabel} (${ses.session_start_time?.substring(0,5)}-${ses.session_end_time?.substring(0,5)})`,
+          label: `${dayLabel} — ${sesLabel} (${ses.session_start_time?.substring(0, 5)}-${ses.session_end_time?.substring(0, 5)})`,
+          dayIdx: di,
+          sesIdx: si,
+          sessionId: ses.id,
         });
       });
     });
@@ -470,12 +474,6 @@ export default function AdminCreateShuttle() {
   }, [form.operation_days]);
 
   const handleSubmit = async () => {
-    console.log('[handleSubmit] form state at submit', {
-      is_soldout: form.is_soldout,
-      ticketsCount: form.tickets.length,
-      operationDaysCount: form.operation_days.length,
-      operationDaysStructure: form.operation_days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, ticketsCount: s.tickets.length })) }))
-    });
     if (!form.name) {
       notifications.show({ title: "Validasi", message: "Nama shuttle wajib diisi.", color: "orange" });
       return;
@@ -484,16 +482,54 @@ export default function AdminCreateShuttle() {
     try {
       const seatmapJson = seatmapData.length > 0 ? JSON.stringify(seatmapData) : null;
 
-      // Build operation_days payload from state
-      const operationDaysPayload = form.operation_days.map((day) => ({
+      // Normalisasi ulang: pastikan setiap tiket flat ter-attach ke satu sesi valid.
+      // Ini melindungi dari key basi setelah tambah/hapus hari/sesi.
+      const keyToSessionIdSubmit = new Map<string, number | undefined>();
+      form.operation_days.forEach((day, di) => {
+        day.sessions.forEach((ses, si) => {
+          keyToSessionIdSubmit.set(`${di}-${si}`, ses.id);
+        });
+      });
+      const validKeysSubmit = new Set(keyToSessionIdSubmit.keys());
+      const firstKeySubmit = form.operation_days.length > 0 && form.operation_days[0].sessions.length > 0
+        ? "0-0"
+        : undefined;
+      const normalizedFlat: ShuttleTicket[] = form.tickets.map((t) => {
+        let key = t._sessionKey;
+        if (!key || !validKeysSubmit.has(key)) {
+          let byIdKey: string | undefined;
+          keyToSessionIdSubmit.forEach((sid, k) => {
+            if (byIdKey === undefined && sid !== undefined && sid === t.shuttle_session_id) {
+              byIdKey = k;
+            }
+          });
+          key = byIdKey ?? firstKeySubmit ?? t._sessionKey;
+        }
+        return {
+          ...t,
+          _sessionKey: key,
+          shuttle_session_id: (key ? keyToSessionIdSubmit.get(key) : undefined) ?? t.shuttle_session_id ?? 1,
+        };
+      });
+      const ticketsBySession = new Map<string, ShuttleTicket[]>();
+      normalizedFlat.forEach((t) => {
+        if (!t._sessionKey) return;
+        const arr = ticketsBySession.get(t._sessionKey) || [];
+        arr.push(t);
+        ticketsBySession.set(t._sessionKey, arr);
+      });
+
+      // Build operation_days payload from state (tiket diambil dari flat yang sudah dinormalisasi
+      // agar tidak ada tiket yang hilang kalau ses.tickets basi). _sessionKey tidak dikirim.
+      const operationDaysPayload = form.operation_days.map((day, di) => ({
         ...(day.id ? { id: day.id } : {}),
         day_name: day.day_name,
-        sessions: day.sessions.map((ses) => ({
+        sessions: day.sessions.map((ses, si) => ({
           ...(ses.id ? { id: ses.id } : {}),
           session_name: ses.session_name,
           session_start_time: ses.session_start_time,
           session_end_time: ses.session_end_time,
-          tickets: ses.tickets.map((t) => ({
+          tickets: (ticketsBySession.get(`${di}-${si}`) || ses.tickets).map((t) => ({
             ...(t.id ? { id: t.id } : {}),
             name: t.name,
             description: t.description,
@@ -625,33 +661,52 @@ export default function AdminCreateShuttle() {
     });
   };
 
-  // Ticket modal state â€“ proxies flat form.tickets
+  // Ticket modal state – proxies flat form.tickets
   const modalTickets = form.tickets;
   const handleSetTicket = (tickets: ShuttleTicket[]) => {
-    console.log('[handleSetTicket] called', {
-      incomingCount: tickets.length,
-      incomingSessionIds: tickets.map(t => t.shuttle_session_id),
-      prevOperationDays: form.operation_days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, count: s.tickets.length })) }))
-    });
     setForm(prev => {
-      const days = prev.operation_days.map((day) => ({
-        ...day,
-        sessions: day.sessions.map((ses, si) => {
-          const targetId = ses.id ?? (si + 1);
-          const matched = tickets.filter(t => t.shuttle_session_id === targetId);
-          console.log('[handleSetTicket] session filter', { sesIdx: si + 1, targetId, sessionName: ses.session_name, matchedCount: matched.length });
-          return {
-            ...ses,
-            tickets: matched,
-          };
-        }),
-      }));
-      console.log('[handleSetTicket] result', {
-        prevTicketsCount: prev.tickets.length,
-        newTicketsCount: tickets.length,
-        newOperationDays: days.map(d => ({ day: d.day_name, sessions: d.sessions.map(s => ({ name: s.session_name, count: s.tickets.length })) }))
+      // Peta kunci sesi yang valid: "di-si" -> sessionId asli (kalau ada).
+      const keyToSessionId = new Map<string, number | undefined>();
+      prev.operation_days.forEach((day, di) => {
+        day.sessions.forEach((ses, si) => {
+          keyToSessionId.set(`${di}-${si}`, ses.id);
+        });
       });
-      return { ...prev, tickets, operation_days: days };
+      const validKeys = new Set(keyToSessionId.keys());
+      const firstKey = prev.operation_days.length > 0 && prev.operation_days[0].sessions.length > 0
+        ? "0-0"
+        : undefined;
+
+      // Normalisasi: satu tiket hanya untuk satu sesi via _sessionKey.
+      // Tiket lama tanpa _sessionKey di-resolve via shuttle_session_id -> sessionId asli.
+      const normalized = tickets.map((t) => {
+        let key = t._sessionKey;
+        if (!key || !validKeys.has(key)) {
+          let byIdKey: string | undefined;
+          keyToSessionId.forEach((sid, k) => {
+            if (byIdKey === undefined && sid !== undefined && sid === t.shuttle_session_id) {
+              byIdKey = k;
+            }
+          });
+          key = byIdKey ?? firstKey ?? t._sessionKey;
+        }
+        const sessionId = key ? keyToSessionId.get(key) : undefined;
+        return {
+          ...t,
+          _sessionKey: key,
+          shuttle_session_id: sessionId ?? t.shuttle_session_id ?? 1,
+        };
+      });
+
+      const days = prev.operation_days.map((day, di) => ({
+        ...day,
+        sessions: day.sessions.map((ses, si) => ({
+          ...ses,
+          tickets: normalized.filter((t) => t._sessionKey === `${di}-${si}`),
+        })),
+      }));
+
+      return { ...prev, tickets: normalized, operation_days: days };
     });
   };
   const handleOpenTicketModal = () => {

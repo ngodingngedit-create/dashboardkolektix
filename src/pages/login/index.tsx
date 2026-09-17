@@ -1197,6 +1197,7 @@ import Countdown, { CountdownRendererFn } from "react-countdown";
 import { PasswordInput, TextInput, Menu, Card, Flex, Text } from "@mantine/core";
 import { useSetState } from "@mantine/hooks";
 import { UserProps } from "@/utils/globalInterface";
+import { getStaffRoleNames, isStaffCheckinUser, STAFF_CHECKIN_LINK } from "@/utils/staffCheckin";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
 
@@ -1292,7 +1293,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (users?.id) {
-      if (users.role === 'Admin') {
+      if (isStaffCheckinUser(users)) {
+        router.push(STAFF_CHECKIN_LINK);
+      } else if (users.role === 'Admin') {
         router.push("/dashboard/admin");
       } else {
         router.push("/dashboard");
@@ -1398,12 +1401,18 @@ const Auth = () => {
         const role: UserProps["role"] = res?.user_access?.some((e: any) => e?.has_role.id == 3) ? "Creator" : res?.user_access?.some((e: any) => e?.has_role?.name == "Admin") ? "Admin" : "Staff";
 
         // Optimize cookie size by only storing essential info
+        // NOTE: role utama tetap dari user_access (tidak diubah).
+        // Tambahan aditif: baca data.permissions[].role.name untuk Staff Checkin.
+        const rawPermissions: any[] = res?.data?.permissions ?? [];
+        const isCheckinStaff = isStaffCheckinUser(rawPermissions);
         const userData = {
           id: res?.data?.id,
           name: res?.data?.name,
           email: res?.data?.email,
           role,
           force_creator: true,
+          isCheckinStaff,
+          staffRoleNames: getStaffRoleNames(rawPermissions),
           has_creator: res?.data?.has_creator ? {
             id: res.data.has_creator.id,
             name: res.data.has_creator.name,
@@ -1413,14 +1422,20 @@ const Auth = () => {
             is_verified: res.data.has_creator.is_verified,
             verified_status_id: res.data.has_creator.verified_status_id,
           } : undefined,
-          permissions: (res?.data?.permissions ?? []).map((p: any) => ({
-            module_id: p.module_id
+          permissions: rawPermissions.map((p: any) => ({
+            module_id: p.module_id,
+            role_id: p.role_id ?? p?.role?.id,
+            role_name: p?.role?.name ?? p?.role_name,
           }))
         };
 
         Cookies.set("user_data", JSON.stringify(userData));
         setLoading(false);
-        router.push(role == "Admin" ? "/dashboard/admin" : "/dashboard");
+        if (isCheckinStaff) {
+          router.push(STAFF_CHECKIN_LINK);
+        } else {
+          router.push(role == "Admin" ? "/dashboard/admin" : "/dashboard");
+        }
       })
       .catch((err: any) => {
         if (err.response?.status === 401) {
