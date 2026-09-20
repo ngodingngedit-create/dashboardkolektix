@@ -337,6 +337,7 @@ export type UserProps = Partial<{
   // Aditif untuk Staff Checkin: role utama tetap "Staff",
   // flag ini hanya menandai hasil baca data.permissions[].role.name.
   isCheckinStaff?: boolean;
+  isKasirStaff?: boolean;
   staffRoleNames?: string[];
   bookmarked?: {
     id: number;

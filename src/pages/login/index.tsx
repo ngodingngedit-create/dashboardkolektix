@@ -1197,7 +1197,7 @@ import Countdown, { CountdownRendererFn } from "react-countdown";
 import { PasswordInput, TextInput, Menu, Card, Flex, Text } from "@mantine/core";
 import { useSetState } from "@mantine/hooks";
 import { UserProps } from "@/utils/globalInterface";
-import { getStaffRoleNames, isStaffCheckinUser, STAFF_CHECKIN_LINK } from "@/utils/staffCheckin";
+import { getStaffRoleNames, isStaffCheckinUser, isKasirUser, STAFF_CHECKIN_LINK, KASIR_DEFAULT_LINK } from "@/utils/staffCheckin";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
 
@@ -1405,6 +1405,7 @@ const Auth = () => {
         // Tambahan aditif: baca data.permissions[].role.name untuk Staff Checkin.
         const rawPermissions: any[] = res?.data?.permissions ?? [];
         const isCheckinStaff = isStaffCheckinUser(rawPermissions);
+        const isKasir = isKasirUser(rawPermissions);
         const userData = {
           id: res?.data?.id,
           name: res?.data?.name,
@@ -1412,6 +1413,7 @@ const Auth = () => {
           role,
           force_creator: true,
           isCheckinStaff,
+          isKasirStaff: isKasir,
           staffRoleNames: getStaffRoleNames(rawPermissions),
           has_creator: res?.data?.has_creator ? {
             id: res.data.has_creator.id,
@@ -1433,6 +1435,8 @@ const Auth = () => {
         setLoading(false);
         if (isCheckinStaff) {
           router.push(STAFF_CHECKIN_LINK);
+        } else if (isKasir) {
+          router.push(KASIR_DEFAULT_LINK);
         } else {
           router.push(role == "Admin" ? "/dashboard/admin" : "/dashboard");
         }

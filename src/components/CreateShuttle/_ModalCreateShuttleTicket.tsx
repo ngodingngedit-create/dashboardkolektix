@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useContext } from "react";
-import { Modal as ModalM, Stack, Flex, Card, TextInput, UnstyledButton, Box, Button, Text, Radio as RadioM, RadioGroup as RadioGroupM, Switch } from "@mantine/core";
+import { Modal as ModalM, Stack, Flex, Card, TextInput, UnstyledButton, Box, Button, Text, Radio as RadioM, RadioGroup as RadioGroupM, Switch, Checkbox as CheckboxM } from "@mantine/core";
 import { RadioGroup, Radio } from "@nextui-org/react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -82,6 +82,7 @@ interface ModalProps {
 export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, setTicket, sessionOptions }: ModalProps) {
   const [openForm, setOpenForm] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<ShuttleTicket>(emptyTicket);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   const [addSeatMap, setAddSeatMap] = useState(false);
   const [isFullscreenSeatmap, setIsFullscreenSeatmap] = useState(false);
@@ -102,7 +103,9 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
   }, [isOpen]);
 
   useEffect(() => {
+    const opts = sessionOptions || [];
     if (typeof openForm === "number" && openForm >= 0) {
+      setSelectedKeys([]);
       const t = ticket[openForm];
       if (!t) {
         setForm({ ...emptyTicket });
@@ -111,7 +114,6 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
       // Tiket lama mungkin belum punya _sessionKey (data dari API).
       // Resolve dari shuttle_session_id -> sessionId, fallback ke _sessionKey / sesi pertama.
       let resolved = t._sessionKey;
-      const opts = sessionOptions || [];
       if ((!resolved || !opts.some((o) => o.value === resolved)) && opts.length > 0) {
         const byId = opts.find((o) => o.sessionId !== undefined && o.sessionId === t.shuttle_session_id);
         resolved = byId?.value || t._sessionKey || opts[0]?.value;
@@ -123,8 +125,9 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
           opts.find((o) => o.value === resolved)?.sessionId ?? t.shuttle_session_id ?? 1,
       });
     } else {
-      // Form tiket baru: default ke sesi pertama agar langsung ter-attach.
-      const first = (sessionOptions || [])[0];
+      // Form tiket baru: default pilih sesi pertama agar langsung ter-attach.
+      const first = opts[0];
+      setSelectedKeys(first ? [first.value] : []);
       setForm({
         ...emptyTicket,
         _sessionKey: first?.value,
@@ -133,6 +136,24 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openForm, isOpen]);
+
+  // Sinkronisasi pilihan saat daftar sesi berubah (tambah/hapus sesi selagi modal terbuka).
+  // Buang key yang sudah tidak valid; pastikan minimal 1 terpilih untuk form baru.
+  // Hanya untuk form tambah baru — mode edit tetap single dan tidak pakai selectedKeys.
+  useEffect(() => {
+    if (typeof openForm === "number" && openForm >= 0) return;
+    const opts = sessionOptions || [];
+    if (opts.length === 0) {
+      setSelectedKeys([]);
+      return;
+    }
+    setSelectedKeys((prev) => {
+      const valid = prev.filter((k) => opts.some((o) => o.value === k));
+      if (valid.length > 0) return valid.length === prev.length ? prev : valid;
+      return opts[0] ? [opts[0].value] : [];
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionOptions, openForm]);
 
   const openSeatMap = useMemo(() => addSeatMap, [addSeatMap]);
 
@@ -145,27 +166,107 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
     return opts[0];
   };
 
+  const isEditing = typeof openForm === "number" && openForm >= 0;
+  const isNew = !isEditing;
+  const showSessionList = isNew && (sessionOptions || []).length > 1;
+  const allSelected = isNew && (sessionOptions || []).length > 0 && selectedKeys.length === (sessionOptions || []).length;
+
+  const toggleKey = (key: string) => {
+    setSelectedKeys((prev) => {
+      if (prev.includes(key)) {
+        // Minimal 1 sesi harus terpilih.
+        if (prev.length <= 1) return prev;
+        const next = prev.filter((k) => k !== key);
+        setForm((f) => {
+          if (f._sessionKey !== key) return f;
+          const fallback = (sessionOptions || []).find((o) => o.value === next[0]);
+          return { ...f, _sessionKey: next[0], shuttle_session_id: fallback?.sessionId ?? f.shuttle_session_id ?? 1 };
+        });
+        return next;
+      }
+      const next = [...prev, key];
+      setForm((f) => ({ ...f, _sessionKey: f._sessionKey ?? key }));
+      return next;
+    });
+  };
+
+  const selectAllSessions = () => {
+    const opts = sessionOptions || [];
+    const all = opts.map((o) => o.value);
+    setSelectedKeys(all);
+    if (all.length > 0) {
+      const first = opts[0];
+      setForm((f) => ({ ...f, _sessionKey: f._sessionKey ?? first.value, shuttle_session_id: f.shuttle_session_id ?? first.sessionId ?? 1 }));
+    }
+  };
+
+  const clearSessionSelection = () => {
+    const opts = sessionOptions || [];
+    const first = opts[0];
+    setSelectedKeys(first ? [first.value] : []);
+    if (first) {
+      setForm((f) => ({ ...f, _sessionKey: first.value, shuttle_session_id: first.sessionId ?? f.shuttle_session_id ?? 1 }));
+    }
+  };
+
   const handleSaveTicket = () => {
     if (!form.name || !form.ticket_start_date) {
       notifications.show({ title: "Validasi", message: "Mohon isi nama tiket dan tanggal", color: "red" });
       return;
     }
-    // Pastikan tiket selalu ter-attach ke satu sesi yang valid.
-    const target = resolveSessionKey(form._sessionKey);
-    const newForm: ShuttleTicket = {
+    const opts = sessionOptions || [];
+    if (opts.length === 0) {
+      notifications.show({ title: "Validasi", message: "Tambahkan tanggal & sesi operasional dulu sebelum membuat tiket.", color: "orange" });
+      return;
+    }
+    // Hitung seat/qty sekali sebelum di-clone agar konsisten di semua sesi.
+    // (Nomor kursi yang sama dipakai ulang di tiap sesi — armada yang sama.)
+    const seatNumber = form.available_seat && form.available_seat.length > 0
+      ? form.available_seat.join(",")
+      : form.available_seat_number;
+    const seatQty = form.available_seat && form.available_seat.length > 0
+      ? form.available_seat.length
+      : form.qty;
+    const base: ShuttleTicket = {
       ...form,
-      _sessionKey: target?.value ?? form._sessionKey,
-      shuttle_session_id: target?.sessionId ?? form.shuttle_session_id ?? 1,
+      ...(seatNumber ? { available_seat_number: seatNumber } : {}),
+      qty: seatQty,
     };
-    if (newForm.available_seat && newForm.available_seat.length > 0) {
-      newForm.available_seat_number = newForm.available_seat.join(",");
-      newForm.qty = newForm.available_seat.length;
-    }
-    if (typeof openForm === "number" && openForm >= 0) {
+
+    if (isEditing) {
+      // Edit tetap berlaku untuk satu sesi saja.
+      const target = resolveSessionKey(form._sessionKey);
+      const newForm: ShuttleTicket = {
+        ...base,
+        _sessionKey: target?.value ?? form._sessionKey,
+        shuttle_session_id: target?.sessionId ?? form.shuttle_session_id ?? 1,
+      };
       setTicket(ticket.map((e, i) => (i === openForm ? newForm : e)));
-    } else {
-      setTicket([...ticket, newForm]);
+      setOpenForm(undefined);
+      return;
     }
+
+    // Tambah baru: duplikasi ke sesi-sesi yang dicentang (1 / beberapa / semua).
+    // Strip id agar jadi row baru. Kursi yang sama dipakai ulang tiap sesi.
+    const validTargets = opts.filter((o) => selectedKeys.includes(o.value));
+    if (validTargets.length === 0) {
+      notifications.show({ title: "Validasi", message: "Pilih minimal 1 sesi untuk tiket ini.", color: "orange" });
+      return;
+    }
+    const clones: ShuttleTicket[] = validTargets.map((opt) => {
+      const { id: _omit, ...rest } = base;
+      return {
+        ...rest,
+        _sessionKey: opt.value,
+        shuttle_session_id: opt.sessionId ?? base.shuttle_session_id ?? 1,
+      };
+    });
+    setTicket([...ticket, ...clones]);
+    if (clones.length > 1) {
+      notifications.show({ title: "Berhasil", message: `Tiket "${form.name}" dibuat untuk ${clones.length} sesi.`, color: "green" });
+    }
+    const first = opts[0];
+    setSelectedKeys(first ? [first.value] : []);
     setOpenForm(undefined);
   };
 
@@ -275,30 +376,74 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
             </Flex>
 
             {sessionOptions && sessionOptions.length > 0 && (
-              <div className="flex flex-col gap-1 mb-2">
-                <Text size="sm" fw={500}>Sesi <span className="text-red-500">*</span></Text>
-                <select
-                  className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white"
-                  value={(() => {
-                    // Satu tiket hanya untuk satu sesi — pakai kunci "di-si".
-                    if (form._sessionKey && sessionOptions.some((opt) => opt.value === form._sessionKey)) {
-                      return form._sessionKey;
-                    }
-                    return sessionOptions[0]?.value || "";
-                  })()}
-                  onChange={(e) => {
-                    const selected = sessionOptions.find((opt) => opt.value === e.target.value);
-                    setForm({
-                      ...form,
-                      _sessionKey: e.target.value,
-                      shuttle_session_id: selected?.sessionId ?? form.shuttle_session_id ?? 1,
-                    });
-                  }}
-                >
-                  {sessionOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-2 mb-2">
+                <div className="flex items-center justify-between">
+                  <Text size="sm" fw={500}>Sesi <span className="text-red-500">*</span></Text>
+                  {showSessionList && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllSessions}
+                        className="text-xs font-semibold text-primary-base hover:underline"
+                      >
+                        Pilih semua
+                      </button>
+                      <span className="text-gray-300 text-xs">|</span>
+                      <button
+                        type="button"
+                        onClick={clearSessionSelection}
+                        className="text-xs font-semibold text-gray-500 hover:underline"
+                      >
+                        Hapus semua
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {isEditing || !showSessionList ? (
+                  <select
+                    className="w-full border border-light-grey rounded-lg p-2 text-sm bg-white"
+                    value={(() => {
+                      if (form._sessionKey && sessionOptions.some((opt) => opt.value === form._sessionKey)) {
+                        return form._sessionKey;
+                      }
+                      return sessionOptions[0]?.value || "";
+                    })()}
+                    onChange={(e) => {
+                      const selected = sessionOptions.find((opt) => opt.value === e.target.value);
+                      setForm({
+                        ...form,
+                        _sessionKey: e.target.value,
+                        shuttle_session_id: selected?.sessionId ?? form.shuttle_session_id ?? 1,
+                      });
+                    }}
+                  >
+                    {sessionOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="border border-light-grey rounded-lg p-2.5 flex flex-col gap-1.5 max-h-48 overflow-y-auto bg-white">
+                    {sessionOptions.map((opt) => (
+                      <CheckboxM
+                        key={opt.value}
+                        size="sm"
+                        label={opt.label}
+                        checked={selectedKeys.includes(opt.value)}
+                        onChange={() => toggleKey(opt.value)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {showSessionList && (
+                  <Text size="xs" c="dimmed">
+                    {selectedKeys.length === 0
+                      ? "Pilih minimal 1 sesi."
+                      : selectedKeys.length === 1
+                        ? "Tiket akan dibuat untuk 1 sesi."
+                        : `Tiket akan dibuat ${selectedKeys.length} kali — satu untuk tiap sesi terpilih.`}{" "}
+                    {allSelected ? "(semua sesi)" : ""}
+                  </Text>
+                )}
               </div>
             )}
 
@@ -464,7 +609,11 @@ export default function ModalCreateShuttleTicket({ isOpen, setIsOpen, ticket, se
             <Flex justify="end" py={10} className="sticky bottom-[-15px] bg-white z-10 border-t border-light-grey pt-4">
               <button className="w-full sm:w-auto px-8 py-2.5 text-white bg-primary-base rounded-xl flex items-center justify-center gap-2 text-sm font-semibold hover:bg-primary-dark transition-all shadow-sm" onClick={handleSaveTicket}>
                 <FontAwesomeIcon icon={openForm === undefined ? faPlus : faSave} />
-                {openForm === undefined ? "Tambah Tiket" : "Simpan Tiket"}
+                {isEditing
+                  ? "Simpan Tiket"
+                  : showSessionList && selectedKeys.length > 1
+                    ? `Tambah Tiket ke ${selectedKeys.length} Sesi`
+                    : "Tambah Tiket"}
               </button>
             </Flex>
           </div>

@@ -1633,7 +1633,7 @@ import { useClickOutside } from "@mantine/hooks";
 import { Flex, Menu, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useTranslation } from "react-i18next";
-import { isStaffCheckinUser, STAFF_CHECKIN_LINK } from "@/utils/staffCheckin";
+import { isStaffCheckinUser, isKasirUser, getAllowedStaffLinks } from "@/utils/staffCheckin";
 
 export const SidebarContext = createContext<{ collapse: boolean }>({ collapse: false });
 export const useSidebar = () => useContext(SidebarContext);
@@ -1805,7 +1805,29 @@ const sidebarData: SidebarData = [
         link: "/dashboard/my-event/report",
         role: "Staff",
       },
+      {
+        id: 1,
+        name: "Ticket OTS",
+        icon: faTicket,
+        link: "/dashboard/my-event/ticket-ots",
+        role: "Staff",
+      },
 
+    ],
+  },
+  {
+    id: 6,
+    name: "Produk",
+    icon: faGift,
+    role: "Staff",
+    submenu: [
+      {
+        id: 3,
+        name: "POS Produk",
+        iconify: "hugeicons:cashier",
+        link: "/dashboard/merch-pos",
+        role: "Staff",
+      },
     ],
   },
   {
@@ -2230,33 +2252,38 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Label role khusus tampilan: Staff Checkin tetap role "Staff" untuk
-  // filtering menu, tapi labelnya tampil "Staff Checkin".
-  const roleLabel = useMemo(
-    () =>
-      isStaffCheckinUser(users)
-        ? users?.staffRoleNames?.[0]?.trim() || "Staff Checkin"
-        : role,
-    [users, role]
-  );
+  // Label role khusus tampilan: Staff Checkin / Kasir tetap role "Staff"
+  // untuk filtering menu, tapi labelnya tampil sesuai nama role ("Kasir", dsb).
+  const roleLabel = useMemo(() => {
+    const customName = users?.staffRoleNames?.[0]?.trim();
+    if (isStaffCheckinUser(users) || isKasirUser(users)) {
+      if (customName) return customName;
+      if (isKasirUser(users)) return "Kasir";
+      return "Staff Checkin";
+    }
+    return role;
+  }, [users, role]);
 
   const filteredSidebarData = useMemo(() => {
     console.log("🔄 Filtering menu with role:", role, "and user:", users?.name);
 
-    // Aditif: Staff Checkin (data.permissions[].role.name) hanya lihat Check In Event.
+    // Aditif: Staff Checkin hanya lihat Check In Event; Kasir (role_id 9)
+    // hanya lihat Ticket OTS + Merch POS. User dua role dapat gabungan.
     // Role utama tetap "Staff"; Dashboard disembunyikan. Alur lain tidak berubah.
     const isCheckinStaff = isStaffCheckinUser(users);
+    const isKasir = isKasirUser(users);
+    const allowedStaffLinks = getAllowedStaffLinks(users);
     return sidebarData.filter((el) => {
       // Role filtering
       if (el.role !== role) return false;
 
-      if (isCheckinStaff) {
+      if (isCheckinStaff || isKasir) {
         // Sembunyikan menu top-level ber-link (mis. Dashboard /dashboard).
-        if (el.link) return el.link === STAFF_CHECKIN_LINK;
-        // Untuk parent ber-submenu (mis. Event), loloskan hanya jika
-        // memuat anak Check In Event. Penyempitan anak dilakukan di render.
+        if (el.link) return allowedStaffLinks.includes(el.link);
+        // Untuk parent ber-submenu, loloskan hanya jika memuat anak yang diizinkan.
+        // Penyempitan anak dilakukan di render.
         if (el.submenu) {
-          return el.submenu.some((subEl) => subEl.link === STAFF_CHECKIN_LINK);
+          return el.submenu.some((subEl) => allowedStaffLinks.includes(subEl.link ?? ""));
         }
         return false;
       }
@@ -2522,8 +2549,8 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
                           {el.submenu
                             .filter((subEl) => {
                               if (subEl.role !== role) return false;
-                              // Aditif: Staff Checkin hanya lihat 1 anak (Check In Event).
-                              if (isStaffCheckinUser(users)) return subEl.link === STAFF_CHECKIN_LINK;
+                              // Aditif: Staff Checkin / Kasir hanya lihat anak yang diizinkan (gabungan bila dua role).
+                              if (isStaffCheckinUser(users) || isKasirUser(users)) return getAllowedStaffLinks(users).includes(subEl.link ?? "");
                               if (role === "Creator" && subEl.moduleId) {
                                 return users?.permissions?.some((p) => p.module_id === subEl.moduleId);
                               }

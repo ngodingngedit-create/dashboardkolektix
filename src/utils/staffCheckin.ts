@@ -8,6 +8,15 @@ export const STAFF_CHECKIN_LINK = "/dashboard/my-event/checkin";
 export const STAFF_CHECKIN_ROLE_ID = 5;
 export const STAFF_CHECKIN_ROLE_NAME = "staff checkin";
 
+// Kasir (role_id = 9): hanya sidebar Ticket OTS dan Merch POS.
+export const KASIR_ROLE_ID = 9;
+export const KASIR_ROLE_NAME = "kasir";
+export const KASIR_LINKS = [
+  "/dashboard/my-event/ticket-ots",
+  "/dashboard/merch-pos",
+] as const;
+export const KASIR_DEFAULT_LINK = "/dashboard/my-event/ticket-ots";
+
 export function normalizeRoleName(value: unknown): string {
   return String(value ?? "")
     .trim()
@@ -21,6 +30,16 @@ export function isStaffCheckinPermission(p: any): boolean {
   if (roleName === STAFF_CHECKIN_ROLE_NAME) return true;
   const roleId = Number(p?.role_id ?? p?.role?.id);
   if (Number.isFinite(roleId) && roleId === STAFF_CHECKIN_ROLE_ID) return true;
+  return false;
+}
+
+export function isKasirPermission(p: any): boolean {
+  if (!p || typeof p !== "object") return false;
+  const roleName: string =
+    normalizeRoleName(p?.role?.name) || normalizeRoleName(p?.role_name);
+  if (roleName === KASIR_ROLE_NAME) return true;
+  const roleId = Number(p?.role_id ?? p?.role?.id);
+  if (Number.isFinite(roleId) && roleId === KASIR_ROLE_ID) return true;
   return false;
 }
 
@@ -49,4 +68,28 @@ export function isStaffCheckinUser(input: any): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Deteksi Kasir (mirror Staff Checkin).
+ * Terima raw API array, cookie baru, maupun object user ({permissions, isKasirStaff}).
+ */
+export function isKasirUser(input: any): boolean {
+  if (!input) return false;
+  if (Array.isArray(input)) return input.some(isKasirPermission);
+  if (typeof input === "object") {
+    if (input.isKasirStaff === true) return true;
+    if (Array.isArray(input.permissions)) {
+      return input.permissions.some(isKasirPermission);
+    }
+  }
+  return false;
+}
+
+/** Gabungan link yang boleh dilihat user dua role (checkin ∪ kasir). */
+export function getAllowedStaffLinks(input: any): string[] {
+  const links: string[] = [];
+  if (isStaffCheckinUser(input)) links.push(STAFF_CHECKIN_LINK);
+  if (isKasirUser(input)) links.push(...KASIR_LINKS);
+  return Array.from(new Set(links));
 }
